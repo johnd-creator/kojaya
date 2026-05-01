@@ -16,6 +16,7 @@ class PosTransaction extends Model
         'subtotal',
         'discount_amount',
         'total_amount',
+        'gross_profit',
         'status',
         'sold_at',
     ];
@@ -26,6 +27,7 @@ class PosTransaction extends Model
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'gross_profit' => 'decimal:2',
             'sold_at' => 'datetime',
         ];
     }

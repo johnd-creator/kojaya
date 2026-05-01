@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class PosTransactionService
 {
+    public function __construct(private MemberPointService $memberPointService) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -25,6 +27,8 @@ class PosTransactionService
                 ->first();
 
             if ($existing) {
+                $this->memberPointService->postFromTransaction($existing);
+
                 return $existing;
             }
         }
@@ -42,6 +46,7 @@ class PosTransactionService
             }
 
             $subtotal = 0;
+            $grossProfit = 0;
             $items = [];
 
             foreach ($data['items'] as $item) {
@@ -55,8 +60,11 @@ class PosTransactionService
                 }
 
                 $lineTotal = (float) $product->sale_price * $quantity;
+                $unitProfit = (float) $product->sale_price - (float) $product->cost_price;
+                $lineProfit = $unitProfit * $quantity;
                 $subtotal += $lineTotal;
-                $items[] = [$product, $quantity, $lineTotal];
+                $grossProfit += $lineProfit;
+                $items[] = [$product, $quantity, $lineTotal, $unitProfit, $lineProfit];
             }
 
             $discount = (float) ($data['discount_amount'] ?? 0);
@@ -70,16 +78,20 @@ class PosTransactionService
                 'subtotal' => $subtotal,
                 'discount_amount' => $discount,
                 'total_amount' => $total,
+                'gross_profit' => max($grossProfit - $discount, 0),
                 'status' => 'COMPLETED',
                 'sold_at' => now(),
             ]);
 
-            foreach ($items as [$product, $quantity, $lineTotal]) {
+            foreach ($items as [$product, $quantity, $lineTotal, $unitProfit, $lineProfit]) {
                 $transaction->items()->create([
                     'pos_product_id' => $product->id,
                     'quantity' => $quantity,
                     'unit_price' => $product->sale_price,
+                    'cost_price' => $product->cost_price,
+                    'unit_profit' => $unitProfit,
                     'line_total' => $lineTotal,
+                    'line_profit' => $lineProfit,
                 ]);
 
                 $stockBefore = $product->stock;
@@ -116,6 +128,8 @@ class PosTransactionService
                     'posted_at' => now()->toDateString(),
                 ]);
             }
+
+            $this->memberPointService->postFromTransaction($transaction->refresh());
 
             return $transaction->load(['items.product', 'payments', 'member']);
         });

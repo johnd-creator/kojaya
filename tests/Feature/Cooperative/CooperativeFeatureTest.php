@@ -4,21 +4,33 @@ namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
-use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\CooperativeShuPeriod;
 use App\Models\Organization;
 use App\Models\PosCategory;
+use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
+use App\Models\PosStockMovement;
 use App\Models\User;
+use App\Services\Cooperative\AnnualShuDistributionService;
 use App\Services\Cooperative\DuesGenerationService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class CooperativeFeatureTest extends TestCase
 {
     use DatabaseMigrations;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_member_creation_always_uses_cooperative_head_office(): void
     {
@@ -161,6 +173,271 @@ class CooperativeFeatureTest extends TestCase
             'entry_type' => 'POS_MEMBER_CREDIT',
             'debit' => 20000,
         ]);
+    }
+
+    public function test_pos_member_transaction_snapshots_profit_and_posts_points(): void
+    {
+        Carbon::setTestNow('2026-05-15 10:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $product = $this->product(['stock' => 5, 'cost_price' => 6000, 'sale_price' => 10000]);
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'POINT-001',
+            'payment_method' => 'CASH',
+            'cooperative_member_id' => $member->id,
+            'items' => [
+                ['pos_product_id' => $product->id, 'quantity' => 2],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('pos_transaction_items', [
+            'pos_product_id' => $product->id,
+            'cost_price' => 6000,
+            'unit_profit' => 4000,
+            'line_profit' => 8000,
+        ]);
+        $this->assertDatabaseHas('pos_transactions', [
+            'client_reference' => 'POINT-001',
+            'gross_profit' => 8000,
+        ]);
+        $this->assertDatabaseHas('pos_member_points', [
+            'cooperative_member_id' => $member->id,
+            'year' => 2026,
+            'profit_amount' => 8000,
+            'points' => 8000,
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'POINT-002',
+            'payment_method' => 'CASH',
+            'items' => [
+                ['pos_product_id' => $product->id, 'quantity' => 1],
+            ],
+        ])->assertRedirect();
+
+        $this->assertSame(1, PosMemberPoint::query()->count());
+    }
+
+    public function test_pos_profit_snapshot_and_points_do_not_change_after_product_cost_changes(): void
+    {
+        Carbon::setTestNow('2026-05-15 10:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $product = $this->product(['stock' => 5, 'cost_price' => 6000, 'sale_price' => 10000]);
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'SNAPSHOT-001',
+            'payment_method' => 'TRANSFER',
+            'cooperative_member_id' => $member->id,
+            'items' => [
+                ['pos_product_id' => $product->id, 'quantity' => 1],
+            ],
+        ])->assertRedirect();
+
+        $product->update(['cost_price' => 9000, 'sale_price' => 12000]);
+
+        $this->assertDatabaseHas('pos_transaction_items', [
+            'pos_product_id' => $product->id,
+            'cost_price' => 6000,
+            'unit_price' => 10000,
+            'unit_profit' => 4000,
+            'line_profit' => 4000,
+        ]);
+        $this->assertDatabaseHas('pos_member_points', [
+            'cooperative_member_id' => $member->id,
+            'profit_amount' => 4000,
+            'points' => 4000,
+        ]);
+    }
+
+    public function test_annual_shu_score_rewards_long_membership_and_complete_mandatory_dues(): void
+    {
+        $longMember = $this->member([
+            'member_no' => 'KOP-2026-00001',
+            'status' => 'ACTIVE',
+            'joined_at' => '2026-01-01',
+        ]);
+        $newMember = $this->member([
+            'member_no' => 'KOP-2026-00002',
+            'status' => 'ACTIVE',
+            'joined_at' => '2026-07-01',
+        ]);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        foreach (range(1, 12) as $month) {
+            CooperativeDuesInvoice::query()->create([
+                'cooperative_member_id' => $longMember->id,
+                'cooperative_contribution_type_id' => $type->id,
+                'period' => '2026-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT),
+                'amount' => 50000,
+                'paid_amount' => 50000,
+                'status' => 'PAID',
+            ]);
+        }
+
+        foreach ([7, 8, 9] as $month) {
+            CooperativeDuesInvoice::query()->create([
+                'cooperative_member_id' => $newMember->id,
+                'cooperative_contribution_type_id' => $type->id,
+                'period' => '2026-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT),
+                'amount' => 50000,
+                'paid_amount' => 50000,
+                'status' => 'PAID',
+            ]);
+        }
+
+        $preview = app(AnnualShuDistributionService::class)->preview(2026, 150000);
+        $allocations = collect($preview['allocations'])->keyBy(fn (array $allocation) => $allocation['member']->id);
+
+        $this->assertGreaterThan($allocations[$newMember->id]['shu_score'], $allocations[$longMember->id]['shu_score']);
+        $this->assertGreaterThan($allocations[$newMember->id]['cooperative_shu_amount'], $allocations[$longMember->id]['cooperative_shu_amount']);
+    }
+
+    public function test_annual_pos_shu_is_allocated_by_member_profit_points_and_close_is_locked(): void
+    {
+        Carbon::setTestNow('2026-05-15 10:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+        $firstMember = $this->member(['member_no' => 'KOP-2026-00003', 'status' => 'ACTIVE']);
+        $secondMember = $this->member(['member_no' => 'KOP-2026-00004', 'status' => 'ACTIVE']);
+        $firstProduct = $this->product(['stock' => 5, 'cost_price' => 5000, 'sale_price' => 10000]);
+        $secondProduct = $this->product(['stock' => 5, 'cost_price' => 5000, 'sale_price' => 20000]);
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'POS-SHU-001',
+            'payment_method' => 'CASH',
+            'cooperative_member_id' => $firstMember->id,
+            'items' => [
+                ['pos_product_id' => $firstProduct->id, 'quantity' => 2],
+            ],
+        ])->assertRedirect();
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'POS-SHU-002',
+            'payment_method' => 'CASH',
+            'cooperative_member_id' => $secondMember->id,
+            'items' => [
+                ['pos_product_id' => $secondProduct->id, 'quantity' => 2],
+            ],
+        ])->assertRedirect();
+
+        $service = app(AnnualShuDistributionService::class);
+        $preview = $service->preview(2026);
+        $allocations = collect($preview['allocations'])->keyBy(fn (array $allocation) => $allocation['member']->id);
+
+        $this->assertSame(40000, $preview['total_pos_points']);
+        $this->assertSame(40000.0, $preview['pos_profit_pool']);
+        $this->assertSame(10000.0, $allocations[$firstMember->id]['pos_shu_amount']);
+        $this->assertSame(30000.0, $allocations[$secondMember->id]['pos_shu_amount']);
+
+        $period = $service->close(2026, 100000, null, $user);
+
+        $this->assertSame('CLOSED', $period->status);
+        $this->assertDatabaseHas('cooperative_shu_periods', [
+            'year' => 2026,
+            'status' => 'CLOSED',
+            'total_pos_points' => 40000,
+        ]);
+        $this->assertSame(2, CooperativeShuPeriod::query()->where('year', 2026)->firstOrFail()->allocations()->count());
+        $this->expectException(ValidationException::class);
+
+        $service->close(2026, 100000, null, $user);
+    }
+
+    public function test_pos_category_and_product_can_be_managed(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+
+        $this->actingAs($user)->post(route('cooperative.pos-categories.store'), [
+            'name' => 'Minuman',
+            'slug' => 'minuman',
+            'is_active' => true,
+        ])->assertRedirect();
+
+        $category = PosCategory::query()->where('slug', 'minuman')->firstOrFail();
+
+        $this->actingAs($user)->post(route('cooperative.pos-products.store'), [
+            'pos_category_id' => $category->id,
+            'sku' => 'DRINK-001',
+            'barcode' => '899000000001',
+            'name' => 'Air Mineral',
+            'cost_price' => 2500,
+            'sale_price' => 4000,
+            'stock' => 20,
+            'minimum_stock' => 5,
+            'is_active' => true,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('pos_products', [
+            'sku' => 'DRINK-001',
+            'name' => 'Air Mineral',
+            'stock' => 20,
+        ]);
+
+        $product = PosProduct::query()->where('sku', 'DRINK-001')->firstOrFail();
+
+        $this->actingAs($user)->put(route('cooperative.pos-products.update', $product), [
+            'pos_category_id' => $category->id,
+            'sku' => 'DRINK-001',
+            'barcode' => '899000000001',
+            'name' => 'Air Mineral Botol',
+            'cost_price' => 2600,
+            'sale_price' => 4500,
+            'minimum_stock' => 8,
+            'is_active' => true,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('pos_products', [
+            'id' => $product->id,
+            'name' => 'Air Mineral Botol',
+            'minimum_stock' => 8,
+        ]);
+    }
+
+    public function test_pos_stock_adjustment_records_movement_and_rejects_negative_stock(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+        $product = $this->product(['stock' => 5]);
+
+        $this->actingAs($user)->post(route('cooperative.pos-products.adjust-stock', $product), [
+            'movement_type' => 'ADJUSTMENT_IN',
+            'quantity' => 7,
+            'notes' => 'Restock',
+        ])->assertRedirect();
+
+        $this->assertSame(12, $product->refresh()->stock);
+        $this->assertDatabaseHas('pos_stock_movements', [
+            'pos_product_id' => $product->id,
+            'movement_type' => 'ADJUSTMENT_IN',
+            'quantity' => 7,
+            'stock_before' => 5,
+            'stock_after' => 12,
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.pos-products.adjust-stock', $product), [
+            'movement_type' => 'ADJUSTMENT_OUT',
+            'quantity' => 20,
+        ])->assertSessionHasErrors('quantity');
+
+        $this->assertSame(12, $product->refresh()->stock);
+        $this->assertSame(1, PosStockMovement::query()->where('pos_product_id', $product->id)->count());
     }
 
     public function test_api_requires_sanctum_and_cooperative_role(): void

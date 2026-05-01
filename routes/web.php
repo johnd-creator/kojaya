@@ -155,8 +155,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'index'])->name('payments.index');
         Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
         Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
+        Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])->name('ledger.index');
+        Route::get('shu', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'index'])->name('shu.index');
+        Route::post('shu/close', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'close'])->name('shu.close');
         Route::get('pos', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'index'])->name('pos.index');
+        Route::get('pos/reports', [\App\Http\Controllers\Cooperative\PosSalesReportController::class, 'index'])->name('pos.reports.index');
+        Route::get('pos/shu', [\App\Http\Controllers\Cooperative\PosAnnualShuController::class, 'index'])->name('pos.shu.index');
         Route::post('pos/transactions', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'store'])->name('pos.transactions.store');
+        Route::get('pos/transactions', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'index'])->name('pos.transactions.index');
+        Route::get('pos/transactions/{transaction}', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'show'])->name('pos.transactions.show');
+        Route::resource('pos-categories', \App\Http\Controllers\Cooperative\PosCategoryController::class)->only(['index', 'store', 'update', 'destroy'])->parameters(['pos-categories' => 'category']);
+        Route::resource('pos-products', \App\Http\Controllers\Cooperative\PosProductController::class)->only(['index', 'store', 'show', 'update', 'destroy'])->parameters(['pos-products' => 'product']);
+        Route::post('pos-products/{product}/adjust-stock', [\App\Http\Controllers\Cooperative\PosProductController::class, 'adjustStock'])->name('pos-products.adjust-stock');
         Route::get('reports', [\App\Http\Controllers\Cooperative\CooperativeReportController::class, 'index'])->name('reports.index');
     });
 

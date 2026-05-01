@@ -89,8 +89,8 @@ const submit = () => {
                         <option>QRIS</option>
                         <option>MEMBER_CREDIT</option>
                     </select>
-                    <select v-if="paymentMethod === 'MEMBER_CREDIT'" v-model="memberId" class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950">
-                        <option value="">Pilih anggota aktif</option>
+                    <select v-model="memberId" class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950">
+                        <option value="">{{ paymentMethod === 'MEMBER_CREDIT' ? 'Pilih anggota aktif' : 'Pilih anggota untuk poin POS' }}</option>
                         <option v-for="member in members" :key="member.id" :value="member.id">{{ member.member_no }} - {{ member.name }}</option>
                     </select>
                     <div class="flex justify-between text-lg font-semibold"><span>Total</span><span>{{ formatCurrency(subtotal) }}</span></div>

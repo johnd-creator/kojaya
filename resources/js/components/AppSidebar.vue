@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BarChart3, BookOpen, FileSearch, LayoutGrid, BriefcaseBusiness, UserPlus, Database, FileText, Wrench, Warehouse, ShoppingCart, Landmark } from 'lucide-vue-next';
+import { BarChart3, BookOpen, FileSearch, LayoutGrid, BriefcaseBusiness, UserPlus, Database, FileText, Wrench, Warehouse, ShoppingCart, Users, WalletCards, Store, Boxes } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { index as assetsIndex } from '@/actions/App/Http/Controllers/AssetController';
 import { index as attendancesIndex, selfService as attendancesSelfService } from '@/actions/App/Http/Controllers/AttendanceController';
@@ -36,10 +36,17 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as cooperativeDuesIndex } from '@/routes/cooperative/dues';
+import { index as cooperativeLedgerIndex } from '@/routes/cooperative/ledger';
 import { index as cooperativeMembersIndex } from '@/routes/cooperative/members';
 import { index as cooperativePaymentsIndex } from '@/routes/cooperative/payments';
 import { index as cooperativePosIndex } from '@/routes/cooperative/pos';
+import { index as cooperativePosCategoriesIndex } from '@/routes/cooperative/pos-categories';
+import { index as cooperativePosProductsIndex } from '@/routes/cooperative/pos-products';
+import { index as cooperativePosReportsIndex } from '@/routes/cooperative/pos/reports';
+import { index as cooperativePosShuIndex } from '@/routes/cooperative/pos/shu';
+import { index as cooperativePosTransactionsIndex } from '@/routes/cooperative/pos/transactions';
 import { index as cooperativeReportsIndex } from '@/routes/cooperative/reports';
+import { index as cooperativeShuIndex } from '@/routes/cooperative/shu';
 import type { NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
 
@@ -125,15 +132,45 @@ const allNavItems: NavItem[] = [
         ],
     },
     {
-        title: 'Koperasi',
+        title: 'Keanggotaan',
         href: '#',
-        icon: Landmark,
+        icon: Users,
         items: [
             { title: 'Anggota', href: cooperativeMembersIndex().url },
-            { title: 'Iuran & Simpanan', href: cooperativeDuesIndex().url },
+            { title: 'Verifikasi / Status', href: cooperativeMembersIndex({ query: { status: 'PENDING' } }).url },
+        ],
+    },
+    {
+        title: 'Iuran & Simpanan',
+        href: '#',
+        icon: WalletCards,
+        items: [
+            { title: 'Tagihan Iuran', href: cooperativeDuesIndex().url },
             { title: 'Pembayaran', href: cooperativePaymentsIndex().url },
-            { title: 'POS Toko', href: cooperativePosIndex().url },
-            { title: 'Laporan Koperasi', href: cooperativeReportsIndex().url },
+            { title: 'Ledger Simpanan', href: cooperativeLedgerIndex().url },
+            { title: 'SHU Koperasi', href: cooperativeShuIndex().url },
+        ],
+    },
+    {
+        title: 'POS Toko',
+        href: '#',
+        icon: Store,
+        items: [
+            { title: 'Kasir POS', href: cooperativePosIndex().url },
+            { title: 'Riwayat Transaksi', href: cooperativePosTransactionsIndex().url },
+            { title: 'Report Penjualan', href: cooperativePosReportsIndex().url },
+            { title: 'SHU POS Tahunan', href: cooperativePosShuIndex().url },
+        ],
+    },
+    {
+        title: 'Inventory POS',
+        href: '#',
+        icon: Boxes,
+        items: [
+            { title: 'Produk', href: cooperativePosProductsIndex().url },
+            { title: 'Kategori', href: cooperativePosCategoriesIndex().url },
+            { title: 'Stok Minimum', href: cooperativePosProductsIndex({ query: { low_stock: 1 } }).url },
+            { title: 'Stock Movement', href: cooperativePosProductsIndex().url },
         ],
     },
     {
@@ -165,6 +202,10 @@ const allNavItems: NavItem[] = [
         title: 'Reports',
         href: '/reports',
         icon: BarChart3,
+        items: [
+            { title: 'Reports ERP', href: '/reports' },
+            { title: 'Laporan Koperasi', href: cooperativeReportsIndex().url },
+        ],
     },
     {
         title: 'Audit Logs',

@@ -12,14 +12,20 @@ class PosTransactionItem extends Model
         'pos_product_id',
         'quantity',
         'unit_price',
+        'cost_price',
+        'unit_profit',
         'line_total',
+        'line_profit',
     ];
 
     protected function casts(): array
     {
         return [
             'unit_price' => 'decimal:2',
+            'cost_price' => 'decimal:2',
+            'unit_profit' => 'decimal:2',
             'line_total' => 'decimal:2',
+            'line_profit' => 'decimal:2',
         ];
     }
 

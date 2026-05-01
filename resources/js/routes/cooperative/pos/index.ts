@@ -1,4 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
+import reports from './reports'
+import shu from './shu'
 import transactions from './transactions'
 /**
 * @see \App\Http\Controllers\Cooperative\PosRegisterController::index
@@ -83,6 +85,8 @@ index.form = indexForm
 
 const pos = {
     index: Object.assign(index, index),
+    reports: Object.assign(reports, reports),
+    shu: Object.assign(shu, shu),
     transactions: Object.assign(transactions, transactions),
 }
 

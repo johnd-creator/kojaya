@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+
+class CooperativeLedgerEntry extends Model
+{
+    protected $fillable = [
+        'cooperative_member_id',
+        'cooperative_payment_id',
+        'source_type',
+        'source_id',
+        'entry_type',
+        'debit',
+        'credit',
+        'period',
+        'description',
+        'posted_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'debit' => 'decimal:2',
+            'credit' => 'decimal:2',
+            'posted_at' => 'date',
+        ];
+    }
+
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(CooperativeMember::class, 'cooperative_member_id');
+    }
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(CooperativePayment::class, 'cooperative_payment_id');
+    }
+
+    public function source(): MorphTo
+    {
+        return $this->morphTo();
+    }
+}

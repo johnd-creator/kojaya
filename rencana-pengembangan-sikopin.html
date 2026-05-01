@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIKOPIN — Rencana Pengembangan Sistem Informasi Koperasi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1117;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --gold: #c8962c;
+    --gold-light: #e8b84b;
+    --teal: #1a6b6b;
+    --teal-light: #2a9090;
+    --rust: #b84c2c;
+    --slate: #3a4455;
+    --muted: #6b7280;
+    --border: rgba(15,17,23,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    min-height: 100vh;
+    background: var(--ink);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 80% 20%, rgba(200,150,44,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 20% 80%, rgba(26,107,107,0.22) 0%, transparent 60%);
+  }
+  .cover-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(200,150,44,0.4);
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 2px;
+  }
+  .cover-center { position: relative; z-index: 1; }
+  .cover-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.45);
+    margin-bottom: 24px;
+  }
+  .cover-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 8vw, 96px);
+    font-weight: 900;
+    color: var(--paper);
+    line-height: 0.95;
+    margin-bottom: 8px;
+  }
+  .cover-title span { color: var(--gold); }
+  .cover-subtitle {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(18px, 2.5vw, 26px);
+    color: rgba(245,240,232,0.6);
+    font-weight: 400;
+    font-style: italic;
+    margin-top: 20px;
+    margin-bottom: 48px;
+  }
+  .cover-tags {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .cover-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .tag-backend { background: rgba(26,107,107,0.3); color: #6dd4d4; border: 1px solid rgba(26,107,107,0.5); }
+  .tag-android { background: rgba(200,150,44,0.2); color: var(--gold-light); border: 1px solid rgba(200,150,44,0.4); }
+  .tag-pos { background: rgba(184,76,44,0.2); color: #e8815e; border: 1px solid rgba(184,76,44,0.4); }
+
+  .cover-footer {
+    display: flex; align-items: flex-end; justify-content: space-between; position: relative; z-index: 1;
+  }
+  .cover-meta { font-size: 12px; color: rgba(245,240,232,0.35); line-height: 1.8; font-family: 'DM Mono', monospace; }
+  .cover-version {
+    font-family: 'Playfair Display', serif;
+    font-size: 72px;
+    font-weight: 900;
+    color: rgba(245,240,232,0.06);
+    line-height: 1;
+    letter-spacing: -4px;
+  }
+
+  /* ── LAYOUT ── */
+  .page { padding: 80px 60px; max-width: 1100px; margin: 0 auto; }
+  .page + .page { border-top: 1px solid var(--border); }
+
+  /* ── SECTION HEADER ── */
+  .section-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-eyebrow::after {
+    content: ''; flex: 1; height: 1px; background: var(--gold); opacity: 0.3; max-width: 60px;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.15;
+    margin-bottom: 40px;
+  }
+
+  /* ── OVERVIEW GRID ── */
+  .overview-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--border); border: 1px solid var(--border); margin-bottom: 60px;
+  }
+  .overview-cell {
+    background: var(--paper); padding: 32px 28px;
+  }
+  .overview-cell-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .overview-cell-value {
+    font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700;
+    color: var(--teal);
+  }
+  .overview-cell-desc { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* ── MODULES ── */
+  .modules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 60px; }
+  .module-card {
+    border: 1px solid var(--border); padding: 32px;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .module-card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+  }
+  .module-keanggotaan::before { background: var(--teal); }
+  .module-iuran::before { background: var(--gold); }
+  .module-pos::before { background: var(--rust); }
+  .module-laporan::before { background: var(--slate); }
+
+  .module-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 18px;
+  }
+  .icon-teal { background: rgba(26,107,107,0.12); }
+  .icon-gold { background: rgba(200,150,44,0.12); }
+  .icon-rust { background: rgba(184,76,44,0.12); }
+  .icon-slate { background: rgba(58,68,85,0.1); }
+
+  .module-name {
+    font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .module-desc { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .feature-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .feature-list li {
+    font-size: 13px; color: var(--slate); padding-left: 16px; position: relative;
+  }
+  .feature-list li::before {
+    content: '→'; position: absolute; left: 0; color: var(--gold); font-size: 11px;
+  }
+
+  /* ── STACK RECOMMENDATION ── */
+  .stack-section { margin-bottom: 60px; }
+  .stack-layer {
+    border: 1px solid var(--border); margin-bottom: -1px;
+    display: grid; grid-template-columns: 180px 1fr;
+  }
+  .stack-label {
+    padding: 24px 28px;
+    background: var(--cream);
+    border-right: 1px solid var(--border);
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); display: flex; align-items: center;
+  }
+  .stack-content { padding: 24px 28px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .tech-pill {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    padding: 5px 14px; border-radius: 4px; font-weight: 500;
+  }
+  .pill-primary { background: var(--teal); color: white; }
+  .pill-secondary { background: rgba(26,107,107,0.1); color: var(--teal); border: 1px solid rgba(26,107,107,0.2); }
+  .pill-gold { background: rgba(200,150,44,0.15); color: #8a5e10; border: 1px solid rgba(200,150,44,0.3); }
+  .pill-rust { background: rgba(184,76,44,0.12); color: var(--rust); border: 1px solid rgba(184,76,44,0.25); }
+  .pill-slate { background: rgba(58,68,85,0.1); color: var(--slate); border: 1px solid rgba(58,68,85,0.2); }
+  .stack-note { font-size: 12px; color: var(--muted); margin-left: 6px; font-style: italic; }
+
+  /* ── RATIONALE ── */
+  .rationale-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 60px; }
+  .rationale-card {
+    background: var(--cream); padding: 28px 24px; border-radius: 2px;
+  }
+  .rationale-num {
+    font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 900;
+    color: rgba(15,17,23,0.08); line-height: 1; margin-bottom: 12px;
+  }
+  .rationale-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; color: var(--ink); }
+  .rationale-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-diagram {
+    background: var(--ink); padding: 48px; margin-bottom: 60px; position: relative; overflow: hidden;
+  }
+  .arch-diagram::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(26,107,107,0.15) 0%, transparent 70%);
+  }
+  .arch-inner { position: relative; z-index: 1; }
+  .arch-row {
+    display: flex; justify-content: center; gap: 16px; margin-bottom: 0; align-items: center;
+  }
+  .arch-row + .arch-row { margin-top: 12px; }
+  .arch-node {
+    border: 1px solid rgba(245,240,232,0.15);
+    padding: 14px 20px; text-align: center; min-width: 120px;
+    background: rgba(245,240,232,0.05);
+    backdrop-filter: blur(4px);
+  }
+  .arch-node-title {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(245,240,232,0.5); margin-bottom: 4px;
+  }
+  .arch-node-name {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--paper);
+  }
+  .arch-node.highlight { border-color: var(--gold); background: rgba(200,150,44,0.08); }
+  .arch-node.highlight .arch-node-name { color: var(--gold-light); }
+  .arch-node.teal { border-color: var(--teal-light); background: rgba(26,107,107,0.12); }
+  .arch-node.teal .arch-node-name { color: #6dd4d4; }
+
+  .arch-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: rgba(245,240,232,0.2); font-size: 18px; min-height: 32px;
+    font-family: 'DM Mono', monospace;
+  }
+  .arch-arrow-label {
+    font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(245,240,232,0.25); margin-top: 2px;
+  }
+
+  .arch-group-label {
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--gold); text-align: center;
+    margin-bottom: 12px; margin-top: 24px;
+  }
+  .arch-group-label:first-child { margin-top: 0; }
+
+  .arch-divider {
+    height: 1px; background: rgba(245,240,232,0.06); margin: 28px 0;
+  }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; margin-bottom: 60px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 140px; top: 0; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .timeline-item { display: grid; grid-template-columns: 140px 1fr; gap: 0; margin-bottom: 0; }
+  .timeline-item + .timeline-item { border-top: 1px solid var(--border); }
+  .timeline-phase {
+    padding: 28px 28px 28px 0; display: flex; flex-direction: column;
+    justify-content: flex-start; gap: 4px;
+  }
+  .phase-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+  }
+  .phase-name {
+    font-family: 'Playfair Display', serif; font-size: 15px;
+    font-weight: 700; color: var(--ink);
+  }
+  .phase-duration {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--gold);
+  }
+  .timeline-body { padding: 28px; border-left: none; position: relative; }
+  .timeline-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--gold); position: absolute;
+    left: -5px; top: 36px;
+    border: 2px solid var(--paper);
+    box-shadow: 0 0 0 1px var(--gold);
+  }
+  .timeline-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; color: var(--ink); }
+  .timeline-items { display: flex; flex-direction: column; gap: 4px; }
+  .timeline-items li { font-size: 13px; color: var(--muted); padding-left: 14px; position: relative; }
+  .timeline-items li::before { content: '·'; position: absolute; left: 0; color: var(--teal); font-size: 16px; line-height: 1.3; }
+  .phase-badge {
+    display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px;
+    padding: 2px 10px; border-radius: 2px; letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .badge-1 { background: rgba(26,107,107,0.12); color: var(--teal); }
+  .badge-2 { background: rgba(200,150,44,0.15); color: #8a5e10; }
+  .badge-3 { background: rgba(184,76,44,0.12); color: var(--rust); }
+  .badge-4 { background: rgba(58,68,85,0.12); color: var(--slate); }
+
+  /* ── TEAM & COST ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 60px; }
+  .cost-table { width: 100%; border-collapse: collapse; }
+  .cost-table th {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); text-align: left;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+  .cost-table td {
+    padding: 12px 12px; font-size: 13px; color: var(--slate);
+    border-bottom: 1px solid rgba(15,17,23,0.05);
+  }
+  .cost-table tr:last-child td { border-bottom: none; }
+  .cost-table .total td { font-weight: 600; color: var(--ink); border-top: 1px solid var(--border); }
+  .cost-table .cost-num { font-family: 'DM Mono', monospace; color: var(--teal); text-align: right; }
+
+  .team-list { display: flex; flex-direction: column; gap: 12px; }
+  .team-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px; background: var(--cream);
+  }
+  .team-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .team-role { font-weight: 600; font-size: 13px; color: var(--ink); }
+  .team-desc { font-size: 12px; color: var(--muted); }
+  .team-count {
+    margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px;
+    color: var(--gold); flex-shrink: 0;
+  }
+
+  /* ── RISKS ── */
+  .risks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 60px; }
+  .risk-card { border: 1px solid var(--border); padding: 22px; }
+  .risk-level {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em;
+    text-transform: uppercase; margin-bottom: 8px; font-weight: 500;
+  }
+  .risk-high { color: var(--rust); }
+  .risk-medium { color: var(--gold); }
+  .risk-low { color: var(--teal); }
+  .risk-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .risk-mitigation { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+  /* ── API ENDPOINTS ── */
+  .endpoints { display: flex; flex-direction: column; gap: 0; margin-bottom: 60px; }
+  .endpoint { display: grid; grid-template-columns: 64px 280px 1fr; gap: 0; border: 1px solid var(--border); margin-bottom: -1px; }
+  .method {
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+    padding: 12px 0; text-align: center; display: flex; align-items: center; justify-content: center;
+  }
+  .method-get { background: rgba(26,107,107,0.1); color: var(--teal); }
+  .method-post { background: rgba(200,150,44,0.1); color: #8a5e10; }
+  .method-put { background: rgba(58,68,85,0.1); color: var(--slate); }
+  .method-delete { background: rgba(184,76,44,0.1); color: var(--rust); }
+  .endpoint-path {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    padding: 12px 16px; color: var(--ink); border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border); display: flex; align-items: center;
+  }
+  .endpoint-desc { font-size: 13px; color: var(--muted); padding: 12px 16px; display: flex; align-items: center; }
+
+  /* ── FOOTER ── */
+  .doc-footer {
+    background: var(--ink); padding: 48px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-brand {
+    font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--paper);
+  }
+  .footer-brand span { color: var(--gold); }
+  .footer-note { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(245,240,232,0.35); text-align: right; line-height: 1.8; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-left: 3px solid var(--teal); background: rgba(26,107,107,0.06);
+    padding: 20px 24px; margin-bottom: 32px;
+  }
+  .callout-title { font-weight: 600; font-size: 13px; color: var(--teal); margin-bottom: 6px; }
+  .callout-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* PRINT */
+  @media print {
+    .cover { min-height: auto; }
+    .page { padding: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ COVER ══ -->
+<div class="cover">
+  <div>
+    <div class="cover-badge">Dokumen Perencanaan Teknis</div>
+  </div>
+
+  <div class="cover-center">
+    <div class="cover-eyebrow">Sistem Informasi Koperasi Indonesia</div>
+    <div class="cover-title">SI<span>KOP</span>IN</div>
+    <div class="cover-subtitle">Rencana Pengembangan Aplikasi Koperasi<br>Backend Web + Aplikasi Android</div>
+    <div class="cover-tags">
+      <span class="cover-tag tag-backend">REST API Backend</span>
+      <span class="cover-tag tag-android">Android (Phone + Tablet)</span>
+      <span class="cover-tag tag-pos">POS Toko</span>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div class="cover-meta">
+      Versi 1.0 — April 2025<br>
+      Dokumen Perencanaan Internal<br>
+      Bersifat Rahasia
+    </div>
+    <div class="cover-version">v1</div>
+  </div>
+</div>
+
+
+<!-- ══ SECTION 1: OVERVIEW ══ -->
+<div class="page">
+  <div class="section-eyebrow">01 — Gambaran Umum</div>
+  <div class="section-title">Ringkasan Proyek</div>
+
+  <div class="overview-grid">
+    <div class="overview-cell">
+      <div class="overview-cell-label">Tipe Sistem</div>
+      <div class="overview-cell-value">3-in-1</div>
+      <div class="overview-cell-desc">Keanggotaan, Iuran & POS Toko dalam satu platform</div>
+    </div>
+    <div class="overview-cell">
+      <div class="overview-cell-label">Platform Target</div>
+      <div class="overview-cell-value">2</div>
+      <div class="overview-cell-desc">Backend Web Admin + Aplikasi Android (Phone & Tablet)</div>
+    </div>
+    <div class="overview-cell">
+      <div class="overview-cell-label">Estimasi Durasi</div>
+      <div class="overview-cell-value">9 Bln</div>
+      <div class="overview-cell-desc">Dari perencanaan hingga go-live produksi</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">📋 Scope Proyek</div>
+    <div class="callout-text">
+      SIKOPIN dirancang sebagai sistem informasi terpadu untuk koperasi yang mencakup manajemen keanggotaan (data anggota, riwayat, dokumen), pengelolaan iuran (tagihan otomatis, pembayaran, laporan), dan sistem kasir (POS) untuk toko koperasi. Semua modul terintegrasi dalam satu backend API yang dapat diakses via web admin maupun aplikasi Android.
+    </div>
+  </div>
+
+  <!-- MODULES -->
+  <div class="section-eyebrow">Modul Utama</div>
+  <div class="modules-grid">
+    <div class="module-card module-keanggotaan">
+      <div class="module-icon icon-teal">👥</div>
+      <div class="module-name">Manajemen Keanggotaan</div>
+      <div class="module-desc">Pengelolaan data anggota koperasi secara lengkap, mulai pendaftaran hingga pengunduran diri.</div>
+      <ul class="feature-list">
+        <li>Pendaftaran & verifikasi anggota baru</li>
+        <li>Profil anggota + foto KTP/dokumen</li>
+        <li>Nomor induk anggota otomatis</li>
+        <li>Status anggota (aktif, non-aktif, keluar)</li>
+        <li>Riwayat aktivitas anggota</li>
+        <li>Export data ke Excel/PDF</li>
+      </ul>
+    </div>
+
+    <div class="module-card module-iuran">
+      <div class="module-icon icon-gold">💰</div>
+      <div class="module-name">Manajemen Iuran</div>
+      <div class="module-desc">Sistem tagihan dan pembayaran iuran wajib, sukarela, dan simpanan anggota koperasi.</div>
+      <ul class="feature-list">
+        <li>Jenis iuran: wajib, pokok, sukarela</li>
+        <li>Generate tagihan otomatis bulanan</li>
+        <li>Pencatatan pembayaran (tunai & transfer)</li>
+        <li>Notifikasi tunggakan & pengingat</li>
+        <li>Riwayat simpanan & pinjaman</li>
+        <li>Laporan keuangan per periode</li>
+      </ul>
+    </div>
+
+    <div class="module-card module-pos">
+      <div class="module-icon icon-rust">🛒</div>
+      <div class="module-name">POS Toko Koperasi</div>
+      <div class="module-desc">Sistem kasir lengkap untuk toko koperasi, support tablet sebagai mesin kasir.</div>
+      <ul class="feature-list">
+        <li>Antarmuka kasir touch-friendly (tablet)</li>
+        <li>Manajemen produk & kategori</li>
+        <li>Barcode scanner support</li>
+        <li>Transaksi tunai, kredit anggota, QRIS</li>
+        <li>Manajemen stok & peringatan minim stok</li>
+        <li>Laporan penjualan harian/bulanan</li>
+      </ul>
+    </div>
+
+    <div class="module-card module-laporan">
+      <div class="module-icon icon-slate">📊</div>
+      <div class="module-name">Laporan & Dashboard</div>
+      <div class="module-desc">Dashboard eksekutif dan laporan terintegrasi untuk pengurus koperasi.</div>
+      <ul class="feature-list">
+        <li>Dashboard ringkasan real-time</li>
+        <li>Laporan keuangan koperasi</li>
+        <li>Grafik pertumbuhan anggota</li>
+        <li>Rekap iuran & tunggakan</li>
+        <li>Laporan omzet toko per periode</li>
+        <li>Export laporan ke PDF & Excel</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ SECTION 2: TECH STACK ══ -->
+<div class="page">
+  <div class="section-eyebrow">02 — Rekomendasi Teknologi</div>
+  <div class="section-title">Tech Stack yang Direkomendasikan</div>
+
+  <div class="stack-section">
+    <div class="stack-layer">
+      <div class="stack-label">Backend API</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-primary">Laravel 11</span>
+        <span class="tech-pill pill-secondary">PHP 8.3</span>
+        <span class="tech-pill pill-secondary">REST API</span>
+        <span class="tech-pill pill-gold">Laravel Sanctum</span>
+        <span class="tech-pill pill-gold">Laravel Queues</span>
+        <span class="stack-note">Framework matang, ekosistem luas, komunitas Indonesia besar</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">Database</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-primary">MySQL 8.0</span>
+        <span class="tech-pill pill-secondary">Redis</span>
+        <span class="tech-pill pill-slate">Laravel Migrations</span>
+        <span class="stack-note">MySQL untuk data utama, Redis untuk cache & session</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">Web Admin</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-primary">Filament PHP v3</span>
+        <span class="tech-pill pill-secondary">Livewire</span>
+        <span class="tech-pill pill-secondary">Alpine.js</span>
+        <span class="tech-pill pill-gold">Tailwind CSS</span>
+        <span class="stack-note">Admin panel siap pakai, CRUD otomatis, hemat waktu 60%</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">Android App</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-primary">Kotlin</span>
+        <span class="tech-pill pill-secondary">Jetpack Compose</span>
+        <span class="tech-pill pill-secondary">Retrofit 2</span>
+        <span class="tech-pill pill-gold">Room DB</span>
+        <span class="tech-pill pill-gold">Hilt (DI)</span>
+        <span class="stack-note">Native Android, performa terbaik, support phone & tablet</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">Storage & File</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-secondary">Laravel Storage</span>
+        <span class="tech-pill pill-slate">MinIO / S3</span>
+        <span class="tech-pill pill-slate">Spatie Media Library</span>
+        <span class="stack-note">Untuk foto anggota, dokumen, dan bukti pembayaran</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">Notifikasi</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-secondary">Firebase FCM</span>
+        <span class="tech-pill pill-slate">WhatsApp API</span>
+        <span class="tech-pill pill-slate">Email (SMTP)</span>
+        <span class="stack-note">Push notif Android + pengingat iuran via WA</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">Server / Infra</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-primary">VPS Ubuntu 22.04</span>
+        <span class="tech-pill pill-secondary">Nginx</span>
+        <span class="tech-pill pill-secondary">Docker</span>
+        <span class="tech-pill pill-gold">GitHub Actions CI/CD</span>
+        <span class="stack-note">Deploy di VPS lokal (Niagahoster/Biznet) atau cloud</span>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">POS Hardware</div>
+      <div class="stack-content">
+        <span class="tech-pill pill-secondary">Bluetooth Printer</span>
+        <span class="tech-pill pill-slate">USB Barcode Scanner</span>
+        <span class="tech-pill pill-slate">Cash Drawer</span>
+        <span class="stack-note">Compatible via Android Bluetooth/USB OTG</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RATIONALE -->
+  <div class="section-eyebrow" style="margin-top:48px;">Alasan Pemilihan Stack</div>
+  <div class="rationale-grid">
+    <div class="rationale-card">
+      <div class="rationale-num">01</div>
+      <div class="rationale-title">Laravel + Filament = Hemat Waktu</div>
+      <div class="rationale-text">Filament PHP menyediakan admin panel siap pakai dengan CRUD otomatis. Pengurus koperasi bisa langsung pakai dashboard web tanpa perlu membangun dari nol. Estimasi hemat 2–3 bulan development.</div>
+    </div>
+    <div class="rationale-card">
+      <div class="rationale-num">02</div>
+      <div class="rationale-title">Kotlin Native = Performa Terbaik</div>
+      <div class="rationale-text">Untuk POS yang dipakai intensif setiap hari, native Android jauh lebih responsif daripada Flutter/React Native. Jetpack Compose memudahkan UI adaptif untuk phone dan tablet dengan satu codebase.</div>
+    </div>
+    <div class="rationale-card">
+      <div class="rationale-num">03</div>
+      <div class="rationale-title">Offline-First untuk POS</div>
+      <div class="rationale-text">Room Database memungkinkan modul POS bekerja tanpa internet. Transaksi disimpan lokal, lalu disinkronisasi ke server saat koneksi tersedia — krusial untuk toko koperasi di area sinyal lemah.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ SECTION 3: ARCHITECTURE ══ -->
+<div class="page">
+  <div class="section-eyebrow">03 — Arsitektur Sistem</div>
+  <div class="section-title">Diagram Arsitektur</div>
+
+  <div class="arch-diagram">
+    <div class="arch-inner">
+
+      <div class="arch-group-label">─── CLIENT LAYER ───</div>
+      <div class="arch-row">
+        <div class="arch-node">
+          <div class="arch-node-title">Web Browser</div>
+          <div class="arch-node-name">Admin Panel</div>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-title">Android Phone</div>
+          <div class="arch-node-name">App Anggota</div>
+        </div>
+        <div class="arch-node highlight">
+          <div class="arch-node-title">Android Tablet</div>
+          <div class="arch-node-name">POS Kasir</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓<div class="arch-arrow-label">HTTPS / REST API</div></div>
+
+      <div class="arch-group-label">─── API GATEWAY ───</div>
+      <div class="arch-row">
+        <div class="arch-node teal" style="min-width:320px;">
+          <div class="arch-node-title">Nginx Reverse Proxy</div>
+          <div class="arch-node-name">API Gateway + SSL Termination</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓<div class="arch-arrow-label">Internal</div></div>
+
+      <div class="arch-group-label">─── APPLICATION LAYER ───</div>
+      <div class="arch-row">
+        <div class="arch-node">
+          <div class="arch-node-title">Module</div>
+          <div class="arch-node-name">Keanggotaan</div>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-title">Module</div>
+          <div class="arch-node-name">Iuran</div>
+        </div>
+        <div class="arch-node highlight">
+          <div class="arch-node-title">Module</div>
+          <div class="arch-node-name">POS & Inventory</div>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-title">Module</div>
+          <div class="arch-node-name">Laporan</div>
+        </div>
+      </div>
+
+      <div class="arch-divider"></div>
+
+      <div class="arch-group-label">─── SERVICE LAYER ───</div>
+      <div class="arch-row">
+        <div class="arch-node teal">
+          <div class="arch-node-title">Auth</div>
+          <div class="arch-node-name">Laravel Sanctum</div>
+        </div>
+        <div class="arch-node teal">
+          <div class="arch-node-title">Queue</div>
+          <div class="arch-node-name">Laravel Horizon</div>
+        </div>
+        <div class="arch-node teal">
+          <div class="arch-node-title">Storage</div>
+          <div class="arch-node-name">MinIO / S3</div>
+        </div>
+        <div class="arch-node teal">
+          <div class="arch-node-title">Notif</div>
+          <div class="arch-node-name">FCM + WA API</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">↓<div class="arch-arrow-label">Query</div></div>
+
+      <div class="arch-group-label">─── DATA LAYER ───</div>
+      <div class="arch-row">
+        <div class="arch-node highlight">
+          <div class="arch-node-title">Primary Store</div>
+          <div class="arch-node-name">MySQL 8.0</div>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-title">Cache / Session</div>
+          <div class="arch-node-name">Redis</div>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-title">Local (Android)</div>
+          <div class="arch-node-name">Room Database</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SAMPLE API ENDPOINTS -->
+  <div class="section-eyebrow">Contoh API Endpoints</div>
+  <div style="margin-bottom:24px; font-size:13px; color:var(--muted);">Berikut adalah contoh struktur REST API yang akan dibangun (base URL: <code style="font-family:'DM Mono',monospace;font-size:12px;background:var(--cream);padding:2px 6px;">/api/v1</code>)</div>
+
+  <div class="endpoints">
+    <div class="endpoint">
+      <div class="method method-get">GET</div>
+      <div class="endpoint-path">/members</div>
+      <div class="endpoint-desc">Daftar semua anggota (paginasi, filter, search)</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-post">POST</div>
+      <div class="endpoint-path">/members</div>
+      <div class="endpoint-desc">Daftarkan anggota baru dengan upload dokumen</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-get">GET</div>
+      <div class="endpoint-path">/dues/invoices</div>
+      <div class="endpoint-desc">Daftar tagihan iuran semua anggota</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-post">POST</div>
+      <div class="endpoint-path">/dues/payments</div>
+      <div class="endpoint-desc">Catat pembayaran iuran dari anggota</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-get">GET</div>
+      <div class="endpoint-path">/pos/products</div>
+      <div class="endpoint-desc">Daftar produk toko (filter kategori, stok tersedia)</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-post">POST</div>
+      <div class="endpoint-path">/pos/transactions</div>
+      <div class="endpoint-desc">Buat transaksi penjualan, kurangi stok otomatis</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-get">GET</div>
+      <div class="endpoint-path">/reports/sales</div>
+      <div class="endpoint-desc">Laporan penjualan dengan filter tanggal & kategori</div>
+    </div>
+    <div class="endpoint">
+      <div class="method method-post">POST</div>
+      <div class="endpoint-path">/sync/pos-offline</div>
+      <div class="endpoint-desc">Sinkronisasi transaksi POS offline dari tablet</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ SECTION 4: TIMELINE ══ -->
+<div class="page">
+  <div class="section-eyebrow">04 — Rencana Kerja</div>
+  <div class="section-title">Timeline Pengembangan (9 Bulan)</div>
+
+  <div class="timeline">
+
+    <div class="timeline-item">
+      <div class="timeline-phase">
+        <div class="phase-label">Fase 1</div>
+        <div class="phase-name">Foundation</div>
+        <div class="phase-duration">Bulan 1–2</div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-dot"></div>
+        <span class="phase-badge badge-1">Setup & Arsitektur</span>
+        <div class="timeline-title">Fondasi Sistem & Setup Infrastruktur</div>
+        <ul class="timeline-items">
+          <li>Setup server VPS, domain, SSL, environment</li>
+          <li>Instalasi Docker, Nginx, MySQL, Redis</li>
+          <li>Inisialisasi proyek Laravel & struktur database (ERD)</li>
+          <li>Setup Filament PHP admin panel dasar</li>
+          <li>Inisialisasi proyek Android (Kotlin + Jetpack Compose)</li>
+          <li>Setup CI/CD pipeline dengan GitHub Actions</li>
+          <li>Autentikasi API (Laravel Sanctum + role: Admin, Pengurus, Kasir, Anggota)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">
+        <div class="phase-label">Fase 2</div>
+        <div class="phase-name">Core Modules</div>
+        <div class="phase-duration">Bulan 3–4</div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-dot"></div>
+        <span class="phase-badge badge-2">Modul Utama</span>
+        <div class="timeline-title">Modul Keanggotaan & Iuran (Backend + Web Admin)</div>
+        <ul class="timeline-items">
+          <li>CRUD anggota lengkap + upload foto & dokumen</li>
+          <li>Generate nomor anggota otomatis</li>
+          <li>Sistem jenis iuran & simpanan</li>
+          <li>Generate tagihan otomatis via Laravel Scheduler</li>
+          <li>Pencatatan pembayaran manual & approval</li>
+          <li>Notifikasi tunggakan via FCM & WA</li>
+          <li>API endpoints untuk modul keanggotaan & iuran</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">
+        <div class="phase-label">Fase 3</div>
+        <div class="phase-name">POS System</div>
+        <div class="phase-duration">Bulan 5–6</div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-dot"></div>
+        <span class="phase-badge badge-3">Modul POS</span>
+        <div class="timeline-title">Sistem POS Toko + Manajemen Inventori</div>
+        <ul class="timeline-items">
+          <li>Manajemen produk, kategori, harga, stok</li>
+          <li>Antarmuka kasir tablet (landscape, touch-first)</li>
+          <li>Transaksi tunai, kredit anggota, QRIS</li>
+          <li>Integrasi Bluetooth printer struk thermal</li>
+          <li>Scanner barcode (kamera & USB/Bluetooth)</li>
+          <li>Mode offline + sinkronisasi otomatis</li>
+          <li>Laporan penjualan & stok real-time</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">
+        <div class="phase-label">Fase 4</div>
+        <div class="phase-name">Android App</div>
+        <div class="phase-duration">Bulan 6–7</div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-dot" style="background:var(--slate); box-shadow:0 0 0 1px var(--slate);"></div>
+        <span class="phase-badge badge-4">Mobile Development</span>
+        <div class="timeline-title">Aplikasi Android untuk Anggota & Pengurus</div>
+        <ul class="timeline-items">
+          <li>Login & autentikasi biometrik (fingerprint)</li>
+          <li>Dashboard anggota: simpanan, iuran, riwayat</li>
+          <li>Pembayaran iuran (integrasi payment gateway)</li>
+          <li>Notifikasi push real-time</li>
+          <li>Dashboard pengurus: ringkasan keuangan, laporan</li>
+          <li>Adaptive layout (phone & tablet — satu codebase)</li>
+          <li>Dark mode support</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-phase">
+        <div class="phase-label">Fase 5</div>
+        <div class="phase-name">QA & Launch</div>
+        <div class="phase-duration">Bulan 8–9</div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-dot" style="background:var(--teal-light); box-shadow:0 0 0 1px var(--teal-light);"></div>
+        <span class="phase-badge badge-1">Testing & Deploy</span>
+        <div class="timeline-title">Quality Assurance, Pelatihan & Go-Live</div>
+        <ul class="timeline-items">
+          <li>UAT (User Acceptance Testing) bersama pengurus koperasi</li>
+          <li>Load testing & optimasi performa</li>
+          <li>Perbaikan bug & penyesuaian UI/UX</li>
+          <li>Migrasi data dari sistem lama (jika ada)</li>
+          <li>Pelatihan admin, kasir & pengurus (onsite)</li>
+          <li>Deploy produksi & monitoring awal</li>
+          <li>Publikasi APK ke Google Play Internal Track</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ SECTION 5: TEAM & COST ══ -->
+<div class="page">
+  <div class="section-eyebrow">05 — Tim & Estimasi</div>
+  <div class="section-title">Kebutuhan Tim & Perkiraan Biaya</div>
+
+  <div class="two-col">
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Struktur Tim Minimum</div>
+      <div class="team-list">
+        <div class="team-item">
+          <div class="team-avatar" style="background:rgba(26,107,107,0.12);">🧑‍💻</div>
+          <div>
+            <div class="team-role">Backend Developer</div>
+            <div class="team-desc">Laravel, API, Database, Admin Panel</div>
+          </div>
+          <div class="team-count">1–2 org</div>
+        </div>
+        <div class="team-item">
+          <div class="team-avatar" style="background:rgba(200,150,44,0.12);">📱</div>
+          <div>
+            <div class="team-role">Android Developer</div>
+            <div class="team-desc">Kotlin, Jetpack Compose, POS UI</div>
+          </div>
+          <div class="team-count">1–2 org</div>
+        </div>
+        <div class="team-item">
+          <div class="team-avatar" style="background:rgba(184,76,44,0.12);">🎨</div>
+          <div>
+            <div class="team-role">UI/UX Designer</div>
+            <div class="team-desc">Figma, user research, prototype</div>
+          </div>
+          <div class="team-count">1 org</div>
+        </div>
+        <div class="team-item">
+          <div class="team-avatar" style="background:rgba(58,68,85,0.1);">🧪</div>
+          <div>
+            <div class="team-role">QA Tester</div>
+            <div class="team-desc">Manual & automated testing</div>
+          </div>
+          <div class="team-count">1 org</div>
+        </div>
+        <div class="team-item">
+          <div class="team-avatar" style="background:rgba(26,107,107,0.1);">🗂️</div>
+          <div>
+            <div class="team-role">Project Manager</div>
+            <div class="team-desc">Koordinasi, klien, dokumentasi</div>
+          </div>
+          <div class="team-count">1 org</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Estimasi Biaya Infrastruktur / Tahun</div>
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align:right;">Estimasi/Tahun</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>VPS (2 vCPU, 4GB RAM)</td>
+            <td class="cost-num">Rp 1.8 – 3 jt</td>
+          </tr>
+          <tr>
+            <td>Domain + SSL</td>
+            <td class="cost-num">Rp 200 – 400 rb</td>
+          </tr>
+          <tr>
+            <td>Storage (MinIO / S3)</td>
+            <td class="cost-num">Rp 500 rb – 1.2 jt</td>
+          </tr>
+          <tr>
+            <td>Google Play Developer</td>
+            <td class="cost-num">~Rp 400 rb (sekali)</td>
+          </tr>
+          <tr>
+            <td>FCM (Firebase)</td>
+            <td class="cost-num">Gratis (tier dasar)</td>
+          </tr>
+          <tr>
+            <td>WhatsApp API (opsional)</td>
+            <td class="cost-num">Rp 100 rb – 500 rb/bln</td>
+          </tr>
+          <tr class="total">
+            <td>Total Infrastruktur/Tahun</td>
+            <td class="cost-num">~Rp 4 – 8 jt</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:24px; font-size:12px; color:var(--muted); line-height:1.6; background:var(--cream); padding:16px;">
+        💡 <strong>Catatan:</strong> Estimasi di atas hanya untuk infrastruktur. Biaya development tim tidak termasuk dan tergantung pada skema (tim internal, freelancer, atau vendor). Koperasi dapat memulai dengan VPS entry-level dan upgrade sesuai pertumbuhan.
+      </div>
+    </div>
+  </div>
+
+  <!-- RISKS -->
+  <div class="section-eyebrow" style="margin-top:20px;">Risiko & Mitigasi</div>
+  <div class="risks-grid">
+    <div class="risk-card">
+      <div class="risk-level risk-high">● Risiko Tinggi</div>
+      <div class="risk-title">Koneksi internet tidak stabil di lokasi toko</div>
+      <div class="risk-mitigation"><strong>Mitigasi:</strong> Implementasi mode offline-first di modul POS. Transaksi disimpan di Room DB lokal, sinkron otomatis saat online.</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-level risk-high">● Risiko Tinggi</div>
+      <div class="risk-title">Resistensi pengguna terhadap sistem baru</div>
+      <div class="risk-mitigation"><strong>Mitigasi:</strong> Libatkan pengurus dalam UAT sejak Fase 1. Sediakan sesi pelatihan onsite dan panduan penggunaan video/PDF.</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-level risk-medium">● Risiko Sedang</div>
+      <div class="risk-title">Scope creep — permintaan fitur tambahan</div>
+      <div class="risk-mitigation"><strong>Mitigasi:</strong> Gunakan dokumen scope yang ditandatangani. Fitur tambahan masuk backlog untuk versi 2.0 agar tidak mengganggu jadwal.</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-level risk-medium">● Risiko Sedang</div>
+      <div class="risk-title">Kompatibilitas perangkat Android beragam</div>
+      <div class="risk-mitigation"><strong>Mitigasi:</strong> Target minimum API 26 (Android 8.0+). Testing di 3–4 device berbeda. Gunakan Jetpack Compose untuk konsistensi UI.</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-level risk-low">● Risiko Rendah</div>
+      <div class="risk-title">Keamanan data anggota & keuangan</div>
+      <div class="risk-mitigation"><strong>Mitigasi:</strong> Enkripsi data sensitif, HTTPS wajib, API rate limiting, audit log, backup otomatis harian.</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-level risk-low">● Risiko Rendah</div>
+      <div class="risk-title">Performa saat data anggota bertambah besar</div>
+      <div class="risk-mitigation"><strong>Mitigasi:</strong> Optimasi query dengan indexing, paginasi di semua list endpoint, caching Redis untuk laporan berat.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ SECTION 6: NEXT STEPS ══ -->
+<div class="page">
+  <div class="section-eyebrow">06 — Langkah Selanjutnya</div>
+  <div class="section-title">Rekomendasi Langkah Awal</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:48px;">
+    <div style="border:1px solid var(--border);padding:32px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;">Minggu 1–2</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:12px;">Kickoff & Perencanaan Detail</div>
+      <ul class="feature-list">
+        <li>Workshop requirement gathering bersama pengurus koperasi</li>
+        <li>Finalisasi ERD (Entity Relationship Diagram) database</li>
+        <li>Desain wireframe semua modul di Figma</li>
+        <li>Setup repositori GitHub + project board</li>
+        <li>Kontrak & onboarding tim developer</li>
+      </ul>
+    </div>
+    <div style="border:1px solid var(--border);padding:32px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--teal);margin-bottom:16px;">Segera Diputuskan</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:12px;">Keputusan Kritis</div>
+      <ul class="feature-list">
+        <li>Skema tim: rekrut internal atau gunakan vendor/freelancer?</li>
+        <li>Provider VPS: Niagahoster, Biznet, atau DigitalOcean?</li>
+        <li>Integrasi payment gateway untuk pembayaran iuran online?</li>
+        <li>Apakah perlu integrasi dengan sistem akuntansi existing?</li>
+        <li>Target perangkat tablet POS (Samsung, Lenovo, dll.)?</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="background:var(--ink);padding:40px;margin-bottom:60px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;">Roadmap Versi Berikutnya (v2.0)</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+      <div>
+        <div style="color:var(--paper);font-weight:600;font-size:14px;margin-bottom:8px;">💳 Payment Gateway</div>
+        <div style="color:rgba(245,240,232,.5);font-size:13px;line-height:1.6;">Integrasi Midtrans/Xendit untuk pembayaran iuran online via transfer, QRIS, VA</div>
+      </div>
+      <div>
+        <div style="color:var(--paper);font-weight:600;font-size:14px;margin-bottom:8px;">🏦 Modul Simpan Pinjam</div>
+        <div style="color:rgba(245,240,232,.5);font-size:13px;line-height:1.6;">Pengajuan & persetujuan pinjaman, cicilan, angsuran, perhitungan bunga otomatis</div>
+      </div>
+      <div>
+        <div style="color:var(--paper);font-weight:600;font-size:14px;margin-bottom:8px;">📈 Analitik Lanjutan</div>
+        <div style="color:rgba(245,240,232,.5);font-size:13px;line-height:1.6;">Dashboard BI dengan grafik tren, prediksi arus kas, perbandingan periode</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ FOOTER ══ -->
+<div class="doc-footer">
+  <div>
+    <div class="footer-brand">SI<span>KOP</span>IN</div>
+    <div style="font-size:12px;color:rgba(245,240,232,.3);margin-top:6px;font-family:'DM Mono',monospace;">Sistem Informasi Koperasi Indonesia</div>
+  </div>
+  <div class="footer-note">
+    Dokumen Perencanaan Teknis v1.0<br>
+    Dibuat: April 2025<br>
+    Bersifat Rahasia & Internal
+  </div>
+</div>
+
+</body>
+</html>

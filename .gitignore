@@ -1,3 +1,193 @@
-node_modules
-node_modules
+# ==========================================
+# LARAVEL FRAMEWORK
+# ==========================================
+
+# Environment files - VERY IMPORTANT!
+.env
+.env.*
+!.env.example
+
+# Build & dependency artifacts
+/node_modules
+/public/hot
+/public/storage
+/public/build
+/storage/*.key
+/vendor
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Laravel specific
+/bootstrap/cache/
+.cache
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+
+# Laravel 12+ specific
+/bootstrap/ssr/
+
+# ==========================================
+# VUE & VITE
+# ==========================================
+
+# Vite build artifacts
+/public/build/assets
+/public/build/*.hot-update.*
+/public/build/manifest.json
+
+# ==========================================
+# IDE & EDITOR FILES
+# ==========================================
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains IDEs (IntelliJ, PhpStorm, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==========================================
+# LOGS & DEBUG FILES
+# ==========================================
+
+# Laravel logs
+/storage/logs
+/storage/logs/laravel.log
+
+# Application logs
+*.log
+logs/
+
+# ==========================================
+# DATABASE & STORAGE
+# ==========================================
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# MySQL dumps
+*.sql
+*.sql.gz
+
+# Storage (uploaded files)
+/storage/app/*
+!storage/app/.gitignore
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+
+# ==========================================
+# SECURITY SENSITIVE FILES
+# ==========================================
+
+# Private keys and certificates
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# OAuth & API credentials
+oauth-private.key
+oauth-public.key
+passport-keys/
+
+# AWS & Cloud credentials
+.aws/
+.credentials
+
+# ==========================================
+# TESTING & COVERAGE
+# ==========================================
+
+# PHPUnit
+.phpunit.cache
+.phpunit.result.cache
+
+# Coverage reports
+/coverage
+/.nyc_output
+/hot
+
+# Pest PHP (if used in future)
+/.pest
+
+# ==========================================
+# DEPLOYMENT & CI/CD
+# ==========================================
+
+# Serverless
+.serverless/
+
+# AWS Lambda
+.lambda-sAM-artifacts/
+
+# ==========================================
+# TEMPORARY FILES
+# ==========================================
+
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# ==========================================
+# PROJECT SPECIFIC
+# ==========================================
+
+# Documentation (internal)
 rencana-pengembangan-sikopin.html
+*.md.bak
+/docs/internal
+
+# Claude Code memory (optional, contains project notes)
+/.claude/memory/

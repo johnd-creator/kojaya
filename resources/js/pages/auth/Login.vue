@@ -20,8 +20,8 @@ defineProps<{
 
 <template>
     <AuthBase
-        title="Admin ERP Login"
-        description="Silakan masuk ke akun Anda untuk mengelola sistem"
+        title="Masuk ke KojayaPro"
+        description="Akses aman ke platform ERP Koperasi KOJAYA"
     >
         <Head title="Log in" />
 

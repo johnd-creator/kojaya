@@ -1,13 +1,28 @@
-# Kojaya ERP - API Documentation
+# KojayaPro & Kojayaku - API Documentation
 
 ## 📡 API Overview
 
-Kojaya ERP menyediakan **RESTful API** yang lengkap untuk integrasi mobile applications dan third-party systems.
+KojayaPro dan Kojayaku menyediakan **RESTful API** yang lengkap untuk integrasi mobile applications dan third-party systems.
 
 **Base URL:** `http://localhost:8000/api` (development)
 **API Version:** v1
 **Authentication:** Laravel Sanctum (Token-based)
 **Content-Type:** `application/json`
+
+---
+
+## 🎯 API Platforms
+
+### **KojayaPro API** (Sistem Admin)
+API untuk admin panel KojayaPro - ERP, POS, Inventori, Akuntansi, Simpan Pinjam.
+
+### **Kojayaku API** (Aplikasi Anggota)
+API untuk mobile/web app Kojayaku - Simpanan, Pinjaman, Poin, Transaksi, Profil.
+
+### **Mobile Integrations**
+- **Kojayaku Member App** - `/api/v1/members`, `/api/v1/savings`, `/api/v1/loans`, `/api/v1/points`
+- **Technician App** - `/api/technician/*`
+- **ESS App** - `/api/ess/*`, `/api/payrolls`
 
 ---
 
@@ -503,6 +518,492 @@ Content-Type: application/json
       }
     ],
     "created_at": "2026-05-02T14:30:00Z"
+  }
+}
+```
+
+---
+
+## 💰 Kojayaku - Savings (Simpanan) API
+
+**Base Path:** `/api/v1/savings`
+**Use Case:** Anggota cek saldo simpanan dan riwayat transaksi
+
+### **Get Savings Balance**
+```http
+GET /api/v1/savings/balance
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "uuid",
+    "member_name": "Ahmad Subarjo",
+    "total_savings": 15000000,
+    "savings_accounts": [
+      {
+        "id": "uuid",
+        "account_type": "SIMPANAN_POKOK",
+        "account_name": "Simpanan Pokok",
+        "balance": 500000,
+        "created_at": "2025-01-15T00:00:00Z"
+      },
+      {
+        "id": "uuid",
+        "account_type": "SIMPANAN_WAJIB",
+        "account_name": "Simpanan Wajib",
+        "balance": 1000000,
+        "created_at": "2025-01-15T00:00:00Z"
+      },
+      {
+        "id": "uuid",
+        "account_type": "SIMPANAN_SUKARELA",
+        "account_name": "Simpanan Sukarela",
+        "balance": 13500000,
+        "created_at": "2025-01-15T00:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+### **Get Savings Ledger (Riwayat Transaksi)**
+```http
+GET /api/v1/savings/ledger
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `savings_account_id` (optional): Filter by account type
+- `transaction_type` (optional): `DEPOSIT`, `WITHDRAWAL`
+- `start_date` (optional): Filter start date (ISO 8601)
+- `end_date` (optional): Filter end date (ISO 8601)
+- `page` (optional): Page number
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "transaction_date": "2026-05-01T10:30:00Z",
+      "transaction_type": "DEPOSIT",
+      "amount": 500000,
+      "balance_before": 14000000,
+      "balance_after": 14500000,
+      "description": "Setoran bulan Mei",
+      "reference_number": "SAV-2026-05001"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 150
+  }
+}
+```
+
+### **Download Savings Statement (PDF)**
+```http
+GET /api/v1/savings/statement/pdf
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `start_date` (required): Start date
+- `end_date` (required): End date
+- `savings_account_id` (optional): Filter by account
+
+**Response:** PDF file download
+
+---
+
+## 💸 Kojayaku - Loans (Pinjaman) API
+
+**Base Path:** `/api/v1/loans`
+**Use Case:** Anggota ajukan pinjaman dan cek status angsuran
+
+### **List Loans**
+```http
+GET /api/v1/loans
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `status` (optional): `PENDING`, `APPROVED`, `REJECTED`, `DISBURSED`, `COMPLETED`
+- `page` (optional): Page number
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "loan_number": "PINJ-2026-001",
+      "loan_type": "PINJAMAN_UMUM",
+      "principal_amount": 10000000,
+      "interest_rate": 12,
+      "tenure_months": 12,
+      "monthly_installment": 888000,
+      "disbursed_date": "2026-01-15",
+      "status": "ACTIVE",
+      "remaining_balance": 5500000
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total": 5
+  }
+}
+```
+
+### **Apply for Loan (Ajukan Pinjaman)**
+```http
+POST /api/v1/loans/apply
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "loan_type_id": "uuid",
+  "amount": 10000000,
+  "tenure_months": 12,
+  "purpose": "Modal usaha warung",
+  "guarantor_id": "uuid"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Pengajuan pinjaman berhasil dibuat. Menunggu persetujuan.",
+  "data": {
+    "id": "uuid",
+    "loan_number": "PINJ-2026-001",
+    "status": "PENDING",
+    "estimated_monthly_installment": 888000,
+    "created_at": "2026-05-02T10:00:00Z"
+  }
+}
+```
+
+### **Get Loan Detail**
+```http
+GET /api/v1/loans/{loan}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "loan_number": "PINJ-2026-001",
+    "loan_type": "PINJAMAN_UMUM",
+    "principal_amount": 10000000,
+    "interest_rate": 12,
+    "tenure_months": 12,
+    "monthly_installment": 888000,
+    "total_amount": 10656000,
+    "disbursed_date": "2026-01-15",
+    "next_payment_date": "2026-06-15",
+    "status": "ACTIVE",
+    "remaining_balance": 5500000,
+    "installments_paid": 6,
+    "installments_remaining": 6
+  }
+}
+```
+
+### **Get Installment Schedule (Jadwal Angsuran)**
+```http
+GET /api/v1/loans/{loan}/schedule
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "installment_number": 1,
+      "due_date": "2026-02-15",
+      "amount": 888000,
+      "principal": 779000,
+      "interest": 109000,
+      "balance_after": 9221000,
+      "status": "PAID",
+      "paid_date": "2026-02-14"
+    },
+    {
+      "installment_number": 7,
+      "due_date": "2026-08-15",
+      "amount": 888000,
+      "principal": 779000,
+      "interest": 109000,
+      "balance_after": 4712000,
+      "status": "PENDING"
+    }
+  ]
+}
+```
+
+### **Loan Calculator (Simulasi Cicilan)**
+```http
+POST /api/v1/loans/calculate
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "amount": 10000000,
+  "tenure_months": 12,
+  "loan_type_id": "uuid"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "principal_amount": 10000000,
+    "interest_rate": 12,
+    "tenure_months": 12,
+    "monthly_installment": 888000,
+    "total_amount": 10656000,
+    "total_interest": 656000
+  }
+}
+```
+
+---
+
+## 🎁 Kojayaku - Points & Rewards API
+
+**Base Path:** `/api/v1/points`
+**Use Case:** Anggota cek poin dan tukar reward
+
+### **Get Points Balance**
+```http
+GET /api/v1/points/balance
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "member_id": "uuid",
+    "member_name": "Ahmad Subarjo",
+    "total_points": 2500,
+    "points_earned": 5000,
+    "points_redeemed": 2500,
+    "member_tier": "GOLD",
+    "next_tier": "PLATINUM",
+    "points_to_next_tier": 2500
+  }
+}
+```
+
+### **Get Points History**
+```http
+GET /api/v1/points/history
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `transaction_type` (optional): `EARNED`, `REDEEMED`
+- `start_date` (optional): Filter start date
+- `end_date` (optional): Filter end date
+- `page` (optional): Page number
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "transaction_date": "2026-05-01T14:30:00Z",
+      "transaction_type": "EARNED",
+      "points": 100,
+      "balance_before": 2400,
+      "balance_after": 2500,
+      "description": "Belanja di toko koperasi",
+      "reference_number": "POS-2026-05001"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total": 150
+  }
+}
+```
+
+### **List Available Rewards**
+```http
+GET /api/v1/rewards
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `category` (optional): `BARANG`, `DISKON`, `LAYANAN`
+- `min_points` (optional): Minimum points required
+- `page` (optional): Page number
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Voucher Belanja Rp 50.000",
+      "description": "Voucher belanja di toko koperasi",
+      "category": "DISKON",
+      "points_required": 500,
+      "stock": 50,
+      "valid_until": "2026-12-31",
+      "image_url": "https://example.com/rewards/voucher-50k.jpg"
+    },
+    {
+      "id": "uuid",
+      "name": "Rice Cooker",
+      "description": "Rice cooker merek XXX",
+      "category": "BARANG",
+      "points_required": 2000,
+      "stock": 10,
+      "valid_until": "2026-12-31",
+      "image_url": "https://example.com/rewards/rice-cooker.jpg"
+    }
+  ]
+}
+```
+
+### **Redeem Reward (Tukar Poin)**
+```http
+POST /api/v1/rewards/{reward}/redeem
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "quantity": 1,
+  "delivery_address": "Jl. Contoh No. 123, Jakarta"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Penukaran reward berhasil. Silakan tunggu konfirmasi admin.",
+  "data": {
+    "id": "uuid",
+    "reward": {
+      "name": "Rice Cooker"
+    },
+    "points_used": 2000,
+    "quantity": 1,
+    "status": "PENDING",
+    "created_at": "2026-05-02T10:00:00Z"
+  }
+}
+```
+
+---
+
+## 🛒 Kojayaku - Transactions API
+
+**Base Path:** `/api/v1/transactions`
+**Use Case:** Anggota lihat riwayat belanja di toko koperasi
+
+### **Get Transaction History**
+```http
+GET /api/v1/transactions
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `start_date` (optional): Filter start date
+- `end_date` (optional): Filter end date
+- `payment_method` (optional): `CASH`, `TRANSFER`, `QRIS`, `MEMBER_CREDIT`
+- `page` (optional): Page number
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "transaction_number": "POS-2026-05001",
+      "transaction_date": "2026-05-01T14:30:00Z",
+      "total_amount": 105000,
+      "payment_method": "CASH",
+      "points_earned": 105,
+      "items": [
+        {
+          "product_name": "Minyak Goreng 2L",
+          "quantity": 2,
+          "unit_price": 35000,
+          "subtotal": 70000
+        },
+        {
+          "product_name": "Gula Pasir 1kg",
+          "quantity": 1,
+          "unit_price": 15000,
+          "subtotal": 15000
+        }
+      ],
+      "cashier": "Siti Aminah"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 45
+  }
+}
+```
+
+### **Get Transaction Detail**
+```http
+GET /api/v1/transactions/{transaction}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "transaction_number": "POS-2026-05001",
+    "transaction_date": "2026-05-01T14:30:00Z",
+    "total_amount": 105000,
+    "payment_method": "CASH",
+    "discount_amount": 0,
+    "final_amount": 105000,
+    "points_earned": 105,
+    "items": [
+      {
+        "product": {
+          "name": "Minyak Goreng 2L",
+          "sku": "PROD-001"
+        },
+        "quantity": 2,
+        "unit_price": 35000,
+        "subtotal": 70000
+      }
+    ],
+    "cashier": {
+      "name": "Siti Aminah"
+    },
+    "store": {
+      "name": "Koperasi KOJAYA - Cabang Pusat"
+    }
   }
 }
 ```

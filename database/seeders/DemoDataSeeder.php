@@ -7,6 +7,7 @@ use App\Enums\CertificateType;
 use App\Enums\McuResult;
 use App\Models\Asset;
 use App\Models\AssetReading;
+use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Budget;
 use App\Models\BudgetLine;
@@ -38,7 +39,6 @@ use App\Models\Reimbursement;
 use App\Models\ReimbursementItem;
 use App\Models\SparePart;
 use App\Models\SparePartStock;
-use App\Models\Attendance;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
@@ -58,12 +58,12 @@ class DemoDataSeeder extends Seeder
             ['code' => 'KOP-001'],
             [
                 'id' => (string) Str::uuid(),
-                'name' => 'Koperasi Utama',
+                'name' => 'Koperasi Jaya Bersama',
                 'level' => 'L0',
                 'type' => 'HEAD_OFFICE',
-                'address' => 'Jalan Koperasi No. 1, Jakarta',
+                'address' => 'Jalan Jaya Bersama No. 1, Jakarta',
                 'phone' => '021-12345678',
-                'email' => 'info@koperasi.id',
+                'email' => 'info@koperasijayabersama.id',
                 'is_active' => true,
                 'latitude' => '-6.200000',
                 'longitude' => '106.816666',
@@ -71,38 +71,20 @@ class DemoDataSeeder extends Seeder
             ],
         );
 
-        $jakartaBranch = Organization::query()->firstOrCreate(
-            ['code' => 'KOP-101'],
+        $subsidiary = Organization::query()->firstOrCreate(
+            ['code' => 'KBU-001'],
             [
                 'id' => (string) Str::uuid(),
                 'parent_id' => $headOffice->id,
-                'name' => 'Anak Koperasi Jakarta',
+                'name' => 'PT Koperasi Berkah Usaha',
                 'level' => 'L1',
                 'type' => 'BRANCH',
-                'address' => 'Jl. Jakarta No. 1',
+                'address' => 'Jl. Berkah Usaha No. 8, Jakarta',
                 'phone' => '021-111111',
-                'email' => 'jakarta@koperasi.id',
+                'email' => 'operasional@koperasiberkahusaha.id',
                 'is_active' => true,
                 'latitude' => '-6.175392',
                 'longitude' => '106.827153',
-                'radius' => 150,
-            ],
-        );
-
-        $bandungBranch = Organization::query()->firstOrCreate(
-            ['code' => 'KOP-102'],
-            [
-                'id' => (string) Str::uuid(),
-                'parent_id' => $headOffice->id,
-                'name' => 'Anak Koperasi Bandung',
-                'level' => 'L1',
-                'type' => 'BRANCH',
-                'address' => 'Jl. Bandung No. 1',
-                'phone' => '022-222222',
-                'email' => 'bandung@koperasi.id',
-                'is_active' => true,
-                'latitude' => '-6.917464',
-                'longitude' => '107.619125',
                 'radius' => 150,
             ],
         );
@@ -255,7 +237,7 @@ class DemoDataSeeder extends Seeder
 
         $siteManager = $this->upsertDemoEmployeeUser(
             role: 'Site Manager',
-            organization: $jakartaBranch,
+            organization: $subsidiary,
             department: $operationsDepartment,
             position: $siteManagerPosition,
             jobGrade: $supervisorGrade,
@@ -327,7 +309,7 @@ class DemoDataSeeder extends Seeder
 
         $technicianOne = $this->upsertDemoEmployeeUser(
             role: 'Karyawan',
-            organization: $jakartaBranch,
+            organization: $subsidiary,
             department: $operationsDepartment,
             position: $technicianPosition,
             jobGrade: $staffGrade,
@@ -351,7 +333,7 @@ class DemoDataSeeder extends Seeder
 
         $technicianTwo = $this->upsertDemoEmployeeUser(
             role: 'Karyawan',
-            organization: $bandungBranch,
+            organization: $subsidiary,
             department: $operationsDepartment,
             position: $technicianPosition,
             jobGrade: $staffGrade,
@@ -376,7 +358,7 @@ class DemoDataSeeder extends Seeder
         $plnClient = Client::query()->firstOrCreate(
             ['code' => 'DEMO-CLI-PLN'],
             [
-                'name' => 'PT PLN UID Jakarta Demo',
+                'name' => 'PT PLN UID Anak Usaha Demo',
                 'address' => 'Jl. Distribusi Tenaga No. 10, Jakarta',
                 'tax_id' => '01.234.567.8-999.000',
                 'contact_person' => 'Agus Prakoso',
@@ -423,7 +405,7 @@ class DemoDataSeeder extends Seeder
             ['project_code' => 'DEMO-PRJ-002'],
             [
                 'id' => (string) Str::uuid(),
-                'name' => 'Maintenance Panel Cabang Bandung',
+                'name' => 'Maintenance Panel Anak Usaha',
                 'description' => 'Project demo kedua untuk pengujian status planning.',
                 'organization_id' => $headOffice->id,
                 'client_id' => $privateClient->id,
@@ -611,7 +593,7 @@ class DemoDataSeeder extends Seeder
             ['budget_id' => $budget->id, 'gl_account' => '5100-OPS-MAT'],
             [
                 'id' => (string) Str::uuid(),
-                'cost_center' => 'OPS-JKT',
+                'cost_center' => 'OPS-KBU',
                 'project_id' => $activeProject->id,
                 'category' => 'CAPEX',
                 'allocated_amount' => 1500000000,
@@ -624,7 +606,7 @@ class DemoDataSeeder extends Seeder
             ['budget_id' => $budget->id, 'gl_account' => '5200-OPS-LAB'],
             [
                 'id' => (string) Str::uuid(),
-                'cost_center' => 'OPS-JKT',
+                'cost_center' => 'OPS-KBU',
                 'project_id' => $activeProject->id,
                 'category' => 'OPEX',
                 'allocated_amount' => 600000000,
@@ -651,7 +633,7 @@ class DemoDataSeeder extends Seeder
         Invoice::query()->firstOrCreate(
             ['organization_id' => $headOffice->id, 'invoice_no' => 'DEMO-INV-2026-001'],
             [
-                'unit_id' => $jakartaBranch->id,
+                'unit_id' => $subsidiary->id,
                 'client_id' => $plnClient->id,
                 'project_id' => $activeProject->id,
                 'invoice_date' => '2026-04-30',
@@ -667,7 +649,7 @@ class DemoDataSeeder extends Seeder
         Invoice::query()->firstOrCreate(
             ['organization_id' => $headOffice->id, 'invoice_no' => 'DEMO-INV-2026-002'],
             [
-                'unit_id' => $jakartaBranch->id,
+                'unit_id' => $subsidiary->id,
                 'client_id' => $plnClient->id,
                 'project_id' => $activeProject->id,
                 'invoice_date' => '2026-05-31',
@@ -754,8 +736,8 @@ class DemoDataSeeder extends Seeder
             ['code' => 'DEMO-WH-001'],
             [
                 'id' => (string) Str::uuid(),
-                'name' => 'Gudang Operasional Jakarta Demo',
-                'organization_id' => $jakartaBranch->id,
+                'name' => 'Gudang Operasional Anak Usaha Demo',
+                'organization_id' => $subsidiary->id,
                 'location' => 'Area Workshop Jakarta Timur',
                 'type' => 'STORAGE',
                 'is_active' => true,
@@ -773,7 +755,7 @@ class DemoDataSeeder extends Seeder
                 'max_stock' => 200,
                 'reorder_level' => 40,
                 'category' => 'Electrical',
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'is_active' => true,
             ],
         );
@@ -789,7 +771,7 @@ class DemoDataSeeder extends Seeder
                 'max_stock' => 25,
                 'reorder_level' => 8,
                 'category' => 'Protection',
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'is_active' => true,
             ],
         );
@@ -810,7 +792,7 @@ class DemoDataSeeder extends Seeder
                 'id' => (string) Str::uuid(),
                 'name' => 'Trafo Distribusi 250 kVA',
                 'category' => 'Transformer',
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'status' => 'ACTIVE',
                 'purchase_date' => '2025-09-12',
                 'serial_number' => 'TRF-250KVA-DEMO-01',
@@ -823,7 +805,7 @@ class DemoDataSeeder extends Seeder
                 'id' => (string) Str::uuid(),
                 'name' => 'Genset Mobile 200 kVA',
                 'category' => 'Generator',
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'status' => 'UNDER_MAINTENANCE',
                 'purchase_date' => '2024-11-03',
                 'serial_number' => 'GEN-200KVA-DEMO-02',
@@ -855,7 +837,7 @@ class DemoDataSeeder extends Seeder
         WorkOrder::query()->firstOrCreate(
             ['asset_id' => $gensetAsset->id, 'description' => 'Routine oil and filter replacement'],
             [
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'type' => 'PREVENTIVE',
                 'priority' => 'HIGH',
                 'status' => 'IN_PROGRESS',
@@ -867,7 +849,7 @@ class DemoDataSeeder extends Seeder
         WorkOrder::query()->firstOrCreate(
             ['asset_id' => $transformerAsset->id, 'description' => 'Infrared thermography inspection'],
             [
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'type' => 'CORRECTIVE',
                 'priority' => 'MEDIUM',
                 'status' => 'OPEN',
@@ -948,7 +930,7 @@ class DemoDataSeeder extends Seeder
         );
 
         $overtimeRule = OvertimeRule::query()->firstOrCreate(
-            ['organization_id' => $jakartaBranch->id, 'code' => 'DEMO-OT-001'],
+            ['organization_id' => $subsidiary->id, 'code' => 'DEMO-OT-001'],
             [
                 'name' => 'Weekday Field Overtime',
                 'description' => 'Standard overtime rule for project demo.',
@@ -966,7 +948,7 @@ class DemoDataSeeder extends Seeder
         OvertimeRequest::query()->firstOrCreate(
             ['employee_id' => $technicianOne['employee']->id, 'date' => '2026-05-18'],
             [
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'overtime_rule_id' => $overtimeRule->id,
                 'start_time' => '17:30:00',
                 'end_time' => '20:30:00',
@@ -998,7 +980,7 @@ class DemoDataSeeder extends Seeder
         $siteManagerPayroll = Payroll::query()->firstOrCreate(
             ['employee_id' => $siteManager['employee']->id, 'period' => $payrollPeriod],
             [
-                'organization_id' => $jakartaBranch->id,
+                'organization_id' => $subsidiary->id,
                 'basic_salary' => 11250000,
                 'total_allowance' => 1750000,
                 'total_deduction' => 950000,

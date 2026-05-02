@@ -1,9 +1,12 @@
-# Kojaya ERP - Project Overview
+# KojayaPro & Kojayaku - Project Overview
 
 ## 📋 Project Information
 
-**Project Name:** Kojaya ERP Koperasi
-**Type:** Enterprise Resource Planning (ERP) / Human Resource Management (HRM) System
+**Platform Names:**
+- **KojayaPro** - Sistem ERP, POS, Inventori, Akuntansi, Simpan Pinjam
+- **Kojayaku** - Aplikasi Anggota untuk cek simpanan, pinjaman, poin, transaksi
+
+**Type:** Integrated Cooperative Management System
 **Version:** 1.0.0
 **Status:** Active Development
 **Start Date:** February 2026
@@ -13,120 +16,195 @@
 
 ## 🎯 Project Purpose
 
-Kojaya ERP adalah sistem **ERP/HRM terintegrasi** yang dikembangkan khusus untuk **koperasi di Indonesia** dengan fitur lengkap mencakup:
+### **KojayaPro - Sistem ERP Koperasi (Admin/Staff)**
 
-1. **Manajemen Karyawan** - Employee data, contracts, certificates, family, medical records
-2. **Absensi & Kehadiran** - GPS-based attendance, geofence, shift management
-3. **Cuti & Lembur** - Leave management, overtime calculation & approval
-4. **Payroll & Gaji** - Payroll calculation, BPJS, PPh21, THR (holiday bonus)
-5. **Project Management** - Projects, tasks, Gantt charts, milestones, budgeting
-6. **Procurement** - Purchase Request (PR), Purchase Order (PO), Goods Receive Note (GRN)
-7. **Maintenance** - Asset management, work orders, spare parts, preventive maintenance
-8. **Koperasi** - Member management, dues (iuran), payments, ledger
-9. **POS (Point of Sale)** - Products, transactions, inventory, payments
-10. **Laporan & Compliance** - Certificate compliance, MCU, audit logs, consolidated reports
+Sistem admin terintegrasi untuk **pengelolaan operasional koperasi lengkap**:
+
+1. **ERP & HRM** - Manajemen karyawan, absensi GPS, cuti, lembur, payroll
+2. **Akuntansi & Keuangan** - Invoice, pembayaran, jurnal umum, neraca
+3. **POS & Inventori** - Produk kasir, transaksi, manajemen stok
+4. **Simpan Pinjam** - Pengajuan pinjaman, persetujuan, angsuran, bunga
+5. **Approval Workflow** - Sistem persetujuan multi-level untuk semua transaksi
+6. **Laporan Terintegrasi** - Laporan keuangan, operasional, compliance
+
+### **Kojayaku - Aplikasi Anggota (Mobile/Web)**
+
+Aplikasi untuk **anggota koperasi** guna cek dan kelola:
+
+1. **Simpanan** - Cek saldo simpanan, riwayat setoran, bunga
+2. **Pinjaman** - Ajukan pinjaman, cek status angsuran, riwayat pinjaman
+3. **Poin & Reward** - Cek poin transaksi, tukar poin dengan reward
+4. **Transaksi** - Riwayat transaksi di toko koperasi
+5. **Profil Anggota** - Update profil, cek status keanggotaan
+6. **Notifikasi** - Notifikasi pembayaran, jatuh tempo, dll.
 
 ---
 
 ## 🌟 Target Users
 
-### Primary Users:
-- **Admin/Pengurus Koperasi** - Managing cooperative operations
-- **HR Manager** - Employee management, payroll, attendance
-- **Finance Staff** - Invoicing, payments, budgeting
-- **Project Manager** - Project tracking, resource allocation
-- **Maintenance Supervisor** - Work order management
-- **Kasir Koperasi** - POS transactions
+### **KojayaPro Users (Admin/Staff):**
+- **Pengurus Koperasi** - Managing seluruh operasional koperasi
+- **Manager HR** - Manajemen karyawan, payroll, absensi
+- **Staff Keuangan** - Akuntansi, pembayaran, laporan keuangan
+- **Manager Inventori** - Manajemen stok, produk, gudang
+- **Kasir/Admin POS** - Transaksi kasir, manajemen penjualan
+- **Admin Simpan Pinjam** - Persetujuan pinjaman, manajemen angsuran
+- **Project Manager** - Monitoring proyek dan tim
+- **Supervisor Maintenance** - Work order dan asset management
 
-### Mobile Users:
-- **Employees** - Self-service attendance, leave requests, payslip access
-- **Technicians** - Field maintenance, work order completion
-- **Cooperative Members** - Dues payment, transaction history
+### **Kojayaku Users (Anggota Koperasi):**
+- **Anggota Koperasi** - Cek simpanan, ajukan pinjaman, lihat poin
+- **Calon Anggota** - Daftar anggota, cek status persetujuan
+- **Pemegang Saham** - Cek saldo investasi, riwayat keuntungan
+- **Pengguna Toko** - Cek transaksi belanja, poin reward
 
 ---
 
 ## 🏢 Business Context
 
-### Industry Sector:
-- **Cooperative (Koperasi)** - Primary focus
-- **Maintenance Services** - Asset & facility management
-- **Project-based Services** - Client project delivery
+### **Dual-Platform Architecture:**
 
-### Geographic Scope:
-- **Indonesia** - Full Indonesian compliance
-- **Multi-organization Support** - Multiple entities in one system
+KojayaPro dan Kojayaku adalah **dua aplikasi terpisah** yang saling terintegrasi:
 
-### Compliance Requirements:
-- **BPJS** - Indonesian social security system
-- **PPh21** - Indonesian income tax regulation
-- **eFaktur** - Indonesian electronic invoicing system
-- **Work Safety** - MCU (Medical Check Up) compliance tracking
+```
+┌─────────────────────────────────────────────────────┐
+│              KojayaPro (Admin/Staff)                  │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  ERP • POS • Inventori • Akuntansi                │  │
+│  │  • Simpan Pinjam • Approval • Laporan              │  │
+│  └─────────────────────────────────────────────────┘  │
+│                      ↕ API                           │
+│                    Database Shared                     │
+└─────────────────────────────────────────────────────┘
+                      ↕
+┌─────────────────────────────────────────────────────┐
+│              Kojayaku (Anggota)                      │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  • Profil • Simpanan • Pinjaman                 │  │
+│  │  • Poin • Transaksi • Notifikasi                 │  │
+│  └─────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+```
+
+### **Industry Sector:**
+- **Koperasi Simpan Pinjam & Serba Usaha** - Primary focus
+- **Multi-purpose Cooperative** - Trading, services, savings
+- **Geographic:** Indonesia - Full Indonesian compliance
+
+### **Compliance Requirements:**
+- **BPJS** - Ketenagakerjaan sosial Indonesia
+- **PPh21** - Pajak penghasilan orang pribadi
+- **eFaktur** - Faktur pajak elektronik
+- **OJK** - Otoritas Jasa Keuangan (untuk simpan pinjam)
+- **Work Safety** - MCU (Medical Check Up) compliance
 
 ---
 
 ## 💼 Key Business Problems Solved
 
+### **KojayaPro (Sistem Admin):**
+
 ### 1. **Manual Payroll Calculation**
-- **Before:** Manual spreadsheet-based payroll calculation
-- **After:** Automated payroll with BPJS, PPh21, overtime calculation
+- **Before:** Manual spreadsheet-based payroll, manual BPJS & PPh21 calculation
+- **After:** Automated payroll dengan BPJS, PPh21, overtime calculation
 - **Impact:** 90% reduction in payroll processing time
 
-### 2. **Scattered Employee Data**
-- **Before:** Employee records in multiple systems/files
-- **After:** Centralized employee database with certificates, MCU, family
-- **Impact:** Single source of truth for all employee data
+### 2. **Scattered Financial Data**
+- **Before:** Data keuangan tersebar di Excel, tidak terintegrasi
+- **After:** Sistem akuntansi terintegrasi dengan laporan real-time
+- **Impact:** Single source of truth, laporan instan
 
-### 3. **Manual Attendance Tracking**
-- **Before:** Paper-based attendance, manual entry
-- **After:** GPS-based mobile attendance with geofence validation
-- **Impact:** Real-time attendance, prevent fraud, accurate overtime
+### 3. **Manual Inventory & POS**
+- **Before:** Stok dicatat manual, kesalahan sering terjadi
+- **After:** Digital POS dengan auto stock deduction, real-time inventory
+- **Impact:** 100% akurasi inventory, prevent kehilangan stok
 
-### 4. **Disorganized Procurement**
-- **Before:** Email-based PR/PO process, tracking difficulties
-- **After:** Full PR → PO → GRN workflow with approval
-- **Impact:** 100% traceability, faster procurement cycle
+### 4. **Proses Simpan Pinjam Manual**
+- **Before:** Pengajuan kertas, tracking manual, potensi human error
+- **After:** Sistem pengajuan online dengan approval workflow, auto-calc angsuran
+- **Impact:** Transparansi penuh, proses lebih cepat (hari vs mingguan)
 
-### 5. **Cooperative Member Management**
-- **Before:** Manual ledger, difficult dues tracking
-- **After:** Digital member profiles, automated dues, payment tracking
-- **Impact:** Transparent financial operations, easy audits
+### 5. **Approval Workflow Terpusat**
+- **Before:** Email/manual approval, sulit track status
+- **After:** Sistem approval terpusat dengan multi-level approval
+- **Impact:** 100% traceability, kontrol internal lebih baik
 
-### 6. **Manual POS Operations**
-- **Before:** Cash register, manual stock tracking
-- **After:** Digital POS with automatic stock deduction
-- **Impact:** Real-time inventory, accurate sales reporting
+### 6. **Laporan Terfragmentasi**
+- **Before:** Laporan dari berbagai sumber, sulit dikonsolidasi
+- **After:** Dashboard laporan terintegrasi, export otomatis PDF/Excel
+- **Impact:** Pengambilan keputusan lebih cepat dengan data akurat
+
+### **Kojayaku (Aplikasi Anggota):**
+
+### 7. **Kurang Transparansi Simpanan**
+- **Before:** Anggota harus datang ke kantor untuk cek saldo simpanan
+- **After:** Akses realtime ke saldo simpanan, riwayat, bunga via Kojayaku
+- **Impact:** Peningkatan trust anggota, self-service data
+
+### 8. **Proses Pinjaman Rumit**
+- **Before:** Formulir kertas, harus datang, proses lama
+- **After:** Ajukan pinjaman online via Kojayaku, tracking real-time
+- **Impact:** Akses lebih mudah, peningkatan layanan
+
+### 9. **Poin & Reward Tidak Jelas**
+- **Before:** Tidak ada program loyalitas, anggota tidak termotivasi
+- **After:** Sistem poin dari transaksi, bisa ditukar reward
+- **Impact:** Peningkatan transaksi, engagement lebih tinggi
 
 ---
 
 ## 📊 Project Scope
 
-### In Scope:
-- ✅ Full ERP/HRM modules (10+ modules)
-- ✅ Web-based admin panel (Vue 3 + Inertia.js)
-- ✅ Mobile app API (50+ endpoints)
-- ✅ Indonesian compliance (BPJS, PPh21, eFaktur)
-- ✅ Multi-organization support
-- ✅ Role-based access control
-- ✅ Audit logging & reporting
+### **KojayaPro (Sistem Admin) - In Scope ✅:**
+- ✅ **ERP & HRM Modules** - Employee, attendance, leaves, overtime
+- ✅ **Payroll & Gaji** - Payroll calculation, BPJS, PPh21, THR
+- ✅ **POS & Inventori** - Produk, kasir, stok, gudang
+- ✅ **Akuntansi** - Invoice, pembayaran, jurnal umum, neraca
+- ✅ **Simpan Pinjam** - Pengajuan, persetujuan, angsuran, bunga
+- ✅ **Approval System** - Workflow persetujuan multi-level
+- ✅ **Laporan** - Keuangan, operasional, simpan pinjam, compliance
+- ✅ **Web Admin Panel** - Vue 3 + Inertia.js interface
+- ✅ **API Terintegrasi** - 50+ endpoints untuk mobile
 
-### Out of Scope (Future):
-- ⏳ Mobile apps (Android/iOS native)
-- ⏳ Payment gateway integration (Midtrans/Xendit)
-- ⏳ WhatsApp API notifications
-- ⏳ Advanced analytics dashboard
-- ⏳ AI-powered insights
+### **Kojayaku (Aplikasi Anggota) - Planned ⏳:**
+- ⏳ **Web & Mobile App** - Responsive web + native mobile (Flutter/React Native)
+- ⏳ **Profil Anggota** - Data diri, status keanggotaan, dokumen
+- ⏳ **Simpanan** - Cek saldo, riwayat, bunga, sertifikat deposit
+- ⏳ **Pinjaman** - Ajukan online, tracking status, riwayat angsuran
+- ⏳ **Poin & Reward** - Cek poin transaksi, tukar poin, reward catalog
+- ⏳ **Transaksi** - Riwayat belanja di toko koperasi
+- ⏳ **Notifikasi** - Push notifikasi untuk pembayaran, jatuh tempo, dll.
+
+### **Integrasi:**
+- Kojayaku mengakses API KojayaPro untuk data simpanan, pinjaman, transaksi
+- Satu database terpusat untuk kedua sistem
+- Role-based access control antara admin dan anggota
 
 ---
 
 ## 🎨 Design Philosophy
 
-### Principles:
-1. **Compliance First** - Indonesian regulations built-in
-2. **User-Friendly** - Intuitive UI for non-technical users
-3. **Mobile-Ready** - API-first for mobile app integration
-4. **Audit-Ready** - Complete audit trail for all operations
-5. **Scalable** - Handle multiple organizations & growth
-6. **Secure** - Role-based access, data encryption, secure authentication
+### **KojayaPro (Admin/Staff System):**
+1. **Compliance First** - Indonesian regulations built-in (BPJS, PPh21, eFaktur)
+2. **Operator-Friendly** - Intuitive UI untuk staff koperasi (bukan tech-savvy)
+3. **Comprehensive Dashboard** - Single source of truth untuk seluruh operasional
+4. **Audit-Ready** - Complete audit trail untuk semua transaksi keuangan
+5. **Approval-Driven** - Multi-level approval workflow untuk kontrol internal
+6. **Scalable** - Handle multiple koperasi entities dalam satu sistem
+
+### **Kojayaku (Member App):**
+1. **Simple & Friendly** - UI yang mudah dipahami anggota koperasi (beragam usia)
+2. **Mobile-First** - Optimal untuk smartphone (Android/iOS)
+3. **Real-Time Info** - Data simpanan & pinjaman up-to-date
+4. **Transparency** - Riwayat transaksi & keuntungan yang jelas
+5. **Gamification** - Poin & reward system untuk engagement
+6. **Self-Service** - Anggota bisa mandiri tanpa harus ke kantor
+
+### **Shared Principles:**
+- **Data Integration** - Single database untuk kedua sistem
+- **API-First** - Kojayaku mengakses KojayaPro via API
+- **Secure** - Enkripsi data sensitif, role-based access
+- **Performant** - Cepat dan responsif untuk user experience baik
 
 ### UX Approach:
 - **Modern Dashboard** - Clean, data-rich interface
@@ -189,6 +267,97 @@ Kojaya ERP adalah sistem **ERP/HRM terintegrasi** yang dikembangkan khusus untuk
 - Token expiration for Sanctum (security improvement)
 - Rate limiting for API endpoints
 - Automated testing coverage expansion
+
+---
+
+## 📱 Kojayaku - Aplikasi Anggota Koperasi
+
+### **Platform Overview:**
+**Kojayaku** adalah aplikasi **member-facing** untuk anggota koperasi guna:
+- Cek saldo simpanan dan riwayat transaksi
+- Ajukan pinjaman secara online
+- Cek poin dan tukar dengan reward
+- Lihat riwayat transaksi belanja
+- Update profil anggota
+- Terima notifikasi penting
+
+### **Target Users Kojayaku:**
+- **Anggota Aktif** - Cek simpanan, ajukan pinjaman
+- **Calon Anggota** - Daftar online, upload dokumen
+- **Pemegang Saham** - Cek investasi, SHU
+- **Pengguna Toko** - Cek transaksi, poin belanja
+- **Pengurus** (view-only) - Monitoring operasional
+
+### **Fitur Utama Kojayaku:**
+
+#### **💰 Simpanan**
+- Real-time saldo simpanan
+- Riwayat setoran simpanan
+- Sertifikat deposit/SHU
+- Bunga simpanan (实时更新)
+- Export riwayat simpanan (PDF)
+
+#### **💸 Pinjaman**
+- Ajukan pinjaman online
+- Tracking status pengajuan (pending → approved → rejected → disbursed)
+- Cicilan & angsuran real-time
+- Kalkulator simulasi cicilan
+- Notifikasi jatuh tempo
+- Riwayat pinjaman
+
+#### **🎁 Poin & Reward**
+- Cek poin dari transaksi
+- Katalog reward (barang, diskon, layanan)
+- Tukar poin dengan reward
+- Riwayat poin masuk/keluar
+
+#### **🛒 Transaksi**
+- Riwayat belanja di toko koperasi
+- Detail transaksi (tanggal, items, total)
+- Struk belanja digital
+- Filter berdasarkan tanggal, kategori
+
+#### **👤 Profil**
+- Data diri anggota
+- Status keanggotaan
+- Upload dokumen (KTP, KK, dll)
+- Cek status keanggotaan (aktif/non-aktif)
+- Update kontak & alamat
+
+#### **🔔 Notifikasi**
+- Pembayaran diterima
+- Pinjaman disetujui/ditolak
+- Jatuh tempo pembayaran
+- SHU dibagikan
+- Info promo dan event koperasi
+
+---
+
+## 🔄 Integrasi KojayaPro ↔ Kojayaku
+
+### **API Integration:**
+```
+Kojayaku → KojayaPro (via API):
+- GET /api/v1/members/{id} - Cek profil anggota
+- GET /api/v1/dues/invoices - Cek tagihan iuran
+- GET /api/v1/savings/ledger - Cek saldo simpanan
+- POST /api/v1/loans/apply - Ajukan pinjaman
+- GET /api/v1/transactions - Riwayat transaksi
+- POST /api/v1/rewards/redeem - Tukar poin
+
+KojayaPro → Kojayaku:
+- Push notifikasi via Firebase/WhatsApp API
+- Update status pinjaman
+- Inform tagihan baru
+- Notifikasi pembayaran diterima
+```
+
+### **Shared Database:**
+- **cooperative_members** - Data anggota (shared)
+- **cooperative_savings** - Simpanan anggota (Kojayaku read-only)
+- **loans** - Data pinjaman (Kojayaku view status)
+- **pos_transactions** - Transaksi toko (Kojayaku read history)
+- **points** - Poin anggota (Kojayaku claim)
 
 ---
 

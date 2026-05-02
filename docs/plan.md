@@ -1,4 +1,4 @@
-# Kojaya ERP - Development Plan & Roadmap
+# KojayaPro & Kojayaku - Development Plan & Roadmap
 
 ## 🗺️ Project Roadmap
 
@@ -16,7 +16,7 @@
 - ✅ Basic reporting system
 
 **Deliverables:**
-- Working web admin panel
+- Working web admin panel (KojayaPro)
 - Core HRM functionality
 - API infrastructure for mobile
 
@@ -43,22 +43,31 @@
 
 ---
 
-### **Phase 3: Mobile App Development** ⏳ **PLANNED**
+### **Phase 3: Kojayaku Development** ⏳ **IN PROGRESS**
 **Timeline:** May - July 2026 (3 months)
 
 **Planned:**
+- ⏳ **Kojayaku Web App** (Responsive Web)
+  - Vue 3 + Inertia.js (shared with KojayaPro)
+  - Member profile & dashboard
+  - Savings balance & history
+  - Loan application & tracking
+  - Points & rewards redemption
+  - Transaction history
+  - Mobile-responsive design
+
+- ⏳ **Kojayaku API Completion**
+  - Savings API endpoints (balance, ledger, statements)
+  - Loans API endpoints (apply, track, calculator)
+  - Points & Rewards API (balance, history, redemption)
+  - Transactions API (history, detail)
+
 - ⏳ **Technician Mobile App** (Native Android)
   - Kotlin + Jetpack Compose
   - Work order management
   - Checklist completion
   - Offline mode support
   - GPS photo attachment
-
-- ⏳ **Cooperative Member App** (Flutter or React Native)
-  - Member profile & ledger
-  - Dues payment integration
-  - Transaction history
-  - Payment notification
 
 - ⏳ **Employee ESS App** (Flutter or React Native)
   - GPS attendance (check-in/out)
@@ -67,7 +76,10 @@
   - Certificate & MCU tracking
 
 **Deliverables:**
-- 3 Mobile apps (Android, optionally iOS)
+- Kojayaku web app (responsive)
+- Kojayaku API (savings, loans, points, transactions)
+- Technician mobile app (Android)
+- ESS mobile app (Android/iOS)
 - Offline-first architecture
 - Push notification support
 

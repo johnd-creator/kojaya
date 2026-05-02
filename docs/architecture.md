@@ -1,8 +1,12 @@
-# Kojaya ERP - System Architecture
+# KojayaPro & Kojayaku - System Architecture
 
 ## 🏗️ Architecture Overview
 
-Kojaya ERP menggunakan arsitektur **monolithic frontend + API backend** dengan pendekatan **modern web application** yang scalable dan maintainable.
+KojayaPro dan Kojayaku adalah **dual-platform system** terintegrasi:
+- **KojayaPro**: Sistem admin ERP untuk pengelolaan operasional koperasi
+- **Kojayaku**: Aplikasi member-facing untuk anggota cek simpanan, pinjaman, poin, dan transaksi
+
+Kedua sistem berbagi satu database dan terintegrasi via API.
 
 ---
 
@@ -408,13 +412,37 @@ Mobile App Request
 
 ## 📱 Mobile-Ready Architecture
 
+### **Dual-Platform Integration**
+
+KojayaPro dan Kojayaku terintegrasi melalui shared database dan RESTful API:
+
+```
+┌─────────────────────────────────────────────────────┐
+│              KojayaPro (Web Admin)                  │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  ERP • POS • Inventori • Akuntansi                │  │
+│  │  • Simpan Pinjam • Approval • Laporan              │  │
+│  └─────────────────────────────────────────────────┘  │
+│                      ↕ API                           │
+│              PostgreSQL Database                     │
+└─────────────────────────────────────────────────────┘
+                      ↕
+┌─────────────────────────────────────────────────────┐
+│              Kojayaku (Member App)                   │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  Simpanan • Pinjaman • Poin • Transaksi          │  │
+│  │  • Profil • Notifikasi                            │  │
+│  └─────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+```
+
 ### **API-First Design**
 
-Backend is designed from ground up to support mobile apps:
+Backend didesain dari awal untuk mendukung mobile apps:
 
 1. **RESTful API** - Standard HTTP methods (GET, POST, PUT, DELETE)
 2. **JSON Responses** - Consistent response format
-3. **Token Auth** - Sanctum tokens for mobile
+3. **Token Auth** - Sanctum tokens untuk mobile
 4. **API Versioning** - `/api/v1/` prefix
 5. **Documentation** - OpenAPI specs (planned)
 
@@ -422,8 +450,8 @@ Backend is designed from ground up to support mobile apps:
 
 | Mobile App Type | API Endpoints | Primary Use Cases |
 |-----------------|---------------|-------------------|
+| **Kojayaku (Member App)** | `/api/v1/members`, `/api/v1/savings`, `/api/v1/loans`, `/api/v1/points`, `/api/v1/transactions` | Cek simpanan, ajukan pinjaman, tukar poin, riwayat transaksi |
 | **Technician App** | `/api/technician/*` | Work orders, checklists |
-| **Cooperative App** | `/api/v1/members`, `/api/v1/dues`, `/api/v1/pos` | Member management, payments, POS |
 | **ESS App** | `/api/ess/*`, `/api/payrolls` | Attendance, leaves, payslips |
 
 ---
@@ -456,7 +484,9 @@ Backend is designed from ground up to support mobile apps:
          │  App Server  │                  │  App Server  │
          │   (PHP 8.4)  │                  │   (PHP 8.4)  │
          │  - Laravel   │                  │  - Laravel   │
+         │  - KojayaPro │                  │  - KojayaPro │
          │  - Wayfinder │                  │  - Wayfinder │
+         │  - API       │                  │  - API       │
          └──────┬───────┘                  └──────┬───────┘
                 │                                  │
                 └────────────────┬────────────────┘
@@ -469,6 +499,14 @@ Backend is designed from ground up to support mobile apps:
                     ┌────────────▼────────────┐
                     │   Redis (Session/Cache)  │
                     └─────────────────────────┘
+                                 │
+                ┌────────────────┴────────────────┐
+                │                                  │
+         ┌──────▼──────┐                  ┌──────▼──────┐
+         │  Kojayaku   │                  │  Mobile Apps│
+         │  (Web App)  │                  │  (Android/  │
+         │             │                  │   iOS)      │
+         └─────────────┘                  └─────────────┘
 ```
 
 ### **Infrastructure Requirements**
@@ -529,18 +567,24 @@ Backend is designed from ground up to support mobile apps:
 - [ ] Add automated testing coverage
 - [ ] Database query optimization
 - [ ] Redis caching implementation
+- [ ] **Kojayaku Web App** - Responsive web version untuk member access
+- [ ] **Kojayaku API** - Complete API endpoints untuk simpanan, pinjaman, poin
 
 ### **Medium Term (6-12 months)**
 - [ ] Microservices for specific modules (POS, Payroll)
 - [ ] Event-driven architecture (Laravel Events + Queues)
 - [ ] Real-time notifications (WebSocket/SSE)
 - [ ] Advanced analytics dashboard
+- [ ] **Kojayaku Mobile Apps** - Native Android/iOS apps
+- [ ] **Payment Gateway Integration** - Midtrans/Xendit untuk Kojayaku payments
+- [ ] **Push Notifications** - Firebase/WhatsApp untuk member notifications
 
 ### **Long Term (12+ months)**
 - [ ] GraphQL API (alternative to REST)
 - [ ] Elasticsearch for search
 - [ ] Multi-region deployment
 - [ ] AI-powered insights
+- [ ] **Advanced Kojayaku Features** - Machine learning untuk credit scoring, fraud detection
 
 ---
 

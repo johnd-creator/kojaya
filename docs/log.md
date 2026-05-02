@@ -1,10 +1,50 @@
-# Kojaya ERP - Development Log
+# KojayaPro & Kojayaku - Development Log
 
 ## 📅 Project Timeline
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
 **Last Updated:** May 2, 2026
+
+---
+
+## 🎯 2026-05: Branding & Kojayaku Development
+
+### **May 2, 2026 - Dual-Platform Rebranding**
+
+**🎨 Branding Update:**
+- ✅ **Rebranded to KojayaPro + Kojayaku**
+  - **KojayaPro** - Sistem ERP admin untuk pengelolaan operasional koperasi
+  - **Kojayaku** - Aplikasi anggota untuk cek simpanan, pinjaman, poin, transaksi
+
+- ✅ **Updated Login Page**
+  - Changed title to "Masuk ke KojayaPro"
+  - Updated description to "Akses aman ke platform ERP Koperasi KOJAYA"
+
+**📚 Documentation Updates:**
+- ✅ **Updated all documentation files**
+  - `/docs/project.md` - Added Kojayaku features & integration
+  - `/docs/architecture.md` - Updated for dual-platform architecture
+  - `/docs/api.md` - Added Kojayaku API sections (savings, loans, points, transactions)
+  - `/docs/plan.md` - Updated Phase 3 for Kojayaku development
+
+- ✅ **New Kojayaku API Documentation**
+  - Savings (Simpanan) API - Balance, ledger, statements
+  - Loans (Pinjaman) API - Application, tracking, calculator
+  - Points & Rewards API - Balance, history, redemption
+  - Transactions API - Purchase history, detail
+
+**🔄 Integration Architecture:**
+- ✅ **Shared Database** - Single PostgreSQL database
+- ✅ **API Integration** - Kojayaku mengakses KojayaPro via RESTful API
+- ✅ **Role-based Access** - Separate permissions for admin vs member
+
+**📱 Kojayaku Features Planned:**
+- ⏳ **Simpanan** - Real-time balance, history, certificates, interest
+- ⏳ **Pinjaman** - Online application, status tracking, installment calculator
+- ⏳ **Poin & Reward** - Point balance, catalog, redemption
+- ⏳ **Transaksi** - Purchase history, digital receipts
+- ⏳ **Profil** - Member profile, documents, status
 
 ---
 

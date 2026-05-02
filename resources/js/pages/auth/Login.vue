@@ -102,15 +102,14 @@ const modules = [
           <h1
             class="text-2xl leading-tight font-black text-slate-950 xl:text-4xl"
           >
-            ERP Koperasi KOJAYA
-            <span class="block text-[#0b8f2e]">Terintegrasi</span>
+            Kelola Operasional KOJAYA
+            <span class="block text-[#0b8f2e]">Dalam Satu Platform</span>
           </h1>
           <div class="mt-4 h-1 w-16 rounded-full bg-[#0b8f2e]" />
           <p
             class="mt-4 max-w-2xl text-base leading-7 font-semibold text-slate-700 xl:text-lg"
           >
-            Kelola seluruh operasional koperasi dalam satu sistem modern, aman,
-            dan efisien.
+            Pantau data anggota, iuran, transaksi toko, stok inventori, total simpanan, simpan pinjam, laporan keuangan, dan approval dalam satu sistem.
           </p>
         </div>
 
@@ -156,7 +155,7 @@ const modules = [
                 KojayaPro
               </p>
               <p class="text-sm font-medium text-slate-600">
-                Sistem ERP Koperasi KOJAYA
+                Sistem Koperasi KOJAYA
               </p>
             </div>
           </div>
@@ -169,10 +168,10 @@ const modules = [
 
           <div class="text-center">
             <h2 class="text-2xl font-black text-slate-950 sm:text-3xl">
-              Masuk ke KojayaPro
+              Selamat Datang
             </h2>
             <p class="mt-2 text-sm text-slate-600 sm:text-base">
-              Akses aman ke platform ERP Koperasi KOJAYA
+              Masuk untuk melanjutkan aktivitas Anda
             </p>
           </div>
 

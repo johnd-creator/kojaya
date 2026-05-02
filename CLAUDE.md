@@ -6,6 +6,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Laravel 12 + Vue 3 ERP/HRM system with Inertia.js frontend, handling modules for employee management, payroll, projects, procurement (PR/PO/GRN), maintenance, overtime, leave, invoicing, petty cash, budget management, and Indonesian tax compliance (eFaktur, BPJS, PPh21).
 
+## 📚 Project Documentation
+
+**IMPORTANT:** Always read the project documentation in `/docs/` folder first before making significant changes. This ensures you understand the full context, architecture decisions, and business requirements.
+
+**Required Reading Order:**
+1. **`docs/project.md`** - Project overview, business context, success metrics (READ FIRST)
+2. **`docs/architecture.md`** - System design, tech stack, security, performance
+3. **`docs/api.md`** - Complete API documentation for mobile integrations
+4. **`docs/plan.md`** - Roadmap, sprint plans, milestones
+5. **`docs/decisions.md`** - Architecture Decision Records (ADRs)
+6. **`docs/log.md`** - Development timeline, changelog, lessons learned
+
+**When to Read Documentation:**
+- ✅ **Before starting any task** - Read relevant docs to understand context
+- ✅ **Adding new features** - Check `docs/plan.md` and `docs/decisions.md`
+- ✅ **Working with APIs** - Read `docs/api.md` for endpoint specs
+- ✅ **Modifying architecture** - Review `docs/architecture.md` and `docs/decisions.md`
+- ✅ **Debugging issues** - Check `docs/log.md` for known issues and solutions
+
+**Documentation is Single Source of Truth:**
+- If code behavior conflicts with docs, **update the docs**
+- Keep docs synchronized with code changes
+- Document new decisions in `docs/decisions.md`
+- Log significant changes in `docs/log.md`
+
 ## Development Commands
 
 ### Backend

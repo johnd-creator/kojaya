@@ -60,8 +60,60 @@ const getStatusColor = (status: string) => {
     }
 };
 
-const formatTime = (time: string) => {
-    return time ? time.substring(0, 5) : '-';
+const hariIni = new Date();
+const hariIniStr = `${hariIni.getFullYear()}-${String(hariIni.getMonth() + 1).padStart(2, '0')}-${String(hariIni.getDate()).padStart(2, '0')}`;
+
+const formatTanggal = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][d.getDay()];
+    const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()];
+    const tgl = d.getDate();
+    const yr = d.getFullYear();
+    const onlyDate = dateStr.substring(0, 10);
+    const suffix = onlyDate === hariIniStr ? ' (Hari ini)' : '';
+    return `${hari}, ${tgl} ${bulan} ${yr}${suffix}`;
+};
+
+const formatJam = (time: string) => {
+    if (!time) return '-';
+    let hour: number;
+    let minute: string;
+    if (time.includes('T') || time.includes('Z')) {
+        const d = new Date(time);
+        if (isNaN(d.getTime())) return time;
+        hour = d.getHours();
+        minute = String(d.getMinutes()).padStart(2, '0');
+    } else if (time.includes(':')) {
+        const parts = time.split(':');
+        hour = parseInt(parts[0]);
+        minute = parts[1];
+    } else {
+        return time;
+    }
+    const ampm = hour >= 12 ? 'siang' : 'pagi';
+    const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${display}:${minute} ${ampm}`;
+};
+
+const formatDurasi = (hours: any) => {
+    const n = parseFloat(hours);
+    if (isNaN(n) || n === 0) return '-';
+    const h = Math.floor(n);
+    const m = Math.round((n - h) * 60);
+    if (h === 0) return `${m} menit`;
+    if (m === 0) return `${h} jam`;
+    return `${h} jam ${m} menit`;
+};
+
+const formatStatus = (status: string) => {
+    switch (status) {
+        case 'APPROVED': return 'Disetujui';
+        case 'REJECTED': return 'Ditolak';
+        case 'PENDING': return 'Menunggu';
+        default: return status;
+    }
 };
 </script>
 
@@ -69,7 +121,7 @@ const formatTime = (time: string) => {
     <Head title="Overtime Requests" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+        <div class="flex flex-col gap-6 p-6 w-full">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
@@ -132,13 +184,13 @@ const formatTime = (time: string) => {
                                     <div class="text-xs text-zinc-500">{{ req.employee?.employee_code }}</div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="font-medium">{{ req.date }}</div>
-                                    <div class="text-xs text-zinc-500">
-                                        {{ formatTime(req.start_time) }} - {{ formatTime(req.end_time) }}
+                                    <div class="font-medium text-zinc-900 dark:text-white">{{ formatTanggal(req.date) }}</div>
+                                    <div class="text-xs text-zinc-500 mt-0.5">
+                                        {{ formatJam(req.start_time) }} &mdash; {{ formatJam(req.end_time) }}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 font-medium">
-                                    {{ req.total_hours }} hrs
+                                <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">
+                                    {{ formatDurasi(req.total_hours) }}
                                 </td>
                                 <td class="px-6 py-4 max-w-xs truncate" :title="req.reason">
                                     {{ req.reason || '-' }}
@@ -151,7 +203,7 @@ const formatTime = (time: string) => {
                                 </td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="getStatusColor(req.status)">
-                                        {{ req.status }}
+                                        {{ formatStatus(req.status) }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-right flex justify-end gap-2">

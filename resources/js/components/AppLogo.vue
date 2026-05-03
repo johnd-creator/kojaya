@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
 </script>
 
 <template>
-    <div
-        class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
-    >
-        <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
-    </div>
-    <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate leading-tight font-semibold"
-            >KojayaPro</span
-        >
+    <img
+        src="/images/logo-white.png"
+        alt="KojayaPro"
+        class="size-8 shrink-0 object-contain"
+    />
+    <div class="ml-1 grid flex-1 text-left text-sm leading-tight">
+        <span class="truncate font-bold text-sidebar-primary">KojayaPro</span>
+        <span class="truncate text-xs text-sidebar-foreground/70">Sistem Koperasi KOJAYA</span>
     </div>
 </template>

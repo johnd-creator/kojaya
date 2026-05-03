@@ -68,13 +68,29 @@ const getStatusIcon = (status: string) => {
   }
 }
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+const formatTanggal = (dateStr: string) => {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  const hari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][d.getDay()]
+  const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()]
+  return `${hari}, ${d.getDate()} ${bulan} ${d.getFullYear()}`
+}
+
+const formatDurasi = (days: any) => {
+  const n = parseFloat(days)
+  if (isNaN(n) || n === 0) return '-'
+  if (n === 1) return '1 hari'
+  return `${n} hari`
+}
+
+const formatStatus = (status: string) => {
+  switch (status) {
+    case 'Approved': return 'Disetujui'
+    case 'Rejected': return 'Ditolak'
+    case 'Pending': return 'Menunggu'
+    default: return status
+  }
 }
 
 const calculateDays = (start: string, end: string) => {
@@ -161,18 +177,18 @@ const calculateDays = (start: string, end: string) => {
                   <span
                     :class="['px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0', getStatusColor(leave.status)]"
                   >
-                    {{ leave.status }}
+                    {{ formatStatus(leave.status) }}
                   </span>
                 </div>
                 
                 <div class="space-y-1 text-sm text-zinc-500">
                   <p class="flex items-center gap-1">
                     <Calendar class="w-3 h-3" />
-                    {{ formatDate(leave.start_date) }} - {{ formatDate(leave.end_date) }}
+                    {{ formatTanggal(leave.start_date) }} &mdash; {{ formatTanggal(leave.end_date) }}
                   </p>
                   <p class="flex items-center gap-1">
                     <Clock class="w-3 h-3" />
-                    {{ calculateDays(leave.start_date, leave.end_date) }} hari
+                    {{ formatDurasi(leave.total_days) || calculateDays(leave.start_date, leave.end_date) + ' hari' }}
                   </p>
                 </div>
 
@@ -187,7 +203,7 @@ const calculateDays = (start: string, end: string) => {
             </div>
 
             <div v-if="leave.approver" class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-sm text-zinc-500">
-              <p>Disetujui oleh: <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ leave.approver?.name }}</span></p>
+              <p>Disetujui/Ditolak oleh: <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ leave.approver?.name }}</span></p>
             </div>
           </div>
         </div>

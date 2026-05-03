@@ -41,6 +41,15 @@ const calculatedHours = computed(() => {
     return hours.toFixed(2);
 });
 
+const formatDurasi = (hours: number) => {
+    if (!hours || hours === 0) return '0 menit';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    if (h === 0) return `${m} menit`;
+    if (m === 0) return `${h} jam`;
+    return `${h} jam ${m} menit`;
+};
+
 const submit = () => {
     form.post('/overtime', {
         forceFormData: true,
@@ -117,7 +126,7 @@ const submit = () => {
 
                 <div class="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg flex items-center justify-between">
                     <span class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Estimated Duration:</span>
-                    <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ calculatedHours }} Hours</span>
+                    <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ formatDurasi(parseFloat(calculatedHours)) }}</span>
                 </div>
 
                 <div class="grid gap-2">

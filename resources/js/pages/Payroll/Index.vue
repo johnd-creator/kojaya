@@ -63,7 +63,7 @@ const statusColors: Record<string, string> = {
 <template>
     <Head title="Payroll" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-1 flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+        <div class="flex flex-1 flex-col gap-6 p-6 w-full">
 
             <!-- Header -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

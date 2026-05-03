@@ -1,296 +1,663 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from "@inertiajs/vue3";
 import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeDollarSign,
+  BarChart3,
+  Boxes,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  CreditCard,
+  PackageCheck,
+  ReceiptText,
+  ShieldCheck,
+  ShoppingCart,
+  Store,
   Users,
-  BriefcaseBusiness,
-  FileText,
-  Building2,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  CheckCircle,
-  Clock,
-  AlertTriangle
-} from 'lucide-vue-next';
-import { ref, onMounted } from 'vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
+  WalletCards,
+} from "lucide-vue-next";
+import AppLayout from "@/layouts/AppLayout.vue";
+import { dashboard as dashboardRoute } from "@/routes";
+import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
+import { index as cooperativeLedgerIndex } from "@/routes/cooperative/ledger";
+import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
+import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
+import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
+import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
+import { index as cooperativePosProductsIndex } from "@/routes/cooperative/pos-products";
+import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
+import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
+import type { BreadcrumbItem } from "@/types";
+
+interface DashboardPayload {
+  summary: {
+    today_sales: number;
+    today_transactions: number;
+    pending_payments: number;
+    low_stock_products: number;
+    active_members: number;
+    unpaid_dues_amount: number;
+  };
+  workQueue: {
+    pending_members: number;
+    pending_payments: number;
+    unpaid_dues: number;
+    low_stock_products: number;
+  };
+  collections: {
+    period: string;
+    total_due: number;
+    paid: number;
+    outstanding: number;
+    collection_rate: number;
+    pending_payment_amount: number;
+    saving_balance: number;
+    member_credit_balance: number;
+  };
+  pos: {
+    today_sales: number;
+    today_transactions: number;
+    monthly_sales: number;
+    monthly_transactions: number;
+    annual_gross_profit: number;
+    member_transactions: number;
+    top_products: Array<{
+      id: number;
+      name: string;
+      category?: string | null;
+      quantity: number;
+      revenue: number;
+      gross_profit: number;
+    }>;
+  };
+  inventory: {
+    low_stock_count: number;
+    critical_products: Array<{
+      id: number;
+      sku: string;
+      name: string;
+      category?: string | null;
+      stock: number;
+      minimum_stock: number;
+    }>;
+  };
+  members: {
+    active: number;
+    pending: number;
+    resigned: number;
+    new_this_month: number;
+  };
+  shu: {
+    year: number;
+    annual_pos_profit: number;
+    annual_pos_points: number;
+    latest_closed_year?: number | null;
+    latest_closed_total: number;
+  };
+  generatedAt: string;
+}
+
+const props = defineProps<{
+  dashboard: DashboardPayload;
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
-    title: 'Dashboard',
-    href: dashboard(),
+    title: "Dashboard",
+    href: dashboardRoute(),
   },
 ];
 
-interface DashboardStats {
-  totalEmployees: number;
-  activeProjects: number;
-  totalOrganizations: number;
-  monthlyRevenue: number;
-  pendingApprovals: number;
-  payrollProcessed: number;
-  attendanceRate: number;
-  onLeaveToday: number;
-}
-
-interface UnitPerformance {
-  unitName: string;
-  headcount: number;
-  revenue: number;
-  profit: number;
-  completion: number;
-}
-
-const stats = ref<DashboardStats>({
-  totalEmployees: 0,
-  activeProjects: 0,
-  totalOrganizations: 0,
-  monthlyRevenue: 0,
-  pendingApprovals: 0,
-  payrollProcessed: 0,
-  attendanceRate: 0,
-  onLeaveToday: 0,
-});
-
-const topPerformingUnits = ref<UnitPerformance[]>([]);
-const loading = ref(true);
-
-onMounted(async () => {
-  // Simulate fetching dashboard stats
-  // In production, this would be actual API calls
-  setTimeout(() => {
-    stats.value = {
-      totalEmployees: 1247,
-      activeProjects: 18,
-      totalOrganizations: 12,
-      monthlyRevenue: 2850000000,
-      pendingApprovals: 23,
-      payrollProcessed: 95,
-      attendanceRate: 94.5,
-      onLeaveToday: 47,
-    };
-
-    topPerformingUnits.value = [
-      { unitName: 'Unit Jakarta Pusat', headcount: 245, revenue: 450000000, profit: 125000000, completion: 92 },
-      { unitName: 'Unit Bandung', headcount: 178, revenue: 320000000, profit: 89000000, completion: 88 },
-      { unitName: 'Unit Semarang', headcount: 156, revenue: 280000000, profit: 78000000, completion: 85 },
-      { unitName: 'Unit Surabaya', headcount: 198, revenue: 390000000, profit: 95000000, completion: 90 },
-    ];
-
-    loading.value = false;
-  }, 500);
-});
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
+const formatCurrency = (amount: number): string =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
-};
+  }).format(Number(amount ?? 0));
 
-const formatPercent = (value: number) => {
-  return value.toFixed(1) + '%';
-};
+const formatNumber = (value: number): string =>
+  new Intl.NumberFormat("id-ID").format(Number(value ?? 0));
+
+const formatPercent = (value: number): string =>
+  `${Number(value ?? 0).toFixed(1)}%`;
+
+const formatDateTime = (value: string): string =>
+  new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+
+const kpiCards = [
+  {
+    label: "Omzet POS Hari Ini",
+    value: () => formatCurrency(props.dashboard.summary.today_sales),
+    meta: () =>
+      `${formatNumber(props.dashboard.summary.today_transactions)} transaksi`,
+    href: cooperativePosIndex().url,
+    icon: Store,
+    tone: "emerald",
+  },
+  {
+    label: "Pembayaran Pending",
+    value: () => formatNumber(props.dashboard.summary.pending_payments),
+    meta: () =>
+      formatCurrency(props.dashboard.collections.pending_payment_amount),
+    href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+    icon: CreditCard,
+    tone: "amber",
+  },
+  {
+    label: "Tagihan Belum Beres",
+    value: () => formatCurrency(props.dashboard.summary.unpaid_dues_amount),
+    meta: () =>
+      `${formatNumber(props.dashboard.workQueue.unpaid_dues)} tagihan perlu follow-up`,
+    href: cooperativeDuesIndex({ query: { status: "UNPAID" } }).url,
+    icon: ReceiptText,
+    tone: "rose",
+  },
+  {
+    label: "Produk Stok Kritis",
+    value: () => formatNumber(props.dashboard.summary.low_stock_products),
+    meta: () => "Di bawah atau sama dengan stok minimum",
+    href: cooperativePosProductsIndex({ query: { low_stock: 1 } }).url,
+    icon: Boxes,
+    tone: "sky",
+  },
+];
+
+const workItems = [
+  {
+    label: "Verifikasi anggota baru",
+    value: () => formatNumber(props.dashboard.workQueue.pending_members),
+    description: "Calon anggota menunggu aktivasi status.",
+    href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
+    icon: Users,
+  },
+  {
+    label: "Approve pembayaran",
+    value: () => formatNumber(props.dashboard.workQueue.pending_payments),
+    description: "Pembayaran perlu diperiksa agar ledger segera akurat.",
+    href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+    icon: ShieldCheck,
+  },
+  {
+    label: "Tindak lanjut tagihan",
+    value: () => formatNumber(props.dashboard.workQueue.unpaid_dues),
+    description: "Tagihan unpaid atau partial yang perlu ditagih.",
+    href: cooperativeDuesIndex({ query: { status: "UNPAID" } }).url,
+    icon: ClipboardList,
+  },
+  {
+    label: "Restock produk",
+    value: () => formatNumber(props.dashboard.workQueue.low_stock_products),
+    description: "Produk POS sudah mencapai stok minimum.",
+    href: cooperativePosProductsIndex({ query: { low_stock: 1 } }).url,
+    icon: PackageCheck,
+  },
+];
+
+const collectionStats = [
+  {
+    label: "Tagihan periode ini",
+    value: () => formatCurrency(props.dashboard.collections.total_due),
+  },
+  {
+    label: "Sudah dibayar",
+    value: () => formatCurrency(props.dashboard.collections.paid),
+  },
+  {
+    label: "Outstanding",
+    value: () => formatCurrency(props.dashboard.collections.outstanding),
+  },
+  {
+    label: "Collection rate",
+    value: () => formatPercent(props.dashboard.collections.collection_rate),
+  },
+];
+
+const managementStats = [
+  {
+    label: "Saldo Simpanan",
+    value: () => formatCurrency(props.dashboard.collections.saving_balance),
+    href: cooperativeLedgerIndex().url,
+  },
+  {
+    label: "Kredit Anggota",
+    value: () =>
+      formatCurrency(props.dashboard.collections.member_credit_balance),
+    href: cooperativeLedgerIndex().url,
+  },
+  {
+    label: "Profit POS Tahun Ini",
+    value: () => formatCurrency(props.dashboard.shu.annual_pos_profit),
+    href: cooperativePosReportsIndex().url,
+  },
+  {
+    label: "Poin POS Tahun Ini",
+    value: () => formatNumber(props.dashboard.shu.annual_pos_points),
+    href: cooperativeShuIndex().url,
+  },
+];
 </script>
 
 <template>
-  <Head title="Dashboard Konsolidasi" />
+  <Head title="Dashboard Operasional" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
-      <!-- Header -->
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="mx-auto flex w-full flex-1 flex-col gap-6 p-4 sm:p-6">
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
-            Dashboard Konsolidasi
+          <div
+            class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+          >
+            <CalendarClock class="size-4" />
+            Operasional Harian
+          </div>
+          <h1
+            class="mt-3 text-3xl font-bold tracking-tight text-zinc-950 dark:text-white"
+          >
+            Dashboard Koperasi
           </h1>
-          <p class="text-zinc-500 mt-1">
-            Ringkasan performa seluruh unit cabang
+          <p class="mt-1 max-w-2xl text-sm text-zinc-500 dark:text-zinc-400">
+            Prioritas kerja hari ini, kas iuran, POS toko, stok, dan ringkasan
+            keputusan manajemen.
           </p>
         </div>
-        <div class="flex items-center gap-2 text-sm text-zinc-500">
-          <Activity class="w-4 h-4" />
-          <span>Last updated: {{ new Date().toLocaleDateString('id-ID') }}</span>
+        <div
+          class="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm text-zinc-500 shadow-sm dark:bg-zinc-900"
+        >
+          <CheckCircle2 class="size-4 text-emerald-600" />
+          <span>Update {{ formatDateTime(dashboard.generatedAt) }}</span>
         </div>
       </div>
 
-      <!-- Key Metrics -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Total Employees -->
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center justify-between">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Link
+          v-for="card in kpiCards"
+          :key="card.label"
+          :href="card.href"
+          class="group rounded-lg border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-900"
+        >
+          <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Karyawan</p>
-              <p class="text-2xl font-bold mt-2">{{ stats.totalEmployees.toLocaleString('id-ID') }}</p>
-              <div class="flex items-center mt-2 text-sm text-green-600">
-                <TrendingUp class="w-4 h-4 mr-1" />
-                <span>+5.2% dari bulan lalu</span>
-              </div>
+              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                {{ card.label }}
+              </p>
+              <p class="mt-2 text-2xl font-bold text-zinc-950 dark:text-white">
+                {{ card.value() }}
+              </p>
+              <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ card.meta() }}
+              </p>
             </div>
-            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Users class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Active Projects -->
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Proyek Aktif</p>
-              <p class="text-2xl font-bold mt-2">{{ stats.activeProjects }}</p>
-              <div class="flex items-center mt-2 text-sm text-zinc-500">
-                <BriefcaseBusiness class="w-4 h-4 mr-1" />
-                <span>12 overhaul, 6 routine</span>
-              </div>
-            </div>
-            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <FileText class="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div
+              class="rounded-lg p-3"
+              :class="{
+                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300':
+                  card.tone === 'emerald',
+                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300':
+                  card.tone === 'amber',
+                'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300':
+                  card.tone === 'rose',
+                'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300':
+                  card.tone === 'sky',
+              }"
+            >
+              <component :is="card.icon" class="size-6" />
             </div>
           </div>
-        </div>
-
-        <!-- Monthly Revenue -->
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Pendapatan Bulan Ini</p>
-              <p class="text-2xl font-bold mt-2">{{ formatCurrency(stats.monthlyRevenue) }}</p>
-              <div class="flex items-center mt-2 text-sm text-green-600">
-                <TrendingUp class="w-4 h-4 mr-1" />
-                <span>+12.5% vs target</span>
-              </div>
-            </div>
-            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <DollarSign class="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Pending Approvals -->
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Menunggu Approval</p>
-              <p class="text-2xl font-bold mt-2">{{ stats.pendingApprovals }}</p>
-              <div class="flex items-center mt-2 text-sm text-orange-600">
-                <AlertTriangle class="w-4 h-4 mr-1" />
-                <span>8 payroll, 15 transfer</span>
-              </div>
-            </div>
-            <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Clock class="w-6 h-6 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Secondary Metrics -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center gap-4">
-            <div class="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-              <CheckCircle class="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Payroll Diproses</p>
-              <p class="text-xl font-bold mt-1">{{ stats.payrollProcessed }}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center gap-4">
-            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Activity class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Rata-rata Kehadiran</p>
-              <p class="text-xl font-bold mt-1">{{ formatPercent(stats.attendanceRate) }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-          <div class="flex items-center gap-4">
-            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Building2 class="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Unit</p>
-              <p class="text-xl font-bold mt-1">{{ stats.totalOrganizations }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Unit Performance Table -->
-      <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-zinc-200 dark:border-zinc-800">
-          <h2 class="text-lg font-semibold">Performa Unit Teratas</h2>
-          <p class="text-sm text-zinc-500 mt-1">Unit dengan penyelesaian proyek dan profit tertinggi</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-zinc-50 dark:bg-zinc-800">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Unit</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Headcount</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Pendapatan</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Profit</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Completion</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
-              <tr v-for="unit in topPerformingUnits" :key="unit.unitName" class="hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                <td class="px-6 py-4 text-sm font-medium">{{ unit.unitName }}</td>
-                <td class="px-6 py-4 text-sm">{{ unit.headcount }}</td>
-                <td class="px-6 py-4 text-sm">{{ formatCurrency(unit.revenue) }}</td>
-                <td class="px-6 py-4 text-sm text-green-600 font-medium">{{ formatCurrency(unit.profit) }}</td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <div class="flex-1 bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 max-w-[100px]">
-                      <div
-                        class="bg-blue-600 h-2 rounded-full"
-                        :style="{ width: unit.completion + '%' }"
-                      ></div>
-                    </div>
-                    <span class="text-sm font-medium">{{ unit.completion }}%</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-900 dark:to-blue-800 rounded-xl p-6 text-white">
-          <h3 class="text-lg font-semibold mb-2">Proses Payroll Bulan Ini</h3>
-          <p class="text-blue-100 text-sm mb-4">Generate payroll untuk 1,247 karyawan</p>
-          <button
-            class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+          <div
+            class="mt-4 flex items-center gap-1 text-sm font-semibold text-emerald-700 opacity-0 transition group-hover:opacity-100 dark:text-emerald-300"
           >
-            Proses Sekarang
-          </button>
+            Buka modul
+            <ArrowRight class="size-4" />
+          </div>
+        </Link>
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section class="rounded-lg border bg-white shadow-sm dark:bg-zinc-900">
+          <div class="border-b p-5 dark:border-zinc-800">
+            <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
+              Prioritas Hari Ini
+            </h2>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Antrian kerja yang paling memengaruhi operasional koperasi.
+            </p>
+          </div>
+          <div class="divide-y dark:divide-zinc-800">
+            <Link
+              v-for="item in workItems"
+              :key="item.label"
+              :href="item.href"
+              class="flex items-center gap-4 p-5 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+            >
+              <div
+                class="rounded-lg bg-zinc-100 p-3 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+              >
+                <component :is="item.icon" class="size-5" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="font-semibold text-zinc-950 dark:text-white">
+                    {{ item.label }}
+                  </p>
+                  <span
+                    class="text-xl font-bold text-zinc-950 dark:text-white"
+                    >{{ item.value() }}</span
+                  >
+                </div>
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  {{ item.description }}
+                </p>
+              </div>
+              <ArrowRight class="size-4 text-zinc-400" />
+            </Link>
+          </div>
+        </section>
+
+        <section
+          class="rounded-lg border bg-white p-5 shadow-sm dark:bg-zinc-900"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
+                Kas & Iuran
+              </h2>
+              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Periode {{ dashboard.collections.period }}
+              </p>
+            </div>
+            <WalletCards class="size-6 text-emerald-600" />
+          </div>
+
+          <div class="mt-5 grid gap-3 sm:grid-cols-2">
+            <div
+              v-for="stat in collectionStats"
+              :key="stat.label"
+              class="rounded-lg border bg-zinc-50 p-4 dark:bg-zinc-950/50"
+            >
+              <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                {{ stat.label }}
+              </p>
+              <p class="mt-2 text-xl font-bold text-zinc-950 dark:text-white">
+                {{ stat.value() }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-zinc-500 dark:text-zinc-400"
+                >Progress koleksi</span
+              >
+              <span class="font-semibold">{{
+                formatPercent(dashboard.collections.collection_rate)
+              }}</span>
+            </div>
+            <div class="mt-2 h-3 rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <div
+                class="h-3 rounded-full bg-emerald-600"
+                :style="{
+                  width: `${Math.min(dashboard.collections.collection_rate, 100)}%`,
+                }"
+              />
+            </div>
+          </div>
+
+          <div class="mt-5 flex flex-wrap gap-3">
+            <Link
+              :href="cooperativePaymentsIndex().url"
+              class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              Input pembayaran
+              <ArrowRight class="size-4" />
+            </Link>
+            <Link
+              :href="cooperativeDuesIndex().url"
+              class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            >
+              Kelola tagihan
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
+        <section class="rounded-lg border bg-white shadow-sm dark:bg-zinc-900">
+          <div
+            class="flex items-start justify-between gap-4 border-b p-5 dark:border-zinc-800"
+          >
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
+                POS Toko
+              </h2>
+              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Performa transaksi dan produk teratas tahun berjalan.
+              </p>
+            </div>
+            <ShoppingCart class="size-6 text-emerald-600" />
+          </div>
+          <div class="grid gap-3 p-5 sm:grid-cols-3">
+            <div class="rounded-lg border p-4 dark:border-zinc-800">
+              <p class="text-sm text-zinc-500">Omzet bulan ini</p>
+              <p class="mt-2 text-xl font-bold">
+                {{ formatCurrency(dashboard.pos.monthly_sales) }}
+              </p>
+            </div>
+            <div class="rounded-lg border p-4 dark:border-zinc-800">
+              <p class="text-sm text-zinc-500">Transaksi bulan ini</p>
+              <p class="mt-2 text-xl font-bold">
+                {{ formatNumber(dashboard.pos.monthly_transactions) }}
+              </p>
+            </div>
+            <div class="rounded-lg border p-4 dark:border-zinc-800">
+              <p class="text-sm text-zinc-500">Transaksi anggota</p>
+              <p class="mt-2 text-xl font-bold">
+                {{ formatNumber(dashboard.pos.member_transactions) }}
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5">
+            <div class="overflow-hidden rounded-lg border dark:border-zinc-800">
+              <table class="w-full text-sm">
+                <thead
+                  class="bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-800"
+                >
+                  <tr>
+                    <th class="px-4 py-3">Produk</th>
+                    <th class="px-4 py-3 text-right">Qty</th>
+                    <th class="px-4 py-3 text-right">Omzet</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y dark:divide-zinc-800">
+                  <tr v-if="dashboard.pos.top_products.length === 0">
+                    <td colspan="3" class="px-4 py-6 text-center text-zinc-500">
+                      Belum ada penjualan produk tahun ini.
+                    </td>
+                  </tr>
+                  <tr
+                    v-for="product in dashboard.pos.top_products"
+                    :key="product.id"
+                  >
+                    <td class="px-4 py-3">
+                      <p class="font-medium text-zinc-950 dark:text-white">
+                        {{ product.name }}
+                      </p>
+                      <p class="text-xs text-zinc-500">
+                        {{ product.category ?? "Tanpa kategori" }}
+                      </p>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      {{ formatNumber(product.quantity) }}
+                    </td>
+                    <td class="px-4 py-3 text-right font-semibold">
+                      {{ formatCurrency(product.revenue) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <Link
+                :href="cooperativePosIndex().url"
+                class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Buka kasir
+                <ArrowRight class="size-4" />
+              </Link>
+              <Link
+                :href="cooperativePosReportsIndex().url"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              >
+                Laporan POS
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-lg border bg-white shadow-sm dark:bg-zinc-900">
+          <div
+            class="flex items-start justify-between gap-4 border-b p-5 dark:border-zinc-800"
+          >
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
+                Stok Perlu Tindakan
+              </h2>
+              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ formatNumber(dashboard.inventory.low_stock_count) }} produk
+                mencapai minimum.
+              </p>
+            </div>
+            <AlertTriangle class="size-6 text-amber-600" />
+          </div>
+          <div class="divide-y dark:divide-zinc-800">
+            <div
+              v-if="dashboard.inventory.critical_products.length === 0"
+              class="p-6 text-center text-sm text-zinc-500"
+            >
+              Semua produk aktif berada di atas stok minimum.
+            </div>
+            <div
+              v-for="product in dashboard.inventory.critical_products"
+              :key="product.id"
+              class="flex items-center justify-between gap-4 p-4"
+            >
+              <div class="min-w-0">
+                <p class="font-semibold text-zinc-950 dark:text-white">
+                  {{ product.name }}
+                </p>
+                <p class="text-sm text-zinc-500">
+                  {{ product.sku }} · {{ product.category ?? "Tanpa kategori" }}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-lg font-bold text-amber-700 dark:text-amber-300">
+                  {{ formatNumber(product.stock) }}
+                </p>
+                <p class="text-xs text-zinc-500">
+                  Min {{ formatNumber(product.minimum_stock) }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="border-t p-5 dark:border-zinc-800">
+            <Link
+              :href="
+                cooperativePosProductsIndex({ query: { low_stock: 1 } }).url
+              "
+              class="inline-flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            >
+              Kelola stok minimum
+              <ArrowRight class="size-4" />
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      <section
+        class="rounded-lg border bg-white p-5 shadow-sm dark:bg-zinc-900"
+      >
+        <div
+          class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
+              Ringkasan Manajemen
+            </h2>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Sinyal cepat untuk rapat harian dan keputusan pengurus.
+            </p>
+          </div>
+          <Link
+            :href="cooperativeReportsIndex().url"
+            class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-300"
+          >
+            Laporan koperasi
+            <ArrowRight class="size-4" />
+          </Link>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-900 dark:to-purple-800 rounded-xl p-6 text-white">
-          <h3 class="text-lg font-semibold mb-2">Laporan Konsolidasi</h3>
-          <p class="text-purple-100 text-sm mb-4">Download laporan gabungan seluruh unit</p>
-          <button
-            class="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium hover:bg-purple-50 transition-colors"
+        <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Link
+            v-for="stat in managementStats"
+            :key="stat.label"
+            :href="stat.href"
+            class="rounded-lg border bg-zinc-50 p-4 transition hover:bg-zinc-100 dark:bg-zinc-950/50 dark:hover:bg-zinc-800"
           >
-            Download Reports
-          </button>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">
+              {{ stat.label }}
+            </p>
+            <p class="mt-2 text-xl font-bold text-zinc-950 dark:text-white">
+              {{ stat.value() }}
+            </p>
+          </Link>
         </div>
-      </div>
+
+        <div class="mt-5 grid gap-4 md:grid-cols-4">
+          <div class="rounded-lg border p-4 dark:border-zinc-800">
+            <div class="flex items-center gap-2 text-sm text-zinc-500">
+              <Users class="size-4" />
+              Anggota aktif
+            </div>
+            <p class="mt-2 text-xl font-bold">
+              {{ formatNumber(dashboard.members.active) }}
+            </p>
+          </div>
+          <div class="rounded-lg border p-4 dark:border-zinc-800">
+            <div class="flex items-center gap-2 text-sm text-zinc-500">
+              <BadgeDollarSign class="size-4" />
+              Anggota baru bulan ini
+            </div>
+            <p class="mt-2 text-xl font-bold">
+              {{ formatNumber(dashboard.members.new_this_month) }}
+            </p>
+          </div>
+          <div class="rounded-lg border p-4 dark:border-zinc-800">
+            <div class="flex items-center gap-2 text-sm text-zinc-500">
+              <BarChart3 class="size-4" />
+              SHU terakhir
+            </div>
+            <p class="mt-2 text-xl font-bold">
+              {{ dashboard.shu.latest_closed_year ?? "-" }}
+            </p>
+          </div>
+          <div class="rounded-lg border p-4 dark:border-zinc-800">
+            <div class="flex items-center gap-2 text-sm text-zinc-500">
+              <WalletCards class="size-4" />
+              Pool SHU terakhir
+            </div>
+            <p class="mt-2 text-xl font-bold">
+              {{ formatCurrency(dashboard.shu.latest_closed_total) }}
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   </AppLayout>
 </template>

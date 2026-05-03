@@ -71,7 +71,7 @@ const deleteClient = (id: string, name: string) => {
 <template>
     <Head title="Clients" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+        <div class="flex h-full flex-1 flex-col gap-6 p-6 w-full">
             
             <!-- Header Section -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

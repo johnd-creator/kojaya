@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'show'])->name('dashboard');
 
     // Dashboard API
     Route::get('/api/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);

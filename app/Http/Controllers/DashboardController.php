@@ -4,12 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Services\ConsolidatedReportService;
+use App\Services\Dashboard\CooperativeDashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 class DashboardController extends Controller
 {
+    public function show(CooperativeDashboardService $dashboard): InertiaResponse
+    {
+        return Inertia::render('Dashboard', [
+            'dashboard' => $dashboard->data(),
+        ]);
+    }
+
     /**
      * Get dashboard data based on active organization context.
      *
@@ -20,7 +30,7 @@ class DashboardController extends Controller
     public function index(Request $request): JsonResponse
     {
         $activeOrgId = session('active_organization_id');
-        $service = new ConsolidatedReportService();
+        $service = new ConsolidatedReportService;
 
         // If no active organization, show consolidated data
         if (! $activeOrgId) {

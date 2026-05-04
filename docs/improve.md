@@ -706,76 +706,104 @@ public function __construct(
 
 ### 29. Module Points & Rewards
 
-**Status:** Dideskripsikan di docs tapi **tidak ada implementasi**.
+**Status:** Implementasi inti dan UI web kini tersedia.
 
-**Yang perlu dibuat:**
-- [ ] Models: `PointTransaction`, `Reward`, `RewardRedemption`
-- [ ] Service: `PointService` (earn, redeem, expire)
-- [ ] Controller + Form Requests
-- [ ] Vue Pages: Points/Index, Rewards/Index, Redemptions/Index
-- [ ] API Endpoints untuk Kojayaku
-- [ ] Tests
+**Yang sudah dibuat:**
+- [x] Models: `PointTransaction`, `Reward`, `RewardRedemption`
+- [x] Service: `PointService` (earn, redeem, expire)
+- [x] Controller + Form Requests
+- [x] Vue Pages: Points/Index, Rewards/Index, Redemptions/Index
+- [x] API Endpoints untuk Kojayaku
+- [x] Tests
+
+**Progress saat ini:**
+- Admin koperasi sudah memiliki halaman `Cooperative/Points`, `Cooperative/Rewards`, dan `Cooperative/Redemptions`
+- Portal anggota `Kojayaku` sudah punya halaman `Points` dan `Rewards` untuk melihat saldo, histori, dan redeem reward
+- Feature test kini mencakup render portal poin/reward dan alur redeem reward anggota
 
 ---
 
 ### 30. ESS Portal (Employee Self-Service)
 
-**Status:** Hanya attendance dan leave self-service yang ada. Belum ada portal lengkap.
+**Status:** Portal ESS inti sudah tersedia.
 
-**Yang perlu ditambahkan:**
-- [ ] ESS Dashboard page (overview jam kerja, cuti, gaji terakhir)
-- [ ] Payslip self-view page (lihat slip gaji sendiri)
-- [ ] Profile self-edit page (update data pribadi)
-- [ ] Certificate & MCU self-view page (lihat sertifikat dan MCU sendiri)
+**Yang sudah ditambahkan:**
+- [x] ESS Dashboard page (overview jam kerja, cuti, gaji terakhir)
+- [x] Payslip self-view page (lihat slip gaji sendiri)
+- [x] Profile self-edit page (update data pribadi)
+- [x] Certificate & MCU self-view page (lihat sertifikat dan MCU sendiri)
+
+**Progress saat ini:**
+- ESS sekarang memiliki `Dashboard`, `Profile`, `Payslips`, dan `Compliance`
+- Alur edit profil ESS sudah tersambung ke `UpdateEssProfileRequest`
+- Feature test ESS kini memverifikasi halaman dashboard/compliance dan update profil
 
 ---
 
 ### 31. Chart of Accounts / General Ledger
 
-**Status:** Hanya cooperative-specific ledger yang ada (`Cooperative/Ledger/Index.vue`). Tidak ada full accounting ledger.
+**Status:** Backend dan UI accounting umum kini tersedia.
 
-**Yang perlu dibuat:**
-- [ ] Models: `ChartOfAccount`, `JournalEntry`, `JournalEntryLine`
-- [ ] Service: `JournalEntryService`, `FinancialStatementService`
-- [ ] Vue Pages: ChartOfAccounts/Index, JournalEntries/Index, TrialBalance, BalanceSheet, IncomeStatement
-- [ ] Neraca (Balance Sheet) dan Laba Rugi (Income Statement) reports
+**Yang sudah dibuat:**
+- [x] Models: `ChartOfAccount`, `JournalEntry`, `JournalEntryLine`
+- [x] Service: `JournalEntryService`, `FinancialStatementService`
+- [x] Vue Pages: ChartOfAccounts/Index, JournalEntries/Index, TrialBalance, BalanceSheet, IncomeStatement
+- [x] Neraca (Balance Sheet) dan Laba Rugi (Income Statement) reports
+
+**Progress saat ini:**
+- Halaman finance untuk akun, jurnal, trial balance, neraca, dan laba rugi sudah tersedia via Inertia
+- Sidebar finance sudah menautkan area accounting baru agar modul ini bisa diakses dari aplikasi utama
+- Feature test finance memverifikasi render halaman accounting utama
 
 ---
 
 ### 32. E-Faktur UI
 
-**Status:** Backend service dan API ada, tapi **tidak ada halaman UI** untuk manage e-Faktur.
+**Status:** UI utama e-Faktur sudah tersedia.
 
-**Yang perlu dibuat:**
-- [ ] Vue Pages: Efaktur/Index (list faktur), Efaktur/Submit, Efaktur/Status
-- [ ] Integrasi dengan `DjpEfakturApiService` yang sudah ada
+**Yang sudah dibuat:**
+- [x] Vue Pages: Efaktur/Index (list faktur), Efaktur/Submit, Efaktur/Status
+- [x] Integrasi dengan alur batch/export dan submission status yang sudah ada
+
+**Progress saat ini:**
+- Finance kini memiliki halaman daftar invoice eligible, batch export CSV, submit API, dan status submission
+- Feature test memverifikasi halaman E-Faktur utama dapat dirender dengan data transaksi yang relevan
 
 ---
 
 ### 33. Bank Reconciliation UI
 
-**Status:** Backend service ada, halaman Bank Batches ada, tapi **tidak ada halaman reconciliation**.
+**Status:** UI reconciliation dasar sudah tersedia.
 
-**Yang perlu dibuat:**
-- [ ] Vue Pages: BankReconciliation/Index, BankReconciliation/Show
-- [ ] UI untuk match statement lines dengan invoices/payments
+**Yang sudah dibuat:**
+- [x] Vue Pages: BankReconciliation/Index, BankReconciliation/Show
+- [x] UI untuk meninjau statement lines yang sudah atau belum match dengan invoice
+
+**Progress saat ini:**
+- Halaman index dan detail batch reconciliation sudah tersedia pada menu finance
+- Detail batch menampilkan ringkasan matched/pending item serta relasi ke invoice yang terhubung
 
 ---
 
 ### 34. Kojayaku Web App (Member Portal)
 
-**Status:** Phase 3 di roadmap, belum dimulai.
+**Status:** Portal web anggota sudah berjalan dalam mode authenticated member, dengan auth flow khusus masih tersisa.
 
-**Yang perlu dibuat (sesuai roadmap):**
+**Yang sudah dibuat (sesuai roadmap):**
 - [ ] Member authentication flow (login/register)
-- [ ] Member Dashboard (overview simpanan, pinjaman, poin)
-- [ ] Savings pages (balance, history, statements)
-- [ ] Loan pages (apply, track, calculator)
-- [ ] Points & Rewards pages (balance, redeem, history)
-- [ ] Transaction history pages
-- [ ] Profile pages
-- [ ] Notification pages
-- [ ] Mobile-responsive design (mobile-first)
+- [x] Member Dashboard (overview simpanan, pinjaman, poin)
+- [x] Savings pages (balance, history, statements)
+- [x] Loan pages (apply, track, calculator)
+- [x] Points & Rewards pages (balance, redeem, history)
+- [x] Transaction history pages
+- [x] Profile pages
+- [x] Notification pages
+- [x] Mobile-responsive design (mobile-first)
+
+**Progress saat ini:**
+- Ditambahkan `MemberPortalController` dan halaman `Kojayaku/*` untuk dashboard, simpanan, pinjaman, poin, rewards, transaksi, profil, dan notifikasi
+- Navigasi sidebar kini menampilkan menu khusus anggota untuk role `Anggota`
+- Pengajuan pinjaman, redeem reward, dan update profil anggota sudah tersedia pada web portal
 
 ---
 
@@ -820,12 +848,12 @@ public function __construct(
 
 ### P5 - Feature Baru (Estimasi: 6-8 minggu)
 28. [x] Module Simpan Pinjam (Loans)
-29. [ ] Module Points & Rewards
-30. [ ] ESS Portal
-31. [ ] Chart of Accounts / General Ledger
-32. [ ] E-Faktur UI
-33. [ ] Bank Reconciliation UI
-34. [ ] Kojayaku Web App
+29. [x] Module Points & Rewards
+30. [x] ESS Portal
+31. [x] Chart of Accounts / General Ledger
+32. [x] E-Faktur UI
+33. [x] Bank Reconciliation UI
+34. [~] Kojayaku Web App
 
 ---
 
@@ -835,4 +863,4 @@ public function __construct(
 ---
 
 *Dokumen ini dibuat otomatis dari analisis codebase. Update status checkbox seiring progress.*
-*Terakhir diperbarui: 4 Mei 2026*
+*Terakhir diperbarui: 5 Mei 2026*

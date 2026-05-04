@@ -112,6 +112,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/payslips', [\App\Http\Controllers\EssPortalController::class, 'payslips'])->name('payslips');
         Route::get('/compliance', [\App\Http\Controllers\EssPortalController::class, 'compliance'])->name('compliance');
     });
+    Route::prefix('member')->name('member.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
+        Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
+        Route::post('/loans', [\App\Http\Controllers\MemberPortalController::class, 'applyLoan'])->name('loans.store');
+        Route::get('/points', [\App\Http\Controllers\MemberPortalController::class, 'points'])->name('points');
+        Route::get('/rewards', [\App\Http\Controllers\MemberPortalController::class, 'rewards'])->name('rewards');
+        Route::post('/rewards/{reward}/redeem', [\App\Http\Controllers\MemberPortalController::class, 'redeemReward'])->name('rewards.redeem');
+        Route::get('/transactions', [\App\Http\Controllers\MemberPortalController::class, 'transactions'])->name('transactions');
+        Route::get('/profile', [\App\Http\Controllers\MemberPortalController::class, 'profile'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\MemberPortalController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/notifications', [\App\Http\Controllers\MemberPortalController::class, 'notifications'])->name('notifications');
+    });
     Route::resource('employees.contracts', \App\Http\Controllers\EmployeeContractController::class)->only(['index', 'store', 'update']);
     Route::resource('payrolls', \App\Http\Controllers\PayrollController::class)->only(['index', 'show']);
     Route::post('payrolls/generate', [\App\Http\Controllers\PayrollController::class, 'generate'])->name('payrolls.generate');

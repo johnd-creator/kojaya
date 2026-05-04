@@ -7,7 +7,8 @@ use App\Models\PointTransaction;
 use App\Models\PosMemberPoint;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
-use Illuminate\Contracts\Database\Eloquent\Builder;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -75,6 +76,7 @@ class PointService
         foreach ($tiers as $tier => $threshold) {
             if ($pointsEarned >= $threshold) {
                 $memberTier = $tier;
+
                 continue;
             }
 
@@ -211,11 +213,11 @@ class PointService
         string $transactionType,
         int $points,
         string $description,
-        Carbon $postedAt,
+        CarbonInterface $postedAt,
         ?string $sourceType = null,
         ?string $sourceId = null,
         ?string $referenceNumber = null,
-        ?Carbon $expiresAt = null,
+        ?CarbonInterface $expiresAt = null,
         ?array $metadata = null
     ): PointTransaction {
         $latestBalance = (int) PointTransaction::query()

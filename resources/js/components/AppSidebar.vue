@@ -16,6 +16,11 @@ import {
   WalletCards,
   Store,
   Boxes,
+  Bell,
+  CreditCard,
+  Gift,
+  ReceiptText,
+  UserRound,
 } from "lucide-vue-next";
 import { computed } from "vue";
 import { index as assetsIndex } from "@/actions/App/Http/Controllers/AssetController";
@@ -79,6 +84,7 @@ const userRoles = computed(() => {
 const isEmployee = computed(
   () =>
     userRoles.value.includes("Employee") &&
+    !userRoles.value.includes("Anggota") &&
     !userRoles.value.some((r: string) =>
       [
         "System Admin",
@@ -89,6 +95,7 @@ const isEmployee = computed(
       ].includes(r),
     ),
 );
+const isMember = computed(() => userRoles.value.includes("Anggota"));
 
 const allNavItems: NavItem[] = [
   {
@@ -138,6 +145,16 @@ const allNavItems: NavItem[] = [
       { title: "Pinjaman", href: cooperativeLoansIndex().url },
       { title: "Kalkulator Pinjaman", href: cooperativeLoansCalculator().url },
       { title: "Tipe Pinjaman", href: cooperativeLoanTypesIndex().url },
+    ],
+  },
+  {
+    title: "Poin & Reward",
+    href: "#",
+    icon: Gift,
+    items: [
+      { title: "Poin Anggota", href: "/cooperative/points" },
+      { title: "Katalog Reward", href: "/cooperative/rewards" },
+      { title: "Penukaran", href: "/cooperative/redemptions" },
     ],
   },
   {
@@ -240,6 +257,13 @@ const allNavItems: NavItem[] = [
       { title: "Petty Cash", href: "/petty-cash" }, // TODO: Route not defined yet
       { title: "Reimbursements", href: reimbursementsIndex().url },
       { title: "Bank Batches", href: "/finance/bank-batches" },
+      { title: "Bank Reconciliation", href: "/finance/bank-reconciliation" },
+      { title: "Chart of Accounts", href: "/finance/chart-of-accounts" },
+      { title: "Journal Entries", href: "/finance/journal-entries" },
+      { title: "Trial Balance", href: "/finance/trial-balance" },
+      { title: "Balance Sheet", href: "/finance/balance-sheet" },
+      { title: "Income Statement", href: "/finance/income-statement" },
+      { title: "E-Faktur", href: "/finance/efaktur" },
     ],
   },
   {
@@ -268,13 +292,55 @@ const allNavItems: NavItem[] = [
   },
 ] as any[];
 
-const mainNavItems = computed(() =>
-  isEmployee.value
-    ? allNavItems.filter((item: any) => !item.adminOnly)
-    : allNavItems,
-);
-
 const footerNavItems: NavItem[] = [];
+const memberNavItems: NavItem[] = [
+  {
+    title: "Kojayaku",
+    href: "/member",
+    icon: LayoutGrid,
+  },
+  {
+    title: "Simpanan",
+    href: "/member/savings",
+    icon: WalletCards,
+  },
+  {
+    title: "Pinjaman",
+    href: "/member/loans",
+    icon: CreditCard,
+  },
+  {
+    title: "Poin & Reward",
+    href: "#",
+    icon: Gift,
+    items: [
+      { title: "Poin Saya", href: "/member/points" },
+      { title: "Rewards", href: "/member/rewards" },
+    ],
+  },
+  {
+    title: "Transaksi",
+    href: "/member/transactions",
+    icon: ReceiptText,
+  },
+  {
+    title: "Notifikasi",
+    href: "/member/notifications",
+    icon: Bell,
+  },
+  {
+    title: "Profil",
+    href: "/member/profile",
+    icon: UserRound,
+  },
+];
+const mainNavItems = computed(() =>
+  isMember.value
+    ? memberNavItems
+    : isEmployee.value
+      ? allNavItems.filter((item: any) => !item.adminOnly)
+      : allNavItems,
+);
 </script>
 
 <template>

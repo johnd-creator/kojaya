@@ -28,6 +28,7 @@ import AttendanceController from './AttendanceController'
 import LeaveController from './LeaveController'
 import OvertimeController from './OvertimeController'
 import EssPortalController from './EssPortalController'
+import MemberPortalController from './MemberPortalController'
 import EmployeeContractController from './EmployeeContractController'
 import PayrollController from './PayrollController'
 import PayrollApprovalController from './PayrollApprovalController'
@@ -85,6 +86,7 @@ const Controllers = {
     LeaveController: Object.assign(LeaveController, LeaveController),
     OvertimeController: Object.assign(OvertimeController, OvertimeController),
     EssPortalController: Object.assign(EssPortalController, EssPortalController),
+    MemberPortalController: Object.assign(MemberPortalController, MemberPortalController),
     EmployeeContractController: Object.assign(EmployeeContractController, EmployeeContractController),
     PayrollController: Object.assign(PayrollController, PayrollController),
     PayrollApprovalController: Object.assign(PayrollApprovalController, PayrollApprovalController),

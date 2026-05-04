@@ -2,21 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateEfakturBatchRequest;
 use App\Models\EfakturBatch;
 use App\Models\EfakturBatchItem;
 use App\Services\EfakturBatchExportService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class EfakturController extends Controller
 {
-    public function createBatch(Request $request)
+    public function createBatch(CreateEfakturBatchRequest $request)
     {
-        $validated = $request->validate([
-            'invoice_ids' => 'required|array|min:1',
-            'invoice_ids.*' => 'uuid|exists:invoices,id',
-            'reference' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $batch = EfakturBatch::create([
             'organization_id' => Auth::user()->organization_id,

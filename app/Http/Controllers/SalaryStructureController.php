@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertSalaryStructureRequest;
 use App\Models\JobGrade;
 use App\Models\Organization;
 use App\Models\SalaryComponentType;
@@ -35,20 +36,9 @@ class SalaryStructureController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertSalaryStructureRequest $request)
     {
-        $validated = $request->validate([
-            'employee_type' => 'required|in:TKWT,Organic',
-            'job_grade_id' => 'required|exists:job_grades,id',
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
-            'min_tenure_months' => 'integer|min:0',
-            'max_tenure_months' => 'nullable|integer|min:0|gte:min_tenure_months',
-            'effective_from' => 'required|date',
-            'effective_until' => 'nullable|date|after:effective_from',
-            'items' => 'required|array|min:1',
-            'items.*.component_type_id' => 'required|exists:salary_component_types,id',
-            'items.*.amount' => 'required|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         $structure = SalaryStructure::create([
             'employee_type' => $validated['employee_type'],
@@ -71,20 +61,9 @@ class SalaryStructureController extends Controller
         return redirect()->route('salary-structures.index')->with('success', 'Salary structure created.');
     }
 
-    public function update(Request $request, SalaryStructure $salaryStructure)
+    public function update(UpsertSalaryStructureRequest $request, SalaryStructure $salaryStructure)
     {
-        $validated = $request->validate([
-            'employee_type' => 'required|in:TKWT,Organic',
-            'job_grade_id' => 'required|exists:job_grades,id',
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
-            'min_tenure_months' => 'integer|min:0',
-            'max_tenure_months' => 'nullable|integer|min:0',
-            'effective_from' => 'required|date',
-            'effective_until' => 'nullable|date|after:effective_from',
-            'items' => 'required|array|min:1',
-            'items.*.component_type_id' => 'required|exists:salary_component_types,id',
-            'items.*.amount' => 'required|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         $salaryStructure->update([
             'employee_type' => $validated['employee_type'],

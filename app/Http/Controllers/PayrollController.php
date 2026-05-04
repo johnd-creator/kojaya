@@ -2,22 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExportPayrollBankTransferRequest;
+use App\Http\Requests\GeneratePayrollRequest;
+use App\Http\Requests\PreviewThrRequest;
+use App\Http\Requests\SubmitPayrollApprovalRequest;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PayrollApproval;
 use App\Models\PayrollComponent;
+use App\Models\User;
 use App\Services\BankExportService;
 use App\Services\BpjsCalculationService;
 use App\Services\OvertimeCalculationService;
 use App\Services\Pph21TerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PayrollController extends Controller
 {
+    public function __construct(
+        private readonly Pph21TerService $pph21Service,
+        private readonly BpjsCalculationService $bpjsService,
+        private readonly OvertimeCalculationService $overtimeService,
+        private readonly BankExportService $bankExportService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $query = Payroll::query()
@@ -42,20 +55,17 @@ class PayrollController extends Controller
 
         $organizations = Organization::orderBy('name')->get();
 
-        // Summary stats for the selected period
         $period = $request->input('period', now()->format('Y-m'));
-        $totalNetSalary = Payroll::where('period', $period)->sum('net_salary');
-        $totalRecords = Payroll::where('period', $period)->count();
 
         return Inertia::render('Payroll/Index', [
             'payrolls' => $payrolls,
             'organizations' => $organizations,
             'filters' => $request->only(['period', 'organization_id', 'status']),
-            'stats' => [
-                'total_net_salary' => $totalNetSalary,
-                'total_records' => $totalRecords,
+            'stats' => Inertia::defer(fn () => [
+                'total_net_salary' => Payroll::where('period', $period)->sum('net_salary'),
+                'total_records' => Payroll::where('period', $period)->count(),
                 'current_period' => $period,
-            ],
+            ], 'payroll-stats'),
         ]);
     }
 
@@ -66,20 +76,13 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function generate(Request $request)
+    public function generate(GeneratePayrollRequest $request)
     {
-        $validated = $request->validate([
-            'period' => 'required|date_format:Y-m',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-        ]);
+        $validated = $request->validated();
 
         $employees = Employee::where('organization_id', $validated['organization_id'])
             ->where('status', 'ACTIVE')
             ->get();
-
-        $pph21Service = new Pph21TerService;
-        $bpjsService = new BpjsCalculationService;
-        $overtimeService = new OvertimeCalculationService;
 
         $generated = 0;
 
@@ -90,11 +93,11 @@ class PayrollController extends Controller
 
             $basicSalary = $employee->basic_salary ?? 0;
 
-            $pph21Result = $pph21Service->calculate($employee, $basicSalary, 0);
-            $bpjsResult = $bpjsService->calculate($basicSalary);
+            $pph21Result = $this->pph21Service->calculate($employee, $basicSalary, 0);
+            $bpjsResult = $this->bpjsService->calculate($basicSalary);
 
-            $hourlyRate = $overtimeService->calculateHourlyRate($employee);
-            $overtimeResult = $overtimeService->calculateTotalOvertimeForPeriod($employee->id, $validated['period'], $hourlyRate);
+            $hourlyRate = $this->overtimeService->calculateHourlyRate($employee);
+            $overtimeResult = $this->overtimeService->calculateTotalOvertimeForPeriod($employee->id, $validated['period'], $hourlyRate);
 
             $totalBpjsEmployee = $bpjsResult['total_employee_deduction'];
             $taxAmount = $pph21Result['monthly_tax'];
@@ -161,7 +164,8 @@ class PayrollController extends Controller
 
     public function downloadPdf(Payroll $payroll)
     {
-        $user = auth()->user();
+        /** @var User $user */
+        $user = Auth::user();
 
         // Employees can only download their own paystub
         if ($user->hasRole('Employee')) {
@@ -217,14 +221,12 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function previewThr(Request $request)
+    public function previewThr(PreviewThrRequest $request)
     {
-        $validated = $request->validate([
-            'year' => 'required|integer|min:2020|max:2099',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-        ]);
+        $this->authorize('create', Payroll::class);
 
-        $thrPeriod = $validated['year'].'-05';
+        $validated = $request->validated();
+
         $cutoffDate = \Carbon\Carbon::create($validated['year'], 5, 31);
 
         $employees = Employee::where('organization_id', $validated['organization_id'])
@@ -267,12 +269,11 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function generateThr(Request $request)
+    public function generateThr(PreviewThrRequest $request)
     {
-        $validated = $request->validate([
-            'year' => 'required|integer|min:2020|max:2099',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-        ]);
+        $this->authorize('create', Payroll::class);
+
+        $validated = $request->validated();
 
         $thrPeriod = $validated['year'].'-05';
 
@@ -297,7 +298,7 @@ class PayrollController extends Controller
             $basicSalary = $employee->basic_salary ?? 0;
             $thrAmount = ($basicSalary / 12) * $monthsWorked;
 
-            $payroll = Payroll::create([
+            Payroll::create([
                 'employee_id' => $employee->id,
                 'organization_id' => $employee->organization_id,
                 'period' => $thrPeriod,
@@ -325,40 +326,48 @@ class PayrollController extends Controller
             ->with('success', "Generated THR for {$generated} employees.");
     }
 
-    public function submitForApproval(Request $request)
+    public function submitForApproval(SubmitPayrollApprovalRequest $request)
     {
-        $validated = $request->validate([
-            'payroll_ids' => 'required|array',
-            'payroll_ids.*' => 'uuid|exists:payrolls,id',
-            'notes' => 'nullable|string',
-        ]);
+        $this->authorize('submitForApproval', Payroll::class);
 
-        $batchId = \Str::uuid()->toString();
+        $validated = $request->validated();
+
+        $batchId = Str::uuid()->toString();
 
         foreach ($validated['payroll_ids'] as $payrollId) {
             $payroll = Payroll::find($payrollId);
 
-            if ($payroll && $payroll->status === 'DRAFT') {
-                PayrollApproval::create([
-                    'id' => \Str::uuid()->toString(),
-                    'payroll_id' => $payrollId,
-                    'payroll_batch_id' => $batchId,
-                    'requester_id' => Auth::id(),
-                    'status' => 'PENDING',
-                    'requester_notes' => $validated['notes'],
-                    'requested_at' => now(),
-                ]);
+            if (! $payroll || $payroll->status !== 'DRAFT') {
+                continue;
             }
+
+            $hasPendingApproval = PayrollApproval::query()
+                ->where('payroll_id', $payrollId)
+                ->where('status', 'PENDING')
+                ->exists();
+
+            if ($hasPendingApproval) {
+                continue;
+            }
+
+            PayrollApproval::create([
+                'payroll_id' => $payrollId,
+                'payroll_batch_id' => $batchId,
+                'requester_id' => Auth::id(),
+                'status' => 'PENDING',
+                'requester_notes' => $validated['notes'],
+                'requested_at' => now(),
+            ]);
         }
 
         return back()->with('success', 'Payroll submitted for approval.');
     }
 
-    public function exportBankTransfer(Request $request, string $batchId)
+    public function exportBankTransfer(ExportPayrollBankTransferRequest $request, string $batchId)
     {
-        $validated = $request->validate([
-            'bank' => 'required|in:bca,mandiri,bri',
-        ]);
+        $this->authorize('exportBankTransfer', Payroll::class);
+
+        $validated = $request->validated();
 
         $payrolls = Payroll::whereHas('approval', function ($query) use ($batchId) {
             $query->where('payroll_batch_id', $batchId)
@@ -369,11 +378,10 @@ class PayrollController extends Controller
             return back()->with('error', 'No approved payrolls found for this batch.');
         }
 
-        $service = new BankExportService;
-        $content = $service->exportPayrollToBank($batchId, $validated['bank']);
+        $content = $this->bankExportService->exportPayrollToBank($batchId, $validated['bank']);
 
         $filename = 'payroll-export-'.$batchId.'-'.$validated['bank'].'.txt';
 
-        return $service->downloadFile($content, $filename);
+        return $this->bankExportService->downloadFile($content, $filename);
     }
 }

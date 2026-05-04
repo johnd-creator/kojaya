@@ -4,6 +4,9 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -56,7 +59,7 @@ class User extends Authenticatable
     /**
      * Get the organization the user belongs to.
      */
-    public function organization(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
@@ -64,16 +67,29 @@ class User extends Authenticatable
     /**
      * Get the employee profile associated with the user.
      */
-    public function employee(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
     }
 
     /**
+     * Get the cooperative member profile associated with the user.
+     */
+    public function cooperativeMember(): HasOne
+    {
+        return $this->hasOne(CooperativeMember::class);
+    }
+
+    /**
      * Get the notification preferences for the user.
      */
-    public function notificationPreference(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function notificationPreference(): HasOne
     {
         return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
     }
 }

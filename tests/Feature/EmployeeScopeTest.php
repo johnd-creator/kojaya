@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -29,7 +30,7 @@ class EmployeeScopeTest extends TestCase
         Employee::factory()->count(2)->create(['organization_id' => $this->orgB->id]);
     }
 
-    /** @test */
+    #[Test]
     public function system_admin_can_see_all_employees(): void
     {
         Role::firstOrCreate(['name' => 'System Admin', 'guard_name' => 'web']);
@@ -44,7 +45,7 @@ class EmployeeScopeTest extends TestCase
         $this->assertCount(5, $employees);
     }
 
-    /** @test */
+    #[Test]
     public function admin_pusat_can_see_all_employees(): void
     {
         Role::firstOrCreate(['name' => 'Admin Pusat', 'guard_name' => 'web']);
@@ -59,7 +60,7 @@ class EmployeeScopeTest extends TestCase
         $this->assertCount(5, $employees);
     }
 
-    /** @test */
+    #[Test]
     public function hr_unit_only_sees_own_organization_employees(): void
     {
         Role::firstOrCreate(['name' => 'HR Unit', 'guard_name' => 'web']);
@@ -75,7 +76,7 @@ class EmployeeScopeTest extends TestCase
         $employees->each(fn ($e) => $this->assertEquals($this->orgA->id, $e->organization_id));
     }
 
-    /** @test */
+    #[Test]
     public function admin_unit_only_sees_own_organization_employees(): void
     {
         Role::firstOrCreate(['name' => 'Admin Unit', 'guard_name' => 'web']);
@@ -91,7 +92,7 @@ class EmployeeScopeTest extends TestCase
         $employees->each(fn ($e) => $this->assertEquals($this->orgB->id, $e->organization_id));
     }
 
-    /** @test */
+    #[Test]
     public function for_organization_scope_filters_by_given_org(): void
     {
         Role::firstOrCreate(['name' => 'Admin Pusat', 'guard_name' => 'web']);
@@ -106,7 +107,7 @@ class EmployeeScopeTest extends TestCase
         $this->assertCount(2, $employees);
     }
 
-    /** @test */
+    #[Test]
     public function guest_sees_no_employees(): void
     {
         $employees = Employee::query()->forUser()->get();

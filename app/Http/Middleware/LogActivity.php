@@ -18,7 +18,7 @@ class LogActivity
     {
         $response = $next($request);
 
-        if (Auth::check() && $request->isMethod('POST') || $request->isMethod('PUT') || $request->isMethod('DELETE')) {
+        if (Auth::check() && ($request->isMethod('POST') || $request->isMethod('PUT') || $request->isMethod('DELETE'))) {
             $this->auditLogService->log(
                 action: $this->getActionFromMethod($request->method()),
                 module: $this->getModuleFromPath($request->path()),

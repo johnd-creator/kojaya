@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertOrganizationRequest;
 use App\Models\Organization;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class OrganizationController extends Controller
@@ -24,21 +24,9 @@ class OrganizationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(UpsertOrganizationRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:organizations,code',
-            'type' => 'required|in:HEAD_OFFICE,REGIONAL,BRANCH,SITE',
-            'level' => 'required|in:L0,L1,L2,L3',
-            'parent_id' => 'nullable|exists:organizations,id',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'is_active' => 'boolean',
-        ]);
-
-        Organization::create($validated);
+        Organization::create($request->validated());
 
         return redirect()->route('organizations.index')->with('success', 'Organization created successfully.');
     }
@@ -46,23 +34,11 @@ class OrganizationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpsertOrganizationRequest $request, string $id)
     {
         $organization = Organization::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:organizations,code,'.$organization->id,
-            'type' => 'required|in:HEAD_OFFICE,REGIONAL,BRANCH,SITE',
-            'level' => 'required|in:L0,L1,L2,L3',
-            'parent_id' => 'nullable|exists:organizations,id',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'is_active' => 'boolean',
-        ]);
-
-        $organization->update($validated);
+        $organization->update($request->validated());
 
         return redirect()->route('organizations.index')->with('success', 'Organization updated successfully.');
     }

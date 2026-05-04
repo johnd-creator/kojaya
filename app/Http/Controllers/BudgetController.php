@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportBudgetLinesRequest;
+use App\Http\Requests\UpsertBudgetRequest;
 use App\Imports\BudgetLinesImport;
 use App\Models\Budget;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -63,16 +64,11 @@ class BudgetController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertBudgetRequest $request)
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
-            'year' => ['required', 'digits:4'],
-            'period' => ['required', Rule::in(['ANNUAL', 'Q1', 'Q2', 'Q3', 'Q4'])],
-            'status' => ['nullable', Rule::in(['DRAFT', 'ACTIVE', 'CLOSED'])],
-        ]);
+        $validated = $request->validated();
 
         $organizationId = $user->hasAnyRole($this->allAccessRoles())
             ? ($validated['organization_id'] ?? $user->organization_id)
@@ -122,7 +118,7 @@ class BudgetController extends Controller
         ]);
     }
 
-    public function update(Request $request, Budget $budget)
+    public function update(UpsertBudgetRequest $request, Budget $budget)
     {
         $this->authorizeAccess($budget);
 
@@ -132,12 +128,7 @@ class BudgetController extends Controller
 
         $user = $request->user();
 
-        $validated = $request->validate([
-            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
-            'year' => ['required', 'digits:4'],
-            'period' => ['required', Rule::in(['ANNUAL', 'Q1', 'Q2', 'Q3', 'Q4'])],
-            'status' => ['required', Rule::in(['DRAFT', 'ACTIVE', 'CLOSED'])],
-        ]);
+        $validated = $request->validated();
 
         $organizationId = $user->hasAnyRole($this->allAccessRoles())
             ? ($validated['organization_id'] ?? $budget->organization_id)
@@ -179,17 +170,13 @@ class BudgetController extends Controller
         return redirect()->route('budgets.index')->with('success', 'RKAP deleted.');
     }
 
-    public function import(Request $request, Budget $budget)
+    public function import(ImportBudgetLinesRequest $request, Budget $budget)
     {
         $this->authorizeAccess($budget);
 
         if ($budget->status !== 'DRAFT') {
             return back()->with('error', 'Only DRAFT budgets can be modified.');
         }
-
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,csv'],
-        ]);
 
         try {
             Excel::import(new BudgetLinesImport($budget), $request->file('file'));

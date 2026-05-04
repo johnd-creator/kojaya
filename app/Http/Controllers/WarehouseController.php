@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreWarehouseRequest;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,17 +35,9 @@ class WarehouseController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreWarehouseRequest $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:warehouses,code',
-            'name' => 'required|string|max:255',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'location' => 'nullable|string|max:255',
-            'type' => 'required|in:STORAGE,REPAIR,DISPOSAL',
-        ]);
-
-        Warehouse::create($validated);
+        Warehouse::create($request->validated());
 
         return redirect()->route('warehouses.index')->with('success', 'Warehouse created successfully.');
     }

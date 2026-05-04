@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreEmployeeRequest;
+use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\User;
@@ -67,25 +69,9 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreEmployeeRequest $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'email' => 'nullable|email|max:255|unique:employees,email',
-            'employee_code' => 'required|string|max:50|unique:employees,employee_code',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'gender' => 'required|in:M,F',
-            'birth_date' => 'nullable|date',
-            'hire_date' => 'required|date',
-            'status' => 'required|string',
-            'employee_type' => 'required|in:Organic,TKWT',
-            'department_id' => 'nullable|exists:departments,id',
-            'position_id' => 'nullable|exists:positions,id',
-            'job_grade_id' => 'nullable|exists:job_grades,id',
-            'work_shift_id' => 'nullable|exists:work_shifts,id',
-            'shift_group' => 'nullable|in:A,B,C,D',
-        ]);
+        $validated = $request->validated();
 
         Employee::create($validated);
 
@@ -137,25 +123,9 @@ class EmployeeController extends Controller
         ]);
     }
 
-    public function update(Request $request, Employee $employee)
+    public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'email' => 'nullable|email|max:255|unique:employees,email,'.$employee->id,
-            'employee_code' => 'required|string|max:50|unique:employees,employee_code,'.$employee->id,
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'gender' => 'required|in:M,F',
-            'birth_date' => 'nullable|date',
-            'hire_date' => 'required|date',
-            'status' => 'required|string',
-            'employee_type' => 'required|in:Organic,TKWT',
-            'department_id' => 'nullable|exists:departments,id',
-            'position_id' => 'nullable|exists:positions,id',
-            'job_grade_id' => 'nullable|exists:job_grades,id',
-            'work_shift_id' => 'nullable|exists:work_shifts,id',
-            'shift_group' => 'nullable|in:A,B,C,D',
-        ]);
+        $validated = $request->validated();
 
         $employee->update($validated);
 
@@ -169,8 +139,10 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')->with('success', 'Employee terminated successfully.');
     }
 
-    public function enableEssAccess(Employee $employee)
+    public function enableEssAccess(Request $request, Employee $employee)
     {
+        $this->authorize('manageEssAccess', $employee);
+
         if ($employee->user_id) {
             return back()->with('info', 'This employee already has an ESS account.');
         }
@@ -196,8 +168,10 @@ class EmployeeController extends Controller
         return back()->with('success', 'ESS access enabled. Default password is the Employee Code.');
     }
 
-    public function revokeEssAccess(Employee $employee)
+    public function revokeEssAccess(Request $request, Employee $employee)
     {
+        $this->authorize('manageEssAccess', $employee);
+
         if (! $employee->user_id) {
             return back()->with('info', 'No ESS account is linked to this employee.');
         }

@@ -4,11 +4,76 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** May 2, 2026
+**Last Updated:** May 4, 2026
 
 ---
 
 ## 🎯 2026-05: Branding & Kojayaku Development
+
+### **May 4, 2026 - P5 Cooperative Loan Module**
+
+**💳 Cooperative Loan Improvements:**
+- ✅ Added cooperative loan domain tables and models for `LoanType`, `Loan`, `LoanInstallment`, and `LoanPayment`
+- ✅ Added loan status enums, installment status enums, and calculator/service logic for installments, totals, and late-fee refresh
+- ✅ Added cooperative web flows for loan list, create, detail, calculator, approval, disbursement, and installment payment recording
+- ✅ Added Kojayaku API endpoints for loan application, own-loan tracking, and installment calculator preview
+- ✅ Integrated approval logging and automatic cooperative ledger posting for loan disbursement and loan payments
+- ✅ Added `CooperativeLoanFeatureTest` coverage and verified cooperative regression tests stay green
+
+### **May 4, 2026 - P4 Frontend UX Foundation**
+
+**🎨 Frontend UX/UI Improvements:**
+- ✅ Added shared `PageContainer` to standardize page width and spacing for list, detail, and form layouts
+- ✅ Replaced ad-hoc deferred loading placeholders with reusable `Skeleton` states on key pages (`Dashboard`, `Reports`, `Payroll`, cooperative members)
+- ✅ Added baseline accessibility improvements: skip-to-content link, labelled tables, `aria-live` loading regions, labelled icon buttons, and better dialog descriptions
+- ✅ Synchronized `app.ts` and `ssr.ts` through a shared bootstrap helper so route globals and `v-can` directive registration match in client and SSR
+- ✅ Shared `appearance` preference via Inertia props to reduce SSR/client theme mismatch risk
+
+### **May 4, 2026 - P3 Model Consistency Cleanup**
+
+**🧹 Backend Consistency Improvements:**
+- ✅ Standardized remaining model casts to Laravel 12 `casts()` methods, including support models in project, reimbursement, and medical checkup domains
+- ✅ Completed UUID alignment for `Project`, `ProjectTask`, `ProjectTeam`, `ProjectMilestone`, `Client`, `Invoice`, and `PayrollApproval`, and removed redundant manual UUID assignment from related controllers
+- ✅ Added `HasOrganizationScope` to schema-valid models that were still missing organization scoping, including attendance, salary structure, warehouse, and spare part flows
+- ✅ Added missing relationships for warehouse, organization, and user audit log access to reduce ad-hoc query logic in future batches
+- ✅ Added `P3ArchitectureTest` coverage to guard key traits, relationships, and casts conventions
+
+### **May 4, 2026 - P2 Testing Expansion & Full Suite Stabilization**
+
+**🧪 Testing Improvements:**
+- ✅ Added broad P2 feature coverage for Leave, Reimbursement, Petty Cash, Payroll Pipeline, Asset, Warehouse, Spare Parts, Organization setup, HR master data, Salary Structure, Shift Roster, Attendance, Work Order web flow, and Report generation
+- ✅ Expanded factory coverage across core operational modules to reduce manual test setup and improve reuse
+- ✅ Replaced remaining stub coverage in user/role management and removed duplicate placeholder employee scope test file
+- ✅ Re-enabled notification coverage so `NotificationSystemTest` runs without skipped cases
+
+**🔧 Regression Follow-up:**
+- ✅ Audited and fixed stale tests after the broad P2 rollout
+- ✅ Updated tests to match current route names, root redirect behavior, seeded organization code, and procurement permission requirements
+- ✅ Fixed audit log route matching so `/api/audit-logs/export` no longer collides with the detail endpoint
+- ✅ Verified the full PHPUnit suite is green: `259 passed` with `1520 assertions`
+
+### **May 4, 2026 - P1 Architecture Improvements**
+
+**🏗️ Code Quality Improvements:**
+- ✅ Added Form Request classes for key employee, attendance, project, leave, overtime, reimbursement, work order, user, payroll, and role update flows
+- ✅ Completed follow-up Form Request migration for remaining inline controller validation across CRUD, payroll, attendance, project, finance, report, document upload, and technician endpoints
+- ✅ Added named API throttling for authenticated API routes and stricter write endpoint limits
+- ✅ Added shared frontend utilities for formatters, table filters, confirmation dialog, empty state, filter bar, and stats card
+- ✅ Removed duplicate nested components and development artifacts
+- ✅ Replaced remaining controller service instantiation with dependency injection
+- ✅ Added P1 architecture tests for request validation and API rate limiting
+- ✅ Added deferred props and skeleton fallbacks for Dashboard, Reports, Payroll stats, and Cooperative Member stats
+- ✅ Started replacing browser `confirm()` dialogs with the shared `ConfirmDialog` component
+- ✅ Confirmed raw `confirm()`/`prompt()` usage is cleared from Vue pages/components, local status color maps are removed, and priority index filters now use the shared Select wrapper
+
+### **May 4, 2026 - P0 Security Follow-up**
+
+**🔒 Security Improvements:**
+- ✅ Enabled controller-level `$this->authorize()` support through the shared base controller
+- ✅ Moved critical leave, overtime, payroll, and employee ESS access actions onto policies/Form Request authorization
+- ✅ Added Sanctum ability middleware aliases and ability requirements for mobile/API route groups
+- ✅ Expanded role-permission seeding for HR, Finance, Project Manager, and Admin roles
+- ✅ Added/updated P0 tests for HR approval policy checks and API token ability enforcement
 
 ### **May 3, 2026 - Operational Cooperative Dashboard**
 

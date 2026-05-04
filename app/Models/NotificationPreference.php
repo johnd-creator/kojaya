@@ -15,12 +15,15 @@ class NotificationPreference extends Model
         'channels',
     ];
 
-    protected $casts = [
-        'email_enabled' => 'boolean',
-        'database_enabled' => 'boolean',
-        'push_enabled' => 'boolean',
-        'channels' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_enabled' => 'boolean',
+            'database_enabled' => 'boolean',
+            'push_enabled' => 'boolean',
+            'channels' => 'array',
+        ];
+    }
 
     public function user(): BelongsTo
     {

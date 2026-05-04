@@ -62,4 +62,12 @@ class InvoiceFactory extends Factory
             'status' => 'PAID',
         ]);
     }
+
+    public function overdue(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'PENDING',
+            'due_date' => now()->subDays(7)->toDateString(),
+        ]);
+    }
 }

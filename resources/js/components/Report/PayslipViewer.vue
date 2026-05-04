@@ -1,59 +1,65 @@
 <script setup lang="ts">
-import { X, Download, FileText, Loader2 } from 'lucide-vue-next'
-import { ref, computed } from 'vue'
-import { generatePayslip, downloadBlob } from '@/components/Report/helpers'
-import { Button } from '@/components/ui/button'
+import { X, Download, FileText, Loader2 } from "lucide-vue-next";
+import { ref, computed } from "vue";
+import { generatePayslip, downloadBlob } from "@/components/Report/helpers";
+import { Button } from "@/components/ui/button";
 
 const props = defineProps<{
-  open: boolean
-  employeeId: number
-  period: string
-  employeeName?: string
-}>()
+  open: boolean;
+  employeeId: number;
+  period: string;
+  employeeName?: string;
+}>();
 
 const emit = defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
 
-const loading = ref(false)
-const pdfUrl = ref<string | null>(null)
+const loading = ref(false);
+const pdfUrl = ref<string | null>(null);
 
 const loadPayslip = async () => {
-  if (!props.employeeId || !props.period) return
+  if (!props.employeeId || !props.period) return;
 
-  loading.value = true
-  pdfUrl.value = null
+  loading.value = true;
+  pdfUrl.value = null;
 
   try {
-    const blob = await generatePayslip(props.employeeId, props.period, 'pdf')
-    pdfUrl.value = URL.createObjectURL(blob)
+    const blob = await generatePayslip(props.employeeId, props.period, "pdf");
+    pdfUrl.value = URL.createObjectURL(blob);
   } catch (error: any) {
-    console.error('Error loading payslip:', error)
-    alert(`Failed to load payslip: ${error.response?.data?.message || error.message}`)
+    console.error("Error loading payslip:", error);
+    alert(
+      `Failed to load payslip: ${error.response?.data?.message || error.message}`,
+    );
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const downloadPayslip = () => {
   if (pdfUrl.value) {
     downloadBlob(
-      new Blob([pdfUrl.value], { type: 'application/pdf' }),
-      `payslip_${props.period}_${props.employeeId}.pdf`
-    )
+      new Blob([pdfUrl.value], { type: "application/pdf" }),
+      `payslip_${props.period}_${props.employeeId}.pdf`,
+    );
   }
-}
+};
 
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    loadPayslip()
-  } else {
-    if (pdfUrl.value) {
-      URL.revokeObjectURL(pdfUrl.value)
-      pdfUrl.value = null
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      loadPayslip();
+    } else {
+      if (pdfUrl.value) {
+        URL.revokeObjectURL(pdfUrl.value);
+        pdfUrl.value = null;
+      }
     }
-  }
-}, { immediate: true })
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -62,8 +68,12 @@ watch(() => props.open, (isOpen) => {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     @click.self="emit('close')"
   >
-    <div class="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-      <div class="flex items-center justify-between p-4 border-b dark:border-zinc-800">
+    <div
+      class="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+    >
+      <div
+        class="flex items-center justify-between p-4 border-b dark:border-zinc-800"
+      >
         <div>
           <h3 class="text-lg font-semibold">Payslip Preview</h3>
           <p class="text-sm text-muted-foreground">
@@ -80,11 +90,7 @@ watch(() => props.open, (isOpen) => {
             <Download class="w-4 h-4 mr-2" />
             Download
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            @click="emit('close')"
-          >
+          <Button variant="ghost" size="sm" @click="emit('close')">
             <X class="w-4 h-4" />
           </Button>
         </div>

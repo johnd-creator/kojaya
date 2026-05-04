@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMedicalCheckupRequest;
 use App\Http\Requests\UpdateMedicalCheckupRequest;
+use App\Http\Requests\UploadEmployeeDocumentRequest;
 use App\Http\Resources\MedicalCheckupResource;
 use App\Models\Employee;
 use App\Models\MedicalCheckup;
@@ -68,11 +69,9 @@ class MedicalCheckupController extends Controller
         ]);
     }
 
-    public function uploadDocument(Request $request, string $employeeId, string $id): JsonResponse
+    public function uploadDocument(UploadEmployeeDocumentRequest $request, string $employeeId, string $id): JsonResponse
     {
-        $request->validate([
-            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048', // 2MB max
-        ]);
+        $request->validated();
 
         $mcu = MedicalCheckup::where('employee_id', $employeeId)
             ->findOrFail($id);

@@ -27,17 +27,21 @@ import EmployeeTransferController from './EmployeeTransferController'
 import AttendanceController from './AttendanceController'
 import LeaveController from './LeaveController'
 import OvertimeController from './OvertimeController'
+import EssPortalController from './EssPortalController'
 import EmployeeContractController from './EmployeeContractController'
 import PayrollController from './PayrollController'
 import PayrollApprovalController from './PayrollApprovalController'
 import InvoiceController from './InvoiceController'
 import EfakturController from './EfakturController'
 import EfakturApiController from './EfakturApiController'
+import EfakturUiController from './EfakturUiController'
 import BudgetController from './BudgetController'
 import BudgetLineController from './BudgetLineController'
 import PettyCashAccountController from './PettyCashAccountController'
 import PettyCashTransactionController from './PettyCashTransactionController'
 import FinanceBankController from './FinanceBankController'
+import BankReconciliationController from './BankReconciliationController'
+import Accounting from './Accounting'
 import ReimbursementController from './ReimbursementController'
 import Procurement from './Procurement'
 import ProjectController from './ProjectController'
@@ -80,17 +84,21 @@ const Controllers = {
     AttendanceController: Object.assign(AttendanceController, AttendanceController),
     LeaveController: Object.assign(LeaveController, LeaveController),
     OvertimeController: Object.assign(OvertimeController, OvertimeController),
+    EssPortalController: Object.assign(EssPortalController, EssPortalController),
     EmployeeContractController: Object.assign(EmployeeContractController, EmployeeContractController),
     PayrollController: Object.assign(PayrollController, PayrollController),
     PayrollApprovalController: Object.assign(PayrollApprovalController, PayrollApprovalController),
     InvoiceController: Object.assign(InvoiceController, InvoiceController),
     EfakturController: Object.assign(EfakturController, EfakturController),
     EfakturApiController: Object.assign(EfakturApiController, EfakturApiController),
+    EfakturUiController: Object.assign(EfakturUiController, EfakturUiController),
     BudgetController: Object.assign(BudgetController, BudgetController),
     BudgetLineController: Object.assign(BudgetLineController, BudgetLineController),
     PettyCashAccountController: Object.assign(PettyCashAccountController, PettyCashAccountController),
     PettyCashTransactionController: Object.assign(PettyCashTransactionController, PettyCashTransactionController),
     FinanceBankController: Object.assign(FinanceBankController, FinanceBankController),
+    BankReconciliationController: Object.assign(BankReconciliationController, BankReconciliationController),
+    Accounting: Object.assign(Accounting, Accounting),
     ReimbursementController: Object.assign(ReimbursementController, ReimbursementController),
     Procurement: Object.assign(Procurement, Procurement),
     ProjectController: Object.assign(ProjectController, ProjectController),

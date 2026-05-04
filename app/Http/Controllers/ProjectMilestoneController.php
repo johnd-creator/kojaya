@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProjectMilestoneProgressRequest;
+use App\Http\Requests\UpsertProjectMilestoneRequest;
 use App\Models\Project;
 use App\Models\ProjectMilestone;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProjectMilestoneController extends Controller
@@ -19,14 +20,9 @@ class ProjectMilestoneController extends Controller
         ]);
     }
 
-    public function store(Request $request, Project $project)
+    public function store(UpsertProjectMilestoneRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'required|date',
-            'progress_percentage' => 'required|integer|min:0|max:100',
-        ]);
+        $validated = $request->validated();
 
         $validated['project_id'] = $project->id;
         $validated['status'] = 'PENDING';
@@ -36,35 +32,27 @@ class ProjectMilestoneController extends Controller
         return back()->with('success', 'Milestone created successfully.');
     }
 
-    public function update(Request $request, Project $project, ProjectMilestone $milestone)
+    public function update(UpsertProjectMilestoneRequest $request, Project $project, ProjectMilestone $milestone)
     {
         // Ensure milestone belongs to project
         if ($milestone->project_id !== $project->id) {
             abort(404);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'required|date',
-            'status' => 'required|in:PENDING,IN_PROGRESS,COMPLETED,OVERDUE',
-            'progress_percentage' => 'required|integer|min:0|max:100',
-        ]);
+        $validated = $request->validated();
 
         $milestone->update($validated);
 
         return back()->with('success', 'Milestone updated successfully.');
     }
 
-    public function updateProgress(Request $request, Project $project, ProjectMilestone $milestone)
+    public function updateProgress(UpdateProjectMilestoneProgressRequest $request, Project $project, ProjectMilestone $milestone)
     {
         if ($milestone->project_id !== $project->id) {
             abort(404);
         }
 
-        $validated = $request->validate([
-            'progress_percentage' => 'required|integer|min:0|max:100',
-        ]);
+        $validated = $request->validated();
 
         $milestone->update($validated);
 

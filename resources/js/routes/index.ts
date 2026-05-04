@@ -662,8 +662,8 @@ auditLogsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 auditLogs.form = auditLogsForm
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 export const reports = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -677,8 +677,8 @@ reports.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 reports.url = (options?: RouteQueryOptions) => {
@@ -686,8 +686,8 @@ reports.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 reports.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -696,8 +696,8 @@ reports.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -706,8 +706,8 @@ reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 const reportsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -716,8 +716,8 @@ const reportsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 })
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 reportsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -726,8 +726,8 @@ reportsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 })
 
 /**
-* @see \Inertia\Controller::__invoke
-* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @see \App\Http\Controllers\ReportController::reports
+* @see app/Http/Controllers/ReportController.php:33
 * @route '/reports'
 */
 reportsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

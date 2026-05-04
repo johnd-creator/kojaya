@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReimbursementItem extends Model
 {
@@ -19,12 +20,15 @@ class ReimbursementItem extends Model
         'receipt_date',
     ];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'receipt_date' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'receipt_date' => 'date',
+        ];
+    }
 
-    public function reimbursement()
+    public function reimbursement(): BelongsTo
     {
         return $this->belongsTo(Reimbursement::class);
     }

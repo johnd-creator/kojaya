@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { type HTMLAttributes } from "vue"
-import { SelectSeparator, type SelectSeparatorProps } from "reka-ui"
-import { cn } from "@/lib/utils"
+import { type HTMLAttributes } from "vue";
+import { SelectSeparator, type SelectSeparatorProps } from "reka-ui";
+import { cn } from "@/lib/utils";
 
-const props = defineProps<SelectSeparatorProps & { class?: HTMLAttributes["class"] }>()
+const props = defineProps<
+  SelectSeparatorProps & { class?: HTMLAttributes["class"] }
+>();
 </script>
 
 <template>

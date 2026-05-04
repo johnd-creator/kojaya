@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateTechnicianChecklistRequest;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderChecklist;
 use Illuminate\Http\JsonResponse;
@@ -27,13 +28,12 @@ class TechnicianWorkOrderController extends Controller
         ]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $workOrder = WorkOrder::with(['asset', 'organization', 'checklists', 'parts.sparePart'])
             ->findOrFail($id);
 
-        // Optional: verify assignment
-        // if ($workOrder->assigned_to !== auth()->id()) { abort(403); }
+        $this->authorizeTechnicianWorkOrder($request, $workOrder);
 
         return response()->json([
             'success' => true,
@@ -41,9 +41,11 @@ class TechnicianWorkOrderController extends Controller
         ]);
     }
 
-    public function start(string $id): JsonResponse
+    public function start(Request $request, string $id): JsonResponse
     {
         $workOrder = WorkOrder::findOrFail($id);
+
+        $this->authorizeTechnicianWorkOrder($request, $workOrder);
 
         if ($workOrder->status === 'OPEN') {
             $workOrder->update(['status' => 'IN_PROGRESS']);
@@ -56,9 +58,11 @@ class TechnicianWorkOrderController extends Controller
         ]);
     }
 
-    public function complete(string $id): JsonResponse
+    public function complete(Request $request, string $id): JsonResponse
     {
         $workOrder = WorkOrder::findOrFail($id);
+
+        $this->authorizeTechnicianWorkOrder($request, $workOrder);
 
         // Verify all checklists are done
         $pendingChecklists = $workOrder->checklists()->where('is_checked', false)->count();
@@ -82,15 +86,14 @@ class TechnicianWorkOrderController extends Controller
         ]);
     }
 
-    public function updateChecklist(Request $request, string $workOrderId, string $checklistId): JsonResponse
+    public function updateChecklist(UpdateTechnicianChecklistRequest $request, string $workOrderId, string $checklistId): JsonResponse
     {
         $checklist = WorkOrderChecklist::where('work_order_id', $workOrderId)
             ->findOrFail($checklistId);
 
-        $validated = $request->validate([
-            'is_checked' => 'required|boolean',
-            'notes' => 'nullable|string',
-        ]);
+        $this->authorizeTechnicianWorkOrder($request, $checklist->workOrder);
+
+        $validated = $request->validated();
 
         $checklist->update([
             'is_checked' => $validated['is_checked'],
@@ -103,5 +106,10 @@ class TechnicianWorkOrderController extends Controller
             'success' => true,
             'data' => $checklist,
         ]);
+    }
+
+    private function authorizeTechnicianWorkOrder(Request $request, WorkOrder $workOrder): void
+    {
+        abort_unless((string) $workOrder->assigned_to === (string) $request->user()?->id, 403);
     }
 }

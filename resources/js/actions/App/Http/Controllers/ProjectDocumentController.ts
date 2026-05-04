@@ -186,7 +186,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ProjectDocumentController::destroy
-* @see app/Http/Controllers/ProjectDocumentController.php:48
+* @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
 export const destroy = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -201,7 +201,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectDocumentController::destroy
-* @see app/Http/Controllers/ProjectDocumentController.php:48
+* @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
 destroy.url = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -229,7 +229,7 @@ destroy.url = (args: { project: string | number, document: string | { id: string
 
 /**
 * @see \App\Http\Controllers\ProjectDocumentController::destroy
-* @see app/Http/Controllers/ProjectDocumentController.php:48
+* @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
 destroy.delete = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -239,7 +239,7 @@ destroy.delete = (args: { project: string | number, document: string | { id: str
 
 /**
 * @see \App\Http\Controllers\ProjectDocumentController::destroy
-* @see app/Http/Controllers/ProjectDocumentController.php:48
+* @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
 const destroyForm = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -254,7 +254,7 @@ const destroyForm = (args: { project: string | number, document: string | { id: 
 
 /**
 * @see \App\Http\Controllers\ProjectDocumentController::destroy
-* @see app/Http/Controllers/ProjectDocumentController.php:48
+* @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
 destroyForm.delete = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

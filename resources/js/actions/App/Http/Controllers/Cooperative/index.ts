@@ -3,6 +3,11 @@ import CooperativeMemberController from './CooperativeMemberController'
 import CooperativeDuesController from './CooperativeDuesController'
 import CooperativePaymentController from './CooperativePaymentController'
 import CooperativeLedgerController from './CooperativeLedgerController'
+import LoanTypeController from './LoanTypeController'
+import LoanController from './LoanController'
+import PointController from './PointController'
+import RewardController from './RewardController'
+import RewardRedemptionController from './RewardRedemptionController'
 import AnnualShuController from './AnnualShuController'
 import PosRegisterController from './PosRegisterController'
 import PosSalesReportController from './PosSalesReportController'
@@ -17,6 +22,11 @@ const Cooperative = {
     CooperativeDuesController: Object.assign(CooperativeDuesController, CooperativeDuesController),
     CooperativePaymentController: Object.assign(CooperativePaymentController, CooperativePaymentController),
     CooperativeLedgerController: Object.assign(CooperativeLedgerController, CooperativeLedgerController),
+    LoanTypeController: Object.assign(LoanTypeController, LoanTypeController),
+    LoanController: Object.assign(LoanController, LoanController),
+    PointController: Object.assign(PointController, PointController),
+    RewardController: Object.assign(RewardController, RewardController),
+    RewardRedemptionController: Object.assign(RewardRedemptionController, RewardRedemptionController),
     AnnualShuController: Object.assign(AnnualShuController, AnnualShuController),
     PosRegisterController: Object.assign(PosRegisterController, PosRegisterController),
     PosSalesReportController: Object.assign(PosSalesReportController, PosSalesReportController),

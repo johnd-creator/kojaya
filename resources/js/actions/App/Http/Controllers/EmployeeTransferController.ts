@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:14
+* @see app/Http/Controllers/EmployeeTransferController.php:16
 * @route '/employee-transfers'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:40
+* @see app/Http/Controllers/EmployeeTransferController.php:42
 * @route '/employee-transfers/create'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:51
+* @see app/Http/Controllers/EmployeeTransferController.php:53
 * @route '/employee-transfers'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:51
+* @see app/Http/Controllers/EmployeeTransferController.php:53
 * @route '/employee-transfers'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:51
+* @see app/Http/Controllers/EmployeeTransferController.php:53
 * @route '/employee-transfers'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:51
+* @see app/Http/Controllers/EmployeeTransferController.php:53
 * @route '/employee-transfers'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:51
+* @see app/Http/Controllers/EmployeeTransferController.php:53
 * @route '/employee-transfers'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 export const show = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 show.url = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -261,7 +261,7 @@ show.url = (args: { employee_transfer: string | number } | [employee_transfer: s
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 show.get = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -271,7 +271,7 @@ show.get = (args: { employee_transfer: string | number } | [employee_transfer: s
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 show.head = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -281,7 +281,7 @@ show.head = (args: { employee_transfer: string | number } | [employee_transfer: 
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 const showForm = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -291,7 +291,7 @@ const showForm = (args: { employee_transfer: string | number } | [employee_trans
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 showForm.get = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -301,7 +301,7 @@ showForm.get = (args: { employee_transfer: string | number } | [employee_transfe
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:76
+* @see app/Http/Controllers/EmployeeTransferController.php:73
 * @route '/employee-transfers/{employee_transfer}'
 */
 showForm.head = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -318,7 +318,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:85
+* @see app/Http/Controllers/EmployeeTransferController.php:82
 * @route '/employee-transfers/{transfer}/approve'
 */
 export const approve = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -333,7 +333,7 @@ approve.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:85
+* @see app/Http/Controllers/EmployeeTransferController.php:82
 * @route '/employee-transfers/{transfer}/approve'
 */
 approve.url = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -366,7 +366,7 @@ approve.url = (args: { transfer: number | { id: number } } | [transfer: number |
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:85
+* @see app/Http/Controllers/EmployeeTransferController.php:82
 * @route '/employee-transfers/{transfer}/approve'
 */
 approve.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -376,7 +376,7 @@ approve.post = (args: { transfer: number | { id: number } } | [transfer: number 
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:85
+* @see app/Http/Controllers/EmployeeTransferController.php:82
 * @route '/employee-transfers/{transfer}/approve'
 */
 const approveForm = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -386,7 +386,7 @@ const approveForm = (args: { transfer: number | { id: number } } | [transfer: nu
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:85
+* @see app/Http/Controllers/EmployeeTransferController.php:82
 * @route '/employee-transfers/{transfer}/approve'
 */
 approveForm.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -398,7 +398,7 @@ approve.form = approveForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:104
+* @see app/Http/Controllers/EmployeeTransferController.php:99
 * @route '/employee-transfers/{transfer}/reject'
 */
 export const reject = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -413,7 +413,7 @@ reject.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:104
+* @see app/Http/Controllers/EmployeeTransferController.php:99
 * @route '/employee-transfers/{transfer}/reject'
 */
 reject.url = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -446,7 +446,7 @@ reject.url = (args: { transfer: number | { id: number } } | [transfer: number | 
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:104
+* @see app/Http/Controllers/EmployeeTransferController.php:99
 * @route '/employee-transfers/{transfer}/reject'
 */
 reject.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -456,7 +456,7 @@ reject.post = (args: { transfer: number | { id: number } } | [transfer: number |
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:104
+* @see app/Http/Controllers/EmployeeTransferController.php:99
 * @route '/employee-transfers/{transfer}/reject'
 */
 const rejectForm = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -466,7 +466,7 @@ const rejectForm = (args: { transfer: number | { id: number } } | [transfer: num
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:104
+* @see app/Http/Controllers/EmployeeTransferController.php:99
 * @route '/employee-transfers/{transfer}/reject'
 */
 rejectForm.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

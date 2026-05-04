@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SalaryComponentType extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['code', 'name', 'is_taxable', 'is_active', 'sort_order'];
 
     protected function casts(): array

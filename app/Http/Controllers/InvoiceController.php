@@ -6,6 +6,7 @@ use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\User;
 use App\Services\EFakturExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -178,7 +179,10 @@ class InvoiceController extends Controller
      */
     public function approve(Invoice $invoice)
     {
-        if (! Auth::user()->hasAnyRole(['Finance Pusat', 'Admin Pusat', 'System Admin'])) {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (! $user->hasAnyRole(['Finance Pusat', 'Admin Pusat', 'System Admin'])) {
             abort(403, 'You do not have permission to approve invoices.');
         }
 
@@ -197,7 +201,10 @@ class InvoiceController extends Controller
      */
     public function reject(Invoice $invoice)
     {
-        if (! Auth::user()->hasAnyRole(['Finance Pusat', 'Admin Pusat', 'System Admin'])) {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (! $user->hasAnyRole(['Finance Pusat', 'Admin Pusat', 'System Admin'])) {
             abort(403, 'You do not have permission to reject invoices.');
         }
 
@@ -218,6 +225,10 @@ class InvoiceController extends Controller
     {
         $this->authorizeAccess($invoice);
 
+        if ($invoice->status === 'PAID') {
+            return back()->with('success', 'Invoice already marked as paid.');
+        }
+
         if (! in_array($invoice->status, ['APPROVED', 'OVERDUE'])) {
             return back()->with('error', 'Only approved or overdue invoices can be marked as paid.');
         }
@@ -233,6 +244,7 @@ class InvoiceController extends Controller
      */
     protected function authorizeAccess(Invoice $invoice): void
     {
+        /** @var User $user */
         $user = Auth::user();
 
         if ($user->hasAnyRole(['System Admin', 'Admin Pusat', 'Finance Pusat'])) {

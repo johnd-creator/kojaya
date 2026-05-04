@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class OvertimeManagementTest extends TestCase
@@ -21,6 +22,8 @@ class OvertimeManagementTest extends TestCase
         Storage::fake('public');
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        Role::findOrCreate('HR Unit', 'web');
+        $user->assignRole('HR Unit');
         $employee = Employee::factory()->create(['organization_id' => $org->id]);
         $rule = OvertimeRule::create([
             'organization_id' => $org->id,
@@ -55,6 +58,8 @@ class OvertimeManagementTest extends TestCase
     {
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        Role::findOrCreate('HR Unit', 'web');
+        $user->assignRole('HR Unit');
         $employee = Employee::factory()->create(['organization_id' => $org->id]);
         $rule = OvertimeRule::create(['organization_id' => $org->id, 'name' => 'OT', 'code' => 'OT', 'multiplier' => 1.5, 'requires_approval' => true]);
 
@@ -81,6 +86,8 @@ class OvertimeManagementTest extends TestCase
     {
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        Role::findOrCreate('HR Unit', 'web');
+        $user->assignRole('HR Unit');
         $employee = Employee::factory()->create(['organization_id' => $org->id]);
         $rule = OvertimeRule::create(['organization_id' => $org->id, 'name' => 'OT', 'code' => 'OT', 'multiplier' => 1.5, 'requires_approval' => true]);
 

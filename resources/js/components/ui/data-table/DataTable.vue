@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
-import { 
-  Search, 
-  FileText, 
-  Loader2 
-} from 'lucide-vue-next';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import StatusBadge from '@/components/ui/status-badge/StatusBadge.vue';
+import { computed } from "vue";
+import { Link } from "@inertiajs/vue3";
+import { Search, Loader2 } from "lucide-vue-next";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/EmptyState.vue";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 
 interface Column {
   header: string;
@@ -16,7 +13,7 @@ interface Column {
   slot?: string; // Slot name for custom rendering
   class?: string; // Custom classes for the cell
   headerClass?: string; // Custom classes for the header
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   format?: (value: any) => string; // Optional formatter function
 }
 
@@ -52,18 +49,18 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   searchable: true,
-  searchPlaceholder: 'Search...',
+  searchPlaceholder: "Search...",
   loading: false,
-  emptyMessage: 'No records found.',
+  emptyMessage: "No records found.",
   rowClickable: false,
 });
 
-const emit = defineEmits(['search', 'row-click', 'page-change']);
+const emit = defineEmits(["search", "row-click", "page-change"]);
 
 // Handle search input with debounce (to be implemented by parent or added here)
 const onSearch = (e: Event) => {
   const target = e.target as HTMLInputElement;
-  emit('search', target.value);
+  emit("search", target.value);
 };
 
 // Normalize data to array
@@ -76,20 +73,27 @@ const paginationData = computed(() => {
   return Array.isArray(props.data) ? null : props.data;
 });
 
-const isPaginated = computed(() => paginationData.value !== null);
-
 // Helper to get nested value (e.g. user.name)
 const getValue = (obj: any, path: string) => {
-  return path.split('.').reduce((o, i) => (o ? o[i] : null), obj);
+  return path.split(".").reduce((o, i) => (o ? o[i] : null), obj);
 };
 
 const getAlignmentClass = (align?: string) => {
   switch (align) {
-    case 'center': return 'text-center';
-    case 'right': return 'text-right';
-    default: return 'text-left';
+    case "center":
+      return "text-center";
+    case "right":
+      return "text-right";
+    default:
+      return "text-left";
   }
 };
+
+const tableLabel = computed(() => {
+  const primaryColumn = props.columns[0]?.header;
+
+  return primaryColumn ? `Tabel data ${primaryColumn}` : "Tabel data";
+});
 </script>
 
 <template>
@@ -111,13 +115,21 @@ const getAlignmentClass = (align?: string) => {
     </div>
 
     <!-- Table Container -->
-    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+    <div
+      class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden"
+    >
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table
+          :aria-label="tableLabel"
+          class="w-full text-left border-collapse"
+          role="table"
+        >
           <thead>
-            <tr class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
-              <th 
-                v-for="(col, index) in columns" 
+            <tr
+              class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
+            >
+              <th
+                v-for="(col, index) in columns"
                 :key="index"
                 class="py-4 px-6 font-medium text-sm text-zinc-500 uppercase tracking-wider"
                 :class="[getAlignmentClass(col.align), col.headerClass]"
@@ -129,54 +141,65 @@ const getAlignmentClass = (align?: string) => {
           <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
             <!-- Loading State -->
             <tr v-if="loading">
-              <td :colspan="columns.length" class="py-12 text-center text-zinc-500">
-                <Loader2 class="mx-auto h-8 w-8 animate-spin text-zinc-400 mb-2" />
+              <td
+                :colspan="columns.length"
+                class="py-12 text-center text-zinc-500"
+              >
+                <Loader2
+                  class="mx-auto h-8 w-8 animate-spin text-zinc-400 mb-2"
+                />
                 Loading data...
               </td>
             </tr>
 
             <!-- Empty State -->
             <tr v-else-if="tableData.length === 0">
-              <td :colspan="columns.length" class="py-12 text-center text-zinc-500">
-                <component :is="emptyIcon || FileText" class="mx-auto h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-3" />
-                {{ emptyMessage }}
+              <td
+                :colspan="columns.length"
+                class="py-12 text-center text-zinc-500"
+              >
+                <EmptyState :icon="emptyIcon" :description="emptyMessage" />
               </td>
             </tr>
 
             <!-- Data Rows -->
-            <tr 
-              v-else 
-              v-for="(row, rowIndex) in tableData" 
+            <tr
+              v-else
+              v-for="(row, rowIndex) in tableData"
               :key="rowIndex"
               class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
               :class="{ 'cursor-pointer': rowClickable }"
               @click="rowClickable && emit('row-click', row)"
             >
-              <td 
-                v-for="(col, colIndex) in columns" 
+              <td
+                v-for="(col, colIndex) in columns"
                 :key="colIndex"
                 class="py-4 px-6 text-sm text-zinc-600 dark:text-zinc-400"
                 :class="[getAlignmentClass(col.align), col.class]"
               >
                 <!-- Slot Content -->
-                <slot 
-                  v-if="col.slot" 
-                  :name="col.slot" 
-                  :row="row" 
+                <slot
+                  v-if="col.slot"
+                  :name="col.slot"
+                  :row="row"
                   :value="col.key ? getValue(row, col.key) : null"
                 />
-                
+
                 <!-- Status Badge Special Handling -->
-                <StatusBadge 
-                  v-else-if="col.key === 'status'" 
-                  :status="getValue(row, col.key)" 
+                <StatusBadge
+                  v-else-if="col.key === 'status'"
+                  :status="getValue(row, col.key)"
                 />
-                
+
                 <!-- Formatted Value -->
                 <span v-else-if="col.format">
-                  {{ col.key ? col.format(getValue(row, col.key)) : col.format(null) }}
+                  {{
+                    col.key
+                      ? col.format(getValue(row, col.key))
+                      : col.format(null)
+                  }}
                 </span>
-                
+
                 <!-- Default Value -->
                 <span v-else>
                   {{ col.key ? getValue(row, col.key) : null }}
@@ -186,14 +209,16 @@ const getAlignmentClass = (align?: string) => {
           </tbody>
         </table>
       </div>
-      
+
       <!-- Pagination -->
-      <div 
-        v-if="paginationData && paginationData.last_page > 1" 
+      <div
+        v-if="paginationData && paginationData.last_page > 1"
         class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 px-6 py-4 flex items-center justify-between"
       >
         <p class="text-sm text-zinc-500">
-          Showing <span class="font-medium">{{ paginationData.from }}</span> to <span class="font-medium">{{ paginationData.to }}</span> of <span class="font-medium">{{ paginationData.total }}</span> results
+          Showing <span class="font-medium">{{ paginationData.from }}</span> to
+          <span class="font-medium">{{ paginationData.to }}</span> of
+          <span class="font-medium">{{ paginationData.total }}</span> results
         </p>
         <div class="flex items-center gap-1">
           <template v-for="(link, i) in paginationData.links" :key="i">
@@ -209,7 +234,11 @@ const getAlignmentClass = (align?: string) => {
                 <span v-html="link.label"></span>
               </Link>
             </Button>
-            <span v-else v-html="link.label" class="px-2 text-zinc-400 text-sm"></span>
+            <span
+              v-else
+              v-html="link.label"
+              class="px-2 text-zinc-400 text-sm"
+            ></span>
           </template>
         </div>
       </div>

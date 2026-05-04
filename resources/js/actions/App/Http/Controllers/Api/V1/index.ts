@@ -1,12 +1,18 @@
 import CooperativeMemberApiController from './CooperativeMemberApiController'
 import CooperativeDuesApiController from './CooperativeDuesApiController'
 import CooperativePaymentApiController from './CooperativePaymentApiController'
+import LoanApiController from './LoanApiController'
+import PointApiController from './PointApiController'
+import RewardApiController from './RewardApiController'
 import PosApiController from './PosApiController'
 
 const V1 = {
     CooperativeMemberApiController: Object.assign(CooperativeMemberApiController, CooperativeMemberApiController),
     CooperativeDuesApiController: Object.assign(CooperativeDuesApiController, CooperativeDuesApiController),
     CooperativePaymentApiController: Object.assign(CooperativePaymentApiController, CooperativePaymentApiController),
+    LoanApiController: Object.assign(LoanApiController, LoanApiController),
+    PointApiController: Object.assign(PointApiController, PointApiController),
+    RewardApiController: Object.assign(RewardApiController, RewardApiController),
     PosApiController: Object.assign(PosApiController, PosApiController),
 }
 

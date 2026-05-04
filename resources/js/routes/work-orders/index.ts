@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::index
-* @see app/Http/Controllers/WorkOrderController.php:11
+* @see app/Http/Controllers/WorkOrderController.php:12
 * @route '/work-orders'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::create
-* @see app/Http/Controllers/WorkOrderController.php:33
+* @see app/Http/Controllers/WorkOrderController.php:34
 * @route '/work-orders/create'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 export const show = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +178,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 show.url = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -211,7 +211,7 @@ show.url = (args: { workOrder: string | { id: string } } | [workOrder: string | 
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 show.get = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -221,7 +221,7 @@ show.get = (args: { workOrder: string | { id: string } } | [workOrder: string | 
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 show.head = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -231,7 +231,7 @@ show.head = (args: { workOrder: string | { id: string } } | [workOrder: string |
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 const showForm = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -241,7 +241,7 @@ const showForm = (args: { workOrder: string | { id: string } } | [workOrder: str
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 showForm.get = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -251,7 +251,7 @@ showForm.get = (args: { workOrder: string | { id: string } } | [workOrder: strin
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::show
-* @see app/Http/Controllers/WorkOrderController.php:46
+* @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
 showForm.head = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -268,7 +268,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::store
-* @see app/Http/Controllers/WorkOrderController.php:61
+* @see app/Http/Controllers/WorkOrderController.php:62
 * @route '/work-orders'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -283,7 +283,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::store
-* @see app/Http/Controllers/WorkOrderController.php:61
+* @see app/Http/Controllers/WorkOrderController.php:62
 * @route '/work-orders'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -292,7 +292,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::store
-* @see app/Http/Controllers/WorkOrderController.php:61
+* @see app/Http/Controllers/WorkOrderController.php:62
 * @route '/work-orders'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -302,7 +302,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::store
-* @see app/Http/Controllers/WorkOrderController.php:61
+* @see app/Http/Controllers/WorkOrderController.php:62
 * @route '/work-orders'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -312,7 +312,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\WorkOrderController::store
-* @see app/Http/Controllers/WorkOrderController.php:61
+* @see app/Http/Controllers/WorkOrderController.php:62
 * @route '/work-orders'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

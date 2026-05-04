@@ -53,11 +53,59 @@ class RolePermissionSeeder extends Seeder
             $systemAdmin->syncPermissions($permissions);
         }
 
+        Role::where('name', 'Admin Pusat')->first()?->syncPermissions($permissions);
+
+        Role::where('name', 'HR Pusat')->first()?->syncPermissions([
+            'view_employee_all',
+            'create_employee',
+            'edit_employee',
+            'view_payroll_all',
+            'process_payroll',
+        ]);
+
+        Role::where('name', 'HR Unit')->first()?->syncPermissions([
+            'view_employee_unit',
+            'create_employee',
+            'edit_employee',
+            'view_payroll_unit',
+            'process_payroll',
+        ]);
+
+        Role::where('name', 'Finance Pusat')->first()?->syncPermissions([
+            'view_payroll_all',
+            'process_payroll',
+            'approve_payroll',
+            'view_pr_all',
+            'view_po_all',
+            'view_grn_all',
+        ]);
+
+        Role::where('name', 'Finance Unit')->first()?->syncPermissions([
+            'view_payroll_unit',
+            'process_payroll',
+            'view_pr_all',
+            'view_po_all',
+            'view_grn_all',
+        ]);
+
+        Role::where('name', 'Project Manager')->first()?->syncPermissions([
+            'view_pr_all',
+            'create_pr',
+            'approve_pr',
+            'view_po_all',
+            'create_po',
+            'view_grn_all',
+            'receive_grn',
+        ]);
+
         Role::where('name', 'Pengurus Koperasi')->first()?->syncPermissions([
             'view_cooperative_member',
             'manage_cooperative_member',
             'manage_cooperative_dues',
             'manage_cooperative_payment',
+            'view_cooperative_loan',
+            'manage_cooperative_loan',
+            'approve_cooperative_loan',
             'access_cooperative_pos',
             'view_cooperative_report',
         ]);
@@ -65,11 +113,13 @@ class RolePermissionSeeder extends Seeder
         Role::where('name', 'Kasir Koperasi')->first()?->syncPermissions([
             'view_cooperative_member',
             'manage_cooperative_payment',
+            'view_cooperative_loan',
             'access_cooperative_pos',
         ]);
 
         Role::where('name', 'Anggota')->first()?->syncPermissions([
             'view_cooperative_member',
+            'view_cooperative_loan',
         ]);
 
         // Ensure initially there's a head office (Pusat) Organization

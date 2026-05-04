@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\Organization;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -56,8 +55,6 @@ class ClientController extends Controller
     public function store(StoreClientRequest $request)
     {
         $validated = $request->validated();
-
-        $validated['id'] = (string) Str::uuid();
 
         Client::create($validated);
 

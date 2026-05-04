@@ -1,120 +1,249 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, Search, UserCheck, UserX } from 'lucide-vue-next';
-import { ref } from 'vue';
-import { activate, create, edit, index, resign, show } from '@/routes/cooperative/members';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import AppLayout from '@/layouts/AppLayout.vue';
+import { Deferred, Head, Link, router } from "@inertiajs/vue3";
+import {
+  Plus,
+  UserCheck,
+  UserRound,
+  UserX,
+  WalletCards,
+} from "lucide-vue-next";
+import { computed, ref } from "vue";
+import {
+  activate,
+  create,
+  edit,
+  index,
+  resign,
+  show,
+} from "@/routes/cooperative/members";
+import FilterBar from "@/components/FilterBar.vue";
+import PageContainer from "@/components/PageContainer.vue";
+import SelectFilter from "@/components/SelectFilter.vue";
+import StatsCard from "@/components/StatsCard.vue";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
+import { useTableFilters } from "@/composables/useTableFilters";
+import { formatCurrency } from "@/lib/formatters";
+import AppLayout from "@/layouts/AppLayout.vue";
 
 const props = defineProps<{
-    members: any;
-    filters: { search?: string; status?: string };
-    stats: { active: number; pending: number };
+  members: any;
+  filters: { search?: string; status?: string };
+  stats?: { active: number; pending: number };
 }>();
 
-const search = ref(props.filters.search ?? '');
-const status = ref(props.filters.status ?? '');
-
-const breadcrumbs = [
-    { title: 'Koperasi', href: '#' },
-    { title: 'Anggota', href: index().url },
+const filters = ref({
+  search: props.filters.search ?? "",
+  status: props.filters.status ?? "",
+});
+const statusOptions = [
+  { label: "Semua status", value: "" },
+  { label: "PENDING", value: "PENDING" },
+  { label: "ACTIVE", value: "ACTIVE" },
+  { label: "INACTIVE", value: "INACTIVE" },
+  { label: "RESIGNED", value: "RESIGNED" },
 ];
 
-const applyFilters = () => {
-    router.get(index().url, { search: search.value, status: status.value }, { preserveState: true, replace: true });
-};
+const breadcrumbs = [
+  { title: "Koperasi", href: "#" },
+  { title: "Anggota", href: index().url },
+];
 
-const formatCurrency = (amount: number | null) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(amount ?? 0));
+const { resetFilters } = useTableFilters(filters, {
+  route: index().url,
+  debounceMs: 400,
+  only: ["members", "filters", "stats"],
+});
+
+const columns = [
+  { header: "Anggota", key: "name", slot: "member" },
+  { header: "Kontak", key: "email", slot: "contact" },
+  { header: "Status", key: "status", slot: "status" },
+  { header: "Akun", key: "user", slot: "account" },
+  {
+    header: "Simpanan",
+    key: "saving_balance",
+    slot: "balance",
+    align: "right" as const,
+  },
+  { header: "Aksi", key: "actions", slot: "actions", align: "right" as const },
+];
+
+const tableData = computed(() => {
+  if (props.members?.meta) {
+    return {
+      ...props.members.meta,
+      data: props.members.data ?? [],
+      links: props.members.links ?? [],
+    };
+  }
+
+  return props.members;
+});
+
+const totalMembers = computed(() => {
+  if (props.members?.total) {
+    return props.members.total;
+  }
+
+  return props.members?.data?.length ?? 0;
+});
+
+const getMemberStatusVariant = (
+  status: string,
+): "success" | "warning" | "secondary" | "destructive" => {
+  switch (status) {
+    case "ACTIVE":
+      return "success";
+    case "PENDING":
+      return "warning";
+    case "INACTIVE":
+      return "secondary";
+    case "RESIGNED":
+      return "destructive";
+    default:
+      return "secondary";
+  }
+};
 </script>
 
 <template>
-    <Head title="Anggota Koperasi" />
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-6">
-            <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div>
-                    <h1 class="text-3xl font-bold tracking-tight">Anggota Koperasi</h1>
-                    <p class="mt-1 text-sm text-zinc-500">Keanggotaan terpusat di Koperasi Utama.</p>
-                </div>
-                <Link :href="create().url">
-                    <Button><Plus class="mr-2 h-4 w-4" />Anggota Baru</Button>
-                </Link>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-3">
-                <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
-                    <div class="text-sm text-zinc-500">Aktif</div>
-                    <div class="text-2xl font-semibold">{{ stats.active }}</div>
-                </div>
-                <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
-                    <div class="text-sm text-zinc-500">Pending</div>
-                    <div class="text-2xl font-semibold">{{ stats.pending }}</div>
-                </div>
-                <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
-                    <div class="text-sm text-zinc-500">Total Terdata</div>
-                    <div class="text-2xl font-semibold">{{ members.total }}</div>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900 md:flex-row">
-                <div class="relative flex-1">
-                    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                    <Input v-model="search" class="pl-9" placeholder="Cari nomor, nama, email, NIK" @keyup.enter="applyFilters" />
-                </div>
-                <select v-model="status" class="h-10 rounded-md border bg-white px-3 text-sm dark:bg-zinc-950">
-                    <option value="">Semua status</option>
-                    <option value="PENDING">PENDING</option>
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                    <option value="RESIGNED">RESIGNED</option>
-                </select>
-                <Button variant="outline" @click="applyFilters">Filter</Button>
-            </div>
-
-            <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
-                        <tr>
-                            <th class="px-4 py-3">Anggota</th>
-                            <th class="px-4 py-3">Kontak</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3 text-right">Simpanan</th>
-                            <th class="px-4 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        <tr v-for="member in members.data" :key="member.id" class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="px-4 py-3">
-                                <Link class="font-medium hover:text-indigo-600" :href="show(member.id).url">{{ member.name }}</Link>
-                                <div class="text-xs text-zinc-500">{{ member.member_no }}</div>
-                            </td>
-                            <td class="px-4 py-3 text-zinc-600">
-                                <div>{{ member.email || '-' }}</div>
-                                <div class="text-xs">{{ member.phone || '-' }}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="rounded-full border px-2 py-1 text-xs">{{ member.status }}</span>
-                            </td>
-                            <td class="px-4 py-3 text-right">{{ formatCurrency(member.saving_balance) }}</td>
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <Link :href="edit(member.id).url"><Button size="sm" variant="outline">Edit</Button></Link>
-                                    <Button v-if="member.status !== 'ACTIVE'" size="sm" variant="outline" @click="router.post(activate(member.id).url)">
-                                        <UserCheck class="h-4 w-4" />
-                                    </Button>
-                                    <Button v-if="member.status === 'ACTIVE'" size="sm" variant="outline" @click="router.post(resign(member.id).url)">
-                                        <UserX class="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-if="members.data.length === 0">
-                            <td colspan="5" class="px-4 py-10 text-center text-zinc-500">Belum ada anggota koperasi.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+  <Head title="Anggota Koperasi" />
+  <AppLayout :breadcrumbs="breadcrumbs">
+    <PageContainer>
+      <div
+        class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
+      >
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">Anggota Koperasi</h1>
+          <p class="mt-1 text-sm text-zinc-500">
+            Keanggotaan terpusat di Koperasi Utama.
+          </p>
         </div>
-    </AppLayout>
+        <Link :href="create().url" prefetch>
+          <Button><Plus class="mr-2 h-4 w-4" />Anggota Baru</Button>
+        </Link>
+      </div>
+
+      <Deferred data="stats">
+        <template #fallback>
+          <div aria-live="polite" class="sr-only">
+            Memuat statistik anggota koperasi.
+          </div>
+          <div class="grid gap-4 md:grid-cols-3">
+            <Skeleton
+              v-for="card in 3"
+              :key="card"
+              class="h-24 rounded-lg border"
+            />
+          </div>
+        </template>
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <StatsCard
+            label="Aktif"
+            :value="stats?.active ?? 0"
+            :icon="UserCheck"
+          />
+          <StatsCard
+            label="Pending"
+            :value="stats?.pending ?? 0"
+            :icon="UserRound"
+          />
+          <StatsCard
+            label="Total Terdata"
+            :value="totalMembers"
+            :icon="WalletCards"
+          />
+        </div>
+      </Deferred>
+
+      <FilterBar
+        v-model:search="filters.search"
+        search-placeholder="Cari nomor, nama, email, NIK"
+        @reset="resetFilters"
+      >
+        <SelectFilter
+          v-model="filters.status"
+          :options="statusOptions"
+          placeholder="Semua status"
+          class="w-full sm:max-w-[180px]"
+        />
+      </FilterBar>
+
+      <DataTable
+        :columns="columns"
+        :data="tableData"
+        :searchable="false"
+        empty-message="Belum ada anggota koperasi."
+        :empty-icon="UserRound"
+      >
+        <template #member="{ row }">
+          <Link
+            class="font-medium hover:text-indigo-600"
+            :href="show(row.id).url"
+            prefetch
+            >{{ row.name }}</Link
+          >
+          <div class="text-xs text-zinc-500">{{ row.member_no }}</div>
+        </template>
+
+        <template #contact="{ row }">
+          <div class="text-zinc-600">
+            <div>{{ row.email || "-" }}</div>
+            <div class="text-xs">{{ row.phone || "-" }}</div>
+          </div>
+        </template>
+
+        <template #status="{ value }">
+          <StatusBadge
+            :status="value"
+            :variant="getMemberStatusVariant(value)"
+          />
+        </template>
+
+        <template #account="{ row }">
+          <StatusBadge
+            :status="row.user ? 'LINKED' : 'UNLINKED'"
+            :label="row.user ? 'User aktif' : 'Belum tertaut'"
+            :variant="row.user ? 'success' : 'secondary'"
+          />
+        </template>
+
+        <template #balance="{ value }">
+          <span class="font-medium text-zinc-900 dark:text-zinc-100">{{
+            formatCurrency(value)
+          }}</span>
+        </template>
+
+        <template #actions="{ row }">
+          <div class="flex justify-end gap-2">
+            <Link :href="edit(row.id).url" prefetch
+              ><Button size="sm" variant="outline">Edit</Button></Link
+            >
+            <Button
+              v-if="row.status !== 'ACTIVE'"
+              size="sm"
+              variant="outline"
+              :aria-label="`Aktifkan anggota ${row.name}`"
+              @click="router.post(activate(row.id).url)"
+            >
+              <UserCheck class="h-4 w-4" />
+            </Button>
+            <Button
+              v-if="row.status === 'ACTIVE'"
+              size="sm"
+              variant="outline"
+              :aria-label="`Nonaktifkan anggota ${row.name}`"
+              @click="router.post(resign(row.id).url)"
+            >
+              <UserX class="h-4 w-4" />
+            </Button>
+          </div>
+        </template>
+      </DataTable>
+    </PageContainer>
+  </AppLayout>
 </template>

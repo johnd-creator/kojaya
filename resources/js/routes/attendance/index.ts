@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 export const selfService = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ selfService.definition = {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 selfService.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ selfService.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 selfService.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ selfService.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:84
+* @see app/Http/Controllers/AttendanceController.php:79
 * @route '/attendance/self-service'
 */
 selfServiceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ selfService.form = selfServiceForm
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:110
+* @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
 */
 export const checkIn = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ checkIn.definition = {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:110
+* @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
 */
 checkIn.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ checkIn.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:110
+* @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
 */
 checkIn.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ checkIn.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:110
+* @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
 */
 const checkInForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const checkInForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:110
+* @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
 */
 checkInForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

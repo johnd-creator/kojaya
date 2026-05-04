@@ -24,11 +24,16 @@ class CooperativePaymentService
 
     public function approve(CooperativePayment $payment, ?User $approver = null): CooperativePayment
     {
-        if ($payment->status === 'APPROVED' && $payment->ledgerEntries()->exists()) {
-            return $payment;
-        }
-
         return DB::transaction(function () use ($payment, $approver): CooperativePayment {
+            $payment = CooperativePayment::query()
+                ->lockForUpdate()
+                ->with('ledgerEntries')
+                ->findOrFail($payment->id);
+
+            if ($payment->status === 'APPROVED' && $payment->ledgerEntries->isNotEmpty()) {
+                return $payment;
+            }
+
             $payment->forceFill([
                 'status' => 'APPROVED',
                 'approved_at' => now(),
@@ -54,14 +59,14 @@ class CooperativePaymentService
                     'entry_type' => 'SAVING_PAYMENT',
                 ],
                 [
-                'cooperative_member_id' => $payment->cooperative_member_id,
-                'source_type' => CooperativePayment::class,
-                'source_id' => $payment->id,
-                'debit' => 0,
-                'credit' => $payment->amount,
-                'period' => $payment->invoice?->period,
-                'description' => 'Pembayaran iuran/simpanan koperasi',
-                'posted_at' => $payment->paid_at,
+                    'cooperative_member_id' => $payment->cooperative_member_id,
+                    'source_type' => CooperativePayment::class,
+                    'source_id' => $payment->id,
+                    'debit' => 0,
+                    'credit' => $payment->amount,
+                    'period' => $payment->invoice?->period,
+                    'description' => 'Pembayaran iuran/simpanan koperasi',
+                    'posted_at' => $payment->paid_at,
                 ],
             );
 

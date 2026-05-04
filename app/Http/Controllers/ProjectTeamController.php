@@ -2,23 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BulkAssignProjectTeamRequest;
+use App\Http\Requests\CheckProjectTeamAvailabilityRequest;
+use App\Http\Requests\StoreProjectTeamRequest;
+use App\Http\Requests\UpdateProjectTeamMobilizationRequest;
+use App\Http\Requests\UpdateProjectTeamRequest;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Models\ProjectTeam;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProjectTeamController extends Controller
 {
-    public function availability(Request $request, Project $project)
+    public function availability(CheckProjectTeamAvailabilityRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-        ]);
+        $validated = $request->validated();
 
         $startDate = $validated['start_date'];
         $endDate = $validated['end_date'] ?? '2099-12-31';
@@ -64,18 +63,10 @@ class ProjectTeamController extends Controller
         ]);
     }
 
-    public function store(Request $request, Project $project)
+    public function store(StoreProjectTeamRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'role' => 'required|string|max:100',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after:start_date',
-            'daily_rate_cost' => 'required|numeric|min:0',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
-        $validated['id'] = Str::uuid();
         $validated['project_id'] = $project->id;
 
         // Check for conflicts
@@ -100,30 +91,18 @@ class ProjectTeamController extends Controller
         return back()->with('success', 'Team member added successfully.');
     }
 
-    public function update(Request $request, ProjectTeam $teamMember)
+    public function update(UpdateProjectTeamRequest $request, ProjectTeam $teamMember)
     {
-        $validated = $request->validate([
-            'role' => 'required|string|max:100',
-            'end_date' => 'nullable|date',
-            'daily_rate_cost' => 'required|numeric|min:0',
-            'notes' => 'nullable|string',
-            'status' => 'nullable|in:RECRUITMENT,SCREENING,MCU,ONBOARDING,PLACED',
-            'has_ppe' => 'nullable|boolean',
-            'has_uniform' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         $teamMember->update($validated);
 
         return back()->with('success', 'Team member updated successfully.');
     }
 
-    public function updateMobilization(Request $request, ProjectTeam $teamMember)
+    public function updateMobilization(UpdateProjectTeamMobilizationRequest $request, ProjectTeam $teamMember)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:RECRUITMENT,SCREENING,MCU,ONBOARDING,PLACED',
-            'has_ppe' => 'nullable|boolean',
-            'has_uniform' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         $teamMember->update($validated);
 
@@ -137,15 +116,9 @@ class ProjectTeamController extends Controller
         return back()->with('success', 'Team member removed successfully.');
     }
 
-    public function bulkAssign(Request $request, Project $project)
+    public function bulkAssign(BulkAssignProjectTeamRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'employee_ids' => 'required|array',
-            'employee_ids.*' => 'exists:employees,id',
-            'role' => 'required|string|max:100',
-            'start_date' => 'required|date',
-            'daily_rate_cost' => 'required|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         foreach ($validated['employee_ids'] as $employeeId) {
             ProjectTeam::firstOrCreate(
@@ -154,7 +127,6 @@ class ProjectTeamController extends Controller
                     'employee_id' => $employeeId,
                 ],
                 [
-                    'id' => Str::uuid(),
                     'role' => $validated['role'],
                     'start_date' => $validated['start_date'],
                     'daily_rate_cost' => $validated['daily_rate_cost'],

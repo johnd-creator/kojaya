@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProjectDocumentRequest;
+use App\Http\Requests\UpdateProjectDocumentStatusRequest;
 use App\Models\Project;
 use App\Models\ProjectDocument;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,21 +22,15 @@ class ProjectDocumentController extends Controller
         ]);
     }
 
-    public function store(Request $request, Project $project)
+    public function store(StoreProjectDocumentRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|in:SIKA,PERMIT,DRAWING,OTHER',
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'expiry_date' => 'nullable|date|after:today',
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store('project-documents', 'public');
             $validated['file_path'] = $path;
         }
 
-        $validated['id'] = Str::uuid();
         $validated['project_id'] = $project->id;
         $validated['status'] = isset($validated['expiry_date']) ? 'VALID' : 'VALID';
 
@@ -56,13 +50,9 @@ class ProjectDocumentController extends Controller
         return back()->with('success', 'Document deleted successfully.');
     }
 
-    public function updateStatus(Request $request, ProjectDocument $document)
+    public function updateStatus(UpdateProjectDocumentStatusRequest $request, ProjectDocument $document)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:VALID,EXPIRED',
-        ]);
-
-        $document->update($validated);
+        $document->update($request->validated());
 
         return back()->with('success', 'Document status updated successfully.');
     }

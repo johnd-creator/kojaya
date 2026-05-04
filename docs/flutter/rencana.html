@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kojayaku — Rencana Pengembangan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e29;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #7a8094;
+    --accent: #4f8ef7;
+    --accent2: #2dd4a0;
+    --accent3: #f7934f;
+    --accent4: #c97ef7;
+    --danger: #f75f5f;
+    --phase1: #4f8ef7;
+    --phase2: #2dd4a0;
+    --phase3: #f7934f;
+    --phase4: #c97ef7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Background grid pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 64px;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .logo-mark {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+  }
+
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 5vw, 58px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .header h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header p {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 560px;
+    font-weight: 300;
+  }
+
+  .header-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .meta-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+  }
+
+  /* Section titles */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Stats row */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 64px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card:nth-child(1)::before { background: var(--phase1); }
+  .stat-card:nth-child(2)::before { background: var(--phase2); }
+  .stat-card:nth-child(3)::before { background: var(--phase3); }
+  .stat-card:nth-child(4)::before { background: var(--phase4); }
+
+  .stat-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card:nth-child(1) .stat-number { color: var(--phase1); }
+  .stat-card:nth-child(2) .stat-number { color: var(--phase2); }
+  .stat-card:nth-child(3) .stat-number { color: var(--phase3); }
+  .stat-card:nth-child(4) .stat-number { color: var(--phase4); }
+
+  .stat-label { font-size: 12px; color: var(--muted); font-weight: 300; }
+
+  /* Timeline / Phases */
+  .phases { margin-bottom: 64px; }
+
+  .phase-block {
+    margin-bottom: 32px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .phase-block:hover { border-color: var(--border2); }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 28px;
+    cursor: pointer;
+    background: var(--surface);
+    user-select: none;
+  }
+
+  .phase-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .phase-1 .phase-number { background: rgba(79,142,247,0.15); color: var(--phase1); }
+  .phase-2 .phase-number { background: rgba(45,212,160,0.15); color: var(--phase2); }
+  .phase-3 .phase-number { background: rgba(247,147,79,0.15); color: var(--phase3); }
+  .phase-4 .phase-number { background: rgba(201,126,247,0.15); color: var(--phase4); }
+
+  .phase-info { flex: 1; }
+
+  .phase-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .phase-sub { font-size: 13px; color: var(--muted); font-weight: 300; }
+
+  .phase-duration {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .phase-chevron {
+    width: 20px;
+    height: 20px;
+    color: var(--muted);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+
+  .phase-block.open .phase-chevron { transform: rotate(180deg); }
+
+  .phase-body {
+    display: none;
+    padding: 0 28px 28px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .phase-block.open .phase-body { display: block; }
+
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .task-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .task-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .phase-1 .task-icon { background: rgba(79,142,247,0.12); }
+  .phase-2 .task-icon { background: rgba(45,212,160,0.12); }
+  .phase-3 .task-icon { background: rgba(247,147,79,0.12); }
+  .phase-4 .task-icon { background: rgba(201,126,247,0.12); }
+
+  .task-content { flex: 1; }
+  .task-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .task-desc { font-size: 12px; color: var(--muted); font-weight: 300; line-height: 1.5; }
+
+  /* Tech Stack */
+  .tech-section { margin-bottom: 64px; }
+
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .tech-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .tech-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .tag-blue { background: rgba(79,142,247,0.15); color: var(--phase1); }
+  .tag-green { background: rgba(45,212,160,0.15); color: var(--phase2); }
+  .tag-orange { background: rgba(247,147,79,0.15); color: var(--phase3); }
+  .tag-purple { background: rgba(201,126,247,0.15); color: var(--phase4); }
+  .tag-red { background: rgba(247,95,95,0.15); color: var(--danger); }
+
+  .tech-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .tech-desc { font-size: 12px; color: var(--muted); font-weight: 300; }
+
+  /* Features matrix */
+  .features-section { margin-bottom: 64px; }
+
+  .features-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .features-table th {
+    text-align: left;
+    padding: 10px 16px;
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .features-table th:first-child { border-radius: 10px 0 0 0; }
+  .features-table th:last-child { border-radius: 0 10px 0 0; }
+
+  .features-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .features-table tr:last-child td { border-bottom: none; }
+  .features-table tr:hover td { background: var(--surface2); }
+
+  .check { color: var(--accent2); font-size: 14px; }
+  .minus { color: var(--muted); font-size: 14px; }
+
+  .feat-name { font-weight: 500; }
+  .feat-sub { font-size: 11px; color: var(--muted); }
+
+  .priority-high { color: var(--danger); font-size: 11px; font-weight: 500; }
+  .priority-med { color: var(--accent3); font-size: 11px; font-weight: 500; }
+  .priority-low { color: var(--muted); font-size: 11px; font-weight: 500; }
+
+  /* Risk section */
+  .risks-section { margin-bottom: 64px; }
+
+  .risk-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .risk-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 180px 1fr 100px 200px;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .risk-name { font-size: 13px; font-weight: 500; }
+  .risk-desc { font-size: 12px; color: var(--muted); }
+
+  .risk-level {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .risk-high { background: rgba(247,95,95,0.15); color: var(--danger); }
+  .risk-med { background: rgba(247,147,79,0.15); color: var(--phase3); }
+  .risk-low { background: rgba(45,212,160,0.15); color: var(--phase2); }
+
+  .risk-mitigation { font-size: 12px; color: var(--muted); }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .footer-brand {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Animate in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .header, .stats-grid, .phases, .tech-section, .features-section, .risks-section {
+    animation: fadeUp 0.5s ease both;
+  }
+  .stats-grid { animation-delay: 0.1s; }
+  .phases { animation-delay: 0.15s; }
+
+  @media (max-width: 720px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .tasks-grid { grid-template-columns: 1fr; }
+    .tech-grid { grid-template-columns: 1fr; }
+    .risk-item { grid-template-columns: 1fr; }
+    .container { padding: 0 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <div class="logo-mark">KJ</div>
+      <span class="badge">v1.0 · Flutter · Laravel</span>
+    </div>
+    <h1>Rencana Pengembangan<br><span>Kojayaku</span></h1>
+    <p>Aplikasi mobile koperasi & HR untuk anggota dan pegawai — dibangun di atas Flutter dengan backend Laravel.</p>
+    <div class="header-meta">
+      <div class="meta-item"><div class="meta-dot"></div> Mei 2026</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--accent3)"></div> 12 Minggu Pengembangan</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--accent4)"></div> 2 Role Pengguna</div>
+      <div class="meta-item"><div class="meta-dot" style="background:var(--danger)"></div> Android & iOS</div>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number">4</div>
+      <div class="stat-label">Fase Pengembangan</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">12</div>
+      <div class="stat-label">Minggu Total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">18</div>
+      <div class="stat-label">Fitur Utama</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">2</div>
+      <div class="stat-label">Platform Target</div>
+    </div>
+  </div>
+
+  <!-- Phases -->
+  <div class="phases">
+    <div class="section-title">Roadmap Fase</div>
+
+    <!-- Phase 1 -->
+    <div class="phase-block phase-1 open">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-number">01</div>
+        <div class="phase-info">
+          <div class="phase-title">Setup & Fondasi</div>
+          <div class="phase-sub">Project structure, auth, design system, API layer</div>
+        </div>
+        <div class="phase-duration">Minggu 1–2</div>
+        <svg class="phase-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="phase-body">
+        <div class="tasks-grid">
+          <div class="task-item">
+            <div class="task-icon">📁</div>
+            <div class="task-content">
+              <div class="task-name">Clean Architecture Setup</div>
+              <div class="task-desc">Buat struktur folder feature/data/domain/presentation. Setup analysis_options.yaml dan lint rules.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">📦</div>
+            <div class="task-content">
+              <div class="task-name">Core Packages</div>
+              <div class="task-desc">Pasang Riverpod 2.x, Dio, Freezed, GoRouter, flutter_secure_storage, Hive.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🔐</div>
+            <div class="task-content">
+              <div class="task-name">Auth Flow (JWT)</div>
+              <div class="task-desc">Login screen, JWT storage, auto-refresh token, biometric login, role-based redirect.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🌐</div>
+            <div class="task-content">
+              <div class="task-name">API Service Layer</div>
+              <div class="task-desc">Dio client + Auth interceptor + error handler. Base response model. Retrofit code gen.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🎨</div>
+            <div class="task-content">
+              <div class="task-name">Design System</div>
+              <div class="task-desc">AppTheme, AppColors, AppTextStyles. Komponen reusable: button, input, card, snackbar.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">⚙️</div>
+            <div class="task-content">
+              <div class="task-name">Flavor Config</div>
+              <div class="task-desc">Setup dev/staging/prod environment. --dart-define untuk base URL dan API keys.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-block phase-2">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-number">02</div>
+        <div class="phase-info">
+          <div class="phase-title">Modul Anggota Koperasi</div>
+          <div class="phase-sub">Dashboard, simpanan, pinjaman, angsuran, notifikasi</div>
+        </div>
+        <div class="phase-duration">Minggu 3–5</div>
+        <svg class="phase-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="phase-body">
+        <div class="tasks-grid">
+          <div class="task-item">
+            <div class="task-icon">📊</div>
+            <div class="task-content">
+              <div class="task-name">Dashboard Anggota</div>
+              <div class="task-desc">Ringkasan saldo simpanan wajib/sukarela/berjangka, total pinjaman aktif, angsuran berikutnya.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">📋</div>
+            <div class="task-content">
+              <div class="task-name">Riwayat Transaksi</div>
+              <div class="task-desc">List dengan pagination lazy-load, filter jenis & tanggal, detail transaksi.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">💰</div>
+            <div class="task-content">
+              <div class="task-name">Pengajuan Pinjaman</div>
+              <div class="task-desc">Form pengajuan, upload dokumen (foto KTP, slip gaji), estimasi cicilan, konfirmasi.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">📅</div>
+            <div class="task-content">
+              <div class="task-name">Jadwal Angsuran</div>
+              <div class="task-desc">Tabel jadwal cicilan, status per angsuran, tracking sisa pinjaman.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🔔</div>
+            <div class="task-content">
+              <div class="task-name">Push Notification</div>
+              <div class="task-desc">FCM setup, notifikasi jatuh tempo angsuran, status pengajuan pinjaman.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">👤</div>
+            <div class="task-content">
+              <div class="task-name">Profil Anggota</div>
+              <div class="task-desc">Data diri, nomor anggota, ubah password, preferensi notifikasi.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-block phase-3">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-number">03</div>
+        <div class="phase-info">
+          <div class="phase-title">Modul Pegawai / HR</div>
+          <div class="phase-sub">Absensi GPS, lembur, cuti, slip gaji, jadwal shift</div>
+        </div>
+        <div class="phase-duration">Minggu 6–9</div>
+        <svg class="phase-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="phase-body">
+        <div class="tasks-grid">
+          <div class="task-item">
+            <div class="task-icon">📍</div>
+            <div class="task-content">
+              <div class="task-name">Absensi GPS + Foto</div>
+              <div class="task-desc">Clock in/out dengan validasi radius 100m dari kantor, foto selfie wajib, offline queue + sync.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">⏰</div>
+            <div class="task-content">
+              <div class="task-name">Pengajuan Lembur</div>
+              <div class="task-desc">Form lembur, approval flow (menunggu → disetujui/ditolak), riwayat per bulan, notifikasi.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🏖️</div>
+            <div class="task-content">
+              <div class="task-name">Pengajuan Cuti & Izin</div>
+              <div class="task-desc">Sisa cuti, form cuti, kalkulasi hari kerja, validasi overlap, approval + notifikasi.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">💼</div>
+            <div class="task-content">
+              <div class="task-name">Slip Gaji</div>
+              <div class="task-desc">List 12 bulan terakhir, preview PDF in-app, download ke penyimpanan lokal.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🗓️</div>
+            <div class="task-content">
+              <div class="task-name">Jadwal & Shift</div>
+              <div class="task-desc">Kalender jadwal shift, tampilan mingguan/bulanan, info tukar shift.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">📢</div>
+            <div class="task-content">
+              <div class="task-name">Pengumuman Internal</div>
+              <div class="task-desc">Feed pengumuman perusahaan, badge notifikasi belum dibaca, detail pengumuman.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-block phase-4">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div class="phase-number">04</div>
+        <div class="phase-info">
+          <div class="phase-title">Polish, Testing & Deployment</div>
+          <div class="phase-sub">Testing, CI/CD, crash reporting, release ke store</div>
+        </div>
+        <div class="phase-duration">Minggu 10–12</div>
+        <svg class="phase-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="phase-body">
+        <div class="tasks-grid">
+          <div class="task-item">
+            <div class="task-icon">🧪</div>
+            <div class="task-content">
+              <div class="task-name">Unit & Widget Test</div>
+              <div class="task-desc">Test use cases, repository, provider Riverpod. Widget test untuk komponen kritis. Target 70%+ coverage.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🔄</div>
+            <div class="task-content">
+              <div class="task-name">CI/CD Pipeline</div>
+              <div class="task-desc">GitHub Actions: flutter test + analyze → build APK/IPA → deploy ke Firebase App Distribution.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">📱</div>
+            <div class="task-content">
+              <div class="task-name">Release Build</div>
+              <div class="task-desc">Obfuscation, ProGuard rules, signing config, Play Store dan App Store submission.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">🚨</div>
+            <div class="task-content">
+              <div class="task-name">Crash Monitoring</div>
+              <div class="task-desc">Firebase Crashlytics + Analytics. Setup alert untuk crash rate di atas threshold.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">⚡</div>
+            <div class="task-content">
+              <div class="task-name">Performance Tuning</div>
+              <div class="task-desc">Flutter DevTools profiling, lazy loading, gambar caching, minimize rebuild widget.</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-icon">📶</div>
+            <div class="task-content">
+              <div class="task-name">Offline Hardening</div>
+              <div class="task-desc">Final QA untuk skenario offline/fluktuasi jaringan. Sync conflict resolution.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="tech-section">
+    <div class="section-title">Tech Stack</div>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <span class="tech-tag tag-blue">State</span>
+        <div><div class="tech-name">Riverpod 2.x</div><div class="tech-desc">AsyncNotifier, code generation, DI container</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-blue">Nav</span>
+        <div><div class="tech-name">GoRouter</div><div class="tech-desc">Declarative routing, deep link, auth redirect</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-blue">HTTP</span>
+        <div><div class="tech-name">Dio + Retrofit</div><div class="tech-desc">Interceptor, auth refresh, code-gen API service</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-green">Model</span>
+        <div><div class="tech-name">Freezed</div><div class="tech-desc">Immutable models, sealed class, copyWith</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-green">Storage</span>
+        <div><div class="tech-name">Secure Storage + Hive</div><div class="tech-desc">JWT di secure storage, cache & offline di Hive</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-green">Notif</span>
+        <div><div class="tech-name">Firebase Messaging</div><div class="tech-desc">FCM push notification, foreground + background</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-orange">GPS</span>
+        <div><div class="tech-name">Geolocator</div><div class="tech-desc">Validasi radius absensi, background location</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-orange">Media</span>
+        <div><div class="tech-name">Image Picker + Compress</div><div class="tech-desc">Foto selfie absensi, kompresi sebelum upload</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-orange">PDF</span>
+        <div><div class="tech-name">flutter_pdfview</div><div class="tech-desc">Preview slip gaji PDF in-app, download lokal</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-purple">CI/CD</span>
+        <div><div class="tech-name">GitHub Actions</div><div class="tech-desc">Test, build, deploy ke Firebase App Distribution</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-purple">Monitor</span>
+        <div><div class="tech-name">Firebase Crashlytics</div><div class="tech-desc">Crash reporting, performance monitoring</div></div>
+      </div>
+      <div class="tech-card">
+        <span class="tech-tag tag-red">Arch</span>
+        <div><div class="tech-name">Clean Architecture</div><div class="tech-desc">Feature-first folder, testable domain layer</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Matrix -->
+  <div class="features-section">
+    <div class="section-title">Matriks Fitur</div>
+    <table class="features-table">
+      <thead>
+        <tr>
+          <th>Fitur</th>
+          <th style="text-align:center">Anggota</th>
+          <th style="text-align:center">Pegawai</th>
+          <th>Prioritas</th>
+          <th>Fase</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="feat-name">Login & Biometrik</div><div class="feat-sub">JWT, fingerprint/face ID</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 1</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Dashboard Keuangan</div><div class="feat-sub">Saldo, simpanan, pinjaman</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 2</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Riwayat Transaksi</div><div class="feat-sub">Simpanan, penarikan, setoran</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 2</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Pengajuan Pinjaman</div><div class="feat-sub">Form + upload dokumen</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 2</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Jadwal Angsuran</div><div class="feat-sub">Status cicilan, jatuh tempo</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td><span class="priority-med">Medium</span></td>
+          <td>Fase 2</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Absensi GPS + Foto</div><div class="feat-sub">Clock in/out, offline support</div></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 3</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Pengajuan Lembur</div><div class="feat-sub">Form, approval, riwayat</div></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 3</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Cuti & Izin</div><div class="feat-sub">Sisa cuti, form, status</div></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-high">High</span></td>
+          <td>Fase 3</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Slip Gaji PDF</div><div class="feat-sub">Preview & download</div></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-med">Medium</span></td>
+          <td>Fase 3</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Jadwal Shift</div><div class="feat-sub">Kalender, shift harian</div></td>
+          <td style="text-align:center"><span class="minus">—</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-med">Medium</span></td>
+          <td>Fase 3</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Push Notification</div><div class="feat-sub">FCM, jatuh tempo, approval</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-med">Medium</span></td>
+          <td>Fase 2–3</td>
+        </tr>
+        <tr>
+          <td><div class="feat-name">Pengumuman Internal</div><div class="feat-sub">Berita & info perusahaan</div></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td style="text-align:center"><span class="check">✓</span></td>
+          <td><span class="priority-low">Low</span></td>
+          <td>Fase 3</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Risks -->
+  <div class="risks-section">
+    <div class="section-title">Risiko & Mitigasi</div>
+    <div class="risk-list">
+      <div class="risk-item">
+        <div class="risk-name">API backend belum stabil</div>
+        <div class="risk-desc">Endpoint Laravel mungkin berubah saat development paralel</div>
+        <div class="risk-level risk-high">Tinggi</div>
+        <div class="risk-mitigation">Buat mock API & contract testing dari awal (Postman collection)</div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-name">GPS lemah di dalam gedung</div>
+        <div class="risk-desc">Sinyal GPS tidak akurat atau tidak tersedia di kantor tertutup</div>
+        <div class="risk-level risk-high">Tinggi</div>
+        <div class="risk-mitigation">Toleransi radius +50m, fallback ke WiFi SSID whitelist</div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-name">Pengguna tidak familiar teknologi</div>
+        <div class="risk-desc">Beberapa pegawai/anggota senior tidak terbiasa aplikasi mobile</div>
+        <div class="risk-level risk-med">Sedang</div>
+        <div class="risk-mitigation">Onboarding tutorial interaktif, UI sangat sederhana, hotline support</div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-name">Upload dokumen besar</div>
+        <div class="risk-desc">Foto dokumen pinjaman bisa sangat besar (>5MB)</div>
+        <div class="risk-level risk-med">Sedang</div>
+        <div class="risk-mitigation">Kompresi otomatis ke <1MB sebelum upload, progress indicator</div>
+      </div>
+      <div class="risk-item">
+        <div class="risk-name">Offline sync konflik</div>
+        <div class="risk-desc">Data absensi offline bisa konflik jika ada error di server</div>
+        <div class="risk-level risk-low">Rendah</div>
+        <div class="risk-mitigation">Timestamp-based resolution, queue retry dengan backoff</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-brand">Kojayaku</div>
+    <div>Rencana Pengembangan v1.0 · Mei 2026 · Confidential</div>
+  </footer>
+
+</div>
+
+<script>
+  function togglePhase(header) {
+    const block = header.closest('.phase-block');
+    block.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

@@ -109,7 +109,9 @@ const modules = [
           <p
             class="mt-4 max-w-2xl text-base leading-7 font-semibold text-slate-700 xl:text-lg"
           >
-            Pantau data anggota, iuran, transaksi toko, stok inventori, total simpanan, simpan pinjam, laporan keuangan, dan approval dalam satu sistem.
+            Pantau data anggota, iuran, transaksi toko, stok inventori, total
+            simpanan, simpan pinjam, laporan keuangan, dan approval dalam satu
+            sistem.
           </p>
         </div>
 

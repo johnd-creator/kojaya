@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GenerateShiftRosterRequest;
+use App\Http\Requests\UpdateShiftRosterRequest;
 use App\Models\ShiftRoster;
 use App\Models\WorkShift;
 use Carbon\Carbon;
@@ -41,13 +43,9 @@ class ShiftRosterController extends Controller
         ]);
     }
 
-    public function update(Request $request, ShiftRoster $shiftRoster): RedirectResponse
+    public function update(UpdateShiftRosterRequest $request, ShiftRoster $shiftRoster): RedirectResponse
     {
-        $validated = $request->validate([
-            'work_shift_id' => 'nullable|exists:work_shifts,id',
-            'is_off_day' => 'required|boolean',
-            'notes' => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $shiftRoster->update([
             'work_shift_id' => $validated['is_off_day'] ? null : $validated['work_shift_id'],
@@ -58,12 +56,9 @@ class ShiftRosterController extends Controller
         return back()->with('success', 'Roster entry updated.');
     }
 
-    public function generate(Request $request): RedirectResponse
+    public function generate(GenerateShiftRosterRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'year' => 'required|integer|min:2020|max:2100',
-            'month' => 'required|integer|min:1|max:12',
-        ]);
+        $validated = $request->validated();
 
         \Artisan::call('shift:generate', [
             'year' => $validated['year'],

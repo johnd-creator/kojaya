@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::index
-* @see app/Http/Controllers/OvertimeController.php:23
+* @see app/Http/Controllers/OvertimeController.php:18
 * @route '/overtime'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::create
-* @see app/Http/Controllers/OvertimeController.php:69
+* @see app/Http/Controllers/OvertimeController.php:66
 * @route '/overtime/create'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\OvertimeController::store
-* @see app/Http/Controllers/OvertimeController.php:80
+* @see app/Http/Controllers/OvertimeController.php:77
 * @route '/overtime'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::store
-* @see app/Http/Controllers/OvertimeController.php:80
+* @see app/Http/Controllers/OvertimeController.php:77
 * @route '/overtime'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::store
-* @see app/Http/Controllers/OvertimeController.php:80
+* @see app/Http/Controllers/OvertimeController.php:77
 * @route '/overtime'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\OvertimeController::store
-* @see app/Http/Controllers/OvertimeController.php:80
+* @see app/Http/Controllers/OvertimeController.php:77
 * @route '/overtime'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\OvertimeController::store
-* @see app/Http/Controllers/OvertimeController.php:80
+* @see app/Http/Controllers/OvertimeController.php:77
 * @route '/overtime'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\OvertimeController::destroy
-* @see app/Http/Controllers/OvertimeController.php:163
+* @see app/Http/Controllers/OvertimeController.php:152
 * @route '/overtime/{overtime}'
 */
 export const destroy = (args: { overtime: string | number } | [overtime: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -234,7 +234,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::destroy
-* @see app/Http/Controllers/OvertimeController.php:163
+* @see app/Http/Controllers/OvertimeController.php:152
 * @route '/overtime/{overtime}'
 */
 destroy.url = (args: { overtime: string | number } | [overtime: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -261,7 +261,7 @@ destroy.url = (args: { overtime: string | number } | [overtime: string | number 
 
 /**
 * @see \App\Http\Controllers\OvertimeController::destroy
-* @see app/Http/Controllers/OvertimeController.php:163
+* @see app/Http/Controllers/OvertimeController.php:152
 * @route '/overtime/{overtime}'
 */
 destroy.delete = (args: { overtime: string | number } | [overtime: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -271,7 +271,7 @@ destroy.delete = (args: { overtime: string | number } | [overtime: string | numb
 
 /**
 * @see \App\Http\Controllers\OvertimeController::destroy
-* @see app/Http/Controllers/OvertimeController.php:163
+* @see app/Http/Controllers/OvertimeController.php:152
 * @route '/overtime/{overtime}'
 */
 const destroyForm = (args: { overtime: string | number } | [overtime: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -286,7 +286,7 @@ const destroyForm = (args: { overtime: string | number } | [overtime: string | n
 
 /**
 * @see \App\Http\Controllers\OvertimeController::destroy
-* @see app/Http/Controllers/OvertimeController.php:163
+* @see app/Http/Controllers/OvertimeController.php:152
 * @route '/overtime/{overtime}'
 */
 destroyForm.delete = (args: { overtime: string | number } | [overtime: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -303,7 +303,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\OvertimeController::approve
-* @see app/Http/Controllers/OvertimeController.php:130
+* @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
 export const approve = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -318,7 +318,7 @@ approve.definition = {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::approve
-* @see app/Http/Controllers/OvertimeController.php:130
+* @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
 approve.url = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -351,7 +351,7 @@ approve.url = (args: { overtimeRequest: string | { id: string } } | [overtimeReq
 
 /**
 * @see \App\Http\Controllers\OvertimeController::approve
-* @see app/Http/Controllers/OvertimeController.php:130
+* @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
 approve.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -361,7 +361,7 @@ approve.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRe
 
 /**
 * @see \App\Http\Controllers\OvertimeController::approve
-* @see app/Http/Controllers/OvertimeController.php:130
+* @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
 const approveForm = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -371,7 +371,7 @@ const approveForm = (args: { overtimeRequest: string | { id: string } } | [overt
 
 /**
 * @see \App\Http\Controllers\OvertimeController::approve
-* @see app/Http/Controllers/OvertimeController.php:130
+* @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
 approveForm.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -383,7 +383,7 @@ approve.form = approveForm
 
 /**
 * @see \App\Http\Controllers\OvertimeController::reject
-* @see app/Http/Controllers/OvertimeController.php:145
+* @see app/Http/Controllers/OvertimeController.php:136
 * @route '/overtime/{overtimeRequest}/reject'
 */
 export const reject = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -398,7 +398,7 @@ reject.definition = {
 
 /**
 * @see \App\Http\Controllers\OvertimeController::reject
-* @see app/Http/Controllers/OvertimeController.php:145
+* @see app/Http/Controllers/OvertimeController.php:136
 * @route '/overtime/{overtimeRequest}/reject'
 */
 reject.url = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -431,7 +431,7 @@ reject.url = (args: { overtimeRequest: string | { id: string } } | [overtimeRequ
 
 /**
 * @see \App\Http\Controllers\OvertimeController::reject
-* @see app/Http/Controllers/OvertimeController.php:145
+* @see app/Http/Controllers/OvertimeController.php:136
 * @route '/overtime/{overtimeRequest}/reject'
 */
 reject.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -441,7 +441,7 @@ reject.post = (args: { overtimeRequest: string | { id: string } } | [overtimeReq
 
 /**
 * @see \App\Http\Controllers\OvertimeController::reject
-* @see app/Http/Controllers/OvertimeController.php:145
+* @see app/Http/Controllers/OvertimeController.php:136
 * @route '/overtime/{overtimeRequest}/reject'
 */
 const rejectForm = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -451,7 +451,7 @@ const rejectForm = (args: { overtimeRequest: string | { id: string } } | [overti
 
 /**
 * @see \App\Http\Controllers\OvertimeController::reject
-* @see app/Http/Controllers/OvertimeController.php:145
+* @see app/Http/Controllers/OvertimeController.php:136
 * @route '/overtime/{overtimeRequest}/reject'
 */
 rejectForm.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

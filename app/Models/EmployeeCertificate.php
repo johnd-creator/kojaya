@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CertificateStatus;
 use App\Enums\CertificateType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,30 +26,33 @@ class EmployeeCertificate extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'issue_date' => 'date',
-        'expiry_date' => 'date',
-        'certificate_type' => CertificateType::class,
-        'status' => CertificateStatus::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'issue_date' => 'date',
+            'expiry_date' => 'date',
+            'certificate_type' => CertificateType::class,
+            'status' => CertificateStatus::class,
+        ];
+    }
 
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    public function scopeValid($query)
+    public function scopeValid(Builder $query): Builder
     {
         return $query->where('status', CertificateStatus::VALID);
     }
 
-    public function scopeExpiring($query, int $days = 60)
+    public function scopeExpiring(Builder $query, int $days = 60): Builder
     {
         return $query->where('status', CertificateStatus::VALID)
             ->whereBetween('expiry_date', [now(), now()->addDays($days)]);
     }
 
-    public function scopeExpired($query)
+    public function scopeExpired(Builder $query): Builder
     {
         return $query->where('status', CertificateStatus::EXPIRED)
             ->orWhere('expiry_date', '<', now());

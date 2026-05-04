@@ -186,7 +186,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 export const update = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -201,7 +201,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 update.url = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions) => {
@@ -231,7 +231,7 @@ update.url = (args: { employee: number | { id: number }, contract: number | { id
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 update.put = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -241,7 +241,7 @@ update.put = (args: { employee: number | { id: number }, contract: number | { id
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 update.patch = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -251,7 +251,7 @@ update.patch = (args: { employee: number | { id: number }, contract: number | { 
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 const updateForm = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -266,7 +266,7 @@ const updateForm = (args: { employee: number | { id: number }, contract: number 
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 updateForm.put = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -281,7 +281,7 @@ updateForm.put = (args: { employee: number | { id: number }, contract: number | 
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:40
+* @see app/Http/Controllers/EmployeeContractController.php:33
 * @route '/employees/{employee}/contracts/{contract}'
 */
 updateForm.patch = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

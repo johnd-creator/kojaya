@@ -65,6 +65,31 @@ class CooperativeMember extends Model
         return $this->hasMany(CooperativePayment::class);
     }
 
+    public function loans(): HasMany
+    {
+        return $this->hasMany(Loan::class);
+    }
+
+    public function loanPayments(): HasMany
+    {
+        return $this->hasMany(LoanPayment::class);
+    }
+
+    public function posMemberPoints(): HasMany
+    {
+        return $this->hasMany(PosMemberPoint::class, 'cooperative_member_id');
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class, 'cooperative_member_id');
+    }
+
+    public function rewardRedemptions(): HasMany
+    {
+        return $this->hasMany(RewardRedemption::class, 'cooperative_member_id');
+    }
+
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(CooperativeLedgerEntry::class);

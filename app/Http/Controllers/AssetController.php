@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertAssetRequest;
 use App\Models\Asset;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,19 +41,9 @@ class AssetController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertAssetRequest $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:assets,code',
-            'name' => 'required|string|max:255',
-            'category' => 'required|string|max:100',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'status' => 'required|in:ACTIVE,INACTIVE,UNDER_MAINTENANCE',
-            'purchase_date' => 'nullable|date',
-            'serial_number' => 'nullable|string|max:100',
-        ]);
-
-        Asset::create($validated);
+        Asset::create($request->validated());
 
         return redirect()->route('assets.index')->with('success', 'Asset created successfully.');
     }
@@ -82,21 +73,11 @@ class AssetController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $id)
+    public function update(UpsertAssetRequest $request, string $id)
     {
         $asset = Asset::findOrFail($id);
 
-        $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:assets,code,'.$asset->id,
-            'name' => 'required|string|max:255',
-            'category' => 'required|string|max:100',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'status' => 'required|in:ACTIVE,INACTIVE,UNDER_MAINTENANCE',
-            'purchase_date' => 'nullable|date',
-            'serial_number' => 'nullable|string|max:100',
-        ]);
-
-        $asset->update($validated);
+        $asset->update($request->validated());
 
         return redirect()->route('assets.index')->with('success', 'Asset updated successfully.');
     }

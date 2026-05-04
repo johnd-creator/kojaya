@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertPettyCashAccountRequest;
 use App\Models\Organization;
 use App\Models\PettyCashAccount;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class PettyCashAccountController extends Controller
@@ -23,17 +23,9 @@ class PettyCashAccountController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertPettyCashAccountRequest $request)
     {
-        $validated = $request->validate([
-            'organization_id' => 'required|exists:organizations,id',
-            'name' => 'required|string|max:255',
-            'limit' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'status' => 'required|in:ACTIVE,INACTIVE',
-        ]);
-
-        PettyCashAccount::create($validated);
+        PettyCashAccount::create($request->validated());
 
         return redirect()->route('petty-cash.index')
             ->with('success', 'Petty Cash Account created successfully.');
@@ -49,19 +41,11 @@ class PettyCashAccountController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $id)
+    public function update(UpsertPettyCashAccountRequest $request, string $id)
     {
         $account = PettyCashAccount::findOrFail($id);
 
-        $validated = $request->validate([
-            'organization_id' => 'required|exists:organizations,id',
-            'name' => 'required|string|max:255',
-            'limit' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'status' => 'required|in:ACTIVE,INACTIVE',
-        ]);
-
-        $account->update($validated);
+        $account->update($request->validated());
 
         return redirect()->back()
             ->with('success', 'Petty Cash Account updated successfully.');

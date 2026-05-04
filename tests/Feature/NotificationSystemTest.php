@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\NotificationPreference;
 use App\Models\User;
+use Database\Factories\NotificationFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class NotificationSystemTest extends TestCase
@@ -45,12 +46,37 @@ class NotificationSystemTest extends TestCase
 
     public function test_user_can_fetch_unread_count(): void
     {
-        $this->markTestSkipped('Sanctum authentication needs configuration for tests');
+        $user = User::factory()->create();
+
+        NotificationFactory::new()->forUser($user)->count(2)->create(['read_at' => null]);
+        NotificationFactory::new()->forUser($user)->read()->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/notifications/unread-count')
+            ->assertOk()
+            ->assertJson(['count' => 2]);
     }
 
     public function test_user_can_fetch_notification_preferences(): void
     {
-        $this->markTestSkipped('Sanctum authentication needs configuration for tests');
+        $user = User::factory()->create();
+
+        NotificationPreference::create([
+            'user_id' => $user->id,
+            'email_enabled' => false,
+            'database_enabled' => true,
+            'push_enabled' => true,
+            'channels' => ['database', 'push'],
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/notifications/preferences')
+            ->assertOk()
+            ->assertJsonPath('data.email_enabled', false)
+            ->assertJsonPath('data.database_enabled', true)
+            ->assertJsonPath('data.push_enabled', true)
+            ->assertJsonPath('data.channels.0', 'database')
+            ->assertJsonPath('data.channels.1', 'push');
     }
 
     public function test_user_can_update_notification_preferences(): void
@@ -80,13 +106,7 @@ class NotificationSystemTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Create an unread notification
-        $notification = $user->notifications()->create([
-            'id' => \Illuminate\Support\Str::uuid(),
-            'type' => 'App\\Notifications\\TestNotification',
-            'data' => json_encode(['title' => 'Test']),
-            'read_at' => null,
-        ]);
+        $notification = NotificationFactory::new()->forUser($user)->create();
 
         $response = $this->actingAs($user)
             ->patchJson("/api/notifications/{$notification->id}/read");
@@ -103,17 +123,7 @@ class NotificationSystemTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Create some unread notifications
-        foreach (range(1, 3) as $i) {
-            $user->notifications()->create([
-                'id' => \Illuminate\Support\Str::uuid(),
-                'type' => 'App\\Notifications\\TestNotification',
-                'data' => json_encode(['title' => "Test $i"]),
-                'read_at' => null,
-            ]);
-        }
-
-        Auth::login($user);
+        NotificationFactory::new()->forUser($user)->count(3)->create(['read_at' => null]);
 
         $response = $this->actingAs($user)
             ->postJson('/api/notifications/mark-all-read');

@@ -43,4 +43,9 @@ class Asset extends Model
     {
         return $this->hasMany(AssetReading::class);
     }
+
+    public function workOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class);
+    }
 }

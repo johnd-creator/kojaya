@@ -18,9 +18,12 @@ class ProjectPayrollAllocation extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+        ];
+    }
 
     public function payroll(): BelongsTo
     {

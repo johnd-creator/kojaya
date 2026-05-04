@@ -8,8 +8,9 @@ use App\Models\GoodsReceiveNoteItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
-use App\Models\Warehouse;
 use App\Models\SparePartStock;
+use App\Models\User;
+use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 
 class ProcurementService
@@ -48,7 +49,7 @@ class ProcurementService
         return ['ok' => true];
     }
 
-    public function approvePr(PurchaseRequest $pr, $user, int $level): array
+    public function approvePr(PurchaseRequest $pr, User $user, int $level): array
     {
         $req = $this->approval->requiredLevels((float) $pr->total_amount);
         if (! $this->approval->canApprove($user, $level)) {
@@ -79,6 +80,14 @@ class ProcurementService
     public function createPoFromPr(PurchaseRequest $pr): PurchaseOrder
     {
         return DB::transaction(function () use ($pr) {
+            $existingPo = PurchaseOrder::query()
+                ->where('purchase_request_id', $pr->id)
+                ->first();
+
+            if ($existingPo) {
+                return $existingPo;
+            }
+
             // Default to first warehouse for now, or null
             $defaultWarehouse = Warehouse::where('organization_id', $pr->organization_id)->first();
 
@@ -129,11 +138,21 @@ class ProcurementService
     public function receiveGrn(GoodsReceiveNote $grn, array $items): array
     {
         return DB::transaction(function () use ($grn, $items) {
+            $grn = GoodsReceiveNote::query()
+                ->lockForUpdate()
+                ->findOrFail($grn->id);
+
+            if ($grn->received_at !== null || in_array($grn->status, ['RECEIVED_FULL', 'RECEIVED_PARTIAL'], true)) {
+                return ['ok' => true, 'already_received' => true];
+            }
+
             $po = $grn->purchaseOrder()->with('items')->lockForUpdate()->firstOrFail();
 
             foreach ($items as $row) {
                 $qty = (float) $row['received_qty'];
-                if ($qty <= 0) continue;
+                if ($qty <= 0) {
+                    continue;
+                }
 
                 GoodsReceiveNoteItem::create([
                     'goods_receive_note_id' => $grn->id,
@@ -149,14 +168,13 @@ class ProcurementService
                         'spare_part_id' => $poItem->spare_part_id,
                         'warehouse_id' => $grn->warehouse_id,
                     ]);
-                    
+
                     // If new, set default bin location if needed, or leave null
                     // For now we just update quantity
                     $stock->quantity = ((float) $stock->quantity) + $qty;
                     $stock->save();
                 }
             }
-
 
             $receivedByPoItem = GoodsReceiveNoteItem::query()
                 ->whereIn('purchase_order_item_id', $po->items->pluck('id'))

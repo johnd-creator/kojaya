@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSparePartRequest;
+use App\Http\Requests\UpdateSparePartStockRequest;
 use App\Models\SparePart;
 use App\Models\SparePartStock;
 use Illuminate\Http\Request;
@@ -58,21 +60,9 @@ class SparePartController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreSparePartRequest $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:spare_parts,code',
-            'name' => 'required|string|max:255',
-            'specification' => 'nullable|string',
-            'unit' => 'required|string|max:20',
-            'min_stock' => 'required|numeric|min:0',
-            'max_stock' => 'required|numeric|min:0',
-            'reorder_level' => 'required|numeric|min:0',
-            'category' => 'nullable|string|max:100',
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
-        ]);
-
-        SparePart::create($validated);
+        SparePart::create($request->validated());
 
         return redirect()->route('spare-parts.index')->with('success', 'Spare part created successfully.');
     }
@@ -86,14 +76,9 @@ class SparePartController extends Controller
         ]);
     }
 
-    public function updateStock(Request $request, string $id)
+    public function updateStock(UpdateSparePartStockRequest $request, string $id)
     {
-        $validated = $request->validate([
-            'warehouse_id' => 'required|uuid|exists:warehouses,id',
-            'quantity' => 'required|numeric|min:0',
-            'type' => 'required|in:IN,OUT,ADJUST',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $sparePart = SparePart::findOrFail($id);
         $stock = SparePartStock::firstOrCreate(

@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertBudgetLineRequest;
 use App\Models\Budget;
 use App\Models\BudgetLine;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class BudgetLineController extends Controller
 {
@@ -20,7 +19,7 @@ class BudgetLineController extends Controller
         ];
     }
 
-    public function store(Request $request, Budget $budget)
+    public function store(UpsertBudgetLineRequest $request, Budget $budget)
     {
         $this->authorizeBudgetAccess($budget);
 
@@ -28,22 +27,7 @@ class BudgetLineController extends Controller
             return back()->with('error', 'Only DRAFT budgets can be modified.');
         }
 
-        $validated = $request->validate([
-            'cost_center' => ['nullable', 'string', 'max:50'],
-            'project_id' => ['nullable', 'uuid', 'exists:projects,id'],
-            'gl_account' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('budget_lines')->where(function ($query) use ($budget, $request) {
-                    return $query->where('budget_id', $budget->id)
-                        ->where('project_id', $request->project_id)
-                        ->where('cost_center', $request->cost_center);
-                }),
-            ],
-            'category' => ['required', Rule::in(['OPEX', 'CAPEX'])],
-            'allocated_amount' => ['required', 'numeric', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         BudgetLine::create([
             'budget_id' => $budget->id,
@@ -59,7 +43,7 @@ class BudgetLineController extends Controller
         return back()->with('success', 'Budget line added.');
     }
 
-    public function update(Request $request, Budget $budget, BudgetLine $line)
+    public function update(UpsertBudgetLineRequest $request, Budget $budget, BudgetLine $line)
     {
         $this->authorizeBudgetAccess($budget);
 
@@ -71,22 +55,7 @@ class BudgetLineController extends Controller
             abort(404);
         }
 
-        $validated = $request->validate([
-            'cost_center' => ['nullable', 'string', 'max:50'],
-            'project_id' => ['nullable', 'uuid', 'exists:projects,id'],
-            'gl_account' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('budget_lines')->where(function ($query) use ($budget, $request) {
-                    return $query->where('budget_id', $budget->id)
-                        ->where('project_id', $request->project_id)
-                        ->where('cost_center', $request->cost_center);
-                })->ignore($line->id),
-            ],
-            'category' => ['required', Rule::in(['OPEX', 'CAPEX'])],
-            'allocated_amount' => ['required', 'numeric', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         $line->update([
             'cost_center' => $validated['cost_center'] ?? null,

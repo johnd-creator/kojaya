@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ApprovalLog extends Model
 {
@@ -18,4 +19,9 @@ class ApprovalLog extends Model
         'approved_by',
         'note',
     ];
+
+    public function subject(): MorphTo
+    {
+        return $this->morphTo();
+    }
 }

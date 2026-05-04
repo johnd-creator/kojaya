@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -73,13 +72,9 @@ class ProjectGanttController extends Controller
         ]);
     }
 
-    public function storeLink(Request $request, Project $project)
+    public function storeLink(StoreProjectGanttLinkRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'source' => 'required|exists:project_tasks,id',
-            'target' => 'required|exists:project_tasks,id',
-            'type' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $id = Str::uuid();
 
@@ -116,3 +111,4 @@ class ProjectGanttController extends Controller
         ]);
     }
 }
+use App\Http\Requests\StoreProjectGanttLinkRequest;

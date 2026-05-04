@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ApprovePayrollApprovalRequest;
+use App\Http\Requests\RejectPayrollApprovalRequest;
 use App\Models\PayrollApproval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,11 +42,11 @@ class PayrollApprovalController extends Controller
         ]);
     }
 
-    public function approve(Request $request, PayrollApproval $approval)
+    public function approve(ApprovePayrollApprovalRequest $request, PayrollApproval $approval)
     {
-        $validated = $request->validate([
-            'notes' => 'nullable|string',
-        ]);
+        $this->authorizePayrollApproval($request);
+
+        $validated = $request->validated();
 
         $approval->approve(Auth::user(), $validated['notes']);
 
@@ -53,16 +55,21 @@ class PayrollApprovalController extends Controller
         return back()->with('success', 'Payroll approved successfully.');
     }
 
-    public function reject(Request $request, PayrollApproval $approval)
+    public function reject(RejectPayrollApprovalRequest $request, PayrollApproval $approval)
     {
-        $validated = $request->validate([
-            'notes' => 'required|string',
-        ]);
+        $this->authorizePayrollApproval($request);
+
+        $validated = $request->validated();
 
         $approval->reject(Auth::user(), $validated['notes']);
 
         $approval->payroll->update(['status' => 'DRAFT']);
 
         return back()->with('success', 'Payroll rejected and returned to draft.');
+    }
+
+    private function authorizePayrollApproval(Request $request): void
+    {
+        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Admin Pusat', 'Finance Pusat']), 403);
     }
 }

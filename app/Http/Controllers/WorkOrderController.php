@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreWorkOrderRequest;
 use App\Models\WorkOrder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,16 +59,9 @@ class WorkOrderController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreWorkOrderRequest $request)
     {
-        $validated = $request->validate([
-            'asset_id' => 'required|uuid|exists:assets,id',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'type' => 'required|in:PREVENTIVE,CORRECTIVE',
-            'priority' => 'required|in:LOW,MEDIUM,HIGH,EMERGENCY',
-            'description' => 'nullable|string',
-            'assigned_to' => 'nullable|exists:users,id',
-        ]);
+        $validated = $request->validated();
 
         $validated['status'] = 'OPEN';
 

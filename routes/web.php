@@ -18,7 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('audit-logs', 'AuditLogs/Index')->name('audit-logs');
 
     // Reports
-    Route::inertia('reports', 'Reports')->name('reports');
+    Route::get('reports', [\App\Http\Controllers\ReportController::class, 'page'])->name('reports');
 
     // Consolidated Reports API
     Route::prefix('api/reports')->group(function () {
@@ -32,18 +32,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [App\Http\Controllers\AuditLogController::class, 'index']);
         Route::get('/export', [App\Http\Controllers\AuditLogController::class, 'export']);
         Route::get('/history/{type}/{id}', [App\Http\Controllers\AuditLogController::class, 'history']);
-        Route::get('/{id}', [App\Http\Controllers\AuditLogController::class, 'show']);
+        Route::get('/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->whereNumber('id');
     });
 
     // Notifications API (session-based for Inertia)
     Route::prefix('api/notifications')->group(function () {
         Route::get('/', [App\Http\Controllers\NotificationController::class, 'index']);
-        Route::get('/{id}', [App\Http\Controllers\NotificationController::class, 'show']);
-        Route::patch('/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
-        Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
         Route::get('/unread-count', [App\Http\Controllers\NotificationController::class, 'unreadCount']);
-        Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences']);
         Route::get('/preferences', [App\Http\Controllers\NotificationController::class, 'getPreferences']);
+        Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences']);
+        Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+        Route::patch('/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
+        Route::get('/{id}', [App\Http\Controllers\NotificationController::class, 'show']);
     });
 
     // HR Master Data
@@ -53,9 +53,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('work-shifts', \App\Http\Controllers\WorkShiftController::class);
     Route::resource('salary-structures', \App\Http\Controllers\SalaryStructureController::class);
     Route::resource('shift-rosters', \App\Http\Controllers\ShiftRosterController::class);
+    Route::post('shift-rosters/generate', [\App\Http\Controllers\ShiftRosterController::class, 'generate'])->name('shift-rosters.generate');
 
     // Storage Management
     Route::resource('spare-parts', \App\Http\Controllers\SparePartController::class);
+    Route::post('spare-parts/{id}/stock', [\App\Http\Controllers\SparePartController::class, 'updateStock'])->name('spare-parts.update-stock');
     Route::resource('warehouses', \App\Http\Controllers\WarehouseController::class);
 
     // Enterprise Asset Management
@@ -103,6 +105,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('attendance/check-out', [\App\Http\Controllers\AttendanceController::class, 'checkOut'])->name('attendances.checkOut');
     Route::resource('attendances', \App\Http\Controllers\AttendanceController::class)->only(['index', 'store']);
+    Route::prefix('ess')->name('ess.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\EssPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [\App\Http\Controllers\EssPortalController::class, 'profile'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\EssPortalController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/payslips', [\App\Http\Controllers\EssPortalController::class, 'payslips'])->name('payslips');
+        Route::get('/compliance', [\App\Http\Controllers\EssPortalController::class, 'compliance'])->name('compliance');
+    });
     Route::resource('employees.contracts', \App\Http\Controllers\EmployeeContractController::class)->only(['index', 'store', 'update']);
     Route::resource('payrolls', \App\Http\Controllers\PayrollController::class)->only(['index', 'show']);
     Route::post('payrolls/generate', [\App\Http\Controllers\PayrollController::class, 'generate'])->name('payrolls.generate');
@@ -129,6 +138,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('invoices/efaktur/batches/{batch}/csv', [\App\Http\Controllers\EfakturController::class, 'downloadCsv'])->name('invoices.efaktur.batch-csv');
     Route::post('invoices/{invoice}/efaktur/api/submit', [\App\Http\Controllers\EfakturApiController::class, 'submit'])->name('invoices.efaktur.api.submit');
     Route::get('invoices/efaktur/api/submissions/{submission}/status', [\App\Http\Controllers\EfakturApiController::class, 'status'])->name('invoices.efaktur.api.status');
+    Route::get('finance/efaktur', [\App\Http\Controllers\EfakturUiController::class, 'index'])->name('finance.efaktur.index');
+    Route::get('finance/efaktur/submit', [\App\Http\Controllers\EfakturUiController::class, 'submitPage'])->name('finance.efaktur.submit');
+    Route::get('finance/efaktur/status', [\App\Http\Controllers\EfakturUiController::class, 'status'])->name('finance.efaktur.status');
     Route::post('invoices/{invoice}/submit-for-approval', [\App\Http\Controllers\InvoiceController::class, 'submitForApproval'])->name('invoices.submit-for-approval');
     Route::post('invoices/{invoice}/approve', [\App\Http\Controllers\InvoiceController::class, 'approve'])->name('invoices.approve');
     Route::post('invoices/{invoice}/reject', [\App\Http\Controllers\InvoiceController::class, 'reject'])->name('invoices.reject');
@@ -152,10 +164,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');
         Route::get('dues', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'index'])->name('dues.index');
         Route::post('dues/generate', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'generate'])->name('dues.generate');
+        Route::post('dues/mark-paid', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'markPaid'])->name('dues.mark-paid');
         Route::get('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'index'])->name('payments.index');
         Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
         Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
         Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])->name('ledger.index');
+        Route::get('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'index'])->name('loan-types.index');
+        Route::post('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'store'])->name('loan-types.store');
+        Route::put('loan-types/{loan_type}', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'update'])->name('loan-types.update');
+        Route::delete('loan-types/{loan_type}', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'destroy'])->name('loan-types.destroy');
+        Route::get('loans/calculator', [\App\Http\Controllers\Cooperative\LoanController::class, 'calculator'])->name('loans.calculator');
+        Route::get('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'index'])->name('loans.index');
+        Route::get('loans/create', [\App\Http\Controllers\Cooperative\LoanController::class, 'create'])->name('loans.create');
+        Route::post('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'store'])->name('loans.store');
+        Route::get('loans/{loan}', [\App\Http\Controllers\Cooperative\LoanController::class, 'show'])->name('loans.show');
+        Route::post('loans/{loan}/approve', [\App\Http\Controllers\Cooperative\LoanController::class, 'approve'])->name('loans.approve');
+        Route::post('loans/{loan}/reject', [\App\Http\Controllers\Cooperative\LoanController::class, 'reject'])->name('loans.reject');
+        Route::post('loans/{loan}/disburse', [\App\Http\Controllers\Cooperative\LoanController::class, 'disburse'])->name('loans.disburse');
+        Route::post('loans/{loan}/payments', [\App\Http\Controllers\Cooperative\LoanController::class, 'pay'])->name('loans.pay');
+        Route::get('points', [\App\Http\Controllers\Cooperative\PointController::class, 'index'])->name('points.index');
+        Route::get('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'index'])->name('rewards.index');
+        Route::post('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'store'])->name('rewards.store');
+        Route::put('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'update'])->name('rewards.update');
+        Route::delete('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'destroy'])->name('rewards.destroy');
+        Route::get('redemptions', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'index'])->name('redemptions.index');
         Route::get('shu', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'index'])->name('shu.index');
         Route::post('shu/close', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'close'])->name('shu.close');
         Route::get('pos', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'index'])->name('pos.index');
@@ -175,6 +207,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('finance/bank-batches', [\App\Http\Controllers\FinanceBankController::class, 'store'])->name('finance.bank-batches.store');
     Route::get('finance/bank-batches/{batch}/export', [\App\Http\Controllers\FinanceBankController::class, 'export'])->name('finance.bank-batches.export');
     Route::post('finance/bank-batches/reconcile', [\App\Http\Controllers\FinanceBankController::class, 'reconcile'])->name('finance.bank-batches.reconcile');
+    Route::get('finance/bank-reconciliation', [\App\Http\Controllers\BankReconciliationController::class, 'index'])->name('finance.bank-reconciliation.index');
+    Route::get('finance/bank-reconciliation/{batch}', [\App\Http\Controllers\BankReconciliationController::class, 'show'])->name('finance.bank-reconciliation.show');
+    Route::get('finance/chart-of-accounts', [\App\Http\Controllers\Accounting\ChartOfAccountController::class, 'index'])->name('finance.chart-of-accounts.index');
+    Route::post('finance/chart-of-accounts', [\App\Http\Controllers\Accounting\ChartOfAccountController::class, 'store'])->name('finance.chart-of-accounts.store');
+    Route::get('finance/journal-entries', [\App\Http\Controllers\Accounting\JournalEntryController::class, 'index'])->name('finance.journal-entries.index');
+    Route::post('finance/journal-entries', [\App\Http\Controllers\Accounting\JournalEntryController::class, 'store'])->name('finance.journal-entries.store');
+    Route::get('finance/trial-balance', [\App\Http\Controllers\Accounting\FinancialStatementController::class, 'trialBalance'])->name('finance.trial-balance');
+    Route::get('finance/balance-sheet', [\App\Http\Controllers\Accounting\FinancialStatementController::class, 'balanceSheet'])->name('finance.balance-sheet');
+    Route::get('finance/income-statement', [\App\Http\Controllers\Accounting\FinancialStatementController::class, 'incomeStatement'])->name('finance.income-statement');
 
     // Reimbursements
     Route::resource('reimbursements', \App\Http\Controllers\ReimbursementController::class);

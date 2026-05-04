@@ -7,6 +7,7 @@ use App\Models\BudgetLine;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -21,8 +22,14 @@ class ProcurementWebFlowTest extends TestCase
             'organization_id' => $org->id,
             'email_verified_at' => now(),
         ]);
-        Role::create(['name' => 'Manager', 'guard_name' => 'web']);
-        $user->assignRole('Manager');
+        Permission::create(['name' => 'create_pr', 'guard_name' => 'web']);
+        Permission::create(['name' => 'approve_pr', 'guard_name' => 'web']);
+        Permission::create(['name' => 'create_po', 'guard_name' => 'web']);
+        Permission::create(['name' => 'receive_grn', 'guard_name' => 'web']);
+
+        $role = Role::create(['name' => 'Manager', 'guard_name' => 'web']);
+        $role->syncPermissions(['create_pr', 'approve_pr', 'create_po', 'receive_grn']);
+        $user->assignRole($role);
 
         $budget = Budget::create([
             'id' => \Illuminate\Support\Str::uuid(),
@@ -78,5 +85,63 @@ class ProcurementWebFlowTest extends TestCase
 
         $this->assertSame('RECEIVED_FULL', $this->app['db']->table('goods_receive_notes')->where('id', $grnId)->value('status'));
         $this->assertSame('RECEIVED', $this->app['db']->table('purchase_orders')->where('id', $poId)->value('status'));
+    }
+
+    public function test_create_po_from_pr_is_idempotent_when_requested_twice(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => $org->id,
+            'email_verified_at' => now(),
+        ]);
+        Permission::create(['name' => 'create_pr', 'guard_name' => 'web']);
+        Permission::create(['name' => 'approve_pr', 'guard_name' => 'web']);
+        Permission::create(['name' => 'create_po', 'guard_name' => 'web']);
+
+        $role = Role::create(['name' => 'Manager', 'guard_name' => 'web']);
+        $role->syncPermissions(['create_pr', 'approve_pr', 'create_po']);
+        $user->assignRole($role);
+
+        $budget = Budget::create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'organization_id' => $org->id,
+            'year' => date('Y'),
+            'period' => 'ANNUAL',
+            'status' => 'APPROVED',
+        ]);
+        BudgetLine::create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'budget_id' => $budget->id,
+            'gl_account' => '6101',
+            'allocated_amount' => 10000000,
+            'committed_amount' => 0,
+            'realized_amount' => 0,
+        ]);
+
+        $this->actingAs($user);
+
+        $this->post('/procurement/purchase-requests', [
+            'title' => 'PR Idempotent',
+            'cost_center' => 'CC-02',
+            'items' => [
+                ['description' => 'Item B', 'gl_account' => '6101', 'qty' => 1, 'price' => 1500000],
+            ],
+        ])->assertRedirect();
+
+        $prId = $this->app['db']->table('purchase_requests')->value('id');
+
+        $this->post("/procurement/purchase-requests/{$prId}/submit")->assertRedirect();
+        $this->post("/procurement/purchase-requests/{$prId}/approve", ['level' => 1])->assertRedirect();
+
+        $firstResponse = $this->post("/procurement/purchase-orders/from-pr/{$prId}");
+        $firstResponse->assertRedirect();
+
+        $firstPoId = $this->app['db']->table('purchase_orders')->where('purchase_request_id', $prId)->value('id');
+        $this->assertNotNull($firstPoId);
+
+        $secondResponse = $this->post("/procurement/purchase-orders/from-pr/{$prId}");
+        $secondResponse->assertRedirect(route('procurement.pos.show', $firstPoId));
+
+        $this->assertSame(1, $this->app['db']->table('purchase_orders')->where('purchase_request_id', $prId)->count());
     }
 }

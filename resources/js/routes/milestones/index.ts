@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 export const index = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 index.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ index.url = (args: { project: string | { id: string } } | [project: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 index.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -59,7 +59,7 @@ index.get = (args: { project: string | { id: string } } | [project: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 index.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -69,7 +69,7 @@ index.head = (args: { project: string | { id: string } } | [project: string | { 
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ const indexForm = (args: { project: string | { id: string } } | [project: string
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -89,7 +89,7 @@ indexForm.get = (args: { project: string | { id: string } } | [project: string |
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:12
+* @see app/Http/Controllers/ProjectMilestoneController.php:13
 * @route '/projects/{project}/milestones'
 */
 indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -106,7 +106,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:22
+* @see app/Http/Controllers/ProjectMilestoneController.php:23
 * @route '/projects/{project}/milestones'
 */
 export const store = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -121,7 +121,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:22
+* @see app/Http/Controllers/ProjectMilestoneController.php:23
 * @route '/projects/{project}/milestones'
 */
 store.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -154,7 +154,7 @@ store.url = (args: { project: string | { id: string } } | [project: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:22
+* @see app/Http/Controllers/ProjectMilestoneController.php:23
 * @route '/projects/{project}/milestones'
 */
 store.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -164,7 +164,7 @@ store.post = (args: { project: string | { id: string } } | [project: string | { 
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:22
+* @see app/Http/Controllers/ProjectMilestoneController.php:23
 * @route '/projects/{project}/milestones'
 */
 const storeForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -174,7 +174,7 @@ const storeForm = (args: { project: string | { id: string } } | [project: string
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:22
+* @see app/Http/Controllers/ProjectMilestoneController.php:23
 * @route '/projects/{project}/milestones'
 */
 storeForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -186,7 +186,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 export const update = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -201,7 +201,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 update.url = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -231,7 +231,7 @@ update.url = (args: { project: string | { id: string }, milestone: string | { id
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 update.put = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -241,7 +241,7 @@ update.put = (args: { project: string | { id: string }, milestone: string | { id
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 update.patch = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -251,7 +251,7 @@ update.patch = (args: { project: string | { id: string }, milestone: string | { 
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 const updateForm = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -266,7 +266,7 @@ const updateForm = (args: { project: string | { id: string }, milestone: string 
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 updateForm.put = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -281,7 +281,7 @@ updateForm.put = (args: { project: string | { id: string }, milestone: string | 
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:39
+* @see app/Http/Controllers/ProjectMilestoneController.php:35
 * @route '/projects/{project}/milestones/{milestone}'
 */
 updateForm.patch = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -298,7 +298,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:80
+* @see app/Http/Controllers/ProjectMilestoneController.php:68
 * @route '/projects/{project}/milestones/{milestone}'
 */
 export const destroy = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -313,7 +313,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:80
+* @see app/Http/Controllers/ProjectMilestoneController.php:68
 * @route '/projects/{project}/milestones/{milestone}'
 */
 destroy.url = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -343,7 +343,7 @@ destroy.url = (args: { project: string | { id: string }, milestone: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:80
+* @see app/Http/Controllers/ProjectMilestoneController.php:68
 * @route '/projects/{project}/milestones/{milestone}'
 */
 destroy.delete = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -353,7 +353,7 @@ destroy.delete = (args: { project: string | { id: string }, milestone: string | 
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:80
+* @see app/Http/Controllers/ProjectMilestoneController.php:68
 * @route '/projects/{project}/milestones/{milestone}'
 */
 const destroyForm = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -368,7 +368,7 @@ const destroyForm = (args: { project: string | { id: string }, milestone: string
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:80
+* @see app/Http/Controllers/ProjectMilestoneController.php:68
 * @route '/projects/{project}/milestones/{milestone}'
 */
 destroyForm.delete = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

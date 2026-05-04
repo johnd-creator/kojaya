@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreLeaveRequest;
+use App\Http\Requests\UpdateLeaveStatusRequest;
 use App\Models\Leave;
 use App\Models\LeaveType;
 use Carbon\Carbon;
@@ -39,20 +41,14 @@ class LeaveController extends Controller
     /**
      * Store a new leave request (ESS).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreLeaveRequest $request): RedirectResponse
     {
         $user = $request->user();
         if (! $user->employee) {
             return back()->with('error', 'You are not linked to an employee profile.');
         }
 
-        $validated = $request->validate([
-            'leave_type_id' => 'required|exists:leave_types,id',
-            'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:1000',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
+        $validated = $request->validated();
 
         $leaveType = LeaveType::find($validated['leave_type_id']);
 
@@ -97,7 +93,8 @@ class LeaveController extends Controller
      */
     public function index(Request $request): Response
     {
-        // Require specific HR or Admin permissions if implemented
+        $this->authorize('viewAny', Leave::class);
+
         $query = Leave::with(['employee:id,first_name,last_name,employee_code', 'type', 'approver:id,name']);
 
         if ($request->filled('status')) {
@@ -115,11 +112,9 @@ class LeaveController extends Controller
     /**
      * Update the leave status (Approve/Reject).
      */
-    public function updateStatus(Request $request, Leave $leave): RedirectResponse
+    public function updateStatus(UpdateLeaveStatusRequest $request, Leave $leave): RedirectResponse
     {
-        $validated = $request->validate([
-            'status' => 'required|in:Approved,Rejected',
-        ]);
+        $validated = $request->validated();
 
         $leave->update([
             'status' => $validated['status'],

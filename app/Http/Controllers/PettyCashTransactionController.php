@@ -2,25 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePettyCashTransactionRequest;
 use App\Models\PettyCashAccount;
 use App\Models\PettyCashTransaction;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class PettyCashTransactionController extends Controller
 {
-    public function store(Request $request)
+    public function store(StorePettyCashTransactionRequest $request)
     {
-        $validated = $request->validate([
-            'petty_cash_account_id' => 'required|exists:petty_cash_accounts,id',
-            'transaction_date' => 'required|date',
-            'type' => 'required|in:DEBIT,CREDIT',
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'required|string',
-            'reference_no' => 'nullable|string',
-            'proof_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
+        $validated = $request->validated();
 
         $account = PettyCashAccount::findOrFail($validated['petty_cash_account_id']);
 

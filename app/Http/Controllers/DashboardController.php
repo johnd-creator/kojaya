@@ -16,7 +16,7 @@ class DashboardController extends Controller
     public function show(CooperativeDashboardService $dashboard): InertiaResponse
     {
         return Inertia::render('Dashboard', [
-            'dashboard' => $dashboard->data(),
+            'dashboard' => Inertia::defer(fn () => $dashboard->data(), 'dashboard'),
         ]);
     }
 
@@ -27,10 +27,9 @@ class DashboardController extends Controller
      * across all organizations. Otherwise, returns data specific
      * to the selected organization.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, ConsolidatedReportService $service): JsonResponse
     {
         $activeOrgId = session('active_organization_id');
-        $service = new ConsolidatedReportService;
 
         // If no active organization, show consolidated data
         if (! $activeOrgId) {

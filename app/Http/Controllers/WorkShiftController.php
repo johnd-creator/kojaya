@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertWorkShiftRequest;
 use App\Models\WorkShift;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,34 +18,16 @@ class WorkShiftController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertWorkShiftRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:work_shifts,name',
-            'type' => 'required|in:SHIFT,NON_SHIFT',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-            'is_flexible' => 'boolean',
-            'flexible_minutes' => 'integer|min:0|max:120',
-        ]);
-
-        WorkShift::create($validated);
+        WorkShift::create($request->validated());
 
         return redirect()->route('work-shifts.index')->with('success', 'Work shift created.');
     }
 
-    public function update(Request $request, WorkShift $workShift)
+    public function update(UpsertWorkShiftRequest $request, WorkShift $workShift)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:work_shifts,name,'.$workShift->id,
-            'type' => 'required|in:SHIFT,NON_SHIFT',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-            'is_flexible' => 'boolean',
-            'flexible_minutes' => 'integer|min:0|max:120',
-        ]);
-
-        $workShift->update($validated);
+        $workShift->update($request->validated());
 
         return redirect()->route('work-shifts.index')->with('success', 'Work shift updated.');
     }

@@ -2,26 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RejectOvertimeRequest;
+use App\Http\Requests\StoreOvertimeRequest;
 use App\Models\Employee;
 use App\Models\OvertimeRequest;
 use App\Models\OvertimeRule;
-use App\Services\OvertimeCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class OvertimeController extends Controller
 {
-    private OvertimeCalculationService $overtimeService;
-
-    public function __construct(OvertimeCalculationService $overtimeService)
-    {
-        $this->overtimeService = $overtimeService;
-    }
-
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', OvertimeRequest::class);
+
         $user = Auth::user();
         $query = OvertimeRequest::query()
             ->with(['employee', 'overtimeRule', 'approvedBy']);
@@ -77,17 +74,9 @@ class OvertimeController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreOvertimeRequest $request)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'overtime_rule_id' => 'required|exists:overtime_rules,id',
-            'date' => 'required|date',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'reason' => 'nullable|string',
-            'evidence' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
+        $validated = $request->validated();
 
         $employee = Employee::find($validated['employee_id']);
         $rule = OvertimeRule::find($validated['overtime_rule_id']);
@@ -110,7 +99,7 @@ class OvertimeController extends Controller
         }
 
         OvertimeRequest::create([
-            'id' => \Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'employee_id' => $validated['employee_id'],
             'organization_id' => $employee->organization_id,
             'overtime_rule_id' => $validated['overtime_rule_id'],
@@ -127,8 +116,10 @@ class OvertimeController extends Controller
             ->with('success', 'Overtime request created successfully.');
     }
 
-    public function approve(OvertimeRequest $overtimeRequest)
+    public function approve(Request $request, OvertimeRequest $overtimeRequest)
     {
+        $this->authorize('approve', $overtimeRequest);
+
         if ($overtimeRequest->status !== 'PENDING') {
             return back()->withErrors(['status' => 'Only pending requests can be approved.']);
         }
@@ -142,11 +133,9 @@ class OvertimeController extends Controller
         return back()->with('success', 'Overtime request approved.');
     }
 
-    public function reject(Request $request, OvertimeRequest $overtimeRequest)
+    public function reject(RejectOvertimeRequest $request, OvertimeRequest $overtimeRequest)
     {
-        $validated = $request->validate([
-            'rejection_reason' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         if ($overtimeRequest->status !== 'PENDING') {
             return back()->withErrors(['status' => 'Only pending requests can be rejected.']);
@@ -162,6 +151,8 @@ class OvertimeController extends Controller
 
     public function destroy(OvertimeRequest $overtimeRequest)
     {
+        $this->authorize('delete', $overtimeRequest);
+
         if ($overtimeRequest->status === 'APPROVED') {
             return back()->withErrors(['status' => 'Cannot delete approved overtime requests.']);
         }

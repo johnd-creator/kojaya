@@ -65,7 +65,7 @@ class ProjectMilestoneTest extends TestCase
             'status' => 'PENDING',
         ]);
 
-        $response = $this->actingAs($user)->patch(route('milestones.update-progress', ['project' => $project, 'milestone' => $milestone]), [
+        $response = $this->actingAs($user)->patch(route('projects.milestones.update-progress', ['project' => $project, 'milestone' => $milestone]), [
             'progress_percentage' => 50,
         ]);
 

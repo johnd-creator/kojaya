@@ -114,7 +114,7 @@ class ProjectTeamTest extends TestCase
         $emp1 = Employee::factory()->create(['organization_id' => $org->id]);
         $emp2 = Employee::factory()->create(['organization_id' => $org->id]);
 
-        $response = $this->actingAs($user)->post(route('team.bulk-assign', $project), [
+        $response = $this->actingAs($user)->post(route('projects.team.bulk-assign', $project), [
             'employee_ids' => [$emp1->id, $emp2->id],
             'role' => 'Worker',
             'start_date' => now()->toDateString(),

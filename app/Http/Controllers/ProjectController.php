@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectProgressRequest;
+use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,22 +66,10 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
-        $validated = $request->validate([
-            'project_code' => 'required|string|max:50|unique:projects,project_code',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'client_id' => 'nullable|uuid|exists:clients,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'budget' => 'required|numeric|min:0',
-            'status' => 'required|in:PLANNING,ONGOING,ON_HOLD,COMPLETED,CANCELLED',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
-        $validated['id'] = (string) Str::uuid();
         $validated['progress_percentage'] = 0;
         $validated['actual_cost'] = 0;
 
@@ -127,20 +117,9 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function update(Request $request, Project $project)
+    public function update(UpdateProjectRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'project_code' => 'required|string|max:50|unique:projects,project_code,'.$project->id,
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'client_id' => 'nullable|uuid|exists:clients,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'budget' => 'required|numeric|min:0',
-            'status' => 'required|in:PLANNING,ONGOING,ON_HOLD,COMPLETED,CANCELLED',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $project->update($validated);
 
@@ -154,11 +133,9 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')->with('success', 'Project deleted successfully.');
     }
 
-    public function updateProgress(Request $request, Project $project)
+    public function updateProgress(UpdateProjectProgressRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'progress_percentage' => 'required|integer|min:0|max:100',
-        ]);
+        $validated = $request->validated();
 
         $project->update($validated);
 

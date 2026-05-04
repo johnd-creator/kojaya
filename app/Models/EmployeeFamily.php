@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeFamily extends Model
 {
@@ -17,17 +18,20 @@ class EmployeeFamily extends Model
         'related_employee_id',
     ];
 
-    protected $casts = [
-        'is_working_here' => 'boolean',
-        'birth_date' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_working_here' => 'boolean',
+            'birth_date' => 'date',
+        ];
+    }
 
-    public function employee(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    public function relatedEmployee(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function relatedEmployee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'related_employee_id');
     }

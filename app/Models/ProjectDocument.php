@@ -2,10 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectDocument extends Model
 {
+    use HasFactory, HasUuids;
+
     protected $fillable = [
         'project_id',
         'name',
@@ -15,30 +21,33 @@ class ProjectDocument extends Model
         'status',
     ];
 
-    protected $casts = [
-        'expiry_date' => 'date',
-    ];
-
     protected $keyType = 'string';
 
     public $incrementing = false;
 
-    public function project()
+    protected function casts(): array
+    {
+        return [
+            'expiry_date' => 'date',
+        ];
+    }
+
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function scopeValid($query)
+    public function scopeValid(Builder $query): Builder
     {
         return $query->where('status', 'VALID');
     }
 
-    public function scopeExpired($query)
+    public function scopeExpired(Builder $query): Builder
     {
         return $query->where('status', 'EXPIRED');
     }
 
-    public function scopeExpiringSoon($query, $days = 30)
+    public function scopeExpiringSoon(Builder $query, int $days = 30): Builder
     {
         return $query->where('expiry_date', '<=', now()->addDays($days))
             ->where('expiry_date', '>', now());

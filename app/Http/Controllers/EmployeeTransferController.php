@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ProcessEmployeeTransferRequest;
+use App\Http\Requests\StoreEmployeeTransferRequest;
 use App\Models\EmployeeTransfer;
 use App\Models\Organization;
 use Illuminate\Http\Request;
@@ -48,14 +50,9 @@ class EmployeeTransferController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreEmployeeTransferRequest $request)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|integer|exists:employees,id',
-            'to_organization_id' => 'required|uuid|exists:organizations,id|different:from_organization_id',
-            'effective_date' => 'required|date|after:today',
-            'reason' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         $employee = \App\Models\Employee::forUser()->findOrFail($validated['employee_id']);
 
@@ -82,15 +79,13 @@ class EmployeeTransferController extends Controller
         ]);
     }
 
-    public function approve(Request $request, EmployeeTransfer $transfer)
+    public function approve(ProcessEmployeeTransferRequest $request, EmployeeTransfer $transfer)
     {
         if (! $transfer->isPending()) {
             return back()->with('error', 'This transfer has already been processed.');
         }
 
-        $validated = $request->validate([
-            'notes' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         $transfer->approve(Auth::user(), $validated['notes'] ?? null);
 
@@ -101,15 +96,13 @@ class EmployeeTransferController extends Controller
         return back()->with('success', 'Transfer approved and employee has been moved to the new organization.');
     }
 
-    public function reject(Request $request, EmployeeTransfer $transfer)
+    public function reject(ProcessEmployeeTransferRequest $request, EmployeeTransfer $transfer)
     {
         if (! $transfer->isPending()) {
             return back()->with('error', 'This transfer has already been processed.');
         }
 
-        $validated = $request->validate([
-            'notes' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         $transfer->reject(Auth::user(), $validated['notes'] ?? null);
 

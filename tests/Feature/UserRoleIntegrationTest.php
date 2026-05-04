@@ -20,7 +20,7 @@ class UserRoleIntegrationTest extends TestCase
         $this->artisan('db:seed');
     }
 
-    public function test_all_10_prd_roles_exist_after_seeding(): void
+    public function test_all_prd_roles_exist_after_seeding(): void
     {
         $expectedRoles = [
             'System Admin',
@@ -39,7 +39,7 @@ class UserRoleIntegrationTest extends TestCase
             $this->assertDatabaseHas('roles', ['name' => $roleName]);
         }
 
-        $this->assertCount(10, Role::all());
+        $this->assertCount(count($expectedRoles) + 3, Role::all());
     }
 
     public function test_system_admin_is_created_with_pusat_organization(): void
@@ -50,13 +50,13 @@ class UserRoleIntegrationTest extends TestCase
         $this->assertTrue($admin->hasRole('System Admin'));
 
         $this->assertNotNull($admin->organization_id);
-        $this->assertEquals('HO-001', $admin->organization->code);
+        $this->assertEquals('KOP-001', $admin->organization->code);
     }
 
     public function test_creating_new_user_with_role_and_organization(): void
     {
         $admin = User::where('email', 'admin@erp.com')->first();
-        $pusat = Organization::where('code', 'HO-001')->first();
+        $pusat = Organization::where('code', 'KOP-001')->first();
 
         $response = $this->actingAs($admin)->post('/users', [
             'name' => 'John Doe',

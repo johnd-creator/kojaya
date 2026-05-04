@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectMilestone extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'project_id',
@@ -18,27 +21,30 @@ class ProjectMilestone extends Model
         'progress_percentage',
     ];
 
-    protected $casts = [
-        'due_date' => 'date',
-        'progress_percentage' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+            'progress_percentage' => 'integer',
+        ];
+    }
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function scopePending($query)
+    public function scopePending(Builder $query): Builder
     {
         return $query->where('status', 'PENDING');
     }
 
-    public function scopeCompleted($query)
+    public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', 'COMPLETED');
     }
 
-    public function scopeOverdue($query)
+    public function scopeOverdue(Builder $query): Builder
     {
         return $query->where('due_date', '<', now())
             ->whereNotIn('status', ['COMPLETED']);

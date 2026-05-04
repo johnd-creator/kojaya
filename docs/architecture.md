@@ -39,7 +39,7 @@ Kedua sistem berbagi satu database dan terintegrasi via API.
 │  └───────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │ Data Access Layer                                     │  │
-│  │ - Eloquent Models (72 models with UUID)               │  │
+│  │ - Eloquent Models (82 models, 36 with UUID)               │  │
 │  │ - Query Scopes, Relationships                         │  │
 │  │ - API Resources (JSON transformation)                 │  │
 │  └───────────────────────────────────────────────────────┘  │
@@ -47,7 +47,8 @@ Kedua sistem berbagi satu database dan terintegrasi via API.
                               ↕ SQL (Eloquent)
 ┌─────────────────────────────────────────────────────────────┐
 │                     Data Layer                                │
-│                    PostgreSQL 13+                            │
+│                    PostgreSQL 15+                             │
+│  - Database: kojaya_erp                                     │
 │  - Multi-organization tenancy                             │
 │  - Audit logs, soft deletes                               │
 │  - Indexes for performance                                │
@@ -150,7 +151,7 @@ kojaya/
 │   │   └── Resources/             # API Resources (JSON transformation)
 │   ├── Jobs/                      # Queued jobs
 │   ├── Listeners/                 # Event listeners
-│   ├── Models/                    # Eloquent models (72 models, UUID-based)
+│   ├── Models/                    # Eloquent models (82 models (36 UUID, 46 auto-increment))
 │   ├── Observers/                 # Model observers
 │   ├── Providers/                 # Service providers
 │   ├── Services/                  # Business logic layer
@@ -225,9 +226,9 @@ kojaya/
 - **Mechanism:** Laravel Sanctum (token-based)
 - **Middleware:** `auth:sanctum`
 - **Features:**
-  - API tokens without expiration (configurable)
-  - Token abilities (permissions)
-  - Mobile-first authentication
+   - API tokens with 30-day expiration (configurable)
+   - Token abilities (permissions): profile:read, cooperative:read/write, pos:read/write, reports:read, work-orders:read/write, employee-documents:read/write
+   - Mobile-first authentication
 
 #### **3. Role-Based Access Control (RBAC)**
 - **Package:** Spatie Laravel Permission
@@ -276,7 +277,7 @@ Route::middleware(['can:manage-payroll'])->group(function () {
 
 ### **Schema Principles**
 
-1. **UUID Primary Keys** - All tables use `uuid` primary keys (not auto-increment)
+1. **UUID Primary Keys** - 36 tables use UUID primary keys (via `HasUuids` trait), 46 use auto-increment integers
 2. **Soft Deletes** - `deleted_at` column for soft deletion
 3. **Audit Trail** - `created_at`, `updated_at` timestamps
 4. **Organization Scope** - Multi-tenancy via `organization_id`
@@ -442,17 +443,34 @@ Backend didesain dari awal untuk mendukung mobile apps:
 
 1. **RESTful API** - Standard HTTP methods (GET, POST, PUT, DELETE)
 2. **JSON Responses** - Consistent response format
-3. **Token Auth** - Sanctum tokens untuk mobile
+3. **Token Auth** - Sanctum tokens with 30-day expiration and scoped abilities
 4. **API Versioning** - `/api/v1/` prefix
-5. **Documentation** - OpenAPI specs (planned)
+5. **Rate Limiting** - 3-tier throttle (60/min read, 30/min write, 5/min login)
+6. **Documentation** - See `docs/flutter/` for complete Flutter development docs
+
+### **API Endpoints (Current)**
+
+| Group | Prefix | Endpoints | Auth |
+|-------|--------|-----------|------|
+| User Profile | `/api/user` | GET current user | sanctum + profile:read |
+| Cooperative Members | `/api/v1/members` | CRUD + activate/resign | sanctum + cooperative:* |
+| Cooperative Dues | `/api/v1/dues` | List invoices, generate | sanctum + cooperative:* |
+| Cooperative Payments | `/api/v1/dues/payments` | Record, approve | sanctum + cooperative:* |
+| POS Products | `/api/v1/pos/products` | List | sanctum + pos:read |
+| POS Transactions | `/api/v1/pos/transactions` | Create | sanctum + pos:write |
+| Cooperative Reports | `/api/v1/reports` | Summary, sales | sanctum + reports:read |
+| Technician Work Orders | `/api/technician/work-orders` | List, start, complete, checklists | sanctum + work-orders:* |
+| Employee Certificates | `/api/employees/{id}/certificates` | CRUD + upload | sanctum + employee-documents:* |
+| Medical Checkups | `/api/employees/{id}/mcu` | CRUD + upload | sanctum + employee-documents:* |
+| Compliance Reports | `/api/reports` | Certificate/MCU compliance | sanctum + reports:read |
 
 ### **Mobile App Integration Points**
 
 | Mobile App Type | API Endpoints | Primary Use Cases |
 |-----------------|---------------|-------------------|
-| **Kojayaku (Member App)** | `/api/v1/members`, `/api/v1/savings`, `/api/v1/loans`, `/api/v1/points`, `/api/v1/transactions` | Cek simpanan, ajukan pinjaman, tukar poin, riwayat transaksi |
-| **Technician App** | `/api/technician/*` | Work orders, checklists |
-| **ESS App** | `/api/ess/*`, `/api/payrolls` | Attendance, leaves, payslips |
+| **Kojayaku (Cooperative App)** | `/api/v1/members`, `/api/v1/dues/*`, `/api/v1/pos/*`, `/api/v1/reports/*` | Manajemen anggota, iuran, pembayaran, POS, laporan koperasi |
+| **Technician App** | `/api/technician/work-orders/*` | Work orders, checklists, spare parts |
+| **Compliance App** | `/api/employees/*/certificates`, `/api/employees/*/mcu`, `/api/reports/*-compliance` | Sertifikasi karyawan, medical checkup, kepatuhan |
 
 ---
 
@@ -465,7 +483,7 @@ Backend didesain dari awal untuk mendukung mobile apps:
 │     Developer Workstation           │
 │  - PHP 8.4 (local or Docker)       │
 │  - Node.js 22 (local)               │
-│  - PostgreSQL 13 (Docker)           │
+│  - PostgreSQL 15 (Docker)           │
 │  - Redis (Docker, optional)         │
 └─────────────────────────────────────┘
 ```
@@ -516,7 +534,7 @@ Backend didesain dari awal untuk mendukung mobile apps:
 | CPU | 2 cores | 4 cores |
 | RAM | 4 GB | 8 GB |
 | Storage | 40 GB SSD | 80 GB SSD |
-| Database | PostgreSQL 13 | PostgreSQL 15+ with replica |
+| Database | PostgreSQL 15 | PostgreSQL 15+ with replica |
 | Web Server | Nginx | Nginx + PHP-FPM |
 | OS | Ubuntu 22.04 LTS | Ubuntu 24.04 LTS |
 
@@ -527,14 +545,14 @@ Backend didesain dari awal untuk mendukung mobile apps:
 ### **Test Coverage**
 
 - **Unit Tests** - Service layer logic (payroll, tax calculations)
-- **Feature Tests** - End-to-end API testing
+- **Feature Tests** - End-to-end API testing (58+ test methods across 14 test files)
 - **Browser Tests** - Inertia page interactions (planned)
 
 ### **Testing Tools**
 
 - **PHPUnit 11.5** - Testing framework
 - **Faker** - Test data generation
-- **Factories** - Model factories for test data
+- **Factories** - 37 model factories for test data
 - **Database Migrations** - Rollback between tests
 
 ---
@@ -563,21 +581,22 @@ Backend didesain dari awal untuk mendukung mobile apps:
 
 ### **Short Term (3-6 months)**
 - [ ] Add OpenAPI/Swagger documentation
-- [ ] Implement rate limiting
-- [ ] Add automated testing coverage
+- [x] Implement rate limiting (3-tier: api 60/min, api-write 30/min, login 5/min)
+- [x] Add automated testing coverage (37 factories, 58+ test methods)
 - [ ] Database query optimization
 - [ ] Redis caching implementation
-- [ ] **Kojayaku Web App** - Responsive web version untuk member access
-- [ ] **Kojayaku API** - Complete API endpoints untuk simpanan, pinjaman, poin
+- [x] **Kojayaku Architecture** - Flutter app architecture docs completed (see `docs/flutter/`)
+- [x] **Kojayaku API** - Cooperative, POS, Technician, Employee Document endpoints live
 
 ### **Medium Term (6-12 months)**
 - [ ] Microservices for specific modules (POS, Payroll)
 - [ ] Event-driven architecture (Laravel Events + Queues)
 - [ ] Real-time notifications (WebSocket/SSE)
 - [ ] Advanced analytics dashboard
-- [ ] **Kojayaku Mobile Apps** - Native Android/iOS apps
+- [ ] **Kojayaku Flutter App** - Native Android/iOS apps (architecture docs ready)
 - [ ] **Payment Gateway Integration** - Midtrans/Xendit untuk Kojayaku payments
 - [ ] **Push Notifications** - Firebase/WhatsApp untuk member notifications
+- [ ] **ESS API** - Attendance clock-in/out, leave requests, overtime, payslips untuk mobile
 
 ### **Long Term (12+ months)**
 - [ ] GraphQL API (alternative to REST)
@@ -588,4 +607,4 @@ Backend didesain dari awal untuk mendukung mobile apps:
 
 ---
 
-*Last Updated: May 2, 2026*
+*Last Updated: May 4, 2026*

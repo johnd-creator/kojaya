@@ -7,6 +7,8 @@ use App\Models\PosTransaction;
 
 class MemberPointService
 {
+    public function __construct(private readonly PointService $pointService) {}
+
     public function postFromTransaction(PosTransaction $transaction): ?PosMemberPoint
     {
         if (! $transaction->cooperative_member_id) {
@@ -20,7 +22,7 @@ class MemberPointService
             return null;
         }
 
-        return PosMemberPoint::query()->firstOrCreate(
+        $point = PosMemberPoint::query()->firstOrCreate(
             ['pos_transaction_id' => $transaction->id],
             [
                 'cooperative_member_id' => $transaction->cooperative_member_id,
@@ -30,5 +32,13 @@ class MemberPointService
                 'posted_at' => $transaction->sold_at->toDateString(),
             ],
         );
+
+        $point->loadMissing('member', 'transaction');
+
+        if ($point->member) {
+            $this->pointService->syncPosPoints($point->member);
+        }
+
+        return $point;
     }
 }

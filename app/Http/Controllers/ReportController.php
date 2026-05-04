@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ConsolidatedAttendanceReportRequest;
+use App\Http\Requests\ConsolidatedPayrollReportRequest;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Reports\Attendance\MonthlyAttendanceReport;
@@ -11,21 +13,48 @@ use App\Reports\Leave\LeaveReport;
 use App\Reports\Payroll\PayrollDetailReport;
 use App\Reports\Payroll\PayrollSummaryReport;
 use App\Reports\Payroll\PayslipReport;
+use App\Services\ConsolidatedReportService;
+use App\Services\ExcelExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Response;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
+    public function __construct(
+        private readonly ExcelExportService $excelExportService,
+        private readonly ConsolidatedReportService $consolidatedReportService,
+    ) {}
+
+    public function page(): InertiaResponse
+    {
+        return Inertia::render('Reports', [
+            'reports' => Inertia::defer(fn () => $this->reportCatalog(), 'reports'),
+        ]);
+    }
+
     public function index(): JsonResponse
     {
-        $reports = [
+        return Response::json($this->reportCatalog());
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function reportCatalog(): array
+    {
+        return [
             [
                 'id' => 'payslip',
                 'name' => 'Payslip',
                 'description' => 'Generate individual employee payslip PDF',
                 'type' => 'pdf',
+                'formats' => ['pdf'],
+                'filters' => ['employee_id', 'period'],
                 'category' => 'payroll',
             ],
             [
@@ -33,6 +62,8 @@ class ReportController extends Controller
                 'name' => 'Payroll Summary',
                 'description' => 'Consolidated payroll summary per organization',
                 'type' => 'excel',
+                'formats' => ['excel'],
+                'filters' => ['period', 'organization_id'],
                 'category' => 'payroll',
             ],
             [
@@ -40,6 +71,8 @@ class ReportController extends Controller
                 'name' => 'Payroll Detail',
                 'description' => 'Detailed payroll breakdown with all components',
                 'type' => 'excel',
+                'formats' => ['excel'],
+                'filters' => ['period', 'organization_id'],
                 'category' => 'payroll',
             ],
             [
@@ -47,6 +80,8 @@ class ReportController extends Controller
                 'name' => 'Attendance Report',
                 'description' => 'Monthly attendance summary',
                 'type' => 'excel',
+                'formats' => ['excel'],
+                'filters' => ['date_from', 'date_to', 'organization_id', 'unit_id'],
                 'category' => 'attendance',
             ],
             [
@@ -54,6 +89,8 @@ class ReportController extends Controller
                 'name' => 'Leave Report',
                 'description' => 'Leave summary and balance report',
                 'type' => 'excel',
+                'formats' => ['excel'],
+                'filters' => ['date_from', 'date_to', 'organization_id', 'unit_id'],
                 'category' => 'leave',
             ],
             [
@@ -61,6 +98,8 @@ class ReportController extends Controller
                 'name' => 'Certificate Compliance',
                 'description' => 'Certificate status and expiry tracking',
                 'type' => 'excel',
+                'formats' => ['excel'],
+                'filters' => ['date_from', 'date_to', 'organization_id'],
                 'category' => 'compliance',
             ],
             [
@@ -68,14 +107,14 @@ class ReportController extends Controller
                 'name' => 'MCU Compliance',
                 'description' => 'Medical check-up compliance status',
                 'type' => 'excel',
+                'formats' => ['excel'],
+                'filters' => ['date_from', 'date_to', 'organization_id'],
                 'category' => 'compliance',
             ],
         ];
-
-        return Response::json($reports);
     }
 
-    public function payslip(Request $request, int $employeeId, string $period): BinaryFileResponse
+    public function payslip(Request $request, int $employeeId, string $period): HttpResponse
     {
         $employee = Employee::findOrFail($employeeId);
         $payroll = Payroll::where('employee_id', $employeeId)
@@ -108,7 +147,7 @@ class ReportController extends Controller
 
         $fileName = 'payroll_summary_'.now()->format('Y-m-d_His').'.xlsx';
 
-        return (new \App\Services\ExcelExportService)
+        return $this->excelExportService
             ->export(new PayrollSummaryReport($filters), $fileName)
             ->download();
     }
@@ -124,7 +163,7 @@ class ReportController extends Controller
 
         $fileName = 'payroll_detail_'.now()->format('Y-m-d_His').'.xlsx';
 
-        return (new \App\Services\ExcelExportService)
+        return $this->excelExportService
             ->export(new PayrollDetailReport($filters), $fileName)
             ->download();
     }
@@ -139,7 +178,7 @@ class ReportController extends Controller
 
         $fileName = 'attendance_report_'.$filters['month'].'.xlsx';
 
-        return (new \App\Services\ExcelExportService)
+        return $this->excelExportService
             ->export(new MonthlyAttendanceReport($filters), $fileName)
             ->download();
     }
@@ -155,7 +194,7 @@ class ReportController extends Controller
 
         $fileName = 'leave_report_'.$filters['year'].'.xlsx';
 
-        return (new \App\Services\ExcelExportService)
+        return $this->excelExportService
             ->export(new LeaveReport($filters), $fileName)
             ->download();
     }
@@ -170,7 +209,7 @@ class ReportController extends Controller
 
         $fileName = 'certificate_compliance_'.now()->format('Y-m-d_His').'.xlsx';
 
-        return (new \App\Services\ExcelExportService)
+        return $this->excelExportService
             ->export(new CertificateComplianceReport($filters), $fileName)
             ->download();
     }
@@ -185,7 +224,7 @@ class ReportController extends Controller
 
         $fileName = 'mcu_compliance_'.now()->format('Y-m-d_His').'.xlsx';
 
-        return (new \App\Services\ExcelExportService)
+        return $this->excelExportService
             ->export(new McuComplianceReport($filters), $fileName)
             ->download();
     }
@@ -195,8 +234,7 @@ class ReportController extends Controller
      */
     public function consolidatedStats(Request $request): JsonResponse
     {
-        $service = new \App\Services\ConsolidatedReportService();
-        $stats = $service->getEmployeeStats();
+        $stats = $this->consolidatedReportService->getEmployeeStats();
 
         return Response::json([
             'data' => $stats,
@@ -207,15 +245,11 @@ class ReportController extends Controller
     /**
      * Get consolidated payroll summary across all organizations.
      */
-    public function consolidatedPayroll(Request $request): JsonResponse
+    public function consolidatedPayroll(ConsolidatedPayrollReportRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'period_from' => 'required|date_format:Y-m',
-            'period_to' => 'required|date_format:Y-m|after_or_equal:period_from',
-        ]);
+        $validated = $request->validated();
 
-        $service = new \App\Services\ConsolidatedReportService();
-        $payroll = $service->getPayrollSummary(
+        $payroll = $this->consolidatedReportService->getPayrollSummary(
             $validated['period_from'],
             $validated['period_to']
         );
@@ -231,14 +265,11 @@ class ReportController extends Controller
     /**
      * Get consolidated attendance statistics across all organizations.
      */
-    public function consolidatedAttendance(Request $request): JsonResponse
+    public function consolidatedAttendance(ConsolidatedAttendanceReportRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'month' => 'required|date_format:Y-m',
-        ]);
+        $validated = $request->validated();
 
-        $service = new \App\Services\ConsolidatedReportService();
-        $attendance = $service->getAttendanceStats($validated['month']);
+        $attendance = $this->consolidatedReportService->getAttendanceStats($validated['month']);
 
         return Response::json([
             'data' => $attendance,

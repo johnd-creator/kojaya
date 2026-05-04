@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectTeam extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     protected $table = 'project_team';
 
@@ -24,31 +27,34 @@ class ProjectTeam extends Model
         'has_uniform',
     ];
 
-    protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'daily_rate_cost' => 'decimal:2',
-        'has_ppe' => 'boolean',
-        'has_uniform' => 'boolean',
-    ];
-
     protected $keyType = 'string';
 
     public $incrementing = false;
 
-    public function project()
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'daily_rate_cost' => 'decimal:2',
+            'has_ppe' => 'boolean',
+            'has_uniform' => 'boolean',
+        ];
+    }
+
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function employee()
+    public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
-        return $query->where(function ($q) {
+        return $query->where(function (Builder $q) {
             $q->whereNull('end_date')->orWhere('end_date', '>=', now());
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertPositionRequest;
 use App\Models\Department;
 use App\Models\JobGrade;
 use App\Models\Position;
@@ -32,32 +33,16 @@ class PositionController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertPositionRequest $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:positions,code',
-            'name' => 'required|string|max:150',
-            'description' => 'nullable|string',
-            'department_id' => 'required|exists:departments,id',
-            'job_grade_id' => 'required|exists:job_grades,id',
-        ]);
-
-        Position::create($validated);
+        Position::create($request->validated());
 
         return redirect()->route('positions.index')->with('success', 'Position created.');
     }
 
-    public function update(Request $request, Position $position)
+    public function update(UpsertPositionRequest $request, Position $position)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:positions,code,'.$position->id,
-            'name' => 'required|string|max:150',
-            'description' => 'nullable|string',
-            'department_id' => 'required|exists:departments,id',
-            'job_grade_id' => 'required|exists:job_grades,id',
-        ]);
-
-        $position->update($validated);
+        $position->update($request->validated());
 
         return redirect()->route('positions.index')->with('success', 'Position updated.');
     }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { Home } from 'lucide-vue-next';
+import { Link } from "@inertiajs/vue3";
+import { Home } from "lucide-vue-next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,7 +8,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+} from "@/components/ui/breadcrumb";
 
 interface BreadcrumbItemType {
   title: string;
@@ -25,7 +25,9 @@ defineProps<Props>();
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+  <div
+    class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8"
+  >
     <div class="space-y-1.5">
       <!-- Breadcrumbs -->
       <Breadcrumb v-if="breadcrumbs && breadcrumbs.length > 0" class="mb-2">
@@ -39,7 +41,7 @@ defineProps<Props>();
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          
+
           <template v-for="(item, index) in breadcrumbs" :key="index">
             <BreadcrumbItem>
               <template v-if="index === breadcrumbs.length - 1 || !item.href">
@@ -57,7 +59,9 @@ defineProps<Props>();
       </Breadcrumb>
 
       <!-- Title & Description -->
-      <h2 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+      <h2
+        class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100"
+      >
         {{ title }}
       </h2>
       <p v-if="description" class="text-sm text-zinc-500 dark:text-zinc-400">

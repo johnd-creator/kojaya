@@ -4,7 +4,9 @@ namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
+use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Organization;
 use App\Models\PosCategory;
@@ -17,7 +19,9 @@ use App\Services\Cooperative\DuesGenerationService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -59,6 +63,127 @@ class CooperativeFeatureTest extends TestCase
 
         $this->assertSame('KOP-001', $member->organization->code);
         $this->assertNotSame($branch->id, $member->organization_id);
+    }
+
+    public function test_member_creation_provisions_member_user_and_opening_balance(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+
+        $this->actingAs($user)->post(route('cooperative.members.store'), [
+            'name' => 'Anggota Login',
+            'email' => 'anggota-login@test.local',
+            'phone' => '08123',
+            'joined_at' => '2026-05-01',
+            'status' => 'ACTIVE',
+            'member_login_password' => 'password-anggota',
+            'opening_saving_balance' => 125000,
+        ])->assertRedirect(route('cooperative.members.index'));
+
+        $member = CooperativeMember::query()->where('email', 'anggota-login@test.local')->firstOrFail();
+        $memberUser = User::query()->where('email', 'anggota-login@test.local')->firstOrFail();
+
+        $this->assertSame($memberUser->id, $member->user_id);
+        $this->assertTrue($memberUser->hasRole('Anggota'));
+        $this->assertTrue(Hash::check('password-anggota', $memberUser->password));
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'cooperative_member_id' => $member->id,
+            'entry_type' => 'OPENING_BALANCE',
+            'credit' => 125000,
+            'posted_at' => '2026-05-01 00:00:00',
+        ]);
+    }
+
+    public function test_member_creation_links_existing_user_without_changing_password(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+        $existingUser = User::factory()->create([
+            'email' => 'existing-member@test.local',
+            'password' => Hash::make('old-password'),
+        ]);
+
+        $this->actingAs($admin)->post(route('cooperative.members.store'), [
+            'name' => 'Existing Member',
+            'email' => 'existing-member@test.local',
+            'joined_at' => '2026-05-01',
+            'status' => 'ACTIVE',
+            'member_login_password' => 'new-password',
+        ])->assertRedirect(route('cooperative.members.index'));
+
+        $member = CooperativeMember::query()->where('email', 'existing-member@test.local')->firstOrFail();
+
+        $this->assertSame($existingUser->id, $member->user_id);
+        $this->assertTrue($existingUser->refresh()->hasRole('Anggota'));
+        $this->assertTrue(Hash::check('old-password', $existingUser->password));
+    }
+
+    public function test_user_management_loads_and_searches_cooperative_member_links(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+        $memberUser = User::factory()->create(['email' => 'member-user@test.local']);
+        $memberUser->assignRole('Anggota');
+        $member = $this->member([
+            'user_id' => $memberUser->id,
+            'member_no' => 'KOP-SEARCH-001',
+            'name' => 'Member Searchable',
+            'email' => 'member-user@test.local',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('users.index', ['search' => 'KOP-SEARCH-001']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('User/Index')
+                ->where('users.data.0.cooperative_member.id', $member->id)
+                ->where('users.data.0.cooperative_member.member_no', 'KOP-SEARCH-001')
+            );
+    }
+
+    public function test_member_opening_balance_can_be_updated_without_duplicate_entries(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+        $member = $this->member([
+            'name' => 'Opening Balance',
+            'email' => 'opening@test.local',
+        ]);
+
+        $this->actingAs($admin)->put(route('cooperative.members.update', $member), [
+            'name' => 'Opening Balance',
+            'email' => 'opening@test.local',
+            'phone' => '08123',
+            'identity_number' => '12345',
+            'address' => 'Alamat',
+            'joined_at' => '2026-05-01',
+            'status' => 'ACTIVE',
+            'notes' => 'Migrasi',
+            'opening_saving_balance' => 150000,
+        ])->assertRedirect(route('cooperative.members.index'));
+
+        $this->actingAs($admin)->put(route('cooperative.members.update', $member), [
+            'name' => 'Opening Balance',
+            'email' => 'opening@test.local',
+            'phone' => '08123',
+            'identity_number' => '12345',
+            'address' => 'Alamat',
+            'joined_at' => '2026-05-01',
+            'status' => 'ACTIVE',
+            'notes' => 'Migrasi',
+            'opening_saving_balance' => 200000,
+        ])->assertRedirect(route('cooperative.members.index'));
+
+        $this->assertSame(1, $member->ledgerEntries()->where('entry_type', 'OPENING_BALANCE')->count());
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'cooperative_member_id' => $member->id,
+            'entry_type' => 'OPENING_BALANCE',
+            'credit' => 200000,
+        ]);
     }
 
     public function test_member_can_be_activated_and_resigned(): void
@@ -139,6 +264,137 @@ class CooperativeFeatureTest extends TestCase
             'entry_type' => 'SAVING_PAYMENT',
             'credit' => 50000,
         ]);
+    }
+
+    public function test_approving_same_cooperative_payment_twice_does_not_duplicate_invoice_or_ledger(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'user_id' => $user->id,
+            'amount' => 50000,
+            'payment_method' => 'CASH',
+            'paid_at' => '2026-05-01',
+            'status' => 'PENDING',
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.payments.approve', $payment))->assertRedirect();
+        $this->actingAs($user)->post(route('cooperative.payments.approve', $payment))->assertRedirect();
+
+        $this->assertSame('PAID', $invoice->refresh()->status);
+        $this->assertSame('50000.00', $invoice->paid_amount);
+        $this->assertSame('APPROVED', $payment->refresh()->status);
+        $this->assertSame(1, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count());
+    }
+
+    public function test_dues_batch_mark_paid_creates_approved_payments_and_ledger_entries(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+        $firstMember = $this->member(['status' => 'ACTIVE']);
+        $secondMember = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $firstInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $firstMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        $secondInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $secondMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 75000,
+            'paid_amount' => 25000,
+            'status' => 'PARTIAL',
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.dues.mark-paid'), [
+            'invoice_ids' => [$firstInvoice->id, $secondInvoice->id],
+            'payment_method' => 'CASH',
+            'paid_at' => '2026-05-10',
+            'reference_no' => 'BATCH-001',
+        ])->assertRedirect();
+
+        $this->assertSame('PAID', $firstInvoice->refresh()->status);
+        $this->assertSame('50000.00', $firstInvoice->paid_amount);
+        $this->assertSame('PAID', $secondInvoice->refresh()->status);
+        $this->assertSame('75000.00', $secondInvoice->paid_amount);
+        $this->assertDatabaseHas('cooperative_payments', [
+            'cooperative_dues_invoice_id' => $firstInvoice->id,
+            'amount' => 50000,
+            'status' => 'APPROVED',
+        ]);
+        $this->assertDatabaseHas('cooperative_payments', [
+            'cooperative_dues_invoice_id' => $secondInvoice->id,
+            'amount' => 50000,
+            'status' => 'APPROVED',
+        ]);
+        $this->assertSame(2, $firstMember->ledgerEntries()->where('entry_type', 'SAVING_PAYMENT')->count() + $secondMember->ledgerEntries()->where('entry_type', 'SAVING_PAYMENT')->count());
+    }
+
+    public function test_dues_mark_paid_skips_already_paid_invoices_without_duplicate_payment(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 50000,
+            'status' => 'PAID',
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.dues.mark-paid'), [
+            'invoice_ids' => [$invoice->id],
+            'payment_method' => 'CASH',
+            'paid_at' => '2026-05-10',
+        ])->assertRedirect();
+
+        $this->assertSame(0, $invoice->payments()->count());
+        $this->assertSame('PAID', $invoice->refresh()->status);
+        $this->assertSame('50000.00', $invoice->paid_amount);
     }
 
     public function test_pos_transaction_reduces_stock_and_requires_active_member_for_credit(): void
@@ -447,12 +703,12 @@ class CooperativeFeatureTest extends TestCase
         $this->getJson('/api/v1/members')->assertUnauthorized();
 
         $plainUser = User::factory()->create();
-        Sanctum::actingAs($plainUser);
+        Sanctum::actingAs($plainUser, ['cooperative:read']);
         $this->getJson('/api/v1/members')->assertForbidden();
 
         $admin = User::factory()->create();
         $admin->assignRole('System Admin');
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($admin, ['cooperative:read']);
         $this->getJson('/api/v1/members')->assertOk();
     }
 

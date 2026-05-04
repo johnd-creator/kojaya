@@ -11,6 +11,7 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderChecklist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class TechnicianApiTest extends TestCase
@@ -101,8 +102,9 @@ class TechnicianApiTest extends TestCase
             'assigned_to' => $otherUser->id,
         ]);
 
-        $response = $this->actingAs($user, 'sanctum')
-            ->getJson('/api/technician/work-orders');
+        Sanctum::actingAs($user, ['work-orders:read']);
+
+        $response = $this->getJson('/api/technician/work-orders');
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -138,29 +140,72 @@ class TechnicianApiTest extends TestCase
         ]);
 
         // Start WO
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/technician/work-orders/{$wo->id}/start")
+        Sanctum::actingAs($user, ['work-orders:read', 'work-orders:write']);
+
+        $this->postJson("/api/technician/work-orders/{$wo->id}/start")
             ->assertStatus(200)
             ->assertJsonPath('data.status', 'IN_PROGRESS');
 
         // Try complete (should fail)
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/technician/work-orders/{$wo->id}/complete")
+        $this->postJson("/api/technician/work-orders/{$wo->id}/complete")
             ->assertStatus(422);
 
         // Update checklist
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/technician/work-orders/{$wo->id}/checklists/{$checklist->id}", [
-                'is_checked' => true,
-                'notes' => 'Seals look good',
-            ])
+        $this->postJson("/api/technician/work-orders/{$wo->id}/checklists/{$checklist->id}", [
+            'is_checked' => true,
+            'notes' => 'Seals look good',
+        ])
             ->assertStatus(200)
             ->assertJsonPath('data.is_checked', true);
 
         // Complete WO (should succeed)
-        $this->actingAs($user, 'sanctum')
-            ->postJson("/api/technician/work-orders/{$wo->id}/complete")
+        $this->postJson("/api/technician/work-orders/{$wo->id}/complete")
             ->assertStatus(200)
             ->assertJsonPath('data.status', 'COMPLETED');
+    }
+
+    public function test_technician_cannot_view_or_mutate_unassigned_work_orders(): void
+    {
+        $assignedUser = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $org = Organization::factory()->create();
+        $asset = Asset::create([
+            'id' => (string) Str::uuid(),
+            'code' => 'AS-UNASSIGNED',
+            'name' => 'Unassigned Asset',
+            'category' => 'Mechanical',
+            'organization_id' => $org->id,
+            'status' => 'ACTIVE',
+        ]);
+
+        $workOrder = WorkOrder::create([
+            'asset_id' => $asset->id,
+            'organization_id' => $org->id,
+            'type' => 'PREVENTIVE',
+            'status' => 'OPEN',
+            'assigned_to' => $assignedUser->id,
+        ]);
+
+        $checklist = WorkOrderChecklist::create([
+            'work_order_id' => $workOrder->id,
+            'item_name' => 'Inspect filter',
+            'is_checked' => false,
+        ]);
+
+        Sanctum::actingAs($otherUser, ['work-orders:read', 'work-orders:write']);
+
+        $this->getJson("/api/technician/work-orders/{$workOrder->id}")
+            ->assertForbidden();
+
+        $this->postJson("/api/technician/work-orders/{$workOrder->id}/start")
+            ->assertForbidden();
+
+        $this->postJson("/api/technician/work-orders/{$workOrder->id}/checklists/{$checklist->id}", [
+            'is_checked' => true,
+        ])
+            ->assertForbidden();
+
+        $this->postJson("/api/technician/work-orders/{$workOrder->id}/complete")
+            ->assertForbidden();
     }
 }

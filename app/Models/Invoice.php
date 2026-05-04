@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Models\Traits\HasOrganizationScope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invoice extends Model
 {
-    use HasFactory, HasOrganizationScope, SoftDeletes;
+    use HasFactory, HasOrganizationScope, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'organization_id',
@@ -30,17 +33,6 @@ class Invoice extends Model
 
     public $incrementing = false;
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) \Illuminate\Support\Str::uuid();
-            }
-        });
-    }
-
     protected function casts(): array
     {
         return [
@@ -52,47 +44,47 @@ class Invoice extends Model
         ];
     }
 
-    public function organization(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    public function unit(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function unit(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'unit_id');
     }
 
-    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
-    public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function scopeDraft($query)
+    public function scopeDraft(Builder $query): Builder
     {
         return $query->where('status', 'DRAFT');
     }
 
-    public function scopePending($query)
+    public function scopePending(Builder $query): Builder
     {
         return $query->where('status', 'PENDING');
     }
 
-    public function scopeApproved($query)
+    public function scopeApproved(Builder $query): Builder
     {
         return $query->where('status', 'APPROVED');
     }
 
-    public function scopePaid($query)
+    public function scopePaid(Builder $query): Builder
     {
         return $query->where('status', 'PAID');
     }
 
-    public function scopeOverdue($query)
+    public function scopeOverdue(Builder $query): Builder
     {
         return $query->where('status', 'OVERDUE');
     }

@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReconcileBankStatementRequest;
+use App\Http\Requests\StoreBankTransferBatchRequest;
 use App\Models\BankTransferBatch;
 use App\Models\BankTransferItem;
 use App\Models\Invoice;
 use App\Services\BankFileGenerator;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class FinanceBankController extends Controller
@@ -20,22 +21,9 @@ class FinanceBankController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreBankTransferBatchRequest $request)
     {
-        $validated = $request->validate([
-            'bank_name' => 'required|string',
-            'account_number' => 'required|string',
-            'format' => 'in:CSV,XML,FW',
-            'batch_date' => 'required|date',
-            'reference' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.beneficiary_name' => 'required|string',
-            'items.*.beneficiary_account' => 'required|string',
-            'items.*.amount' => 'required|numeric|min:0.01',
-            'items.*.currency' => 'in:IDR',
-            'items.*.reference' => 'nullable|string',
-            'items.*.invoice_id' => 'nullable|uuid|exists:invoices,id',
-        ]);
+        $validated = $request->validated();
 
         $batch = BankTransferBatch::create([
             'organization_id' => Auth::user()->organization_id,
@@ -75,11 +63,9 @@ class FinanceBankController extends Controller
         ]);
     }
 
-    public function reconcile(Request $request)
+    public function reconcile(ReconcileBankStatementRequest $request)
     {
-        $validated = $request->validate([
-            'statement_csv' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         $lines = array_filter(array_map('trim', explode("\n", $validated['statement_csv'])));
         if (count($lines) < 2) {

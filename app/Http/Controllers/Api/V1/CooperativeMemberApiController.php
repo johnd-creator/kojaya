@@ -7,6 +7,8 @@ use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Models\CooperativeMember;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
+use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
+use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,16 +40,21 @@ class CooperativeMemberApiController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         MemberNumberGenerator $memberNumberGenerator,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        CooperativeOpeningBalanceService $openingBalanceService,
     ): JsonResponse {
         $this->authorizeCooperativeAccess($request);
 
         $member = CooperativeMember::query()->create([
-            ...$request->validated(),
+            ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
             'member_no' => $memberNumberGenerator->generate(),
             'joined_at' => $request->input('joined_at') ?: now()->toDateString(),
             'status' => $request->input('status', 'PENDING'),
         ]);
+
+        $userProvisioningService->provision($member, $request->validated('member_login_password'));
+        $openingBalanceService->sync($member, $request->validated('opening_saving_balance'));
 
         return response()->json(['data' => $member->load('organization')], 201);
     }
@@ -65,19 +72,27 @@ class CooperativeMemberApiController extends Controller
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
         CooperativeHeadOfficeResolver $headOfficeResolver,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        CooperativeOpeningBalanceService $openingBalanceService,
     ): JsonResponse {
         $this->authorizeCooperativeAccess($request, $member);
 
         $member->update([
-            ...$request->validated(),
+            ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
         ]);
+
+        $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
+        $openingBalanceService->sync($member->refresh(), $request->validated('opening_saving_balance'));
 
         return response()->json(['data' => $member->refresh()->load('organization')]);
     }
 
-    public function activate(Request $request, CooperativeMember $member): JsonResponse
-    {
+    public function activate(
+        Request $request,
+        CooperativeMember $member,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+    ): JsonResponse {
         $this->authorizeCooperativeAccess($request, $member);
 
         $member->update([
@@ -85,6 +100,8 @@ class CooperativeMemberApiController extends Controller
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'resigned_at' => null,
         ]);
+
+        $userProvisioningService->provision($member->refresh());
 
         return response()->json(['data' => $member->refresh()]);
     }

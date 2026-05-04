@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:14
+* @see app/Http/Controllers/ReimbursementController.php:16
 * @route '/reimbursements'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:49
+* @see app/Http/Controllers/ReimbursementController.php:43
 * @route '/reimbursements/create'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:54
+* @see app/Http/Controllers/ReimbursementController.php:48
 * @route '/reimbursements'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:54
+* @see app/Http/Controllers/ReimbursementController.php:48
 * @route '/reimbursements'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:54
+* @see app/Http/Controllers/ReimbursementController.php:48
 * @route '/reimbursements'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:54
+* @see app/Http/Controllers/ReimbursementController.php:48
 * @route '/reimbursements'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:54
+* @see app/Http/Controllers/ReimbursementController.php:48
 * @route '/reimbursements'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 export const show = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 show.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -267,7 +267,7 @@ show.url = (args: { reimbursement: string | { id: string } } | [reimbursement: s
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 show.get = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -277,7 +277,7 @@ show.get = (args: { reimbursement: string | { id: string } } | [reimbursement: s
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 show.head = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -287,7 +287,7 @@ show.head = (args: { reimbursement: string | { id: string } } | [reimbursement: 
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 const showForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -297,7 +297,7 @@ const showForm = (args: { reimbursement: string | { id: string } } | [reimbursem
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 showForm.get = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -307,7 +307,7 @@ showForm.get = (args: { reimbursement: string | { id: string } } | [reimbursemen
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:99
+* @see app/Http/Controllers/ReimbursementController.php:84
 * @route '/reimbursements/{reimbursement}'
 */
 showForm.head = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -616,7 +616,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:130
+* @see app/Http/Controllers/ReimbursementController.php:116
 * @route '/reimbursements/{reimbursement}/approve'
 */
 export const approve = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -631,7 +631,7 @@ approve.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:130
+* @see app/Http/Controllers/ReimbursementController.php:116
 * @route '/reimbursements/{reimbursement}/approve'
 */
 approve.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -664,7 +664,7 @@ approve.url = (args: { reimbursement: string | { id: string } } | [reimbursement
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:130
+* @see app/Http/Controllers/ReimbursementController.php:116
 * @route '/reimbursements/{reimbursement}/approve'
 */
 approve.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -674,7 +674,7 @@ approve.post = (args: { reimbursement: string | { id: string } } | [reimbursemen
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:130
+* @see app/Http/Controllers/ReimbursementController.php:116
 * @route '/reimbursements/{reimbursement}/approve'
 */
 const approveForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -684,7 +684,7 @@ const approveForm = (args: { reimbursement: string | { id: string } } | [reimbur
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:130
+* @see app/Http/Controllers/ReimbursementController.php:116
 * @route '/reimbursements/{reimbursement}/approve'
 */
 approveForm.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -696,7 +696,7 @@ approve.form = approveForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:144
+* @see app/Http/Controllers/ReimbursementController.php:130
 * @route '/reimbursements/{reimbursement}/reject'
 */
 export const reject = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -711,7 +711,7 @@ reject.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:144
+* @see app/Http/Controllers/ReimbursementController.php:130
 * @route '/reimbursements/{reimbursement}/reject'
 */
 reject.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -744,7 +744,7 @@ reject.url = (args: { reimbursement: string | { id: string } } | [reimbursement:
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:144
+* @see app/Http/Controllers/ReimbursementController.php:130
 * @route '/reimbursements/{reimbursement}/reject'
 */
 reject.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -754,7 +754,7 @@ reject.post = (args: { reimbursement: string | { id: string } } | [reimbursement
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:144
+* @see app/Http/Controllers/ReimbursementController.php:130
 * @route '/reimbursements/{reimbursement}/reject'
 */
 const rejectForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -764,7 +764,7 @@ const rejectForm = (args: { reimbursement: string | { id: string } } | [reimburs
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:144
+* @see app/Http/Controllers/ReimbursementController.php:130
 * @route '/reimbursements/{reimbursement}/reject'
 */
 rejectForm.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -776,7 +776,7 @@ reject.form = rejectForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:159
+* @see app/Http/Controllers/ReimbursementController.php:143
 * @route '/reimbursements/{reimbursement}/pay'
 */
 export const pay = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -791,7 +791,7 @@ pay.definition = {
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:159
+* @see app/Http/Controllers/ReimbursementController.php:143
 * @route '/reimbursements/{reimbursement}/pay'
 */
 pay.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -824,7 +824,7 @@ pay.url = (args: { reimbursement: string | { id: string } } | [reimbursement: st
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:159
+* @see app/Http/Controllers/ReimbursementController.php:143
 * @route '/reimbursements/{reimbursement}/pay'
 */
 pay.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -834,7 +834,7 @@ pay.post = (args: { reimbursement: string | { id: string } } | [reimbursement: s
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:159
+* @see app/Http/Controllers/ReimbursementController.php:143
 * @route '/reimbursements/{reimbursement}/pay'
 */
 const payForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -844,7 +844,7 @@ const payForm = (args: { reimbursement: string | { id: string } } | [reimburseme
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:159
+* @see app/Http/Controllers/ReimbursementController.php:143
 * @route '/reimbursements/{reimbursement}/pay'
 */
 payForm.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

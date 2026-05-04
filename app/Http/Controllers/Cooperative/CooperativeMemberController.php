@@ -9,6 +9,8 @@ use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
+use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
+use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,10 +43,10 @@ class CooperativeMemberController extends Controller
         return Inertia::render('Cooperative/Members/Index', [
             'members' => $query->orderByDesc('created_at')->paginate(15)->withQueryString(),
             'filters' => $request->only(['search', 'status']),
-            'stats' => [
+            'stats' => Inertia::defer(fn () => [
                 'active' => CooperativeMember::query()->where('status', 'ACTIVE')->count(),
                 'pending' => CooperativeMember::query()->where('status', 'PENDING')->count(),
-            ],
+            ], 'member-stats'),
         ]);
     }
 
@@ -60,14 +62,19 @@ class CooperativeMemberController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         MemberNumberGenerator $memberNumberGenerator,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        CooperativeOpeningBalanceService $openingBalanceService,
     ): RedirectResponse {
-        CooperativeMember::query()->create([
-            ...$request->validated(),
+        $member = CooperativeMember::query()->create([
+            ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
             'member_no' => $memberNumberGenerator->generate(),
             'joined_at' => $request->input('joined_at') ?: now()->toDateString(),
             'status' => $request->input('status', 'PENDING'),
         ]);
+
+        $userProvisioningService->provision($member, $request->validated('member_login_password'));
+        $openingBalanceService->sync($member, $request->validated('opening_saving_balance'));
 
         return redirect()->route('cooperative.members.index')
             ->with('success', 'Cooperative member created successfully.');
@@ -75,19 +82,24 @@ class CooperativeMemberController extends Controller
 
     public function show(CooperativeMember $member): Response
     {
-        $member->load(['organization', 'employee', 'user', 'documents', 'invoices.contributionType', 'payments', 'ledgerEntries']);
+        $member->load(['organization', 'employee', 'user.roles', 'documents', 'invoices.contributionType', 'payments', 'ledgerEntries'])
+            ->loadSum('ledgerEntries as saving_balance', 'credit');
 
         return Inertia::render('Cooperative/Members/Show', [
             'member' => $member,
+            'openingSavingBalance' => $member->ledgerEntries->firstWhere('entry_type', 'OPENING_BALANCE')?->credit,
         ]);
     }
 
     public function edit(CooperativeMember $member): Response
     {
+        $member->load('ledgerEntries');
+
         return Inertia::render('Cooperative/Members/Edit', [
             'member' => $member,
             'employees' => Employee::query()->select('id', 'first_name', 'last_name', 'employee_code')->orderBy('first_name')->get(),
             'users' => User::query()->select('id', 'name', 'email')->orderBy('name')->get(),
+            'openingSavingBalance' => $member->ledgerEntries->firstWhere('entry_type', 'OPENING_BALANCE')?->credit,
         ]);
     }
 
@@ -95,23 +107,32 @@ class CooperativeMemberController extends Controller
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
         CooperativeHeadOfficeResolver $headOfficeResolver,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        CooperativeOpeningBalanceService $openingBalanceService,
     ): RedirectResponse {
         $member->update([
-            ...$request->validated(),
+            ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
         ]);
+
+        $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
+        $openingBalanceService->sync($member->refresh(), $request->validated('opening_saving_balance'));
 
         return redirect()->route('cooperative.members.index')
             ->with('success', 'Cooperative member updated successfully.');
     }
 
-    public function activate(CooperativeMember $member): RedirectResponse
-    {
+    public function activate(
+        CooperativeMember $member,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+    ): RedirectResponse {
         $member->update([
             'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'resigned_at' => null,
         ]);
+
+        $userProvisioningService->provision($member->refresh());
 
         return back()->with('success', 'Cooperative member activated successfully.');
     }

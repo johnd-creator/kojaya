@@ -6,6 +6,8 @@ use App\Models\Traits\HasOrganizationScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Reimbursement extends Model
@@ -25,33 +27,36 @@ class Reimbursement extends Model
         'payment_date',
     ];
 
-    protected $casts = [
-        'submission_date' => 'date',
-        'payment_date' => 'date',
-        'total_amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'submission_date' => 'date',
+            'payment_date' => 'date',
+            'total_amount' => 'decimal:2',
+        ];
+    }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function approver()
+    public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approver_id');
     }
 
-    public function organization()
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(ReimbursementItem::class);
     }

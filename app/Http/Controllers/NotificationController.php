@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateNotificationPreferencesRequest;
 use App\Http\Resources\NotificationResource;
 use App\Models\NotificationPreference;
+use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +19,7 @@ class NotificationController extends Controller
 
     public function index(Request $request)
     {
-        $notifications = Auth::user()
+        $notifications = $this->currentUser()
             ->notifications()
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 20));
@@ -27,7 +29,7 @@ class NotificationController extends Controller
 
     public function show(string $id)
     {
-        $notification = Auth::user()
+        $notification = $this->currentUser()
             ->notifications()
             ->where('id', $id)
             ->firstOrFail();
@@ -37,7 +39,7 @@ class NotificationController extends Controller
 
     public function markAsRead(string $id): JsonResponse
     {
-        $success = $this->notificationService->markAsRead(Auth::user(), $id);
+        $success = $this->notificationService->markAsRead($this->currentUser(), $id);
 
         return response()->json([
             'success' => $success,
@@ -47,7 +49,7 @@ class NotificationController extends Controller
 
     public function markAllAsRead(): JsonResponse
     {
-        $success = $this->notificationService->markAllAsRead(Auth::user());
+        $success = $this->notificationService->markAllAsRead($this->currentUser());
 
         return response()->json([
             'success' => $success,
@@ -57,23 +59,18 @@ class NotificationController extends Controller
 
     public function unreadCount(): JsonResponse
     {
-        $count = $this->notificationService->getUnreadCount(Auth::user());
+        $count = $this->notificationService->getUnreadCount($this->currentUser());
 
         return response()->json([
             'count' => $count,
         ]);
     }
 
-    public function updatePreferences(Request $request): JsonResponse
+    public function updatePreferences(UpdateNotificationPreferencesRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email_enabled' => 'sometimes|boolean',
-            'database_enabled' => 'sometimes|boolean',
-            'push_enabled' => 'sometimes|boolean',
-            'channels' => 'sometimes|array',
-        ]);
+        $validated = $request->validated();
 
-        $preference = Auth::user()->notificationPreference ?? new NotificationPreference;
+        $preference = $this->currentUser()->notificationPreference ?? new NotificationPreference;
         $preference->user_id = Auth::id();
         $preference->fill($validated);
         $preference->save();
@@ -87,7 +84,7 @@ class NotificationController extends Controller
 
     public function getPreferences(): JsonResponse
     {
-        $preference = Auth::user()->notificationPreference;
+        $preference = $this->currentUser()->notificationPreference;
 
         return response()->json([
             'data' => $preference ?? [
@@ -97,5 +94,13 @@ class NotificationController extends Controller
                 'channels' => ['mail', 'database'],
             ],
         ]);
+    }
+
+    protected function currentUser(): User
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return $user;
     }
 }

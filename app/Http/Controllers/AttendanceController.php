@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AttendanceApiLocationRequest;
+use App\Http\Requests\AttendanceLocationRequest;
+use App\Http\Requests\StoreAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\Organization;
@@ -61,17 +64,9 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreAttendanceRequest $request)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'organization_id' => 'required|uuid|exists:organizations,id',
-            'date' => 'required|date',
-            'clock_in' => 'nullable|date_format:H:i',
-            'clock_out' => 'nullable|date_format:H:i|after:clock_in',
-            'status' => 'required|in:PRESENT,ABSENT,SICK,LEAVE,OFF',
-            'notes' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         Attendance::updateOrCreate(
             ['employee_id' => $validated['employee_id'], 'date' => $validated['date']],
@@ -107,7 +102,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function checkIn(Request $request)
+    public function checkIn(AttendanceLocationRequest $request)
     {
         $user = $request->user();
         if (! $user || ! $user->employee) {
@@ -118,10 +113,7 @@ class AttendanceController extends Controller
         $today = now()->toDateString();
         $org = $employee->organization;
 
-        $request->validate([
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ]);
+        $request->validated();
 
         if ($org && $org->latitude && $org->longitude && $org->radius) {
             $lat1 = $request->input('latitude');
@@ -240,7 +232,7 @@ class AttendanceController extends Controller
         return back()->with('success', 'Checked out successfully.');
     }
 
-    public function checkInApi(Request $request)
+    public function checkInApi(AttendanceApiLocationRequest $request)
     {
         $user = $request->user();
         if (! $user || ! $user->employee) {
@@ -251,12 +243,7 @@ class AttendanceController extends Controller
         $today = now()->toDateString();
         $org = $employee->organization;
 
-        $validated = $request->validate([
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'accuracy' => 'nullable|numeric', // meters
-            'device_id' => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validated();
 
         if ($org && $org->latitude && $org->longitude && $org->radius) {
             $distance = $this->haversineDistanceMeters(
@@ -297,7 +284,7 @@ class AttendanceController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function checkOutApi(Request $request)
+    public function checkOutApi(AttendanceApiLocationRequest $request)
     {
         $user = $request->user();
         if (! $user || ! $user->employee) {
@@ -308,12 +295,7 @@ class AttendanceController extends Controller
         $today = now()->toDateString();
         $org = $employee->organization;
 
-        $validated = $request->validate([
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'accuracy' => 'nullable|numeric',
-            'device_id' => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validated();
 
         if ($org && $org->latitude && $org->longitude && $org->radius) {
             $distance = $this->haversineDistanceMeters(

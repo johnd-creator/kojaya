@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 export const index = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 index.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ index.url = (args: { project: string | { id: string } } | [project: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 index.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -59,7 +59,7 @@ index.get = (args: { project: string | { id: string } } | [project: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 index.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -69,7 +69,7 @@ index.head = (args: { project: string | { id: string } } | [project: string | { 
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ const indexForm = (args: { project: string | { id: string } } | [project: string
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -89,7 +89,7 @@ indexForm.get = (args: { project: string | { id: string } } | [project: string |
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::index
-* @see app/Http/Controllers/ProjectTaskController.php:15
+* @see app/Http/Controllers/ProjectTaskController.php:17
 * @route '/projects/{project}/tasks'
 */
 indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -106,7 +106,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::store
-* @see app/Http/Controllers/ProjectTaskController.php:37
+* @see app/Http/Controllers/ProjectTaskController.php:39
 * @route '/projects/{project}/tasks'
 */
 export const store = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -121,7 +121,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::store
-* @see app/Http/Controllers/ProjectTaskController.php:37
+* @see app/Http/Controllers/ProjectTaskController.php:39
 * @route '/projects/{project}/tasks'
 */
 store.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -154,7 +154,7 @@ store.url = (args: { project: string | { id: string } } | [project: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::store
-* @see app/Http/Controllers/ProjectTaskController.php:37
+* @see app/Http/Controllers/ProjectTaskController.php:39
 * @route '/projects/{project}/tasks'
 */
 store.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -164,7 +164,7 @@ store.post = (args: { project: string | { id: string } } | [project: string | { 
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::store
-* @see app/Http/Controllers/ProjectTaskController.php:37
+* @see app/Http/Controllers/ProjectTaskController.php:39
 * @route '/projects/{project}/tasks'
 */
 const storeForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -174,7 +174,7 @@ const storeForm = (args: { project: string | { id: string } } | [project: string
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::store
-* @see app/Http/Controllers/ProjectTaskController.php:37
+* @see app/Http/Controllers/ProjectTaskController.php:39
 * @route '/projects/{project}/tasks'
 */
 storeForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -186,7 +186,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 export const update = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -201,7 +201,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 update.url = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -231,7 +231,7 @@ update.url = (args: { project: string | { id: string }, task: string | { id: str
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 update.put = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -241,7 +241,7 @@ update.put = (args: { project: string | { id: string }, task: string | { id: str
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 update.patch = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -251,7 +251,7 @@ update.patch = (args: { project: string | { id: string }, task: string | { id: s
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 const updateForm = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -266,7 +266,7 @@ const updateForm = (args: { project: string | { id: string }, task: string | { i
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 updateForm.put = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -281,7 +281,7 @@ updateForm.put = (args: { project: string | { id: string }, task: string | { id:
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::update
-* @see app/Http/Controllers/ProjectTaskController.php:82
+* @see app/Http/Controllers/ProjectTaskController.php:60
 * @route '/projects/{project}/tasks/{task}'
 */
 updateForm.patch = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -298,7 +298,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::destroy
-* @see app/Http/Controllers/ProjectTaskController.php:168
+* @see app/Http/Controllers/ProjectTaskController.php:117
 * @route '/projects/{project}/tasks/{task}'
 */
 export const destroy = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -313,7 +313,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::destroy
-* @see app/Http/Controllers/ProjectTaskController.php:168
+* @see app/Http/Controllers/ProjectTaskController.php:117
 * @route '/projects/{project}/tasks/{task}'
 */
 destroy.url = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -343,7 +343,7 @@ destroy.url = (args: { project: string | { id: string }, task: string | { id: st
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::destroy
-* @see app/Http/Controllers/ProjectTaskController.php:168
+* @see app/Http/Controllers/ProjectTaskController.php:117
 * @route '/projects/{project}/tasks/{task}'
 */
 destroy.delete = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -353,7 +353,7 @@ destroy.delete = (args: { project: string | { id: string }, task: string | { id:
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::destroy
-* @see app/Http/Controllers/ProjectTaskController.php:168
+* @see app/Http/Controllers/ProjectTaskController.php:117
 * @route '/projects/{project}/tasks/{task}'
 */
 const destroyForm = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -368,7 +368,7 @@ const destroyForm = (args: { project: string | { id: string }, task: string | { 
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::destroy
-* @see app/Http/Controllers/ProjectTaskController.php:168
+* @see app/Http/Controllers/ProjectTaskController.php:117
 * @route '/projects/{project}/tasks/{task}'
 */
 destroyForm.delete = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -385,7 +385,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::updateProgress
-* @see app/Http/Controllers/ProjectTaskController.php:142
+* @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
 export const updateProgress = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -400,7 +400,7 @@ updateProgress.definition = {
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::updateProgress
-* @see app/Http/Controllers/ProjectTaskController.php:142
+* @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
 updateProgress.url = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -430,7 +430,7 @@ updateProgress.url = (args: { project: string | { id: string }, task: string | {
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::updateProgress
-* @see app/Http/Controllers/ProjectTaskController.php:142
+* @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
 updateProgress.post = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -440,7 +440,7 @@ updateProgress.post = (args: { project: string | { id: string }, task: string | 
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::updateProgress
-* @see app/Http/Controllers/ProjectTaskController.php:142
+* @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
 const updateProgressForm = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -450,7 +450,7 @@ const updateProgressForm = (args: { project: string | { id: string }, task: stri
 
 /**
 * @see \App\Http\Controllers\ProjectTaskController::updateProgress
-* @see app/Http/Controllers/ProjectTaskController.php:142
+* @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
 updateProgressForm.post = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

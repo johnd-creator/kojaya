@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\AttendanceController::checkOut
-* @see app/Http/Controllers/AttendanceController.php:197
+* @see app/Http/Controllers/AttendanceController.php:189
 * @route '/attendance/check-out'
 */
 export const checkOut = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ checkOut.definition = {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkOut
-* @see app/Http/Controllers/AttendanceController.php:197
+* @see app/Http/Controllers/AttendanceController.php:189
 * @route '/attendance/check-out'
 */
 checkOut.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ checkOut.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkOut
-* @see app/Http/Controllers/AttendanceController.php:197
+* @see app/Http/Controllers/AttendanceController.php:189
 * @route '/attendance/check-out'
 */
 checkOut.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ checkOut.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkOut
-* @see app/Http/Controllers/AttendanceController.php:197
+* @see app/Http/Controllers/AttendanceController.php:189
 * @route '/attendance/check-out'
 */
 const checkOutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const checkOutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkOut
-* @see app/Http/Controllers/AttendanceController.php:197
+* @see app/Http/Controllers/AttendanceController.php:189
 * @route '/attendance/check-out'
 */
 checkOutForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -57,7 +57,7 @@ checkOut.form = checkOutForm
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -72,7 +72,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -91,7 +91,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -101,7 +101,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -111,7 +111,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -121,7 +121,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
-* @see app/Http/Controllers/AttendanceController.php:14
+* @see app/Http/Controllers/AttendanceController.php:17
 * @route '/attendances'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -138,7 +138,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\AttendanceController::store
-* @see app/Http/Controllers/AttendanceController.php:64
+* @see app/Http/Controllers/AttendanceController.php:67
 * @route '/attendances'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -153,7 +153,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::store
-* @see app/Http/Controllers/AttendanceController.php:64
+* @see app/Http/Controllers/AttendanceController.php:67
 * @route '/attendances'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -162,7 +162,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AttendanceController::store
-* @see app/Http/Controllers/AttendanceController.php:64
+* @see app/Http/Controllers/AttendanceController.php:67
 * @route '/attendances'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -172,7 +172,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\AttendanceController::store
-* @see app/Http/Controllers/AttendanceController.php:64
+* @see app/Http/Controllers/AttendanceController.php:67
 * @route '/attendances'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -182,7 +182,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\AttendanceController::store
-* @see app/Http/Controllers/AttendanceController.php:64
+* @see app/Http/Controllers/AttendanceController.php:67
 * @route '/attendances'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

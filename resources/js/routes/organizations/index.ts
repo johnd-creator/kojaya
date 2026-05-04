@@ -318,7 +318,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 export const update = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -333,7 +333,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 update.url = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -360,7 +360,7 @@ update.url = (args: { organization: string | number } | [organization: string | 
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 update.put = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -370,7 +370,7 @@ update.put = (args: { organization: string | number } | [organization: string | 
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 update.patch = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -380,7 +380,7 @@ update.patch = (args: { organization: string | number } | [organization: string 
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 const updateForm = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -395,7 +395,7 @@ const updateForm = (args: { organization: string | number } | [organization: str
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 updateForm.put = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -410,7 +410,7 @@ updateForm.put = (args: { organization: string | number } | [organization: strin
 
 /**
 * @see \App\Http\Controllers\OrganizationController::update
-* @see app/Http/Controllers/OrganizationController.php:49
+* @see app/Http/Controllers/OrganizationController.php:37
 * @route '/organizations/{organization}'
 */
 updateForm.patch = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -427,7 +427,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:73
+* @see app/Http/Controllers/OrganizationController.php:49
 * @route '/organizations/{organization}'
 */
 export const destroy = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -442,7 +442,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:73
+* @see app/Http/Controllers/OrganizationController.php:49
 * @route '/organizations/{organization}'
 */
 destroy.url = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -469,7 +469,7 @@ destroy.url = (args: { organization: string | number } | [organization: string |
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:73
+* @see app/Http/Controllers/OrganizationController.php:49
 * @route '/organizations/{organization}'
 */
 destroy.delete = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -479,7 +479,7 @@ destroy.delete = (args: { organization: string | number } | [organization: strin
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:73
+* @see app/Http/Controllers/OrganizationController.php:49
 * @route '/organizations/{organization}'
 */
 const destroyForm = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const destroyForm = (args: { organization: string | number } | [organization: st
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:73
+* @see app/Http/Controllers/OrganizationController.php:49
 * @route '/organizations/{organization}'
 */
 destroyForm.delete = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

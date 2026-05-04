@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpsertJobGradeRequest;
 use App\Models\JobGrade;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,28 +18,16 @@ class JobGradeController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(UpsertJobGradeRequest $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:job_grades,code',
-            'name' => 'required|string|max:100',
-            'level' => 'required|integer|min:1',
-        ]);
-
-        JobGrade::create($validated);
+        JobGrade::create($request->validated());
 
         return redirect()->route('job-grades.index')->with('success', 'Job grade created.');
     }
 
-    public function update(Request $request, JobGrade $jobGrade)
+    public function update(UpsertJobGradeRequest $request, JobGrade $jobGrade)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:job_grades,code,'.$jobGrade->id,
-            'name' => 'required|string|max:100',
-            'level' => 'required|integer|min:1',
-        ]);
-
-        $jobGrade->update($validated);
+        $jobGrade->update($request->validated());
 
         return redirect()->route('job-grades.index')->with('success', 'Job grade updated.');
     }

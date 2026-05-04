@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\McuResult;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,24 +25,27 @@ class MedicalCheckup extends Model
         'clinic_name',
     ];
 
-    protected $casts = [
-        'checkup_date' => 'date',
-        'next_checkup_date' => 'date',
-        'result' => McuResult::class,
-        'fit_to_work' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'checkup_date' => 'date',
+            'next_checkup_date' => 'date',
+            'result' => McuResult::class,
+            'fit_to_work' => 'boolean',
+        ];
+    }
 
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    public function scopeDue($query, int $days = 30)
+    public function scopeDue(Builder $query, int $days = 30): Builder
     {
         return $query->whereBetween('next_checkup_date', [now(), now()->addDays($days)]);
     }
 
-    public function scopeCompleted($query)
+    public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('checkup_date', '<=', now());
     }

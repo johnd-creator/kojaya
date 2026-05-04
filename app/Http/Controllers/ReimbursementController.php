@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RejectReimbursementRequest;
+use App\Http\Requests\StoreReimbursementRequest;
 use App\Models\Reimbursement;
 use App\Models\ReimbursementItem;
-use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -13,16 +15,8 @@ class ReimbursementController extends Controller
 {
     public function index()
     {
+        /** @var User $user */
         $user = Auth::user();
-        $query = Reimbursement::query()->with(['user', 'items']);
-
-        // Apply organization scope manually or via trait method if needed
-        // Since HasOrganizationScope provides scopeForUser, we use that
-        // But wait, the trait method is scopeForUser($query).
-        // If I use Reimbursement::forUser(), it works.
-
-        // However, standard HasOrganizationScope usually checks role.
-        // Let's assume forUser() handles the logic correctly as seen in the file.
 
         $reimbursements = Reimbursement::query()
             ->when(! $user->hasRole(['System Admin', 'Admin Pusat', 'Finance Pusat', 'HR Pusat']), function ($q) use ($user) {
@@ -51,18 +45,9 @@ class ReimbursementController extends Controller
         return Inertia::render('Reimbursement/Create');
     }
 
-    public function store(Request $request)
+    public function store(StoreReimbursementRequest $request)
     {
-        $validated = $request->validate([
-            'submission_date' => 'required|date',
-            'description' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.category' => 'required|string|in:TRANSPORT,MEAL,MEDICAL,LODGING,OFFICE_SUPPLIES,OTHER',
-            'items.*.description' => 'required|string',
-            'items.*.amount' => 'required|numeric|min:0',
-            'items.*.receipt_date' => 'required|date',
-            'items.*.receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($validated, $request) {
             $totalAmount = collect($validated['items'])->sum('amount');
@@ -73,7 +58,7 @@ class ReimbursementController extends Controller
                 'submission_date' => $validated['submission_date'],
                 'total_amount' => $totalAmount,
                 'status' => 'SUBMITTED', // Auto submit? Or DRAFT? Let's say SUBMITTED for simplicity
-                'description' => $validated['description'],
+                'description' => $validated['description'] ?? null,
             ]);
 
             foreach ($validated['items'] as $index => $itemData) {
@@ -99,6 +84,7 @@ class ReimbursementController extends Controller
     public function show(Reimbursement $reimbursement)
     {
         // Check authorization
+        /** @var User $user */
         $user = Auth::user();
 
         // If employee, must be own
@@ -127,7 +113,7 @@ class ReimbursementController extends Controller
         ]);
     }
 
-    public function approve(Request $request, Reimbursement $reimbursement)
+    public function approve(Reimbursement $reimbursement)
     {
         // Only HR/Finance/Manager can approve
         // For simplicity, let's allow HR Unit, Finance Unit, Admin Unit
@@ -141,11 +127,9 @@ class ReimbursementController extends Controller
         return back()->with('success', 'Reimbursement approved.');
     }
 
-    public function reject(Request $request, Reimbursement $reimbursement)
+    public function reject(RejectReimbursementRequest $request, Reimbursement $reimbursement)
     {
-        $validated = $request->validate([
-            'rejection_reason' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         $reimbursement->update([
             'status' => 'REJECTED',
@@ -156,9 +140,22 @@ class ReimbursementController extends Controller
         return back()->with('success', 'Reimbursement rejected.');
     }
 
-    public function pay(Request $request, Reimbursement $reimbursement)
+    public function pay(Reimbursement $reimbursement)
     {
-        // Only Finance
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (! $user->hasRole(['Finance Unit', 'Finance Pusat'])) {
+            abort(403);
+        }
+
+        if ($reimbursement->status === 'PAID') {
+            return back()->with('success', 'Reimbursement already marked as paid.');
+        }
+
+        if ($reimbursement->status !== 'APPROVED') {
+            return back()->with('error', 'Only approved reimbursements can be marked as paid.');
+        }
 
         $reimbursement->update([
             'status' => 'PAID',

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,11 +25,14 @@ class AuditLog extends Model
         'user_agent',
     ];
 
-    protected $casts = [
-        'old_values' => 'array',
-        'new_values' => 'array',
-        'created_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'old_values' => 'array',
+            'new_values' => 'array',
+            'created_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -39,18 +44,21 @@ class AuditLog extends Model
         return $this->morphTo();
     }
 
-    public function scopeForUser($query, $userId)
+    public function scopeForUser(Builder $query, int|string $userId): Builder
     {
         return $query->where('user_id', $userId);
     }
 
-    public function scopeForModule($query, $module)
+    public function scopeForModule(Builder $query, string $module): Builder
     {
         return $query->where('module', $module);
     }
 
-    public function scopeForDateRange($query, $startDate, $endDate)
-    {
+    public function scopeForDateRange(
+        Builder $query,
+        DateTimeInterface|string $startDate,
+        DateTimeInterface|string $endDate
+    ): Builder {
         return $query->whereBetween('created_at', [$startDate, $endDate]);
     }
 }

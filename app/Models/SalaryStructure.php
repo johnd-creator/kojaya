@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasOrganizationScope;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SalaryStructure extends Model
 {
+    use HasFactory, HasOrganizationScope;
+
     protected $fillable = [
         'employee_type',
         'job_grade_id',
@@ -25,17 +31,17 @@ class SalaryStructure extends Model
         ];
     }
 
-    public function jobGrade(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function jobGrade(): BelongsTo
     {
         return $this->belongsTo(JobGrade::class);
     }
 
-    public function organization(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function items(): HasMany
     {
         return $this->hasMany(SalaryStructureItem::class);
     }

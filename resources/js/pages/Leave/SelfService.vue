@@ -1,113 +1,150 @@
 <script setup lang="ts">
-import { Head, useForm, Link } from '@inertiajs/vue3'
-import { Calendar, Plus, Clock, CheckCircle2, XCircle, FileText, ChevronRight } from 'lucide-vue-next'
-import { ref, computed } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import AppLayout from '@/layouts/AppLayout.vue'
-import type { BreadcrumbItem } from '@/types'
+import { Head, useForm, Link } from "@inertiajs/vue3";
+import {
+  Calendar,
+  Plus,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  ChevronRight,
+} from "lucide-vue-next";
+import { ref, computed } from "vue";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import AppLayout from "@/layouts/AppLayout.vue";
+import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{
-  leaves: any
-  leaveTypes: any[]
-  employee: any
-}>()
+  leaves: any;
+  leaveTypes: any[];
+  employee: any;
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Employee Self Service', href: '#' },
-  { title: 'My Leaves', href: '#' },
-]
+  { title: "Employee Self Service", href: "#" },
+  { title: "My Leaves", href: "#" },
+];
 
-const showModal = ref(false)
+const showModal = ref(false);
 
 const form = useForm({
-  leave_type_id: '',
-  start_date: '',
-  end_date: '',
-  reason: '',
+  leave_type_id: "",
+  start_date: "",
+  end_date: "",
+  reason: "",
   attachment: null as File | null,
-})
+});
 
 const openModal = () => {
-  form.reset()
-  form.clearErrors()
-  showModal.value = true
-}
+  form.reset();
+  form.clearErrors();
+  showModal.value = true;
+};
 
 const submit = () => {
-  form.post('/leaves/self-service', {
+  form.post("/leaves/self-service", {
     preserveScroll: true,
     onSuccess: () => {
-      showModal.value = false
+      showModal.value = false;
     },
-  })
-}
+  });
+};
 
 const handleFileChange = (e: Event) => {
-  const target = e.target as HTMLInputElement
+  const target = e.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
-    form.attachment = target.files[0]
+    form.attachment = target.files[0];
   }
-}
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'Approved': return 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30 border-green-200 dark:border-green-800'
-    case 'Rejected': return 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30 border-red-200 dark:border-red-800'
-    default: return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'
+    case "Approved":
+      return "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30 border-green-200 dark:border-green-800";
+    case "Rejected":
+      return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30 border-red-200 dark:border-red-800";
+    default:
+      return "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800";
   }
-}
+};
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case 'Approved': return CheckCircle2
-    case 'Rejected': return XCircle
-    default: return Clock
+    case "Approved":
+      return CheckCircle2;
+    case "Rejected":
+      return XCircle;
+    default:
+      return Clock;
   }
-}
+};
 
 const formatTanggal = (dateStr: string) => {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const hari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][d.getDay()]
-  const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()]
-  return `${hari}, ${d.getDate()} ${bulan} ${d.getFullYear()}`
-}
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const hari = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"][d.getDay()];
+  const bulan = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ][d.getMonth()];
+  return `${hari}, ${d.getDate()} ${bulan} ${d.getFullYear()}`;
+};
 
 const formatDurasi = (days: any) => {
-  const n = parseFloat(days)
-  if (isNaN(n) || n === 0) return '-'
-  if (n === 1) return '1 hari'
-  return `${n} hari`
-}
+  const n = parseFloat(days);
+  if (isNaN(n) || n === 0) return "-";
+  if (n === 1) return "1 hari";
+  return `${n} hari`;
+};
 
 const formatStatus = (status: string) => {
   switch (status) {
-    case 'Approved': return 'Disetujui'
-    case 'Rejected': return 'Ditolak'
-    case 'Pending': return 'Menunggu'
-    default: return status
+    case "Approved":
+      return "Disetujui";
+    case "Rejected":
+      return "Ditolak";
+    case "Pending":
+      return "Menunggu";
+    default:
+      return status;
   }
-}
+};
 
 const calculateDays = (start: string, end: string) => {
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-  const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays + 1
-}
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays + 1;
+};
 </script>
 
 <template>
   <Head title="Pengajuan Cuti" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 max-w-7xl mx-auto w-full">
-      
+    <div
+      class="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 max-w-7xl mx-auto w-full"
+    >
       <!-- Mobile Header -->
       <div class="flex flex-col gap-4">
         <div class="flex items-center justify-between">
@@ -116,7 +153,9 @@ const calculateDays = (start: string, end: string) => {
               <Calendar class="h-8 w-8 text-purple-600" />
               Pengajuan Cuti
             </h1>
-            <p class="text-zinc-500 mt-1">Kelola cuti dan lihat status persetujuan</p>
+            <p class="text-zinc-500 mt-1">
+              Kelola cuti dan lihat status persetujuan
+            </p>
           </div>
         </div>
 
@@ -129,17 +168,16 @@ const calculateDays = (start: string, end: string) => {
         </button>
 
         <!-- Desktop Button -->
-        <Button
-          @click="openModal"
-          class="hidden lg:flex w-auto"
-        >
+        <Button @click="openModal" class="hidden lg:flex w-auto">
           <Plus class="w-4 h-4 mr-2" />
           Ajukan Cuti
         </Button>
       </div>
 
       <!-- Leave Balance Card (Mobile) -->
-      <div class="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-900 dark:to-purple-800 rounded-2xl p-6 text-white shadow-lg lg:hidden">
+      <div
+        class="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-900 dark:to-purple-800 rounded-2xl p-6 text-white shadow-lg lg:hidden"
+      >
         <h2 class="text-lg font-semibold mb-4">Sisa Cuti Tahun Ini</h2>
         <div class="flex items-end justify-between">
           <div>
@@ -154,12 +192,17 @@ const calculateDays = (start: string, end: string) => {
       </div>
 
       <!-- Leave Requests List -->
-      <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+      <div
+        class="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+      >
         <div class="p-4 lg:p-6 border-b border-zinc-200 dark:border-zinc-800">
           <h2 class="text-lg font-semibold">Riwayat Pengajuan</h2>
         </div>
 
-        <div v-if="props.leaves?.data?.length === 0" class="p-8 text-center text-zinc-500">
+        <div
+          v-if="props.leaves?.data?.length === 0"
+          class="p-8 text-center text-zinc-500"
+        >
           <FileText class="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>Belum ada pengajuan cuti</p>
         </div>
@@ -173,55 +216,86 @@ const calculateDays = (start: string, end: string) => {
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-2">
-                  <h3 class="font-semibold truncate">{{ leave.leave_type?.name }}</h3>
+                  <h3 class="font-semibold truncate">
+                    {{ leave.leave_type?.name }}
+                  </h3>
                   <span
-                    :class="['px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0', getStatusColor(leave.status)]"
+                    :class="[
+                      'px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0',
+                      getStatusColor(leave.status),
+                    ]"
                   >
                     {{ formatStatus(leave.status) }}
                   </span>
                 </div>
-                
+
                 <div class="space-y-1 text-sm text-zinc-500">
                   <p class="flex items-center gap-1">
                     <Calendar class="w-3 h-3" />
-                    {{ formatTanggal(leave.start_date) }} &mdash; {{ formatTanggal(leave.end_date) }}
+                    {{ formatTanggal(leave.start_date) }} &mdash;
+                    {{ formatTanggal(leave.end_date) }}
                   </p>
                   <p class="flex items-center gap-1">
                     <Clock class="w-3 h-3" />
-                    {{ formatDurasi(leave.total_days) || calculateDays(leave.start_date, leave.end_date) + ' hari' }}
+                    {{
+                      formatDurasi(leave.total_days) ||
+                      calculateDays(leave.start_date, leave.end_date) + " hari"
+                    }}
                   </p>
                 </div>
 
                 <div v-if="leave.reason" class="mt-2 text-sm">
-                  <p class="text-zinc-600 dark:text-zinc-400 line-clamp-2">{{ leave.reason }}</p>
+                  <p class="text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                    {{ leave.reason }}
+                  </p>
                 </div>
               </div>
 
               <div class="flex-shrink-0">
-                <component :is="getStatusIcon(leave.status)" class="w-5 h-5" :class="getStatusColor(leave.status).split(' ')[0]" />
+                <component
+                  :is="getStatusIcon(leave.status)"
+                  class="w-5 h-5"
+                  :class="getStatusColor(leave.status).split(' ')[0]"
+                />
               </div>
             </div>
 
-            <div v-if="leave.approver" class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-sm text-zinc-500">
-              <p>Disetujui/Ditolak oleh: <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ leave.approver?.name }}</span></p>
+            <div
+              v-if="leave.approver"
+              class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-sm text-zinc-500"
+            >
+              <p>
+                Disetujui/Ditolak oleh:
+                <span class="font-medium text-zinc-700 dark:text-zinc-300">{{
+                  leave.approver?.name
+                }}</span>
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Desktop Leave Balance -->
-      <div class="hidden lg:block bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-6">
+      <div
+        class="hidden lg:block bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-6"
+      >
         <h2 class="text-lg font-semibold mb-4">Sisa Cuti Tahun Ini</h2>
         <div class="grid grid-cols-3 gap-4">
-          <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+          <div
+            class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl"
+          >
             <p class="text-3xl font-bold text-purple-600">12</p>
             <p class="text-sm text-zinc-500 mt-1">Tersisa</p>
           </div>
-          <div class="text-center p-4 bg-gray-50 dark:bg-gray-900/20 rounded-xl">
+          <div
+            class="text-center p-4 bg-gray-50 dark:bg-gray-900/20 rounded-xl"
+          >
             <p class="text-3xl font-bold text-gray-600">5</p>
             <p class="text-sm text-zinc-500 mt-1">Digunakan</p>
           </div>
-          <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+          <div
+            class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl"
+          >
             <p class="text-3xl font-bold text-green-600">17</p>
             <p class="text-sm text-zinc-500 mt-1">Total Kuota</p>
           </div>
@@ -245,11 +319,17 @@ const calculateDays = (start: string, end: string) => {
                 required
               >
                 <option value="">Pilih tipe cuti</option>
-                <option v-for="type in props.leaveTypes" :key="type.id" :value="type.id">
+                <option
+                  v-for="type in props.leaveTypes"
+                  :key="type.id"
+                  :value="type.id"
+                >
                   {{ type.name }}
                 </option>
               </select>
-              <p v-if="form.errors.leave_type_id" class="text-sm text-red-600">{{ form.errors.leave_type_id }}</p>
+              <p v-if="form.errors.leave_type_id" class="text-sm text-red-600">
+                {{ form.errors.leave_type_id }}
+              </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -261,7 +341,9 @@ const calculateDays = (start: string, end: string) => {
                   type="date"
                   required
                 />
-                <p v-if="form.errors.start_date" class="text-sm text-red-600">{{ form.errors.start_date }}</p>
+                <p v-if="form.errors.start_date" class="text-sm text-red-600">
+                  {{ form.errors.start_date }}
+                </p>
               </div>
 
               <div class="space-y-2">
@@ -272,7 +354,9 @@ const calculateDays = (start: string, end: string) => {
                   type="date"
                   required
                 />
-                <p v-if="form.errors.end_date" class="text-sm text-red-600">{{ form.errors.end_date }}</p>
+                <p v-if="form.errors.end_date" class="text-sm text-red-600">
+                  {{ form.errors.end_date }}
+                </p>
               </div>
             </div>
 
@@ -286,7 +370,9 @@ const calculateDays = (start: string, end: string) => {
                 placeholder="Jelaskan alasan cuti Anda"
                 required
               ></textarea>
-              <p v-if="form.errors.reason" class="text-sm text-red-600">{{ form.errors.reason }}</p>
+              <p v-if="form.errors.reason" class="text-sm text-red-600">
+                {{ form.errors.reason }}
+              </p>
             </div>
 
             <div class="space-y-2">
@@ -297,8 +383,12 @@ const calculateDays = (start: string, end: string) => {
                 @change="handleFileChange"
                 accept=".pdf,.jpg,.jpeg,.png"
               />
-              <p class="text-xs text-zinc-500">Format: PDF, JPG, PNG (Maks 5MB)</p>
-              <p v-if="form.errors.attachment" class="text-sm text-red-600">{{ form.errors.attachment }}</p>
+              <p class="text-xs text-zinc-500">
+                Format: PDF, JPG, PNG (Maks 5MB)
+              </p>
+              <p v-if="form.errors.attachment" class="text-sm text-red-600">
+                {{ form.errors.attachment }}
+              </p>
             </div>
 
             <div class="flex justify-end gap-3 pt-4">
@@ -309,18 +399,14 @@ const calculateDays = (start: string, end: string) => {
               >
                 Batal
               </Button>
-              <Button
-                type="submit"
-                :disabled="form.processing"
-              >
+              <Button type="submit" :disabled="form.processing">
                 <Plus v-if="!form.processing" class="w-4 h-4 mr-2" />
-                {{ form.processing ? 'Mengajukan...' : 'Ajukan' }}
+                {{ form.processing ? "Mengajukan..." : "Ajukan" }}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
-
     </div>
   </AppLayout>
 </template>

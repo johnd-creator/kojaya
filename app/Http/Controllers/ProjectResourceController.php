@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProjectAssetAllocationRequest;
+use App\Http\Requests\UpdateProjectAssetAllocationRequest;
 use App\Models\Asset;
 use App\Models\Project;
 use App\Models\ProjectAssetAllocation;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProjectResourceController extends Controller
@@ -30,15 +31,9 @@ class ProjectResourceController extends Controller
         ]);
     }
 
-    public function storeAsset(Request $request, Project $project)
+    public function storeAsset(StoreProjectAssetAllocationRequest $request, Project $project)
     {
-        $validated = $request->validate([
-            'asset_id' => 'required|exists:assets,id',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'status' => 'required|in:planned,requested,mobilized,demobilized',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $newStartDate = $validated['start_date'];
         // Use a far future date if end_date is null (indefinite allocation)
@@ -66,14 +61,9 @@ class ProjectResourceController extends Controller
         return back()->with('success', 'Asset allocated successfully.');
     }
 
-    public function updateAsset(Request $request, Project $project, ProjectAssetAllocation $allocation)
+    public function updateAsset(UpdateProjectAssetAllocationRequest $request, Project $project, ProjectAssetAllocation $allocation)
     {
-        $validated = $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'status' => 'required|in:planned,requested,mobilized,demobilized',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $newStartDate = $validated['start_date'];
         $newEndDate = $validated['end_date'] ?? '2099-12-31';

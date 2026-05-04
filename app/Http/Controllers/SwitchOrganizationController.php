@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SwitchOrganizationRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class SwitchOrganizationController extends Controller
 {
@@ -14,11 +14,9 @@ class SwitchOrganizationController extends Controller
      * allowing users with appropriate permissions to view data from
      * different organizations or see consolidated data across all.
      */
-    public function switch(Request $request): RedirectResponse
+    public function switch(SwitchOrganizationRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'organization_id' => 'nullable|uuid|exists:organizations,id',
-        ]);
+        $validated = $request->validated();
 
         // Store active organization in session
         // null = consolidated view (all organizations)

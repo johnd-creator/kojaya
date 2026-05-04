@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ProgressIndicator, type ProgressIndicatorProps } from 'reka-ui'
-import { cn } from '@/lib/utils'
-import type { HTMLAttributes } from 'vue'
+import { ProgressIndicator, type ProgressIndicatorProps } from "reka-ui";
+import { cn } from "@/lib/utils";
+import type { HTMLAttributes } from "vue";
 
-const props = defineProps<ProgressIndicatorProps & { class?: HTMLAttributes['class'] }>()
+const props = defineProps<
+  ProgressIndicatorProps & { class?: HTMLAttributes["class"] }
+>();
 </script>
 
 <template>

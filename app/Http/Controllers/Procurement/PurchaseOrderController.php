@@ -69,7 +69,15 @@ class PurchaseOrderController extends Controller
         if (! $request->user()->can('create_po')) {
             abort(403, 'Unauthorized to create PO');
         }
-        
+
+        $existingPo = PurchaseOrder::query()
+            ->where('purchase_request_id', $purchaseRequest->id)
+            ->first();
+
+        if ($existingPo) {
+            return redirect()->route('procurement.pos.show', $existingPo);
+        }
+
         if ($purchaseRequest->status !== 'APPROVED') {
             return back()->withErrors(['po' => 'PR belum approved.']);
         }

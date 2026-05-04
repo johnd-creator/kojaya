@@ -18,3 +18,6 @@ Schedule::command('expiry:check')->dailyAt('08:00');
 
 // Cooperative monthly dues generation
 Schedule::command('cooperative:generate-monthly-dues')->monthlyOn(1, '03:00');
+
+// Sanctum token hygiene
+Schedule::command('sanctum:prune-expired --hours=24')->dailyAt('01:00');

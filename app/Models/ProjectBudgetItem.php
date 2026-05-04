@@ -19,10 +19,13 @@ class ProjectBudgetItem extends Model
         'actual_amount',
     ];
 
-    protected $casts = [
-        'planned_amount' => 'decimal:2',
-        'actual_amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'planned_amount' => 'decimal:2',
+            'actual_amount' => 'decimal:2',
+        ];
+    }
 
     public function project(): BelongsTo
     {

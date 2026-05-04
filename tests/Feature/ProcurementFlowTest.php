@@ -4,15 +4,20 @@ namespace Tests\Feature;
 
 use App\Models\Budget;
 use App\Models\BudgetLine;
+use App\Models\GoodsReceiveNoteItem;
 use App\Models\Organization;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Models\SparePart;
+use App\Models\SparePartStock;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Services\Procurement\ApprovalService;
 use App\Services\Procurement\BudgetValidationService;
 use App\Services\Procurement\ProcurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProcurementFlowTest extends TestCase
@@ -28,6 +33,8 @@ class ProcurementFlowTest extends TestCase
     {
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'web']);
+        $user->assignRole('Manager');
 
         $budget = Budget::create([
             'id' => \Illuminate\Support\Str::uuid(),
@@ -69,9 +76,7 @@ class ProcurementFlowTest extends TestCase
         $this->assertTrue($res['ok']);
         $this->assertEquals('SUBMITTED', $pr->fresh()->status);
 
-        $mockUser = \Mockery::mock(User::class)->makePartial();
-        $mockUser->shouldReceive('hasAnyRole')->andReturn(true);
-        $resApr = $svc->approvePr($pr->fresh(), $mockUser, 1);
+        $resApr = $svc->approvePr($pr->fresh(), $user, 1);
         $this->assertTrue($resApr['ok']);
         $this->assertEquals('APPROVED', $pr->fresh()->status);
 
@@ -85,5 +90,62 @@ class ProcurementFlowTest extends TestCase
         ]);
         $this->assertTrue($resGrn['ok']);
         $this->assertEquals('RECEIVED_FULL', $grn->fresh()->status);
+    }
+
+    public function test_receive_grn_is_idempotent_and_does_not_duplicate_stock(): void
+    {
+        $org = Organization::factory()->create();
+        $warehouse = Warehouse::factory()->create(['organization_id' => $org->id]);
+        $sparePart = SparePart::factory()->create(['organization_id' => $org->id]);
+
+        $pr = PurchaseRequest::create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'organization_id' => $org->id,
+            'unit_id' => $org->id,
+            'title' => 'PR Spare Part',
+            'status' => 'APPROVED',
+            'total_amount' => 500000,
+        ]);
+
+        PurchaseRequestItem::create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'purchase_request_id' => $pr->id,
+            'spare_part_id' => $sparePart->id,
+            'description' => 'Bearing',
+            'gl_account' => '6101',
+            'qty' => 2,
+            'price' => 250000,
+            'amount' => 500000,
+        ]);
+
+        $svc = $this->makeService();
+        $po = $svc->createPoFromPr($pr->fresh()->load('items'));
+        $this->assertSame($warehouse->id, $po->warehouse_id);
+
+        $grn = $svc->createGrnFromPo($po->fresh());
+        $poItemId = $po->items()->value('id');
+
+        $firstReceive = $svc->receiveGrn($grn->fresh(), [
+            ['po_item_id' => $poItemId, 'received_qty' => 2, 'condition' => 'OK'],
+        ]);
+        $secondReceive = $svc->receiveGrn($grn->fresh(), [
+            ['po_item_id' => $poItemId, 'received_qty' => 2, 'condition' => 'OK'],
+        ]);
+
+        $this->assertTrue($firstReceive['ok']);
+        $this->assertTrue($secondReceive['ok']);
+        $this->assertTrue($secondReceive['already_received']);
+
+        $grn->refresh();
+        $this->assertSame('RECEIVED_FULL', $grn->status);
+        $this->assertSame(1, GoodsReceiveNoteItem::query()->where('goods_receive_note_id', $grn->id)->count());
+
+        $stock = SparePartStock::query()
+            ->where('spare_part_id', $sparePart->id)
+            ->where('warehouse_id', $warehouse->id)
+            ->first();
+
+        $this->assertNotNull($stock);
+        $this->assertSame('2.00', $stock->quantity);
     }
 }

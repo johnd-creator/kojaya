@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 export const consolidatedStats = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ consolidatedStats.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStats.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ consolidatedStats.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStats.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ consolidatedStats.get = (options?: RouteQueryOptions): RouteDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStats.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ consolidatedStats.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 const consolidatedStatsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const consolidatedStatsForm = (options?: RouteQueryOptions): RouteFormDefinition
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStatsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ consolidatedStatsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:196
+* @see app/Http/Controllers/ReportController.php:235
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStatsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ consolidatedStats.form = consolidatedStatsForm
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 export const consolidatedPayroll = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ consolidatedPayroll.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayroll.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ consolidatedPayroll.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayroll.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ consolidatedPayroll.get = (options?: RouteQueryOptions): RouteDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayroll.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ consolidatedPayroll.head = (options?: RouteQueryOptions): RouteDefinition<'head'
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 const consolidatedPayrollForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const consolidatedPayrollForm = (options?: RouteQueryOptions): RouteFormDefiniti
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayrollForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ consolidatedPayrollForm.get = (options?: RouteQueryOptions): RouteFormDefinition
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:210
+* @see app/Http/Controllers/ReportController.php:248
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayrollForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ consolidatedPayroll.form = consolidatedPayrollForm
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 export const consolidatedAttendance = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +178,7 @@ consolidatedAttendance.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendance.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ consolidatedAttendance.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendance.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +197,7 @@ consolidatedAttendance.get = (options?: RouteQueryOptions): RouteDefinition<'get
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -207,7 +207,7 @@ consolidatedAttendance.head = (options?: RouteQueryOptions): RouteDefinition<'he
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 const consolidatedAttendanceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -217,7 +217,7 @@ const consolidatedAttendanceForm = (options?: RouteQueryOptions): RouteFormDefin
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendanceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -227,7 +227,7 @@ consolidatedAttendanceForm.get = (options?: RouteQueryOptions): RouteFormDefinit
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:234
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendanceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

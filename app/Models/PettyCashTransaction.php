@@ -25,10 +25,13 @@ class PettyCashTransaction extends Model
         'proof_file',
     ];
 
-    protected $casts = [
-        'transaction_date' => 'date',
-        'amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'transaction_date' => 'date',
+            'amount' => 'decimal:2',
+        ];
+    }
 
     public function account(): BelongsTo
     {

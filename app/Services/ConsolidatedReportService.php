@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\Payroll;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class ConsolidatedReportService
@@ -43,7 +42,7 @@ class ConsolidatedReportService
             ->selectRaw('
                 organization_id,
                 COUNT(*) as employee_count,
-                SUM(gross_salary) as total_gross,
+                SUM(basic_salary + total_allowance) as total_gross,
                 SUM(net_salary) as total_net,
                 MIN(period) as period_from,
                 MAX(period) as period_to
@@ -84,7 +83,6 @@ class ConsolidatedReportService
     /**
      * Recursively build organization tree structure.
      *
-     * @param  Organization  $organization
      * @return array<string, mixed>
      */
     protected function buildTree(Organization $organization): array
@@ -103,7 +101,6 @@ class ConsolidatedReportService
     /**
      * Get consolidated statistics for a specific organization and its children.
      *
-     * @param  string  $organizationId
      * @return array<string, mixed>
      */
     public function getOrganizationHierarchyStats(string $organizationId): array
@@ -152,8 +149,8 @@ class ConsolidatedReportService
             ->selectRaw('
                 organization_id,
                 COUNT(DISTINCT employee_id) as total_employees,
-                SUM(CASE WHEN check_in_time IS NOT NULL THEN 1 ELSE 0 END) as total_present,
-                SUM(CASE WHEN check_in_time IS NULL THEN 1 ELSE 0 END) as total_absent
+                SUM(CASE WHEN clock_in IS NOT NULL THEN 1 ELSE 0 END) as total_present,
+                SUM(CASE WHEN clock_in IS NULL THEN 1 ELSE 0 END) as total_absent
             ')
             ->whereBetween('date', [$startDate, $endDate])
             ->groupBy('organization_id')

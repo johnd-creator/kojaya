@@ -137,11 +137,11 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
             <h2 class="text-lg font-semibold">Approval</h2>
             <form class="mt-4 space-y-3" @submit.prevent="submitApprove">
               <Input v-model="approveForm.notes" placeholder="Catatan approval" />
-              <Button type="submit" :disabled="approveForm.processing" class="w-full">Setujui</Button>
+              <Button v-can="'approve_cooperative_loan'" type="submit" :disabled="approveForm.processing" class="w-full">Setujui</Button>
             </form>
             <form class="mt-4 space-y-3" @submit.prevent="submitReject">
               <textarea v-model="rejectForm.rejection_reason" required class="min-h-24 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-zinc-950" placeholder="Alasan penolakan" />
-              <Button type="submit" variant="destructive" :disabled="rejectForm.processing" class="w-full">Tolak</Button>
+              <Button v-can="'approve_cooperative_loan'" type="submit" variant="destructive" :disabled="rejectForm.processing" class="w-full">Tolak</Button>
             </form>
           </div>
 
@@ -152,7 +152,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
             <h2 class="text-lg font-semibold">Pencairan</h2>
             <form class="mt-4 space-y-3" @submit.prevent="submitDisburse">
               <Input v-model="disburseForm.reference_no" placeholder="Referensi pencairan" />
-              <Button type="submit" :disabled="disburseForm.processing" class="w-full">Cairkan Pinjaman</Button>
+              <Button v-can="'manage_cooperative_loan'" type="submit" :disabled="disburseForm.processing" class="w-full">Cairkan Pinjaman</Button>
             </form>
           </div>
 
@@ -171,7 +171,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
               <Input v-model="paymentForm.paid_at" type="date" required />
               <Input v-model="paymentForm.reference_no" placeholder="Referensi pembayaran" />
               <textarea v-model="paymentForm.notes" class="min-h-20 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-zinc-950" placeholder="Catatan pembayaran" />
-              <Button type="submit" :disabled="paymentForm.processing" class="w-full">Simpan Pembayaran</Button>
+              <Button v-can="'manage_cooperative_loan'" type="submit" :disabled="paymentForm.processing" class="w-full">Simpan Pembayaran</Button>
             </form>
           </div>
 

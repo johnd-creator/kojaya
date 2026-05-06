@@ -159,11 +159,22 @@ Authorization: Bearer {token}
 GET /api/v1/member/dues/invoices
 GET /api/v1/member/payments
 POST /api/v1/member/payments/proof
+POST /api/payments/charge
 Authorization: Bearer {token}
 Content-Type: multipart/form-data
 ```
 
 Payment proof fields: `cooperative_dues_invoice_id`, `amount`, `payment_method` (`TRANSFER` or `QRIS`), `paid_at`, optional `reference_no`, optional `notes`, and `proof` (`jpg`, `png`, or `pdf`).
+
+Payment charge fields: `cooperative_payment_id` and `channel` (`QRIS`, `VA`, `E_WALLET`, or `TRANSFER`). The endpoint returns gateway provider, reference, status, amount, and checkout URL. Gateway webhook callback is `POST /api/payments/webhook` with `reference`/`gateway_reference`, `status`, and optional `reconciliation_reference`.
+
+### **Push Device Registration**
+```http
+POST /api/devices/push-token
+Authorization: Bearer {token}
+```
+
+Fields: `app`, `device_id`, `platform`, and `push_token`. The backend stores active mobile device tokens and currently mirrors push events to database notifications while integration providers are configured.
 
 ### **Loans**
 ```http
@@ -1547,6 +1558,8 @@ class ApiClient {
 - POS products and transactions
 - ESS attendance and leaves
 - Certificate compliance reports
+- Operator hardening endpoints for approval inbox, closing, reconciliation, exception dashboard, exports, monitoring, and OpenAPI.
+- Production integration foundation: payment charge/webhook, push token registration, and `/api/openapi.json`.
 
 ### **Planned for v1.1.0**
 - Payment gateway integration
@@ -1557,4 +1570,4 @@ class ApiClient {
 
 ---
 
-*Last Updated: May 2, 2026*
+*Last Updated: May 6, 2026*

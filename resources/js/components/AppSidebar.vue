@@ -20,6 +20,7 @@ import {
   CreditCard,
   Gift,
   ReceiptText,
+  ClipboardCheck,
   UserRound,
 } from "lucide-vue-next";
 import { computed } from "vue";
@@ -76,6 +77,7 @@ import { index as cooperativePosTransactionsIndex } from "@/routes/cooperative/p
 import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
 import { index as cooperativeLoanTypesIndex } from "@/routes/cooperative/loan-types";
+import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
 import type { NavItem } from "@/types";
 import AppLogo from "./AppLogo.vue";
 
@@ -85,12 +87,20 @@ const userRoles = computed(() => {
   return (user?.roles ?? []).map((r: any) => r.name ?? r);
 });
 const isMember = computed(() => userRoles.value.includes("Anggota"));
+const isSystemAdmin = computed(() =>
+  userRoles.value.includes("System Admin") || userRoles.value.includes("Admin Pusat"),
+);
 const userPermissions = computed<string[]>(() => {
   const permissions = page.props.auth?.permissions as string[] | undefined;
 
   return permissions ?? [];
 });
 const canAccess = (permissions?: string | string[]): boolean => {
+  // System Admin and Admin Pusat have access to everything
+  if (isSystemAdmin.value) {
+    return true;
+  }
+
   if (!permissions) {
     return true;
   }
@@ -275,6 +285,24 @@ const allNavItems: NavItem[] = [
         title: "Stock Movement",
         href: cooperativePosProductsIndex().url,
         permissions: "manage_pos_products",
+      },
+    ],
+  },
+  {
+    title: "Operator Koperasi",
+    href: "#",
+    icon: ClipboardCheck,
+    permissions: ["view_cooperative_report", "manage_cooperative_settings"],
+    items: [
+      {
+        title: "Dashboard Operator",
+        href: operatorDashboard().url,
+        permissions: ["view_cooperative_report", "manage_cooperative_settings"],
+      },
+      {
+        title: "Tutup Periode",
+        href: operatorClosing().url,
+        permissions: "manage_cooperative_settings",
       },
     ],
   },

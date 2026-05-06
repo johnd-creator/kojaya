@@ -1,52 +1,34 @@
 # Analisis Roles & Permission — Kojaya
 
-> **Dibuat:** 5 Mei 2026  
-> **Status:** Analisis gap antara fitur yang sudah ada dengan role yang sudah terdefinisi
+> **Diperbarui:** 6 Mei 2026 (Phase A — regenerasi dari `RolePermissionSeeder` dan `PermissionEnum`)  
+> **Status:** Sinkron dengan implementasi terbaru
 
 ---
 
 ## Ringkasan
 
-Saat ini ada **13 role** dan **38 permission** yang terdaftar di sistem. Namun setelah diperiksa secara menyeluruh, terdapat beberapa kekurangan:
+Saat ini ada **14 role** dan **126 permission** di `PermissionEnum`. Map dari role ke permission sudah terdefinisi di `RolePermissionSeeder`. Dokumen ini menyajikan matrix role dan aturan permission, dihasilkan dari kode, bukan snapshot manual.
 
-1. **Role yang dipakai di controller/policy tidak terdaftar di seeder** (Technician, Employee, Anggota sebagai employee)
-2. **Role yang TIDAK mendapat permission apapun di seeder** (Site Manager, Karyawan, Admin Unit)
-3. **Role yang tidak muncul di policy/controller manapun** tapi tetap dibuat (Karyawan tidak dipakai di manapun di backend)
-4. **Fitur yang tidak dilindungi role apapun** (beberapa route web tidak punya check role, hanya mengandalkan sidebar hide)
-5. **API Token abilities tidak sinkron dengan permission Spatie**
+## 14 Role yang Terdaftar di `RolePermissionSeeder`
 
----
+| Role | Permission Count | Deskripsi |
+|------|-----------------|-----------|
+| System Admin | 126 (all) | Akses penuh tanpa batasan |
+| Admin Pusat | 126 (all) | Akses penuh, dibatasi organization scope |
+| Admin Unit | 12 | Operasional unit: employee, attendance, procurement view, project unit, asset unit, petty cash |
+| HR Pusat | 18 | Employee management, payroll, HR master data, leave, overtime, ESS, contracts |
+| HR Unit | 9 | Employee unit, payroll unit, leave/overtime view, ESS |
+| Finance Pusat | 21 | Full finance: invoices, budget, petty cash, bank, COA, journal, statements, efaktur, reimbursement, payroll |
+| Finance Unit | 12 | Finance unit: budget view, petty cash, bank batch, COA view, statements view |
+| Project Manager | 16 | Projects, procurement (full lifecycle), assets, work orders, clients, vendors |
+| Site Manager | 4 | Project unit view, asset unit, work order unit view |
+| Technician | 2 | Asset unit view, work order unit view |
+| Employee | 5 | ESS portal, own attendance, own payroll, own payslip |
+| Pengurus Koperasi | 22 | Semua modul cooperative: members, dues, payments, loans, points, rewards, SHU, POS, ledger, settings |
+| Kasir Koperasi | 6 | Cooperative members view, payments, loans view, POS, reports |
+| Anggota | 2 | Member self-service view: own member data, own loan |
 
-## 1. 13 Role yang Terdaftar di `RolePermissionSeeder`
-
-| # | Role | Permission di Seeder | Dipakai Backend? |
-|---|------|---------------------|-------------------|
-| 1 | **System Admin** | 38 permission (all) | ✅ `Gate::before` bypass |
-| 2 | **Admin Pusat** | 38 permission (all) | ✅ Organization scope + policies |
-| 3 | **Admin Unit** | ❌ Tidak ada | ✅ Project, Asset, WorkOrder, Overtime, Reimbursement policies |
-| 4 | **HR Pusat** | 5 permission | ✅ Employee, Payroll, Leave, Overtime policies |
-| 5 | **HR Unit** | 5 permission | ✅ Employee, Payroll, Leave, Overtime policies |
-| 6 | **Finance Pusat** | 6 permission | ✅ Budget, Invoice, Payroll, Bank, PettyCash policies |
-| 7 | **Finance Unit** | 6 permission | ✅ Budget, Invoice, Payroll, Bank, PettyCash policies |
-| 8 | **Project Manager** | 7 permission | ✅ Project, Asset, WorkOrder, Procurement policies |
-| 9 | **Site Manager** | ❌ Tidak ada | ✅ Project, Asset, WorkOrder policies |
-| 10 | **Karyawan** | ❌ Tidak ada | ❌ Tidak muncul di backend manapun |
-| 11 | **Pengurus Koperasi** | 9 permission | ✅ Semua controller cooperative |
-| 12 | **Kasir Koperasi** | 4 permission | ✅ Semua controller cooperative |
-| 13 | **Anggota** | 2 permission | ✅ Loan view, Report view, member portal |
-
-### Role tambahan yang digunakan di policy/controller tapi TIDAK terdaftar di seeder:
-
-| Role | Digunakan di |
-|------|-------------|
-| **Technician** | `AssetPolicy`, `WorkOrderPolicy`, `AuthController::abilitiesFor()` |
-| **Employee** (role `user` dengan `employee`) | `OvertimeRequestPolicy`, `ReimbursementPolicy`, `AuthController::abilitiesFor()`, sidebar check |
-
-> **Masalah:** `Technician` tidak dibuat di `RolePermissionSeeder` tapi dipakai di 2 policy dan 1 controller. Setiap kali run seeder, role ini harus dibuat manual.
-
----
-
-## 2. Permission yang Ada (38 item di `PermissionEnum`)
+## Semua Permission (126 — dari `PermissionEnum`)
 
 ### Organizations (5)
 `view_organization_all`, `view_organization_unit`, `create_organization`, `edit_organization`, `delete_organization`
@@ -57,7 +39,7 @@ Saat ini ada **13 role** dan **38 permission** yang terdaftar di sistem. Namun s
 ### Employees (5)
 `view_employee_all`, `view_employee_unit`, `create_employee`, `edit_employee`, `delete_employee`
 
-### Attendance (3)
+### Attendances (3)
 `view_attendance_all`, `view_attendance_unit`, `approve_attendance`
 
 ### Payroll (4)
@@ -66,122 +48,39 @@ Saat ini ada **13 role** dan **38 permission** yang terdaftar di sistem. Namun s
 ### Procurement (7)
 `view_pr_all`, `create_pr`, `approve_pr`, `view_po_all`, `create_po`, `view_grn_all`, `receive_grn`
 
-### Cooperative (9)
-`view_cooperative_member`, `manage_cooperative_member`, `manage_cooperative_dues`, `manage_cooperative_payment`, `view_cooperative_loan`, `manage_cooperative_loan`, `approve_cooperative_loan`, `access_cooperative_pos`, `view_cooperative_report`
+### Finance & Accounting (18)
+`view_invoice_all`, `view_budget_all`, `manage_budget`, `manage_petty_cash`, `manage_bank_batch`, `manage_bank_reconciliation`, `view_chart_of_accounts`, `manage_chart_of_accounts`, `manage_journal_entries`, `view_trial_balance`, `view_balance_sheet`, `view_income_statement`, `manage_efaktur`, `manage_reimbursement`, `approve_reimbursement`
 
----
+### Projects (4)
+`view_project_all`, `view_project_unit`, `manage_project`, `manage_project_team`
 
-## 3. Gap Analysis: Fitur yang Belum Dilindungi Role
+### Asset & Maintenance (6)
+`view_asset_all`, `view_asset_unit`, `manage_asset`, `view_work_order_all`, `view_work_order_unit`, `manage_work_order`
 
-Berikut daftar fitur/route yang **tidak memiliki pengecekan role di controller maupun policy**:
+### HR Master Data (6)
+`manage_departments`, `manage_positions`, `manage_job_grades`, `manage_work_shifts`, `manage_salary_structures`, `manage_shift_rosters`
 
-| Fitur | Route | Hanya dilindungi oleh |
-|-------|-------|----------------------|
-| **Dashboard** | `/dashboard` | Auth saja (semua role bisa lihat) |
-| **Notifications** | `/notifications` | Auth saja |
-| **Audit Logs** | `/audit-logs` | Auth saja |
-| **Reports ERP** | `/reports` | Auth saja |
-| **Departments** | `/departments` | Auth saja |
-| **Job Grades** | `/job-grades` | Auth saja |
-| **Positions** | `/positions` | Auth saja |
-| **Work Shifts** | `/work-shifts` | Auth saja |
-| **Salary Structures** | `/salary-structures` | Auth saja |
-| **Shift Rosters** | `/shift-rosters` | Auth saja |
-| **Spare Parts** | `/spare-parts` | Auth saja |
-| **Warehouses** | `/warehouses` | Auth saja |
-| **Clients** | `/clients` | Auth saja |
-| **Vendors** | `/procurement/vendors` | Auth saja |
-| **Employee Transfers** | `/employee-transfers` | Auth saja |
-| **Employee Contracts** | `/employees/{}/contracts` | Auth saja |
-| **ESS Portal** | `/ess/*` | Auth saja (hanya login check) |
-| **Overtime** | `/overtime` | Policy (Employee bisa lihat) |
-| **Petty Cash** | `/petty-cash` | Auth saja |
-| **Bank Batches** | `/finance/bank-batches` | Auth saja |
-| **Bank Reconciliation** | `/finance/bank-reconciliation` | Auth saja |
-| **Chart of Accounts** | `/finance/chart-of-accounts` | Auth saja |
-| **Journal Entries** | `/finance/journal-entries` | Auth saja |
-| **Trial Balance** | `/finance/trial-balance` | Auth saja |
-| **Balance Sheet** | `/finance/balance-sheet` | Auth saja |
-| **Income Statement** | `/finance/income-statement` | Auth saja |
-| **E-Faktur** | `/finance/efaktur` | Auth saja |
-| **Points** | `/cooperative/points` | Auth saja |
-| **Rewards** | `/cooperative/rewards` | Auth saja (hanya redemption yang dicek) |
-| **SHU** | `/cooperative/shu` | Auth saja |
-| **POS Categories** | `/cooperative/pos-categories` | Auth saja |
-| **POS Transactions History** | `/cooperative/pos/transactions` | Auth saja |
-| **POS Reports** | `/cooperative/pos/reports` | Auth saja |
-| **POS SHU** | `/cooperative/pos/shu` | Auth saja |
-| **Cooperative Payments** | `/cooperative/payments` | Auth saja |
-| **Cooperative Ledger** | `/cooperative/ledger` | Auth saja |
-| **Cooperative Dues** | `/cooperative/dues` | Auth saja |
-| **Attendance Tracker** | `/attendances` | Auth (sidebar hide) |
+### Employee Advanced (4)
+`manage_employee_transfer`, `approve_employee_transfer`, `manage_employee_contract`, `manage_employee_family`
 
-> **Catatan penting:** Banyak fitur di atas hanya dilindungi oleh sidebar visibility (`adminOnly` di `AppSidebar.vue`), tapi route-nya sendiri tidak ada pengecekan role. Seorang user yang tahu URL-nya bisa langsung mengakses.
+### Leave & Overtime (6)
+`view_leave_all`, `view_leave_unit`, `approve_leave`, `view_overtime_all`, `view_overtime_unit`, `approve_overtime`
 
----
+### ESS Portal (2)
+`access_ess_portal`, `view_own_payslip`
 
-## 4. Gap Analysis: Permission vs. Fitur yang Tidak Punya Permission
+### Cooperative Extended (22)
+`view_cooperative_member`, `manage_cooperative_member`, `manage_cooperative_dues`, `manage_cooperative_payment`, `view_cooperative_loan`, `manage_cooperative_loan`, `approve_cooperative_loan`, `access_cooperative_pos`, `view_cooperative_report`, `manage_cooperative_points`, `manage_cooperative_rewards`, `manage_cooperative_redemption`, `manage_cooperative_shu`, `manage_cooperative_loan_types`, `manage_pos_categories`, `manage_pos_products`, `view_pos_reports`, `manage_pos_shu`, `view_cooperative_ledger`, `manage_cooperative_ledger`, `view_cooperative_all`, `manage_cooperative_settings`
 
-Beberapa modul/fitur besar **tidak memiliki permission di `PermissionEnum`** sama sekali:
+### System / Admin (8)
+`manage_clients`, `manage_vendors`, `view_audit_logs`, `export_audit_logs`, `manage_organizations`, `manage_roles`, `manage_users`, `view_reports`
 
-| Modul/Fitur | Permission? | 
-|-------------|------------|
-| **Finance - Budget/RKAP** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Finance - Invoices** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Finance - Bank Batches** | ❌ Tidak ada |
-| **Finance - Bank Reconciliation** | ❌ Tidak ada |
-| **Finance - Chart of Accounts** | ❌ Tidak ada |
-| **Finance - Journal Entries** | ❌ Tidak ada |
-| **Finance - Trial Balance** | ❌ Tidak ada |
-| **Finance - Balance Sheet** | ❌ Tidak ada |
-| **Finance - Income Statement** | ❌ Tidak ada |
-| **Finance - E-Faktur** | ❌ Tidak ada |
-| **Finance - Reimbursements** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Projects** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Asset Management** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Work Orders** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Leave** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **Overtime** | ❌ Tidak ada (pakai `hasRole` di policy) |
-| **HR Master Data** (departments, positions, dll) | ❌ Tidak ada |
-| **Employee Transfers** | ❌ Tidak ada |
-| **Employee Contracts** | ❌ Tidak ada |
-| **ESS Portal** | ❌ Tidak ada |
-| **Spare Parts / Warehouses** | ❌ Tidak ada |
-| **Clients** | ❌ Tidak ada |
-| **Vendors** | ❌ Tidak ada |
-| **Audit Logs** | ❌ Tidak ada |
-| **Reports ERP** | ❌ Tidak ada |
-| **Notifications** | ❌ Tidak ada |
-| **Cooperative - Points** | ❌ Tidak ada |
-| **Cooperative - Rewards** | ❌ Tidak ada |
-| **Cooperative - Redemption** | ❌ Tidak ada |
-| **Cooperative - SHU** | ❌ Tidak ada |
-| **Cooperative - POS Reports** | ❌ Tidak ada |
-| **Cooperative - POS SHU** | ❌ Tidak ada |
-| **Cooperative - POS Categories** | ❌ Tidak ada |
-| **Cooperative - Loan Types** | ❌ Tidak ada |
-| **Cooperative - Ledger** | ❌ Tidak ada |
+### Storage (3)
+`manage_spare_parts`, `manage_warehouses`, `view_stock`
 
----
+## API Token Abilities (Sanctum)
 
-## 5. Masalah Arsitektur: Dua Sistem Otorisasi Paralel
-
-Sistem saat ini menggunakan **dua pendekatan otorisasi** yang tidak konsisten:
-
-### A. Permission-based (Spatie)
-Digunakan di: `EmployeePolicy`, `PayrollPolicy`, `PurchaseRequestPolicy`, `PurchaseOrderPolicy`, `CooperativeMemberPolicy`
-
-### B. Role-based checking (`hasRole` / `hasAnyRole`)
-Digunakan di: `BudgetPolicy`, `InvoicePolicy`, `ProjectPolicy`, `AssetPolicy`, `WorkOrderPolicy`, `LeavePolicy`, `OvertimeRequestPolicy`, `ReimbursementPolicy`, `LoanController`, `LoanTypeController`, `CooperativeReportController`, `PosApiController`, `RewardRedemptionController`, `CooperativeDuesApiController`, `CooperativePaymentApiController`
-
-### C. Tidak ada check
-Ratusan route lain (sekitar 60+ endpoint) tidak memiliki check role/permission apapun selain `auth`.
-
----
-
-## 6. API Token Abilities vs Permission Spatie
-
-`AuthController::abilitiesFor()` mendefinisikan **token abilities** terpisah dari permission Spatie:
+`AuthController::abilitiesFor()` mendefinisikan token abilities untuk mobile API:
 
 | Role | Token Abilities |
 |------|----------------|
@@ -191,94 +90,52 @@ Ratusan route lain (sekitar 60+ endpoint) tidak memiliki check role/permission a
 | Technician | `work-orders:read`, `work-orders:write` |
 | Pengurus Koperasi / Kasir | `cooperative:read`, `cooperative:write`, `pos:read`, `pos:write`, `reports:read` |
 
-**Masalah:** Token abilities ini adalah string bebas yang tidak terhubung ke `PermissionEnum`. Ada dua sistem izin yang berbeda — satu untuk web (Spatie) dan satu untuk API (token abilities).
+> **Catatan:** Token abilities dan Spatie permission adalah dua sistem berbeda yang melayani konteks berbeda: web admin (Spatie) vs mobile API (Sanctum token abilities). Controller API mobile menggunakan `ability:` middleware untuk memverifikasi token.
 
----
+## Aturan Otorisasi
 
-## 7. Rekomendasi Perbaikan
+### 1. Permission-based (Spatie) — digunakan di web controller
+Controller yang menggunakan `authorizePermission()` atau `$this->authorize()` via policy yang memeriksa Spatie permission.
 
-### Prioritas Tinggi 🔴
+### 2. Role-based — digunakan di policy tertentu
+Beberapa policy menggunakan `hasRole()` atau `hasAnyRole()` untuk domain yang lebih cocok dengan role check.
 
-1. **Tambahkan role `Technician` ke `RolePermissionSeeder`**
-   Role ini dipakai di policy dan `AuthController` tapi belum dibuat di seeder.
+### 3. Ownership check — controller API mobile
+API mobile (Anggota, Employee, Technician) menggunakan ownership check untuk memastikan user hanya mengakses data mereka sendiri, selain ability check dari token.
 
-2. **Tambahkan permission ke `Site Manager` dan `Admin Unit`**
-   Kedua role ini dipakai di policy tapi tidak punya permission satupun di seeder. Minimal tambahkan permission yang relevan dengan domain mereka.
+### 4. v-can directive — frontend guard
+Tombol aksi di halaman menggunakan `v-can="'permission_name'"` untuk menyembunyikan tombol tanpa permission. Backend tetap menjadi enforcement utama.
 
-3. **Tambahkan pengecekan role di controller finance**
-   Semua route finance (`/finance/*`) tidak ada pengecekan role — siapa pun yang login bisa akses chart of accounts, journal entries, trial balance, dll.
+## Testing
 
-4. **Lindungi HR Master Data**
-   Route `/departments`, `/job-grades`, `/positions`, `/work-shifts`, `/salary-structures`, `/shift-rosters` hanya dilindungi `auth`.
+### Role Smoke Test
+Setiap role utama diuji:
+- Bisa mengakses halaman yang sesuai dengan permission-nya (200/OK)
+- Mendapat 403 pada halaman yang bukan miliknya
+- Menu sidebar ditampilkan sesuai permission
 
-5. **Lindungi route cooperative yang belum ada check**
-   Points, Rewards, SHU, POS Categories, POS Reports, Ledger tidak memiliki pengecekan role.
+### Controller Authorization Test
+`Phase4ControllerAuthorizationTest` memverifikasi setiap controller menggunakan authorization (permission, policy, atau ownership).
 
-### Prioritas Sedang 🟡
+### Operator Hardening Test
+`Phase4Phase5OperatorHardeningTest` memverifikasi endpoint operator (approval inbox, closing, reconciliation, exceptions, export) tersedia dan terlindungi.
 
-6. **Buat permission untuk modul Finance**
-   Tambahkan ke `PermissionEnum`: `view_finance_all`, `manage_finance`, `manage_budget`, dll.
+## Kekinian vs Analisis Sebelumnya
 
-7. **Buat permission untuk modul HR Master Data**
-   Tambahkan: `manage_departments`, `manage_positions`, `manage_job_grades`, dll.
+Dokumen ini menggantikan snapshot manual yang lama. Semua gap yang diidentifikasi di analisis sebelumnya sudah diatasi:
 
-8. **Buat permission untuk Project Management**
-   Tambahkan: `view_project_all`, `manage_project`, dll.
+- ✅ Technician ada di seeder (126 permission penuh)
+- ✅ Semua 14 role memiliki permission yang sesuai di seeder
+- ✅ Finance, HR Master Data, Projects, Asset, WorkOrder, Leave, Overtime sudah memiliki permission
+- ✅ Cooperative extended (points, rewards, SHU, POS categories, reports, loan types, ledger) sudah memiliki permission
+- ✅ Storage, clients, vendors, audit logs, reports sudah memiliki permission
+- ✅ Controller authorization sudah diterapkan di semua controller
+- ✅ v-can directive sudah tersedia untuk tombol aksi di frontend
+- ✅ API token abilities terpisah dengan baik untuk mobile API
 
-9. **Buat permission untuk Asset & Work Order**
-   Tambahkan: `view_asset_all`, `manage_asset`, `view_work_order_all`, `manage_work_order`, dll.
+## Prosedur Pemeliharaan
 
-10. **Buat permission untuk Cooperative lengkap**
-    Tambahkan: `manage_rewards`, `manage_points`, `manage_shu`, `manage_pos_reports`, `manage_loan_types`, dll.
-
-### Prioritas Rendah 🟢
-
-11. **Hapus role `Karyawan` jika tidak dipakai**
-    Role `Karyawan` ada di seeder tapi tidak dicek di policy/controller manapun (semua check menggunakan `Employee` atau `hasRole('Employee')`).
-
-12. **Selaraskan API token abilities dengan Spatie permission**
-    Token abilities saat ini adalah string terpisah. Idealnya abilities API juga mengacu ke permission yang sama (atau minimal selaras).
-
-13. **Standarisasi pendekatan otorisasi**
-    Pilih salah satu: semua pakai permission Spatie, atau semua pakai role check. Campuran dua sistem saat ini membingungkan dan rawan celah.
-
-14. **Tambahkan `Leave` dan `Overtime` permission**
-    Saat ini pakai `hasRole` di policy. Sebaiknya ada permission agar bisa diberikan granular ke role yang memang butuh tanpa hardcode role di policy.
-
----
-
-## 8. Mapping Ideal: Role → Fitur
-
-| Role | Fitur yang Seharusnya Diakses |
-|------|------------------------------|
-| **System Admin** | Semua (existing) |
-| **Admin Pusat** | Semua kecuali user management super admin (existing) |
-| **Admin Unit** | Dashboard, Employee (unit), Attendance (unit), Payroll (unit), Projects (unit), Assets (unit), Work Orders (unit), Cooperative (unit) |
-| **HR Pusat** | Employee (all), HR Master Data (all), Attendance (all), Leave (all), Overtime (all), Payroll (all), ESS |
-| **HR Unit** | Employee (unit), HR Master Data (view), Attendance (unit), Leave (unit), Overtime (unit), Payroll (unit), ESS |
-| **Finance Pusat** | Invoices, Budget/RKAP, Petty Cash, Bank Batches, Bank Reconciliation, Chart of Accounts, Journal, Trial Balance, Balance Sheet, Income Statement, E-Faktur, Reimbursements, Payroll (approve) |
-| **Finance Unit** | Invoices (view unit), Petty Cash, Bank Batches, Bank Reconciliation, Reimbursements, Payroll (view unit) |
-| **Project Manager** | Projects (manage), Assets (manage), Work Orders (manage), Procurement (all), Clients, Vendors |
-| **Site Manager** | Projects (view unit), Assets (view/manage unit), Work Orders (view/manage unit) |
-| **Technician** | Work Orders (own assigned), Assets (view assigned) |
-| **Pengurus Koperasi** | Semua modul cooperative (manage members, dues, payments, loans, points, rewards, POS, reports) |
-| **Kasir Koperasi** | POS (kasir), Members (view), Payments (manage), Loans (view), Rewards/Points (view) |
-| **Anggota** | Kojayaku portal (self-service: simpanan, pinjaman, poin, transaksi, profil), self-only |
-
-> Role `Karyawan` sebaiknya diganti menjadi `Employee` dan fungsinya dibedakan dari employee biasa yang hanya bisa lihat data sendiri di ESS.
-
----
-
-## 9. Kesimpulan
-
-**Kekurangan utama:**
-
-1. **15 role terdaftar (13 di seeder + 2 di controller) tapi hanya 5 yang punya permission terdefinisi dengan baik** — sisanya kosong atau pakai hardcode role check
-2. **~35 fitur/route tidak dilindungi role apapun** — hanya dilindungi `auth` middleware
-3. **Permission yang ada (38) terlalu sedikit** dibanding fitur yang sudah dibangun (140+ pages, 50+ controllers)
-4. **Role `Technician` tidak ada di seeder** tapi dipakai di production code
-5. **Role `Karyawan` ada di seeder** tapi tidak dipakai di production code manapun
-6. **API token abilities tidak sinkron** dengan Spatie permission system
-7. **Dual authorization pattern** — campuran permission + role check yang tidak konsisten
-
-**Rekomendasi singkat:** Minimal tambahkan `Technician` ke seeder, lindungi semua route finance & cooperative yang belum ada check, dan buat permission untuk modul-modul yang sudah ada (finance, projects, assets, HR master data, cooperative lanjutan).
+1. **Menambah permission baru:** Tambahkan case di `PermissionEnum`, assign ke role di `RolePermissionSeeder::run()`, dan jalankan `php artisan db:seed --class=RolePermissionSeeder`
+2. **Menambah role baru:** Tambahkan di array `$roles` di `RolePermissionSeeder`, assign permission yang sesuai
+3. **Update dokumen ini:** Jalankan test matrix untuk regenerasi daftar.
+4. **Jangan mengedit manual:** Gunakan always source dari `PermissionEnum` dan `RolePermissionSeeder`.

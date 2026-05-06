@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EssController;
+use App\Http\Controllers\Api\ProductionIntegrationController;
 use App\Http\Controllers\Api\TechnicianWorkOrderController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\V1\CooperativeDuesApiController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\ComplianceReportController;
 use App\Http\Controllers\Cooperative\CooperativeReportController;
 use App\Http\Controllers\EmployeeCertificateController;
 use App\Http\Controllers\MedicalCheckupController;
+use App\Http\Controllers\OpenApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +37,18 @@ Route::get('/user', function (Request $request) {
 
 Route::post('/token/rotate', [TokenController::class, 'rotate'])
     ->middleware(['auth:sanctum', 'throttle:api-write']);
+
+Route::get('/openapi.json', OpenApiController::class)->middleware('throttle:api');
+Route::post('/payments/webhook', [ProductionIntegrationController::class, 'paymentWebhook'])->middleware('throttle:api-write');
+
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    Route::post('/devices/push-token', [ProductionIntegrationController::class, 'registerDevice'])
+        ->middleware(['ability:profile:read', 'throttle:api-write']);
+    Route::post('/payments/charge', [ProductionIntegrationController::class, 'createPaymentCharge'])
+        ->middleware(['ability:member:write', 'throttle:api-write']);
+    Route::get('/monitoring/health', [ProductionIntegrationController::class, 'monitoring'])
+        ->middleware('ability:reports:read');
+});
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
     Route::prefix('member')->group(function () {

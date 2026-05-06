@@ -215,6 +215,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('pos-products', \App\Http\Controllers\Cooperative\PosProductController::class)->only(['index', 'store', 'show', 'update', 'destroy'])->parameters(['pos-products' => 'product']);
         Route::post('pos-products/{product}/adjust-stock', [\App\Http\Controllers\Cooperative\PosProductController::class, 'adjustStock'])->name('pos-products.adjust-stock');
         Route::get('reports', [\App\Http\Controllers\Cooperative\CooperativeReportController::class, 'index'])->name('reports.index');
+        Route::get('operator/dashboard', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'dashboard'])->name('operator.dashboard');
+        Route::get('operator/approval-inbox', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'approvalInbox'])->name('operator.approval-inbox');
+        Route::get('operator/exceptions', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'exceptions'])->name('operator.exceptions');
+        Route::get('operator/analytics', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'analytics'])->name('operator.analytics');
+        Route::get('operator/closing', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'closingPage'])->name('operator.closing');
+        Route::get('operator/closing/{period}', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'closing'])->name('operator.closing.show');
+        Route::post('operator/closing/{period}/steps', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'completeClosingStep'])->name('operator.closing.steps.complete');
+        Route::post('operator/closing/{period}/lock', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'lock'])->name('operator.closing.lock');
+        Route::post('operator/closing/{period}/unlock', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'unlock'])->name('operator.closing.unlock');
+        Route::post('operator/payments/{payment}/reconcile', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'reconcilePayment'])->name('operator.payments.reconcile');
+        Route::get('operator/export', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'export'])->name('operator.export');
     });
 
     // Finance - Bank Batches

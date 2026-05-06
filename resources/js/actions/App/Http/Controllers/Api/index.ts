@@ -1,5 +1,6 @@
 import AuthController from './AuthController'
 import TokenController from './TokenController'
+import ProductionIntegrationController from './ProductionIntegrationController'
 import V1 from './V1'
 import EssController from './EssController'
 import TechnicianWorkOrderController from './TechnicianWorkOrderController'
@@ -7,6 +8,7 @@ import TechnicianWorkOrderController from './TechnicianWorkOrderController'
 const Api = {
     AuthController: Object.assign(AuthController, AuthController),
     TokenController: Object.assign(TokenController, TokenController),
+    ProductionIntegrationController: Object.assign(ProductionIntegrationController, ProductionIntegrationController),
     V1: Object.assign(V1, V1),
     EssController: Object.assign(EssController, EssController),
     TechnicianWorkOrderController: Object.assign(TechnicianWorkOrderController, TechnicianWorkOrderController),

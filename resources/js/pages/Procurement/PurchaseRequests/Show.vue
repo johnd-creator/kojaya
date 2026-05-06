@@ -146,6 +146,7 @@ const currentStepIndex = computed(() => {
         <div class="flex flex-wrap gap-2">
           <button
             v-if="props.pr.status === 'DRAFT'"
+            v-can="'create_pr'"
             class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm text-sm"
             @click="submitDialogOpen = true"
             :disabled="submitForm.processing"
@@ -160,6 +161,7 @@ const currentStepIndex = computed(() => {
             "
           >
             <button
+              v-can="'approve_pr'"
               class="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm text-sm"
               @click="openApproveDialog(1)"
               :disabled="approveForm.processing"
@@ -167,6 +169,7 @@ const currentStepIndex = computed(() => {
               Approve L1
             </button>
             <button
+              v-can="'approve_pr'"
               class="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm text-sm"
               @click="openApproveDialog(2)"
               :disabled="approveForm.processing"
@@ -174,6 +177,7 @@ const currentStepIndex = computed(() => {
               Approve L2
             </button>
             <button
+              v-can="'approve_pr'"
               class="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors shadow-sm text-sm"
               @click="openApproveDialog(3)"
               :disabled="approveForm.processing"
@@ -188,6 +192,7 @@ const currentStepIndex = computed(() => {
               props.pr.status !== 'PO_CREATED' &&
               props.pr.status !== 'DRAFT'
             "
+            v-can="'approve_pr'"
             class="px-4 py-2 rounded-md bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium transition-colors shadow-sm text-sm"
             @click="openRejectDialog"
             :disabled="rejectForm.processing"
@@ -197,6 +202,7 @@ const currentStepIndex = computed(() => {
 
           <button
             v-if="props.pr.status === 'APPROVED'"
+            v-can="'create_po'"
             class="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm text-sm"
             @click="createPoDialogOpen = true"
             :disabled="poForm.processing"

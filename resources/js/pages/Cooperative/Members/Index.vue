@@ -123,7 +123,7 @@ const getMemberStatusVariant = (
           </p>
         </div>
         <Link :href="create().url" prefetch>
-          <Button><Plus class="mr-2 h-4 w-4" />Anggota Baru</Button>
+          <Button v-can="'manage_cooperative_member'"><Plus class="mr-2 h-4 w-4" />Anggota Baru</Button>
         </Link>
       </div>
 
@@ -221,10 +221,11 @@ const getMemberStatusVariant = (
         <template #actions="{ row }">
           <div class="flex justify-end gap-2">
             <Link :href="edit(row.id).url" prefetch
-              ><Button size="sm" variant="outline">Edit</Button></Link
+              ><Button v-can="'manage_cooperative_member'" size="sm" variant="outline">Edit</Button></Link
             >
             <Button
               v-if="row.status !== 'ACTIVE'"
+              v-can="'manage_cooperative_member'"
               size="sm"
               variant="outline"
               :aria-label="`Aktifkan anggota ${row.name}`"
@@ -234,6 +235,7 @@ const getMemberStatusVariant = (
             </Button>
             <Button
               v-if="row.status === 'ACTIVE'"
+              v-can="'manage_cooperative_member'"
               size="sm"
               variant="outline"
               :aria-label="`Nonaktifkan anggota ${row.name}`"

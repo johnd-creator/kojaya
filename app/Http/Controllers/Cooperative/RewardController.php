@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\StoreRewardRequest;
 use App\Http\Requests\Cooperative\UpdateRewardRequest;
 use App\Models\Reward;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

@@ -95,6 +95,7 @@ const closePeriod = () => {
             Preview
           </Button>
           <Button
+            v-can="'manage_cooperative_shu'"
             type="button"
             :disabled="isClosed || closeForm.processing"
             @click="closePeriod"

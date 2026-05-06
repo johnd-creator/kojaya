@@ -15,6 +15,7 @@ import PosAnnualShuController from './PosAnnualShuController'
 import PosTransactionHistoryController from './PosTransactionHistoryController'
 import PosCategoryController from './PosCategoryController'
 import PosProductController from './PosProductController'
+import OperatorProcedureController from './OperatorProcedureController'
 
 const Cooperative = {
     CooperativeReportController: Object.assign(CooperativeReportController, CooperativeReportController),
@@ -34,6 +35,7 @@ const Cooperative = {
     PosTransactionHistoryController: Object.assign(PosTransactionHistoryController, PosTransactionHistoryController),
     PosCategoryController: Object.assign(PosCategoryController, PosCategoryController),
     PosProductController: Object.assign(PosProductController, PosProductController),
+    OperatorProcedureController: Object.assign(OperatorProcedureController, OperatorProcedureController),
 }
 
 export default Cooperative

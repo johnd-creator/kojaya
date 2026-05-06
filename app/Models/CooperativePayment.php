@@ -14,13 +14,22 @@ class CooperativePayment extends Model
         'user_id',
         'amount',
         'payment_method',
+        'gateway_provider',
+        'gateway_reference',
+        'gateway_status',
+        'gateway_payload',
         'paid_at',
         'status',
         'proof_path',
         'reference_no',
+        'receipt_no',
+        'receipt_issued_at',
         'notes',
         'approved_at',
         'approved_by',
+        'reconciled_at',
+        'reconciled_by',
+        'reconciliation_reference',
     ];
 
     protected function casts(): array
@@ -29,6 +38,9 @@ class CooperativePayment extends Model
             'amount' => 'decimal:2',
             'paid_at' => 'date',
             'approved_at' => 'datetime',
+            'receipt_issued_at' => 'datetime',
+            'reconciled_at' => 'datetime',
+            'gateway_payload' => 'array',
         ];
     }
 

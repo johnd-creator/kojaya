@@ -626,6 +626,17 @@ Koperasi membutuhkan data yang akurat. Perlu tambahan:
 - Dashboard operator menunjukkan pekerjaan tertunda dan anomali.
 - Dokumentasi prosedur sesuai implementasi.
 
+**Status eksekusi Phase 4 (May 6, 2026):**
+- [x] Role matrix dan otorisasi controller web sudah ditutup melalui Spatie permission/Gate pada finance, HR master data, system/admin, storage, procurement, ESS, report, audit, dan sidebar permission-aware.
+- [x] Approval inbox operator tersedia di `GET /cooperative/operator/approval-inbox` untuk pending payment, loan, redemption, dan payroll approval.
+- [x] Exception dashboard tersedia di `GET /cooperative/operator/exceptions` untuk overdue loan installment, unpaid dues, pending payments, low stock, dan analytics dasar.
+- [x] Monthly closing checklist tersedia di `GET /cooperative/operator/closing/{period}` dengan step completion dan period lock/unlock.
+- [x] Period lock mencegah posting pembayaran/iuran pada periode koperasi yang sudah terkunci.
+- [x] Payment reconciliation tersedia di `POST /cooperative/operator/payments/{payment}/reconcile`; proses ini approve payment, membuat receipt, posting ledger, dan menyimpan reference rekonsiliasi.
+- [x] Export laporan operasional koperasi tersedia di `GET /cooperative/operator/export?type=members|savings|loans|shu|payments&period=YYYY-MM`.
+- [x] Test `Phase4Phase5OperatorHardeningTest` menutup closing lock, reconciliation, export, approval inbox, dan OpenAPI.
+- [~] UI Inertia khusus approval inbox/closing dashboard masih bisa dikembangkan sebagai layer visual di atas endpoint operator ini.
+
 ---
 
 ### Phase 5 - Integrasi Produksi dan Scale
@@ -653,6 +664,15 @@ Koperasi membutuhkan data yang akurat. Perlu tambahan:
 - Push notification terkirim untuk approval, pembayaran, due date, payslip, dan work order.
 - Tim mobile punya OpenAPI yang cocok dengan backend.
 - Operator punya insight risiko dan performa koperasi.
+
+**Status eksekusi Phase 5 (May 6, 2026):**
+- [x] Fondasi payment gateway tersedia melalui `PaymentGatewayService`, `POST /api/payments/charge`, dan `POST /api/payments/webhook`.
+- [x] Webhook payment berstatus `PAID` otomatis menjalankan reconciliation, approve payment, membuat receipt, posting ledger, dan mengirim database notification/push mirror ke anggota.
+- [x] Push notification foundation tersedia melalui `MobileDeviceToken`, `POST /api/devices/push-token`, dan `PushNotificationService`.
+- [x] OpenAPI route aktual tersedia di `GET /api/openapi.json`.
+- [x] Monitoring API dasar tersedia di `GET /api/monitoring/health`.
+- [x] Analytics koperasi dasar tersedia di `GET /cooperative/operator/analytics` mencakup outstanding aktif, overdue amount, NPL ratio, unpaid dues, pending payment, dan SHU terakhir.
+- [~] Adapter vendor produksi spesifik seperti Midtrans/Xendit/FCM/WhatsApp masih berupa layer provider berikutnya; kontrak endpoint dan persistence internal sudah disiapkan.
 
 ---
 

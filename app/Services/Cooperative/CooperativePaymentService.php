@@ -10,11 +10,19 @@ use Illuminate\Support\Facades\DB;
 
 class CooperativePaymentService
 {
+    public function __construct(private readonly CooperativePeriodLockService $periodLockService) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
     public function record(array $data, ?User $user = null): CooperativePayment
     {
+        $invoice = isset($data['cooperative_dues_invoice_id'])
+            ? CooperativeDuesInvoice::query()->find($data['cooperative_dues_invoice_id'])
+            : null;
+
+        $this->periodLockService->assertUnlocked($invoice?->period ?? substr((string) $data['paid_at'], 0, 7));
+
         return CooperativePayment::query()->create([
             ...$data,
             'user_id' => $user?->id,
@@ -34,10 +42,14 @@ class CooperativePaymentService
                 return $payment;
             }
 
+            $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
+
             $payment->forceFill([
                 'status' => 'APPROVED',
                 'approved_at' => now(),
                 'approved_by' => $approver?->id,
+                'receipt_no' => $payment->receipt_no ?: $this->receiptNo($payment),
+                'receipt_issued_at' => $payment->receipt_issued_at ?: now(),
             ])->save();
 
             if ($payment->cooperative_dues_invoice_id) {
@@ -72,5 +84,31 @@ class CooperativePaymentService
 
             return $payment->refresh();
         });
+    }
+
+    public function reconcile(CooperativePayment $payment, ?User $user, string $reference, bool $approve = true): CooperativePayment
+    {
+        return DB::transaction(function () use ($payment, $user, $reference, $approve): CooperativePayment {
+            $payment = CooperativePayment::query()->lockForUpdate()->findOrFail($payment->id);
+
+            if ($approve && $payment->status !== 'APPROVED') {
+                $payment = $this->approve($payment, $user);
+            }
+
+            $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
+
+            $payment->forceFill([
+                'reconciled_at' => now(),
+                'reconciled_by' => $user?->id,
+                'reconciliation_reference' => $reference,
+            ])->save();
+
+            return $payment->refresh();
+        });
+    }
+
+    private function receiptNo(CooperativePayment $payment): string
+    {
+        return sprintf('RCPT-%s-%06d', now()->format('Ymd'), $payment->id);
     }
 }

@@ -95,7 +95,7 @@ const submitMarkPaid = (invoiceIds: number[]) => {
             Generate dan pantau tagihan anggota per periode.
           </p>
         </div>
-        <Button @click="submitGenerate" :disabled="form.processing"
+        <Button v-can="'manage_cooperative_dues'" @click="submitGenerate" :disabled="form.processing"
           ><RefreshCw class="mr-2 h-4 w-4" />Generate Periode</Button
         >
       </div>
@@ -141,6 +141,7 @@ const submitMarkPaid = (invoiceIds: number[]) => {
           />
         </label>
         <Button
+          v-can="'manage_cooperative_dues'"
           :disabled="selectedInvoiceIds.length === 0 || markPaidForm.processing"
           @click="submitMarkPaid(selectedInvoiceIds)"
         >

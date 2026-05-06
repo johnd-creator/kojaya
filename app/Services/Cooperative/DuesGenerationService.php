@@ -9,8 +9,12 @@ use Carbon\CarbonImmutable;
 
 class DuesGenerationService
 {
+    public function __construct(private readonly CooperativePeriodLockService $periodLockService) {}
+
     public function generateForPeriod(string $period): int
     {
+        $this->periodLockService->assertUnlocked($period);
+
         $periodDate = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
         $created = 0;
 

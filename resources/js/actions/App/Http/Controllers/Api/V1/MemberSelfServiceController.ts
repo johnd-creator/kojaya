@@ -749,7 +749,7 @@ applyLoan.form = applyLoanForm
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-export const loan = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const loan = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loan.url(args, options),
     method: 'get',
 })
@@ -764,7 +764,7 @@ loan.definition = {
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-loan.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+loan.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -797,7 +797,7 @@ loan.url = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-loan.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+loan.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loan.url(args, options),
     method: 'get',
 })
@@ -807,7 +807,7 @@ loan.get = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-loan.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+loan.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: loan.url(args, options),
     method: 'head',
 })
@@ -817,7 +817,7 @@ loan.head = (args: { loan: number | { id: number } } | [loan: number | { id: num
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-const loanForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const loanForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: loan.url(args, options),
     method: 'get',
 })
@@ -827,7 +827,7 @@ const loanForm = (args: { loan: number | { id: number } } | [loan: number | { id
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-loanForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+loanForm.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: loan.url(args, options),
     method: 'get',
 })
@@ -837,7 +837,7 @@ loanForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: 
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
 * @route '/api/v1/member/loans/{loan}'
 */
-loanForm.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+loanForm.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: loan.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

@@ -36,6 +36,8 @@ use App\Policies\PurchaseOrderPolicy;
 use App\Policies\PurchaseRequestPolicy;
 use App\Policies\ReimbursementPolicy;
 use App\Policies\WorkOrderPolicy;
+use App\Services\Integrations\MidtransPaymentProvider;
+use App\Services\Integrations\PaymentGatewayProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -54,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentGatewayProvider::class, MidtransPaymentProvider::class);
     }
 
     public function boot(): void

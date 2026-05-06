@@ -93,7 +93,7 @@ const submit = () =>
             <option>PENDING</option>
             <option>APPROVED</option>
           </select>
-          <Button class="w-full" type="submit" :disabled="form.processing"
+          <Button v-can="'manage_cooperative_payment'" class="w-full" type="submit" :disabled="form.processing"
             >Simpan Pembayaran</Button
           >
         </div>
@@ -122,6 +122,7 @@ const submit = () =>
               <td class="px-4 py-3 text-right">
                 <Button
                   v-if="payment.status !== 'APPROVED'"
+                  v-can="'manage_cooperative_payment'"
                   size="sm"
                   variant="outline"
                   @click="router.post(approve(payment.id).url)"

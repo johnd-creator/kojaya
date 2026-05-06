@@ -10,6 +10,16 @@
 
 ## 🎯 2026-05: Branding & Kojayaku Development
 
+### **May 6, 2026 - Improve3 Phase B Production Integration Corrections**
+
+**🔌 Production Integration Corrections:**
+- ✅ Fixed Midtrans webhook verification to read `signature_key` from payload and normalize header arrays safely.
+- ✅ Made payment webhook processing idempotent so duplicate paid callbacks do not reconcile or notify repeatedly.
+- ✅ Kept unconfigured payment gateway flows on the internal provider instead of labelling fallback charges as Midtrans.
+- ✅ Fixed FCM push payload to match the configured legacy endpoint contract and revoke invalid Android tokens.
+- ✅ Expanded OpenAPI output with Phase B request schemas, reusable error responses, path parameters, and required ability metadata.
+- ✅ Added `PhaseBContractApiTest` coverage for OpenAPI integration contracts, signed Midtrans webhook idempotency, and FCM token handling.
+
 ### **May 6, 2026 - Improve2 Phase 3 Technician Mobile API**
 
 **🔧 Technician Mobile Improvements:**
@@ -507,6 +517,7 @@
 | Apr 1, 2026 | Scope Discussion | All | Added cooperative & POS modules |
 | Apr 15, 2026 | API Requirements | Mobile Team | Defined API endpoints for mobile |
 | May 2, 2026 | Security Review | All | Cleaned up git history, improved security |
+| May 6, 2026 | Phase 4/5 Operator & Production Hardening | Engineering | Added cooperative approval inbox, closing checklist/period lock, payment reconciliation/receipt, operator exception analytics/export, OpenAPI, payment gateway foundation, push token registration, and monitoring API |
 
 ---
 
@@ -527,4 +538,4 @@
 
 ---
 
-*This log is maintained throughout the project lifecycle. Last updated: May 2, 2026*
+*This log is maintained throughout the project lifecycle. Last updated: May 6, 2026*

@@ -167,7 +167,7 @@ const columns = [
         </div>
         <Dialog v-model:open="showGenerateModal">
           <DialogTrigger as-child>
-            <Button>
+            <Button v-can="'process_payroll'">
               <Zap class="h-4 w-4 mr-2" />
               Generate Payroll
             </Button>
@@ -220,7 +220,7 @@ const columns = [
                   @click="showGenerateModal = false"
                   >Cancel</Button
                 >
-                <Button type="submit" :disabled="generateForm.processing">
+                <Button v-can="'process_payroll'" type="submit" :disabled="generateForm.processing">
                   <span v-if="generateForm.processing">Generating...</span>
                   <span v-else>Generate</span>
                 </Button>

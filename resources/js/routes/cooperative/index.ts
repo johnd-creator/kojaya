@@ -12,6 +12,7 @@ import pos from './pos'
 import posCategories from './pos-categories'
 import posProducts from './pos-products'
 import reports from './reports'
+import operator from './operator'
 
 const cooperative = {
     members: Object.assign(members, members),
@@ -28,6 +29,7 @@ const cooperative = {
     posCategories: Object.assign(posCategories, posCategories),
     posProducts: Object.assign(posProducts, posProducts),
     reports: Object.assign(reports, reports),
+    operator: Object.assign(operator, operator),
 }
 
 export default cooperative

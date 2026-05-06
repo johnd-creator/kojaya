@@ -60,7 +60,7 @@ createBatch.form = createBatchForm
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-export const downloadCsv = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const downloadCsv = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadCsv.url(args, options),
     method: 'get',
 })
@@ -75,7 +75,7 @@ downloadCsv.definition = {
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-downloadCsv.url = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+downloadCsv.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -108,7 +108,7 @@ downloadCsv.url = (args: { batch: string | { id: string } } | [batch: string | {
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-downloadCsv.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+downloadCsv.get = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadCsv.url(args, options),
     method: 'get',
 })
@@ -118,7 +118,7 @@ downloadCsv.get = (args: { batch: string | { id: string } } | [batch: string | {
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-downloadCsv.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+downloadCsv.head = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: downloadCsv.url(args, options),
     method: 'head',
 })
@@ -128,7 +128,7 @@ downloadCsv.head = (args: { batch: string | { id: string } } | [batch: string | 
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-const downloadCsvForm = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const downloadCsvForm = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadCsv.url(args, options),
     method: 'get',
 })
@@ -138,7 +138,7 @@ const downloadCsvForm = (args: { batch: string | { id: string } } | [batch: stri
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-downloadCsvForm.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadCsvForm.get = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadCsv.url(args, options),
     method: 'get',
 })
@@ -148,7 +148,7 @@ downloadCsvForm.get = (args: { batch: string | { id: string } } | [batch: string
 * @see app/Http/Controllers/EfakturController.php:38
 * @route '/invoices/efaktur/batches/{batch}/csv'
 */
-downloadCsvForm.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadCsvForm.head = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadCsv.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

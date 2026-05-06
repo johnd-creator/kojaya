@@ -1,4 +1,5 @@
 import Api from './Api'
+import OpenApiController from './OpenApiController'
 import Cooperative from './Cooperative'
 import EmployeeCertificateController from './EmployeeCertificateController'
 import MedicalCheckupController from './MedicalCheckupController'
@@ -57,6 +58,7 @@ import Settings from './Settings'
 
 const Controllers = {
     Api: Object.assign(Api, Api),
+    OpenApiController: Object.assign(OpenApiController, OpenApiController),
     Cooperative: Object.assign(Cooperative, Cooperative),
     EmployeeCertificateController: Object.assign(EmployeeCertificateController, EmployeeCertificateController),
     MedicalCheckupController: Object.assign(MedicalCheckupController, MedicalCheckupController),

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasApprovalLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PayrollApproval extends Model
 {
-    use HasFactory, HasUuids;
+    use HasApprovalLog, HasFactory, HasUuids;
 
     protected $fillable = [
         'id',
@@ -75,6 +76,8 @@ class PayrollApproval extends Model
             'approver_notes' => $notes,
             'approved_at' => now(),
         ]);
+
+        $this->logApproval('PENDING', 'APPROVED', $approver, $notes);
     }
 
     public function reject(User $approver, ?string $notes = null): void
@@ -85,5 +88,7 @@ class PayrollApproval extends Model
             'approver_notes' => $notes,
             'approved_at' => now(),
         ]);
+
+        $this->logApproval('PENDING', 'REJECTED', $approver, $notes);
     }
 }

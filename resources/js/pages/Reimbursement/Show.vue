@@ -57,6 +57,13 @@ interface Reimbursement {
 
 interface Props {
   reimbursement: Reimbursement;
+  approvalLogs: {
+    from_status: string | null;
+    to_status: string;
+    approved_by: string | null;
+    note: string | null;
+    created_at: string;
+  }[];
   can: {
     approve: boolean;
     reject: boolean;
@@ -274,6 +281,56 @@ const getReceiptUrl = (path: string) => {
           <p class="text-zinc-900 dark:text-white mt-2 text-sm leading-relaxed">
             {{ reimbursement.description || "No description provided." }}
           </p>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <div
+        class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden"
+      >
+        <div class="p-6 border-b border-zinc-200 dark:border-zinc-800">
+          <h2 class="text-lg font-semibold text-zinc-900 dark:text-white">
+            Approval Timeline
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="relative pl-8 border-l-2 border-zinc-200 dark:border-zinc-700 space-y-6">
+            <div
+              v-for="(log, i) in approvalLogs"
+              :key="i"
+              class="relative"
+            >
+              <div
+                class="absolute -left-[calc(2rem+5px)] top-0 w-3 h-3 rounded-full border-2"
+                :class="{
+                  'bg-blue-500 border-blue-500': log.to_status === 'SUBMITTED',
+                  'bg-emerald-500 border-emerald-500': log.to_status === 'APPROVED',
+                  'bg-red-500 border-red-500': log.to_status === 'REJECTED',
+                  'bg-green-600 border-green-600': log.to_status === 'PAID',
+                  'bg-zinc-400 border-zinc-400': !['SUBMITTED','APPROVED','REJECTED','PAID'].includes(log.to_status),
+                }"
+              />
+              <div>
+                <div class="flex items-center gap-2 text-sm">
+                  <Badge variant="outline" class="text-xs px-2 py-0.5">
+                    {{ log.to_status }}
+                  </Badge>
+                  <span v-if="log.from_status" class="text-zinc-400 text-xs">
+                    dari {{ log.from_status }}
+                  </span>
+                </div>
+                <p v-if="log.note" class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  {{ log.note }}
+                </p>
+                <p class="mt-1 text-xs text-zinc-400">
+                  {{ new Date(log.created_at).toLocaleString('id-ID') }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div v-if="approvalLogs.length === 0" class="text-sm text-zinc-400 text-center py-4">
+            Belum ada riwayat approval.
+          </div>
         </div>
       </div>
 

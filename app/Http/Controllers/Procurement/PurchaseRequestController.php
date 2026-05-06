@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Procurement\ApprovePurchaseRequest;
 use App\Http\Requests\Procurement\RejectPurchaseRequest;
 use App\Http\Requests\Procurement\StorePurchaseRequest;
-use App\Models\ApprovalLog;
 use App\Models\BudgetLine;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
@@ -130,12 +129,8 @@ class PurchaseRequestController extends Controller
             abort(403, 'Unauthorized to view this Purchase Request');
         }
 
-        $logs = ApprovalLog::query()
-            ->where('subject_type', 'PR')
-            ->where('subject_id', $pr->id)
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn (ApprovalLog $l) => [
+        $logs = $pr->approvalLogItems()
+            ->map(fn ($l) => [
                 'from_status' => $l->from_status,
                 'to_status' => $l->to_status,
                 'approved_by' => $l->approved_by,
@@ -208,14 +203,8 @@ class PurchaseRequestController extends Controller
         $from = $purchaseRequest->status;
         $purchaseRequest->status = 'REJECTED';
         $purchaseRequest->save();
-        ApprovalLog::create([
-            'subject_type' => 'PR',
-            'subject_id' => $purchaseRequest->id,
-            'from_status' => $from,
-            'to_status' => 'REJECTED',
-            'approved_by' => $request->user()->id,
-            'note' => $request->validated('note'),
-        ]);
+
+        $purchaseRequest->logApproval($from, 'REJECTED', $request->user(), $request->validated('note'));
 
         return back();
     }

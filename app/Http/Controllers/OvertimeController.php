@@ -130,6 +130,8 @@ class OvertimeController extends Controller
             'approved_at' => now(),
         ]);
 
+        $overtimeRequest->logApproval('PENDING', 'APPROVED', Auth::user());
+
         return back()->with('success', 'Overtime request approved.');
     }
 
@@ -145,6 +147,8 @@ class OvertimeController extends Controller
             'status' => 'REJECTED',
             'rejection_reason' => $validated['rejection_reason'],
         ]);
+
+        $overtimeRequest->logApproval('PENDING', 'REJECTED', Auth::user(), $validated['rejection_reason']);
 
         return back()->with('success', 'Overtime request rejected.');
     }

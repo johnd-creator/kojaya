@@ -115,11 +115,14 @@ class LeaveController extends Controller
     public function updateStatus(UpdateLeaveStatusRequest $request, Leave $leave): RedirectResponse
     {
         $validated = $request->validated();
+        $previousStatus = $leave->status;
 
         $leave->update([
             'status' => $validated['status'],
             'approver_id' => $request->user()->id,
         ]);
+
+        $leave->logApproval($previousStatus, $validated['status'], $request->user());
 
         return redirect()->route('leaves.index')->with('success', 'Leave request '.strtolower($validated['status']).' successfully.');
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasApprovalLog;
 use App\Models\Traits\HasOrganizationScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Reimbursement extends Model
 {
-    use HasFactory, HasOrganizationScope, HasUuids, SoftDeletes;
+    use HasApprovalLog, HasFactory, HasOrganizationScope, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'organization_id',

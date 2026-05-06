@@ -2,7 +2,6 @@
 
 namespace App\Services\Procurement;
 
-use App\Models\ApprovalLog;
 use App\Models\GoodsReceiveNote;
 use App\Models\GoodsReceiveNoteItem;
 use App\Models\PurchaseOrder;
@@ -39,12 +38,8 @@ class ProcurementService
         $pr->status = 'SUBMITTED';
         $pr->submitted_at = now();
         $pr->save();
-        ApprovalLog::create([
-            'subject_type' => 'PR',
-            'subject_id' => $pr->id,
-            'from_status' => 'DRAFT',
-            'to_status' => 'SUBMITTED',
-        ]);
+
+        $pr->logApproval('DRAFT', 'SUBMITTED');
 
         return ['ok' => true];
     }
@@ -66,13 +61,8 @@ class ProcurementService
             $pr->status = 'APPROVAL_L'.$req[$currentIdx + 1];
         }
         $pr->save();
-        ApprovalLog::create([
-            'subject_type' => 'PR',
-            'subject_id' => $pr->id,
-            'from_status' => $from,
-            'to_status' => $pr->status,
-            'approved_by' => $user->id ?? null,
-        ]);
+
+        $pr->logApproval($from, $pr->status, $user);
 
         return ['ok' => true];
     }
@@ -113,12 +103,9 @@ class ProcurementService
             }
             $pr->status = 'PO_CREATED';
             $pr->save();
-            ApprovalLog::create([
-                'subject_type' => 'PR',
-                'subject_id' => $pr->id,
-                'from_status' => 'APPROVED',
-                'to_status' => 'PO_CREATED',
-            ]);
+
+            $pr->logApproval('APPROVED', 'PO_CREATED');
+            $po->logApproval(null, 'ISSUED', null, "PO dibuat dari PR #{$pr->pr_number}");
 
             return $po;
         });

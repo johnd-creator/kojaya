@@ -85,7 +85,7 @@ index.form = indexForm
 * @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
-export const fromPo = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const fromPo = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: fromPo.url(args, options),
     method: 'post',
 })
@@ -100,7 +100,7 @@ fromPo.definition = {
 * @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
-fromPo.url = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+fromPo.url = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseOrder: args }
     }
@@ -133,7 +133,7 @@ fromPo.url = (args: { purchaseOrder: string | number | { id: string | number } }
 * @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
-fromPo.post = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+fromPo.post = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: fromPo.url(args, options),
     method: 'post',
 })
@@ -143,7 +143,7 @@ fromPo.post = (args: { purchaseOrder: string | number | { id: string | number } 
 * @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
-const fromPoForm = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const fromPoForm = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: fromPo.url(args, options),
     method: 'post',
 })
@@ -153,7 +153,7 @@ const fromPoForm = (args: { purchaseOrder: string | number | { id: string | numb
 * @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
-fromPoForm.post = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+fromPoForm.post = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: fromPo.url(args, options),
     method: 'post',
 })
@@ -165,7 +165,7 @@ fromPo.form = fromPoForm
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-export const show = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -180,7 +180,7 @@ show.definition = {
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-show.url = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { goodsReceiveNote: args }
     }
@@ -213,7 +213,7 @@ show.url = (args: { goodsReceiveNote: string | number | { id: string | number } 
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-show.get = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -223,7 +223,7 @@ show.get = (args: { goodsReceiveNote: string | number | { id: string | number } 
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-show.head = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -233,7 +233,7 @@ show.head = (args: { goodsReceiveNote: string | number | { id: string | number }
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-const showForm = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -243,7 +243,7 @@ const showForm = (args: { goodsReceiveNote: string | number | { id: string | num
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-showForm.get = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -253,7 +253,7 @@ showForm.get = (args: { goodsReceiveNote: string | number | { id: string | numbe
 * @see app/Http/Controllers/Procurement/GrnController.php:42
 * @route '/procurement/grns/{goodsReceiveNote}'
 */
-showForm.head = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -270,7 +270,7 @@ show.form = showForm
 * @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
-export const receive = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const receive = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: receive.url(args, options),
     method: 'post',
 })
@@ -285,7 +285,7 @@ receive.definition = {
 * @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
-receive.url = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+receive.url = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { goodsReceiveNote: args }
     }
@@ -318,7 +318,7 @@ receive.url = (args: { goodsReceiveNote: string | number | { id: string | number
 * @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
-receive.post = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+receive.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: receive.url(args, options),
     method: 'post',
 })
@@ -328,7 +328,7 @@ receive.post = (args: { goodsReceiveNote: string | number | { id: string | numbe
 * @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
-const receiveForm = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const receiveForm = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: receive.url(args, options),
     method: 'post',
 })
@@ -338,7 +338,7 @@ const receiveForm = (args: { goodsReceiveNote: string | number | { id: string | 
 * @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
-receiveForm.post = (args: { goodsReceiveNote: string | number | { id: string | number } } | [goodsReceiveNote: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+receiveForm.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: receive.url(args, options),
     method: 'post',
 })

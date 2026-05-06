@@ -81,8 +81,18 @@ class ReimbursementController extends Controller
 
         $reimbursement->load(['items', 'user', 'approver']);
 
+        $approvalLogs = $reimbursement->approvalLogItems()
+            ->map(fn ($log) => [
+                'from_status' => $log->from_status,
+                'to_status' => $log->to_status,
+                'approved_by' => $log->approved_by,
+                'note' => $log->note,
+                'created_at' => $log->created_at?->toISOString(),
+            ]);
+
         return Inertia::render('Reimbursement/Show', [
             'reimbursement' => $reimbursement,
+            'approvalLogs' => $approvalLogs,
             'can' => [
                 'approve' => $user->can('approve_reimbursement') && $reimbursement->status === 'SUBMITTED',
                 'reject' => $user->can('approve_reimbursement') && $reimbursement->status === 'SUBMITTED',
@@ -93,14 +103,14 @@ class ReimbursementController extends Controller
 
     public function approve(Reimbursement $reimbursement)
     {
-        // Only HR/Finance/Manager can approve
-        // For simplicity, let's allow HR Unit, Finance Unit, Admin Unit
-        // Real logic might be complex approval chain
+        $previousStatus = $reimbursement->getOriginal('status');
 
         $reimbursement->update([
             'status' => 'APPROVED',
             'approver_id' => Auth::id(),
         ]);
+
+        $reimbursement->logApproval($previousStatus, 'APPROVED', Auth::user(), 'Reimbursement disetujui');
 
         return back()->with('success', 'Reimbursement approved.');
     }
@@ -108,12 +118,15 @@ class ReimbursementController extends Controller
     public function reject(RejectReimbursementRequest $request, Reimbursement $reimbursement)
     {
         $validated = $request->validated();
+        $previousStatus = $reimbursement->status;
 
         $reimbursement->update([
             'status' => 'REJECTED',
             'approver_id' => Auth::id(),
             'rejection_reason' => $validated['rejection_reason'],
         ]);
+
+        $reimbursement->logApproval($previousStatus, 'REJECTED', Auth::user(), $validated['rejection_reason']);
 
         return back()->with('success', 'Reimbursement rejected.');
     }
@@ -139,6 +152,8 @@ class ReimbursementController extends Controller
             'status' => 'PAID',
             'payment_date' => now(),
         ]);
+
+        $reimbursement->logApproval('APPROVED', 'PAID', Auth::user(), 'Pembayaran reimbursement selesai');
 
         return back()->with('success', 'Reimbursement marked as paid.');
     }

@@ -322,7 +322,7 @@ show.form = showForm
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-export const edit = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const edit = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: edit.url(args, options),
     method: 'get',
 })
@@ -337,7 +337,7 @@ edit.definition = {
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-edit.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+edit.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -370,7 +370,7 @@ edit.url = (args: { employee: string | number | { id: string | number } } | [emp
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-edit.get = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+edit.get = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: edit.url(args, options),
     method: 'get',
 })
@@ -380,7 +380,7 @@ edit.get = (args: { employee: string | number | { id: string | number } } | [emp
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-edit.head = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+edit.head = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: edit.url(args, options),
     method: 'head',
 })
@@ -390,7 +390,7 @@ edit.head = (args: { employee: string | number | { id: string | number } } | [em
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-const editForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const editForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: edit.url(args, options),
     method: 'get',
 })
@@ -400,7 +400,7 @@ const editForm = (args: { employee: string | number | { id: string | number } } 
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-editForm.get = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+editForm.get = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: edit.url(args, options),
     method: 'get',
 })
@@ -410,7 +410,7 @@ editForm.get = (args: { employee: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-editForm.head = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+editForm.head = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: edit.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -427,7 +427,7 @@ edit.form = editForm
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-export const update = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -442,7 +442,7 @@ update.definition = {
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-update.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+update.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -475,7 +475,7 @@ update.url = (args: { employee: string | number | { id: string | number } } | [e
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-update.put = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -485,7 +485,7 @@ update.put = (args: { employee: string | number | { id: string | number } } | [e
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-update.patch = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
@@ -495,7 +495,7 @@ update.patch = (args: { employee: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-const updateForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const updateForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -510,7 +510,7 @@ const updateForm = (args: { employee: string | number | { id: string | number } 
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-updateForm.put = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateForm.put = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -525,7 +525,7 @@ updateForm.put = (args: { employee: string | number | { id: string | number } } 
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-updateForm.patch = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateForm.patch = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PATCH',
@@ -542,7 +542,7 @@ update.form = updateForm
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-export const destroy = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -557,7 +557,7 @@ destroy.definition = {
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-destroy.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+destroy.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -590,7 +590,7 @@ destroy.url = (args: { employee: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-destroy.delete = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -600,7 +600,7 @@ destroy.delete = (args: { employee: string | number | { id: string | number } } 
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-const destroyForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const destroyForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: destroy.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'DELETE',
@@ -615,7 +615,7 @@ const destroyForm = (args: { employee: string | number | { id: string | number }
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-destroyForm.delete = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+destroyForm.delete = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: destroy.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'DELETE',
@@ -632,7 +632,7 @@ destroy.form = destroyForm
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-export const enableEss = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const enableEss = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: enableEss.url(args, options),
     method: 'post',
 })
@@ -647,7 +647,7 @@ enableEss.definition = {
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-enableEss.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+enableEss.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -680,7 +680,7 @@ enableEss.url = (args: { employee: string | number | { id: string | number } } |
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-enableEss.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+enableEss.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: enableEss.url(args, options),
     method: 'post',
 })
@@ -690,7 +690,7 @@ enableEss.post = (args: { employee: string | number | { id: string | number } } 
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-const enableEssForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const enableEssForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: enableEss.url(args, options),
     method: 'post',
 })
@@ -700,7 +700,7 @@ const enableEssForm = (args: { employee: string | number | { id: string | number
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-enableEssForm.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+enableEssForm.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: enableEss.url(args, options),
     method: 'post',
 })
@@ -712,7 +712,7 @@ enableEss.form = enableEssForm
 * @see app/Http/Controllers/EmployeeController.php:171
 * @route '/employees/{employee}/revoke-ess'
 */
-export const revokeEss = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const revokeEss = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revokeEss.url(args, options),
     method: 'post',
 })
@@ -727,7 +727,7 @@ revokeEss.definition = {
 * @see app/Http/Controllers/EmployeeController.php:171
 * @route '/employees/{employee}/revoke-ess'
 */
-revokeEss.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+revokeEss.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -760,7 +760,7 @@ revokeEss.url = (args: { employee: string | number | { id: string | number } } |
 * @see app/Http/Controllers/EmployeeController.php:171
 * @route '/employees/{employee}/revoke-ess'
 */
-revokeEss.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+revokeEss.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revokeEss.url(args, options),
     method: 'post',
 })
@@ -770,7 +770,7 @@ revokeEss.post = (args: { employee: string | number | { id: string | number } } 
 * @see app/Http/Controllers/EmployeeController.php:171
 * @route '/employees/{employee}/revoke-ess'
 */
-const revokeEssForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const revokeEssForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: revokeEss.url(args, options),
     method: 'post',
 })
@@ -780,7 +780,7 @@ const revokeEssForm = (args: { employee: string | number | { id: string | number
 * @see app/Http/Controllers/EmployeeController.php:171
 * @route '/employees/{employee}/revoke-ess'
 */
-revokeEssForm.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+revokeEssForm.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: revokeEss.url(args, options),
     method: 'post',
 })

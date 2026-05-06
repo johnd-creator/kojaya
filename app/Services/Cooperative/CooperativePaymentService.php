@@ -44,6 +44,8 @@ class CooperativePaymentService
 
             $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
 
+            $originalStatus = $payment->getOriginal('status');
+
             $payment->forceFill([
                 'status' => 'APPROVED',
                 'approved_at' => now(),
@@ -82,6 +84,8 @@ class CooperativePaymentService
                 ],
             );
 
+            $payment->logApproval($originalStatus, 'APPROVED', $approver, 'Pembayaran disetujui');
+
             return $payment->refresh();
         });
     }
@@ -102,6 +106,8 @@ class CooperativePaymentService
                 'reconciled_by' => $user?->id,
                 'reconciliation_reference' => $reference,
             ])->save();
+
+            $payment->logApproval('APPROVED', 'RECONCILED', $user, "Referensi: {$reference}");
 
             return $payment->refresh();
         });

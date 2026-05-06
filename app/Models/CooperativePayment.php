@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasApprovalLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CooperativePayment extends Model
 {
+    use HasApprovalLog;
+
     protected $fillable = [
         'cooperative_member_id',
         'cooperative_dues_invoice_id',

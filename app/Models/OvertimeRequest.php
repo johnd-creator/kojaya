@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasApprovalLog;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OvertimeRequest extends Model
 {
-    use HasFactory, HasUuids;
+    use HasApprovalLog, HasFactory, HasUuids;
 
     protected $fillable = [
         'employee_id',

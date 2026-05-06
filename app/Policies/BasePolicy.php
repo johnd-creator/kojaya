@@ -23,11 +23,6 @@ abstract class BasePolicy
         return false;
     }
 
-    protected function hasAnyRole(User $user, array $roles): bool
-    {
-        return $user->hasAnyRole($roles);
-    }
-
     protected function sameOrganization(User $user, Model $model): bool
     {
         $organizationId = $model->getAttribute('organization_id');

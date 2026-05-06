@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureIsMember;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogActivity;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'abilities' => CheckAbilities::class,
             'ability' => CheckForAnyAbility::class,
+            'member' => EnsureIsMember::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

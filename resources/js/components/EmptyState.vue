@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Component } from "vue";
+import { computed } from "vue";
 import { FileText } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 
@@ -10,12 +11,13 @@ interface Props {
   actionLabel?: string;
 }
 
-withDefaults(defineProps<Props>(), {
-  icon: FileText,
+const props = withDefaults(defineProps<Props>(), {
   title: "Tidak ada data",
   description: "Belum ada data yang bisa ditampilkan.",
   actionLabel: "",
 });
+
+const emptyIcon = computed<Component>(() => props.icon ?? FileText);
 
 defineEmits<{
   (e: "action"): void;
@@ -25,7 +27,7 @@ defineEmits<{
 <template>
   <div class="flex flex-col items-center justify-center py-10 text-center">
     <component
-      :is="icon"
+      :is="emptyIcon"
       class="mb-3 h-12 w-12 text-zinc-300 dark:text-zinc-700"
     />
     <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">

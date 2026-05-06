@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::createFromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:84
+* @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
 export const createFromPo = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ createFromPo.definition = {
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::createFromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:84
+* @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
 createFromPo.url = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -130,7 +130,7 @@ createFromPo.url = (args: { purchaseOrder: string | { id: string } } | [purchase
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::createFromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:84
+* @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
 createFromPo.post = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -140,7 +140,7 @@ createFromPo.post = (args: { purchaseOrder: string | { id: string } } | [purchas
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::createFromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:84
+* @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
 const createFromPoForm = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -150,7 +150,7 @@ const createFromPoForm = (args: { purchaseOrder: string | { id: string } } | [pu
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::createFromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:84
+* @see app/Http/Controllers/Procurement/GrnController.php:90
 * @route '/procurement/grns/from-po/{purchaseOrder}'
 */
 createFromPoForm.post = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -267,7 +267,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:95
+* @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
 export const receive = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -282,7 +282,7 @@ receive.definition = {
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:95
+* @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
 receive.url = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -315,7 +315,7 @@ receive.url = (args: { goodsReceiveNote: string | { id: string } } | [goodsRecei
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:95
+* @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
 receive.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -325,7 +325,7 @@ receive.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsRece
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:95
+* @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
 const receiveForm = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -335,7 +335,7 @@ const receiveForm = (args: { goodsReceiveNote: string | { id: string } } | [good
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:95
+* @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
 */
 receiveForm.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

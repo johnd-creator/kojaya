@@ -24,17 +24,17 @@ class OvertimeController extends Controller
             ->with(['employee', 'overtimeRule', 'approvedBy']);
 
         // Employee Scope: Only see own requests unless they have admin roles
-        if ($user->hasRole('Employee') && ! $user->hasAnyRole(['System Admin', 'Admin Pusat', 'HR Pusat', 'HR Unit', 'Admin Unit'])) {
-            $employee = $user->employee;
-            if ($employee) {
-                $query->where('employee_id', $employee->id);
+        if (! $user->can('view_overtime_all') && ! $user->can('approve_overtime')) {
+            if ($user->can('view_overtime_unit') && $user->organization_id) {
+                $query->where('organization_id', $user->organization_id);
             } else {
-                // If user has Employee role but no employee record linked, show nothing
-                $query->whereRaw('1 = 0');
+                $employee = $user->employee;
+                if ($employee) {
+                    $query->where('employee_id', $employee->id);
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
             }
-        } elseif ($user->organization_id && ! $user->hasRole('System Admin') && ! $user->hasRole('Admin Pusat')) {
-            // Unit Admins/HR see their organization's requests
-            $query->where('organization_id', $user->organization_id);
         }
 
         if ($request->filled('status')) {

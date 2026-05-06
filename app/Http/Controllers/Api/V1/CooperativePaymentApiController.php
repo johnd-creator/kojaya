@@ -33,6 +33,6 @@ class CooperativePaymentApiController extends Controller
 
     private function authorizeCooperativeAccess(Request $request): void
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi']), 403);
+        abort_unless($request->user()?->can('manage_cooperative_payment'), 403);
     }
 }

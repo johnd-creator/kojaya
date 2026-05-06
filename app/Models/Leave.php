@@ -20,6 +20,9 @@ class Leave extends Model
         'attachment_path',
         'status',
         'approver_id',
+        'cancel_requested_at',
+        'cancel_requested_by',
+        'cancel_reason',
     ];
 
     /**
@@ -32,6 +35,7 @@ class Leave extends Model
         return [
             'start_date' => 'date',
             'end_date' => 'date',
+            'cancel_requested_at' => 'datetime',
         ];
     }
 

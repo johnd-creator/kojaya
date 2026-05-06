@@ -12,6 +12,8 @@ class AuditLogController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $this->authorizePermission('view_audit_logs');
+
         $query = AuditLog::with('user');
 
         if ($request->has('user_id')) {
@@ -46,6 +48,8 @@ class AuditLogController extends Controller
 
     public function show(string $id): JsonResponse
     {
+        $this->authorizePermission('view_audit_logs');
+
         $log = AuditLog::with('user')->findOrFail($id);
 
         return Response::json(new AuditLogResource($log));
@@ -53,6 +57,8 @@ class AuditLogController extends Controller
 
     public function history(string $subjectType, string $subjectId): JsonResponse
     {
+        $this->authorizePermission('view_audit_logs');
+
         $logs = AuditLog::with('user')
             ->where('subject_type', $subjectType)
             ->where('subject_id', $subjectId)
@@ -64,6 +70,8 @@ class AuditLogController extends Controller
 
     public function export(Request $request): JsonResponse
     {
+        $this->authorizePermission('export_audit_logs');
+
         $query = AuditLog::query();
 
         if ($request->has('user_id')) {

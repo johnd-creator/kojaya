@@ -16,10 +16,10 @@
 | Shared Components | 28 (+127 UI components) |
 | Services | 31 |
 | Migrations | 96 |
-| Tests | 72 files (272 passed, 1614 assertions) |
+| Tests | 73 files (320 passed, 2091 assertions) |
 | Factories | 40 (dari 82 models) |
 | Policies | 14 |
-| Form Requests | 100 |
+| Form Requests | 102 |
 
 ---
 
@@ -97,14 +97,14 @@ if (Auth::check() && ($request->isMethod('POST') || $request->isMethod('PUT') ||
 
 **Aksi:**
 - [x] Set token expiration ke reasonable value (misal 30 hari atau 90 hari)
-- [ ] Implementasi token rotation mechanism
+- [x] Implementasi token rotation mechanism
 - [x] Tambah artisan command untuk cleanup expired tokens
 - [x] Tambah token abilities (permissions) untuk mobile API
 
 **Progress saat ini:**
 - `SANCTUM_TOKEN_EXPIRATION` default 30 hari dan scheduler menjalankan `sanctum:prune-expired --hours=24`.
 - API routes sekarang memakai named rate limiter dan Sanctum ability middleware (`profile:read`, `cooperative:*`, `work-orders:*`, `employee-documents:*`, `reports:read`, `pos:*`).
-- Token rotation penuh masih belum dibuat karena belum ada endpoint login/token issuance khusus mobile di codebase.
+- Endpoint `POST /api/token/rotate` sudah tersedia untuk rotasi bearer token aktif; token baru mewarisi abilities token lama, dan token lama dicabut dalam satu transaksi.
 
 ```php
 // config/sanctum.php
@@ -250,6 +250,7 @@ export function useTableFilters(filters: Ref<Record<string, string>>)
 **Progress saat ini:**
 - `StatsCard.vue` sudah dibuat
 - Komponen ini sudah mulai dipakai di halaman `Client/Index.vue` untuk menggantikan card statistik yang sebelumnya hardcoded
+- Batch lanjutan memperluas adopsi `StatsCard` ke halaman `Cooperative/Points/Index.vue` untuk ringkasan active members dan total balance
 
 **Aksi:**
 - [x] Buat `lib/formatters.ts` dan refaktor 20+ halaman yang pakai `formatCurrency`
@@ -295,6 +296,7 @@ export function useTableFilters(filters: Ref<Record<string, string>>)
 
 **Progress saat ini:**
 - `DataTable` sudah dipakai di beberapa halaman procurement dan sekarang juga mulai diadopsi di `Client/Index.vue`, `Invoice/Index.vue`, `Reimbursement/Index.vue`, `Overtime/Index.vue`, `User/Index.vue`, `Assets/Index.vue`, `Employee/Index.vue`, `Payroll/Index.vue`, `Warehouses/Index.vue`, `WorkOrders/Index.vue`, `SpareParts/Index.vue`, `Cooperative/Members/Index.vue`, dan daftar audit log melalui `components/Audit/AuditLogList.vue`
+- Batch lanjutan memperluas `DataTable` ke halaman P5 koperasi: `Cooperative/Points/Index.vue`, `Cooperative/Rewards/Index.vue`, dan `Cooperative/Redemptions/Index.vue`
 - `StatusBadge` sudah dipakai pada tabel yang sudah dimigrasikan tersebut, termasuk label status kustom pada halaman yang sebelumnya memakai badge manual
 - `FilterBar` juga sudah dipakai di area audit log dan halaman anggota koperasi sehingga adopsi filter bersama makin merata
 - `SelectFilter.vue` dibuat sebagai wrapper `ui/select`, lalu dipakai di halaman indeks prioritas P1 dan komponen audit
@@ -718,6 +720,9 @@ public function __construct(
 
 **Progress saat ini:**
 - Admin koperasi sudah memiliki halaman `Cooperative/Points`, `Cooperative/Rewards`, dan `Cooperative/Redemptions`
+- Admin koperasi sekarang memiliki halaman detail redemption untuk memproses status `PROCESSING`, `SHIPPED`, `DELIVERED`, dan `CANCELLED`
+- Pembatalan redemption kini mengembalikan poin anggota dan stok reward secara idempotent, serta mencegah pembatalan redemption yang sudah `DELIVERED`
+- Transaksi poin redemption kini memakai `RewardRedemption` sebagai source unik sehingga reward yang sama bisa diredeem berulang selama poin dan stok masih mencukupi
 - Portal anggota `Kojayaku` sudah punya halaman `Points` dan `Rewards` untuk melihat saldo, histori, dan redeem reward
 - Feature test kini mencakup render portal poin/reward dan alur redeem reward anggota
 
@@ -787,10 +792,10 @@ public function __construct(
 
 ### 34. Kojayaku Web App (Member Portal)
 
-**Status:** Portal web anggota sudah berjalan dalam mode authenticated member, dengan auth flow khusus masih tersisa.
+**Status:** Portal web anggota sudah lengkap dengan auth flow mandiri (register + login + redirect).
 
 **Yang sudah dibuat (sesuai roadmap):**
-- [ ] Member authentication flow (login/register)
+- [x] Member authentication flow (login/register)
 - [x] Member Dashboard (overview simpanan, pinjaman, poin)
 - [x] Savings pages (balance, history, statements)
 - [x] Loan pages (apply, track, calculator)
@@ -804,27 +809,32 @@ public function __construct(
 - Ditambahkan `MemberPortalController` dan halaman `Kojayaku/*` untuk dashboard, simpanan, pinjaman, poin, rewards, transaksi, profil, dan notifikasi
 - Navigasi sidebar kini menampilkan menu khusus anggota untuk role `Anggota`
 - Pengajuan pinjaman, redeem reward, dan update profil anggota sudah tersedia pada web portal
+- **Batch 2 (selesai):** Halaman `auth/Register.vue` dibuat untuk pendaftaran anggota mandiri dengan field NIK, telepon, dan alamat
+- `CreateNewUser` (Fortify) kini otomatis membuat `CooperativeMember` + `Anggota` role saat registrasi
+- `RegisterResponse` custom mengarahkan anggota baru langsung ke `/member` portal
+- Link "Belum punya akun anggota? Daftar di sini" ditambahkan di halaman login
+- Test `RegistrationTest` diperluas dengan 8 skenario termasuk validasi, duplikat NIK, dan verifikasi redirect ke portal anggota
 
 ---
 
 ## Summary - Checklist Per Prioritas
 
 ### P0 - Keamanan (Estimasi: 1-2 minggu)
-1. [ ] Implementasi Laravel Policies (~15 files)
-2. [ ] Perbaiki TechnicianWorkOrderController authorization
-3. [ ] Perbaiki LogActivity middleware operator precedence
-4. [ ] Set Sanctum token expiration
-5. [ ] Tambah authorization di 5+ endpoint tanpa auth check
-6. [ ] Perbaiki StoreBudgetRequest::authorize()
+1. [~] Implementasi Laravel Policies (~15 files)
+2. [x] Perbaiki TechnicianWorkOrderController authorization
+3. [x] Perbaiki LogActivity middleware operator precedence
+4. [x] Set Sanctum token expiration
+5. [x] Tambah authorization di 5+ endpoint tanpa auth check
+6. [x] Perbaiki StoreBudgetRequest::authorize()
 
 ### P1 - Arsitektur (Estimasi: 2-3 minggu)
-7. [ ] Buat Form Requests untuk 12 controller
-8. [ ] Buat shared frontend utilities (6 files)
-9. [ ] Hapus duplicate components dan file backup
-10. [ ] Refaktor halaman tabel ke DataTable component
-11. [ ] Tambah rate limiting di API routes
-12. [ ] Implementasi Inertia deferred props
-13. [ ] Perbaiki service instantiation
+7. [x] Buat Form Requests untuk 12 controller
+8. [x] Buat shared frontend utilities (6 files)
+9. [x] Hapus duplicate components dan file backup
+10. [x] Refaktor halaman tabel ke DataTable component
+11. [x] Tambah rate limiting di API routes
+12. [x] Implementasi Inertia deferred props
+13. [x] Perbaiki service instantiation
 
 ### P2 - Testing (Estimasi: 3-4 minggu)
 14. [x] Buat 15+ model factories
@@ -853,7 +863,7 @@ public function __construct(
 31. [x] Chart of Accounts / General Ledger
 32. [x] E-Faktur UI
 33. [x] Bank Reconciliation UI
-34. [~] Kojayaku Web App
+34. [x] Kojayaku Web App
 
 ---
 

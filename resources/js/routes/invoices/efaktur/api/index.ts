@@ -81,7 +81,7 @@ submit.form = submitForm
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 export const status = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -96,7 +96,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 status.url = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -129,7 +129,7 @@ status.url = (args: { submission: string | { id: string } } | [submission: strin
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 status.get = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -139,7 +139,7 @@ status.get = (args: { submission: string | { id: string } } | [submission: strin
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 status.head = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -149,7 +149,7 @@ status.head = (args: { submission: string | { id: string } } | [submission: stri
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 const statusForm = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -159,7 +159,7 @@ const statusForm = (args: { submission: string | { id: string } } | [submission:
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 statusForm.get = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -169,7 +169,7 @@ statusForm.get = (args: { submission: string | { id: string } } | [submission: s
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:29
+* @see app/Http/Controllers/EfakturApiController.php:31
 * @route '/invoices/efaktur/api/submissions/{submission}/status'
 */
 statusForm.head = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

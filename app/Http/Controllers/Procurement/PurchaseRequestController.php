@@ -10,12 +10,11 @@ use App\Models\ApprovalLog;
 use App\Models\BudgetLine;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Models\SparePart;
 use App\Services\Procurement\ProcurementService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-
-use App\Models\SparePart;
 
 class PurchaseRequestController extends Controller
 {
@@ -23,8 +22,12 @@ class PurchaseRequestController extends Controller
 
     public function index(Request $request)
     {
-        // TODO: Add permission check: Gate::authorize('viewAny', PurchaseRequest::class); or check permission 'view_pr_all'
-        
+        abort_unless(
+            $request->user()?->can('view_pr_all') || $request->user()?->can('create_pr') || $request->user()?->can('approve_pr'),
+            403,
+            'Unauthorized to view Purchase Requests'
+        );
+
         $prs = PurchaseRequest::query()
             ->forUser()
             ->withCount('items')
@@ -82,6 +85,8 @@ class PurchaseRequestController extends Controller
 
     public function store(StorePurchaseRequest $request): RedirectResponse
     {
+        abort_unless($request->user()?->can('create_pr'), 403, 'Unauthorized to create Purchase Request');
+
         $user = $request->user();
         $data = $request->validated();
 
@@ -119,9 +124,9 @@ class PurchaseRequestController extends Controller
     {
         $user = auth()->user();
         $pr = $purchaseRequest->load('items.sparePart'); // Eager load sparePart
-        
+
         // Authorization: Requester OR has view_pr_all permission
-        if ($pr->requester_id !== $user->id && !$user->can('view_pr_all')) {
+        if ($pr->requester_id !== $user->id && ! $user->can('view_pr_all')) {
             abort(403, 'Unauthorized to view this Purchase Request');
         }
 
@@ -167,7 +172,7 @@ class PurchaseRequestController extends Controller
     {
         // Permission check
         if (auth()->user()->id !== $purchaseRequest->requester_id) {
-             abort(403, 'Only requester can submit PR');
+            abort(403, 'Only requester can submit PR');
         }
 
         $result = $this->procurement->submitPr($purchaseRequest->load('items'));

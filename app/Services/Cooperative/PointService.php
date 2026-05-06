@@ -135,35 +135,75 @@ class PointService
                 abort(422, 'Insufficient points balance.');
             }
 
-            $transaction = $this->recordTransaction(
-                member: $member,
-                transactionType: 'REDEEMED',
-                points: $pointsRequired * -1,
-                description: 'Penukaran reward: '.$lockedReward->name,
-                postedAt: now(),
-                sourceType: Reward::class,
-                sourceId: $lockedReward->id,
-                referenceNumber: null,
-                metadata: [
-                    'reward_name' => $lockedReward->name,
-                    'quantity' => $quantity,
-                ],
-            );
-
             if ($lockedReward->stock !== null) {
                 $lockedReward->decrement('stock', $quantity);
             }
 
-            return RewardRedemption::query()->create([
+            $redemption = RewardRedemption::query()->create([
                 'reward_id' => $lockedReward->id,
                 'cooperative_member_id' => $member->id,
-                'point_transaction_id' => $transaction->id,
+                'point_transaction_id' => null,
                 'quantity' => $quantity,
                 'points_used' => $pointsRequired,
                 'delivery_address' => $deliveryAddress,
                 'status' => 'PENDING',
                 'redeemed_at' => now(),
             ]);
+
+            $transaction = $this->recordTransaction(
+                member: $member,
+                transactionType: 'REDEEMED',
+                points: $pointsRequired * -1,
+                description: 'Penukaran reward: '.$lockedReward->name,
+                postedAt: now(),
+                sourceType: RewardRedemption::class,
+                sourceId: $redemption->id,
+                referenceNumber: null,
+                metadata: [
+                    'reward_id' => $lockedReward->id,
+                    'reward_name' => $lockedReward->name,
+                    'quantity' => $quantity,
+                ],
+            );
+
+            $redemption->forceFill(['point_transaction_id' => $transaction->id])->save();
+
+            return $redemption->refresh();
+        });
+    }
+
+    public function updateRedemptionStatus(
+        RewardRedemption $redemption,
+        string $status,
+        ?string $notes = null
+    ): RewardRedemption {
+        return DB::transaction(function () use ($notes, $redemption, $status): RewardRedemption {
+            $lockedRedemption = RewardRedemption::query()
+                ->with(['member', 'reward'])
+                ->lockForUpdate()
+                ->findOrFail($redemption->id);
+
+            if ($lockedRedemption->status === 'DELIVERED' && $status === 'CANCELLED') {
+                abort(422, 'Delivered redemptions cannot be cancelled.');
+            }
+
+            if ($lockedRedemption->status === 'CANCELLED' && $status !== 'CANCELLED') {
+                abort(422, 'Cancelled redemptions cannot be reopened.');
+            }
+
+            if ($status === 'CANCELLED' && $lockedRedemption->status !== 'CANCELLED') {
+                $this->refundRedemption($lockedRedemption);
+            }
+
+            $lockedRedemption->forceFill([
+                'status' => $status,
+                'notes' => $notes ?? $lockedRedemption->notes,
+                'processed_at' => in_array($status, ['SHIPPED', 'DELIVERED', 'CANCELLED'], true)
+                    ? now()
+                    : $lockedRedemption->processed_at,
+            ])->save();
+
+            return $lockedRedemption->refresh();
         });
     }
 
@@ -242,5 +282,38 @@ class PointService
             'expires_at' => $expiresAt?->toDateString(),
             'metadata' => $metadata,
         ]);
+    }
+
+    private function refundRedemption(RewardRedemption $redemption): void
+    {
+        $alreadyRefunded = PointTransaction::query()
+            ->where('transaction_type', 'REFUNDED')
+            ->where('source_type', RewardRedemption::class)
+            ->where('source_id', $redemption->id)
+            ->exists();
+
+        if ($alreadyRefunded) {
+            return;
+        }
+
+        $this->recordTransaction(
+            member: $redemption->member,
+            transactionType: 'REFUNDED',
+            points: (int) $redemption->points_used,
+            description: 'Pengembalian poin redemption: '.$redemption->reward->name,
+            postedAt: now(),
+            sourceType: RewardRedemption::class,
+            sourceId: $redemption->id,
+            referenceNumber: $redemption->id,
+            metadata: [
+                'reward_id' => $redemption->reward_id,
+                'reward_name' => $redemption->reward->name,
+                'quantity' => $redemption->quantity,
+            ],
+        );
+
+        if ($redemption->reward->stock !== null) {
+            $redemption->reward->increment('stock', (int) $redemption->quantity);
+        }
     }
 }

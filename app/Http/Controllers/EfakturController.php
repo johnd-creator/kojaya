@@ -12,6 +12,8 @@ class EfakturController extends Controller
 {
     public function createBatch(CreateEfakturBatchRequest $request)
     {
+        $this->authorizePermission('manage_efaktur');
+
         $validated = $request->validated();
 
         $batch = EfakturBatch::create([
@@ -35,6 +37,8 @@ class EfakturController extends Controller
 
     public function downloadCsv(EfakturBatch $batch, EfakturBatchExportService $service)
     {
+        $this->authorizePermission('manage_efaktur');
+
         $csv = $service->generateCsv($batch);
         $filename = 'efaktur_batch_'.$batch->id.'.csv';
 

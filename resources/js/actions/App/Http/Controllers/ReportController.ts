@@ -82,7 +82,7 @@ page.form = pageForm
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 export const consolidatedStats = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ consolidatedStats.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStats.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ consolidatedStats.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStats.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ consolidatedStats.get = (options?: RouteQueryOptions): RouteDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStats.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ consolidatedStats.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 const consolidatedStatsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const consolidatedStatsForm = (options?: RouteQueryOptions): RouteFormDefinition
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStatsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ consolidatedStatsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:235
+* @see app/Http/Controllers/ReportController.php:253
 * @route '/api/reports/consolidated-stats'
 */
 consolidatedStatsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ consolidatedStats.form = consolidatedStatsForm
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 export const consolidatedPayroll = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +178,7 @@ consolidatedPayroll.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayroll.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ consolidatedPayroll.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayroll.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +197,7 @@ consolidatedPayroll.get = (options?: RouteQueryOptions): RouteDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayroll.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -207,7 +207,7 @@ consolidatedPayroll.head = (options?: RouteQueryOptions): RouteDefinition<'head'
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 const consolidatedPayrollForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -217,7 +217,7 @@ const consolidatedPayrollForm = (options?: RouteQueryOptions): RouteFormDefiniti
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayrollForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -227,7 +227,7 @@ consolidatedPayrollForm.get = (options?: RouteQueryOptions): RouteFormDefinition
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:248
+* @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
 */
 consolidatedPayrollForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -244,7 +244,7 @@ consolidatedPayroll.form = consolidatedPayrollForm
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 export const consolidatedAttendance = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -259,7 +259,7 @@ consolidatedAttendance.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendance.url = (options?: RouteQueryOptions) => {
@@ -268,7 +268,7 @@ consolidatedAttendance.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendance.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -278,7 +278,7 @@ consolidatedAttendance.get = (options?: RouteQueryOptions): RouteDefinition<'get
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -288,7 +288,7 @@ consolidatedAttendance.head = (options?: RouteQueryOptions): RouteDefinition<'he
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 const consolidatedAttendanceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -298,7 +298,7 @@ const consolidatedAttendanceForm = (options?: RouteQueryOptions): RouteFormDefin
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendanceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -308,7 +308,7 @@ consolidatedAttendanceForm.get = (options?: RouteQueryOptions): RouteFormDefinit
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:268
+* @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
 */
 consolidatedAttendanceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -325,7 +325,7 @@ consolidatedAttendance.form = consolidatedAttendanceForm
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 export const index = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -340,7 +340,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 index.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -367,7 +367,7 @@ index.url = (args: { project: string | number } | [project: string | number ] | 
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 index.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -377,7 +377,7 @@ index.get = (args: { project: string | number } | [project: string | number ] | 
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 index.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -387,7 +387,7 @@ index.head = (args: { project: string | number } | [project: string | number ] |
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 const indexForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -397,7 +397,7 @@ const indexForm = (args: { project: string | number } | [project: string | numbe
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 indexForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -407,7 +407,7 @@ indexForm.get = (args: { project: string | number } | [project: string | number 
 
 /**
 * @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:40
+* @see app/Http/Controllers/ReportController.php:42
 * @route '/projects/{project}/api/reports'
 */
 indexForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -424,7 +424,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 export const payslip = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -439,7 +439,7 @@ payslip.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 payslip.url = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions) => {
@@ -468,7 +468,7 @@ payslip.url = (args: { project: string | number, employeeId: string | number, pe
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 payslip.get = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -478,7 +478,7 @@ payslip.get = (args: { project: string | number, employeeId: string | number, pe
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 payslip.head = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -488,7 +488,7 @@ payslip.head = (args: { project: string | number, employeeId: string | number, p
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 const payslipForm = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -498,7 +498,7 @@ const payslipForm = (args: { project: string | number, employeeId: string | numb
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 payslipForm.get = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -508,7 +508,7 @@ payslipForm.get = (args: { project: string | number, employeeId: string | number
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:117
+* @see app/Http/Controllers/ReportController.php:121
 * @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
 */
 payslipForm.head = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -525,7 +525,7 @@ payslip.form = payslipForm
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 export const payrollSummary = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -540,7 +540,7 @@ payrollSummary.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 payrollSummary.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -567,7 +567,7 @@ payrollSummary.url = (args: { project: string | number } | [project: string | nu
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 payrollSummary.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -577,7 +577,7 @@ payrollSummary.get = (args: { project: string | number } | [project: string | nu
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 payrollSummary.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -587,7 +587,7 @@ payrollSummary.head = (args: { project: string | number } | [project: string | n
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 const payrollSummaryForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -597,7 +597,7 @@ const payrollSummaryForm = (args: { project: string | number } | [project: strin
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 payrollSummaryForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -607,7 +607,7 @@ payrollSummaryForm.get = (args: { project: string | number } | [project: string 
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:139
+* @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
 */
 payrollSummaryForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -624,7 +624,7 @@ payrollSummary.form = payrollSummaryForm
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 export const payrollDetail = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -639,7 +639,7 @@ payrollDetail.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 payrollDetail.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -666,7 +666,7 @@ payrollDetail.url = (args: { project: string | number } | [project: string | num
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 payrollDetail.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -676,7 +676,7 @@ payrollDetail.get = (args: { project: string | number } | [project: string | num
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 payrollDetail.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -686,7 +686,7 @@ payrollDetail.head = (args: { project: string | number } | [project: string | nu
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 const payrollDetailForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -696,7 +696,7 @@ const payrollDetailForm = (args: { project: string | number } | [project: string
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 payrollDetailForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -706,7 +706,7 @@ payrollDetailForm.get = (args: { project: string | number } | [project: string |
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:155
+* @see app/Http/Controllers/ReportController.php:163
 * @route '/projects/{project}/api/reports/payroll-detail'
 */
 payrollDetailForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -723,7 +723,7 @@ payrollDetail.form = payrollDetailForm
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 export const attendanceReport = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -738,7 +738,7 @@ attendanceReport.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 attendanceReport.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -765,7 +765,7 @@ attendanceReport.url = (args: { project: string | number } | [project: string | 
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 attendanceReport.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -775,7 +775,7 @@ attendanceReport.get = (args: { project: string | number } | [project: string | 
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 attendanceReport.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -785,7 +785,7 @@ attendanceReport.head = (args: { project: string | number } | [project: string |
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 const attendanceReportForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -795,7 +795,7 @@ const attendanceReportForm = (args: { project: string | number } | [project: str
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 attendanceReportForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -805,7 +805,7 @@ attendanceReportForm.get = (args: { project: string | number } | [project: strin
 
 /**
 * @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:171
+* @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
 */
 attendanceReportForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -822,7 +822,7 @@ attendanceReport.form = attendanceReportForm
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 export const leaveReport = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -837,7 +837,7 @@ leaveReport.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 leaveReport.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -864,7 +864,7 @@ leaveReport.url = (args: { project: string | number } | [project: string | numbe
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 leaveReport.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -874,7 +874,7 @@ leaveReport.get = (args: { project: string | number } | [project: string | numbe
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 leaveReport.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -884,7 +884,7 @@ leaveReport.head = (args: { project: string | number } | [project: string | numb
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 const leaveReportForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -894,7 +894,7 @@ const leaveReportForm = (args: { project: string | number } | [project: string |
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 leaveReportForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -904,7 +904,7 @@ leaveReportForm.get = (args: { project: string | number } | [project: string | n
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:186
+* @see app/Http/Controllers/ReportController.php:198
 * @route '/projects/{project}/api/reports/leave'
 */
 leaveReportForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -921,7 +921,7 @@ leaveReport.form = leaveReportForm
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 export const certificateCompliance = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -936,7 +936,7 @@ certificateCompliance.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 certificateCompliance.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -963,7 +963,7 @@ certificateCompliance.url = (args: { project: string | number } | [project: stri
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 certificateCompliance.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -973,7 +973,7 @@ certificateCompliance.get = (args: { project: string | number } | [project: stri
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 certificateCompliance.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -983,7 +983,7 @@ certificateCompliance.head = (args: { project: string | number } | [project: str
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 const certificateComplianceForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -993,7 +993,7 @@ const certificateComplianceForm = (args: { project: string | number } | [project
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 certificateComplianceForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1003,7 +1003,7 @@ certificateComplianceForm.get = (args: { project: string | number } | [project: 
 
 /**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:202
+* @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
 */
 certificateComplianceForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1020,7 +1020,7 @@ certificateCompliance.form = certificateComplianceForm
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 export const mcuCompliance = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1035,7 +1035,7 @@ mcuCompliance.definition = {
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 mcuCompliance.url = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -1062,7 +1062,7 @@ mcuCompliance.url = (args: { project: string | number } | [project: string | num
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 mcuCompliance.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1072,7 +1072,7 @@ mcuCompliance.get = (args: { project: string | number } | [project: string | num
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 mcuCompliance.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1082,7 +1082,7 @@ mcuCompliance.head = (args: { project: string | number } | [project: string | nu
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 const mcuComplianceForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1092,7 +1092,7 @@ const mcuComplianceForm = (args: { project: string | number } | [project: string
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 mcuComplianceForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1102,7 +1102,7 @@ mcuComplianceForm.get = (args: { project: string | number } | [project: string |
 
 /**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:217
+* @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
 */
 mcuComplianceForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

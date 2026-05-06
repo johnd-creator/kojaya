@@ -11,6 +11,8 @@ class WarehouseController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('manage_warehouses');
+
         $organizationId = $request->query('organization_id');
 
         $query = Warehouse::with('organization');
@@ -28,6 +30,8 @@ class WarehouseController extends Controller
 
     public function create()
     {
+        $this->authorizePermission('manage_warehouses');
+
         $organizations = \App\Models\Organization::orderBy('name')->get();
 
         return Inertia::render('Warehouses/Create', [
@@ -37,6 +41,8 @@ class WarehouseController extends Controller
 
     public function store(StoreWarehouseRequest $request)
     {
+        $this->authorizePermission('manage_warehouses');
+
         Warehouse::create($request->validated());
 
         return redirect()->route('warehouses.index')->with('success', 'Warehouse created successfully.');
@@ -44,6 +50,8 @@ class WarehouseController extends Controller
 
     public function show(string $id)
     {
+        $this->authorizePermission('manage_warehouses');
+
         $warehouse = Warehouse::with(['organization', 'stocks.sparePart'])->findOrFail($id);
 
         return Inertia::render('Warehouses/Show', [

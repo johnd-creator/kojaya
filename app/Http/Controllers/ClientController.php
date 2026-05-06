@@ -14,6 +14,8 @@ class ClientController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_clients');
+
         $query = Client::query()->with(['organization']);
 
         if ($request->filled('search')) {
@@ -45,6 +47,8 @@ class ClientController extends Controller
 
     public function create(): Response
     {
+        $this->authorizePermission('manage_clients');
+
         $organizations = Organization::orderBy('name')->get();
 
         return Inertia::render('Client/Create', [
@@ -54,6 +58,8 @@ class ClientController extends Controller
 
     public function store(StoreClientRequest $request)
     {
+        $this->authorizePermission('manage_clients');
+
         $validated = $request->validated();
 
         Client::create($validated);
@@ -63,6 +69,8 @@ class ClientController extends Controller
 
     public function show(Client $client): Response
     {
+        $this->authorizePermission('manage_clients');
+
         $client->load(['organization', 'projects']);
 
         return Inertia::render('Client/Show', [
@@ -72,6 +80,8 @@ class ClientController extends Controller
 
     public function edit(Client $client): Response
     {
+        $this->authorizePermission('manage_clients');
+
         $client->load('organization');
         $organizations = Organization::orderBy('name')->get();
 
@@ -83,6 +93,8 @@ class ClientController extends Controller
 
     public function update(UpdateClientRequest $request, Client $client)
     {
+        $this->authorizePermission('manage_clients');
+
         $validated = $request->validated();
 
         $client->update($validated);
@@ -92,6 +104,8 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
+        $this->authorizePermission('manage_clients');
+
         $client->delete();
 
         return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');

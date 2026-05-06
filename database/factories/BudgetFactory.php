@@ -21,7 +21,7 @@ class BudgetFactory extends Factory
             'organization_id' => Organization::factory(),
             'year' => (int) now()->format('Y'),
             'period' => fake()->randomElement(['ANNUAL', 'Q1', 'Q2', 'Q3', 'Q4']),
-            'status' => fake()->randomElement(['DRAFT', 'APPROVED', 'LOCKED']),
+            'status' => fake()->randomElement(['DRAFT', 'ACTIVE', 'CLOSED']),
         ];
     }
 }

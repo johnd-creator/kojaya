@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\OvertimeRequest;
 use App\Models\OvertimeRule;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -17,12 +18,17 @@ class OvertimeManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+    }
+
     public function test_user_can_create_overtime_request_with_evidence(): void
     {
         Storage::fake('public');
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
-        Role::findOrCreate('HR Unit', 'web');
         $user->assignRole('HR Unit');
         $employee = Employee::factory()->create(['organization_id' => $org->id]);
         $rule = OvertimeRule::create([

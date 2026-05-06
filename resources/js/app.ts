@@ -18,6 +18,10 @@ createInertiaApp({
   setup({ el, App, props, plugin }) {
     const vueApp = createApp({ render: () => h(App, props) }).use(plugin);
 
+    vueApp.config.errorHandler = (err, _instance, info) => {
+      console.error(`[Vue Error] ${info}:`, err);
+    };
+
     registerAppSharedFeatures(vueApp);
 
     vueApp.mount(el);

@@ -9,14 +9,9 @@ use Illuminate\Support\Facades\Auth;
 
 class BudgetLineController extends Controller
 {
-    protected function allAccessRoles(): array
+    protected function hasOrgScope(): bool
     {
-        return [
-            'System Admin',
-            'Admin Pusat',
-            'Finance Pusat',
-            'HR Pusat',
-        ];
+        return auth()->user()?->can('view_budget_all') ?? false;
     }
 
     public function store(UpsertBudgetLineRequest $request, Budget $budget)
@@ -93,7 +88,7 @@ class BudgetLineController extends Controller
             abort(403);
         }
 
-        if ($user->hasAnyRole($this->allAccessRoles())) {
+        if ($user->can('view_budget_all')) {
             return;
         }
 

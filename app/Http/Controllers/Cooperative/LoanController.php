@@ -28,7 +28,7 @@ class LoanController extends Controller
 
         $query = Loan::query()->with(['member', 'loanType']);
 
-        if ($request->user()?->hasRole('Anggota')) {
+        if (! $request->user()?->can('view_cooperative_loan_all') && $request->user()?->can('view_cooperative_member')) {
             $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $request->user()?->id));
         }
 
@@ -164,17 +164,17 @@ class LoanController extends Controller
 
     private function authorizeLoanView(Request $request): void
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi', 'Anggota']), 403);
+        abort_unless($request->user()?->can('view_cooperative_loan'), 403);
     }
 
     private function authorizeLoanManagement(Request $request): void
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi']), 403);
+        abort_unless($request->user()?->can('manage_cooperative_loan'), 403);
     }
 
     private function authorizeLoanApproval(Request $request): void
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi']), 403);
+        abort_unless($request->user()?->can('approve_cooperative_loan'), 403);
     }
 
     private function authorizeSpecificLoanView(Request $request, Loan $loan): void
@@ -183,10 +183,13 @@ class LoanController extends Controller
 
         abort_unless($user, 401);
 
-        if ($user->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi'])) {
+        if ($user->can('view_cooperative_loan_all')) {
             return;
         }
 
-        abort_unless($user->hasRole('Anggota') && $loan->member?->user_id === $user->id, 403);
+        abort_unless(
+            $user->can('view_cooperative_member') && $loan->member?->user_id === $user->id,
+            403,
+        );
     }
 }

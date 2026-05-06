@@ -252,11 +252,11 @@ const calculateDays = (start: string, end: string) => {
               </div>
 
               <div class="flex-shrink-0">
-                <component
+                <span class="contents"><component
                   :is="getStatusIcon(leave.status)"
                   class="w-5 h-5"
                   :class="getStatusColor(leave.status).split(' ')[0]"
-                />
+                /></span>
               </div>
             </div>
 

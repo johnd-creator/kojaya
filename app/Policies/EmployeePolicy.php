@@ -38,7 +38,7 @@ class EmployeePolicy extends BasePolicy
 
     public function manageEssAccess(User $user, Employee $employee): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'HR Pusat', 'HR Unit'])
-            && ($this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'HR Pusat']) || $this->sameOrganization($user, $employee));
+        return $this->can($user, 'manage_departments')
+            && ($this->can($user, 'view_employee_all') || $this->sameOrganization($user, $employee));
     }
 }

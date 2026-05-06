@@ -9,13 +9,13 @@ class InvoicePolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Finance Pusat', 'Finance Unit']);
+        return $this->can($user, 'view_invoice_all');
     }
 
     public function view(User $user, Invoice $invoice): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Finance Pusat'])
-            || ($this->hasAnyRole($user, ['Finance Unit']) && $this->sameOrganization($user, $invoice));
+        return $this->can($user, 'view_invoice_all')
+            || ($this->can($user, 'manage_chart_of_accounts') && $this->sameOrganization($user, $invoice));
     }
 
     public function update(User $user, Invoice $invoice): bool

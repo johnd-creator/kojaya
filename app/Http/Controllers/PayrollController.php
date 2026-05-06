@@ -168,7 +168,7 @@ class PayrollController extends Controller
         $user = Auth::user();
 
         // Employees can only download their own paystub
-        if ($user->hasRole('Employee')) {
+        if ($user->can('view_own_payslip') && ! $user->can('view_payroll_all')) {
             $employee = $user->employee;
             if (! $employee || $employee->id !== $payroll->employee_id) {
                 abort(403, 'Unauthorized. You may only download your own paystub.');

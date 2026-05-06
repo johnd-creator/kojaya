@@ -19,18 +19,8 @@ class ReimbursementController extends Controller
         $user = Auth::user();
 
         $reimbursements = Reimbursement::query()
-            ->when(! $user->hasRole(['System Admin', 'Admin Pusat', 'Finance Pusat', 'HR Pusat']), function ($q) use ($user) {
-                // If not central admin/finance, filter by user's organization
-                // Also if normal employee, only show their own requests?
-                // The PRD says:
-                // Employee: Self Only
-                // HR Unit/Finance Unit: View Unit
-
-                if ($user->hasRole('Employee') && ! $user->hasRole(['HR Unit', 'Finance Unit', 'Admin Unit'])) {
-                    $q->where('user_id', $user->id);
-                } else {
-                    $q->where('organization_id', $user->organization_id);
-                }
+            ->when(! $user->can('manage_reimbursement'), function ($q) use ($user) {
+                $q->where('user_id', $user->id);
             })
             ->latest()
             ->paginate(10);
@@ -83,22 +73,10 @@ class ReimbursementController extends Controller
 
     public function show(Reimbursement $reimbursement)
     {
-        // Check authorization
-        /** @var User $user */
         $user = Auth::user();
 
-        // If employee, must be own
-        if ($user->hasRole('Employee') && ! $user->hasRole(['HR Unit', 'Finance Unit', 'Admin Unit', 'System Admin', 'Admin Pusat', 'HR Pusat', 'Finance Pusat'])) {
-            if ($reimbursement->user_id !== $user->id) {
-                abort(403);
-            }
-        }
-
-        // If unit admin/finance, must be same org
-        if (! $user->hasRole(['System Admin', 'Admin Pusat', 'HR Pusat', 'Finance Pusat'])) {
-            if ($reimbursement->organization_id !== $user->organization_id) {
-                abort(403);
-            }
+        if (! $user->can('manage_reimbursement') && $reimbursement->user_id !== $user->id) {
+            abort(403);
         }
 
         $reimbursement->load(['items', 'user', 'approver']);
@@ -106,9 +84,9 @@ class ReimbursementController extends Controller
         return Inertia::render('Reimbursement/Show', [
             'reimbursement' => $reimbursement,
             'can' => [
-                'approve' => $user->hasRole(['HR Unit', 'Finance Unit', 'Admin Unit', 'System Admin', 'Admin Pusat', 'HR Pusat', 'Finance Pusat']) && $reimbursement->status === 'SUBMITTED',
-                'reject' => $user->hasRole(['HR Unit', 'Finance Unit', 'Admin Unit', 'System Admin', 'Admin Pusat', 'HR Pusat', 'Finance Pusat']) && $reimbursement->status === 'SUBMITTED',
-                'pay' => $user->hasRole(['Finance Unit', 'Finance Pusat']) && $reimbursement->status === 'APPROVED',
+                'approve' => $user->can('approve_reimbursement') && $reimbursement->status === 'SUBMITTED',
+                'reject' => $user->can('approve_reimbursement') && $reimbursement->status === 'SUBMITTED',
+                'pay' => $user->can('manage_reimbursement') && $reimbursement->status === 'APPROVED',
             ],
         ]);
     }
@@ -145,7 +123,7 @@ class ReimbursementController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->hasRole(['Finance Unit', 'Finance Pusat'])) {
+        if (! $user->can('manage_reimbursement')) {
             abort(403);
         }
 

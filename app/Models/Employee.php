@@ -81,6 +81,16 @@ class Employee extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function leaves(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Leave::class);
+    }
+
+    public function overtimeRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OvertimeRequest::class);
+    }
+
     public function payrolls(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Payroll::class);

@@ -15,6 +15,8 @@ class EmployeeTransferController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_employee_transfer');
+
         $query = EmployeeTransfer::query()
             ->forUser()
             ->with(['employee', 'fromOrganization', 'toOrganization', 'requestedBy', 'approvedBy']);
@@ -41,6 +43,8 @@ class EmployeeTransferController extends Controller
 
     public function create(): Response
     {
+        $this->authorizePermission('manage_employee_transfer');
+
         return Inertia::render('EmployeeTransfer/Create', [
             'employees' => \App\Models\Employee::forUser()
                 ->where('status', 'ACTIVE')
@@ -52,6 +56,8 @@ class EmployeeTransferController extends Controller
 
     public function store(StoreEmployeeTransferRequest $request)
     {
+        $this->authorizePermission('manage_employee_transfer');
+
         $validated = $request->validated();
 
         $employee = \App\Models\Employee::forUser()->findOrFail($validated['employee_id']);
@@ -72,6 +78,8 @@ class EmployeeTransferController extends Controller
 
     public function show(EmployeeTransfer $transfer): Response
     {
+        $this->authorizePermission('manage_employee_transfer');
+
         $transfer->load(['employee', 'fromOrganization', 'toOrganization', 'requestedBy', 'approvedBy']);
 
         return Inertia::render('EmployeeTransfer/Show', [
@@ -81,6 +89,8 @@ class EmployeeTransferController extends Controller
 
     public function approve(ProcessEmployeeTransferRequest $request, EmployeeTransfer $transfer)
     {
+        $this->authorizePermission('approve_employee_transfer');
+
         if (! $transfer->isPending()) {
             return back()->with('error', 'This transfer has already been processed.');
         }
@@ -98,6 +108,8 @@ class EmployeeTransferController extends Controller
 
     public function reject(ProcessEmployeeTransferRequest $request, EmployeeTransfer $transfer)
     {
+        $this->authorizePermission('approve_employee_transfer');
+
         if (! $transfer->isPending()) {
             return back()->with('error', 'This transfer has already been processed.');
         }

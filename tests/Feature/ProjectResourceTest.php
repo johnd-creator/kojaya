@@ -3,16 +3,49 @@
 namespace Tests\Feature;
 
 use App\Models\Asset;
+use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\ProjectAssetAllocation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProjectResourceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_project_store_generates_uuid_without_controller_assigning_id(): void
+    {
+        $organization = Organization::factory()->create();
+        $client = Client::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $user = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('projects.store'), [
+            'project_code' => 'PRJ-UUID-001',
+            'name' => 'UUID Regression Project',
+            'description' => 'Verify Project UUID auto-generation.',
+            'organization_id' => $organization->id,
+            'client_id' => $client->id,
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addMonth()->toDateString(),
+            'budget' => 1000000,
+            'status' => 'PLANNING',
+            'notes' => 'Regression test',
+        ]);
+
+        $response->assertRedirect(route('projects.index'));
+
+        $project = Project::query()->where('project_code', 'PRJ-UUID-001')->firstOrFail();
+
+        $this->assertNotNull($project->id);
+        $this->assertTrue(Str::isUuid($project->id));
+    }
 
     public function test_can_allocate_asset_to_project(): void
     {

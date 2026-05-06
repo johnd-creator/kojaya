@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('chart_of_accounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
-            $table->foreignUuid('parent_id')->nullable()->constrained('chart_of_accounts')->nullOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->string('code', 30);
             $table->string('name');
             $table->string('account_type', 30);
@@ -23,6 +23,13 @@ return new class extends Migration
 
             $table->unique(['organization_id', 'code']);
             $table->index(['account_type', 'category']);
+        });
+
+        Schema::table('chart_of_accounts', function (Blueprint $table) {
+            $table->foreign('parent_id')
+                ->references('id')
+                ->on('chart_of_accounts')
+                ->nullOnDelete();
         });
     }
 

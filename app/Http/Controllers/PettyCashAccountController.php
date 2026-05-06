@@ -11,6 +11,8 @@ class PettyCashAccountController extends Controller
 {
     public function index()
     {
+        $this->authorizePermission('manage_petty_cash');
+
         $accounts = PettyCashAccount::with('organization')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -25,6 +27,8 @@ class PettyCashAccountController extends Controller
 
     public function store(UpsertPettyCashAccountRequest $request)
     {
+        $this->authorizePermission('manage_petty_cash');
+
         PettyCashAccount::create($request->validated());
 
         return redirect()->route('petty-cash.index')
@@ -33,6 +37,8 @@ class PettyCashAccountController extends Controller
 
     public function show(string $id)
     {
+        $this->authorizePermission('manage_petty_cash');
+
         $account = PettyCashAccount::with(['organization', 'transactions.user'])
             ->findOrFail($id);
 
@@ -43,6 +49,8 @@ class PettyCashAccountController extends Controller
 
     public function update(UpsertPettyCashAccountRequest $request, string $id)
     {
+        $this->authorizePermission('manage_petty_cash');
+
         $account = PettyCashAccount::findOrFail($id);
 
         $account->update($request->validated());
@@ -53,6 +61,8 @@ class PettyCashAccountController extends Controller
 
     public function destroy(string $id)
     {
+        $this->authorizePermission('manage_petty_cash');
+
         $account = PettyCashAccount::findOrFail($id);
 
         if ($account->transactions()->exists()) {

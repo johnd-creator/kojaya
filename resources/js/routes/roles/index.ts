@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 export const edit = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 edit.url = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -130,7 +130,7 @@ edit.url = (args: { role: number | { id: number } } | [role: number | { id: numb
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 edit.get = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -140,7 +140,7 @@ edit.get = (args: { role: number | { id: number } } | [role: number | { id: numb
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 edit.head = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -150,7 +150,7 @@ edit.head = (args: { role: number | { id: number } } | [role: number | { id: num
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 const editForm = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -160,7 +160,7 @@ const editForm = (args: { role: number | { id: number } } | [role: number | { id
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 editForm.get = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -170,7 +170,7 @@ editForm.get = (args: { role: number | { id: number } } | [role: number | { id: 
 
 /**
 * @see \App\Http\Controllers\RoleController::edit
-* @see app/Http/Controllers/RoleController.php:22
+* @see app/Http/Controllers/RoleController.php:24
 * @route '/roles/{role}/edit'
 */
 editForm.head = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -187,7 +187,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 export const update = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -202,7 +202,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 update.url = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -235,7 +235,7 @@ update.url = (args: { role: number | { id: number } } | [role: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 update.put = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -245,7 +245,7 @@ update.put = (args: { role: number | { id: number } } | [role: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 update.patch = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -255,7 +255,7 @@ update.patch = (args: { role: number | { id: number } } | [role: number | { id: 
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 const updateForm = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -270,7 +270,7 @@ const updateForm = (args: { role: number | { id: number } } | [role: number | { 
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 updateForm.put = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -285,7 +285,7 @@ updateForm.put = (args: { role: number | { id: number } } | [role: number | { id
 
 /**
 * @see \App\Http\Controllers\RoleController::update
-* @see app/Http/Controllers/RoleController.php:33
+* @see app/Http/Controllers/RoleController.php:37
 * @route '/roles/{role}'
 */
 updateForm.patch = (args: { role: number | { id: number } } | [role: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

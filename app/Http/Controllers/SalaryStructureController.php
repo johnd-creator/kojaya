@@ -16,6 +16,8 @@ class SalaryStructureController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_salary_structures');
+
         $structures = SalaryStructure::query()
             ->with(['jobGrade', 'organization', 'items.componentType'])
             ->when($request->filled('employee_type'), fn ($q) => $q->where('employee_type', $request->input('employee_type')))
@@ -38,6 +40,8 @@ class SalaryStructureController extends Controller
 
     public function store(UpsertSalaryStructureRequest $request)
     {
+        $this->authorizePermission('manage_salary_structures');
+
         $validated = $request->validated();
 
         $structure = SalaryStructure::create([
@@ -63,6 +67,8 @@ class SalaryStructureController extends Controller
 
     public function update(UpsertSalaryStructureRequest $request, SalaryStructure $salaryStructure)
     {
+        $this->authorizePermission('manage_salary_structures');
+
         $validated = $request->validated();
 
         $salaryStructure->update([
@@ -90,6 +96,8 @@ class SalaryStructureController extends Controller
 
     public function destroy(SalaryStructure $salaryStructure)
     {
+        $this->authorizePermission('manage_salary_structures');
+
         $salaryStructure->delete();
 
         return redirect()->route('salary-structures.index')->with('success', 'Salary structure deleted.');

@@ -20,7 +20,7 @@ class LoanApiController extends Controller
         $user = $this->authorizedUser($request);
         $query = Loan::query()->with(['member', 'loanType', 'installments']);
 
-        if ($user->hasRole('Anggota')) {
+        if (! $user->can('view_cooperative_loan_all') && $user->can('view_cooperative_member')) {
             $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $user->id));
         }
 
@@ -49,7 +49,7 @@ class LoanApiController extends Controller
     {
         $user = $this->authorizedUser($request);
 
-        if ($user->hasRole('Anggota')) {
+        if (! $user->can('view_cooperative_loan_all') && $user->can('view_cooperative_member')) {
             abort_unless($loan->member?->user_id === $user->id, 403);
         }
 
@@ -78,14 +78,14 @@ class LoanApiController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user && $user->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi', 'Anggota']), 403);
+        abort_unless($user && ($user->can('view_cooperative_loan')), 403);
 
         return $user;
     }
 
     private function resolveMember(Request $request, \App\Models\User $user): CooperativeMember
     {
-        if ($user->hasRole('Anggota')) {
+        if ($user->can('view_cooperative_member') && ! $user->can('manage_cooperative_loan')) {
             return CooperativeMember::query()->where('user_id', $user->id)->firstOrFail();
         }
 

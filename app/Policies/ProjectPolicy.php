@@ -9,13 +9,14 @@ class ProjectPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager', 'Site Manager', 'Admin Unit']);
+        return $this->can($user, 'view_project_all')
+            || $this->can($user, 'view_project_unit');
     }
 
     public function view(User $user, Project $project): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager'])
-            || ($this->hasAnyRole($user, ['Site Manager', 'Admin Unit']) && $this->sameOrganization($user, $project));
+        return $this->can($user, 'view_project_all')
+            || ($this->can($user, 'view_project_unit') && $this->sameOrganization($user, $project));
     }
 
     public function update(User $user, Project $project): bool

@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::store
-* @see app/Http/Controllers/WorkShiftController.php:21
+* @see app/Http/Controllers/WorkShiftController.php:23
 * @route '/work-shifts'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::store
-* @see app/Http/Controllers/WorkShiftController.php:21
+* @see app/Http/Controllers/WorkShiftController.php:23
 * @route '/work-shifts'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::store
-* @see app/Http/Controllers/WorkShiftController.php:21
+* @see app/Http/Controllers/WorkShiftController.php:23
 * @route '/work-shifts'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::store
-* @see app/Http/Controllers/WorkShiftController.php:21
+* @see app/Http/Controllers/WorkShiftController.php:23
 * @route '/work-shifts'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::store
-* @see app/Http/Controllers/WorkShiftController.php:21
+* @see app/Http/Controllers/WorkShiftController.php:23
 * @route '/work-shifts'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -417,7 +417,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 export const update = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -432,7 +432,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 update.url = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -459,7 +459,7 @@ update.url = (args: { work_shift: string | number } | [work_shift: string | numb
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 update.put = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -469,7 +469,7 @@ update.put = (args: { work_shift: string | number } | [work_shift: string | numb
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 update.patch = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -479,7 +479,7 @@ update.patch = (args: { work_shift: string | number } | [work_shift: string | nu
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 const updateForm = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const updateForm = (args: { work_shift: string | number } | [work_shift: string 
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 updateForm.put = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -509,7 +509,7 @@ updateForm.put = (args: { work_shift: string | number } | [work_shift: string | 
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
-* @see app/Http/Controllers/WorkShiftController.php:28
+* @see app/Http/Controllers/WorkShiftController.php:32
 * @route '/work-shifts/{work_shift}'
 */
 updateForm.patch = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

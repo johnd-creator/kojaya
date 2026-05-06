@@ -9,14 +9,15 @@ class WorkOrderPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager', 'Site Manager', 'Admin Unit', 'Technician']);
+        return $this->can($user, 'view_work_order_all')
+            || $this->can($user, 'view_work_order_unit');
     }
 
     public function view(User $user, WorkOrder $workOrder): bool
     {
         return (string) $workOrder->assigned_to === (string) $user->id
-            || $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager'])
-            || ($this->hasAnyRole($user, ['Site Manager', 'Admin Unit']) && $this->sameOrganization($user, $workOrder));
+            || $this->can($user, 'view_work_order_all')
+            || ($this->can($user, 'view_work_order_unit') && $this->sameOrganization($user, $workOrder));
     }
 
     public function update(User $user, WorkOrder $workOrder): bool

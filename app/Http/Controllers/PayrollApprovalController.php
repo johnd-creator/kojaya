@@ -70,6 +70,6 @@ class PayrollApprovalController extends Controller
 
     private function authorizePayrollApproval(Request $request): void
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Admin Pusat', 'Finance Pusat']), 403);
+        abort_unless($request->user()?->can('approve_payroll'), 403);
     }
 }

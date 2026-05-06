@@ -586,7 +586,7 @@ class DemoDataSeeder extends Seeder
 
         $budget = Budget::query()->firstOrCreate(
             ['organization_id' => $headOffice->id, 'year' => '2026', 'period' => 'ANNUAL'],
-            ['id' => (string) Str::uuid(), 'status' => 'APPROVED'],
+            ['status' => 'ACTIVE'],
         );
 
         BudgetLine::query()->firstOrCreate(

@@ -87,7 +87,7 @@ trialBalance.form = trialBalanceForm
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 export const balanceSheet = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -102,7 +102,7 @@ balanceSheet.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 balanceSheet.url = (options?: RouteQueryOptions) => {
@@ -111,7 +111,7 @@ balanceSheet.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 balanceSheet.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -121,7 +121,7 @@ balanceSheet.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 balanceSheet.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -131,7 +131,7 @@ balanceSheet.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 const balanceSheetForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ const balanceSheetForm = (options?: RouteQueryOptions): RouteFormDefinition<'get
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 balanceSheetForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -151,7 +151,7 @@ balanceSheetForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::balanceSheet
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:24
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:26
 * @route '/finance/balance-sheet'
 */
 balanceSheetForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -168,7 +168,7 @@ balanceSheet.form = balanceSheetForm
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 export const incomeStatement = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -183,7 +183,7 @@ incomeStatement.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 incomeStatement.url = (options?: RouteQueryOptions) => {
@@ -192,7 +192,7 @@ incomeStatement.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 incomeStatement.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -202,7 +202,7 @@ incomeStatement.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 incomeStatement.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -212,7 +212,7 @@ incomeStatement.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =>
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 const incomeStatementForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -222,7 +222,7 @@ const incomeStatementForm = (options?: RouteQueryOptions): RouteFormDefinition<'
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 incomeStatementForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -232,7 +232,7 @@ incomeStatementForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::incomeStatement
-* @see app/Http/Controllers/Accounting/FinancialStatementController.php:35
+* @see app/Http/Controllers/Accounting/FinancialStatementController.php:39
 * @route '/finance/income-statement'
 */
 incomeStatementForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

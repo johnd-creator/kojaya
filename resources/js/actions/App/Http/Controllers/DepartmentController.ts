@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\DepartmentController::store
-* @see app/Http/Controllers/DepartmentController.php:37
+* @see app/Http/Controllers/DepartmentController.php:39
 * @route '/departments'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\DepartmentController::store
-* @see app/Http/Controllers/DepartmentController.php:37
+* @see app/Http/Controllers/DepartmentController.php:39
 * @route '/departments'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\DepartmentController::store
-* @see app/Http/Controllers/DepartmentController.php:37
+* @see app/Http/Controllers/DepartmentController.php:39
 * @route '/departments'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\DepartmentController::store
-* @see app/Http/Controllers/DepartmentController.php:37
+* @see app/Http/Controllers/DepartmentController.php:39
 * @route '/departments'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\DepartmentController::store
-* @see app/Http/Controllers/DepartmentController.php:37
+* @see app/Http/Controllers/DepartmentController.php:39
 * @route '/departments'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -417,7 +417,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 export const update = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -432,7 +432,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 update.url = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -465,7 +465,7 @@ update.url = (args: { department: number | { id: number } } | [department: numbe
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 update.put = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -475,7 +475,7 @@ update.put = (args: { department: number | { id: number } } | [department: numbe
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 update.patch = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -485,7 +485,7 @@ update.patch = (args: { department: number | { id: number } } | [department: num
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 const updateForm = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -500,7 +500,7 @@ const updateForm = (args: { department: number | { id: number } } | [department:
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 updateForm.put = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -515,7 +515,7 @@ updateForm.put = (args: { department: number | { id: number } } | [department: n
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
-* @see app/Http/Controllers/DepartmentController.php:44
+* @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
 updateForm.patch = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -532,7 +532,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\DepartmentController::destroy
-* @see app/Http/Controllers/DepartmentController.php:51
+* @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
 export const destroy = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -547,7 +547,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\DepartmentController::destroy
-* @see app/Http/Controllers/DepartmentController.php:51
+* @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
 destroy.url = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -580,7 +580,7 @@ destroy.url = (args: { department: number | { id: number } } | [department: numb
 
 /**
 * @see \App\Http\Controllers\DepartmentController::destroy
-* @see app/Http/Controllers/DepartmentController.php:51
+* @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
 destroy.delete = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -590,7 +590,7 @@ destroy.delete = (args: { department: number | { id: number } } | [department: n
 
 /**
 * @see \App\Http\Controllers\DepartmentController::destroy
-* @see app/Http/Controllers/DepartmentController.php:51
+* @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
 const destroyForm = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -605,7 +605,7 @@ const destroyForm = (args: { department: number | { id: number } } | [department
 
 /**
 * @see \App\Http\Controllers\DepartmentController::destroy
-* @see app/Http/Controllers/DepartmentController.php:51
+* @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
 destroyForm.delete = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -15,6 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { BreadcrumbItem } from "@/types";
 
 type Project = { id: string; project_code: string; name: string };
@@ -43,6 +50,23 @@ const importModal = ref(false);
 const editLineTarget = ref<any>(null);
 const deleteLineDialogOpen = ref(false);
 const deleteLineTarget = ref<any>(null);
+
+const updateHeaderPeriod = (value: unknown) => {
+  headerForm.period = value == null ? "ANNUAL" : String(value);
+};
+
+const updateHeaderStatus = (value: unknown) => {
+  headerForm.status = value == null ? "DRAFT" : String(value);
+};
+
+const updateLineCategory = (value: unknown) => {
+  lineForm.category = value == null ? "OPEX" : String(value);
+};
+
+const updateLineProjectId = (value: unknown) => {
+  lineForm.project_id =
+    value === "__none__" || value == null ? "" : String(value);
+};
 
 const headerForm = useForm({
   organization_id: props.budget.organization_id,
@@ -211,16 +235,21 @@ const totals = computed(() => {
                   </div>
                   <div class="grid gap-2">
                     <Label>Periode</Label>
-                    <select
-                      v-model="headerForm.period"
-                      class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                    <Select
+                      :model-value="headerForm.period"
+                      @update:model-value="updateHeaderPeriod"
                     >
-                      <option value="ANNUAL">ANNUAL</option>
-                      <option value="Q1">Q1</option>
-                      <option value="Q2">Q2</option>
-                      <option value="Q3">Q3</option>
-                      <option value="Q4">Q4</option>
-                    </select>
+                      <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Pilih periode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ANNUAL">ANNUAL</SelectItem>
+                        <SelectItem value="Q1">Q1</SelectItem>
+                        <SelectItem value="Q2">Q2</SelectItem>
+                        <SelectItem value="Q3">Q3</SelectItem>
+                        <SelectItem value="Q4">Q4</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <span
                       v-if="headerForm.errors.period"
                       class="text-xs text-red-500"
@@ -231,14 +260,19 @@ const totals = computed(() => {
 
                 <div class="grid gap-2">
                   <Label>Status</Label>
-                  <select
-                    v-model="headerForm.status"
-                    class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                  <Select
+                    :model-value="headerForm.status"
+                    @update:model-value="updateHeaderStatus"
                   >
-                    <option value="DRAFT">DRAFT</option>
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="CLOSED">CLOSED</option>
-                  </select>
+                    <SelectTrigger class="w-full">
+                      <SelectValue placeholder="Pilih status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DRAFT">DRAFT</SelectItem>
+                      <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                      <SelectItem value="CLOSED">CLOSED</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <span
                     v-if="headerForm.errors.status"
                     class="text-xs text-red-500"
@@ -375,13 +409,18 @@ const totals = computed(() => {
                   </div>
                   <div class="grid gap-2">
                     <Label>Kategori</Label>
-                    <select
-                      v-model="lineForm.category"
-                      class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                    <Select
+                      :model-value="lineForm.category"
+                      @update:model-value="updateLineCategory"
                     >
-                      <option value="OPEX">OPEX</option>
-                      <option value="CAPEX">CAPEX</option>
-                    </select>
+                      <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Pilih kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPEX">OPEX</SelectItem>
+                        <SelectItem value="CAPEX">CAPEX</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <span
                       v-if="lineForm.errors.category"
                       class="text-xs text-red-500"
@@ -405,15 +444,20 @@ const totals = computed(() => {
                   </div>
                   <div class="grid gap-2">
                     <Label>Project (opsional)</Label>
-                    <select
-                      v-model="lineForm.project_id"
-                      class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                    <Select
+                      :model-value="lineForm.project_id || '__none__'"
+                      @update:model-value="updateLineProjectId"
                     >
-                      <option value="">Tanpa project</option>
-                      <option v-for="p in projects" :key="p.id" :value="p.id">
-                        {{ p.project_code }} - {{ p.name }}
-                      </option>
-                    </select>
+                      <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Tanpa project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Tanpa project</SelectItem>
+                        <SelectItem v-for="p in projects" :key="p.id" :value="p.id">
+                          {{ p.project_code }} - {{ p.name }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                     <span
                       v-if="lineForm.errors.project_id"
                       class="text-xs text-red-500"
@@ -472,13 +516,18 @@ const totals = computed(() => {
               </div>
               <div class="grid gap-2">
                 <Label>Kategori</Label>
-                <select
-                  v-model="lineForm.category"
-                  class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                <Select
+                  :model-value="lineForm.category"
+                  @update:model-value="updateLineCategory"
                 >
-                  <option value="OPEX">OPEX</option>
-                  <option value="CAPEX">CAPEX</option>
-                </select>
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPEX">OPEX</SelectItem>
+                    <SelectItem value="CAPEX">CAPEX</SelectItem>
+                  </SelectContent>
+                </Select>
                 <span
                   v-if="lineForm.errors.category"
                   class="text-xs text-red-500"
@@ -499,15 +548,20 @@ const totals = computed(() => {
               </div>
               <div class="grid gap-2">
                 <Label>Project (opsional)</Label>
-                <select
-                  v-model="lineForm.project_id"
-                  class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                <Select
+                  :model-value="lineForm.project_id || '__none__'"
+                  @update:model-value="updateLineProjectId"
                 >
-                  <option value="">Tanpa project</option>
-                  <option v-for="p in projects" :key="p.id" :value="p.id">
-                    {{ p.project_code }} - {{ p.name }}
-                  </option>
-                </select>
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="Tanpa project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Tanpa project</SelectItem>
+                    <SelectItem v-for="p in projects" :key="p.id" :value="p.id">
+                      {{ p.project_code }} - {{ p.name }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <span
                   v-if="lineForm.errors.project_id"
                   class="text-xs text-red-500"

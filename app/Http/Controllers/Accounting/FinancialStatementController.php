@@ -12,6 +12,8 @@ class FinancialStatementController extends Controller
 {
     public function trialBalance(Request $request, FinancialStatementService $financialStatementService): Response
     {
+        $this->authorizePermission('view_trial_balance');
+
         return Inertia::render('Finance/TrialBalance', [
             'rows' => $financialStatementService->trialBalance(
                 $request->user()?->organization_id,
@@ -23,6 +25,8 @@ class FinancialStatementController extends Controller
 
     public function balanceSheet(Request $request, FinancialStatementService $financialStatementService): Response
     {
+        $this->authorizePermission('view_balance_sheet');
+
         return Inertia::render('Finance/BalanceSheet', [
             'statement' => $financialStatementService->balanceSheet(
                 $request->user()?->organization_id,
@@ -34,6 +38,8 @@ class FinancialStatementController extends Controller
 
     public function incomeStatement(Request $request, FinancialStatementService $financialStatementService): Response
     {
+        $this->authorizePermission('view_income_statement');
+
         return Inertia::render('Finance/IncomeStatement', [
             'statement' => $financialStatementService->incomeStatement(
                 $request->user()?->organization_id,

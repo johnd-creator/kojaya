@@ -13,6 +13,8 @@ class DepartmentController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_departments');
+
         $departments = Department::query()
             ->with('organization')
             ->withCount('positions')
@@ -36,6 +38,8 @@ class DepartmentController extends Controller
 
     public function store(UpsertDepartmentRequest $request)
     {
+        $this->authorizePermission('manage_departments');
+
         Department::create($request->validated());
 
         return redirect()->route('departments.index')->with('success', 'Department created.');
@@ -43,6 +47,8 @@ class DepartmentController extends Controller
 
     public function update(UpsertDepartmentRequest $request, Department $department)
     {
+        $this->authorizePermission('manage_departments');
+
         $department->update($request->validated());
 
         return redirect()->route('departments.index')->with('success', 'Department updated.');
@@ -50,6 +56,8 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department)
     {
+        $this->authorizePermission('manage_departments');
+
         $department->delete();
 
         return redirect()->route('departments.index')->with('success', 'Department deleted.');

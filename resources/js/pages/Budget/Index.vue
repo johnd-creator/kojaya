@@ -45,6 +45,7 @@ const deleteTarget = ref<any>(null);
 const currentYear = new Date().getFullYear().toString();
 const defaultOrganizationValue = "__default_organization__";
 const allOrganizationsValue = "__all_organizations__";
+const allStatusesValue = "__all_statuses__";
 
 const updatePeriod = (value: unknown) => {
   form.period = value == null ? "ANNUAL" : String(value);
@@ -60,7 +61,8 @@ const updateOrganizationId = (value: unknown) => {
 };
 
 const updateStatusFilter = (value: unknown) => {
-  filters.value.status = value == null ? "" : String(value);
+  filters.value.status =
+    value === allStatusesValue || value == null ? "" : String(value);
 };
 
 const updateOrganizationFilter = (value: unknown) => {
@@ -278,14 +280,14 @@ const { resetFilters } = useTableFilters(filters, {
         @reset="resetFilters"
       >
         <Select
-          :model-value="filters.status || ''"
+          :model-value="filters.status || allStatusesValue"
           @update:model-value="updateStatusFilter"
         >
           <SelectTrigger class="w-full sm:w-[220px]">
             <SelectValue placeholder="Semua status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Semua status</SelectItem>
+            <SelectItem :value="allStatusesValue">Semua status</SelectItem>
             <SelectItem value="DRAFT">DRAFT</SelectItem>
             <SelectItem value="ACTIVE">ACTIVE</SelectItem>
             <SelectItem value="CLOSED">CLOSED</SelectItem>

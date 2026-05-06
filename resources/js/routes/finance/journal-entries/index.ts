@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Accounting\JournalEntryController::store
-* @see app/Http/Controllers/Accounting/JournalEntryController.php:32
+* @see app/Http/Controllers/Accounting/JournalEntryController.php:34
 * @route '/finance/journal-entries'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Accounting\JournalEntryController::store
-* @see app/Http/Controllers/Accounting/JournalEntryController.php:32
+* @see app/Http/Controllers/Accounting/JournalEntryController.php:34
 * @route '/finance/journal-entries'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Accounting\JournalEntryController::store
-* @see app/Http/Controllers/Accounting/JournalEntryController.php:32
+* @see app/Http/Controllers/Accounting/JournalEntryController.php:34
 * @route '/finance/journal-entries'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Accounting\JournalEntryController::store
-* @see app/Http/Controllers/Accounting/JournalEntryController.php:32
+* @see app/Http/Controllers/Accounting/JournalEntryController.php:34
 * @route '/finance/journal-entries'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Accounting\JournalEntryController::store
-* @see app/Http/Controllers/Accounting/JournalEntryController.php:32
+* @see app/Http/Controllers/Accounting/JournalEntryController.php:34
 * @route '/finance/journal-entries'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

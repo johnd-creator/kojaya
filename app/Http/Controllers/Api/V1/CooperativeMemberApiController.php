@@ -124,11 +124,11 @@ class CooperativeMemberApiController extends Controller
 
         abort_unless($user, 401);
 
-        if ($user->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi'])) {
+        if ($user->can('manage_cooperative_member')) {
             return;
         }
 
-        if ($member && $user->hasRole('Anggota') && $member->user_id === $user->id) {
+        if ($member && $user->can('view_cooperative_member') && $member->user_id === $user->id) {
             return;
         }
 

@@ -9,12 +9,14 @@ class OvertimeRequestPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'HR Pusat', 'HR Unit', 'Admin Unit', 'Employee']);
+        return $this->can($user, 'view_overtime_all')
+            || $this->can($user, 'view_overtime_unit')
+            || $this->can($user, 'access_ess_portal');
     }
 
     public function update(User $user, OvertimeRequest $overtimeRequest): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'HR Pusat', 'HR Unit']);
+        return $this->can($user, 'approve_overtime');
     }
 
     public function approve(User $user, OvertimeRequest $overtimeRequest): bool

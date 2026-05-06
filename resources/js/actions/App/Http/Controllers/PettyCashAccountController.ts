@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::store
-* @see app/Http/Controllers/PettyCashAccountController.php:26
+* @see app/Http/Controllers/PettyCashAccountController.php:28
 * @route '/petty-cash'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::store
-* @see app/Http/Controllers/PettyCashAccountController.php:26
+* @see app/Http/Controllers/PettyCashAccountController.php:28
 * @route '/petty-cash'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::store
-* @see app/Http/Controllers/PettyCashAccountController.php:26
+* @see app/Http/Controllers/PettyCashAccountController.php:28
 * @route '/petty-cash'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::store
-* @see app/Http/Controllers/PettyCashAccountController.php:26
+* @see app/Http/Controllers/PettyCashAccountController.php:28
 * @route '/petty-cash'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::store
-* @see app/Http/Controllers/PettyCashAccountController.php:26
+* @see app/Http/Controllers/PettyCashAccountController.php:28
 * @route '/petty-cash'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 export const show = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 show.url = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -261,7 +261,7 @@ show.url = (args: { petty_cash: string | number } | [petty_cash: string | number
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 show.get = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -271,7 +271,7 @@ show.get = (args: { petty_cash: string | number } | [petty_cash: string | number
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 show.head = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -281,7 +281,7 @@ show.head = (args: { petty_cash: string | number } | [petty_cash: string | numbe
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 const showForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -291,7 +291,7 @@ const showForm = (args: { petty_cash: string | number } | [petty_cash: string | 
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 showForm.get = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -301,7 +301,7 @@ showForm.get = (args: { petty_cash: string | number } | [petty_cash: string | nu
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
-* @see app/Http/Controllers/PettyCashAccountController.php:34
+* @see app/Http/Controllers/PettyCashAccountController.php:38
 * @route '/petty-cash/{petty_cash}'
 */
 showForm.head = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -417,7 +417,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 export const update = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -432,7 +432,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 update.url = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -459,7 +459,7 @@ update.url = (args: { petty_cash: string | number } | [petty_cash: string | numb
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 update.put = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -469,7 +469,7 @@ update.put = (args: { petty_cash: string | number } | [petty_cash: string | numb
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 update.patch = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -479,7 +479,7 @@ update.patch = (args: { petty_cash: string | number } | [petty_cash: string | nu
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 const updateForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const updateForm = (args: { petty_cash: string | number } | [petty_cash: string 
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 updateForm.put = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -509,7 +509,7 @@ updateForm.put = (args: { petty_cash: string | number } | [petty_cash: string | 
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
-* @see app/Http/Controllers/PettyCashAccountController.php:44
+* @see app/Http/Controllers/PettyCashAccountController.php:50
 * @route '/petty-cash/{petty_cash}'
 */
 updateForm.patch = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -526,7 +526,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::destroy
-* @see app/Http/Controllers/PettyCashAccountController.php:54
+* @see app/Http/Controllers/PettyCashAccountController.php:62
 * @route '/petty-cash/{petty_cash}'
 */
 export const destroy = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -541,7 +541,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::destroy
-* @see app/Http/Controllers/PettyCashAccountController.php:54
+* @see app/Http/Controllers/PettyCashAccountController.php:62
 * @route '/petty-cash/{petty_cash}'
 */
 destroy.url = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -568,7 +568,7 @@ destroy.url = (args: { petty_cash: string | number } | [petty_cash: string | num
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::destroy
-* @see app/Http/Controllers/PettyCashAccountController.php:54
+* @see app/Http/Controllers/PettyCashAccountController.php:62
 * @route '/petty-cash/{petty_cash}'
 */
 destroy.delete = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -578,7 +578,7 @@ destroy.delete = (args: { petty_cash: string | number } | [petty_cash: string | 
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::destroy
-* @see app/Http/Controllers/PettyCashAccountController.php:54
+* @see app/Http/Controllers/PettyCashAccountController.php:62
 * @route '/petty-cash/{petty_cash}'
 */
 const destroyForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -593,7 +593,7 @@ const destroyForm = (args: { petty_cash: string | number } | [petty_cash: string
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::destroy
-* @see app/Http/Controllers/PettyCashAccountController.php:54
+* @see app/Http/Controllers/PettyCashAccountController.php:62
 * @route '/petty-cash/{petty_cash}'
 */
 destroyForm.delete = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

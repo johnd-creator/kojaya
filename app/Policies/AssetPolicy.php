@@ -9,18 +9,19 @@ class AssetPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager', 'Site Manager', 'Admin Unit', 'Technician']);
+        return $this->can($user, 'view_asset_all')
+            || $this->can($user, 'view_asset_unit');
     }
 
     public function view(User $user, Asset $asset): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager'])
-            || ($this->hasAnyRole($user, ['Site Manager', 'Admin Unit', 'Technician']) && $this->sameOrganization($user, $asset));
+        return $this->can($user, 'view_asset_all')
+            || ($this->can($user, 'view_asset_unit') && $this->sameOrganization($user, $asset));
     }
 
     public function update(User $user, Asset $asset): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager', 'Admin Unit'])
-            && ($this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Project Manager']) || $this->sameOrganization($user, $asset));
+        return $this->can($user, 'manage_asset')
+            && ($this->can($user, 'view_asset_all') || $this->sameOrganization($user, $asset));
     }
 }

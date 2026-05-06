@@ -4,11 +4,79 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** May 4, 2026
+**Last Updated:** May 6, 2026
 
 ---
 
 ## 🎯 2026-05: Branding & Kojayaku Development
+
+### **May 6, 2026 - Improve2 Phase 3 Technician Mobile API**
+
+**🔧 Technician Mobile Improvements:**
+- ✅ Added technician work order pagination and filters for status, priority, and scheduled date
+- ✅ Added mobile work order field metadata for scheduled date, GPS start/complete, completion notes, escalation, review, and reopen
+- ✅ Added work order evidence attachments, spare part consumption, timeline logs, and idempotent offline sync tables
+- ✅ Added technician endpoints for attachments, parts, sync, timeline, escalation, and supervisor reopen
+- ✅ Updated complete flow to require GPS payload and record completion timeline
+- ✅ Updated `docs/api.md` and `docs/improve2.md` with Phase 3 implementation status
+- ✅ Added `Phase3TechnicianMobileApiTest` coverage for filters, evidence upload, parts, GPS completion, timeline, offline idempotency, escalation, and reopen
+
+### **May 6, 2026 - Improve2 Phase 2 ESS Mobile API**
+
+**👤 ESS Mobile Improvements:**
+- ✅ Expanded `/api/ess` with shift roster, leaves, overtime, reimbursements, payslips, compliance, and notifications
+- ✅ Added mobile attendance metadata persistence for GPS latitude/longitude, accuracy, device id, and audit payload on check-in/check-out
+- ✅ Added leave cancellation request metadata without changing the existing leave approval status constraint
+- ✅ Added mobile Form Requests for ESS leave, overtime, and reimbursement payloads
+- ✅ Added secure payslip list and PDF download scoped to the authenticated employee
+- ✅ Updated `docs/api.md` and `docs/improve2.md` with Phase 2 implementation status
+- ✅ Added `Phase2EssMobileApiTest` coverage for ESS ownership, mobile attendance metadata, leave cancellation request, overtime, reimbursement receipt upload, payslip, compliance, and notifications
+
+### **May 5, 2026 - Improve2 Phase 1 Member Self-Service API**
+
+**👥 Kojayaku Member API Improvements:**
+- ✅ Added member savings summary and ledger statement endpoints with running balances
+- ✅ Added member dues invoice and payment history endpoints
+- ✅ Added member payment proof upload flow that creates pending cooperative payments
+- ✅ Added member loan list, application, and detail endpoints with ownership enforcement
+- ✅ Added member SHU, notification, and support ticket endpoints
+- ✅ Added `cooperative_support_tickets` table and model for member complaints/support requests
+- ✅ Updated `docs/api.md` and `docs/improve2.md` with Phase 1 endpoint status
+- ✅ Added `Phase1MemberSelfServiceApiTest` coverage for savings, payments, loans, SHU, notifications, and support tickets
+
+### **May 5, 2026 - Improve2 Phase 0 Mobile API Foundation**
+
+**📱 Mobile API Improvements:**
+- ✅ Added mobile auth endpoints for login, current session, logout, and logout all devices
+- ✅ Added persona-aware Sanctum token abilities for member, ESS, technician, and admin mobile clients
+- ✅ Added initial member self-service API namespace for dashboard and profile
+- ✅ Added initial ESS API namespace for dashboard, profile, geofence, attendance today/history, check-in, and check-out
+- ✅ Updated `docs/api.md` and `docs/improve2.md` to reflect the implemented Phase 0 routes
+- ✅ Added `Phase0MobileApiTest` coverage for auth, token revocation, member ownership, and ESS attendance abilities
+
+### **May 5, 2026 - P0 API Token Rotation Follow-up**
+
+**🔐 Security Improvements:**
+- ✅ Added `POST /api/token/rotate` for rotating the active Sanctum bearer token
+- ✅ Preserved token abilities during rotation and revoked the previous token in the same transaction
+- ✅ Added P0 feature coverage for unauthenticated rotation denial, old token revocation, and new token usability
+- ✅ Synchronized the P0 summary checklist in `docs/improve.md` with completed detailed P0 progress
+
+### **May 5, 2026 - P1 Cooperative UI Consistency Follow-up**
+
+**🏗️ Frontend Consistency Improvements:**
+- ✅ Migrated cooperative points, rewards, and redemptions index tables to the shared `DataTable` component
+- ✅ Reused shared `StatsCard`, `StatusBadge`, and formatter utilities on the points/rewards/redemptions pages
+- ✅ Synchronized the P1 summary checklist in `docs/improve.md` with the completed detailed P1 progress
+
+### **May 5, 2026 - P5 Points & Rewards Redemption Follow-up**
+
+**🎁 Points & Rewards Improvements:**
+- ✅ Added cooperative redemption detail UI for reviewing member, reward, point transaction, delivery, and processing data
+- ✅ Added admin redemption status processing for `PROCESSING`, `SHIPPED`, `DELIVERED`, and `CANCELLED`
+- ✅ Made cancellation refund member points and restore reward stock exactly once
+- ✅ Fixed repeated redemption of the same reward by using each `RewardRedemption` as the point transaction source
+- ✅ Added P5 feature coverage for repeated redemption, admin cancellation refund, and delivered-redemption cancellation guard
 
 ### **May 4, 2026 - P5 Cooperative Loan Module**
 

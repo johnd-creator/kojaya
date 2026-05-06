@@ -41,6 +41,12 @@ class GrnController extends Controller
 
     public function show(GoodsReceiveNote $goodsReceiveNote)
     {
+        abort_unless(
+            auth()->user()?->can('view_grn_all') || auth()->user()?->can('receive_grn'),
+            403,
+            'Unauthorized to view GRNs'
+        );
+
         $grn = $goodsReceiveNote->load('purchaseOrder.items');
 
         // Get all items received for this PO across all GRNs to calculate remaining qty

@@ -43,6 +43,12 @@ class PurchaseOrderController extends Controller
 
     public function show(PurchaseOrder $purchaseOrder)
     {
+        abort_unless(
+            auth()->user()?->can('view_po_all') || auth()->user()?->can('create_po'),
+            403,
+            'Unauthorized to view Purchase Orders'
+        );
+
         $po = $purchaseOrder->load('items', 'purchaseRequest');
 
         return Inertia::render('Procurement/PurchaseOrders/Show', [

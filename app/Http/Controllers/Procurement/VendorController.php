@@ -10,6 +10,8 @@ class VendorController extends Controller
 {
     public function index()
     {
+        $this->authorizePermission('manage_vendors');
+
         $vendors = Vendor::query()
             ->forUser()
             ->orderBy('name')
@@ -19,6 +21,8 @@ class VendorController extends Controller
                 'id' => $v->id,
                 'code' => $v->code,
                 'name' => $v->name,
+                'email' => $v->email,
+                'phone' => $v->phone,
                 'status' => $v->status,
                 'rating' => $v->rating,
             ]);

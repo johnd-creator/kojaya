@@ -13,6 +13,8 @@ class OrganizationController extends Controller
      */
     public function index()
     {
+        $this->authorizePermission('manage_organizations');
+
         // Get organizations with their parent relationship loaded
         $organizations = Organization::with('parent')->orderBy('level')->orderBy('name')->get();
 
@@ -26,6 +28,8 @@ class OrganizationController extends Controller
      */
     public function store(UpsertOrganizationRequest $request)
     {
+        $this->authorizePermission('manage_organizations');
+
         Organization::create($request->validated());
 
         return redirect()->route('organizations.index')->with('success', 'Organization created successfully.');
@@ -36,6 +40,8 @@ class OrganizationController extends Controller
      */
     public function update(UpsertOrganizationRequest $request, string $id)
     {
+        $this->authorizePermission('manage_organizations');
+
         $organization = Organization::findOrFail($id);
 
         $organization->update($request->validated());
@@ -48,6 +54,8 @@ class OrganizationController extends Controller
      */
     public function destroy(string $id)
     {
+        $this->authorizePermission('manage_organizations');
+
         $organization = Organization::findOrFail($id);
 
         // Optional: Prevent deletion if it has children or users

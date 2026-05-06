@@ -147,7 +147,11 @@ class TechnicianApiTest extends TestCase
             ->assertJsonPath('data.status', 'IN_PROGRESS');
 
         // Try complete (should fail)
-        $this->postJson("/api/technician/work-orders/{$wo->id}/complete")
+        $this->postJson("/api/technician/work-orders/{$wo->id}/complete", [
+            'latitude' => -6.2,
+            'longitude' => 106.8,
+            'accuracy' => 10,
+        ])
             ->assertStatus(422);
 
         // Update checklist
@@ -159,7 +163,11 @@ class TechnicianApiTest extends TestCase
             ->assertJsonPath('data.is_checked', true);
 
         // Complete WO (should succeed)
-        $this->postJson("/api/technician/work-orders/{$wo->id}/complete")
+        $this->postJson("/api/technician/work-orders/{$wo->id}/complete", [
+            'latitude' => -6.2,
+            'longitude' => 106.8,
+            'accuracy' => 10,
+        ])
             ->assertStatus(200)
             ->assertJsonPath('data.status', 'COMPLETED');
     }
@@ -205,7 +213,11 @@ class TechnicianApiTest extends TestCase
         ])
             ->assertForbidden();
 
-        $this->postJson("/api/technician/work-orders/{$workOrder->id}/complete")
+        $this->postJson("/api/technician/work-orders/{$workOrder->id}/complete", [
+            'latitude' => -6.2,
+            'longitude' => 106.8,
+            'accuracy' => 10,
+        ])
             ->assertForbidden();
     }
 }

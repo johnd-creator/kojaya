@@ -9,6 +9,7 @@ use App\Models\LoanType;
 use App\Models\Organization;
 use App\Models\PointTransaction;
 use App\Models\Reward;
+use App\Models\RewardRedemption;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -171,6 +172,162 @@ class P5PointsRewardsTest extends TestCase
         $this->assertSame(1, Loan::query()->where('cooperative_member_id', $member->id)->count());
     }
 
+    public function test_member_can_redeem_same_reward_multiple_times(): void
+    {
+        [$user, $member, $organization] = $this->createMemberUser();
+
+        PointTransaction::factory()->create([
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'EARNED',
+            'points' => 1000,
+            'balance_before' => 0,
+            'balance_after' => 1000,
+            'description' => 'Saldo awal poin',
+        ]);
+
+        $reward = Reward::factory()->create([
+            'organization_id' => $organization->id,
+            'points_required' => 500,
+            'stock' => 5,
+        ]);
+
+        $this->actingAs($user)
+            ->post('/member/rewards/'.$reward->id.'/redeem', [
+                'quantity' => 1,
+                'delivery_address' => 'Jl. Anggota No. 10',
+            ])
+            ->assertRedirect();
+
+        $this->actingAs($user)
+            ->post('/member/rewards/'.$reward->id.'/redeem', [
+                'quantity' => 1,
+                'delivery_address' => 'Jl. Anggota No. 10',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(2, RewardRedemption::query()->where('reward_id', $reward->id)->count());
+        $this->assertSame(3, $reward->refresh()->stock);
+        $this->assertDatabaseHas('point_transactions', [
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'REDEEMED',
+            'points' => -500,
+            'balance_after' => 0,
+        ]);
+    }
+
+    public function test_admin_can_view_redemption_detail_and_cancel_refunds_points_and_stock_once(): void
+    {
+        [$user, $member, $organization] = $this->createMemberUser();
+        $admin = $this->createCooperativeAdmin($organization);
+
+        PointTransaction::factory()->create([
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'EARNED',
+            'points' => 1000,
+            'balance_before' => 0,
+            'balance_after' => 1000,
+            'description' => 'Saldo awal poin',
+        ]);
+
+        $reward = Reward::factory()->create([
+            'organization_id' => $organization->id,
+            'points_required' => 400,
+            'stock' => 5,
+        ]);
+
+        $this->actingAs($user)
+            ->post('/member/rewards/'.$reward->id.'/redeem', [
+                'quantity' => 1,
+                'delivery_address' => 'Jl. Anggota No. 10',
+            ])
+            ->assertRedirect();
+
+        $redemption = RewardRedemption::query()->where('reward_id', $reward->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get('/cooperative/redemptions/'.$redemption->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Redemptions/Show')
+                ->where('redemption.id', $redemption->id)
+                ->where('redemption.status', 'PENDING')
+            );
+
+        $this->actingAs($admin)
+            ->put('/cooperative/redemptions/'.$redemption->id.'/status', [
+                'status' => 'CANCELLED',
+                'notes' => 'Stok diganti dengan refund poin',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('reward_redemptions', [
+            'id' => $redemption->id,
+            'status' => 'CANCELLED',
+            'notes' => 'Stok diganti dengan refund poin',
+        ]);
+
+        $this->assertDatabaseHas('point_transactions', [
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'REFUNDED',
+            'points' => 400,
+            'source_type' => RewardRedemption::class,
+            'source_id' => $redemption->id,
+        ]);
+
+        $this->assertSame(5, $reward->refresh()->stock);
+        $this->assertDatabaseHas('point_transactions', [
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'REFUNDED',
+            'points' => 400,
+            'balance_after' => 1000,
+        ]);
+
+        $this->actingAs($admin)
+            ->put('/cooperative/redemptions/'.$redemption->id.'/status', [
+                'status' => 'CANCELLED',
+                'notes' => 'Retry cancel',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, PointTransaction::query()
+            ->where('transaction_type', 'REFUNDED')
+            ->where('source_type', RewardRedemption::class)
+            ->where('source_id', $redemption->id)
+            ->count());
+        $this->assertSame(5, $reward->refresh()->stock);
+    }
+
+    public function test_delivered_redemption_cannot_be_cancelled(): void
+    {
+        [$user, $member, $organization] = $this->createMemberUser();
+        $admin = $this->createCooperativeAdmin($organization);
+
+        $reward = Reward::factory()->create([
+            'organization_id' => $organization->id,
+            'stock' => 5,
+        ]);
+        $redemption = RewardRedemption::factory()->create([
+            'reward_id' => $reward->id,
+            'cooperative_member_id' => $member->id,
+            'status' => 'DELIVERED',
+            'quantity' => 1,
+            'points_used' => 500,
+            'processed_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->put('/cooperative/redemptions/'.$redemption->id.'/status', [
+                'status' => 'CANCELLED',
+            ])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseMissing('point_transactions', [
+            'transaction_type' => 'REFUNDED',
+            'source_id' => $redemption->id,
+        ]);
+        $this->assertSame(5, $reward->refresh()->stock);
+    }
+
     private function createMemberUser(): array
     {
         Role::query()->firstOrCreate(['name' => 'Anggota', 'guard_name' => 'web']);
@@ -188,5 +345,18 @@ class P5PointsRewardsTest extends TestCase
         ]);
 
         return [$user, $member, $organization];
+    }
+
+    private function createCooperativeAdmin(Organization $organization): User
+    {
+        Role::query()->firstOrCreate(['name' => 'Pengurus Koperasi', 'guard_name' => 'web']);
+
+        $admin = User::factory()->create([
+            'organization_id' => $organization->id,
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Pengurus Koperasi');
+
+        return $admin;
     }
 }

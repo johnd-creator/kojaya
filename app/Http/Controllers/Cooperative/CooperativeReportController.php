@@ -26,14 +26,14 @@ class CooperativeReportController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi', 'Anggota']), 403);
+        abort_unless($request->user()?->can('view_cooperative_report'), 403);
 
         return response()->json(['data' => $this->summaryData()]);
     }
 
     public function sales(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi']), 403);
+        abort_unless($request->user()?->can('view_pos_reports'), 403);
 
         return response()->json([
             'data' => PosTransaction::query()

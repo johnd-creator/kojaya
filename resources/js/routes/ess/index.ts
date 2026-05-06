@@ -165,7 +165,7 @@ dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 export const profile = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -180,7 +180,7 @@ profile.definition = {
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 profile.url = (options?: RouteQueryOptions) => {
@@ -189,7 +189,7 @@ profile.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 profile.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -199,7 +199,7 @@ profile.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -209,7 +209,7 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -219,7 +219,7 @@ const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -229,7 +229,7 @@ profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
-* @see app/Http/Controllers/EssPortalController.php:49
+* @see app/Http/Controllers/EssPortalController.php:51
 * @route '/ess/profile'
 */
 profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -246,7 +246,7 @@ profile.form = profileForm
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 export const payslips = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -261,7 +261,7 @@ payslips.definition = {
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 payslips.url = (options?: RouteQueryOptions) => {
@@ -270,7 +270,7 @@ payslips.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 payslips.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -280,7 +280,7 @@ payslips.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 payslips.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -290,7 +290,7 @@ payslips.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 const payslipsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -300,7 +300,7 @@ const payslipsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 payslipsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -310,7 +310,7 @@ payslipsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\EssPortalController::payslips
-* @see app/Http/Controllers/EssPortalController.php:79
+* @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
 */
 payslipsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -327,7 +327,7 @@ payslips.form = payslipsForm
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 export const compliance = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -342,7 +342,7 @@ compliance.definition = {
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 compliance.url = (options?: RouteQueryOptions) => {
@@ -351,7 +351,7 @@ compliance.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 compliance.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -361,7 +361,7 @@ compliance.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 compliance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -371,7 +371,7 @@ compliance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 const complianceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -381,7 +381,7 @@ const complianceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 complianceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -391,7 +391,7 @@ complianceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\EssPortalController::compliance
-* @see app/Http/Controllers/EssPortalController.php:93
+* @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
 */
 complianceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

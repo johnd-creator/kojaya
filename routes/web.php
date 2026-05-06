@@ -15,7 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('notifications', 'Notifications')->name('notifications');
 
     // Audit Logs
-    Route::inertia('audit-logs', 'AuditLogs/Index')->name('audit-logs');
+    Route::inertia('audit-logs', 'AuditLogs/Index')->middleware('can:view_audit_logs')->name('audit-logs');
 
     // Reports
     Route::get('reports', [\App\Http\Controllers\ReportController::class, 'page'])->name('reports');
@@ -112,7 +112,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/payslips', [\App\Http\Controllers\EssPortalController::class, 'payslips'])->name('payslips');
         Route::get('/compliance', [\App\Http\Controllers\EssPortalController::class, 'compliance'])->name('compliance');
     });
-    Route::prefix('member')->name('member.')->group(function () {
+    Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
         Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
@@ -201,6 +201,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'update'])->name('rewards.update');
         Route::delete('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'destroy'])->name('rewards.destroy');
         Route::get('redemptions', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'index'])->name('redemptions.index');
+        Route::get('redemptions/{redemption}', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'show'])->name('redemptions.show');
+        Route::put('redemptions/{redemption}/status', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'updateStatus'])->name('redemptions.update-status');
         Route::get('shu', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'index'])->name('shu.index');
         Route::post('shu/close', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'close'])->name('shu.close');
         Route::get('pos', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'index'])->name('pos.index');

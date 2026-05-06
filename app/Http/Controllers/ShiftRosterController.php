@@ -16,6 +16,8 @@ class ShiftRosterController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_shift_rosters');
+
         $year = (int) ($request->input('year', now()->year));
         $month = (int) ($request->input('month', now()->month));
 
@@ -45,6 +47,8 @@ class ShiftRosterController extends Controller
 
     public function update(UpdateShiftRosterRequest $request, ShiftRoster $shiftRoster): RedirectResponse
     {
+        $this->authorizePermission('manage_shift_rosters');
+
         $validated = $request->validated();
 
         $shiftRoster->update([
@@ -58,6 +62,8 @@ class ShiftRosterController extends Controller
 
     public function generate(GenerateShiftRosterRequest $request): RedirectResponse
     {
+        $this->authorizePermission('manage_shift_rosters');
+
         $validated = $request->validated();
 
         \Artisan::call('shift:generate', [

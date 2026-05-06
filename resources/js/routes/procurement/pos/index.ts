@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
-* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:67
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
 export const fromPr = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ fromPr.definition = {
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
-* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:67
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
 fromPr.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -130,7 +130,7 @@ fromPr.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequ
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
-* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:67
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
 fromPr.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -140,7 +140,7 @@ fromPr.post = (args: { purchaseRequest: string | { id: string } } | [purchaseReq
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
-* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:67
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
 const fromPrForm = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -150,7 +150,7 @@ const fromPrForm = (args: { purchaseRequest: string | { id: string } } | [purcha
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
-* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:67
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
 fromPrForm.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

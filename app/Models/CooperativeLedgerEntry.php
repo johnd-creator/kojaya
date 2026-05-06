@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class CooperativeLedgerEntry extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'cooperative_member_id',
         'cooperative_payment_id',

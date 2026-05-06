@@ -32,6 +32,8 @@ class ReportController extends Controller
 
     public function page(): InertiaResponse
     {
+        $this->authorizePermission('view_reports');
+
         return Inertia::render('Reports', [
             'reports' => Inertia::defer(fn () => $this->reportCatalog(), 'reports'),
         ]);
@@ -39,6 +41,8 @@ class ReportController extends Controller
 
     public function index(): JsonResponse
     {
+        $this->authorizePermission('view_reports');
+
         return Response::json($this->reportCatalog());
     }
 
@@ -116,6 +120,8 @@ class ReportController extends Controller
 
     public function payslip(Request $request, int $employeeId, string $period): HttpResponse
     {
+        $this->authorizePermission('view_reports');
+
         $employee = Employee::findOrFail($employeeId);
         $payroll = Payroll::where('employee_id', $employeeId)
             ->where('period', $period)
@@ -138,6 +144,8 @@ class ReportController extends Controller
 
     public function payrollSummary(Request $request): BinaryFileResponse
     {
+        $this->authorizePermission('view_reports');
+
         $filters = [
             'period_from' => $request->input('period_from'),
             'period_to' => $request->input('period_to'),
@@ -154,6 +162,8 @@ class ReportController extends Controller
 
     public function payrollDetail(Request $request): BinaryFileResponse
     {
+        $this->authorizePermission('view_reports');
+
         $filters = [
             'period' => $request->input('period'),
             'period_from' => $request->input('period_from'),
@@ -170,6 +180,8 @@ class ReportController extends Controller
 
     public function attendanceReport(Request $request): BinaryFileResponse
     {
+        $this->authorizePermission('view_reports');
+
         $filters = [
             'month' => $request->input('month', now()->format('Y-m')),
             'organization_id' => $request->input('organization_id'),
@@ -185,6 +197,8 @@ class ReportController extends Controller
 
     public function leaveReport(Request $request): BinaryFileResponse
     {
+        $this->authorizePermission('view_reports');
+
         $filters = [
             'year' => $request->input('year', now()->year),
             'type' => $request->input('type'),
@@ -201,6 +215,8 @@ class ReportController extends Controller
 
     public function certificateCompliance(Request $request): BinaryFileResponse
     {
+        $this->authorizePermission('view_reports');
+
         $filters = [
             'status' => $request->input('status'),
             'organization_id' => $request->input('organization_id'),
@@ -216,6 +232,8 @@ class ReportController extends Controller
 
     public function mcuCompliance(Request $request): BinaryFileResponse
     {
+        $this->authorizePermission('view_reports');
+
         $filters = [
             'result' => $request->input('result'),
             'organization_id' => $request->input('organization_id'),
@@ -234,6 +252,8 @@ class ReportController extends Controller
      */
     public function consolidatedStats(Request $request): JsonResponse
     {
+        $this->authorizePermission('view_reports');
+
         $stats = $this->consolidatedReportService->getEmployeeStats();
 
         return Response::json([
@@ -247,6 +267,8 @@ class ReportController extends Controller
      */
     public function consolidatedPayroll(ConsolidatedPayrollReportRequest $request): JsonResponse
     {
+        $this->authorizePermission('view_reports');
+
         $validated = $request->validated();
 
         $payroll = $this->consolidatedReportService->getPayrollSummary(
@@ -267,6 +289,8 @@ class ReportController extends Controller
      */
     public function consolidatedAttendance(ConsolidatedAttendanceReportRequest $request): JsonResponse
     {
+        $this->authorizePermission('view_reports');
+
         $validated = $request->validated();
 
         $attendance = $this->consolidatedReportService->getAttendanceStats($validated['month']);

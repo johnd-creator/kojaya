@@ -17,7 +17,7 @@ class CooperativeDuesApiController extends Controller
 
         $query = CooperativeDuesInvoice::query()->with(['member', 'contributionType']);
 
-        if ($request->user()?->hasRole('Anggota')) {
+        if (! $request->user()?->can('manage_cooperative_dues') && $request->user()?->can('view_cooperative_member')) {
             $query->whereHas('member', fn ($query) => $query->where('user_id', $request->user()->id));
         }
 
@@ -39,10 +39,13 @@ class CooperativeDuesApiController extends Controller
 
         abort_unless($user, 401);
 
-        $roles = $managementOnly
-            ? ['System Admin', 'Pengurus Koperasi']
-            : ['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi', 'Anggota'];
-
-        abort_unless($user->hasAnyRole($roles), 403);
+        if ($managementOnly) {
+            abort_unless($user->can('manage_cooperative_dues'), 403);
+        } else {
+            abort_unless(
+                $user->can('manage_cooperative_dues') || $user->can('view_cooperative_member'),
+                403,
+            );
+        }
     }
 }

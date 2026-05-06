@@ -12,6 +12,8 @@ class RoleController extends Controller
 {
     public function index(): Response
     {
+        $this->authorizePermission('manage_roles');
+
         $roles = Role::withCount('users')->get();
 
         return Inertia::render('Role/Index', [
@@ -21,6 +23,8 @@ class RoleController extends Controller
 
     public function edit(Role $role): Response
     {
+        $this->authorizePermission('manage_roles');
+
         // Pass all available permissions grouped by something, or just flat for now
         $permissions = Permission::all();
 
@@ -32,6 +36,8 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, Role $role)
     {
+        $this->authorizePermission('manage_roles');
+
         $validated = $request->validated();
 
         $role->syncPermissions($validated['permissions'] ?? []);

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Budget;
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
@@ -13,6 +14,12 @@ use Tests\TestCase;
 class BudgetControllerTest extends TestCase
 {
     use DatabaseMigrations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+    }
 
     public function test_unit_user_sees_only_own_organization_budgets(): void
     {

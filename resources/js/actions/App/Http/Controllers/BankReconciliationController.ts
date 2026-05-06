@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:12
+* @see app/Http/Controllers/BankReconciliationController.php:11
 * @route '/finance/bank-reconciliation'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 export const show = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 show.url = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -130,7 +130,7 @@ show.url = (args: { batch: string | { id: string } } | [batch: string | { id: st
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 show.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -140,7 +140,7 @@ show.get = (args: { batch: string | { id: string } } | [batch: string | { id: st
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 show.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -150,7 +150,7 @@ show.head = (args: { batch: string | { id: string } } | [batch: string | { id: s
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 const showForm = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -160,7 +160,7 @@ const showForm = (args: { batch: string | { id: string } } | [batch: string | { 
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 showForm.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -170,7 +170,7 @@ showForm.get = (args: { batch: string | { id: string } } | [batch: string | { id
 
 /**
 * @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:23
+* @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
 showForm.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

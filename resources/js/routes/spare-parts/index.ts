@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SparePartController::create
-* @see app/Http/Controllers/SparePartController.php:54
+* @see app/Http/Controllers/SparePartController.php:56
 * @route '/spare-parts/create'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\SparePartController::store
-* @see app/Http/Controllers/SparePartController.php:63
+* @see app/Http/Controllers/SparePartController.php:67
 * @route '/spare-parts'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\SparePartController::store
-* @see app/Http/Controllers/SparePartController.php:63
+* @see app/Http/Controllers/SparePartController.php:67
 * @route '/spare-parts'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SparePartController::store
-* @see app/Http/Controllers/SparePartController.php:63
+* @see app/Http/Controllers/SparePartController.php:67
 * @route '/spare-parts'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SparePartController::store
-* @see app/Http/Controllers/SparePartController.php:63
+* @see app/Http/Controllers/SparePartController.php:67
 * @route '/spare-parts'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\SparePartController::store
-* @see app/Http/Controllers/SparePartController.php:63
+* @see app/Http/Controllers/SparePartController.php:67
 * @route '/spare-parts'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 export const show = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 show.url = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -261,7 +261,7 @@ show.url = (args: { spare_part: string | number } | [spare_part: string | number
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 show.get = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -271,7 +271,7 @@ show.get = (args: { spare_part: string | number } | [spare_part: string | number
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 show.head = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -281,7 +281,7 @@ show.head = (args: { spare_part: string | number } | [spare_part: string | numbe
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 const showForm = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -291,7 +291,7 @@ const showForm = (args: { spare_part: string | number } | [spare_part: string | 
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 showForm.get = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -301,7 +301,7 @@ showForm.get = (args: { spare_part: string | number } | [spare_part: string | nu
 
 /**
 * @see \App\Http\Controllers\SparePartController::show
-* @see app/Http/Controllers/SparePartController.php:70
+* @see app/Http/Controllers/SparePartController.php:76
 * @route '/spare-parts/{spare_part}'
 */
 showForm.head = (args: { spare_part: string | number } | [spare_part: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -610,7 +610,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\SparePartController::updateStock
-* @see app/Http/Controllers/SparePartController.php:79
+* @see app/Http/Controllers/SparePartController.php:87
 * @route '/spare-parts/{id}/stock'
 */
 export const updateStock = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -625,7 +625,7 @@ updateStock.definition = {
 
 /**
 * @see \App\Http\Controllers\SparePartController::updateStock
-* @see app/Http/Controllers/SparePartController.php:79
+* @see app/Http/Controllers/SparePartController.php:87
 * @route '/spare-parts/{id}/stock'
 */
 updateStock.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -652,7 +652,7 @@ updateStock.url = (args: { id: string | number } | [id: string | number ] | stri
 
 /**
 * @see \App\Http\Controllers\SparePartController::updateStock
-* @see app/Http/Controllers/SparePartController.php:79
+* @see app/Http/Controllers/SparePartController.php:87
 * @route '/spare-parts/{id}/stock'
 */
 updateStock.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -662,7 +662,7 @@ updateStock.post = (args: { id: string | number } | [id: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\SparePartController::updateStock
-* @see app/Http/Controllers/SparePartController.php:79
+* @see app/Http/Controllers/SparePartController.php:87
 * @route '/spare-parts/{id}/stock'
 */
 const updateStockForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -672,7 +672,7 @@ const updateStockForm = (args: { id: string | number } | [id: string | number ] 
 
 /**
 * @see \App\Http\Controllers\SparePartController::updateStock
-* @see app/Http/Controllers/SparePartController.php:79
+* @see app/Http/Controllers/SparePartController.php:87
 * @route '/spare-parts/{id}/stock'
 */
 updateStockForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

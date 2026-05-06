@@ -14,6 +14,8 @@ class PositionController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_positions');
+
         $positions = Position::query()
             ->with(['department', 'jobGrade'])
             ->withCount('employees')
@@ -35,6 +37,8 @@ class PositionController extends Controller
 
     public function store(UpsertPositionRequest $request)
     {
+        $this->authorizePermission('manage_positions');
+
         Position::create($request->validated());
 
         return redirect()->route('positions.index')->with('success', 'Position created.');
@@ -42,6 +46,8 @@ class PositionController extends Controller
 
     public function update(UpsertPositionRequest $request, Position $position)
     {
+        $this->authorizePermission('manage_positions');
+
         $position->update($request->validated());
 
         return redirect()->route('positions.index')->with('success', 'Position updated.');
@@ -49,6 +55,8 @@ class PositionController extends Controller
 
     public function destroy(Position $position)
     {
+        $this->authorizePermission('manage_positions');
+
         $position->delete();
 
         return redirect()->route('positions.index')->with('success', 'Position deleted.');

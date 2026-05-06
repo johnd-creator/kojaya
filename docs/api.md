@@ -20,9 +20,9 @@ API untuk admin panel KojayaPro - ERP, POS, Inventori, Akuntansi, Simpan Pinjam.
 API untuk mobile/web app Kojayaku - Simpanan, Pinjaman, Poin, Transaksi, Profil.
 
 ### **Mobile Integrations**
-- **Kojayaku Member App** - `/api/v1/members`, `/api/v1/savings`, `/api/v1/loans`, `/api/v1/points`
+- **Kojayaku Member App** - `/api/v1/member/*`, `/api/v1/loans`, `/api/v1/points`, `/api/v1/rewards`
 - **Technician App** - `/api/technician/*`
-- **ESS App** - `/api/ess/*`, `/api/payrolls`
+- **ESS App** - `/api/ess/*`, `/api/employees/{id}/*`
 
 ---
 
@@ -32,24 +32,31 @@ API untuk mobile/web app Kojayaku - Simpanan, Pinjaman, Poin, Transaksi, Profil.
 
 #### 1. **Login & Get Token**
 ```http
-POST /api/login
+POST /api/auth/login
 Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "your_password"
+  "password": "your_password",
+  "app": "member",
+  "device_name": "Android Phone",
+  "device_id": "device-uuid"
 }
 ```
 
 **Response (200):**
 ```json
 {
+  "token_type": "Bearer",
   "token": "1|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "abilities": ["profile:read", "member:read", "member:write", "cooperative:read", "cooperative:write"],
   "user": {
     "id": "uuid",
     "name": "User Name",
     "email": "user@example.com",
-    "roles": ["Employee"]
+    "roles": ["Anggota"],
+    "employee_id": null,
+    "cooperative_member_id": 1
   }
 }
 ```
@@ -63,8 +70,31 @@ Accept: application/json
 
 #### 3. **Logout (Revoke Token)**
 ```http
-POST /api/logout
+POST /api/auth/logout
 Authorization: Bearer {token}
+```
+
+#### 4. **Logout All Devices**
+```http
+POST /api/auth/logout-all
+Authorization: Bearer {token}
+```
+
+#### 5. **Current Mobile Session**
+```http
+GET /api/auth/session
+Authorization: Bearer {token}
+```
+
+#### 6. **Rotate Current Token**
+```http
+POST /api/token/rotate
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "device_name": "Android Phone"
+}
 ```
 
 ---
@@ -94,19 +124,86 @@ Authorization: Bearer {token}
 
 ---
 
+## 👥 Kojayaku Member Self-Service API
+
+**Base Path:** `/api/v1/member`
+
+All endpoints require `auth:sanctum`. Read endpoints require `member:read`; write endpoints require `member:write`.
+
+### **Dashboard**
+```http
+GET /api/v1/member/dashboard
+Authorization: Bearer {token}
+```
+
+Returns member profile, savings balance, pending invoices, active loans, loan outstanding, points balance, tier, and unread notifications.
+
+### **Profile**
+```http
+GET /api/v1/member/profile
+PUT /api/v1/member/profile
+Authorization: Bearer {token}
+```
+
+### **Savings**
+```http
+GET /api/v1/member/savings/summary
+GET /api/v1/member/savings/ledger?start_date=2026-01-01&end_date=2026-05-31
+Authorization: Bearer {token}
+```
+
+`summary` returns total balance, grouped ledger totals, total approved payments, pending invoice count, and remaining unpaid invoice amount. `ledger` returns statement entries with running balance.
+
+### **Dues and Payments**
+```http
+GET /api/v1/member/dues/invoices
+GET /api/v1/member/payments
+POST /api/v1/member/payments/proof
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+
+Payment proof fields: `cooperative_dues_invoice_id`, `amount`, `payment_method` (`TRANSFER` or `QRIS`), `paid_at`, optional `reference_no`, optional `notes`, and `proof` (`jpg`, `png`, or `pdf`).
+
+### **Loans**
+```http
+GET /api/v1/member/loans
+POST /api/v1/member/loans
+GET /api/v1/member/loans/{loan}
+Authorization: Bearer {token}
+```
+
+Loan applications reuse the cooperative loan calculator/service and return the generated installment schedule. Members can only access loans linked to their own member profile.
+
+### **SHU, Notifications, and Support**
+```http
+GET /api/v1/member/shu
+GET /api/v1/member/notifications
+GET /api/v1/member/support-tickets
+POST /api/v1/member/support-tickets
+Authorization: Bearer {token}
+```
+
+Support ticket fields: `subject`, `message`, optional `category` (`GENERAL`, `PAYMENT`, `LOAN`, `SAVINGS`, `POINTS`, `PROFILE`, `POS`), and optional `priority` (`LOW`, `NORMAL`, `HIGH`, `URGENT`).
+
+---
+
 ## 🔧 Technician Work Orders API
 
 **Base Path:** `/api/technician`
 
 ### **List Work Orders**
 ```http
-GET /api/technician/work-orders
+GET /api/technician/work-orders?status=OPEN&priority=HIGH&scheduled_date=2026-05-06&per_page=15
 Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
-- `status` (optional): `OPEN`, `IN_PROGRESS`, `COMPLETED`
-- `page` (optional): Page number for pagination
+- `status` (optional): `OPEN`, `IN_PROGRESS`, `COMPLETED`, `CLOSED`
+- `priority` (optional): `LOW`, `MEDIUM`, `HIGH`, `EMERGENCY`
+- `scheduled_date` (optional): `YYYY-MM-DD`
+- `per_page` (optional): page size, default `15`
+- `page` (optional): page number
 
 **Response (200):**
 ```json
@@ -137,7 +234,8 @@ Authorization: Bearer {token}
   "meta": {
     "current_page": 1,
     "per_page": 15,
-    "total": 45
+    "total": 45,
+    "last_page": 3
   }
 }
 ```
@@ -152,6 +250,13 @@ Authorization: Bearer {token}
 ```http
 POST /api/technician/work-orders/{id}/start
 Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "latitude": -6.2088,
+  "longitude": 106.8456,
+  "accuracy": 12
+}
 ```
 
 **Response (200):**
@@ -170,6 +275,14 @@ Authorization: Bearer {token}
 ```http
 POST /api/technician/work-orders/{id}/complete
 Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "latitude": -6.2088,
+  "longitude": 106.8456,
+  "accuracy": 10,
+  "notes": "Pekerjaan selesai dan mesin normal"
+}
 ```
 
 **Response (200):**
@@ -179,7 +292,10 @@ Authorization: Bearer {token}
   "data": {
     "id": "uuid",
     "status": "COMPLETED",
-    "completed_at": "2026-05-02T17:00:00Z"
+    "completed_at": "2026-05-02T17:00:00Z",
+    "completion_latitude": "-6.2088000",
+    "completion_longitude": "106.8456000",
+    "completion_notes": "Pekerjaan selesai dan mesin normal"
   }
 }
 ```
@@ -199,10 +315,68 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "completed": true,
+  "is_checked": true,
   "notes": "Filter replaced with new one"
 }
 ```
+
+### **Upload Work Order Evidence**
+```http
+POST /api/technician/work-orders/{id}/attachments
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+
+Fields: `type` (`BEFORE`, `AFTER`, `OTHER`), `file` (`jpg`, `png`, or `pdf`), optional `latitude`, `longitude`, `accuracy`, and `notes`.
+
+### **Record Spare Part Usage**
+```http
+POST /api/technician/work-orders/{id}/parts
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "spare_part_id": "uuid",
+  "warehouse_id": "uuid",
+  "quantity_used": 2,
+  "notes": "Ganti seal"
+}
+```
+
+### **Offline Sync**
+```http
+POST /api/technician/work-orders/{id}/sync
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "idempotency_key": "offline-001",
+  "checklists": [
+    {"id": "uuid", "is_checked": true, "notes": "Checked offline"}
+  ],
+  "parts": [
+    {"spare_part_id": "uuid", "warehouse_id": "uuid", "quantity_used": 1}
+  ],
+  "completion": {
+    "latitude": -6.2088,
+    "longitude": 106.8456,
+    "accuracy": 10,
+    "notes": "Completed offline"
+  }
+}
+```
+
+Repeated submit with the same `idempotency_key` for the same technician and work order returns the stored response and does not duplicate parts/checklist actions.
+
+### **Timeline, Escalation, and Reopen**
+```http
+GET /api/technician/work-orders/{id}/timeline
+POST /api/technician/work-orders/{id}/escalate
+POST /api/technician/work-orders/{id}/reopen
+Authorization: Bearer {token}
+```
+
+Escalation fields: `type` (`BLOCKED`, `NEED_PART`, `NEED_SUPERVISOR`, `REASSIGNMENT`, `SAFETY_RISK`, `OTHER`), `reason`, optional `reassignment_requested_to`. Reopen requires `work-orders:review` ability and moves completed/closed work orders back to `IN_PROGRESS`.
 
 ---
 
@@ -1013,6 +1187,18 @@ Authorization: Bearer {token}
 ## 👤 Employee Self Service API
 
 **Base Path:** `/api/ess` and `/api/employees/{id}`
+**Auth:** Sanctum bearer token
+**Abilities:** `ess:read`, `ess:write`, `attendance:read`, `attendance:write`
+
+### **Dashboard & Profile**
+```http
+GET /api/ess/dashboard
+GET /api/ess/profile
+PUT /api/ess/profile
+Authorization: Bearer {token}
+```
+
+Dashboard mengembalikan profil karyawan, absensi hari ini, shift hari ini, statistik cuti/lembur/reimbursement, payroll terakhir, dan status compliance ringkas.
 
 ### **Attendance Check-In**
 ```http
@@ -1033,10 +1219,21 @@ Content-Type: application/json
 {
   "ok": true,
   "data": {
-    "id": "uuid",
-    "check_in_time": "2026-05-02T08:00:00Z",
-    "location": "HQ Office",
-    "status": "PRESENT"
+    "id": 1,
+    "employee_id": 10,
+    "date": "2026-05-06T00:00:00.000000Z",
+    "clock_in": "08:00:00",
+    "clock_in_latitude": "-6.2088000",
+    "clock_in_longitude": "106.8456000",
+    "clock_in_accuracy": "10.50",
+    "clock_in_device_id": "device-uuid",
+    "status": "PRESENT",
+    "mobile_audit": {
+      "check_in": {
+        "at": "2026-05-06T08:00:00+07:00",
+        "device_id": "device-uuid"
+      }
+    }
   }
 }
 ```
@@ -1047,6 +1244,13 @@ Content-Type: application/json
   "ok": false,
   "error": "Location outside geofence. Distance: 1.2km from office."
 }
+```
+
+### **Attendance Today & History**
+```http
+GET /api/ess/attendance/today
+GET /api/ess/attendance/history?per_page=15
+Authorization: Bearer {token}
 ```
 
 ### **Attendance Check-Out**
@@ -1063,6 +1267,8 @@ Content-Type: application/json
 }
 ```
 
+Check-out menyimpan `clock_out_latitude`, `clock_out_longitude`, `clock_out_accuracy`, `clock_out_device_id`, dan audit mobile.
+
 ### **Get Geofence Data**
 ```http
 GET /api/ess/geofence
@@ -1075,56 +1281,80 @@ Authorization: Bearer {token}
   "data": {
     "latitude": -6.2088,
     "longitude": 106.8456,
-    "radius": 500,
-    "location_name": "HQ Office"
+    "radius": 500
   }
 }
 ```
 
-### **List Leave Requests**
+### **Shift Roster**
 ```http
-GET /api/leaves/self-service
+GET /api/ess/shift-roster?from=2026-05-06&to=2026-05-20
 Authorization: Bearer {token}
 ```
 
-**Response (200):**
+Mengembalikan roster berdasarkan `employee.shift_group` dan relasi `workShift`.
+
+### **Leave Requests**
+```http
+GET /api/ess/leaves?per_page=15
+POST /api/ess/leaves
+POST /api/ess/leaves/{leave}/cancel
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+
+Create payload:
 ```json
 {
-  "data": [
-    {
-      "id": "uuid",
-      "leave_type": "ANNUAL",
-      "start_date": "2026-05-10",
-      "end_date": "2026-05-12",
-      "days": 3,
-      "reason": "Family event",
-      "status": "PENDING"
-    }
-  ]
-}
-```
-
-### **Create Leave Request**
-```http
-POST /api/leaves/self-service
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "leave_type_id": "uuid",
+  "leave_type_id": 1,
   "start_date": "2026-05-10",
   "end_date": "2026-05-12",
-  "reason": "Attending family event"
+  "reason": "Attending family event",
+  "attachment": "optional jpg/png/pdf"
 }
 ```
 
-### **Download Payslip PDF**
+List response menyertakan `balance` per jenis cuti. Cancellation menyimpan `cancel_requested_at`, `cancel_requested_by`, dan `cancel_reason`; status approval lama tetap mengikuti constraint `Pending`, `Approved`, `Rejected`.
+
+### **Overtime**
 ```http
-GET /api/payrolls/{payroll}/download-pdf
+GET /api/ess/overtime?per_page=15
+POST /api/ess/overtime
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+Create payload:
+```json
+{
+  "overtime_rule_id": 1,
+  "date": "2026-05-06",
+  "start_time": "18:00",
+  "end_time": "20:00",
+  "reason": "Closing bulanan"
+}
+```
+
+### **Reimbursements**
+```http
+GET /api/ess/reimbursements?per_page=15
+POST /api/ess/reimbursements
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+
+Create payload memakai `items[]` dengan `category`, `description`, `amount`, `receipt_date`, dan `receipt_file` opsional. Semua reimbursement scoped ke user pemilik token.
+
+### **Payslips, Compliance, Notifications**
+```http
+GET /api/ess/payslips?per_page=12
+GET /api/ess/payslips/{payroll}/download
+GET /api/ess/compliance
+GET /api/ess/notifications?per_page=15
 Authorization: Bearer {token}
 ```
 
-**Response:** PDF file download
+Payslip hanya mengembalikan atau mengunduh payroll milik employee yang statusnya `PROCESSED` atau `PAID`. Compliance mengembalikan certificate dan medical checkup milik employee. Notifications memakai Laravel database notifications milik user login.
 
 ---
 

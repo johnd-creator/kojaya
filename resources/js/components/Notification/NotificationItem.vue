@@ -156,7 +156,7 @@ const handleClick = async () => {
       class="flex shrink-0 items-center justify-center rounded-full p-2"
       :class="[iconData.bgClass, iconData.colorClass]"
     >
-      <component :is="IconComponent" class="h-4 w-4" />
+      <span class="contents"><component :is="IconComponent" class="h-4 w-4" /></span>
     </div>
 
     <div class="min-w-0 flex-1">

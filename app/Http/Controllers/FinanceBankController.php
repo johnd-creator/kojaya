@@ -14,6 +14,8 @@ class FinanceBankController extends Controller
 {
     public function index()
     {
+        $this->authorizePermission('manage_bank_batch');
+
         $batches = BankTransferBatch::orderBy('created_at', 'desc')->get();
 
         return inertia('Finance/BankBatches/Index', [
@@ -23,6 +25,8 @@ class FinanceBankController extends Controller
 
     public function store(StoreBankTransferBatchRequest $request)
     {
+        $this->authorizePermission('manage_bank_batch');
+
         $validated = $request->validated();
 
         $batch = BankTransferBatch::create([
@@ -53,6 +57,8 @@ class FinanceBankController extends Controller
 
     public function export(BankTransferBatch $batch, BankFileGenerator $generator)
     {
+        $this->authorizePermission('manage_bank_batch');
+
         $batch->load('items');
         $csv = $generator->generateCsv($batch);
         $filename = 'bank_batch_'.$batch->id.'.csv';
@@ -65,6 +71,8 @@ class FinanceBankController extends Controller
 
     public function reconcile(ReconcileBankStatementRequest $request)
     {
+        $this->authorizePermission('manage_bank_reconciliation');
+
         $validated = $request->validated();
 
         $lines = array_filter(array_map('trim', explode("\n", $validated['statement_csv'])));

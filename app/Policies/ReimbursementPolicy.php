@@ -9,16 +9,17 @@ class ReimbursementPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Finance Pusat', 'Finance Unit', 'Employee']);
+        return $this->can($user, 'manage_reimbursement')
+            || $this->can($user, 'access_ess_portal');
     }
 
     public function update(User $user, Reimbursement $reimbursement): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'Finance Pusat', 'Finance Unit']);
+        return $this->can($user, 'manage_reimbursement');
     }
 
     public function approve(User $user, Reimbursement $reimbursement): bool
     {
-        return $this->update($user, $reimbursement);
+        return $this->can($user, 'approve_reimbursement');
     }
 }

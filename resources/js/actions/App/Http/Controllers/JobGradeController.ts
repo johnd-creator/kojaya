@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\JobGradeController::store
-* @see app/Http/Controllers/JobGradeController.php:21
+* @see app/Http/Controllers/JobGradeController.php:23
 * @route '/job-grades'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\JobGradeController::store
-* @see app/Http/Controllers/JobGradeController.php:21
+* @see app/Http/Controllers/JobGradeController.php:23
 * @route '/job-grades'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\JobGradeController::store
-* @see app/Http/Controllers/JobGradeController.php:21
+* @see app/Http/Controllers/JobGradeController.php:23
 * @route '/job-grades'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\JobGradeController::store
-* @see app/Http/Controllers/JobGradeController.php:21
+* @see app/Http/Controllers/JobGradeController.php:23
 * @route '/job-grades'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\JobGradeController::store
-* @see app/Http/Controllers/JobGradeController.php:21
+* @see app/Http/Controllers/JobGradeController.php:23
 * @route '/job-grades'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -417,7 +417,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 export const update = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -432,7 +432,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 update.url = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -459,7 +459,7 @@ update.url = (args: { job_grade: string | number } | [job_grade: string | number
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 update.put = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -469,7 +469,7 @@ update.put = (args: { job_grade: string | number } | [job_grade: string | number
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 update.patch = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -479,7 +479,7 @@ update.patch = (args: { job_grade: string | number } | [job_grade: string | numb
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 const updateForm = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const updateForm = (args: { job_grade: string | number } | [job_grade: string | 
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 updateForm.put = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -509,7 +509,7 @@ updateForm.put = (args: { job_grade: string | number } | [job_grade: string | nu
 
 /**
 * @see \App\Http\Controllers\JobGradeController::update
-* @see app/Http/Controllers/JobGradeController.php:28
+* @see app/Http/Controllers/JobGradeController.php:32
 * @route '/job-grades/{job_grade}'
 */
 updateForm.patch = (args: { job_grade: string | number } | [job_grade: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -42,14 +42,14 @@ const { isCurrentUrl } = useCurrentUrl();
           <SidebarMenuItem>
             <CollapsibleTrigger as-child>
               <SidebarMenuButton :tooltip="item.title">
-                <component :is="item.icon" v-if="item.icon" />
+                <span v-if="item.icon" class="shrink-0"><component :is="item.icon" /></span>
                 <span>{{ item.title }}</span>
                 <ChevronRight
                   class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                 />
               </SidebarMenuButton>
             </CollapsibleTrigger>
-            <CollapsibleContent>
+            <CollapsibleContent class="overflow-hidden">
               <SidebarMenuSub>
                 <SidebarMenuSubItem
                   v-for="subItem in item.items"
@@ -76,7 +76,7 @@ const { isCurrentUrl } = useCurrentUrl();
             :tooltip="item.title"
           >
             <Link :href="item.href">
-              <component :is="item.icon" v-if="item.icon" />
+              <span v-if="item.icon" class="shrink-0"><component :is="item.icon" /></span>
               <span>{{ item.title }}</span>
             </Link>
           </SidebarMenuButton>

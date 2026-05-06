@@ -95,6 +95,11 @@ class CooperativeMember extends Model
         return $this->hasMany(CooperativeLedgerEntry::class);
     }
 
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(CooperativeSupportTicket::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'ACTIVE');

@@ -8,8 +8,8 @@ use App\Models\LeaveType;
 use App\Models\Organization;
 use App\Models\User;
 use Carbon\Carbon;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class LeaveManagementTest extends TestCase
@@ -20,8 +20,7 @@ class LeaveManagementTest extends TestCase
     {
         parent::setUp();
 
-        Role::create(['name' => 'Employee', 'guard_name' => 'web']);
-        Role::create(['name' => 'HR Unit', 'guard_name' => 'web']);
+        $this->seed(RolePermissionSeeder::class);
     }
 
     public function test_employee_can_submit_leave_request_and_working_days_are_calculated(): void

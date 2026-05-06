@@ -417,7 +417,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 export const update = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -432,7 +432,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 update.url = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -459,7 +459,7 @@ update.url = (args: { shift_roster: string | number } | [shift_roster: string | 
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 update.put = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -469,7 +469,7 @@ update.put = (args: { shift_roster: string | number } | [shift_roster: string | 
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 update.patch = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -479,7 +479,7 @@ update.patch = (args: { shift_roster: string | number } | [shift_roster: string 
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 const updateForm = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const updateForm = (args: { shift_roster: string | number } | [shift_roster: str
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 updateForm.put = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -509,7 +509,7 @@ updateForm.put = (args: { shift_roster: string | number } | [shift_roster: strin
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::update
-* @see app/Http/Controllers/ShiftRosterController.php:46
+* @see app/Http/Controllers/ShiftRosterController.php:48
 * @route '/shift-rosters/{shift_roster}'
 */
 updateForm.patch = (args: { shift_roster: string | number } | [shift_roster: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -610,7 +610,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::generate
-* @see app/Http/Controllers/ShiftRosterController.php:59
+* @see app/Http/Controllers/ShiftRosterController.php:63
 * @route '/shift-rosters/generate'
 */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -625,7 +625,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::generate
-* @see app/Http/Controllers/ShiftRosterController.php:59
+* @see app/Http/Controllers/ShiftRosterController.php:63
 * @route '/shift-rosters/generate'
 */
 generate.url = (options?: RouteQueryOptions) => {
@@ -634,7 +634,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::generate
-* @see app/Http/Controllers/ShiftRosterController.php:59
+* @see app/Http/Controllers/ShiftRosterController.php:63
 * @route '/shift-rosters/generate'
 */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -644,7 +644,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::generate
-* @see app/Http/Controllers/ShiftRosterController.php:59
+* @see app/Http/Controllers/ShiftRosterController.php:63
 * @route '/shift-rosters/generate'
 */
 const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -654,7 +654,7 @@ const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\ShiftRosterController::generate
-* @see app/Http/Controllers/ShiftRosterController.php:59
+* @see app/Http/Controllers/ShiftRosterController.php:63
 * @route '/shift-rosters/generate'
 */
 generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

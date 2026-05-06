@@ -11,7 +11,6 @@ use App\Models\OvertimeRule;
 use App\Models\Reimbursement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class P1FormRequestValidationTest extends TestCase
@@ -108,8 +107,6 @@ class P1FormRequestValidationTest extends TestCase
 
     private function createUserWithRole(string $roleName, Organization $organization): User
     {
-        Role::findOrCreate($roleName, 'web');
-
         $user = User::factory()->create([
             'organization_id' => $organization->id,
         ]);

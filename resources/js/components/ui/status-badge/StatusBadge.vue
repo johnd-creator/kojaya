@@ -41,6 +41,10 @@ const variant = computed(() => {
       "PUBLISHED",
       "VERIFIED",
       "PRESENT",
+      "RECEIVED",
+      "RECEIVED_FULL",
+      "ISSUED",
+      "PO_CREATED",
     ].includes(status)
   ) {
     return "success";
@@ -74,9 +78,13 @@ const variant = computed(() => {
       "ONGOING",
       "SICK",
       "HIGH",
+      "APPROVAL_L1",
+      "APPROVAL_L2",
+      "APPROVAL_L3",
+      "RECEIVED_PARTIAL",
     ].includes(status)
   ) {
-    return "warning"; // or info depending on preference
+    return "warning";
   }
 
   if (["PLANNING", "PROCESSED", "OPEN", "LEAVE", "MEDIUM"].includes(status)) {

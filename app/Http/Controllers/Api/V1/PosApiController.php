@@ -13,7 +13,7 @@ class PosApiController extends Controller
 {
     public function products(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi']), 403);
+        abort_unless($request->user()?->can('access_cooperative_pos'), 403);
 
         return response()->json([
             'data' => PosProduct::query()
@@ -34,7 +34,7 @@ class PosApiController extends Controller
 
     public function store(StorePosTransactionRequest $request, PosTransactionService $service): JsonResponse
     {
-        abort_unless($request->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi', 'Kasir Koperasi']), 403);
+        abort_unless($request->user()?->can('access_cooperative_pos'), 403);
 
         return response()->json([
             'data' => $service->create($request->validated(), $request->user()),

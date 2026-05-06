@@ -1,3 +1,4 @@
+import MemberSelfServiceController from './MemberSelfServiceController'
 import CooperativeMemberApiController from './CooperativeMemberApiController'
 import CooperativeDuesApiController from './CooperativeDuesApiController'
 import CooperativePaymentApiController from './CooperativePaymentApiController'
@@ -7,6 +8,7 @@ import RewardApiController from './RewardApiController'
 import PosApiController from './PosApiController'
 
 const V1 = {
+    MemberSelfServiceController: Object.assign(MemberSelfServiceController, MemberSelfServiceController),
     CooperativeMemberApiController: Object.assign(CooperativeMemberApiController, CooperativeMemberApiController),
     CooperativeDuesApiController: Object.assign(CooperativeDuesApiController, CooperativeDuesApiController),
     CooperativePaymentApiController: Object.assign(CooperativePaymentApiController, CooperativePaymentApiController),

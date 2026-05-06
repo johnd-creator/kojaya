@@ -17,7 +17,16 @@ class RewardRedemptionFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'reward_id' => \App\Models\Reward::factory(),
+            'cooperative_member_id' => \App\Models\CooperativeMember::factory(),
+            'point_transaction_id' => null,
+            'quantity' => 1,
+            'points_used' => fake()->numberBetween(100, 1000),
+            'delivery_address' => fake()->optional()->address(),
+            'status' => 'PENDING',
+            'notes' => null,
+            'redeemed_at' => now(),
+            'processed_at' => null,
         ];
     }
 }

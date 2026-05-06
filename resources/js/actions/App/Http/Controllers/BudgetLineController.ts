@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\BudgetLineController::store
-* @see app/Http/Controllers/BudgetLineController.php:22
+* @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
 export const store = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::store
-* @see app/Http/Controllers/BudgetLineController.php:22
+* @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
 store.url = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ store.url = (args: { budget: string | { id: string } } | [budget: string | { id:
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::store
-* @see app/Http/Controllers/BudgetLineController.php:22
+* @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
 store.post = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -59,7 +59,7 @@ store.post = (args: { budget: string | { id: string } } | [budget: string | { id
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::store
-* @see app/Http/Controllers/BudgetLineController.php:22
+* @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
 const storeForm = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -69,7 +69,7 @@ const storeForm = (args: { budget: string | { id: string } } | [budget: string |
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::store
-* @see app/Http/Controllers/BudgetLineController.php:22
+* @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
 storeForm.post = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -81,7 +81,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::update
-* @see app/Http/Controllers/BudgetLineController.php:46
+* @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
 export const update = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -96,7 +96,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::update
-* @see app/Http/Controllers/BudgetLineController.php:46
+* @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
 update.url = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -126,7 +126,7 @@ update.url = (args: { budget: string | { id: string }, line: string | { id: stri
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::update
-* @see app/Http/Controllers/BudgetLineController.php:46
+* @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
 update.put = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -136,7 +136,7 @@ update.put = (args: { budget: string | { id: string }, line: string | { id: stri
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::update
-* @see app/Http/Controllers/BudgetLineController.php:46
+* @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
 const updateForm = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -151,7 +151,7 @@ const updateForm = (args: { budget: string | { id: string }, line: string | { id
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::update
-* @see app/Http/Controllers/BudgetLineController.php:46
+* @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
 updateForm.put = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -168,7 +168,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::destroy
-* @see app/Http/Controllers/BudgetLineController.php:71
+* @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
 export const destroy = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -183,7 +183,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::destroy
-* @see app/Http/Controllers/BudgetLineController.php:71
+* @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
 destroy.url = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions) => {
@@ -213,7 +213,7 @@ destroy.url = (args: { budget: string | { id: string }, line: string | { id: str
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::destroy
-* @see app/Http/Controllers/BudgetLineController.php:71
+* @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
 destroy.delete = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -223,7 +223,7 @@ destroy.delete = (args: { budget: string | { id: string }, line: string | { id: 
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::destroy
-* @see app/Http/Controllers/BudgetLineController.php:71
+* @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
 const destroyForm = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -238,7 +238,7 @@ const destroyForm = (args: { budget: string | { id: string }, line: string | { i
 
 /**
 * @see \App\Http\Controllers\BudgetLineController::destroy
-* @see app/Http/Controllers/BudgetLineController.php:71
+* @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
 destroyForm.delete = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

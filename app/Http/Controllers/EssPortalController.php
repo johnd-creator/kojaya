@@ -6,8 +6,8 @@ use App\Http\Requests\UpdateEssProfileRequest;
 use App\Models\Attendance;
 use App\Models\Leave;
 use App\Models\Payroll;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,6 +15,8 @@ class EssPortalController extends Controller
 {
     public function dashboard(Request $request): Response
     {
+        $this->authorizePermission('access_ess_portal');
+
         $employee = $this->employeeOrAbort($request);
 
         $latestPayroll = Payroll::query()
@@ -48,6 +50,8 @@ class EssPortalController extends Controller
 
     public function profile(Request $request): Response
     {
+        $this->authorizePermission('access_ess_portal');
+
         $employee = $this->employeeOrAbort($request);
 
         return Inertia::render('ESS/Profile', [
@@ -58,6 +62,8 @@ class EssPortalController extends Controller
 
     public function updateProfile(UpdateEssProfileRequest $request): RedirectResponse
     {
+        $this->authorizePermission('access_ess_portal');
+
         $employee = $this->employeeOrAbort($request);
         $user = $request->user();
         $validated = $request->validated();
@@ -78,6 +84,8 @@ class EssPortalController extends Controller
 
     public function payslips(Request $request): Response
     {
+        $this->authorizePermission('access_ess_portal');
+
         $employee = $this->employeeOrAbort($request);
 
         return Inertia::render('ESS/Payslips', [
@@ -92,6 +100,8 @@ class EssPortalController extends Controller
 
     public function compliance(Request $request): Response
     {
+        $this->authorizePermission('access_ess_portal');
+
         $employee = $this->employeeOrAbort($request);
 
         return Inertia::render('ESS/Compliance', [

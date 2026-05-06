@@ -182,7 +182,7 @@ class InvoiceController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->hasAnyRole(['Finance Pusat', 'Admin Pusat', 'System Admin'])) {
+        if (! $user->can('manage_chart_of_accounts')) {
             abort(403, 'You do not have permission to approve invoices.');
         }
 
@@ -204,7 +204,7 @@ class InvoiceController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->hasAnyRole(['Finance Pusat', 'Admin Pusat', 'System Admin'])) {
+        if (! $user->can('manage_chart_of_accounts')) {
             abort(403, 'You do not have permission to reject invoices.');
         }
 
@@ -247,7 +247,7 @@ class InvoiceController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if ($user->hasAnyRole(['System Admin', 'Admin Pusat', 'Finance Pusat'])) {
+        if ($user->can('view_invoice_all')) {
             return;
         }
 

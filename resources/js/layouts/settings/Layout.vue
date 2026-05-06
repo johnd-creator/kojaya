@@ -58,7 +58,7 @@ const { isCurrentUrl } = useCurrentUrl();
             as-child
           >
             <Link :href="item.href">
-              <component :is="item.icon" class="h-4 w-4" />
+              <span class="shrink-0"><component :is="item.icon" class="h-4 w-4" /></span>
               {{ item.title }}
             </Link>
           </Button>

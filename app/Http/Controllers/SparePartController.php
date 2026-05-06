@@ -13,6 +13,8 @@ class SparePartController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizePermission('manage_spare_parts');
+
         $categoryId = $request->query('category');
         $lowStock = $request->query('low_stock');
 
@@ -53,6 +55,8 @@ class SparePartController extends Controller
 
     public function create()
     {
+        $this->authorizePermission('manage_spare_parts');
+
         $organizations = \App\Models\Organization::orderBy('name')->get();
 
         return Inertia::render('SpareParts/Create', [
@@ -62,6 +66,8 @@ class SparePartController extends Controller
 
     public function store(StoreSparePartRequest $request)
     {
+        $this->authorizePermission('manage_spare_parts');
+
         SparePart::create($request->validated());
 
         return redirect()->route('spare-parts.index')->with('success', 'Spare part created successfully.');
@@ -69,6 +75,8 @@ class SparePartController extends Controller
 
     public function show(string $id)
     {
+        $this->authorizePermission('manage_spare_parts');
+
         $sparePart = SparePart::with(['organization', 'stocks.warehouse'])->findOrFail($id);
 
         return Inertia::render('SpareParts/Show', [
@@ -78,6 +86,8 @@ class SparePartController extends Controller
 
     public function updateStock(UpdateSparePartStockRequest $request, string $id)
     {
+        $this->authorizePermission('manage_spare_parts');
+
         $validated = $request->validated();
 
         $sparePart = SparePart::findOrFail($id);

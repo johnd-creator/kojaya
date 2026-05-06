@@ -29,6 +29,7 @@ import { request } from "@/routes/password";
 defineProps<{
   status?: string;
   canResetPassword: boolean;
+  canRegister: boolean;
 }>();
 
 const passwordVisible = ref(false);
@@ -297,7 +298,19 @@ const modules = [
           </Form>
 
           <div
-            class="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-200 pt-5 text-xs font-medium text-slate-600 sm:text-sm"
+            v-if="canRegister"
+            class="mt-5 flex items-center justify-center border-t border-slate-200 pt-5"
+          >
+            <TextLink
+              href="/register"
+              class="text-sm font-bold text-[#087a28] no-underline hover:text-[#0b8f2e] hover:underline"
+            >
+              Belum punya akun anggota? Daftar di sini
+            </TextLink>
+          </div>
+
+          <div
+            class="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-200 pt-5 text-xs font-medium text-slate-600 sm:text-sm"
           >
             <span class="inline-flex items-center gap-2">
               <ShieldCheck class="size-4 text-[#0b8f2e]" />

@@ -16,16 +16,6 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class BudgetController extends Controller
 {
-    protected function allAccessRoles(): array
-    {
-        return [
-            'System Admin',
-            'Admin Pusat',
-            'Finance Pusat',
-            'HR Pusat',
-        ];
-    }
-
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -33,10 +23,10 @@ class BudgetController extends Controller
         $budgets = Budget::query()
             ->with('organization')
             ->withCount('lines')
-            ->when(! $user->hasAnyRole($this->allAccessRoles()), function ($q) use ($user) {
+            ->when(! $user->can('view_budget_all'), function ($q) use ($user) {
                 $q->where('organization_id', $user->organization_id);
             })
-            ->when($request->filled('organization_id') && $user->hasAnyRole($this->allAccessRoles()), function ($q) use ($request) {
+            ->when($request->filled('organization_id') && $user->can('view_budget_all'), function ($q) use ($request) {
                 $q->where('organization_id', $request->input('organization_id'));
             })
             ->when($request->filled('year'), function ($q) use ($request) {
@@ -50,7 +40,7 @@ class BudgetController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $organizations = $user->hasAnyRole($this->allAccessRoles())
+        $organizations = $user->can('view_budget_all')
             ? Organization::orderBy('name')->get(['id', 'code', 'name'])
             : Organization::whereKey($user->organization_id)->get(['id', 'code', 'name']);
 
@@ -59,7 +49,7 @@ class BudgetController extends Controller
             'organizations' => $organizations,
             'filters' => $request->only(['organization_id', 'year', 'status']),
             'can' => [
-                'selectOrganization' => $user->hasAnyRole($this->allAccessRoles()),
+                'selectOrganization' => $user->can('view_budget_all'),
             ],
         ]);
     }
@@ -70,7 +60,7 @@ class BudgetController extends Controller
 
         $validated = $request->validated();
 
-        $organizationId = $user->hasAnyRole($this->allAccessRoles())
+        $organizationId = $user->can('view_budget_all')
             ? ($validated['organization_id'] ?? $user->organization_id)
             : $user->organization_id;
 
@@ -112,7 +102,7 @@ class BudgetController extends Controller
                 ->orderBy('project_code')
                 ->get(['id', 'project_code', 'name']),
             'can' => [
-                'edit' => Auth::user()?->hasAnyRole($this->allAccessRoles()) || $budget->organization_id === Auth::user()?->organization_id,
+                'edit' => Auth::user()?->can('view_budget_all') || $budget->organization_id === Auth::user()?->organization_id,
                 'editLines' => $budget->status === 'DRAFT',
             ],
         ]);
@@ -130,7 +120,7 @@ class BudgetController extends Controller
 
         $validated = $request->validated();
 
-        $organizationId = $user->hasAnyRole($this->allAccessRoles())
+        $organizationId = $user->can('view_budget_all')
             ? ($validated['organization_id'] ?? $budget->organization_id)
             : $budget->organization_id;
 
@@ -203,7 +193,7 @@ class BudgetController extends Controller
             abort(403);
         }
 
-        if ($user->hasAnyRole($this->allAccessRoles())) {
+        if ($user->can('view_budget_all')) {
             return;
         }
 

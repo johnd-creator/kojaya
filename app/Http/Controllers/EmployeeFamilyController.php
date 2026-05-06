@@ -16,6 +16,8 @@ class EmployeeFamilyController extends Controller
      */
     public function store(StoreEmployeeFamilyRequest $request): RedirectResponse
     {
+        $this->authorizePermission('manage_employee_family');
+
         $validated = $request->validated();
 
         $this->enforceFamilyConstraints($validated['employee_id'], $validated);
@@ -30,6 +32,8 @@ class EmployeeFamilyController extends Controller
      */
     public function update(UpdateEmployeeFamilyRequest $request, EmployeeFamily $employeeFamily): RedirectResponse
     {
+        $this->authorizePermission('manage_employee_family');
+
         $validated = $request->validated();
 
         $this->enforceFamilyConstraints($employeeFamily->employee_id, $validated, $employeeFamily->id);
@@ -44,6 +48,8 @@ class EmployeeFamilyController extends Controller
      */
     public function destroy(EmployeeFamily $employeeFamily): RedirectResponse
     {
+        $this->authorizePermission('manage_employee_family');
+
         $employeeFamily->delete();
 
         return back()->with('success', 'Family member deleted successfully.');

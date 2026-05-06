@@ -32,14 +32,14 @@ class UserRoleIntegrationTest extends TestCase
             'Finance Unit',
             'Project Manager',
             'Site Manager',
-            'Karyawan',
+            'Employee',
         ];
 
         foreach ($expectedRoles as $roleName) {
             $this->assertDatabaseHas('roles', ['name' => $roleName]);
         }
 
-        $this->assertCount(count($expectedRoles) + 3, Role::all());
+        $this->assertCount(count($expectedRoles) + 4, Role::all());
     }
 
     public function test_system_admin_is_created_with_pusat_organization(): void

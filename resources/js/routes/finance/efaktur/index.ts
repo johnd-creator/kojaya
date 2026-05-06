@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 export const submit = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ submit.definition = {
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 submit.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ submit.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 submit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ submit.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 submit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ submit.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 const submitForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const submitForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 submitForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ submitForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submit
-* @see app/Http/Controllers/EfakturUiController.php:33
+* @see app/Http/Controllers/EfakturUiController.php:35
 * @route '/finance/efaktur/submit'
 */
 submitForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ submit.form = submitForm
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 export const status = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +178,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 status.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ status.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +197,7 @@ status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -207,7 +207,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -217,7 +217,7 @@ const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -227,7 +227,7 @@ statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::status
-* @see app/Http/Controllers/EfakturUiController.php:44
+* @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
 */
 statusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

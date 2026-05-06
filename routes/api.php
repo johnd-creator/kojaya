@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EssController;
 use App\Http\Controllers\Api\TechnicianWorkOrderController;
+use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\V1\CooperativeDuesApiController;
 use App\Http\Controllers\Api\V1\CooperativeMemberApiController;
 use App\Http\Controllers\Api\V1\CooperativePaymentApiController;
 use App\Http\Controllers\Api\V1\LoanApiController;
-use App\Http\Controllers\Api\V1\PosApiController;
+use App\Http\Controllers\Api\V1\MemberSelfServiceController;
 use App\Http\Controllers\Api\V1\PointApiController;
+use App\Http\Controllers\Api\V1\PosApiController;
 use App\Http\Controllers\Api\V1\RewardApiController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ComplianceReportController;
@@ -16,11 +20,41 @@ use App\Http\Controllers\MedicalCheckupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+        Route::get('/session', [AuthController::class, 'session'])->middleware('ability:profile:read');
+        Route::post('/logout', [AuthController::class, 'logout'])->middleware('throttle:api-write');
+        Route::post('/logout-all', [AuthController::class, 'logoutAll'])->middleware('throttle:api-write');
+    });
+});
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware(['auth:sanctum', 'ability:profile:read', 'throttle:api']);
 
+Route::post('/token/rotate', [TokenController::class, 'rotate'])
+    ->middleware(['auth:sanctum', 'throttle:api-write']);
+
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
+    Route::prefix('member')->group(function () {
+        Route::get('/dashboard', [MemberSelfServiceController::class, 'dashboard'])->middleware('ability:member:read');
+        Route::get('/profile', [MemberSelfServiceController::class, 'profile'])->middleware('ability:member:read');
+        Route::put('/profile', [MemberSelfServiceController::class, 'updateProfile'])->middleware(['ability:member:write', 'throttle:api-write']);
+        Route::get('/savings/summary', [MemberSelfServiceController::class, 'savingsSummary'])->middleware('ability:member:read');
+        Route::get('/savings/ledger', [MemberSelfServiceController::class, 'savingsLedger'])->middleware('ability:member:read');
+        Route::get('/dues/invoices', [MemberSelfServiceController::class, 'invoices'])->middleware('ability:member:read');
+        Route::get('/payments', [MemberSelfServiceController::class, 'payments'])->middleware('ability:member:read');
+        Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write']);
+        Route::get('/loans', [MemberSelfServiceController::class, 'loans'])->middleware('ability:member:read');
+        Route::post('/loans', [MemberSelfServiceController::class, 'applyLoan'])->middleware(['ability:member:write', 'throttle:api-write']);
+        Route::get('/loans/{loan}', [MemberSelfServiceController::class, 'loan'])->middleware('ability:member:read');
+        Route::get('/shu', [MemberSelfServiceController::class, 'shu'])->middleware('ability:member:read');
+        Route::get('/notifications', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
+        Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
+        Route::post('/support-tickets', [MemberSelfServiceController::class, 'storeSupportTicket'])->middleware(['ability:member:write', 'throttle:api-write']);
+    });
+
     Route::get('/members', [CooperativeMemberApiController::class, 'index'])->middleware('ability:cooperative:read');
     Route::post('/members', [CooperativeMemberApiController::class, 'store'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::get('/members/{member}', [CooperativeMemberApiController::class, 'show'])->middleware('ability:cooperative:read');
@@ -45,6 +79,30 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::get('/reports/sales', [CooperativeReportController::class, 'sales'])->middleware('ability:reports:read');
 });
 
+// Employee Self Service Mobile API
+Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('ess')->group(function () {
+    Route::get('/dashboard', [EssController::class, 'dashboard'])->middleware('ability:ess:read');
+    Route::get('/profile', [EssController::class, 'profile'])->middleware('ability:ess:read');
+    Route::put('/profile', [EssController::class, 'updateProfile'])->middleware(['ability:ess:write', 'throttle:api-write']);
+    Route::get('/attendance/today', [EssController::class, 'todayAttendance'])->middleware('ability:attendance:read');
+    Route::get('/attendance/history', [EssController::class, 'attendanceHistory'])->middleware('ability:attendance:read');
+    Route::post('/attendance/check-in', [EssController::class, 'checkIn'])->middleware(['ability:attendance:write', 'throttle:api-write']);
+    Route::post('/attendance/check-out', [EssController::class, 'checkOut'])->middleware(['ability:attendance:write', 'throttle:api-write']);
+    Route::get('/geofence', [EssController::class, 'geofence'])->middleware('ability:attendance:read');
+    Route::get('/shift-roster', [EssController::class, 'shiftRoster'])->middleware('ability:ess:read');
+    Route::get('/leaves', [EssController::class, 'leaves'])->middleware('ability:ess:read');
+    Route::post('/leaves', [EssController::class, 'storeLeave'])->middleware(['ability:ess:write', 'throttle:api-write']);
+    Route::post('/leaves/{leave}/cancel', [EssController::class, 'cancelLeave'])->middleware(['ability:ess:write', 'throttle:api-write']);
+    Route::get('/overtime', [EssController::class, 'overtime'])->middleware('ability:ess:read');
+    Route::post('/overtime', [EssController::class, 'storeOvertime'])->middleware(['ability:ess:write', 'throttle:api-write']);
+    Route::get('/reimbursements', [EssController::class, 'reimbursements'])->middleware('ability:ess:read');
+    Route::post('/reimbursements', [EssController::class, 'storeReimbursement'])->middleware(['ability:ess:write', 'throttle:api-write']);
+    Route::get('/payslips', [EssController::class, 'payslips'])->middleware('ability:ess:read');
+    Route::get('/payslips/{payroll}/download', [EssController::class, 'downloadPayslip'])->middleware('ability:ess:read');
+    Route::get('/compliance', [EssController::class, 'compliance'])->middleware('ability:ess:read');
+    Route::get('/notifications', [EssController::class, 'notifications'])->middleware('ability:ess:read');
+});
+
 // Technician Mobile API
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('technician')->group(function () {
     Route::get('/work-orders', [TechnicianWorkOrderController::class, 'index'])->middleware('ability:work-orders:read');
@@ -52,6 +110,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('technician')->group
     Route::post('/work-orders/{id}/start', [TechnicianWorkOrderController::class, 'start'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
     Route::post('/work-orders/{id}/complete', [TechnicianWorkOrderController::class, 'complete'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
     Route::post('/work-orders/{id}/checklists/{checklistId}', [TechnicianWorkOrderController::class, 'updateChecklist'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
+    Route::post('/work-orders/{id}/attachments', [TechnicianWorkOrderController::class, 'storeAttachment'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
+    Route::post('/work-orders/{id}/parts', [TechnicianWorkOrderController::class, 'storePart'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
+    Route::post('/work-orders/{id}/sync', [TechnicianWorkOrderController::class, 'sync'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
+    Route::get('/work-orders/{id}/timeline', [TechnicianWorkOrderController::class, 'timeline'])->middleware('ability:work-orders:read');
+    Route::post('/work-orders/{id}/escalate', [TechnicianWorkOrderController::class, 'escalate'])->middleware(['ability:work-orders:write', 'throttle:api-write']);
+    Route::post('/work-orders/{id}/reopen', [TechnicianWorkOrderController::class, 'reopen'])->middleware(['ability:work-orders:review', 'throttle:api-write']);
 });
 
 // Employee Certificates API

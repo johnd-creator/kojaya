@@ -55,6 +55,6 @@ class LoanTypeController extends Controller
 
     private function authorizeLoanManagement(): void
     {
-        abort_unless(request()->user()?->hasAnyRole(['System Admin', 'Pengurus Koperasi']), 403);
+        abort_unless(request()->user()?->can('manage_cooperative_loan_types'), 403);
     }
 }

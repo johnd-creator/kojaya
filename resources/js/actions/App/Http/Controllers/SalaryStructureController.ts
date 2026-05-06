@@ -163,7 +163,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::store
-* @see app/Http/Controllers/SalaryStructureController.php:39
+* @see app/Http/Controllers/SalaryStructureController.php:41
 * @route '/salary-structures'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::store
-* @see app/Http/Controllers/SalaryStructureController.php:39
+* @see app/Http/Controllers/SalaryStructureController.php:41
 * @route '/salary-structures'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::store
-* @see app/Http/Controllers/SalaryStructureController.php:39
+* @see app/Http/Controllers/SalaryStructureController.php:41
 * @route '/salary-structures'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::store
-* @see app/Http/Controllers/SalaryStructureController.php:39
+* @see app/Http/Controllers/SalaryStructureController.php:41
 * @route '/salary-structures'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::store
-* @see app/Http/Controllers/SalaryStructureController.php:39
+* @see app/Http/Controllers/SalaryStructureController.php:41
 * @route '/salary-structures'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -417,7 +417,7 @@ edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 export const update = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -432,7 +432,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 update.url = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -459,7 +459,7 @@ update.url = (args: { salary_structure: string | number } | [salary_structure: s
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 update.put = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -469,7 +469,7 @@ update.put = (args: { salary_structure: string | number } | [salary_structure: s
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 update.patch = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -479,7 +479,7 @@ update.patch = (args: { salary_structure: string | number } | [salary_structure:
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 const updateForm = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const updateForm = (args: { salary_structure: string | number } | [salary_struct
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 updateForm.put = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -509,7 +509,7 @@ updateForm.put = (args: { salary_structure: string | number } | [salary_structur
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::update
-* @see app/Http/Controllers/SalaryStructureController.php:64
+* @see app/Http/Controllers/SalaryStructureController.php:68
 * @route '/salary-structures/{salary_structure}'
 */
 updateForm.patch = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -526,7 +526,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::destroy
-* @see app/Http/Controllers/SalaryStructureController.php:91
+* @see app/Http/Controllers/SalaryStructureController.php:97
 * @route '/salary-structures/{salary_structure}'
 */
 export const destroy = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -541,7 +541,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::destroy
-* @see app/Http/Controllers/SalaryStructureController.php:91
+* @see app/Http/Controllers/SalaryStructureController.php:97
 * @route '/salary-structures/{salary_structure}'
 */
 destroy.url = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -568,7 +568,7 @@ destroy.url = (args: { salary_structure: string | number } | [salary_structure: 
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::destroy
-* @see app/Http/Controllers/SalaryStructureController.php:91
+* @see app/Http/Controllers/SalaryStructureController.php:97
 * @route '/salary-structures/{salary_structure}'
 */
 destroy.delete = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -578,7 +578,7 @@ destroy.delete = (args: { salary_structure: string | number } | [salary_structur
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::destroy
-* @see app/Http/Controllers/SalaryStructureController.php:91
+* @see app/Http/Controllers/SalaryStructureController.php:97
 * @route '/salary-structures/{salary_structure}'
 */
 const destroyForm = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -593,7 +593,7 @@ const destroyForm = (args: { salary_structure: string | number } | [salary_struc
 
 /**
 * @see \App\Http\Controllers\SalaryStructureController::destroy
-* @see app/Http/Controllers/SalaryStructureController.php:91
+* @see app/Http/Controllers/SalaryStructureController.php:97
 * @route '/salary-structures/{salary_structure}'
 */
 destroyForm.delete = (args: { salary_structure: string | number } | [salary_structure: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

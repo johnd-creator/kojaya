@@ -16,6 +16,8 @@ class UserController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_users');
+
         $users = User::with(['roles', 'organization', 'cooperativeMember'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($query) use ($search): void {
@@ -41,6 +43,8 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
+        $this->authorizePermission('manage_users');
+
         $validated = $request->validated();
 
         $user = User::create([
@@ -57,6 +61,8 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user)
     {
+        $this->authorizePermission('manage_users');
+
         $validated = $request->validated();
 
         $user->update([
@@ -76,6 +82,8 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $this->authorizePermission('manage_users');
+
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'You cannot delete yourself.');
         }

@@ -33,7 +33,7 @@ defineProps<Props>();
               target="_blank"
               rel="noopener noreferrer"
             >
-              <component :is="item.icon" />
+              <span class="shrink-0"><component :is="item.icon" /></span>
               <span>{{ item.title }}</span>
             </a>
           </SidebarMenuButton>

@@ -7,6 +7,7 @@ use App\Models\BudgetLine;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -14,6 +15,54 @@ use Tests\TestCase;
 class ProcurementWebFlowTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_procurement_index_pages_render_when_empty(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => $org->id,
+            'email_verified_at' => now(),
+        ]);
+
+        Permission::create(['name' => 'view_pr_all', 'guard_name' => 'web']);
+        Permission::create(['name' => 'view_po_all', 'guard_name' => 'web']);
+        Permission::create(['name' => 'view_grn_all', 'guard_name' => 'web']);
+        Permission::create(['name' => 'manage_vendors', 'guard_name' => 'web']);
+
+        $role = Role::create(['name' => 'Procurement Viewer', 'guard_name' => 'web']);
+        $role->syncPermissions(['view_pr_all', 'view_po_all', 'view_grn_all', 'manage_vendors']);
+        $user->assignRole($role);
+
+        $this->actingAs($user);
+
+        $this->get('/procurement/vendors')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Procurement/Vendors/Index')
+                ->has('vendors', 0)
+            );
+
+        $this->get('/procurement/purchase-requests')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Procurement/PurchaseRequests/Index')
+                ->has('requests', 0)
+            );
+
+        $this->get('/procurement/purchase-orders')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Procurement/PurchaseOrders/Index')
+                ->has('orders', 0)
+            );
+
+        $this->get('/procurement/grns')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Procurement/Grn/Index')
+                ->has('receipts', 0)
+            );
+    }
 
     public function test_pr_submit_approve_generate_po_and_receive_grn_via_web_routes(): void
     {

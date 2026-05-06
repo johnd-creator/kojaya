@@ -13,6 +13,8 @@ class EfakturUiController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorizePermission('manage_efaktur');
+
         $invoices = Invoice::query()
             ->with(['client'])
             ->whereIn('status', ['APPROVED', 'PAID'])
@@ -32,6 +34,8 @@ class EfakturUiController extends Controller
 
     public function submitPage(): Response
     {
+        $this->authorizePermission('manage_efaktur');
+
         return Inertia::render('Finance/Efaktur/Submit', [
             'eligibleInvoices' => Invoice::query()
                 ->with('client')
@@ -43,6 +47,8 @@ class EfakturUiController extends Controller
 
     public function status(): Response
     {
+        $this->authorizePermission('manage_efaktur');
+
         return Inertia::render('Finance/Efaktur/Status', [
             'submissions' => EfakturSubmission::query()
                 ->with(['invoice.client'])

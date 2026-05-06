@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankTransferBatch;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -11,6 +10,8 @@ class BankReconciliationController extends Controller
 {
     public function index(): Response
     {
+        $this->authorizePermission('manage_bank_reconciliation');
+
         return Inertia::render('Finance/BankReconciliation/Index', [
             'batches' => BankTransferBatch::query()
                 ->withCount('items')
@@ -22,6 +23,8 @@ class BankReconciliationController extends Controller
 
     public function show(BankTransferBatch $batch): Response
     {
+        $this->authorizePermission('manage_bank_reconciliation');
+
         $batch->load(['items.invoice.client']);
 
         return Inertia::render('Finance/BankReconciliation/Show', [

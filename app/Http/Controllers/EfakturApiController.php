@@ -10,6 +10,8 @@ class EfakturApiController extends Controller
 {
     public function submit(Invoice $invoice, DjpEfakturApiService $service)
     {
+        $this->authorizePermission('manage_efaktur');
+
         $payload = $service->submit($invoice);
 
         $submission = EfakturSubmission::create([
@@ -28,6 +30,8 @@ class EfakturApiController extends Controller
 
     public function status(EfakturSubmission $submission, DjpEfakturApiService $service)
     {
+        $this->authorizePermission('manage_efaktur');
+
         $result = $service->checkStatus($submission);
         $submission->status = $result['status'];
         $submission->response_payload = $result;

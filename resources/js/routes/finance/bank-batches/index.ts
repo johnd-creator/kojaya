@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::store
-* @see app/Http/Controllers/FinanceBankController.php:24
+* @see app/Http/Controllers/FinanceBankController.php:26
 * @route '/finance/bank-batches'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::store
-* @see app/Http/Controllers/FinanceBankController.php:24
+* @see app/Http/Controllers/FinanceBankController.php:26
 * @route '/finance/bank-batches'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::store
-* @see app/Http/Controllers/FinanceBankController.php:24
+* @see app/Http/Controllers/FinanceBankController.php:26
 * @route '/finance/bank-batches'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::store
-* @see app/Http/Controllers/FinanceBankController.php:24
+* @see app/Http/Controllers/FinanceBankController.php:26
 * @route '/finance/bank-batches'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::store
-* @see app/Http/Controllers/FinanceBankController.php:24
+* @see app/Http/Controllers/FinanceBankController.php:26
 * @route '/finance/bank-batches'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -138,7 +138,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 export const exportMethod = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -153,7 +153,7 @@ exportMethod.definition = {
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 exportMethod.url = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -186,7 +186,7 @@ exportMethod.url = (args: { batch: string | { id: string } } | [batch: string | 
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 exportMethod.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -196,7 +196,7 @@ exportMethod.get = (args: { batch: string | { id: string } } | [batch: string | 
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 exportMethod.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -206,7 +206,7 @@ exportMethod.head = (args: { batch: string | { id: string } } | [batch: string |
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 const exportMethodForm = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -216,7 +216,7 @@ const exportMethodForm = (args: { batch: string | { id: string } } | [batch: str
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 exportMethodForm.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -226,7 +226,7 @@ exportMethodForm.get = (args: { batch: string | { id: string } } | [batch: strin
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
-* @see app/Http/Controllers/FinanceBankController.php:54
+* @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
 exportMethodForm.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -243,7 +243,7 @@ exportMethod.form = exportMethodForm
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::reconcile
-* @see app/Http/Controllers/FinanceBankController.php:66
+* @see app/Http/Controllers/FinanceBankController.php:72
 * @route '/finance/bank-batches/reconcile'
 */
 export const reconcile = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -258,7 +258,7 @@ reconcile.definition = {
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::reconcile
-* @see app/Http/Controllers/FinanceBankController.php:66
+* @see app/Http/Controllers/FinanceBankController.php:72
 * @route '/finance/bank-batches/reconcile'
 */
 reconcile.url = (options?: RouteQueryOptions) => {
@@ -267,7 +267,7 @@ reconcile.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::reconcile
-* @see app/Http/Controllers/FinanceBankController.php:66
+* @see app/Http/Controllers/FinanceBankController.php:72
 * @route '/finance/bank-batches/reconcile'
 */
 reconcile.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -277,7 +277,7 @@ reconcile.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::reconcile
-* @see app/Http/Controllers/FinanceBankController.php:66
+* @see app/Http/Controllers/FinanceBankController.php:72
 * @route '/finance/bank-batches/reconcile'
 */
 const reconcileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -287,7 +287,7 @@ const reconcileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::reconcile
-* @see app/Http/Controllers/FinanceBankController.php:66
+* @see app/Http/Controllers/FinanceBankController.php:72
 * @route '/finance/bank-batches/reconcile'
 */
 reconcileForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

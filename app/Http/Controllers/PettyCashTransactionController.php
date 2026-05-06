@@ -12,6 +12,8 @@ class PettyCashTransactionController extends Controller
 {
     public function store(StorePettyCashTransactionRequest $request)
     {
+        $this->authorizePermission('manage_petty_cash');
+
         $validated = $request->validated();
 
         $account = PettyCashAccount::findOrFail($validated['petty_cash_account_id']);

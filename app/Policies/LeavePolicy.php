@@ -9,12 +9,13 @@ class LeavePolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'HR Pusat', 'HR Unit']);
+        return $this->can($user, 'view_leave_all')
+            || $this->can($user, 'view_leave_unit');
     }
 
     public function update(User $user, Leave $leave): bool
     {
-        return $this->hasAnyRole($user, ['System Admin', 'Admin Pusat', 'HR Pusat', 'HR Unit']);
+        return $this->can($user, 'approve_leave');
     }
 
     public function approve(User $user, Leave $leave): bool

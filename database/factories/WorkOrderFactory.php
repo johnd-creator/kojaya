@@ -28,6 +28,7 @@ class WorkOrderFactory extends Factory
             'priority' => fake()->randomElement(['LOW', 'MEDIUM', 'HIGH']),
             'status' => fake()->randomElement(['OPEN', 'IN_PROGRESS']),
             'description' => fake()->sentence(),
+            'scheduled_date' => today()->toDateString(),
             'assigned_to' => User::factory()->state(['organization_id' => $organization]),
             'completed_at' => null,
         ];

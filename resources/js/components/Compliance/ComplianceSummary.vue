@@ -272,10 +272,10 @@ watch(
                   class="inline-flex items-center justify-center rounded-full p-3 mb-2"
                   :class="getComplianceColor(certificateRate)"
                 >
-                  <component
+                  <span class="contents"><component
                     :is="getComplianceIcon(certificateRate)"
                     class="h-8 w-8"
-                  />
+                  /></span>
                 </div>
                 <div
                   class="text-3xl font-bold text-neutral-900 dark:text-neutral-100"
@@ -345,7 +345,7 @@ watch(
                   class="inline-flex items-center justify-center rounded-full p-3 mb-2"
                   :class="getComplianceColor(mcuRate)"
                 >
-                  <component :is="getComplianceIcon(mcuRate)" class="h-8 w-8" />
+                  <span class="contents"><component :is="getComplianceIcon(mcuRate)" class="h-8 w-8" /></span>
                 </div>
                 <div
                   class="text-3xl font-bold text-neutral-900 dark:text-neutral-100"
@@ -414,10 +414,10 @@ watch(
             class="inline-flex items-center justify-center rounded-full p-4 mb-3"
             :class="getComplianceColor(overallCompliance)"
           >
-            <component
+            <span class="contents"><component
               :is="getComplianceIcon(overallCompliance)"
               class="h-10 w-10"
-            />
+            /></span>
           </div>
           <div
             class="text-4xl font-bold text-neutral-900 dark:text-neutral-100"

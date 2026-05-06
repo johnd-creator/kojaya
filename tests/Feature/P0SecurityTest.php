@@ -11,13 +11,13 @@ use App\Models\LeaveType;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\AuditLogService;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
@@ -25,9 +25,14 @@ class P0SecurityTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+    }
+
     public function test_system_admin_bypasses_registered_policies(): void
     {
-        Role::create(['name' => 'System Admin']);
         $user = User::factory()->create();
         $user->assignRole('System Admin');
 
@@ -38,21 +43,17 @@ class P0SecurityTest extends TestCase
 
     public function test_employee_policy_requires_employee_permission(): void
     {
-        Permission::create(['name' => 'edit_employee']);
         $organization = Organization::factory()->create();
-        $role = Role::create(['name' => 'HR Unit']);
-        $role->givePermissionTo('edit_employee');
         $user = User::factory()->create(['organization_id' => $organization->id]);
-        $user->assignRole($role);
+        $user->assignRole('HR Unit');
 
+        $otherOrg = Organization::factory()->create();
         $employee = Employee::factory()->create([
-            'organization_id' => Organization::factory()->create()->id,
+            'organization_id' => $otherOrg->id,
         ]);
 
         $this->assertFalse(Gate::forUser($user)->allows('update', $employee));
 
-        Permission::create(['name' => 'view_employee_unit']);
-        $role->givePermissionTo('view_employee_unit');
         $employee->update(['organization_id' => $organization->id]);
 
         $this->assertTrue(Gate::forUser($user)->allows('update', $employee));
@@ -79,9 +80,6 @@ class P0SecurityTest extends TestCase
 
     public function test_leave_status_update_requires_hr_policy(): void
     {
-        Role::create(['name' => 'Employee']);
-        Role::create(['name' => 'HR Unit']);
-
         $organization = Organization::factory()->create();
         $employeeUser = User::factory()->create(['organization_id' => $organization->id]);
         $employeeUser->assignRole('Employee');
@@ -130,6 +128,40 @@ class P0SecurityTest extends TestCase
         Sanctum::actingAs($user, ['profile:read']);
 
         $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('id', $user->id);
+    }
+
+    public function test_api_token_rotation_requires_authentication(): void
+    {
+        $this->postJson('/api/token/rotate')
+            ->assertUnauthorized();
+    }
+
+    public function test_api_token_rotation_revokes_old_token_and_preserves_abilities(): void
+    {
+        $user = User::factory()->create();
+        $plainTextToken = $user->createToken('android-phone', ['profile:read'])->plainTextToken;
+        $oldTokenId = (int) explode('|', $plainTextToken, 2)[0];
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$plainTextToken)
+            ->postJson('/api/token/rotate', ['device_name' => 'android-phone-refresh'])
+            ->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('abilities', ['profile:read'])
+            ->assertJsonStructure([
+                'token',
+                'expires_at',
+            ]);
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'id' => $oldTokenId,
+        ]);
+
+        $this->assertNull(PersonalAccessToken::findToken($plainTextToken));
+
+        $this->withHeader('Authorization', 'Bearer '.$response->json('token'))
+            ->getJson('/api/user')
             ->assertOk()
             ->assertJsonPath('id', $user->id);
     }

@@ -117,6 +117,8 @@ class LeaveController extends Controller
         $validated = $request->validated();
         $previousStatus = $leave->status;
 
+        $this->authorize('approve', $leave);
+
         $leave->update([
             'status' => $validated['status'],
             'approver_id' => $request->user()->id,

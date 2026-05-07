@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\FailedJobListener;
 use App\Listeners\LogFailedLogin;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
@@ -129,5 +130,12 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Login::class, LogSuccessfulLogin::class);
         Event::listen(Logout::class, LogSuccessfulLogout::class);
         Event::listen(Failed::class, LogFailedLogin::class);
+    }
+
+    protected function registerJobListeners(): void
+    {
+        Queue::failing(function (JobFailed $event) {
+            (new FailedJobListener)->handle($event);
+        });
     }
 }

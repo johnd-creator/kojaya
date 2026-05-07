@@ -20,6 +20,14 @@ class LeavePolicy extends BasePolicy
 
     public function approve(User $user, Leave $leave): bool
     {
-        return $this->update($user, $leave);
+        if (! $this->can($user, 'approve_leave')) {
+            return false;
+        }
+
+        if ($leave->employee && $leave->employee->user_id === $user->id) {
+            return false;
+        }
+
+        return true;
     }
 }

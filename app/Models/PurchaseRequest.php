@@ -52,4 +52,9 @@ class PurchaseRequest extends Model
     {
         return $this->belongsTo(Organization::class);
     }
+
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
 }

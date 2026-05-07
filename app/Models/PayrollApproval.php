@@ -70,6 +70,12 @@ class PayrollApproval extends Model
 
     public function approve(User $approver, ?string $notes = null): void
     {
+        if ($approver->id === $this->requester_id) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'approved_by' => 'Pengaju payroll tidak dapat menyetujui payrollnya sendiri.',
+            ]);
+        }
+
         $this->update([
             'status' => 'APPROVED',
             'approver_id' => $approver->id,

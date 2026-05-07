@@ -21,7 +21,15 @@ class OvertimeRequestPolicy extends BasePolicy
 
     public function approve(User $user, OvertimeRequest $overtimeRequest): bool
     {
-        return $this->update($user, $overtimeRequest);
+        if (! $this->can($user, 'approve_overtime')) {
+            return false;
+        }
+
+        if ($overtimeRequest->employee && $overtimeRequest->employee->user_id === $user->id) {
+            return false;
+        }
+
+        return true;
     }
 
     public function delete(User $user, OvertimeRequest $overtimeRequest): bool

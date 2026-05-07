@@ -92,7 +92,7 @@ class Phase4Phase5OperatorHardeningTest extends TestCase
         $payment = CooperativePayment::query()->create([
             'cooperative_member_id' => $this->member->id,
             'cooperative_dues_invoice_id' => $this->invoice->id,
-            'user_id' => $this->operator->id,
+            'user_id' => $this->member->user_id,
             'amount' => 100000,
             'payment_method' => 'TRANSFER',
             'paid_at' => '2026-05-12',
@@ -109,7 +109,7 @@ class Phase4Phase5OperatorHardeningTest extends TestCase
         $payment = CooperativePayment::query()->create([
             'cooperative_member_id' => $this->member->id,
             'cooperative_dues_invoice_id' => $this->invoice->id,
-            'user_id' => $this->operator->id,
+            'user_id' => $this->member->user_id,
             'amount' => 100000,
             'payment_method' => 'TRANSFER',
             'paid_at' => '2026-05-12',

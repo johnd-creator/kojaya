@@ -243,6 +243,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('finance/balance-sheet', [\App\Http\Controllers\Accounting\FinancialStatementController::class, 'balanceSheet'])->name('finance.balance-sheet');
     Route::get('finance/income-statement', [\App\Http\Controllers\Accounting\FinancialStatementController::class, 'incomeStatement'])->name('finance.income-statement');
 
+    // Finance Closing
+    Route::get('finance/closing', [\App\Http\Controllers\Finance\FinanceClosingController::class, 'index'])->name('finance.closing.index');
+    Route::get('finance/closing/{period}', [\App\Http\Controllers\Finance\FinanceClosingController::class, 'closing'])->name('finance.closing.show');
+    Route::post('finance/closing/{period}/steps', [\App\Http\Controllers\Finance\FinanceClosingController::class, 'completeClosingStep'])->name('finance.closing.steps.complete');
+    Route::post('finance/closing/{period}/lock', [\App\Http\Controllers\Finance\FinanceClosingController::class, 'lock'])->name('finance.closing.lock');
+    Route::post('finance/closing/{period}/unlock', [\App\Http\Controllers\Finance\FinanceClosingController::class, 'unlock'])->name('finance.closing.unlock');
+
+    // Exceptions Dashboard
+    Route::get('exceptions', [\App\Http\Controllers\ExceptionReportController::class, 'index'])->name('exceptions.index');
+    Route::get('exceptions/data', [\App\Http\Controllers\ExceptionReportController::class, 'data'])->name('exceptions.data');
+    Route::get('exceptions/{module}', [\App\Http\Controllers\ExceptionReportController::class, 'module'])->name('exceptions.module');
+
+    // Monitoring
+    Route::middleware('can:manage_cooperative_settings')->group(function () {
+        Route::get('/monitoring/health', fn (\App\Monitoring\Health $health) => \Inertia\Inertia::render('Monitoring/Health', [
+            'health' => $health->full(),
+        ]))->name('monitoring.health');
+
+        Route::get('/monitoring/metrics', [\App\Http\Controllers\Monitoring\MetricsController::class, 'index'])->name('monitoring.metrics');
+    });
+
+    // Signed URL document downloads (no auth middleware — validated by signature)
+    Route::get('/download/payslip/{id}', [\App\Http\Controllers\DocumentDownloadController::class, 'payslip'])
+        ->name('download.payslip')
+        ->middleware('signed');
+    Route::get('/download/mcu/{mcu}', [\App\Http\Controllers\DocumentDownloadController::class, 'medicalCheckup'])
+        ->name('download.mcu')
+        ->middleware('signed');
+    Route::get('/download/certificate/{employee}/{certificate}', [\App\Http\Controllers\DocumentDownloadController::class, 'certificate'])
+        ->name('download.certificate')
+        ->middleware('signed');
+    Route::get('/download/kyc/{memberId}/{documentId}', [\App\Http\Controllers\DocumentDownloadController::class, 'kyc'])
+        ->name('download.kyc')
+        ->middleware('signed');
+
     // Reimbursements
     Route::resource('reimbursements', \App\Http\Controllers\ReimbursementController::class);
     Route::post('reimbursements/{reimbursement}/approve', [\App\Http\Controllers\ReimbursementController::class, 'approve'])->name('reimbursements.approve');

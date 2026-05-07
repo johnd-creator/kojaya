@@ -50,6 +50,11 @@ class ProcurementService
         if (! $this->approval->canApprove($user, $level)) {
             return ['ok' => false, 'error' => 'not_allowed'];
         }
+
+        if ($user->id === $pr->requester_id) {
+            return ['ok' => false, 'error' => 'creator_cannot_approve'];
+        }
+
         $from = $pr->status;
         $currentIdx = array_search($level, $req, true);
         if ($currentIdx === false) {

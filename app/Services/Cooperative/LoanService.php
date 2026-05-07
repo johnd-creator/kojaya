@@ -77,6 +77,12 @@ class LoanService
                 return $loan;
             }
 
+            if ($actor && $loan->user_id && (int) $actor->id === (int) $loan->user_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'approved_by' => 'Pembuat pengajuan pinjaman tidak dapat menyetujui pinjamannya sendiri.',
+                ]);
+            }
+
             $loan->forceFill([
                 'status' => LoanStatus::Approved,
                 'approved_at' => now(),

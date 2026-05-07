@@ -4,6 +4,7 @@ import bankBatches from './bank-batches'
 import bankReconciliation from './bank-reconciliation'
 import chartOfAccounts from './chart-of-accounts'
 import journalEntries from './journal-entries'
+import closing from './closing'
 /**
 * @see \App\Http\Controllers\Accounting\FinancialStatementController::trialBalance
 * @see app/Http/Controllers/Accounting/FinancialStatementController.php:13
@@ -256,6 +257,7 @@ const finance = {
     trialBalance: Object.assign(trialBalance, trialBalance),
     balanceSheet: Object.assign(balanceSheet, balanceSheet),
     incomeStatement: Object.assign(incomeStatement, incomeStatement),
+    closing: Object.assign(closing, closing),
 }
 
 export default finance

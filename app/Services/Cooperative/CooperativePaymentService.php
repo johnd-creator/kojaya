@@ -46,6 +46,12 @@ class CooperativePaymentService
 
             $originalStatus = $payment->getOriginal('status');
 
+            if ($approver && $payment->user_id && (int) $approver->id === (int) $payment->user_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'approved_by' => 'Pembuat pembayaran tidak dapat menyetujui pembayarannya sendiri.',
+                ]);
+            }
+
             $payment->forceFill([
                 'status' => 'APPROVED',
                 'approved_at' => now(),

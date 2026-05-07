@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CorrelationIdMiddleware;
 use App\Http\Middleware\EnsureIsMember;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -20,6 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        $middleware->append(CorrelationIdMiddleware::class);
+
+        $middleware->api(append: [
+            CorrelationIdMiddleware::class,
+        ]);
 
         $middleware->web(append: [
             HandleAppearance::class,

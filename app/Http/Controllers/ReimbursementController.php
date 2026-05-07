@@ -103,6 +103,8 @@ class ReimbursementController extends Controller
 
     public function approve(Reimbursement $reimbursement)
     {
+        $this->authorize('approve', $reimbursement);
+
         $previousStatus = $reimbursement->getOriginal('status');
 
         $reimbursement->update([
@@ -117,6 +119,8 @@ class ReimbursementController extends Controller
 
     public function reject(RejectReimbursementRequest $request, Reimbursement $reimbursement)
     {
+        $this->authorize('approve', $reimbursement);
+
         $validated = $request->validated();
         $previousStatus = $reimbursement->status;
 

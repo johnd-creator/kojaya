@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+
+    services:
+      selenium:
+        image: selenium/standalone-chrome:latest
+        ports:
+          - 4444:4444
+
+    strategy:
+      matrix:
+        php-version: ['8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install NPM dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Run Pint (code style)
+        run: vendor/bin/pint --test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run Wayfinder (route generation)
+        run: php artisan wayfinder:generate
+
+      - name: Check Wayfinder drift
+        run: |
+          if ! git diff --exit-code resources/js/actions resources/js/routes; then
+            echo "::error::Wayfinder routes are out of date. Run 'php artisan wayfinder:generate' locally."
+            exit 1
+          fi
+
+      - name: Run PHPUnit (fast suite)
+        run: php artisan test --compact --parallel --profile
+
+      - name: Check OpenAPI snapshot drift
+        run: php artisan openapi:snapshot --validate || (echo "::error::OpenAPI snapshot changed. Run 'php artisan openapi:snapshot' locally." && exit 1)
+
+      - name: Create SQLite database
+        run: touch database/database.sqlite
+
+      - name: Run migrations
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: sqlite
+
+      - name: Seed test data
+        run: php artisan db:seed --force
+        env:
+          DB_CONNECTION: sqlite

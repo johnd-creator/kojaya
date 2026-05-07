@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
 import {
+  Activity,
   BarChart3,
   BookOpen,
   FileSearch,
+  HeartPulse,
   LayoutGrid,
   BriefcaseBusiness,
   UserPlus,
@@ -22,6 +24,7 @@ import {
   ReceiptText,
   ClipboardCheck,
   UserRound,
+  AlertTriangle,
 } from "lucide-vue-next";
 import { computed } from "vue";
 import { index as assetsIndex } from "@/actions/App/Http/Controllers/AssetController";
@@ -523,7 +526,17 @@ const allNavItems: NavItem[] = [
         href: "/finance/efaktur",
         permissions: "manage_efaktur",
       },
+      {
+        title: "Tutup Periode",
+        href: "/finance/closing",
+        permissions: "view_balance_sheet",
+      },
     ],
+  },
+  {
+    title: "Exceptions",
+    href: "/exceptions",
+    permissions: "view_balance_sheet",
   },
   {
     title: "Storage",

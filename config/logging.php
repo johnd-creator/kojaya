@@ -54,8 +54,21 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'json,single')),
             'ignore_exceptions' => false,
+        ],
+
+        'json' => [
+            'driver' => 'monolog',
+            'handler' => \Monolog\Handler\StreamHandler::class,
+            'with' => [
+                'stream' => storage_path('logs/laravel.json'),
+            ],
+            'formatter' => \Monolog\Formatter\JsonFormatter::class,
+            'processors' => [
+                \App\Logging\CorrelationIdProcessor::class,
+            ],
+            'level' => env('LOG_LEVEL', 'debug'),
         ],
 
         'single' => [

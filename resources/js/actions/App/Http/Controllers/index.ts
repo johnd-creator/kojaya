@@ -44,6 +44,10 @@ import PettyCashTransactionController from './PettyCashTransactionController'
 import FinanceBankController from './FinanceBankController'
 import BankReconciliationController from './BankReconciliationController'
 import Accounting from './Accounting'
+import Finance from './Finance'
+import ExceptionReportController from './ExceptionReportController'
+import Monitoring from './Monitoring'
+import DocumentDownloadController from './DocumentDownloadController'
 import ReimbursementController from './ReimbursementController'
 import Procurement from './Procurement'
 import ProjectController from './ProjectController'
@@ -103,6 +107,10 @@ const Controllers = {
     FinanceBankController: Object.assign(FinanceBankController, FinanceBankController),
     BankReconciliationController: Object.assign(BankReconciliationController, BankReconciliationController),
     Accounting: Object.assign(Accounting, Accounting),
+    Finance: Object.assign(Finance, Finance),
+    ExceptionReportController: Object.assign(ExceptionReportController, ExceptionReportController),
+    Monitoring: Object.assign(Monitoring, Monitoring),
+    DocumentDownloadController: Object.assign(DocumentDownloadController, DocumentDownloadController),
     ReimbursementController: Object.assign(ReimbursementController, ReimbursementController),
     Procurement: Object.assign(Procurement, Procurement),
     ProjectController: Object.assign(ProjectController, ProjectController),

@@ -8,6 +8,7 @@ KojayaPro dan Kojayaku menyediakan **RESTful API** yang lengkap untuk integrasi 
 **API Version:** v1
 **Authentication:** Laravel Sanctum (Token-based)
 **Content-Type:** `application/json`
+**OpenAPI Spec:** `GET /api/openapi.json`
 
 ---
 
@@ -61,6 +62,12 @@ Content-Type: application/json
 }
 ```
 
+**App Parameter:**
+- `member` - Kojayaku member app (abilities: `profile:read`, `member:read`, `member:write`, `cooperative:read`, `cooperative:write`)
+- `ess` - Employee Self-Service (abilities: `ess:read`, `ess:write`, `attendance:read`, `attendance:write`, `payroll:read`)
+- `technician` - Technician app (abilities: `work-orders:read`, `work-orders:write`)
+- `admin` - Admin panel (abilities: `*` wildcard for System Admin/Admin Pusat)
+
 #### 2. **Use Token in Requests**
 ```http
 GET /api/user
@@ -74,16 +81,48 @@ POST /api/auth/logout
 Authorization: Bearer {token}
 ```
 
+**Response (200):**
+```json
+{
+  "message": "Logged out."
+}
+```
+
 #### 4. **Logout All Devices**
 ```http
 POST /api/auth/logout-all
 Authorization: Bearer {token}
 ```
 
+**Response (200):**
+```json
+{
+  "message": "All tokens revoked."
+}
+```
+
 #### 5. **Current Mobile Session**
 ```http
 GET /api/auth/session
 Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "user": {
+    "id": "uuid",
+    "name": "User Name",
+    "email": "user@example.com",
+    "roles": ["Anggota"],
+    "employee_id": null,
+    "cooperative_member_id": 1
+  },
+  "token": {
+    "name": "Android Phone",
+    "abilities": ["profile:read", "member:read", "member:write"]
+  }
+}
 ```
 
 #### 6. **Rotate Current Token**
@@ -94,6 +133,16 @@ Content-Type: application/json
 
 {
   "device_name": "Android Phone"
+}
+```
+
+**Response (200):**
+```json
+{
+  "token_type": "Bearer",
+  "token": "2|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "abilities": ["profile:read", "member:read", "member:write"],
+  "expires_at": null
 }
 ```
 
@@ -128,7 +177,7 @@ Authorization: Bearer {token}
 
 **Base Path:** `/api/v1/member`
 
-All endpoints require `auth:sanctum`. Read endpoints require `member:read`; write endpoints require `member:write`.
+All endpoints require `auth:sanctum` and a `CooperativeMember` record linked to the authenticated user. Read endpoints require `member:read`; write endpoints require `member:write`.
 
 ### **Dashboard**
 ```http
@@ -136,7 +185,82 @@ GET /api/v1/member/dashboard
 Authorization: Bearer {token}
 ```
 
-Returns member profile, savings balance, pending invoices, active loans, loan outstanding, points balance, tier, and unread notifications.
+**Response (200):**
+```json
+{
+  "data": {
+    "member": {
+      "id": "uuid",
+      "member_code": "KOP001",
+      "name": "Ahmad Subarjo",
+      "status": "ACTIVE",
+      "join_date": "2020-01-15"
+    },
+    "summary": {
+      "savings_balance": 15000000,
+      "pending_invoices": 2,
+      "active_loans": 1,
+      "loan_outstanding": 5500000,
+      "points_balance": 2500,
+      "member_tier": "GOLD",
+      "unread_notifications": 3
+    },
+    "onboarding": {
+      "completed_steps": 3,
+      "total_steps": 5,
+      "progress_percent": 60,
+      "is_complete": false,
+      "is_dismissed": false,
+      "steps": [
+        {
+          "key": "profile",
+          "label": "Lengkapi profil",
+          "completed": true,
+          "href": "/member/profile"
+        }
+      ]
+    },
+    "journeys": {
+      "payment": {
+        "title": "Status pembayaran",
+        "current_status": "PENDING",
+        "steps": []
+      },
+      "loan": {
+        "title": "Status pinjaman",
+        "current_status": "ACTIVE",
+        "steps": []
+      },
+      "reward": {
+        "title": "Status reward",
+        "current_status": "PROCESSING",
+        "steps": []
+      }
+    }
+  }
+}
+```
+
+### **Onboarding & Status Journey**
+```http
+GET /api/v1/member/onboarding/status
+POST /api/v1/member/onboarding/steps
+GET /api/v1/member/status-journey
+Authorization: Bearer {token}
+```
+
+`onboarding/status` mengembalikan checklist onboarding anggota: kelengkapan profil, dokumen KYC, setoran simpanan pertama, intro pinjaman, dan intro reward. Langkah profil/KYC/simpanan dihitung dari data live anggota; langkah pinjaman/reward bisa ditandai saat anggota membuka fitur.
+
+**Mark Onboarding Step Request:**
+```json
+{
+  "step": "loans"
+}
+```
+
+Nilai `step` yang valid: `profile`, `kyc`, `first_savings`, `loans`, `rewards`.
+
+`status-journey` mengembalikan status ringkas dan timeline untuk pembayaran terakhir, pinjaman terakhir, dan redeem reward terakhir agar aplikasi Kojayaku bisa menampilkan perjalanan proses yang konsisten.
 
 ### **Profile**
 ```http
@@ -145,63 +269,296 @@ PUT /api/v1/member/profile
 Authorization: Bearer {token}
 ```
 
+**Response (200):**
+```json
+{
+  "data": {
+    "user": {
+      "id": "uuid",
+      "name": "Ahmad Subarjo",
+      "email": "ahmad@example.com"
+    },
+    "member": {
+      "id": "uuid",
+      "member_code": "KOP001",
+      "status": "ACTIVE",
+      "organization": {
+        "id": "uuid",
+        "name": "Koperasi Karyawan"
+      }
+    }
+  }
+}
+```
+
 ### **Savings**
 ```http
 GET /api/v1/member/savings/summary
 GET /api/v1/member/savings/ledger?start_date=2026-01-01&end_date=2026-05-31
+POST /api/v1/member/savings/withdraw
 Authorization: Bearer {token}
 ```
 
-`summary` returns total balance, grouped ledger totals, total approved payments, pending invoice count, and remaining unpaid invoice amount. `ledger` returns statement entries with running balance.
+**Summary Response (200):**
+```json
+{
+  "data": {
+    "total_balance": 15000000,
+    "by_entry_type": {
+      "SIMPANAN_POKOK": { "credit": 500000, "debit": 0, "balance": 500000 },
+      "SIMPANAN_WAJIB": { "credit": 5000000, "debit": 0, "balance": 5000000 },
+      "SIMPANAN_SUKARELA": { "credit": 10000000, "debit": 500000, "balance": 9500000 }
+    },
+    "total_paid": 14500000,
+    "pending_invoices": 2,
+    "pending_invoice_amount": 1000000
+  }
+}
+```
+
+**Withdrawal Request (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "cooperative_member_id": 1,
+    "amount": "150000.00",
+    "status": "PENDING",
+    "destination_bank": "BCA",
+    "destination_account_no": "1234567890",
+    "destination_account_name": "Ahmad Subarjo",
+    "reason": "Kebutuhan mendesak"
+  }
+}
+```
+
+**Ledger Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "entry_type": "SIMPANAN_WAJIB",
+      "description": "Setoran bulan Mei",
+      "posted_at": "2026-05-01T10:30:00Z",
+      "debit": 0,
+      "credit": 500000,
+      "running_balance": 5000000
+    }
+  ]
+}
+```
 
 ### **Dues and Payments**
 ```http
 GET /api/v1/member/dues/invoices
 GET /api/v1/member/payments
+GET /api/v1/member/payments/{payment}/receipt
 POST /api/v1/member/payments/proof
-POST /api/payments/charge
 Authorization: Bearer {token}
-Content-Type: multipart/form-data
 ```
 
-Payment proof fields: `cooperative_dues_invoice_id`, `amount`, `payment_method` (`TRANSFER` or `QRIS`), `paid_at`, optional `reference_no`, optional `notes`, and `proof` (`jpg`, `png`, or `pdf`).
+**Payment Proof (multipart/form-data):**
+```
+cooperative_dues_invoice_id: uuid
+amount: 500000
+payment_method: TRANSFER
+paid_at: 2026-05-05
+reference_no: REF-001 (optional)
+notes: Pembayaran iuran Mei (optional)
+proof: <file> (jpg, png, or pdf, max 4MB)
+```
 
-Payment charge fields: `cooperative_payment_id` and `channel` (`QRIS`, `VA`, `E_WALLET`, or `TRANSFER`). The endpoint returns gateway provider, reference, status, amount, and checkout URL. Gateway webhook callback is `POST /api/payments/webhook` with `reference`/`gateway_reference`, `status`, and optional `reconciliation_reference`.
+**Response (201):**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "invoice": {
+      "id": "uuid",
+      "invoice_number": "INV-2026-001",
+      "contribution_type": {
+        "name": "Iuran Wajib"
+      }
+    },
+    "amount": 500000,
+    "payment_method": "TRANSFER",
+    "status": "PENDING",
+    "paid_at": "2026-05-05",
+    "proof_url": "https://storage.example.com/proofs/xxx.jpg"
+  }
+}
+```
+
+**Payment Receipt Response (200):**
+```json
+{
+  "data": {
+    "receipt_no": "RC-202606-000001",
+    "issued_at": "2026-06-12T10:15:00Z",
+    "download_url": "https://example.com/download/cooperative-receipts/1?expires=..."
+  }
+}
+```
+
+Receipt hanya tersedia untuk pembayaran berstatus `APPROVED`. `download_url` adalah signed URL sementara untuk file PDF receipt.
+
+### **Payment Gateway Charge**
+```http
+POST /api/payments/charge
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "cooperative_payment_id": "uuid",
+  "channel": "QRIS"
+}
+```
+
+**Channel options:** `QRIS`, `VA`, `E_WALLET`, `TRANSFER`
+
+**Response (201):**
+```json
+{
+  "data": {
+    "provider": "midtrans",
+    "reference": "MID-2026-05001",
+    "status": "PENDING",
+    "amount": 500000,
+    "checkout_url": "https://app.midtrans.com/..."
+  }
+}
+```
 
 ### **Push Device Registration**
 ```http
 POST /api/devices/push-token
 Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "app": "member",
+  "device_id": "device-uuid",
+  "platform": "android",
+  "push_token": "fcm-token-string"
+}
 ```
 
-Fields: `app`, `device_id`, `platform`, and `push_token`. The backend stores active mobile device tokens and currently mirrors push events to database notifications while integration providers are configured.
+**Response (200):**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "app": "member",
+    "device_id": "device-uuid",
+    "platform": "android",
+    "push_token": "fcm-token-string",
+    "is_active": true
+  }
+}
+```
 
 ### **Loans**
 ```http
 GET /api/v1/member/loans
 POST /api/v1/member/loans
 GET /api/v1/member/loans/{loan}
+POST /api/v1/member/loans/{loan}/restructure
 Authorization: Bearer {token}
 ```
 
 Loan applications reuse the cooperative loan calculator/service and return the generated installment schedule. Members can only access loans linked to their own member profile.
 
-### **SHU, Notifications, and Support**
+**Apply Loan Request:**
+```json
+{
+  "loan_type_id": "uuid",
+  "amount": 10000000,
+  "tenure_months": 12,
+  "purpose": "Modal usaha warung"
+}
+```
+
+**Restructure Request (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "loan_id": 10,
+    "cooperative_member_id": 1,
+    "status": "PENDING",
+    "reason": "Pendapatan turun sementara",
+    "proposed_term_months": 18
+  }
+}
+```
+
+### **SHU (Sisa Hasil Usaha)**
 ```http
 GET /api/v1/member/shu
-GET /api/v1/member/notifications
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "period": "2025",
+      "status": "CLOSED",
+      "allocations": [
+        {
+          "type": "DIVIDEN",
+          "amount": 500000
+        },
+        {
+          "type": "JASA_BELANJA",
+          "amount": 250000
+        }
+      ]
+    }
+  ]
+}
+```
+
+### **Notifications**
+```http
+GET /api/v1/member/notifications?per_page=15
+Authorization: Bearer {token}
+```
+
+Returns paginated database notifications for the authenticated user.
+
+### **Support Tickets**
+```http
 GET /api/v1/member/support-tickets
 POST /api/v1/member/support-tickets
 Authorization: Bearer {token}
 ```
 
-Support ticket fields: `subject`, `message`, optional `category` (`GENERAL`, `PAYMENT`, `LOAN`, `SAVINGS`, `POINTS`, `PROFILE`, `POS`), and optional `priority` (`LOW`, `NORMAL`, `HIGH`, `URGENT`).
+**Create payload:**
+```json
+{
+  "subject": "Masalah pembayaran iuran",
+  "message": "Saya sudah bayar tapi status masih pending",
+  "category": "PAYMENT",
+  "priority": "HIGH"
+}
+```
+
+**Category options:** `GENERAL`, `PAYMENT`, `LOAN`, `SAVINGS`, `POINTS`, `PROFILE`, `POS`
+**Priority options:** `LOW`, `NORMAL`, `HIGH`, `URGENT`
 
 ---
 
 ## 🔧 Technician Work Orders API
 
 **Base Path:** `/api/technician`
+
+All endpoints require the user to be the assigned technician on the work order (403 otherwise). Supervisor endpoints require `work-orders:review` or `view_work_order_all` ability.
 
 ### **List Work Orders**
 ```http
@@ -257,6 +614,8 @@ GET /api/technician/work-orders/{id}
 Authorization: Bearer {token}
 ```
 
+Returns work order with `asset`, `organization`, `checklists`, `parts`, `attachments`, and `timelines`.
+
 ### **Start Work Order**
 ```http
 POST /api/technician/work-orders/{id}/start
@@ -274,6 +633,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "Work order started",
   "data": {
     "id": "uuid",
     "status": "IN_PROGRESS",
@@ -300,6 +660,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "message": "Work order completed",
   "data": {
     "id": "uuid",
     "status": "COMPLETED",
@@ -331,6 +692,19 @@ Content-Type: application/json
 }
 ```
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "item": "Check filter condition",
+    "is_checked": true,
+    "notes": "Filter replaced with new one"
+  }
+}
+```
+
 ### **Upload Work Order Evidence**
 ```http
 POST /api/technician/work-orders/{id}/attachments
@@ -338,7 +712,28 @@ Authorization: Bearer {token}
 Content-Type: multipart/form-data
 ```
 
-Fields: `type` (`BEFORE`, `AFTER`, `OTHER`), `file` (`jpg`, `png`, or `pdf`), optional `latitude`, `longitude`, `accuracy`, and `notes`.
+**Fields:**
+- `type` (required): `BEFORE`, `AFTER`, `OTHER`
+- `file` (required): jpg, jpeg, png, or pdf (max 8MB)
+- `latitude` (optional): numeric
+- `longitude` (optional): numeric
+- `accuracy` (optional): numeric
+- `notes` (optional): string
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "type": "BEFORE",
+    "file_url": "https://storage.example.com/attachments/xxx.jpg",
+    "latitude": "-6.2088000",
+    "longitude": "106.8456000",
+    "notes": "Kondisi awal"
+  }
+}
+```
 
 ### **Record Spare Part Usage**
 ```http
@@ -351,6 +746,27 @@ Content-Type: application/json
   "warehouse_id": "uuid",
   "quantity_used": 2,
   "notes": "Ganti seal"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "spare_part": {
+      "id": "uuid",
+      "name": "Seal Kit",
+      "sku": "SP-001"
+    },
+    "warehouse": {
+      "id": "uuid",
+      "name": "Warehouse A"
+    },
+    "quantity_used": 2,
+    "notes": "Ganti seal"
+  }
 }
 ```
 
@@ -377,6 +793,19 @@ Content-Type: application/json
 }
 ```
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "idempotency_key": "offline-001",
+    "updated_checklists": [...],
+    "created_parts": [...],
+    "work_order": {...}
+  }
+}
+```
+
 Repeated submit with the same `idempotency_key` for the same technician and work order returns the stored response and does not duplicate parts/checklist actions.
 
 ### **Timeline, Escalation, and Reopen**
@@ -387,7 +816,18 @@ POST /api/technician/work-orders/{id}/reopen
 Authorization: Bearer {token}
 ```
 
-Escalation fields: `type` (`BLOCKED`, `NEED_PART`, `NEED_SUPERVISOR`, `REASSIGNMENT`, `SAFETY_RISK`, `OTHER`), `reason`, optional `reassignment_requested_to`. Reopen requires `work-orders:review` ability and moves completed/closed work orders back to `IN_PROGRESS`.
+**Escalation payload:**
+```json
+{
+  "type": "NEED_PART",
+  "reason": "Spare part tidak tersedia di warehouse",
+  "reassignment_requested_to": "user-uuid"
+}
+```
+
+**Escalation types:** `BLOCKED`, `NEED_PART`, `NEED_SUPERVISOR`, `REASSIGNMENT`, `SAFETY_RISK`, `OTHER`
+
+**Reopen** requires `work-orders:review` ability and moves `COMPLETED`/`CLOSED` work orders back to `IN_PROGRESS`.
 
 ---
 
@@ -397,7 +837,7 @@ Escalation fields: `type` (`BLOCKED`, `NEED_PART`, `NEED_SUPERVISOR`, `REASSIGNM
 
 ### **List Members**
 ```http
-GET /api/v1/members
+GET /api/v1/members?search=ahmad&status=ACTIVE&page=1
 Authorization: Bearer {token}
 ```
 
@@ -452,6 +892,10 @@ Content-Type: application/json
     "member_code": "KOP002",
     "name": "Siti Aminah",
     "status": "ACTIVE",
+    "organization": {
+      "id": "uuid",
+      "name": "Koperasi Karyawan"
+    },
     "created_at": "2026-05-02T10:00:00Z"
   }
 }
@@ -513,15 +957,13 @@ Content-Type: application/json
 }
 ```
 
----
-
 ## 💰 Cooperative Dues API
 
 **Base Path:** `/api/v1/dues`
 
 ### **List Invoices**
 ```http
-GET /api/v1/dues/invoices
+GET /api/v1/dues/invoices?member_id=uuid&status=PENDING
 Authorization: Bearer {token}
 ```
 
@@ -572,13 +1014,7 @@ Content-Type: application/json
 **Response (201):**
 ```json
 {
-  "success": true,
-  "message": "Generated 120 invoices",
-  "data": {
-    "period": "2026-05",
-    "total_amount": 60000000,
-    "total_members": 120
-  }
+  "created": 120
 }
 ```
 
@@ -606,6 +1042,9 @@ Content-Type: application/json
     "member": {
       "name": "Ahmad Subarjo"
     },
+    "invoice": {
+      "invoice_number": "INV-2026-001"
+    },
     "amount": 500000,
     "payment_method": "CASH",
     "status": "PENDING",
@@ -620,6 +1059,16 @@ POST /api/v1/dues/payments/{payment}/approve
 Authorization: Bearer {token}
 ```
 
+**Response (200):**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "status": "PAID"
+  }
+}
+```
+
 ---
 
 ## 🛒 POS API
@@ -628,7 +1077,7 @@ Authorization: Bearer {token}
 
 ### **List Products**
 ```http
-GET /api/v1/pos/products
+GET /api/v1/pos/products?search=minyak&category_id=uuid
 Authorization: Bearer {token}
 ```
 
@@ -707,156 +1156,21 @@ Content-Type: application/json
 }
 ```
 
----
-
-## 💰 Kojayaku - Savings (Simpanan) API
-
-**Base Path:** `/api/v1/savings`
-**Use Case:** Anggota cek saldo simpanan dan riwayat transaksi
-
-### **Get Savings Balance**
+### **Create Return**
 ```http
-GET /api/v1/savings/balance
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "member_id": "uuid",
-    "member_name": "Ahmad Subarjo",
-    "total_savings": 15000000,
-    "savings_accounts": [
-      {
-        "id": "uuid",
-        "account_type": "SIMPANAN_POKOK",
-        "account_name": "Simpanan Pokok",
-        "balance": 500000,
-        "created_at": "2025-01-15T00:00:00Z"
-      },
-      {
-        "id": "uuid",
-        "account_type": "SIMPANAN_WAJIB",
-        "account_name": "Simpanan Wajib",
-        "balance": 1000000,
-        "created_at": "2025-01-15T00:00:00Z"
-      },
-      {
-        "id": "uuid",
-        "account_type": "SIMPANAN_SUKARELA",
-        "account_name": "Simpanan Sukarela",
-        "balance": 13500000,
-        "created_at": "2025-01-15T00:00:00Z"
-      }
-    ]
-  }
-}
-```
-
-### **Get Savings Ledger (Riwayat Transaksi)**
-```http
-GET /api/v1/savings/ledger
-Authorization: Bearer {token}
-```
-
-**Query Parameters:**
-- `savings_account_id` (optional): Filter by account type
-- `transaction_type` (optional): `DEPOSIT`, `WITHDRAWAL`
-- `start_date` (optional): Filter start date (ISO 8601)
-- `end_date` (optional): Filter end date (ISO 8601)
-- `page` (optional): Page number
-
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "transaction_date": "2026-05-01T10:30:00Z",
-      "transaction_type": "DEPOSIT",
-      "amount": 500000,
-      "balance_before": 14000000,
-      "balance_after": 14500000,
-      "description": "Setoran bulan Mei",
-      "reference_number": "SAV-2026-05001"
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "per_page": 20,
-    "total": 150
-  }
-}
-```
-
-### **Download Savings Statement (PDF)**
-```http
-GET /api/v1/savings/statement/pdf
-Authorization: Bearer {token}
-```
-
-**Query Parameters:**
-- `start_date` (required): Start date
-- `end_date` (required): End date
-- `savings_account_id` (optional): Filter by account
-
-**Response:** PDF file download
-
----
-
-## 💸 Kojayaku - Loans (Pinjaman) API
-
-**Base Path:** `/api/v1/loans`
-**Use Case:** Anggota ajukan pinjaman dan cek status angsuran
-
-### **List Loans**
-```http
-GET /api/v1/loans
-Authorization: Bearer {token}
-```
-
-**Query Parameters:**
-- `status` (optional): `PENDING`, `APPROVED`, `REJECTED`, `DISBURSED`, `COMPLETED`
-- `page` (optional): Page number
-
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "loan_number": "PINJ-2026-001",
-      "loan_type": "PINJAMAN_UMUM",
-      "principal_amount": 10000000,
-      "interest_rate": 12,
-      "tenure_months": 12,
-      "monthly_installment": 888000,
-      "disbursed_date": "2026-01-15",
-      "status": "ACTIVE",
-      "remaining_balance": 5500000
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "total": 5
-  }
-}
-```
-
-### **Apply for Loan (Ajukan Pinjaman)**
-```http
-POST /api/v1/loans/apply
+POST /api/v1/pos/returns
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "loan_type_id": "uuid",
-  "amount": 10000000,
-  "tenure_months": 12,
-  "purpose": "Modal usaha warung",
-  "guarantor_id": "uuid"
+  "pos_transaction_id": 123,
+  "reason": "Barang rusak",
+  "items": [
+    {
+      "pos_transaction_item_id": 456,
+      "quantity": 1
+    }
+  ]
 }
 ```
 
@@ -864,113 +1178,22 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Pengajuan pinjaman berhasil dibuat. Menunggu persetujuan.",
   "data": {
-    "id": "uuid",
-    "loan_number": "PINJ-2026-001",
-    "status": "PENDING",
-    "estimated_monthly_installment": 888000,
-    "created_at": "2026-05-02T10:00:00Z"
-  }
-}
-```
-
-### **Get Loan Detail**
-```http
-GET /api/v1/loans/{loan}
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "loan_number": "PINJ-2026-001",
-    "loan_type": "PINJAMAN_UMUM",
-    "principal_amount": 10000000,
-    "interest_rate": 12,
-    "tenure_months": 12,
-    "monthly_installment": 888000,
-    "total_amount": 10656000,
-    "disbursed_date": "2026-01-15",
-    "next_payment_date": "2026-06-15",
-    "status": "ACTIVE",
-    "remaining_balance": 5500000,
-    "installments_paid": 6,
-    "installments_remaining": 6
-  }
-}
-```
-
-### **Get Installment Schedule (Jadwal Angsuran)**
-```http
-GET /api/v1/loans/{loan}/schedule
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "installment_number": 1,
-      "due_date": "2026-02-15",
-      "amount": 888000,
-      "principal": 779000,
-      "interest": 109000,
-      "balance_after": 9221000,
-      "status": "PAID",
-      "paid_date": "2026-02-14"
-    },
-    {
-      "installment_number": 7,
-      "due_date": "2026-08-15",
-      "amount": 888000,
-      "principal": 779000,
-      "interest": 109000,
-      "balance_after": 4712000,
-      "status": "PENDING"
-    }
-  ]
-}
-```
-
-### **Loan Calculator (Simulasi Cicilan)**
-```http
-POST /api/v1/loans/calculate
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "amount": 10000000,
-  "tenure_months": 12,
-  "loan_type_id": "uuid"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "principal_amount": 10000000,
-    "interest_rate": 12,
-    "tenure_months": 12,
-    "monthly_installment": 888000,
-    "total_amount": 10656000,
-    "total_interest": 656000
+    "id": 1,
+    "pos_transaction_id": 123,
+    "return_no": "RET-20260516-120000-001",
+    "status": "APPROVED",
+    "total_amount": "20000.00",
+    "points_reversed": 10
   }
 }
 ```
 
 ---
 
-## 🎁 Kojayaku - Points & Rewards API
+## 🎁 Points & Rewards API
 
-**Base Path:** `/api/v1/points`
-**Use Case:** Anggota cek poin dan tukar reward
+**Base Path:** `/api/v1/points` and `/api/v1/rewards`
 
 ### **Get Points Balance**
 ```http
@@ -997,7 +1220,7 @@ Authorization: Bearer {token}
 
 ### **Get Points History**
 ```http
-GET /api/v1/points/history
+GET /api/v1/points/history?transaction_type=EARNED&start_date=2026-01-01
 Authorization: Bearer {token}
 ```
 
@@ -1024,6 +1247,7 @@ Authorization: Bearer {token}
   ],
   "meta": {
     "current_page": 1,
+    "per_page": 15,
     "total": 150
   }
 }
@@ -1031,12 +1255,12 @@ Authorization: Bearer {token}
 
 ### **List Available Rewards**
 ```http
-GET /api/v1/rewards
+GET /api/v1/rewards?category=DISKON&min_points=500
 Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
-- `category` (optional): `BARANG`, `DISKON`, `LAYANAN`
+- `category` (optional): Filter by category
 - `min_points` (optional): Minimum points required
 - `page` (optional): Page number
 
@@ -1053,18 +1277,13 @@ Authorization: Bearer {token}
       "stock": 50,
       "valid_until": "2026-12-31",
       "image_url": "https://example.com/rewards/voucher-50k.jpg"
-    },
-    {
-      "id": "uuid",
-      "name": "Rice Cooker",
-      "description": "Rice cooker merek XXX",
-      "category": "BARANG",
-      "points_required": 2000,
-      "stock": 10,
-      "valid_until": "2026-12-31",
-      "image_url": "https://example.com/rewards/rice-cooker.jpg"
     }
-  ]
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 20
+  }
 }
 ```
 
@@ -1100,21 +1319,18 @@ Content-Type: application/json
 
 ---
 
-## 🛒 Kojayaku - Transactions API
+## 💸 Loans API (Admin)
 
-**Base Path:** `/api/v1/transactions`
-**Use Case:** Anggota lihat riwayat belanja di toko koperasi
+**Base Path:** `/api/v1/loans`
 
-### **Get Transaction History**
+### **List Loans**
 ```http
-GET /api/v1/transactions
+GET /api/v1/loans?status=PENDING
 Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
-- `start_date` (optional): Filter start date
-- `end_date` (optional): Filter end date
-- `payment_method` (optional): `CASH`, `TRANSFER`, `QRIS`, `MEMBER_CREDIT`
+- `status` (optional): `PENDING`, `APPROVED`, `REJECTED`, `DISBURSED`, `COMPLETED`
 - `page` (optional): Page number
 
 **Response (200):**
@@ -1123,72 +1339,105 @@ Authorization: Bearer {token}
   "data": [
     {
       "id": "uuid",
-      "transaction_number": "POS-2026-05001",
-      "transaction_date": "2026-05-01T14:30:00Z",
-      "total_amount": 105000,
-      "payment_method": "CASH",
-      "points_earned": 105,
-      "items": [
-        {
-          "product_name": "Minyak Goreng 2L",
-          "quantity": 2,
-          "unit_price": 35000,
-          "subtotal": 70000
-        },
-        {
-          "product_name": "Gula Pasir 1kg",
-          "quantity": 1,
-          "unit_price": 15000,
-          "subtotal": 15000
-        }
-      ],
-      "cashier": "Siti Aminah"
+      "loan_number": "PINJ-2026-001",
+      "loan_type": "PINJAMAN_UMUM",
+      "principal_amount": 10000000,
+      "interest_rate": 12,
+      "tenure_months": 12,
+      "monthly_installment": 888000,
+      "disbursed_date": "2026-01-15",
+      "status": "ACTIVE",
+      "remaining_balance": 5500000
     }
   ],
   "meta": {
     "current_page": 1,
-    "per_page": 20,
-    "total": 45
+    "per_page": 15,
+    "total": 5
   }
 }
 ```
 
-### **Get Transaction Detail**
+### **Apply for Loan (Ajukan Pinjaman)**
 ```http
-GET /api/v1/transactions/{transaction}
+POST /api/v1/loans/apply
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "loan_type_id": "uuid",
+  "amount": 10000000,
+  "tenure_months": 12,
+  "purpose": "Modal usaha warung"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Pengajuan pinjaman berhasil dibuat. Menunggu persetujuan.",
+  "data": {
+    "id": "uuid",
+    "loan_number": "PINJ-2026-001",
+    "status": "PENDING",
+    "estimated_monthly_installment": 888000,
+    "created_at": "2026-05-02T10:00:00Z"
+  }
+}
+```
+
+### **Get Loan Detail**
+```http
+GET /api/v1/loans/{loan}
 Authorization: Bearer {token}
 ```
 
 **Response (200):**
 ```json
 {
-  "success": true,
   "data": {
     "id": "uuid",
-    "transaction_number": "POS-2026-05001",
-    "transaction_date": "2026-05-01T14:30:00Z",
-    "total_amount": 105000,
-    "payment_method": "CASH",
-    "discount_amount": 0,
-    "final_amount": 105000,
-    "points_earned": 105,
-    "items": [
-      {
-        "product": {
-          "name": "Minyak Goreng 2L",
-          "sku": "PROD-001"
-        },
-        "quantity": 2,
-        "unit_price": 35000,
-        "subtotal": 70000
-      }
-    ],
-    "cashier": {
-      "name": "Siti Aminah"
-    },
-    "store": {
-      "name": "Koperasi KOJAYA - Cabang Pusat"
-    }
+    "loan_number": "PINJ-2026-001",
+    "loan_type": "PINJAMAN_UMUM",
+    "principal_amount": 10000000,
+    "interest_rate": 12,
+    "tenure_months": 12,
+    "monthly_installment": 888000,
+    "total_amount": 10656000,
+    "disbursed_date": "2026-01-15",
+    "next_payment_date": "2026-06-15",
+    "status": "ACTIVE",
+    "remaining_balance": 5500000,
+    "installments_paid": 6,
+    "installments_remaining": 6
+  }
+}
+```
+
+### **Loan Calculator (Simulasi Cicilan)**
+```http
+POST /api/v1/loans/calculator
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "amount": 10000000,
+  "tenure_months": 12,
+  "loan_type_id": "uuid"
+}
+```
+
+**Response (200):**
+```json
+{
+  "data": {
+    "principal_amount": 10000000,
+    "interest_rate": 12,
+    "tenure_months": 12,
+    "monthly_installment": 888000,
+    "total_amount": 10656000,
+    "total_interest": 656000
   }
 }
 ```
@@ -1197,9 +1446,11 @@ Authorization: Bearer {token}
 
 ## 👤 Employee Self Service API
 
-**Base Path:** `/api/ess` and `/api/employees/{id}`
+**Base Path:** `/api/ess`
 **Auth:** Sanctum bearer token
 **Abilities:** `ess:read`, `ess:write`, `attendance:read`, `attendance:write`
+
+All ESS endpoints require the authenticated user to have an associated `Employee` record (returns 403 otherwise).
 
 ### **Dashboard & Profile**
 ```http
@@ -1209,7 +1460,41 @@ PUT /api/ess/profile
 Authorization: Bearer {token}
 ```
 
-Dashboard mengembalikan profil karyawan, absensi hari ini, shift hari ini, statistik cuti/lembur/reimbursement, payroll terakhir, dan status compliance ringkas.
+**Dashboard Response (200):**
+```json
+{
+  "data": {
+    "employee": {
+      "id": "uuid",
+      "employee_code": "EMP001",
+      "name": "John Doe",
+      "department": { "name": "IT" },
+      "position": { "name": "Developer" }
+    },
+    "today_attendance": {
+      "clock_in": "08:00:00",
+      "clock_out": null,
+      "status": "PRESENT"
+    },
+    "today_shift": {
+      "name": "Pagi",
+      "start_time": "08:00:00",
+      "end_time": "17:00:00"
+    },
+    "stats": {
+      "attendance_this_month": 20,
+      "pending_leaves": 1,
+      "approved_leaves_this_year": 5,
+      "latest_payroll_period": "2026-04",
+      "latest_net_salary": 8500000,
+      "expiring_certificates": 2,
+      "due_medical_checkups": 1,
+      "pending_overtime": 3,
+      "pending_reimbursements": 2
+    }
+  }
+}
+```
 
 ### **Attendance Check-In**
 ```http
@@ -1257,6 +1542,14 @@ Content-Type: application/json
 }
 ```
 
+**Conflict Response (409):**
+```json
+{
+  "ok": false,
+  "error": "Already checked in."
+}
+```
+
 ### **Attendance Today & History**
 ```http
 GET /api/ess/attendance/today
@@ -1278,7 +1571,60 @@ Content-Type: application/json
 }
 ```
 
-Check-out menyimpan `clock_out_latitude`, `clock_out_longitude`, `clock_out_accuracy`, `clock_out_device_id`, dan audit mobile.
+Check-out stores `clock_out_latitude`, `clock_out_longitude`, `clock_out_accuracy`, `clock_out_device_id`, and mobile audit data.
+
+**Conflict Response (409):**
+```json
+{
+  "ok": false,
+  "error": "Not checked in."
+}
+```
+
+### **Attendance Correction**
+```http
+POST /api/ess/attendance/correction
+POST /api/ess/attendance/corrections/{attendanceCorrection}/approve
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**Create payload:**
+```json
+{
+  "date": "2026-05-15",
+  "corrected_clock_in": "08:05",
+  "corrected_clock_out": "17:10",
+  "reason": "Lupa check-in dan check-out karena kunjungan lapangan."
+}
+```
+
+Create returns `PENDING`. Approval writes or updates the related `attendances` row with `status=PRESENT`, links `attendance_corrections.attendance_id`, and stores reviewer audit metadata.
+
+### **THR Entitlement**
+```http
+GET /api/ess/thr/entitlement?year=2026
+Authorization: Bearer {token}
+```
+
+Requires `payroll:read`. Returns the authenticated employee's calculated THR entitlement based on cutoff 31 Mei, capped at 12 months of service.
+
+**Response (200):**
+```json
+{
+  "data": {
+    "year": 2026,
+    "months_worked": 12,
+    "base_salary": 6000000,
+    "amount": 6000000,
+    "status": "DRAFT",
+    "calculation_breakdown": {
+      "cutoff_date": "2026-05-31",
+      "formula": "(base_salary / 12) * months_worked"
+    }
+  }
+}
+```
 
 ### **Get Geofence Data**
 ```http
@@ -1303,7 +1649,7 @@ GET /api/ess/shift-roster?from=2026-05-06&to=2026-05-20
 Authorization: Bearer {token}
 ```
 
-Mengembalikan roster berdasarkan `employee.shift_group` dan relasi `workShift`.
+Returns roster based on `employee.shift_group` and related `workShift`. Only available if employee has a shift group assigned.
 
 ### **Leave Requests**
 ```http
@@ -1311,21 +1657,48 @@ GET /api/ess/leaves?per_page=15
 POST /api/ess/leaves
 POST /api/ess/leaves/{leave}/cancel
 Authorization: Bearer {token}
-Content-Type: multipart/form-data
 ```
 
-Create payload:
+**Create payload (multipart/form-data):**
+```
+leave_type_id: 1
+start_date: 2026-05-10
+end_date: 2026-05-12
+reason: Attending family event
+attachment: <optional file> (jpg/png/pdf, max 4MB)
+```
+
+**List Response (200):**
 ```json
 {
-  "leave_type_id": 1,
-  "start_date": "2026-05-10",
-  "end_date": "2026-05-12",
-  "reason": "Attending family event",
-  "attachment": "optional jpg/png/pdf"
+  "data": [
+    {
+      "id": "uuid",
+      "leave_type": {
+        "id": 1,
+        "name": "Cuti Tahunan"
+      },
+      "start_date": "2026-05-10",
+      "end_date": "2026-05-12",
+      "status": "Pending",
+      "reason": "Attending family event"
+    }
+  ],
+  "balance": [
+    {
+      "leave_type_id": 1,
+      "name": "Cuti Tahunan",
+      "allowance": 12,
+      "used": 5,
+      "remaining": 7,
+      "requires_attachment": false,
+      "is_paid": true
+    }
+  ]
 }
 ```
 
-List response menyertakan `balance` per jenis cuti. Cancellation menyimpan `cancel_requested_at`, `cancel_requested_by`, dan `cancel_reason`; status approval lama tetap mengikuti constraint `Pending`, `Approved`, `Rejected`.
+Cancellation stores `cancel_requested_at`, `cancel_requested_by`, and `cancel_reason`. Only `Pending` leaves can be cancelled (409 otherwise).
 
 ### **Overtime**
 ```http
@@ -1335,7 +1708,7 @@ Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
-Create payload:
+**Create payload:**
 ```json
 {
   "overtime_rule_id": 1,
@@ -1354,7 +1727,16 @@ Authorization: Bearer {token}
 Content-Type: multipart/form-data
 ```
 
-Create payload memakai `items[]` dengan `category`, `description`, `amount`, `receipt_date`, dan `receipt_file` opsional. Semua reimbursement scoped ke user pemilik token.
+**Create payload:**
+```
+items[0][category]: TRANSPORT
+items[0][description]: Ojek ke kantor
+items[0][amount]: 50000
+items[0][receipt_date]: 2026-05-06
+items[0][receipt_file]: <optional file>
+```
+
+**Category options:** `TRANSPORT`, `MEAL`, `MEDICAL`, `LODGING`, `OFFICE_SUPPLIES`, `OTHER`
 
 ### **Payslips, Compliance, Notifications**
 ```http
@@ -1365,7 +1747,59 @@ GET /api/ess/notifications?per_page=15
 Authorization: Bearer {token}
 ```
 
-Payslip hanya mengembalikan atau mengunduh payroll milik employee yang statusnya `PROCESSED` atau `PAID`. Compliance mengembalikan certificate dan medical checkup milik employee. Notifications memakai Laravel database notifications milik user login.
+Payslip only returns or downloads payrolls owned by the employee with status `PROCESSED` or `PAID`. Compliance returns certificates and medical checkups owned by the employee. Notifications use Laravel database notifications for the logged-in user.
+
+---
+
+## 🧾 Cooperative SHU Revision
+
+```http
+POST /cooperative/shu/{period}/request-revision
+Authorization: Session cookie
+Content-Type: application/json
+```
+
+Requires `manage_cooperative_shu`. Only `CLOSED` or `CLOSED_REVISED` periods can enter `REVISION`; every revision request writes an `approval_logs` audit entry.
+
+**Payload:**
+```json
+{
+  "reason": "Ada koreksi data transaksi anggota setelah tutup buku."
+}
+```
+
+---
+
+## 🛒 Procurement API
+
+```http
+GET /api/v1/procurement/vendors/{vendor}/performance
+Authorization: Bearer {token}
+```
+
+Requires `reports:read`. Calculates and stores a vendor performance snapshot from purchase orders and goods receive notes, then updates `vendors.rating`.
+
+**Response (200):**
+```json
+{
+  "data": {
+    "vendor": {
+      "id": "uuid",
+      "code": "VND-00001",
+      "name": "Vendor A",
+      "rating": 5
+    },
+    "performance": {
+      "score": 100,
+      "rating": 5,
+      "on_time_delivery_rate": 100,
+      "quality_acceptance_rate": 100,
+      "purchase_order_count": 1,
+      "goods_receive_note_count": 1
+    }
+  }
+}
+```
 
 ---
 
@@ -1375,12 +1809,9 @@ Payslip hanya mengembalikan atau mengunduh payroll milik employee yang statusnya
 
 ### **Certificate Compliance Report**
 ```http
-GET /api/reports/certificate-compliance
+GET /api/reports/certificate-compliance?department_id=uuid
 Authorization: Bearer {token}
 ```
-
-**Query Parameters:**
-- `department_id` (optional): Filter by department
 
 **Response (200):**
 ```json
@@ -1414,47 +1845,225 @@ GET /api/reports/non-compliant-employees
 Authorization: Bearer {token}
 ```
 
+### **Consolidated Reports**
+```http
+GET /api/reports/consolidated-stats
+GET /api/reports/consolidated-attendance
+GET /api/reports/consolidated-payroll
+GET /api/v1/reports/npl-aging
+Authorization: Bearer {token}
+```
+
+### **NPL Aging Report**
+```http
+GET /api/v1/reports/npl-aging?as_of=2026-05-16
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "as_of": "2026-05-16",
+    "active_loan_outstanding": 1000000,
+    "npl_outstanding": 200000,
+    "npl_ratio": 0.2,
+    "buckets": [
+      {
+        "bucket": "91-120",
+        "installment_count": 1,
+        "outstanding_amount": 200000,
+        "provisioning_amount": 100000
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 🔔 Notifications API
+
+**Base Path:** `/api/notifications`
+
+### **List Notifications**
+```http
+GET /api/notifications?per_page=15
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "type": "App\\Notifications\\PaymentReceived",
+      "data": {
+        "message": "Pembayaran Anda telah diterima",
+        "url": "/member/payments"
+      },
+      "read_at": null,
+      "created_at": "2026-05-06T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 30
+  }
+}
+```
+
+### **Get Notification Detail**
+```http
+GET /api/notifications/{id}
+Authorization: Bearer {token}
+```
+
+### **Mark as Read**
+```http
+PATCH /api/notifications/{id}/read
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Notification marked as read."
+}
+```
+
+### **Mark All as Read**
+```http
+POST /api/notifications/mark-all-read
+Authorization: Bearer {token}
+```
+
+### **Unread Count**
+```http
+GET /api/notifications/unread-count
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "count": 5
+}
+```
+
+### **Notification Preferences**
+```http
+GET /api/notifications/preferences
+PUT /api/notifications/preferences
+Authorization: Bearer {token}
+```
+
+**Update payload:**
+```json
+{
+  "email_enabled": true,
+  "push_enabled": true,
+  "whatsapp_enabled": true,
+  "whatsapp_phone": "081234567890",
+  "channels": ["mail", "database", "push", "whatsapp"]
+}
+```
+
+`whatsapp_enabled` adalah kontrol opt-in/opt-out untuk reminder WhatsApp. Nomor `whatsapp_phone` dinormalisasi saat pengiriman; jika kosong, sistem dapat memakai nomor anggota koperasi yang tersimpan pada profil member.
+
+### **WhatsApp Operational Notifications**
+
+WhatsApp dikirim melalui transactional outbox dengan channel `whatsapp`, sehingga delivery tercatat di `notification_outboxes` dan ikut retry oleh `notifications:outbox:process`.
+
+**Automated flows:**
+- `notifications:whatsapp-dues-reminders --days=3` mengantrekan reminder iuran `UNPAID`/`PARTIAL` yang jatuh tempo dalam 3 hari atau sudah lewat jatuh tempo.
+- Approval/rejection cuti mengantrekan notifikasi status cuti ke karyawan yang opt-in WhatsApp.
+
+**Environment:**
+```
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_ENDPOINT=https://graph.facebook.com/v20.0
+WHATSAPP_DEFAULT_COUNTRY_CODE=62
+```
+
 ---
 
 ## 📋 Common Response Format
 
-### **Success Response**
+API responses under `/api/*` are normalized by middleware. Legacy payload shapes are preserved for backward compatibility, but every JSON API response includes a `success` boolean.
+
+### **Success: `{ success: true, data?: ..., message?: ... }`**
 ```json
 {
   "success": true,
-  "data": { ... }
+  "data": { ... },
+  "message": "Operation successful"
 }
 ```
 
-### **Error Response**
+### **Error: `{ success: false, message, error_code, request_id }`**
 ```json
 {
   "success": false,
-  "message": "Error description",
-  "errors": {
-    "field": ["Validation error message"]
-  }
+  "message": "Resource tidak ditemukan.",
+  "errors": {},
+  "error": "Resource tidak ditemukan.",
+  "error_code": "NOT_FOUND",
+  "error_details": {},
+  "request_id": "req-01HY..."
 }
 ```
 
-### **Pagination Response**
+`request_id` matches the `X-Correlation-ID` response header and can be passed by clients using the `X-Correlation-ID` request header.
+
+### **Pagination Response (Laravel Paginator)**
+All list endpoints return Laravel's standard paginator format:
+
 ```json
 {
+  "current_page": 1,
   "data": [...],
-  "meta": {
-    "current_page": 1,
-    "per_page": 15,
-    "total": 100,
-    "last_page": 7
-  },
-  "links": {
-    "first": "https://api.com/resource?page=1",
-    "last": "https://api.com/resource?page=7",
-    "prev": null,
-    "next": "https://api.com/resource?page=2"
-  }
+  "first_page_url": "http://localhost:8000/api/resource?page=1",
+  "from": 1,
+  "last_page": 7,
+  "last_page_url": "http://localhost:8000/api/resource?page=7",
+  "links": [...],
+  "next_page_url": "http://localhost:8000/api/resource?page=2",
+  "path": "http://localhost:8000/api/resource",
+  "per_page": 15,
+  "prev_page_url": null,
+  "to": 15,
+  "total": 100
 }
 ```
+
+---
+
+## 🧰 Production Operations
+
+Scheduled operational tasks are configured in `routes/console.php`:
+
+- `operations:prune-retention` runs daily at `01:30` and prunes managed rotated log files plus `audit_logs` rows older than `AUDIT_LOG_RETENTION_DAYS`.
+- `backup:database --prune` runs daily at `02:30` and writes a DB backup to `BACKUP_DISK` / `BACKUP_DIRECTORY`, then removes backups older than `BACKUP_RETENTION_DAYS`.
+- `backup:verify {path?}` verifies a selected backup or the latest backup in `BACKUP_DIRECTORY`; SQLite backups are restored to a temporary read-only database and checked with `PRAGMA integrity_check`.
+- `notifications:outbox:process --limit=100` runs every 30 seconds for transactional notification retry.
+
+Environment controls:
+
+```dotenv
+LOG_RETENTION_DAYS=30
+AUDIT_LOG_RETENTION_DAYS=365
+BACKUP_DISK=local
+BACKUP_DIRECTORY=backups/database
+BACKUP_RETENTION_DAYS=14
+```
+
+Manual deployment is available via `.github/workflows/deploy.yml` (`workflow_dispatch`) and executes `bin/deploy.sh` over SSH using `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH`, and `DEPLOY_SSH_KEY` secrets.
 
 ---
 
@@ -1465,11 +2074,38 @@ Authorization: Bearer {token}
 | 200 | Success |
 | 201 | Created |
 | 401 | Unauthorized - Invalid or missing token |
-| 403 | Forbidden - Insufficient permissions |
+| 403 | Forbidden - Insufficient permissions or not assigned |
 | 404 | Not Found |
+| 409 | Conflict - Already checked in, cannot cancel, etc. |
 | 422 | Validation Error |
 | 429 | Too Many Requests - Rate limit exceeded |
 | 500 | Server Error |
+
+Business error envelopes may additionally expose `error_code` values such as `PERIOD_LOCKED`, `INSUFFICIENT_BALANCE`, and `BUSINESS_RULE_VIOLATION`.
+
+---
+
+## 🔑 Abilities / Permissions
+
+| Ability | Granted To |
+|---------|-----------|
+| `*` | System Admin, Admin Pusat |
+| `profile:read` | All authenticated users |
+| `member:read`, `member:write` | Anggota, cooperative members |
+| `cooperative:read`, `cooperative:write` | Anggota, Pengurus Koperasi, Kasir Koperasi |
+| `ess:read`, `ess:write` | Employees |
+| `attendance:read`, `attendance:write` | Employees |
+| `payroll:read` | Employees |
+| `work-orders:read` | Technicians |
+| `work-orders:write` | Technicians, users with `manage_work_order` |
+| `work-orders:review` | Users with `manage_work_order` or `view_work_order_all` |
+| `pos:read`, `pos:write` | Pengurus Koperasi, Kasir Koperasi |
+| `reports:read` | Pengurus Koperasi, Kasir Koperasi |
+| `access_cooperative_pos` | Pengurus Koperasi, Kasir Koperasi |
+| `manage_cooperative_member` | Admin koperasi |
+| `manage_cooperative_dues` | Admin koperasi |
+| `manage_cooperative_payment` | Admin koperasi |
+| `view_cooperative_loan` | Admin koperasi & anggota (scoped) |
 
 ---
 
@@ -1479,9 +2115,9 @@ Authorization: Bearer {token}
 
 ```bash
 # 1. Login
-curl -X POST http://localhost:8000/api/login \
+curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password"}'
+  -d '{"email":"user@example.com","password":"password","app":"member"}'
 
 # 2. Get work orders
 curl -X GET http://localhost:8000/api/technician/work-orders \
@@ -1498,52 +2134,107 @@ curl -X POST http://localhost:8000/api/v1/pos/transactions \
       {"pos_product_id": "uuid", "quantity": 2}
     ]
   }'
+
+# 4. Check-in attendance
+curl -X POST http://localhost:8000/api/ess/attendance/check-in \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "latitude": -6.2088,
+    "longitude": 106.8456,
+    "accuracy": 10.5,
+    "device_id": "device-uuid"
+  }'
 ```
 
 ---
 
 ## 📱 Mobile App Integration Guide
 
-### **Android (Kotlin) Example**
-
-```kotlin
-// API Client
-class ApiClient {
-    private val baseUrl = "http://localhost:8000/api"
-    private var token: String? = null
-
-    suspend fun login(email: String, password: String): AuthResponse {
-        // Implementation
-    }
-
-    suspend fun getWorkOrders(): List<WorkOrder> {
-        // Requires token
-    }
-}
-
-// Usage
-val api = ApiClient()
-val authResponse = api.login("user@example.com", "password")
-api.token = authResponse.token
-
-val workOrders = api.getWorkOrders()
-```
-
 ### **Flutter (Dart) Example**
 
 ```dart
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 class ApiClient {
   final String baseUrl = 'http://localhost:8000/api';
   String? _token;
 
-  Future<AuthResponse> login(String email, String password) async {
-    // Implementation
+  Future<Map<String, dynamic>> login(String email, String password, {String app = 'member'}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'app': app,
+        'device_name': 'Flutter App',
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      _token = data['token'];
+      return data;
+    }
+    throw Exception('Login failed: ${response.body}');
   }
 
-  Future<List<WorkOrder>> getWorkOrders() async {
-    // Requires _token
+  Future<Map<String, dynamic>> get(String path, {Map<String, String>? queryParameters}) async {
+    final uri = Uri.parse('$baseUrl$path').replace(queryParameters: queryParameters);
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Request failed: ${response.body}');
+  }
+
+  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $_token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    }
+    throw Exception('Request failed: ${response.body}');
   }
 }
+
+// Usage
+final api = ApiClient();
+final authResponse = await api.login('user@example.com', 'password', app: 'member');
+
+// Get member dashboard
+final dashboard = await api.get('/v1/member/dashboard');
+
+// Get work orders
+final workOrders = await api.get('/technician/work-orders', queryParameters: {
+  'status': 'OPEN',
+  'per_page': '15',
+});
+
+// Check-in attendance
+final checkIn = await api.post('/ess/attendance/check-in', {
+  'latitude': -6.2088,
+  'longitude': 106.8456,
+  'accuracy': 10.5,
+  'device_id': 'device-uuid',
+});
 ```
 
 ---
@@ -1551,18 +2242,23 @@ class ApiClient {
 ## 🔄 API Changelog
 
 ### **Version 1.0.0** (Current Release)
-- Initial API release
-- Technician work orders endpoints
-- Cooperative members management
-- Dues and payments endpoints
-- POS products and transactions
-- ESS attendance and leaves
-- Certificate compliance reports
-- Operator hardening endpoints for approval inbox, closing, reconciliation, exception dashboard, exports, monitoring, and OpenAPI.
-- Production integration foundation: payment charge/webhook, push token registration, and `/api/openapi.json`.
+- Authentication with Sanctum tokens (login, logout, session, rotate)
+- Technician work orders (CRUD, start, complete, sync with idempotency, attachments, parts, escalation, reopen, timeline)
+- Employee Self-Service (dashboard, profile, attendance with geofence, leaves, overtime, reimbursements, payslips, compliance, shift roster, geofence)
+- Cooperative members management (CRUD, activate, resign)
+- Cooperative dues (invoices, generate, payments, approve)
+- Member self-service (dashboard, profile, savings summary/ledger, dues invoices, payments with proof upload, loans, SHU, notifications, support tickets)
+- POS (products, transactions)
+- Points & rewards (balance, history, list rewards, redeem)
+- Loans (list, apply, detail, calculator)
+- Notifications (list, read, mark-all, unread count, preferences)
+- Reports (certificate compliance, MCU compliance, non-compliant employees, consolidated stats/attendance/payroll)
+- Payment gateway integration (charge, webhook with Midtrans compatibility)
+- Push token registration for mobile devices
+- OpenAPI spec available at `/api/openapi.json`
+- Dashboard API (consolidated/organization view)
 
 ### **Planned for v1.1.0**
-- Payment gateway integration
 - WhatsApp notifications
 - Advanced filtering and sorting
 - Export endpoints (Excel, PDF)
@@ -1570,4 +2266,4 @@ class ApiClient {
 
 ---
 
-*Last Updated: May 6, 2026*
+*Last Updated: May 15, 2026*

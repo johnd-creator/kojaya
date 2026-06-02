@@ -141,7 +141,7 @@ apply.form = applyForm
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-export const show = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -156,7 +156,7 @@ show.definition = {
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-show.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -189,7 +189,7 @@ show.url = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-show.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -199,7 +199,7 @@ show.get = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-show.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -209,7 +209,7 @@ show.head = (args: { loan: number | { id: number } } | [loan: number | { id: num
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-const showForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -219,7 +219,7 @@ const showForm = (args: { loan: number | { id: number } } | [loan: number | { id
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-showForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -229,7 +229,7 @@ showForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: 
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:48
 * @route '/api/v1/loans/{loan}'
 */
-showForm.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -243,7 +243,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:61
+* @see app/Http/Controllers/Api/V1/LoanApiController.php:57
 * @route '/api/v1/loans/calculator'
 */
 export const calculator = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -258,7 +258,7 @@ calculator.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:61
+* @see app/Http/Controllers/Api/V1/LoanApiController.php:57
 * @route '/api/v1/loans/calculator'
 */
 calculator.url = (options?: RouteQueryOptions) => {
@@ -267,7 +267,7 @@ calculator.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:61
+* @see app/Http/Controllers/Api/V1/LoanApiController.php:57
 * @route '/api/v1/loans/calculator'
 */
 calculator.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -277,7 +277,7 @@ calculator.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:61
+* @see app/Http/Controllers/Api/V1/LoanApiController.php:57
 * @route '/api/v1/loans/calculator'
 */
 const calculatorForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -287,7 +287,7 @@ const calculatorForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:61
+* @see app/Http/Controllers/Api/V1/LoanApiController.php:57
 * @route '/api/v1/loans/calculator'
 */
 calculatorForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
@@ -87,7 +88,7 @@ class CooperativeSeeder extends Seeder
         $products = $this->seedPosInventory();
         $this->seedPosTransactions($members, $products, $kasir);
 
-        if (! CooperativeShuPeriod::query()->where('year', 2025)->where('status', 'CLOSED')->exists()) {
+        if (! CooperativeShuPeriod::query()->where('year', 2025)->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])->exists()) {
             app(AnnualShuDistributionService::class)->close(
                 2025,
                 12500000,

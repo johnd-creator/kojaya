@@ -7,6 +7,7 @@ use App\Models\SparePart;
 use App\Models\SparePartStock;
 use App\Models\User;
 use App\Models\Warehouse;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -15,9 +16,24 @@ class SparePartManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_create_spare_part(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    private function storageManager(): User
     {
         $user = User::factory()->create();
+        $user->assignRole('Project Manager');
+
+        return $user;
+    }
+
+    public function test_user_can_create_spare_part(): void
+    {
+        $user = $this->storageManager();
         $organization = Organization::factory()->create();
 
         $this->actingAs($user)
@@ -44,7 +60,7 @@ class SparePartManagementTest extends TestCase
 
     public function test_low_stock_filter_only_returns_parts_below_minimum(): void
     {
-        $user = User::factory()->create();
+        $user = $this->storageManager();
         $organization = Organization::factory()->create();
         $warehouse = Warehouse::factory()->create(['organization_id' => $organization->id]);
         $lowStockPart = SparePart::factory()->create([
@@ -83,7 +99,7 @@ class SparePartManagementTest extends TestCase
 
     public function test_user_can_update_spare_part_stock(): void
     {
-        $user = User::factory()->create();
+        $user = $this->storageManager();
         $organization = Organization::factory()->create();
         $warehouse = Warehouse::factory()->create(['organization_id' => $organization->id]);
         $sparePart = SparePart::factory()->create(['organization_id' => $organization->id]);

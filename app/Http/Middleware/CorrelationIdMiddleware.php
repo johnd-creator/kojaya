@@ -14,6 +14,7 @@ class CorrelationIdMiddleware
     {
         $correlationId = $request->header('X-Correlation-ID', (string) Str::uuid());
 
+        $request->attributes->set('correlation_id', $correlationId);
         Log::withContext(['correlation_id' => $correlationId]);
 
         $response = $next($request);

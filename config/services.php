@@ -39,6 +39,13 @@ return [
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
     ],
 
+    'whatsapp' => [
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'endpoint' => env('WHATSAPP_ENDPOINT', 'https://graph.facebook.com/v20.0'),
+        'default_country_code' => env('WHATSAPP_DEFAULT_COUNTRY_CODE', '62'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

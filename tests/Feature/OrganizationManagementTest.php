@@ -6,19 +6,31 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class OrganizationManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected User $adminUser;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Permission::query()->firstOrCreate(['name' => 'manage_organizations', 'guard_name' => 'web']);
+
+        $this->adminUser = User::factory()->create();
+        $this->adminUser->givePermissionTo('manage_organizations');
+    }
+
     public function test_user_can_view_organization_index(): void
     {
-        $user = User::factory()->create();
         $parent = Organization::factory()->create(['level' => 'L0']);
         Organization::factory()->create(['parent_id' => $parent->id, 'level' => 'L1']);
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->get(route('organizations.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -29,10 +41,9 @@ class OrganizationManagementTest extends TestCase
 
     public function test_user_can_create_and_update_organization(): void
     {
-        $user = User::factory()->create();
         $parent = Organization::factory()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->from(route('organizations.index'))
             ->post(route('organizations.store'), [
                 'name' => 'Unit Operasional',
@@ -51,7 +62,7 @@ class OrganizationManagementTest extends TestCase
 
         $this->assertNotNull($organization);
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->from(route('organizations.index'))
             ->put(route('organizations.update', $organization->id), [
                 'name' => 'Unit Operasional Updated',
@@ -76,10 +87,9 @@ class OrganizationManagementTest extends TestCase
 
     public function test_organization_code_must_be_unique(): void
     {
-        $user = User::factory()->create();
         Organization::factory()->create(['code' => 'DUPL01']);
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->from(route('organizations.index'))
             ->post(route('organizations.store'), [
                 'name' => 'Duplikat',
@@ -95,11 +105,10 @@ class OrganizationManagementTest extends TestCase
 
     public function test_organization_with_child_units_cannot_be_deleted(): void
     {
-        $user = User::factory()->create();
         $parent = Organization::factory()->create();
         Organization::factory()->create(['parent_id' => $parent->id, 'level' => 'L1']);
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->delete(route('organizations.destroy', $parent->id))
             ->assertRedirect(route('organizations.index'))
             ->assertSessionHas('error', 'Cannot delete organization with child units.');
@@ -109,11 +118,10 @@ class OrganizationManagementTest extends TestCase
 
     public function test_organization_with_assigned_users_cannot_be_deleted(): void
     {
-        $user = User::factory()->create();
         $organization = Organization::factory()->create();
         User::factory()->create(['organization_id' => $organization->id]);
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->delete(route('organizations.destroy', $organization->id))
             ->assertRedirect(route('organizations.index'))
             ->assertSessionHas('error', 'Cannot delete organization with assigned users.');
@@ -123,10 +131,9 @@ class OrganizationManagementTest extends TestCase
 
     public function test_user_can_switch_active_organization_context(): void
     {
-        $user = User::factory()->create();
         $organization = Organization::factory()->create();
 
-        $this->actingAs($user)
+        $this->actingAs($this->adminUser)
             ->from(route('organizations.index'))
             ->post(route('switch-organization'), [
                 'organization_id' => $organization->id,

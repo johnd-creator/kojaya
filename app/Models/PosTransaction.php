@@ -51,4 +51,9 @@ class PosTransaction extends Model
     {
         return $this->hasMany(PosPayment::class);
     }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(PosReturn::class);
+    }
 }

@@ -108,16 +108,16 @@ class PhaseDOpenApiSnapshotTest extends TestCase
     {
         $this->artisan('openapi:snapshot')->assertSuccessful();
 
-        $this->assertFileExists(storage_path('openapi.snapshot.json'));
+        $this->assertFileExists(base_path('docs/openapi.json'));
 
-        $snapshot = json_decode(file_get_contents(storage_path('openapi.snapshot.json')), true);
+        $snapshot = json_decode(file_get_contents(base_path('docs/openapi.json')), true);
         $this->assertArrayHasKey('paths', $snapshot);
     }
 
-    public function test_openapi_spec_snapshot_validate_passes_on_match(): void
+    public function test_openapi_spec_snapshot_check_passes_on_match(): void
     {
         $this->artisan('openapi:snapshot')->assertSuccessful();
-        $this->artisan('openapi:snapshot', ['--validate' => true])->assertSuccessful();
+        $this->artisan('openapi:snapshot', ['--check' => true])->assertSuccessful();
     }
 
     public function test_ci_workflow_file_exists(): void
@@ -127,7 +127,9 @@ class PhaseDOpenApiSnapshotTest extends TestCase
         $content = file_get_contents(base_path('.github/workflows/ci.yml'));
 
         $this->assertStringContainsString('php artisan test', $content);
-        $this->assertStringContainsString('openapi:snapshot', $content);
+        $this->assertStringContainsString('bin/openapi.sh check', $content);
+        $this->assertStringContainsString('--parallel', $content);
+        $this->assertStringContainsString('--coverage --min=70', $content);
         $this->assertStringContainsString('Pint', $content);
         $this->assertStringContainsString('wayfinder:generate', $content);
         $this->assertStringContainsString('npm run build', $content);

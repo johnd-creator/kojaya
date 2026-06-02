@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import axios from "axios";
 import { gantt } from "dhtmlx-gantt";
 import { onMounted, onUnmounted, ref } from "vue";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
+import {
+  createProjectGanttLink,
+  createProjectTask,
+  deleteProjectGanttLink,
+  deleteProjectTask,
+  fetchProjectGantt,
+  updateProjectTask,
+} from "@/api/projectGantt";
 
 const props = defineProps<{
   projectId: string;
@@ -41,7 +48,7 @@ const toDuration = (value: unknown) => {
 
 const loadData = async () => {
   gantt.clearAll();
-  const { data } = await axios.get(`/projects/${props.projectId}/gantt-data`);
+  const data = await fetchProjectGantt(props.projectId);
   gantt.parse(data);
 };
 
@@ -67,16 +74,13 @@ const attachEvents = () => {
   eventIds.push(
     gantt.attachEvent("onAfterLinkAdd", async (tempId, link) => {
       try {
-        const res = await axios.post(
-          `/projects/${props.projectId}/gantt-link`,
-          {
-            source: link.source,
-            target: link.target,
-            type: link.type,
-          },
-        );
-        if (res.data?.tid) {
-          gantt.changeLinkId(tempId, res.data.tid);
+        const res = await createProjectGanttLink(props.projectId, {
+          source: link.source,
+          target: link.target,
+          type: link.type,
+        });
+        if (res?.tid) {
+          gantt.changeLinkId(tempId, res.tid);
         }
       } catch {
         gantt.deleteLink(tempId);
@@ -87,7 +91,7 @@ const attachEvents = () => {
   eventIds.push(
     gantt.attachEvent("onAfterLinkDelete", async (id) => {
       try {
-        await axios.delete(`/projects/${props.projectId}/gantt-link/${id}`);
+        await deleteProjectGanttLink(props.projectId, id);
       } catch {
         await loadData();
       }
@@ -99,14 +103,14 @@ const attachEvents = () => {
       try {
         const start = toDate((task as any).start_date);
         const end = calcEndDate(start, toDuration((task as any).duration));
-        const res = await axios.post(`/projects/${props.projectId}/tasks`, {
+        const res = await createProjectTask(props.projectId, {
           text: task.text,
           start_date: formatDate(start),
           end_date: formatDate(end),
           parent_task_id: task.parent && task.parent !== 0 ? task.parent : null,
         });
-        if (res.data?.id) {
-          gantt.changeTaskId(tempId, res.data.id);
+        if (res?.id) {
+          gantt.changeTaskId(tempId, res.id);
         }
       } catch {
         gantt.deleteTask(tempId);
@@ -121,7 +125,7 @@ const attachEvents = () => {
         const end = (task as any).end_date
           ? toDate((task as any).end_date)
           : calcEndDate(start, toDuration((task as any).duration));
-        await axios.put(`/projects/${props.projectId}/tasks/${id}`, {
+        await updateProjectTask(props.projectId, id, {
           text: task.text,
           start_date: formatDate(start),
           end_date: formatDate(end),
@@ -137,7 +141,7 @@ const attachEvents = () => {
   eventIds.push(
     gantt.attachEvent("onAfterTaskDelete", async (id) => {
       try {
-        await axios.delete(`/projects/${props.projectId}/tasks/${id}`);
+        await deleteProjectTask(props.projectId, id);
       } catch {
         await loadData();
       }

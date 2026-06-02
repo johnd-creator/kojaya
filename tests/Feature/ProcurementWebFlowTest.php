@@ -79,6 +79,11 @@ class ProcurementWebFlowTest extends TestCase
         $role = Role::create(['name' => 'Manager', 'guard_name' => 'web']);
         $role->syncPermissions(['create_pr', 'approve_pr', 'create_po', 'receive_grn']);
         $user->assignRole($role);
+        $approver = User::factory()->create([
+            'organization_id' => $org->id,
+            'email_verified_at' => now(),
+        ]);
+        $approver->assignRole($role);
 
         $budget = Budget::create([
             'id' => \Illuminate\Support\Str::uuid(),
@@ -113,7 +118,9 @@ class ProcurementWebFlowTest extends TestCase
         $this->post("/procurement/purchase-requests/{$prId}/submit")->assertRedirect();
         $this->assertSame('SUBMITTED', $this->app['db']->table('purchase_requests')->where('id', $prId)->value('status'));
 
-        $this->post("/procurement/purchase-requests/{$prId}/approve", ['level' => 1])->assertRedirect();
+        $this->actingAs($approver)
+            ->post("/procurement/purchase-requests/{$prId}/approve", ['level' => 1])
+            ->assertRedirect();
         $this->assertSame('APPROVED', $this->app['db']->table('purchase_requests')->where('id', $prId)->value('status'));
 
         $this->post("/procurement/purchase-orders/from-pr/{$prId}")->assertRedirect();
@@ -150,6 +157,11 @@ class ProcurementWebFlowTest extends TestCase
         $role = Role::create(['name' => 'Manager', 'guard_name' => 'web']);
         $role->syncPermissions(['create_pr', 'approve_pr', 'create_po']);
         $user->assignRole($role);
+        $approver = User::factory()->create([
+            'organization_id' => $org->id,
+            'email_verified_at' => now(),
+        ]);
+        $approver->assignRole($role);
 
         $budget = Budget::create([
             'id' => \Illuminate\Support\Str::uuid(),
@@ -180,7 +192,9 @@ class ProcurementWebFlowTest extends TestCase
         $prId = $this->app['db']->table('purchase_requests')->value('id');
 
         $this->post("/procurement/purchase-requests/{$prId}/submit")->assertRedirect();
-        $this->post("/procurement/purchase-requests/{$prId}/approve", ['level' => 1])->assertRedirect();
+        $this->actingAs($approver)
+            ->post("/procurement/purchase-requests/{$prId}/approve", ['level' => 1])
+            ->assertRedirect();
 
         $firstResponse = $this->post("/procurement/purchase-orders/from-pr/{$prId}");
         $firstResponse->assertRedirect();

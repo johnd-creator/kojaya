@@ -59,6 +59,27 @@ class PushNotificationService
 
     /**
      * @param  array<string, mixed>  $data
+     */
+    public function sendOrFail(User $user, string $title, string $message, array $data = []): int
+    {
+        $activeAndroidTokenCount = MobileDeviceToken::query()
+            ->where('user_id', $user->id)
+            ->where('platform', 'android')
+            ->whereNull('revoked_at')
+            ->whereNotNull('push_token')
+            ->count();
+
+        $sent = $this->send($user, $title, $message, $data);
+
+        if ($activeAndroidTokenCount > 0 && $sent === 0) {
+            throw new \RuntimeException('Push notification delivery failed for all active Android tokens.');
+        }
+
+        return $sent;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
      * @return array{success: bool, invalid_token: bool, fcm_message_id: string|null}
      */
     private function sendFcm(string $pushToken, string $title, string $message, array $data = []): array

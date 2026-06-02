@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\LoanStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ApproveLoanRequest;
@@ -14,7 +15,6 @@ use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanType;
 use App\Services\Cooperative\LoanCalculatorService;
-use App\Services\Cooperative\LoanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,11 +24,11 @@ class LoanController extends Controller
 {
     public function index(Request $request): Response
     {
-        $this->authorizeLoanView($request);
+        $this->authorize('viewAny', Loan::class);
 
         $query = Loan::query()->with(['member', 'loanType']);
 
-        if (! $request->user()?->can('view_cooperative_loan_all') && $request->user()?->can('view_cooperative_member')) {
+        if (! $request->user()?->can('view_cooperative_all') && ! $request->user()?->can('manage_cooperative_loan')) {
             $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $request->user()?->id));
         }
 
@@ -55,7 +55,7 @@ class LoanController extends Controller
 
     public function create(Request $request): Response
     {
-        $this->authorizeLoanManagement($request);
+        $this->authorize('manage', Loan::class);
 
         return Inertia::render('Cooperative/Loans/Create', [
             'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
@@ -63,9 +63,9 @@ class LoanController extends Controller
         ]);
     }
 
-    public function store(StoreLoanRequest $request, LoanService $loanService): RedirectResponse
+    public function store(StoreLoanRequest $request, LoanServiceContract $loanService): RedirectResponse
     {
-        $this->authorizeLoanManagement($request);
+        $this->authorize('manage', Loan::class);
 
         $member = CooperativeMember::query()->findOrFail($request->validated('cooperative_member_id'));
 
@@ -79,7 +79,7 @@ class LoanController extends Controller
 
     public function show(Request $request, Loan $loan): Response
     {
-        $this->authorizeSpecificLoanView($request, $loan);
+        $this->authorize('view', $loan);
 
         $loan->load([
             'member.user',
@@ -101,36 +101,36 @@ class LoanController extends Controller
         ]);
     }
 
-    public function approve(ApproveLoanRequest $request, Loan $loan, LoanService $loanService): RedirectResponse
+    public function approve(ApproveLoanRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse
     {
-        $this->authorizeLoanApproval($request);
+        $this->authorize('approve', $loan);
 
         $loanService->approve($loan, $request->user(), $request->validated('notes'));
 
         return back()->with('success', 'Pinjaman berhasil disetujui.');
     }
 
-    public function reject(RejectLoanRequest $request, Loan $loan, LoanService $loanService): RedirectResponse
+    public function reject(RejectLoanRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse
     {
-        $this->authorizeLoanApproval($request);
+        $this->authorize('reject', $loan);
 
         $loanService->reject($loan, $request->user(), $request->validated('rejection_reason'));
 
         return back()->with('success', 'Pinjaman berhasil ditolak.');
     }
 
-    public function disburse(DisburseLoanRequest $request, Loan $loan, LoanService $loanService): RedirectResponse
+    public function disburse(DisburseLoanRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse
     {
-        $this->authorizeLoanApproval($request);
+        $this->authorize('disburse', $loan);
 
         $loanService->disburse($loan, $request->user(), $request->validated('reference_no'));
 
         return back()->with('success', 'Pinjaman berhasil dicairkan.');
     }
 
-    public function pay(StoreLoanPaymentRequest $request, Loan $loan, LoanService $loanService): RedirectResponse
+    public function pay(StoreLoanPaymentRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse
     {
-        $this->authorizeLoanManagement($request);
+        $this->authorize('recordPayment', $loan);
 
         $loanService->recordPayment($loan, $request->validated(), $request->user());
 
@@ -139,7 +139,7 @@ class LoanController extends Controller
 
     public function calculator(PreviewLoanCalculationPageRequest $request, LoanCalculatorService $calculatorService): Response
     {
-        $this->authorizeLoanView($request);
+        $this->authorize('viewAny', Loan::class);
 
         $preview = null;
         $input = $request->only(['loan_type_id', 'principal_amount', 'term_months', 'first_due_date']);
@@ -160,36 +160,5 @@ class LoanController extends Controller
             'input' => $input,
             'preview' => $preview,
         ]);
-    }
-
-    private function authorizeLoanView(Request $request): void
-    {
-        abort_unless($request->user()?->can('view_cooperative_loan'), 403);
-    }
-
-    private function authorizeLoanManagement(Request $request): void
-    {
-        abort_unless($request->user()?->can('manage_cooperative_loan'), 403);
-    }
-
-    private function authorizeLoanApproval(Request $request): void
-    {
-        abort_unless($request->user()?->can('approve_cooperative_loan'), 403);
-    }
-
-    private function authorizeSpecificLoanView(Request $request, Loan $loan): void
-    {
-        $user = $request->user();
-
-        abort_unless($user, 401);
-
-        if ($user->can('view_cooperative_loan_all')) {
-            return;
-        }
-
-        abort_unless(
-            $user->can('view_cooperative_member') && $loan->member?->user_id === $user->id,
-            403,
-        );
     }
 }

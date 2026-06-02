@@ -2,6 +2,7 @@
 
 namespace App\Services\Cooperative;
 
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
 use App\Models\CooperativeDuesInvoice;
@@ -109,7 +110,7 @@ class OperatorProcedureService
             ->sum('amount_due');
 
         $latestShu = CooperativeShuPeriod::query()
-            ->where('status', 'CLOSED')
+            ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
             ->latest('year')
             ->first();
 

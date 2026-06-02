@@ -15,7 +15,7 @@ class RewardRedemptionController extends Controller
 {
     public function index(Request $request): Response
     {
-        $this->authorizeRedemptionView($request);
+        $this->authorize('viewAny', RewardRedemption::class);
 
         $query = RewardRedemption::query()->with(['reward', 'member']);
 
@@ -31,7 +31,7 @@ class RewardRedemptionController extends Controller
 
     public function show(Request $request, RewardRedemption $redemption): Response
     {
-        $this->authorizeRedemptionManagement($request);
+        $this->authorize('view', $redemption);
 
         $redemption->load(['reward', 'member', 'pointTransaction']);
 
@@ -45,7 +45,7 @@ class RewardRedemptionController extends Controller
         RewardRedemption $redemption,
         PointService $pointService
     ): RedirectResponse {
-        $this->authorizeRedemptionManagement($request);
+        $this->authorize('update', $redemption);
 
         $status = $request->validated('status');
 
@@ -63,15 +63,5 @@ class RewardRedemptionController extends Controller
         ];
 
         return back()->with('success', $messages[$status] ?? 'Status redemption diperbarui.');
-    }
-
-    private function authorizeRedemptionView(Request $request): void
-    {
-        abort_unless($request->user()?->can('manage_cooperative_redemption'), 403);
-    }
-
-    private function authorizeRedemptionManagement(Request $request): void
-    {
-        abort_unless($request->user()?->can('manage_cooperative_redemption'), 403);
     }
 }

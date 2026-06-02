@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
-import axios from "axios";
 import {
   DollarSign,
   TrendingUp,
@@ -15,6 +14,7 @@ import {
   Plus,
 } from "lucide-vue-next";
 import { ref, onMounted } from "vue";
+import { fetchProjectFinancials } from "@/api/projectFinancials";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,15 +39,10 @@ const transactions = ref<any[]>([]);
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [summaryRes, budgetRes, transRes] = await Promise.all([
-      axios.get(`/projects/${props.projectId}/financial-summary`),
-      axios.get(`/projects/${props.projectId}/budget-analysis`),
-      axios.get(`/projects/${props.projectId}/transactions?limit=10`),
-    ]);
-
-    summary.value = summaryRes.data;
-    budgetAnalysis.value = budgetRes.data;
-    transactions.value = transRes.data.data;
+    const data = await fetchProjectFinancials(props.projectId);
+    summary.value = data.summary;
+    budgetAnalysis.value = data.budgetAnalysis;
+    transactions.value = data.transactions;
   } catch (error) {
     console.error("Failed to fetch financial data", error);
   } finally {

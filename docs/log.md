@@ -4,11 +4,105 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** May 6, 2026
+**Last Updated:** May 17, 2026
 
 ---
 
 ## 🎯 2026-05: Branding & Kojayaku Development
+
+### **May 17, 2026 - Production Readiness P0-P2 Execution**
+
+**🚦 P0-P2 Hardening:**
+- ✅ Hardened Kojayaku member API responses with allowlisted member/user/payment/invoice/loan/restructure/support-ticket resources instead of raw model serialization.
+- ✅ Added loan `WRITTEN_OFF` lifecycle status and audited service-level write-off support.
+- ✅ Added approve/apply and reject paths for loan restructure requests, including replacement installment schedule generation.
+- ✅ Added policy coverage for loan restructure, savings withdrawal, and vendors.
+- ✅ Blocked purchase orders from using suspended or blacklisted vendors.
+- ✅ Added payment gateway go-live checklist for Midtrans live transactions, webhook validation, WhatsApp template approval, FCM validation, and rollback.
+
+### **May 16, 2026 - Rekomendasi Qwen/ChatGPT Sprint 1: API Contract & CI Bootstrap**
+
+**🔧 API Contract Hardening:**
+- ✅ Added `.env.example` so CI and new developer setup can bootstrap without relying on local secrets.
+- ✅ Added API response normalization middleware for `/api/*` JSON responses, adding a consistent `success` flag while preserving existing `data`, `token`, and legacy `error` payload paths.
+- ✅ Added standardized API error metadata (`message`, `errors`, `error_code`, `error_details`) for validation, authentication, model-not-found, and HTTP exceptions.
+- ✅ Added mobile-domain API Resource classes for members, savings ledger, loans/installments, POS transactions, points, rewards, employees, attendance, payroll, work orders, assets, and vendors.
+- ✅ Updated OpenAPI success envelope schema to expose the `success` boolean.
+- ✅ Added `Sprint1ApiContractHardeningTest` coverage for CI env bootstrap, response envelope, error envelope, and mobile resource availability.
+- ✅ Verified Sprint 1 regression set: `Sprint1ApiContractHardeningTest`, `Phase0MobileApiTest`, `Phase1MemberSelfServiceApiTest`, `Phase2EssMobileApiTest`, `Phase3TechnicianMobileApiTest`, and `PhaseBContractApiTest`.
+
+### **May 16, 2026 - Rekomendasi Qwen/ChatGPT Sprint 2: Cooperative Business Critical Flows**
+
+**🏦 Cooperative Business Hardening:**
+- ✅ Added formal NPL threshold support on loan types plus `NplTrackingService` for NPL ratio, aging buckets, and provisioning estimates.
+- ✅ Added `GET /api/v1/reports/npl-aging` for cooperative risk monitoring.
+- ✅ Added member savings withdrawal requests with `savings_withdrawals` and ledger posting support for processed withdrawals.
+- ✅ Added member loan restructure requests with `loan_restructures` and approval-log traceability.
+- ✅ Added POS return/refund flow with stock restoration, `RETURN` stock movements, POS return ledger posting, and point reversal support.
+- ✅ Added `Sprint2BusinessCriticalFlowsTest` coverage for NPL aging, savings withdrawal, loan restructure request, and POS return.
+- ✅ Verified Sprint 1+2 regression set and OpenAPI snapshot check.
+
+### **May 17, 2026 - Rekomendasi Qwen/ChatGPT Sprint 4: Production Infrastructure**
+
+**🧰 Production Operations Hardening:**
+- ✅ Added configurable operational retention via `operations:prune-retention` for managed log files and `audit_logs`.
+- ✅ Added `backup:database` with SQLite/PostgreSQL/MySQL support, configurable backup disk/directory, and old-backup pruning.
+- ✅ Scheduled retention pruning and database backups in `routes/console.php`.
+- ✅ Added `request_id` to normalized API error envelopes using the existing `X-Correlation-ID` correlation flow.
+- ✅ Added manual deployment workflow `.github/workflows/deploy.yml` and executable `bin/deploy.sh`.
+- ✅ Added `Sprint4ProductionInfrastructureTest` coverage for retention pruning, database backup, error request id, scheduler, and deploy workflow.
+
+### **May 17, 2026 - Rekomendasi Qwen/ChatGPT Sprint 5: Kojayaku UX Onboarding**
+
+**📱 Member Experience Hardening:**
+- ✅ Added member onboarding progress tracking with live completion checks for profile, KYC documents, and first savings payment.
+- ✅ Added API endpoints for onboarding status, onboarding step marking, and member status journey summaries.
+- ✅ Added Kojayaku dashboard/onboarding UI with checklist progress and payment, loan, and reward journey cards.
+- ✅ Added journey context to Kojayaku savings, loans, and rewards pages so members can follow each process from submission through completion.
+- ✅ Updated OpenAPI/docs coverage for the new onboarding step payload and member journey endpoints.
+- ✅ Added `Sprint5KojayakuUxTest` coverage for onboarding API state, dashboard journey payloads, and Inertia page props.
+
+### **May 17, 2026 - Sprint 6: WhatsApp Notification Foundation**
+
+**🔔 WhatsApp Notification Hardening:**
+- ✅ Added WhatsApp opt-in/opt-out preferences with a dedicated WhatsApp phone number field.
+- ✅ Added WhatsApp delivery through the existing transactional notification outbox and retry processor.
+- ✅ Added configurable WhatsApp Business API provider settings in `config/services.php` and `.env.example`.
+- ✅ Added automated unpaid dues reminder queueing via `notifications:whatsapp-dues-reminders --days=3` and daily scheduler registration.
+- ✅ Added leave approval/rejection WhatsApp notification enqueueing for opted-in employees.
+- ✅ Added `Sprint6WhatsAppNotificationTest` coverage for dues reminder opt-in, provider delivery payload, leave status notification, and preference updates.
+
+### **May 17, 2026 - Qwen Follow-up Hardening**
+
+**🧩 Domain & Operations Cleanup:**
+- ✅ Added formal `VendorStatus` and `CooperativeShuPeriodStatus` enums while keeping existing database string values compatible.
+- ✅ Added business-specific API error codes for locked periods and insufficient balances.
+- ✅ Added `backup:verify` for backup artifact validation, including SQLite restore/integrity verification.
+- ✅ Updated architecture documentation counts to match the current codebase model/factory totals.
+- ✅ Added focused regression coverage in `QwenFollowUpHardeningTest` and expanded production infrastructure backup verification coverage.
+
+### **May 16, 2026 - Rekomendasi Sprint 1.5: Baseline Test Stabilization**
+
+**🧪 Test Baseline Stabilization:**
+- ✅ Stabilized the post-Sprint-1 PHPUnit baseline from 50 failed tests to 0 failed tests.
+- ✅ Completed permission fixture hardening across Finance, HR, Storage, Procurement, Cooperative, Reports, User Management, Role Management, ESS, and frontend shell tests.
+- ✅ Expanded `RolePermissionSeeder` mappings for Finance Unit (`manage_bank_reconciliation`, reimbursement permissions) and Project Manager (`manage_spare_parts`, `manage_warehouses`, `view_stock`) to match tested operational access.
+- ✅ Updated cooperative payment handling so already-approved payments can be materialized into invoice/ledger records idempotently while preserving the self-approval guard for pending payments.
+- ✅ Updated procurement and cooperative loan tests to use separate approvers where segregation-of-duties rules block creator self-approval.
+- ✅ Verified full suite: `485 passed`, `6 risky`, `1 incomplete`, `0 failed` (PHPUnit exit code 0).
+
+### **May 16, 2026 - Rekomendasi Sprint 1: Keamanan & Kebersihan Quick Wins**
+
+**🛡️ Security & Hygiene Improvements:**
+- ✅ Removed `resources/js/pages/Welcome.vue.bak` from version control and added `tests/Feature/RepoHygieneTest.php` to prevent backup/temp files (`*.bak`, `*.backup`, `*.old`, `*.tmp`, `*.temp`, `*.orig`, `*.rej`, `*.swp`) from re-entering the repo.
+- ✅ Replaced ESS account default password (was `employee_code` — visible on printed ID cards) with a random 20-char password generated via `Str::password()`. Added `App\Services\Hr\EmployeeEssProvisioningService` with `enable()` / `disable()` methods and a Fortify password-reset link returned via flash session (`ess_password_reset_link`) so operators can deliver it through a secure channel. Wrapped provisioning in `DB::transaction` so partial failures roll back cleanly.
+- ✅ Added `throttle:audit-logs` (30/min) to all audit-logs API routes and a tighter `throttle:audit-export` (5/min) to `/audit-logs/export` to prevent bulk scraping of the audit trail. Registered both rate limiters in `AppServiceProvider::registerRateLimiters`.
+- ✅ Removed inline `formatRupiah` and `new Intl.NumberFormat("id-ID")` helpers from `Exceptions/Dashboard.vue`, `Dashboard.vue`, and `settings/Components.vue`; pages now consume `formatCurrency` / `formatNumber` from `@/lib/formatters`. Added `tests/Feature/FrontendFormatterHygieneTest.php` to fail CI if a local formatter is reintroduced.
+- ✅ Hardened `App\Monitoring\Health::counts()` and `App\Services\Monitoring\MetricsService` (`failedWebhookCount`, `failedPushCount`, `queueFailureCount`) with `Schema::hasTable` guards plus try-catch, so missing observability tables (`webhook_logs`, `push_notification_logs`, `failed_jobs`) no longer break health checks during fresh deployments.
+- ✅ Added 14 new tests across `RepoHygieneTest`, `EmployeeEssProvisioningTest`, `AuditLogsThrottleTest`, `FrontendFormatterHygieneTest`, and `MonitoringDefensiveTest` (37 assertions, all green).
+- ✅ Created `docs/rekomendasi.md` consolidating new findings beyond `improve.md` / `improve2.md` / `improve3.md`, with Sprint 1–4 roadmap and acceptance criteria.
+
+**Catatan:** Verifikasi penuh menemukan ~24 test feature pra-existing yang sudah failing di `main` (terutama di modul AuditLog, Client, EmployeeTransfer, Organization, dan beberapa permission HR). Semuanya bukan akibat Sprint 1 dan dicatat sebagai kandidat Sprint 1.5 untuk stabilisasi baseline sebelum Sprint 2.
 
 ### **May 6, 2026 - Improve3 Phase B Production Integration Corrections**
 
@@ -518,6 +612,11 @@
 | Apr 15, 2026 | API Requirements | Mobile Team | Defined API endpoints for mobile |
 | May 2, 2026 | Security Review | All | Cleaned up git history, improved security |
 | May 6, 2026 | Phase 4/5 Operator & Production Hardening | Engineering | Added cooperative approval inbox, closing checklist/period lock, payment reconciliation/receipt, operator exception analytics/export, OpenAPI, payment gateway foundation, push token registration, and monitoring API |
+| May 16, 2026 | Sprint 2 Cooperative Business Hardening | Engineering | Added resignation guard, loan eligibility rules, period-lock enforcement for cooperative/finance postings, and digital cooperative receipt signed downloads |
+| May 16, 2026 | Sprint 3 Authorization & Architecture Hardening | Engineering | Added cooperative/organization policies, moved mobile token ability mapping into `TokenAbilityResolver`, externalized project frontend axios calls, and replaced raw Gantt dependency queries with `ProjectTaskDependency` |
+| May 16, 2026 | Sprint 4 Reliability & DX | Engineering | Added transactional notification outbox with scheduled retry, service contracts for loans/payment gateway integration, versioned OpenAPI snapshot with CI drift check, and parallel PHPUnit coverage gate |
+| May 16, 2026 | Sprint 3 HR/Payroll Hardening | Engineering | Added THR entitlement tracking and ESS endpoint, attendance correction workflow, audited SHU revision requests, and vendor performance snapshots |
+| May 17, 2026 | Sprint 4 Production Infrastructure | Engineering | Added retention pruning, database backup automation, request-id API errors, and manual deployment workflow |
 
 ---
 
@@ -538,4 +637,4 @@
 
 ---
 
-*This log is maintained throughout the project lifecycle. Last updated: May 6, 2026*
+*This log is maintained throughout the project lifecycle. Last updated: May 17, 2026*

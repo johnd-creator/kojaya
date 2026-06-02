@@ -9,6 +9,7 @@ use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
+use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\MemberNumberGenerator;
@@ -21,10 +22,16 @@ class CooperativeMemberController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', CooperativeMember::class);
+
         $query = CooperativeMember::query()
             ->with(['organization', 'employee', 'user'])
             ->withSum('ledgerEntries as saving_balance', 'credit')
             ->withSum('ledgerEntries as credit_balance', 'debit');
+
+        if (! $this->canViewAllMembers($request)) {
+            $query->where('user_id', $request->user()?->id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -52,6 +59,8 @@ class CooperativeMemberController extends Controller
 
     public function create(): Response
     {
+        $this->authorize('create', CooperativeMember::class);
+
         return Inertia::render('Cooperative/Members/Create', [
             'employees' => Employee::query()->select('id', 'first_name', 'last_name', 'employee_code')->orderBy('first_name')->get(),
             'users' => User::query()->select('id', 'name', 'email')->orderBy('name')->get(),
@@ -65,6 +74,8 @@ class CooperativeMemberController extends Controller
         CooperativeMemberUserProvisioningService $userProvisioningService,
         CooperativeOpeningBalanceService $openingBalanceService,
     ): RedirectResponse {
+        $this->authorize('create', CooperativeMember::class);
+
         $member = CooperativeMember::query()->create([
             ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
@@ -82,6 +93,8 @@ class CooperativeMemberController extends Controller
 
     public function show(CooperativeMember $member): Response
     {
+        $this->authorize('view', $member);
+
         $member->load(['organization', 'employee', 'user.roles', 'documents', 'invoices.contributionType', 'payments', 'ledgerEntries'])
             ->loadSum('ledgerEntries as saving_balance', 'credit');
 
@@ -93,6 +106,8 @@ class CooperativeMemberController extends Controller
 
     public function edit(CooperativeMember $member): Response
     {
+        $this->authorize('update', $member);
+
         $member->load('ledgerEntries');
 
         return Inertia::render('Cooperative/Members/Edit', [
@@ -110,6 +125,8 @@ class CooperativeMemberController extends Controller
         CooperativeMemberUserProvisioningService $userProvisioningService,
         CooperativeOpeningBalanceService $openingBalanceService,
     ): RedirectResponse {
+        $this->authorize('update', $member);
+
         $member->update([
             ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
@@ -126,6 +143,8 @@ class CooperativeMemberController extends Controller
         CooperativeMember $member,
         CooperativeMemberUserProvisioningService $userProvisioningService,
     ): RedirectResponse {
+        $this->authorize('activate', $member);
+
         $member->update([
             'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
@@ -137,13 +156,23 @@ class CooperativeMemberController extends Controller
         return back()->with('success', 'Cooperative member activated successfully.');
     }
 
-    public function resign(CooperativeMember $member): RedirectResponse
+    public function resign(CooperativeMember $member, CooperativeMemberService $memberService): RedirectResponse
     {
-        $member->update([
-            'status' => 'RESIGNED',
-            'resigned_at' => now()->toDateString(),
-        ]);
+        $this->authorize('resign', $member);
+
+        $memberService->resign($member);
 
         return back()->with('success', 'Cooperative member resigned successfully.');
+    }
+
+    private function canViewAllMembers(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user?->can('view_cooperative_all')
+            || $user?->can('manage_cooperative_member')
+            || $user?->can('manage_cooperative_payment')
+            || $user?->can('access_cooperative_pos')
+            || $user?->can('view_cooperative_report');
     }
 }

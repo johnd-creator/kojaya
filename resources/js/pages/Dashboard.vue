@@ -21,7 +21,7 @@ import {
 import { computed } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, formatNumber } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { dashboard as dashboardRoute } from "@/routes";
 import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
@@ -169,9 +169,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: dashboardRoute(),
   },
 ];
-
-const formatNumber = (value: number): string =>
-  new Intl.NumberFormat("id-ID").format(Number(value ?? 0));
 
 const formatPercent = (value: number): string =>
   `${Number(value ?? 0).toFixed(1)}%`;

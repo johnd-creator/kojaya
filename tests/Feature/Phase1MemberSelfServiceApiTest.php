@@ -95,7 +95,8 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
         $this->getJson('/api/v1/member/payments')
             ->assertOk()
-            ->assertJsonPath('data.0.cooperative_member_id', $member->id);
+            ->assertJsonPath('data.0.amount', 50000)
+            ->assertJsonMissingPath('data.0.cooperative_member_id');
     }
 
     public function test_member_can_upload_payment_proof_for_own_invoice(): void
@@ -131,7 +132,8 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'proof' => UploadedFile::fake()->image('proof.jpg'),
         ])->assertCreated()
             ->assertJsonPath('data.status', 'PENDING')
-            ->assertJsonPath('data.cooperative_member_id', $member->id);
+            ->assertJsonPath('data.invoice_id', $invoice->id)
+            ->assertJsonMissingPath('data.cooperative_member_id');
 
         Storage::disk('public')->assertExists($response->json('data.proof_path'));
     }
@@ -151,7 +153,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'first_due_date' => now()->addMonth()->toDateString(),
             'purpose' => 'Modal usaha',
         ])->assertCreated()
-            ->assertJsonPath('data.cooperative_member_id', $member->id)
+            ->assertJsonPath('data.member_id', $member->id)
             ->json('data.id');
 
         $this->getJson('/api/v1/member/loans')
@@ -221,7 +223,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'subject' => 'Pembayaran belum diverifikasi',
             'message' => 'Saya sudah upload bukti transfer.',
         ])->assertCreated()
-            ->assertJsonPath('data.cooperative_member_id', $member->id)
+            ->assertJsonPath('data.category', 'PAYMENT')
             ->assertJsonPath('data.status', 'OPEN');
 
         $this->assertDatabaseHas('cooperative_support_tickets', [

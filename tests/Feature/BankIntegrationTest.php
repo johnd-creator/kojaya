@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,8 +18,11 @@ class BankIntegrationTest extends TestCase
 
     public function test_generate_bank_batch_csv_and_reconcile_invoice(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->assignRole('Finance Pusat');
         $client = Client::factory()->create(['name' => 'Safe Name Ltd']);
 
         $invoice = Invoice::create([

@@ -4,11 +4,14 @@ namespace App\Services\Accounting;
 
 use App\Models\JournalEntry;
 use App\Models\User;
+use App\Services\Cooperative\CooperativePeriodLockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class JournalEntryService
 {
+    public function __construct(private readonly CooperativePeriodLockService $periodLockService) {}
+
     public function create(array $data, User $user): JournalEntry
     {
         $lines = collect($data['lines'] ?? []);
@@ -26,6 +29,8 @@ class JournalEntryService
                 'lines' => 'Journal entry must be balanced.',
             ]);
         }
+
+        $this->periodLockService->assertUnlocked(substr((string) $data['entry_date'], 0, 7), 'FINANCE');
 
         return DB::transaction(function () use ($data, $lines, $user): JournalEntry {
             $entry = JournalEntry::query()->create([

@@ -7,16 +7,16 @@ use Illuminate\Console\Command;
 
 class OpenApiSnapshotCommand extends Command
 {
-    protected $signature = 'openapi:snapshot {--validate : Validate against stored snapshot instead of updating}';
+    protected $signature = 'openapi:snapshot {--check : Validate against stored snapshot instead of updating} {--validate : Alias for --check}';
 
     protected $description = 'Generate or validate OpenAPI snapshot';
 
     public function handle(OpenApiGenerator $generator): int
     {
         $spec = $generator->generate();
-        $path = storage_path('openapi.snapshot.json');
+        $path = base_path('docs/openapi.json');
 
-        if ($this->option('validate')) {
+        if ($this->option('check') || $this->option('validate')) {
             if (! file_exists($path)) {
                 $this->error('No snapshot found. Run "php artisan openapi:snapshot" first.');
 
@@ -40,8 +40,8 @@ class OpenApiSnapshotCommand extends Command
             return self::SUCCESS;
         }
 
-        file_put_contents($path, json_encode($spec, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        $this->info('OpenAPI snapshot saved to storage/openapi.snapshot.json');
+        file_put_contents($path, json_encode($spec, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+        $this->info('OpenAPI snapshot saved to docs/openapi.json');
 
         return self::SUCCESS;
     }

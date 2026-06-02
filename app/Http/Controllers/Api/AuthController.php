@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MobileLoginRequest;
 use App\Models\User;
+use App\Services\Auth\TokenAbilityResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly TokenAbilityResolver $abilityResolver) {}
+
     public function login(MobileLoginRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -28,7 +31,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $abilities = $this->abilitiesFor($user, $validated['app'] ?? null);
+        $abilities = $this->abilityResolver->for($user, $validated['app'] ?? null);
         $deviceName = $validated['device_name'] ?? $this->defaultDeviceName($validated['app'] ?? null);
         $token = $user->createToken($deviceName, $abilities);
 
@@ -71,80 +74,6 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();
 
         return response()->json(['message' => 'All tokens revoked.']);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function abilitiesFor(User $user, ?string $app): array
-    {
-        if ($user->hasAnyRole(['System Admin', 'Admin Pusat'])) {
-            return ['*'];
-        }
-
-        $abilities = ['profile:read'];
-
-        if ($user->hasRole('Anggota') || $user->cooperativeMember) {
-            $abilities = [
-                ...$abilities,
-                'member:read',
-                'member:write',
-                'cooperative:read',
-                'cooperative:write',
-            ];
-        }
-
-        if ($user->hasRole('Employee') || $user->employee) {
-            $abilities = [
-                ...$abilities,
-                'ess:read',
-                'ess:write',
-                'attendance:read',
-                'attendance:write',
-                'payroll:read',
-            ];
-        }
-
-        if ($user->hasRole('Technician') || $user->can('view_work_order_unit') || $user->can('view_work_order_all')) {
-            $abilities = [
-                ...$abilities,
-                'work-orders:read',
-            ];
-        }
-
-        if ($user->hasRole('Technician') || $user->can('manage_work_order')) {
-            $abilities = [
-                ...$abilities,
-                'work-orders:write',
-            ];
-        }
-
-        if ($user->can('manage_work_order')) {
-            $abilities = [
-                ...$abilities,
-                'work-orders:review',
-            ];
-        }
-
-        if ($user->hasAnyRole(['Pengurus Koperasi', 'Kasir Koperasi'])) {
-            $abilities = [
-                ...$abilities,
-                'cooperative:read',
-                'cooperative:write',
-                'pos:read',
-                'pos:write',
-                'reports:read',
-            ];
-        }
-
-        $abilities = array_values(array_unique($abilities));
-
-        return match ($app) {
-            'member' => array_values(array_intersect($abilities, ['profile:read', 'member:read', 'member:write', 'cooperative:read', 'cooperative:write'])),
-            'ess' => array_values(array_intersect($abilities, ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read'])),
-            'technician' => array_values(array_intersect($abilities, ['profile:read', 'work-orders:read', 'work-orders:write', 'work-orders:review'])),
-            default => $abilities,
-        };
     }
 
     private function defaultDeviceName(?string $app): string

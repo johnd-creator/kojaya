@@ -6,6 +6,7 @@ use App\Http\Requests\StoreLeaveRequest;
 use App\Http\Requests\UpdateLeaveStatusRequest;
 use App\Models\Leave;
 use App\Models\LeaveType;
+use App\Services\WhatsAppReminderService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -112,7 +113,7 @@ class LeaveController extends Controller
     /**
      * Update the leave status (Approve/Reject).
      */
-    public function updateStatus(UpdateLeaveStatusRequest $request, Leave $leave): RedirectResponse
+    public function updateStatus(UpdateLeaveStatusRequest $request, Leave $leave, WhatsAppReminderService $reminderService): RedirectResponse
     {
         $validated = $request->validated();
         $previousStatus = $leave->status;
@@ -125,6 +126,7 @@ class LeaveController extends Controller
         ]);
 
         $leave->logApproval($previousStatus, $validated['status'], $request->user());
+        $reminderService->enqueueLeaveStatus($leave->refresh());
 
         return redirect()->route('leaves.index')->with('success', 'Leave request '.strtolower($validated['status']).' successfully.');
     }

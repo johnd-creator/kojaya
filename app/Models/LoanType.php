@@ -21,6 +21,8 @@ class LoanType extends Model
         'max_amount',
         'min_term_months',
         'max_term_months',
+        'eligibility_rules',
+        'npl_threshold_days',
         'is_active',
     ];
 
@@ -32,6 +34,8 @@ class LoanType extends Model
             'late_fee_per_day' => 'decimal:2',
             'min_amount' => 'decimal:2',
             'max_amount' => 'decimal:2',
+            'eligibility_rules' => 'array',
+            'npl_threshold_days' => 'integer',
             'is_active' => 'boolean',
         ];
     }

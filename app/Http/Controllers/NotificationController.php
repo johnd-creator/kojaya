@@ -91,6 +91,8 @@ class NotificationController extends Controller
                 'email_enabled' => true,
                 'database_enabled' => true,
                 'push_enabled' => false,
+                'whatsapp_enabled' => false,
+                'whatsapp_phone' => null,
                 'channels' => ['mail', 'database'],
             ],
         ]);

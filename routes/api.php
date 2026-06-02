@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\LoanApiController;
 use App\Http\Controllers\Api\V1\MemberSelfServiceController;
 use App\Http\Controllers\Api\V1\PointApiController;
 use App\Http\Controllers\Api\V1\PosApiController;
+use App\Http\Controllers\Api\V1\ProcurementApiController;
 use App\Http\Controllers\Api\V1\RewardApiController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ComplianceReportController;
@@ -53,16 +54,22 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
     Route::prefix('member')->group(function () {
         Route::get('/dashboard', [MemberSelfServiceController::class, 'dashboard'])->middleware('ability:member:read');
+        Route::get('/onboarding/status', [MemberSelfServiceController::class, 'onboardingStatus'])->middleware('ability:member:read');
+        Route::post('/onboarding/steps', [MemberSelfServiceController::class, 'markOnboardingStep'])->middleware(['ability:member:write', 'throttle:api-write']);
+        Route::get('/status-journey', [MemberSelfServiceController::class, 'statusJourney'])->middleware('ability:member:read');
         Route::get('/profile', [MemberSelfServiceController::class, 'profile'])->middleware('ability:member:read');
         Route::put('/profile', [MemberSelfServiceController::class, 'updateProfile'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/savings/summary', [MemberSelfServiceController::class, 'savingsSummary'])->middleware('ability:member:read');
         Route::get('/savings/ledger', [MemberSelfServiceController::class, 'savingsLedger'])->middleware('ability:member:read');
+        Route::post('/savings/withdraw', [MemberSelfServiceController::class, 'requestSavingsWithdrawal'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/dues/invoices', [MemberSelfServiceController::class, 'invoices'])->middleware('ability:member:read');
         Route::get('/payments', [MemberSelfServiceController::class, 'payments'])->middleware('ability:member:read');
+        Route::get('/payments/{payment}/receipt', [MemberSelfServiceController::class, 'paymentReceipt'])->middleware('ability:member:read');
         Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/loans', [MemberSelfServiceController::class, 'loans'])->middleware('ability:member:read');
         Route::post('/loans', [MemberSelfServiceController::class, 'applyLoan'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/loans/{loan}', [MemberSelfServiceController::class, 'loan'])->middleware('ability:member:read');
+        Route::post('/loans/{loan}/restructure', [MemberSelfServiceController::class, 'requestLoanRestructure'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/shu', [MemberSelfServiceController::class, 'shu'])->middleware('ability:member:read');
         Route::get('/notifications', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
         Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
@@ -89,8 +96,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::post('/rewards/{reward}/redeem', [RewardApiController::class, 'redeem'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::get('/pos/products', [PosApiController::class, 'products'])->middleware('ability:pos:read');
     Route::post('/pos/transactions', [PosApiController::class, 'store'])->middleware(['ability:pos:write', 'throttle:api-write']);
+    Route::post('/pos/returns', [PosApiController::class, 'processReturn'])->middleware(['ability:pos:write', 'throttle:api-write']);
     Route::get('/reports/cooperative-summary', [CooperativeReportController::class, 'summary'])->middleware('ability:reports:read');
     Route::get('/reports/sales', [CooperativeReportController::class, 'sales'])->middleware('ability:reports:read');
+    Route::get('/reports/npl-aging', [CooperativeReportController::class, 'nplAging'])->middleware('ability:reports:read');
+    Route::get('/procurement/vendors/{vendor}/performance', [ProcurementApiController::class, 'vendorPerformance'])->middleware('ability:reports:read');
 });
 
 // Employee Self Service Mobile API
@@ -102,8 +112,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('ess')->group(functi
     Route::get('/attendance/history', [EssController::class, 'attendanceHistory'])->middleware('ability:attendance:read');
     Route::post('/attendance/check-in', [EssController::class, 'checkIn'])->middleware(['ability:attendance:write', 'throttle:api-write']);
     Route::post('/attendance/check-out', [EssController::class, 'checkOut'])->middleware(['ability:attendance:write', 'throttle:api-write']);
+    Route::post('/attendance/correction', [EssController::class, 'requestAttendanceCorrection'])->middleware(['ability:attendance:write', 'throttle:api-write']);
+    Route::post('/attendance/corrections/{attendanceCorrection}/approve', [EssController::class, 'approveAttendanceCorrection'])->middleware(['ability:attendance:write', 'throttle:api-write']);
     Route::get('/geofence', [EssController::class, 'geofence'])->middleware('ability:attendance:read');
     Route::get('/shift-roster', [EssController::class, 'shiftRoster'])->middleware('ability:ess:read');
+    Route::get('/thr/entitlement', [EssController::class, 'thrEntitlement'])->middleware('ability:payroll:read');
     Route::get('/leaves', [EssController::class, 'leaves'])->middleware('ability:ess:read');
     Route::post('/leaves', [EssController::class, 'storeLeave'])->middleware(['ability:ess:write', 'throttle:api-write']);
     Route::post('/leaves/{leave}/cancel', [EssController::class, 'cancelLeave'])->middleware(['ability:ess:write', 'throttle:api-write']);
@@ -160,9 +173,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('reports')->group(fu
 });
 
 // Audit Logs API (Web session auth for Inertia)
-Route::middleware(['auth:web'])->prefix('audit-logs')->group(function () {
+Route::middleware(['auth:web', 'throttle:audit-logs'])->prefix('audit-logs')->group(function () {
     Route::get('/', [AuditLogController::class, 'index']);
     Route::get('/{id}', [AuditLogController::class, 'show']);
     Route::get('/history/{type}/{id}', [AuditLogController::class, 'history']);
-    Route::get('/export', [AuditLogController::class, 'export']);
+    Route::get('/export', [AuditLogController::class, 'export'])->middleware('throttle:audit-export');
 });

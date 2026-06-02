@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations;
 
+use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Models\CooperativePayment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;

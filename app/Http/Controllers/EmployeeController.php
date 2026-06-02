@@ -6,9 +6,9 @@ use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Employee;
 use App\Models\Organization;
-use App\Models\User;
+use App\Services\Hr\EmployeeEssProvisioningService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -139,44 +139,36 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')->with('success', 'Employee terminated successfully.');
     }
 
-    public function enableEssAccess(Request $request, Employee $employee)
+    public function enableEssAccess(Request $request, Employee $employee, EmployeeEssProvisioningService $provisioning)
     {
         $this->authorize('manageEssAccess', $employee);
 
-        if ($employee->user_id) {
-            return back()->with('info', 'This employee already has an ESS account.');
+        try {
+            $result = $provisioning->enable($employee);
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->errors()[array_key_first($e->errors())][0] ?? 'Gagal mengaktifkan ESS.');
         }
 
-        if (! $employee->email) {
-            return back()->with('error', 'Employee must have an email address before enabling ESS access.');
+        $message = 'ESS access enabled. Karyawan harus mengatur password baru lewat tautan reset password.';
+
+        if ($result['reset_link']) {
+            // Flash to session so the UI can render a "Salin tautan reset password" toast/dialog
+            // exactly once. The link is single-use and tied to the user's email.
+            session()->flash('ess_password_reset_link', $result['reset_link']);
         }
 
-        if (User::where('email', $employee->email)->exists()) {
-            return back()->with('error', 'A user with this email already exists. Please link manually.');
-        }
-
-        $user = User::create([
-            'name' => trim($employee->first_name.' '.$employee->last_name),
-            'email' => $employee->email,
-            'password' => Hash::make($employee->employee_code),
-            'organization_id' => $employee->organization_id,
-        ]);
-
-        $user->assignRole('Employee');
-        $employee->update(['user_id' => $user->id]);
-
-        return back()->with('success', 'ESS access enabled. Default password is the Employee Code.');
+        return back()->with('success', $message);
     }
 
-    public function revokeEssAccess(Request $request, Employee $employee)
+    public function revokeEssAccess(Request $request, Employee $employee, EmployeeEssProvisioningService $provisioning)
     {
         $this->authorize('manageEssAccess', $employee);
 
-        if (! $employee->user_id) {
-            return back()->with('info', 'No ESS account is linked to this employee.');
+        try {
+            $provisioning->disable($employee);
+        } catch (ValidationException $e) {
+            return back()->with('info', $e->errors()[array_key_first($e->errors())][0] ?? 'Tidak ada akun ESS yang ditautkan.');
         }
-
-        $employee->update(['user_id' => null]);
 
         return back()->with('success', 'ESS access has been revoked.');
     }

@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\Organization;
 use App\Models\Reimbursement;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ReimbursementManagementTest extends TestCase
@@ -17,8 +17,7 @@ class ReimbursementManagementTest extends TestCase
     {
         parent::setUp();
 
-        Role::create(['name' => 'Employee', 'guard_name' => 'web']);
-        Role::create(['name' => 'Finance Unit', 'guard_name' => 'web']);
+        $this->seed(RolePermissionSeeder::class);
     }
 
     public function test_employee_can_submit_reimbursement_with_multiple_items(): void

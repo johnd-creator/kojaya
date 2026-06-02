@@ -50,6 +50,21 @@ class MetricsService
         }
     }
 
+    public function failedNotificationOutboxCount(): int
+    {
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('notification_outboxes')) {
+                return 0;
+            }
+
+            return DB::table('notification_outboxes')
+                ->where('status', 'failed')
+                ->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
     public function overdueLoanRatio(): float
     {
         $total = \App\Models\Loan::where('status', 'ACTIVE')->count();
@@ -67,7 +82,15 @@ class MetricsService
 
     public function queueFailureCount(): int
     {
-        return DB::table('failed_jobs')->count();
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('failed_jobs')) {
+                return 0;
+            }
+
+            return DB::table('failed_jobs')->count();
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     public function slowEndpoints(float $thresholdMs = 1000): array
@@ -81,6 +104,7 @@ class MetricsService
             'pending_approvals' => $this->pendingApprovals(),
             'failed_webhooks_24h' => $this->failedWebhookCount(),
             'failed_pushes_24h' => $this->failedPushCount(),
+            'failed_notification_outboxes' => $this->failedNotificationOutboxCount(),
             'overdue_loan_ratio' => $this->overdueLoanRatio(),
             'queue_failures' => $this->queueFailureCount(),
             'slow_endpoints' => $this->slowEndpoints(),

@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PageHeader from "@/components/ui/page-header/PageHeader.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
+import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import SettingsLayout from "@/layouts/settings/Layout.vue";
 
@@ -101,7 +102,7 @@ const columns = [
   {
     header: "Amount",
     key: "amount",
-    format: (val: number) => `Rp ${val.toLocaleString("id-ID")}`,
+    format: (val: number) => formatCurrency(val),
     align: "right" as const,
   },
   { header: "Status", key: "status", align: "center" as const },

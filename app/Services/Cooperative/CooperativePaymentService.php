@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class CooperativePaymentService
 {
-    public function __construct(private readonly CooperativePeriodLockService $periodLockService) {}
+    public function __construct(
+        private readonly CooperativePeriodLockService $periodLockService,
+        private readonly CooperativeReceiptService $receiptService,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -38,15 +41,17 @@ class CooperativePaymentService
                 ->with('ledgerEntries')
                 ->findOrFail($payment->id);
 
+            $originalStatus = $payment->getOriginal('status');
+
             if ($payment->status === 'APPROVED' && $payment->ledgerEntries->isNotEmpty()) {
-                return $payment;
+                $this->receiptService->issue($payment, $approver);
+
+                return $payment->refresh()->load('receipt');
             }
 
             $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
 
-            $originalStatus = $payment->getOriginal('status');
-
-            if ($approver && $payment->user_id && (int) $approver->id === (int) $payment->user_id) {
+            if ($originalStatus !== 'APPROVED' && $approver && $payment->user_id && (int) $approver->id === (int) $payment->user_id) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'approved_by' => 'Pembuat pembayaran tidak dapat menyetujui pembayarannya sendiri.',
                 ]);
@@ -56,8 +61,6 @@ class CooperativePaymentService
                 'status' => 'APPROVED',
                 'approved_at' => now(),
                 'approved_by' => $approver?->id,
-                'receipt_no' => $payment->receipt_no ?: $this->receiptNo($payment),
-                'receipt_issued_at' => $payment->receipt_issued_at ?: now(),
             ])->save();
 
             if ($payment->cooperative_dues_invoice_id) {
@@ -92,7 +95,9 @@ class CooperativePaymentService
 
             $payment->logApproval($originalStatus, 'APPROVED', $approver, 'Pembayaran disetujui');
 
-            return $payment->refresh();
+            $this->receiptService->issue($payment, $approver);
+
+            return $payment->refresh()->load('receipt');
         });
     }
 
@@ -117,10 +122,5 @@ class CooperativePaymentService
 
             return $payment->refresh();
         });
-    }
-
-    private function receiptNo(CooperativePayment $payment): string
-    {
-        return sprintf('RCPT-%s-%06d', now()->format('Ymd'), $payment->id);
     }
 }

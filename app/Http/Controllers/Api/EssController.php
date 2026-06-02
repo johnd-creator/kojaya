@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\EssLeaveRequest;
 use App\Http\Requests\Api\EssOvertimeRequest;
 use App\Http\Requests\Api\EssReimbursementRequest;
+use App\Http\Requests\Api\StoreAttendanceCorrectionRequest;
 use App\Http\Requests\AttendanceApiLocationRequest;
 use App\Http\Requests\UpdateEssProfileRequest;
 use App\Models\Attendance;
+use App\Models\AttendanceCorrection;
 use App\Models\Employee;
 use App\Models\Leave;
 use App\Models\LeaveType;
@@ -18,6 +20,8 @@ use App\Models\Payroll;
 use App\Models\Reimbursement;
 use App\Models\ReimbursementItem;
 use App\Models\ShiftRoster;
+use App\Services\Hr\AttendanceCorrectionService;
+use App\Services\Hr\ThrEntitlementService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -228,6 +232,50 @@ class EssController extends Controller
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('date')
             ->get());
+    }
+
+    public function thrEntitlement(Request $request, ThrEntitlementService $service): JsonResponse
+    {
+        $employee = $this->employeeOrAbort($request);
+        $year = $request->integer('year', now()->year);
+        $entitlement = $service->calculateForEmployee($employee, $year);
+
+        return response()->json([
+            'data' => [
+                'id' => $entitlement->id,
+                'year' => $entitlement->year,
+                'months_worked' => $entitlement->months_worked,
+                'base_salary' => (float) $entitlement->base_salary,
+                'amount' => (float) $entitlement->amount,
+                'status' => $entitlement->status,
+                'calculated_at' => $entitlement->calculated_at?->toIso8601String(),
+                'calculation_breakdown' => $entitlement->calculation_breakdown,
+            ],
+        ]);
+    }
+
+    public function requestAttendanceCorrection(
+        StoreAttendanceCorrectionRequest $request,
+        AttendanceCorrectionService $service,
+    ): JsonResponse {
+        $employee = $this->employeeOrAbort($request);
+        $correction = $service->request($employee, $request->user(), $request->validated());
+
+        return response()->json(['data' => $correction], 201);
+    }
+
+    public function approveAttendanceCorrection(
+        Request $request,
+        AttendanceCorrection $attendanceCorrection,
+        AttendanceCorrectionService $service,
+    ): JsonResponse {
+        $correction = $service->approve(
+            $attendanceCorrection,
+            $request->user(),
+            $request->string('review_note')->toString() ?: null,
+        );
+
+        return response()->json(['data' => $correction]);
     }
 
     public function leaves(Request $request): JsonResponse

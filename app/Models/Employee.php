@@ -20,6 +20,7 @@ class Employee extends Model
         'gender',
         'birth_date',
         'hire_date',
+        'basic_salary',
         'status',
         'employee_type',
         'department_id',
@@ -79,6 +80,16 @@ class Employee extends Model
     public function attendances(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function thrEntitlements(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ThrEntitlement::class);
+    }
+
+    public function attendanceCorrections(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AttendanceCorrection::class);
     }
 
     public function leaves(): \Illuminate\Database\Eloquent\Relations\HasMany

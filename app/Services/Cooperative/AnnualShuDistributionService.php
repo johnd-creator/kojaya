@@ -2,6 +2,7 @@
 
 namespace App\Services\Cooperative;
 
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativeShuPeriod;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class AnnualShuDistributionService
 {
+    public function __construct(private readonly CooperativePeriodLockService $periodLockService) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -90,14 +93,20 @@ class AnnualShuDistributionService
 
     public function close(int $year, float $cooperativePool = 0, ?float $posProfitPool = null, ?User $user = null): CooperativeShuPeriod
     {
+        $this->periodLockService->assertUnlocked($year.'-12');
+
         return DB::transaction(function () use ($year, $cooperativePool, $posProfitPool, $user): CooperativeShuPeriod {
             $period = CooperativeShuPeriod::query()->lockForUpdate()->firstOrNew(['year' => $year]);
 
-            if ($period->exists && $period->status === 'CLOSED') {
+            if ($period->exists && in_array($period->status, [CooperativeShuPeriodStatus::Closed, CooperativeShuPeriodStatus::ClosedRevised], true)) {
                 throw ValidationException::withMessages([
                     'year' => 'This annual SHU period has already been closed.',
                 ]);
             }
+
+            $targetStatus = $period->exists && $period->status === CooperativeShuPeriodStatus::Revision
+                ? CooperativeShuPeriodStatus::ClosedRevised
+                : CooperativeShuPeriodStatus::Closed;
 
             $preview = $this->preview($year, $cooperativePool, $posProfitPool);
 
@@ -108,7 +117,7 @@ class AnnualShuDistributionService
                 'total_dues_score' => $preview['total_dues_score'],
                 'total_shu_score' => $preview['total_shu_score'],
                 'total_pos_points' => $preview['total_pos_points'],
-                'status' => 'CLOSED',
+                'status' => $targetStatus,
                 'closed_at' => now(),
                 'closed_by' => $user?->id,
             ])->save();

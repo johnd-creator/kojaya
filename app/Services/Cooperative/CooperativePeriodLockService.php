@@ -27,7 +27,7 @@ class CooperativePeriodLockService
     {
         if ($period && $this->isLocked($period, $module)) {
             throw ValidationException::withMessages([
-                'period' => "Period {$period} is locked for {$module}.",
+                'period' => "Periode telah dikunci ({$period}, {$module}).",
             ]);
         }
     }

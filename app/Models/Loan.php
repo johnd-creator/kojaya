@@ -87,6 +87,11 @@ class Loan extends Model
         return $this->hasMany(LoanPayment::class);
     }
 
+    public function restructures(): HasMany
+    {
+        return $this->hasMany(LoanRestructure::class);
+    }
+
     public function approvalLogs(): MorphMany
     {
         return $this->morphMany(ApprovalLog::class, 'subject');

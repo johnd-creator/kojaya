@@ -43,73 +43,85 @@
 
 ---
 
-### **Phase 3: Kojayaku Development** ⏳ **IN PROGRESS**
+### **Phase 3: Kojayaku Development** ✅ **COMPLETED**
 **Timeline:** May - July 2026 (3 months)
 
-**Planned:**
-- ⏳ **Kojayaku Web App** (Responsive Web)
+**Completed:**
+- ✅ **Kojayaku Web App** (Responsive Web)
   - Vue 3 + Inertia.js (shared with KojayaPro)
-  - Member profile & dashboard
-  - Savings balance & history
-  - Loan application & tracking
-  - Points & rewards redemption
-  - Transaction history
+  - Member profile & dashboard with onboarding flow
+  - Savings balance, history, and withdrawal requests
+  - Loan application, tracking, and restructure requests
+  - Points & rewards redemption with return/refund
+  - Transaction history with digital receipts
   - Mobile-responsive design
+  - Status journey for payments, loans, and rewards
 
-- ⏳ **Kojayaku API Completion**
-  - Savings API endpoints (balance, ledger, statements)
-  - Loans API endpoints (apply, track, calculator)
+- ✅ **Kojayaku API Completion**
+  - Savings API endpoints (balance, ledger, statements, withdrawal)
+  - Loans API endpoints (apply, track, calculator, restructure)
   - Points & Rewards API (balance, history, redemption)
-  - Transactions API (history, detail)
+  - Transactions API (history, detail, returns)
+  - Onboarding API (status, step completion)
+  - NPL aging report API
+  - Member self-service endpoints (SHU, notifications, support tickets)
 
-- ⏳ **Technician Mobile App** (Native Android)
-  - Kotlin + Jetpack Compose
-  - Work order management
-  - Checklist completion
-  - Offline mode support
-  - GPS photo attachment
+- ✅ **Technician Mobile API**
+  - Work order pagination, filters, and field metadata
+  - Evidence attachments, spare part consumption, timeline logs
+  - Offline sync tables and idempotent sync
+  - GPS-based completion with photo evidence
+  - Escalation and supervisor reopen flow
 
-- ⏳ **Employee ESS App** (Flutter or React Native)
-  - GPS attendance (check-in/out)
-  - Leave requests
-  - Payslip viewer
-  - Certificate & MCU tracking
+- ✅ **Employee ESS API**
+  - Attendance with GPS metadata and correction workflow
+  - Leave requests with cancellation
+  - Overtime and reimbursement submissions
+  - Payslip list and PDF download
+  - THR entitlement tracking and endpoint
+  - Shift roster, compliance, and notifications
+
+- ✅ **Production Infrastructure**
+  - `.env.example` for CI and developer setup
+  - API response normalization middleware
+  - Standardized API error format with error codes
+  - 13 API Resource classes for mobile endpoints
+  - Data retention pruning (logs, audit_logs)
+  - Database backup automation with scheduling
+  - Deployment workflow (`.github/workflows/deploy.yml`)
+  - WhatsApp notification foundation
 
 **Deliverables:**
-- Kojayaku web app (responsive)
-- Kojayaku API (savings, loans, points, transactions)
-- Technician mobile app (Android)
-- ESS mobile app (Android/iOS)
-- Offline-first architecture
-- Push notification support
+- Kojayaku web app (responsive) ✅
+- Kojayaku API (savings, loans, points, transactions, onboarding) ✅
+- Technician mobile API (work orders, offline sync, GPS) ✅
+- ESS mobile API (attendance, leave, payslip, THR) ✅
+- Production infrastructure (backup, retention, deploy) ✅
+- Push notification support (FCM + WhatsApp) ✅
 
 ---
 
-### **Phase 4: Payment & Notification Integration** ⏳ **PLANNED**
+### **Phase 4: Payment & Notification Integration** ✅ **FOUNDATION COMPLETE**
 **Timeline:** August - September 2026 (2 months)
 
-**Planned:**
-- ⏳ Payment gateway integration (Midtrans/Xendit)
-  - Credit card processing
-  - QRIS payment
-  - Virtual account
-  - E-wallet integration
+**Completed:**
+- ✅ Payment gateway foundation (Midtrans adapter, internal fallback)
+  - Payment provider abstraction with `PaymentGatewayInterface`
+  - Midtrans webhook verification with idempotency
+  - FCM push token registration and delivery
+  - Transactional notification outbox with retry processor
 
-- ⏳ WhatsApp Business API
-  - Payment reminders
-  - Dues notification
-  - Leave approval notifications
-  - Payslip delivery
+**Remaining for Production:**
+- ⏳ Payment gateway production credential validation
+- ⏳ Live payment processing (credit card, QRIS, VA, e-wallet)
+- ⏳ WhatsApp Business API production setup
+- ⏳ WhatsApp notification templates approved by Meta
 
-- ⏳ Firebase Cloud Messaging (FCM)
-  - Push notification for mobile apps
-  - Real-time updates
-  - In-app notifications
-
-**Deliverables:**
-- Online payment capability
-- WhatsApp notification system
-- Real-time push notifications
+**Completed Notifications:**
+- ✅ WhatsApp opt-in/opt-out preferences
+- ✅ Unpaid dues reminder via WhatsApp (`notifications:whatsapp-dues-reminders`)
+- ✅ Leave approval/rejection WhatsApp notifications
+- ✅ FCM push notification foundation
 
 ---
 
@@ -293,11 +305,11 @@
 |-----------|-------------|--------|
 | **M1: Core HRM Live** | March 31, 2026 | ✅ Completed |
 | **M2: Full ERP Live** | April 30, 2026 | ✅ Completed |
-| **M3: Technician App Beta** | June 4, 2026 | ⏳ In Progress |
-| **M4: Cooperative App Beta** | June 25, 2026 | ⏳ Planned |
-| **M5: ESS App Beta** | July 16, 2026 | ⏳ Planned |
-| **M6: Payment Gateway** | July 30, 2026 | ⏳ Planned |
-| **M7: WhatsApp Notifications** | August 14, 2026 | ⏳ Planned |
+| **M3: Technician API Complete** | June 4, 2026 | ✅ Completed |
+| **M4: Cooperative API Complete** | June 25, 2026 | ✅ Completed |
+| **M5: ESS API Complete** | July 16, 2026 | ✅ Completed |
+| **M6: Production Infrastructure** | July 30, 2026 | ✅ Completed |
+| **M7: Payment Gateway Production** | August 14, 2026 | ⏳ Planned |
 | **M8: Production Launch** | August 31, 2026 | ⏳ Planned |
 
 ---
@@ -450,4 +462,4 @@ After each sprint, ask:
 
 ---
 
-*Last Updated: May 2, 2026*
+*Last Updated: May 17, 2026*

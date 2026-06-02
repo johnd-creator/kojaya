@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   Users,
 } from "lucide-vue-next";
+import { formatCurrency } from "@/lib/formatters";
 
 interface ExceptionCounts {
   overdue_loan_count: number;
@@ -78,10 +79,6 @@ function totalExceptions(module: string): number {
   const s = summary.value?.[module as keyof Summary];
   if (!s) return 0;
   return Object.values(s).reduce((a, b) => a + (b as number), 0);
-}
-
-function formatRupiah(v: number): string {
-  return "Rp " + v.toLocaleString("id-ID");
 }
 </script>
 

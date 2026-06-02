@@ -2,11 +2,25 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Contracts\Cooperative\LoanServiceContract;
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\Api\MemberPaymentProofRequest;
 use App\Http\Requests\Api\MemberSupportTicketRequest;
+use App\Http\Requests\Api\StoreLoanRestructureRequest;
+use App\Http\Requests\Api\StoreSavingsWithdrawalRequest;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
+use App\Http\Resources\LoanResource;
+use App\Http\Resources\MemberInvoiceResource;
+use App\Http\Resources\MemberLoanRestructureResource;
+use App\Http\Resources\MemberPaymentResource;
+use App\Http\Resources\MemberSavingsWithdrawalResource;
+use App\Http\Resources\MemberSelfServiceResource;
+use App\Http\Resources\MemberSupportTicketResource;
+use App\Http\Resources\MemberUserResource;
+use App\Http\Resources\NotificationResource;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
@@ -14,22 +28,31 @@ use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
 use App\Models\CooperativeSupportTicket;
 use App\Models\Loan;
-use App\Services\Cooperative\LoanService;
+use App\Services\Cooperative\CooperativeReceiptService;
+use App\Services\Cooperative\LoanRestructureService;
+use App\Services\Cooperative\MemberOnboardingService;
+use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
+use App\Services\Cooperative\SavingsWithdrawalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class MemberSelfServiceController extends Controller
 {
-    public function dashboard(Request $request, PointService $pointService): JsonResponse
-    {
+    public function dashboard(
+        Request $request,
+        PointService $pointService,
+        MemberOnboardingService $onboardingService,
+        MemberStatusJourneyService $journeyService,
+    ): JsonResponse {
         $member = $this->memberOrAbort($request);
         $pointSummary = $pointService->balanceSummary($member);
 
         return response()->json([
             'data' => [
-                'member' => $member->load(['organization', 'user']),
+                'member' => new MemberSelfServiceResource($member->load(['organization', 'user'])),
                 'summary' => [
                     'savings_balance' => $this->savingsBalance($member),
                     'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
@@ -39,16 +62,33 @@ class MemberSelfServiceController extends Controller
                     'member_tier' => $pointSummary['member_tier'],
                     'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
                 ],
+                'onboarding' => $onboardingService->status($member),
+                'journeys' => $journeyService->summary($member),
             ],
         ]);
+    }
+
+    public function onboardingStatus(Request $request, MemberOnboardingService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->status($this->memberOrAbort($request))]);
+    }
+
+    public function markOnboardingStep(
+        MarkMemberOnboardingStepRequest $request,
+        MemberOnboardingService $service,
+    ): JsonResponse {
+        $member = $this->memberOrAbort($request);
+        $service->markStep($member, $request->validated('step'));
+
+        return response()->json(['data' => $service->status($member)]);
     }
 
     public function profile(Request $request): JsonResponse
     {
         return response()->json([
             'data' => [
-                'user' => $request->user(),
-                'member' => $this->memberOrAbort($request)->load(['organization']),
+                'user' => new MemberUserResource($request->user()?->loadMissing('roles')),
+                'member' => new MemberSelfServiceResource($this->memberOrAbort($request)->load(['organization'])),
             ],
         ]);
     }
@@ -72,8 +112,8 @@ class MemberSelfServiceController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => $user?->refresh(),
-                'member' => $member->refresh(),
+                'user' => new MemberUserResource($user?->refresh()->loadMissing('roles')),
+                'member' => new MemberSelfServiceResource($member->refresh()->load(['organization'])),
             ],
         ]);
     }
@@ -140,25 +180,66 @@ class MemberSelfServiceController extends Controller
         return response()->json(['data' => $entries]);
     }
 
+    public function requestSavingsWithdrawal(
+        StoreSavingsWithdrawalRequest $request,
+        SavingsWithdrawalService $service,
+    ): JsonResponse {
+        $member = $this->memberOrAbort($request);
+        $withdrawal = $service->request($member, $request->validated(), $request->user());
+
+        return (new MemberSavingsWithdrawalResource($withdrawal))
+            ->response()
+            ->setStatusCode(201);
+    }
+
     public function invoices(Request $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
 
-        return response()->json($member->invoices()
+        return MemberInvoiceResource::collection($member->invoices()
             ->with('contributionType')
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->orderByDesc('period')
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($request->integer('per_page', 15)))
+            ->response();
     }
 
     public function payments(Request $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
 
-        return response()->json($member->payments()
-            ->with('invoice.contributionType')
+        return MemberPaymentResource::collection($member->payments()
+            ->with(['invoice.contributionType', 'receipt'])
             ->orderByDesc('paid_at')
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($request->integer('per_page', 15)))
+            ->response();
+    }
+
+    public function statusJourney(Request $request, MemberStatusJourneyService $service): JsonResponse
+    {
+        return response()->json(['data' => $service->summary($this->memberOrAbort($request))]);
+    }
+
+    public function paymentReceipt(Request $request, CooperativePayment $payment, CooperativeReceiptService $receiptService): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403);
+        abort_unless($payment->status === 'APPROVED', 404, 'Receipt pembayaran belum tersedia.');
+
+        $receipt = $payment->receipt ?: $receiptService->issue($payment, $request->user());
+
+        return response()->json([
+            'data' => [
+                'receipt_no' => $receipt->receipt_no,
+                'issued_at' => $receipt->issued_at,
+                'download_url' => URL::temporarySignedRoute(
+                    'download.cooperative-receipt',
+                    now()->addMinutes(10),
+                    ['receipt' => $receipt->id],
+                ),
+            ],
+        ]);
     }
 
     public function uploadPaymentProof(MemberPaymentProofRequest $request): JsonResponse
@@ -184,21 +265,24 @@ class MemberSelfServiceController extends Controller
             'notes' => $request->validated('notes'),
         ]);
 
-        return response()->json(['data' => $payment->load('invoice.contributionType')], 201);
+        return (new MemberPaymentResource($payment->load('invoice.contributionType')))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function loans(Request $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
 
-        return response()->json($member->loans()
+        return LoanResource::collection($member->loans()
             ->with(['loanType', 'installments'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->latest()
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($request->integer('per_page', 15)))
+            ->response();
     }
 
-    public function applyLoan(ApplyLoanRequest $request, LoanService $loanService): JsonResponse
+    public function applyLoan(ApplyLoanRequest $request, LoanServiceContract $loanService): JsonResponse
     {
         $member = $this->memberOrAbort($request);
 
@@ -208,7 +292,9 @@ class MemberSelfServiceController extends Controller
             'organization_id' => $member->organization_id,
         ], $request->user());
 
-        return response()->json(['data' => $loan], 201);
+        return (new LoanResource($loan))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function loan(Request $request, Loan $loan): JsonResponse
@@ -218,8 +304,22 @@ class MemberSelfServiceController extends Controller
         abort_unless($loan->cooperative_member_id === $member->id, 403);
 
         return response()->json([
-            'data' => $loan->load(['loanType', 'installments', 'payments', 'approvalLogs']),
+            'data' => new LoanResource($loan->load(['loanType', 'installments', 'payments', 'approvalLogs'])),
         ]);
+    }
+
+    public function requestLoanRestructure(
+        StoreLoanRestructureRequest $request,
+        Loan $loan,
+        LoanRestructureService $service,
+    ): JsonResponse {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($loan->cooperative_member_id === $member->id, 403);
+
+        return response()->json([
+            'data' => new MemberLoanRestructureResource($service->request($loan, $request->validated(), $request->user())),
+        ], 201);
     }
 
     public function shu(Request $request): JsonResponse
@@ -228,7 +328,7 @@ class MemberSelfServiceController extends Controller
 
         $periods = CooperativeShuPeriod::query()
             ->with(['allocations' => fn ($query) => $query->where('cooperative_member_id', $member->id)])
-            ->where('status', 'CLOSED')
+            ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
             ->whereHas('allocations', fn ($query) => $query->where('cooperative_member_id', $member->id))
             ->orderByDesc('year')
             ->get();
@@ -238,19 +338,21 @@ class MemberSelfServiceController extends Controller
 
     public function notifications(Request $request): JsonResponse
     {
-        return response()->json($request->user()
+        return NotificationResource::collection($request->user()
             ->notifications()
             ->latest()
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($request->integer('per_page', 15)))
+            ->response();
     }
 
     public function supportTickets(Request $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
 
-        return response()->json($member->supportTickets()
+        return MemberSupportTicketResource::collection($member->supportTickets()
             ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($request->integer('per_page', 15)))
+            ->response();
     }
 
     public function storeSupportTicket(MemberSupportTicketRequest $request): JsonResponse
@@ -268,7 +370,9 @@ class MemberSelfServiceController extends Controller
             'status' => 'OPEN',
         ]);
 
-        return response()->json(['data' => $ticket], 201);
+        return (new MemberSupportTicketResource($ticket))
+            ->response()
+            ->setStatusCode(201);
     }
 
     private function memberOrAbort(Request $request): CooperativeMember

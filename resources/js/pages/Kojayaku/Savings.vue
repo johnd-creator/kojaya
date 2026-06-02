@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatCurrency, formatDate } from '@/lib/formatters';
@@ -9,6 +10,7 @@ defineProps<{
     entries: { data: Array<{ id: number; entry_type: string; description?: string | null; posted_at: string; debit: number | string; credit: number | string }> };
     invoices: { data: Array<{ id: number; period: string; amount: number | string; paid_amount: number | string; status: string; due_date: string; contribution_type?: { name: string } | null }> };
     payments: { data: Array<{ id: number; paid_at: string; amount: number | string; status: string; payment_method: string; invoice?: { period: string } | null }> };
+    journey: { title: string; current_status: string; reference?: string | null; amount?: number | string | null; steps: Array<{ label: string; completed: boolean; completed_at?: string | null }> };
 }>();
 </script>
 
@@ -21,6 +23,8 @@ defineProps<{
                 <div class="rounded-lg border p-4"><div class="text-sm text-muted-foreground">Total Pembayaran</div><div class="mt-2 text-2xl font-semibold">{{ formatCurrency(summary.total_paid) }}</div></div>
                 <div class="rounded-lg border p-4"><div class="text-sm text-muted-foreground">Tagihan Pending</div><div class="mt-2 text-2xl font-semibold">{{ summary.pending_invoices }}</div></div>
             </div>
+
+            <StatusJourney :title="journey.title" :current-status="journey.current_status" :reference="journey.reference" :amount="journey.amount" :steps="journey.steps" />
 
             <div class="grid gap-6 xl:grid-cols-2">
                 <div class="rounded-lg border overflow-x-auto">

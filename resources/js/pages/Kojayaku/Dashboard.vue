@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Bell, CreditCard, Gift, ReceiptText, WalletCards } from 'lucide-vue-next';
+import OnboardingChecklist from '@/components/Kojayaku/OnboardingChecklist.vue';
+import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatsCard from '@/components/StatsCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -9,6 +11,8 @@ import { formatCurrency } from '@/lib/formatters';
 defineProps<{
     member: { name: string; member_no: string; organization?: { name: string } | null };
     summary: { savings_balance: number; pending_invoices: number; active_loans: number; loan_outstanding: number; points_balance: number; member_tier: string; unread_notifications: number };
+    onboarding: { completed_steps: number; total_steps: number; progress_percent: number; is_complete: boolean; is_dismissed: boolean; steps: Array<{ key: string; label: string; description: string; href: string; completed: boolean }> };
+    journeys: Record<string, { title: string; current_status: string; reference?: string | null; amount?: number | string | null; steps: Array<{ label: string; completed: boolean; completed_at?: string | null }> }>;
     recentTransactions: Array<{ id: number; transaction_no: string; total_amount: number | string; sold_at: string }>;
     recentLoans: Array<{ id: number; status: string; outstanding_amount: number | string; loan_type?: { name: string } | null }>;
 }>();
@@ -38,11 +42,25 @@ defineProps<{
                 <StatsCard label="Notifikasi Baru" :value="summary.unread_notifications" :icon="Bell" />
             </div>
 
+            <OnboardingChecklist :onboarding="onboarding" compact />
+
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Link href="/member/savings" class="rounded-lg border p-4 transition hover:bg-muted/40">Simpanan & Tagihan</Link>
                 <Link href="/member/loans" class="rounded-lg border p-4 transition hover:bg-muted/40">Pinjaman</Link>
                 <Link href="/member/points" class="rounded-lg border p-4 transition hover:bg-muted/40">Poin</Link>
                 <Link href="/member/transactions" class="rounded-lg border p-4 transition hover:bg-muted/40">Transaksi POS</Link>
+            </div>
+
+            <div class="grid gap-6 xl:grid-cols-3">
+                <StatusJourney
+                    v-for="journey in journeys"
+                    :key="journey.title"
+                    :title="journey.title"
+                    :current-status="journey.current_status"
+                    :reference="journey.reference"
+                    :amount="journey.amount"
+                    :steps="journey.steps"
+                />
             </div>
 
             <div class="grid gap-6 xl:grid-cols-2">

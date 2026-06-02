@@ -233,6 +233,55 @@ Route::middleware('auth:sanctum')->group(function () {
 
 ---
 
+## 🎯 ADR-015: Permission-Based Authorization Over Controller Role Checks
+
+**Status:** ✅ Accepted
+**Date:** May 16, 2026
+**Deciders:** Engineering
+
+### Context
+Several controller paths still encoded access decisions directly with role checks or scattered permission checks. Mobile token abilities were also mapped inside `AuthController`, which made future permission changes harder to audit.
+
+### Decision
+Move domain authorization into policies and move Sanctum ability mapping into `TokenAbilityResolver`, based primarily on Spatie permissions and model relationships.
+
+### Consequences
+
+**Positive:**
+- Controllers use policy methods for cooperative and organization decisions.
+- Loan actions are auditable through `LoanPolicy`.
+- Mobile token behavior can be tested independently from `AuthController`.
+- Project Gantt dependencies now use an Eloquent model instead of raw table writes.
+
+**Trade-off:**
+- Role seeders must keep permission assignments accurate because token abilities now derive from permission state.
+
+---
+
+## 🎯 ADR-016: Member API Responses Use Allowlisted Resources
+
+**Status:** ✅ Accepted
+**Date:** May 17, 2026
+**Deciders:** Engineering
+
+### Context
+Kojayaku member endpoints returned several Eloquent models and paginators directly. Laravel model `$hidden` protected sensitive user credentials, but raw serialization still exposed internal columns and made the mobile contract drift whenever models changed.
+
+### Decision
+Member-facing API responses must use allowlisted Resources/DTO-style payloads for user, member, invoice, payment, loan, restructure, withdrawal, notification, and support ticket responses.
+
+### Consequences
+
+**Positive:**
+- Mobile clients receive a stable response contract.
+- Sensitive/internal model fields are not exposed by accident.
+- Future model columns do not become public API fields automatically.
+
+**Trade-off:**
+- Existing mobile clients must consume the explicit field names rather than raw database foreign-key fields.
+
+---
+
 ## 🎯 ADR-006: Service Layer Pattern
 
 **Status:** ✅ Accepted
@@ -457,6 +506,56 @@ CSS framework version choice. Options:
 - Beta software (potential bugs)
 - Less documentation/examples available
 - Some plugins may not be compatible yet
+
+---
+
+## 🎯 ADR-016: Transactional Notification Outbox and CI Contract Gates
+
+**Status:** ✅ Accepted
+**Date:** May 16, 2026
+**Deciders:** Engineering
+
+### Context
+Notification delivery and API contract drift were still operational risks. Push delivery failures were only logged, OpenAPI snapshots lived outside the repository, and CI did not enforce an explicit coverage threshold.
+
+### Decision
+Use a database-backed transactional notification outbox with a scheduled retry command, bind swappable service contracts through `App\Contracts`, version `docs/openapi.json`, and enforce OpenAPI drift plus parallel coverage gates in CI.
+
+### Consequences
+
+**Positive:**
+- Notification delivery can retry independently from domain transactions.
+- Failed notification outbox rows are visible in health and metrics dashboards.
+- Mobile API contract changes are reviewed through `docs/openapi.json`.
+- CI blocks pull requests that drift the API snapshot or drop coverage below the agreed threshold.
+
+**Trade-off:**
+- The scheduler and queue worker must be active in production for retry latency to stay near the configured interval.
+
+---
+
+## 🎯 ADR-017: Production Operations Automation
+
+**Status:** ✅ Accepted
+**Date:** May 17, 2026
+**Deciders:** Engineering
+
+### Context
+Production readiness still needed explicit retention, backup, error traceability, and a repeatable deployment entrypoint. Without these, operators would rely on manual cleanup, manual database exports, and ad hoc SSH deployment steps.
+
+### Decision
+Add scheduled Laravel commands for operational retention and database backups, include `request_id` in API error envelopes using the existing correlation id middleware, and provide a manual GitHub Actions deployment workflow backed by `bin/deploy.sh`.
+
+### Consequences
+
+**Positive:**
+- Log and audit retention are configurable through environment variables.
+- Database backups can run from the scheduler and prune old artifacts.
+- API errors can be correlated with logs using `request_id` / `X-Correlation-ID`.
+- Deployment has a repeatable command sequence for dependencies, build, migration, cache optimization, and queue restart.
+
+**Trade-off:**
+- Production still needs external storage, scheduler, SSH secrets, and backup restore drills configured outside the application repository.
 
 ---
 

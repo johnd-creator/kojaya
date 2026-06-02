@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\Cooperative\LoanServiceContract;
+use App\Contracts\Integrations\PaymentGatewayProvider as PaymentGatewayProviderContract;
 use App\Listeners\FailedJobListener;
 use App\Listeners\LogFailedLogin;
 use App\Listeners\LogSuccessfulLogin;
@@ -9,17 +11,25 @@ use App\Listeners\LogSuccessfulLogout;
 use App\Models\Asset;
 use App\Models\Budget;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePayment;
+use App\Models\CooperativeShuPeriod;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
 use App\Models\Invoice;
 use App\Models\Leave;
+use App\Models\Loan;
+use App\Models\LoanRestructure;
 use App\Models\MedicalCheckup;
+use App\Models\Organization;
 use App\Models\OvertimeRequest;
 use App\Models\Payroll;
 use App\Models\Project;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\Reimbursement;
+use App\Models\RewardRedemption;
+use App\Models\SavingsWithdrawal;
+use App\Models\Vendor;
 use App\Models\WorkOrder;
 use App\Observers\EmployeeCertificateObserver;
 use App\Observers\EmployeeObserver;
@@ -27,16 +37,25 @@ use App\Observers\MedicalCheckupObserver;
 use App\Policies\AssetPolicy;
 use App\Policies\BudgetPolicy;
 use App\Policies\CooperativeMemberPolicy;
+use App\Policies\CooperativePaymentPolicy;
+use App\Policies\CooperativeShuPeriodPolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\LeavePolicy;
+use App\Policies\LoanPolicy;
+use App\Policies\LoanRestructurePolicy;
+use App\Policies\OrganizationPolicy;
 use App\Policies\OvertimeRequestPolicy;
 use App\Policies\PayrollPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\PurchaseOrderPolicy;
 use App\Policies\PurchaseRequestPolicy;
 use App\Policies\ReimbursementPolicy;
+use App\Policies\RewardRedemptionPolicy;
+use App\Policies\SavingsWithdrawalPolicy;
+use App\Policies\VendorPolicy;
 use App\Policies\WorkOrderPolicy;
+use App\Services\Cooperative\LoanService;
 use App\Services\Integrations\MidtransPaymentProvider;
 use App\Services\Integrations\PaymentGatewayProvider;
 use Carbon\CarbonImmutable;
@@ -57,6 +76,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(LoanServiceContract::class, LoanService::class);
+        $this->app->bind(PaymentGatewayProviderContract::class, MidtransPaymentProvider::class);
         $this->app->bind(PaymentGatewayProvider::class, MidtransPaymentProvider::class);
     }
 
@@ -102,15 +123,23 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Asset::class, AssetPolicy::class);
         Gate::policy(Budget::class, BudgetPolicy::class);
         Gate::policy(CooperativeMember::class, CooperativeMemberPolicy::class);
+        Gate::policy(CooperativePayment::class, CooperativePaymentPolicy::class);
+        Gate::policy(CooperativeShuPeriod::class, CooperativeShuPeriodPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(Leave::class, LeavePolicy::class);
+        Gate::policy(Loan::class, LoanPolicy::class);
+        Gate::policy(LoanRestructure::class, LoanRestructurePolicy::class);
         Gate::policy(OvertimeRequest::class, OvertimeRequestPolicy::class);
+        Gate::policy(Organization::class, OrganizationPolicy::class);
         Gate::policy(Payroll::class, PayrollPolicy::class);
         Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(PurchaseOrder::class, PurchaseOrderPolicy::class);
         Gate::policy(PurchaseRequest::class, PurchaseRequestPolicy::class);
         Gate::policy(Reimbursement::class, ReimbursementPolicy::class);
+        Gate::policy(RewardRedemption::class, RewardRedemptionPolicy::class);
+        Gate::policy(SavingsWithdrawal::class, SavingsWithdrawalPolicy::class);
+        Gate::policy(Vendor::class, VendorPolicy::class);
         Gate::policy(WorkOrder::class, WorkOrderPolicy::class);
     }
 
@@ -121,6 +150,18 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         RateLimiter::for('api-write', fn (Request $request): Limit => Limit::perMinute(30)->by(
+            $request->user()?->id ?: $request->ip()
+        ));
+
+        // Audit log read endpoints can be expensive (full table scans, joins);
+        // tighten the read limit so a single account/IP cannot abuse them.
+        RateLimiter::for('audit-logs', fn (Request $request): Limit => Limit::perMinute(30)->by(
+            $request->user()?->id ?: $request->ip()
+        ));
+
+        // Export endpoints fetch up to 1k rows. Tightly throttle to discourage
+        // bulk-scraping the audit trail.
+        RateLimiter::for('audit-export', fn (Request $request): Limit => Limit::perMinute(5)->by(
             $request->user()?->id ?: $request->ip()
         ));
     }

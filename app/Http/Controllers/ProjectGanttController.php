@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProjectGanttLinkRequest;
 use App\Models\Project;
+use App\Models\ProjectTaskDependency;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ProjectGanttController extends Controller
 {
     public function getData(Project $project): JsonResponse
     {
+        $this->authorize('view', $project);
+
         $tasks = $project->tasks()
             ->select([
                 'id',
@@ -42,21 +44,14 @@ class ProjectGanttController extends Controller
                 ];
             });
 
-        $links = DB::table('project_task_dependencies')
-            ->join('project_tasks', 'project_task_dependencies.task_id', '=', 'project_tasks.id')
-            ->where('project_tasks.project_id', $project->id)
-            ->select([
-                'project_task_dependencies.id',
-                'project_task_dependencies.predecessor_id as source',
-                'project_task_dependencies.task_id as target',
-                'project_task_dependencies.type',
-            ])
+        $links = ProjectTaskDependency::query()
+            ->whereHas('task', fn ($query) => $query->where('project_id', $project->id))
             ->get()
             ->map(function ($link) {
                 return [
                     'id' => $link->id,
-                    'source' => $link->source,
-                    'target' => $link->target,
+                    'source' => $link->predecessor_id,
+                    'target' => $link->task_id,
                     'type' => match ($link->type) {
                         'SS' => '1',
                         'FF' => '2',
@@ -74,12 +69,11 @@ class ProjectGanttController extends Controller
 
     public function storeLink(StoreProjectGanttLinkRequest $request, Project $project)
     {
+        $this->authorize('update', $project);
+
         $validated = $request->validated();
 
-        $id = Str::uuid();
-
-        DB::table('project_task_dependencies')->insert([
-            'id' => $id,
+        $dependency = ProjectTaskDependency::query()->create([
             'predecessor_id' => $validated['source'],
             'task_id' => $validated['target'],
             'type' => match ($validated['type'] ?? null) {
@@ -88,22 +82,21 @@ class ProjectGanttController extends Controller
                 '3', 'SF' => 'SF',
                 default => 'FS',
             },
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         return response()->json([
             'action' => 'inserted',
-            'tid' => $id,
+            'tid' => $dependency->id,
         ]);
     }
 
     public function destroyLink(Project $project, string $link)
     {
-        DB::table('project_task_dependencies')
-            ->join('project_tasks', 'project_task_dependencies.task_id', '=', 'project_tasks.id')
-            ->where('project_tasks.project_id', $project->id)
-            ->where('project_task_dependencies.id', $link)
+        $this->authorize('update', $project);
+
+        ProjectTaskDependency::query()
+            ->whereHas('task', fn ($query) => $query->where('project_id', $project->id))
+            ->where('id', $link)
             ->delete();
 
         return response()->json([
@@ -111,4 +104,3 @@ class ProjectGanttController extends Controller
         ]);
     }
 }
-use App\Http\Requests\StoreProjectGanttLinkRequest;

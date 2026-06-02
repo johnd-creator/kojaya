@@ -39,7 +39,7 @@ Kedua sistem berbagi satu database dan terintegrasi via API.
 │  └───────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │ Data Access Layer                                     │  │
-│  │ - Eloquent Models (82 models, 36 with UUID)               │  │
+  │  │ - Eloquent Models (114 models, 52 with UUID)              │  │
 │  │ - Query Scopes, Relationships                         │  │
 │  │ - API Resources (JSON transformation)                 │  │
 │  └───────────────────────────────────────────────────────┘  │
@@ -151,7 +151,7 @@ kojaya/
 │   │   └── Resources/             # API Resources (JSON transformation)
 │   ├── Jobs/                      # Queued jobs
 │   ├── Listeners/                 # Event listeners
-│   ├── Models/                    # Eloquent models (82 models (36 UUID, 46 auto-increment))
+  │   ├── Models/                    # Eloquent models (114 models: 52 UUID, 62 auto-increment/string IDs)
 │   ├── Observers/                 # Model observers
 │   ├── Providers/                 # Service providers
 │   ├── Services/                  # Business logic layer
@@ -545,14 +545,14 @@ Backend didesain dari awal untuk mendukung mobile apps:
 ### **Test Coverage**
 
 - **Unit Tests** - Service layer logic (payroll, tax calculations)
-- **Feature Tests** - End-to-end API testing (58+ test methods across 14 test files)
+- **Feature Tests** - End-to-end API testing (100+ test methods across 108 test files)
 - **Browser Tests** - Inertia page interactions (planned)
 
 ### **Testing Tools**
 
 - **PHPUnit 11.5** - Testing framework
 - **Faker** - Test data generation
-- **Factories** - 37 model factories for test data
+- **Factories** - 53 model factories for test data
 - **Database Migrations** - Rollback between tests
 
 ---
@@ -582,7 +582,7 @@ Backend didesain dari awal untuk mendukung mobile apps:
 ### **Short Term (3-6 months)**
 - [ ] Add OpenAPI/Swagger documentation
 - [x] Implement rate limiting (3-tier: api 60/min, api-write 30/min, login 5/min)
-- [x] Add automated testing coverage (37 factories, 58+ test methods)
+- [x] Add automated testing coverage (53 factories, 1000+ test methods)
 - [ ] Database query optimization
 - [ ] Redis caching implementation
 - [x] **Kojayaku Architecture** - Flutter app architecture docs completed (see `docs/flutter/`)
@@ -607,4 +607,4 @@ Backend didesain dari awal untuk mendukung mobile apps:
 
 ---
 
-*Last Updated: May 4, 2026*
+*Last Updated: May 17, 2026*

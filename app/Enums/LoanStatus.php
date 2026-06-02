@@ -10,4 +10,5 @@ enum LoanStatus: string
     case Active = 'ACTIVE';
     case PaidOff = 'PAID_OFF';
     case Defaulted = 'DEFAULTED';
+    case WrittenOff = 'WRITTEN_OFF';
 }

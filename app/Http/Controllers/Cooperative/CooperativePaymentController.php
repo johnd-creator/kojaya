@@ -17,6 +17,8 @@ class CooperativePaymentController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', CooperativePayment::class);
+
         $query = CooperativePayment::query()->with(['member', 'invoice.contributionType']);
 
         if ($request->filled('status')) {
@@ -33,6 +35,8 @@ class CooperativePaymentController extends Controller
 
     public function store(StoreCooperativePaymentRequest $request, CooperativePaymentService $service): RedirectResponse
     {
+        $this->authorize('create', CooperativePayment::class);
+
         $payment = $service->record($request->validated(), $request->user());
 
         if ($payment->status === 'APPROVED') {
@@ -44,6 +48,8 @@ class CooperativePaymentController extends Controller
 
     public function approve(CooperativePayment $payment, CooperativePaymentService $service, Request $request): RedirectResponse
     {
+        $this->authorize('approve', $payment);
+
         $service->approve($payment, $request->user());
 
         return back()->with('success', 'Cooperative payment approved successfully.');

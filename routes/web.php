@@ -28,9 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Audit Logs API (session-based for Inertia)
-    Route::prefix('api/audit-logs')->group(function () {
+    Route::prefix('api/audit-logs')->middleware('throttle:audit-logs')->group(function () {
         Route::get('/', [App\Http\Controllers\AuditLogController::class, 'index']);
-        Route::get('/export', [App\Http\Controllers\AuditLogController::class, 'export']);
+        Route::get('/export', [App\Http\Controllers\AuditLogController::class, 'export'])->middleware('throttle:audit-export');
         Route::get('/history/{type}/{id}', [App\Http\Controllers\AuditLogController::class, 'history']);
         Route::get('/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->whereNumber('id');
     });
@@ -114,6 +114,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
+        Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
         Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
         Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
         Route::post('/loans', [\App\Http\Controllers\MemberPortalController::class, 'applyLoan'])->name('loans.store');
@@ -205,6 +207,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('redemptions/{redemption}/status', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'updateStatus'])->name('redemptions.update-status');
         Route::get('shu', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'index'])->name('shu.index');
         Route::post('shu/close', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'close'])->name('shu.close');
+        Route::post('shu/{period}/request-revision', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'requestRevision'])->name('shu.request-revision');
         Route::get('pos', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'index'])->name('pos.index');
         Route::get('pos/reports', [\App\Http\Controllers\Cooperative\PosSalesReportController::class, 'index'])->name('pos.reports.index');
         Route::get('pos/shu', [\App\Http\Controllers\Cooperative\PosAnnualShuController::class, 'index'])->name('pos.shu.index');
@@ -276,6 +279,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('signed');
     Route::get('/download/kyc/{memberId}/{documentId}', [\App\Http\Controllers\DocumentDownloadController::class, 'kyc'])
         ->name('download.kyc')
+        ->middleware('signed');
+    Route::get('/download/cooperative-receipts/{receipt}', [\App\Http\Controllers\DocumentDownloadController::class, 'cooperativeReceipt'])
+        ->name('download.cooperative-receipt')
         ->middleware('signed');
 
     // Reimbursements

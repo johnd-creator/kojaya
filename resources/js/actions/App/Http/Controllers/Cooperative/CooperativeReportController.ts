@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 export const summary = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ summary.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 summary.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ summary.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 summary.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ summary.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 summary.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ summary.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 const summaryForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const summaryForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 summaryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ summaryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:27
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:28
 * @route '/api/v1/reports/cooperative-summary'
 */
 summaryForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ summary.form = summaryForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 export const sales = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ sales.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 sales.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ sales.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 sales.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ sales.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 sales.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ sales.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 const salesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const salesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 salesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ salesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:34
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:35
 * @route '/api/v1/reports/sales'
 */
 salesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -162,8 +162,89 @@ salesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 sales.form = salesForm
 
 /**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+export const nplAging = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: nplAging.url(options),
+    method: 'get',
+})
+
+nplAging.definition = {
+    methods: ["get","head"],
+    url: '/api/v1/reports/npl-aging',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAging.url = (options?: RouteQueryOptions) => {
+    return nplAging.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAging.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: nplAging.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAging.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: nplAging.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+const nplAgingForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: nplAging.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAgingForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: nplAging.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:49
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAgingForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: nplAging.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+nplAging.form = nplAgingForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +259,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -187,7 +268,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +278,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -207,7 +288,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -217,7 +298,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -227,7 +308,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
-* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:20
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:21
 * @route '/cooperative/reports'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -242,6 +323,6 @@ indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 index.form = indexForm
 
-const CooperativeReportController = { summary, sales, index }
+const CooperativeReportController = { summary, sales, nplAging, index }
 
 export default CooperativeReportController

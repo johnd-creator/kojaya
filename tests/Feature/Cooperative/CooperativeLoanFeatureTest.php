@@ -26,6 +26,8 @@ class CooperativeLoanFeatureTest extends TestCase
 
         $admin = User::factory()->create();
         $admin->assignRole('System Admin');
+        $approver = User::factory()->create();
+        $approver->assignRole('System Admin');
         $member = $this->member();
         $loanType = $this->loanType();
 
@@ -51,7 +53,7 @@ class CooperativeLoanFeatureTest extends TestCase
             'to_status' => 'APPLIED',
         ]);
 
-        $this->actingAs($admin)->post(route('cooperative.loans.approve', $loan), [
+        $this->actingAs($approver)->post(route('cooperative.loans.approve', $loan), [
             'notes' => 'Disetujui pengurus',
         ])->assertRedirect();
 
@@ -63,7 +65,7 @@ class CooperativeLoanFeatureTest extends TestCase
             'to_status' => 'APPROVED',
         ]);
 
-        $this->actingAs($admin)->post(route('cooperative.loans.disburse', $loan), [
+        $this->actingAs($approver)->post(route('cooperative.loans.disburse', $loan), [
             'reference_no' => 'DISB-001',
         ])->assertRedirect();
 

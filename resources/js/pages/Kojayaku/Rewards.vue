@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
+import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ const props = defineProps<{
     summary: { total_points: number };
     rewards: { data: Array<{ id: string; name: string; category: string; description?: string | null; points_required: number; stock?: number | null; valid_until?: string | null }> };
     redemptions: { data: Array<{ id: string; redeemed_at: string; status: string; quantity: number; points_used: number; reward?: { name: string } | null }> };
+    journey: { title: string; current_status: string; reference?: string | null; amount?: number | string | null; steps: Array<{ label: string; completed: boolean; completed_at?: string | null }> };
 }>();
 
 const form = useForm({ reward_id: props.rewards.data[0]?.id ?? '', quantity: 1, delivery_address: '' });
@@ -26,6 +28,8 @@ const submit = (): void => {
     <Head title="Rewards" />
     <AppLayout :breadcrumbs="[{ title: 'Kojayaku', href: '/member' }, { title: 'Rewards', href: '/member/rewards' }]">
         <PageContainer>
+            <StatusJourney :title="journey.title" :current-status="journey.current_status" :reference="journey.reference" :amount="journey.amount" :steps="journey.steps" />
+
             <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
                 <div class="rounded-lg border overflow-x-auto">
                     <div class="border-b px-4 py-3">

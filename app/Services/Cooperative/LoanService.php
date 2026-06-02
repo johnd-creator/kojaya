@@ -2,10 +2,12 @@
 
 namespace App\Services\Cooperative;
 
+use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
 use App\Models\ApprovalLog;
 use App\Models\CooperativeLedgerEntry;
+use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanPayment;
@@ -14,10 +16,12 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class LoanService
+class LoanService implements LoanServiceContract
 {
     public function __construct(
         private readonly LoanCalculatorService $calculator,
+        private readonly LoanEligibilityService $eligibility,
+        private readonly CooperativePeriodLockService $periodLockService,
     ) {}
 
     /**
@@ -27,6 +31,10 @@ class LoanService
     {
         return DB::transaction(function () use ($data, $actor): Loan {
             $loanType = LoanType::query()->findOrFail($data['loan_type_id']);
+            $member = CooperativeMember::query()->findOrFail($data['cooperative_member_id']);
+
+            $this->eligibility->assertEligible($member, $loanType, (float) $data['principal_amount']);
+
             $calculation = $this->calculator->calculate(
                 $loanType,
                 (float) $data['principal_amount'],
@@ -127,6 +135,8 @@ class LoanService
             }
 
             if ($loan->status === LoanStatus::Approved) {
+                $this->periodLockService->assertUnlocked($loan->applied_at?->format('Y-m'));
+
                 $loan->forceFill([
                     'status' => LoanStatus::Active,
                     'disbursed_at' => now(),
@@ -165,6 +175,8 @@ class LoanService
     {
         return DB::transaction(function () use ($loan, $data, $actor): LoanPayment {
             $loan = Loan::query()->lockForUpdate()->with('installments')->findOrFail($loan->id);
+
+            $this->periodLockService->assertUnlocked(substr((string) $data['paid_at'], 0, 7));
 
             $remainingPayment = round((float) $data['amount'], 2);
             $principalPaid = 0.0;
@@ -256,6 +268,28 @@ class LoanService
             ]);
 
             return $payment;
+        });
+    }
+
+    public function writeOff(Loan $loan, ?User $actor = null, ?string $note = null): Loan
+    {
+        return DB::transaction(function () use ($loan, $actor, $note): Loan {
+            $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
+
+            if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Defaulted], true)) {
+                return $loan;
+            }
+
+            $fromStatus = $loan->status->value;
+
+            $loan->forceFill([
+                'status' => LoanStatus::WrittenOff,
+                'notes' => trim(($loan->notes ? $loan->notes."\n" : '').($note ?: 'Pinjaman dihapus buku.')),
+            ])->save();
+
+            $this->logApproval($loan, $fromStatus, LoanStatus::WrittenOff->value, $actor, $note);
+
+            return $loan->refresh();
         });
     }
 

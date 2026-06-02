@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Services\Cooperative;
+
+use App\Enums\WithdrawalStatus;
+use App\Models\CooperativeLedgerEntry;
+use App\Models\CooperativeMember;
+use App\Models\SavingsWithdrawal;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class SavingsWithdrawalService
+{
+    private const VOLUNTARY_ENTRY_TYPES = [
+        'SIMPANAN_SUKARELA',
+        'SAVINGS_VOLUNTARY',
+        'VOLUNTARY_SAVING',
+    ];
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function request(CooperativeMember $member, array $data, ?User $actor = null): SavingsWithdrawal
+    {
+        $amount = round((float) $data['amount'], 2);
+        $balance = $this->voluntaryBalance($member);
+
+        if ($amount <= 0 || $amount > $balance) {
+            throw ValidationException::withMessages([
+                'amount' => 'Saldo simpanan sukarela tidak mencukupi.',
+            ]);
+        }
+
+        return SavingsWithdrawal::query()->create([
+            'cooperative_member_id' => $member->id,
+            'user_id' => $actor?->id,
+            'amount' => $amount,
+            'status' => WithdrawalStatus::Pending,
+            'destination_bank' => $data['destination_bank'] ?? null,
+            'destination_account_no' => $data['destination_account_no'] ?? null,
+            'destination_account_name' => $data['destination_account_name'] ?? null,
+            'reason' => $data['reason'] ?? null,
+        ]);
+    }
+
+    public function approve(SavingsWithdrawal $withdrawal, ?User $actor = null): SavingsWithdrawal
+    {
+        return DB::transaction(function () use ($actor, $withdrawal): SavingsWithdrawal {
+            $locked = SavingsWithdrawal::query()->lockForUpdate()->findOrFail($withdrawal->id);
+
+            if ($locked->status !== WithdrawalStatus::Pending) {
+                return $locked;
+            }
+
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($locked->cooperative_member_id);
+
+            if ((float) $locked->amount > $this->voluntaryBalance($member)) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Saldo simpanan sukarela tidak mencukupi.',
+                ]);
+            }
+
+            $locked->forceFill([
+                'status' => WithdrawalStatus::Processed,
+                'approved_by' => $actor?->id,
+                'approved_at' => now(),
+                'processed_at' => now(),
+            ])->save();
+
+            CooperativeLedgerEntry::query()->create([
+                'cooperative_member_id' => $locked->cooperative_member_id,
+                'cooperative_payment_id' => null,
+                'source_type' => SavingsWithdrawal::class,
+                'source_id' => $locked->id,
+                'entry_type' => 'SAVING_WITHDRAWAL',
+                'debit' => $locked->amount,
+                'credit' => 0,
+                'period' => now()->format('Y-m'),
+                'description' => 'Penarikan simpanan sukarela',
+                'posted_at' => now()->toDateString(),
+            ]);
+
+            return $locked->refresh();
+        });
+    }
+
+    public function voluntaryBalance(CooperativeMember $member): float
+    {
+        return (float) CooperativeLedgerEntry::query()
+            ->where('cooperative_member_id', $member->id)
+            ->whereIn('entry_type', self::VOLUNTARY_ENTRY_TYPES)
+            ->selectRaw('COALESCE(SUM(credit - debit), 0) as balance')
+            ->value('balance');
+    }
+}

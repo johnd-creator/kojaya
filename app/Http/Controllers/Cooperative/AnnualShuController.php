@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Cooperative;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\PreviewAnnualShuRequest;
+use App\Http\Requests\Cooperative\RequestShuRevisionRequest;
 use App\Models\CooperativeShuPeriod;
 use App\Services\Cooperative\AnnualShuDistributionService;
+use App\Services\Cooperative\ShuRevisionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +17,8 @@ class AnnualShuController extends Controller
 {
     public function index(Request $request, AnnualShuDistributionService $service): Response
     {
+        $this->authorize('viewAny', CooperativeShuPeriod::class);
+
         $year = (int) $request->input('year', now()->year);
         $cooperativePool = (float) $request->input('cooperative_pool', 0);
         $posProfitPool = $request->filled('pos_profit_pool') ? (float) $request->input('pos_profit_pool') : null;
@@ -35,6 +39,8 @@ class AnnualShuController extends Controller
 
     public function close(PreviewAnnualShuRequest $request, AnnualShuDistributionService $service): RedirectResponse
     {
+        $this->authorize('close', CooperativeShuPeriod::class);
+
         $validated = $request->validated();
 
         $service->close(
@@ -45,5 +51,17 @@ class AnnualShuController extends Controller
         );
 
         return back()->with('success', 'Annual SHU period closed successfully.');
+    }
+
+    public function requestRevision(
+        RequestShuRevisionRequest $request,
+        CooperativeShuPeriod $period,
+        ShuRevisionService $service,
+    ): RedirectResponse {
+        $this->authorize('close', CooperativeShuPeriod::class);
+
+        $service->requestRevision($period, $request->validated('reason'), $request->user());
+
+        return back()->with('success', 'Annual SHU period reopened for revision.');
     }
 }

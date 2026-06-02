@@ -9,6 +9,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\StoreWorkOrderRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Sanctum\Sanctum;
@@ -53,7 +54,10 @@ class P1ArchitectureTest extends TestCase
 
     public function test_reports_page_loads_report_catalog_as_deferred_props(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $user = User::factory()->create();
+        $user->assignRole('Admin Pusat');
 
         $this->actingAs($user)
             ->get(route('reports'))

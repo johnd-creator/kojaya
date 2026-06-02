@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Contracts\Cooperative\LoanServiceContract;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
 use App\Http\Requests\Cooperative\PreviewLoanCalculationRequest;
@@ -9,7 +10,6 @@ use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanType;
 use App\Services\Cooperative\LoanCalculatorService;
-use App\Services\Cooperative\LoanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,10 +17,10 @@ class LoanApiController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $user = $this->authorizedUser($request);
+        $user = $this->authorizedUser($request, 'viewAny', Loan::class);
         $query = Loan::query()->with(['member', 'loanType', 'installments']);
 
-        if (! $user->can('view_cooperative_loan_all') && $user->can('view_cooperative_member')) {
+        if (! $user->can('view_cooperative_all') && ! $user->can('manage_cooperative_loan')) {
             $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $user->id));
         }
 
@@ -31,9 +31,9 @@ class LoanApiController extends Controller
         return response()->json($query->latest()->paginate($request->integer('per_page', 15)));
     }
 
-    public function apply(ApplyLoanRequest $request, LoanService $loanService): JsonResponse
+    public function apply(ApplyLoanRequest $request, LoanServiceContract $loanService): JsonResponse
     {
-        $user = $this->authorizedUser($request);
+        $user = $this->authorizedUser($request, 'create', Loan::class);
         $member = $this->resolveMember($request, $user);
 
         $loan = $loanService->apply([
@@ -47,11 +47,7 @@ class LoanApiController extends Controller
 
     public function show(Request $request, Loan $loan): JsonResponse
     {
-        $user = $this->authorizedUser($request);
-
-        if (! $user->can('view_cooperative_loan_all') && $user->can('view_cooperative_member')) {
-            abort_unless($loan->member?->user_id === $user->id, 403);
-        }
+        $this->authorizedUser($request, 'view', $loan);
 
         return response()->json([
             'data' => $loan->load(['member', 'loanType', 'installments', 'payments']),
@@ -60,7 +56,7 @@ class LoanApiController extends Controller
 
     public function calculator(PreviewLoanCalculationRequest $request, LoanCalculatorService $calculatorService): JsonResponse
     {
-        $this->authorizedUser($request);
+        $this->authorizedUser($request, 'viewAny', Loan::class);
         $validated = $request->validated();
         $loanType = LoanType::query()->findOrFail($validated['loan_type_id']);
 
@@ -74,11 +70,12 @@ class LoanApiController extends Controller
         ]);
     }
 
-    private function authorizedUser(Request $request): \App\Models\User
+    private function authorizedUser(Request $request, string $ability, mixed $arguments): \App\Models\User
     {
         $user = $request->user();
 
-        abort_unless($user && ($user->can('view_cooperative_loan')), 403);
+        abort_unless($user, 401);
+        $this->authorize($ability, $arguments);
 
         return $user;
     }

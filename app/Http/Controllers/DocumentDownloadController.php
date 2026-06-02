@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CooperativeReceipt;
 use App\Models\DownloadLog;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
@@ -121,6 +122,31 @@ class DocumentDownloadController extends Controller
             $doc->file_path,
             "kyc-{$memberId}.".($doc->file_type ?? 'pdf'),
             ['Content-Type' => 'application/octet-stream']
+        );
+    }
+
+    public function cooperativeReceipt(Request $request, CooperativeReceipt $receipt): mixed
+    {
+        if (! $request->hasValidSignature()) {
+            abort(401, 'Link download tidak valid atau sudah kadaluarsa.');
+        }
+
+        $receipt->load('member');
+
+        if ($request->user() && $receipt->member?->user_id && (int) $receipt->member->user_id !== (int) $request->user()->id) {
+            abort_unless($request->user()?->can('manage_cooperative_payment'), 403);
+        }
+
+        if (! $receipt->pdf_path || ! Storage::disk('local')->exists($receipt->pdf_path)) {
+            abort(404, 'Receipt pembayaran tidak tersedia.');
+        }
+
+        $this->logDownload($request, 'cooperative-receipt', $receipt->id);
+
+        return Storage::disk('local')->download(
+            $receipt->pdf_path,
+            $receipt->receipt_no.'.pdf',
+            ['Content-Type' => 'application/pdf']
         );
     }
 

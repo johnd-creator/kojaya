@@ -204,6 +204,12 @@ class RoleSmokeTest extends TestCase
     {
         $user = $this->user($role);
 
+        if ($forbidden === []) {
+            $this->assertNotEmpty($allowed, "{$role} should have at least one allowed route in the smoke matrix.");
+
+            return;
+        }
+
         foreach ($forbidden as $route) {
             $response = $this->actingAs($user)->get($route);
 
@@ -269,28 +275,25 @@ class RoleSmokeTest extends TestCase
             ->assertForbidden();
     }
 
-    // ─── Documented findings: missing authorization on cooperative web routes ──
+    // ─── Authorization for cooperative web routes ───────────────
 
     /**
-     * Documents authorization gaps on cooperative web routes.
-     * Some controllers have internal authorization (e.g. LoanController),
-     * but others rely only on namespace/middleware grouping which is inconsistent.
+     * Cooperative controllers now enforce policy-level authorization consistently.
      */
     public function test_cooperative_web_routes_authorization_consistency(): void
     {
         $employee = $this->user('Employee');
 
-        // Members page: lacks controller-level authorization
         $this->actingAs($employee)
             ->get('/cooperative/members')
-            ->assertOk();
+            ->assertForbidden();
 
-        // Loans: has controller-level authorization (view_cooperative_loan)
         $this->actingAs($employee)
             ->get('/cooperative/loans')
             ->assertForbidden();
 
-        // Payments: check consistency
-        $this->assertTrue(true, 'Cooperative web route authorization is inconsistent — documented for hardening');
+        $this->actingAs($employee)
+            ->get('/cooperative/payments')
+            ->assertForbidden();
     }
 }

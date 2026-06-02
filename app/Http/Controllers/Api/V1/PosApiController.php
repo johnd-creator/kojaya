@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\StorePosReturnRequest;
 use App\Http\Requests\Cooperative\StorePosTransactionRequest;
 use App\Models\PosProduct;
+use App\Services\Cooperative\PosReturnService;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +35,15 @@ class PosApiController extends Controller
     }
 
     public function store(StorePosTransactionRequest $request, PosTransactionService $service): JsonResponse
+    {
+        abort_unless($request->user()?->can('access_cooperative_pos'), 403);
+
+        return response()->json([
+            'data' => $service->create($request->validated(), $request->user()),
+        ], 201);
+    }
+
+    public function processReturn(StorePosReturnRequest $request, PosReturnService $service): JsonResponse
     {
         abort_unless($request->user()?->can('access_cooperative_pos'), 403);
 

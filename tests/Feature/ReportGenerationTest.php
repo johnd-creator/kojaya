@@ -9,15 +9,31 @@ use App\Models\Payroll;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class ReportGenerationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_view_reports_page(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Permission::query()->firstOrCreate(['name' => 'view_reports', 'guard_name' => 'web']);
+    }
+
+    private function reportingUser(): User
     {
         $user = User::factory()->create();
+        $user->givePermissionTo('view_reports');
+
+        return $user;
+    }
+
+    public function test_user_can_view_reports_page(): void
+    {
+        $user = $this->reportingUser();
 
         $this->actingAs($user)
             ->get(route('reports'))
@@ -29,7 +45,7 @@ class ReportGenerationTest extends TestCase
 
     public function test_consolidated_stats_endpoint_returns_employee_summary(): void
     {
-        $user = User::factory()->create();
+        $user = $this->reportingUser();
         $organization = Organization::factory()->create(['name' => 'Head Office']);
         $employeeUser = User::factory()->create(['organization_id' => $organization->id]);
         Employee::factory()->create([
@@ -52,7 +68,7 @@ class ReportGenerationTest extends TestCase
 
     public function test_consolidated_payroll_endpoint_returns_aggregated_totals(): void
     {
-        $user = User::factory()->create();
+        $user = $this->reportingUser();
         $organization = Organization::factory()->create(['name' => 'Regional A']);
         $employee = Employee::factory()->create(['organization_id' => $organization->id]);
 
@@ -87,7 +103,7 @@ class ReportGenerationTest extends TestCase
 
     public function test_consolidated_attendance_endpoint_returns_monthly_summary(): void
     {
-        $user = User::factory()->create();
+        $user = $this->reportingUser();
         $organization = Organization::factory()->create();
         $employeeA = Employee::factory()->create(['organization_id' => $organization->id]);
         $employeeB = Employee::factory()->create(['organization_id' => $organization->id]);

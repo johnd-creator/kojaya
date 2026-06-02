@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +16,11 @@ class EfakturApiTest extends TestCase
 
     public function test_submit_and_check_status(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->assignRole('Finance Pusat');
         $client = Client::factory()->create([
             'tax_id' => '01.234.567.8-901.000',
         ]);

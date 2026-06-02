@@ -7,6 +7,7 @@ use App\Models\SparePart;
 use App\Models\SparePartStock;
 use App\Models\User;
 use App\Models\Warehouse;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -15,9 +16,24 @@ class WarehouseManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_create_warehouse(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    private function storageManager(): User
     {
         $user = User::factory()->create();
+        $user->assignRole('Project Manager');
+
+        return $user;
+    }
+
+    public function test_user_can_create_warehouse(): void
+    {
+        $user = $this->storageManager();
         $organization = Organization::factory()->create();
 
         $this->actingAs($user)
@@ -40,7 +56,7 @@ class WarehouseManagementTest extends TestCase
 
     public function test_warehouse_code_must_be_unique(): void
     {
-        $user = User::factory()->create();
+        $user = $this->storageManager();
         $organization = Organization::factory()->create();
         Warehouse::factory()->create([
             'code' => 'WH-EXIST',
@@ -62,7 +78,7 @@ class WarehouseManagementTest extends TestCase
 
     public function test_user_can_view_warehouse_with_stock_relations(): void
     {
-        $user = User::factory()->create();
+        $user = $this->storageManager();
         $organization = Organization::factory()->create();
         $warehouse = Warehouse::factory()->create(['organization_id' => $organization->id]);
         $sparePart = SparePart::factory()->create(['organization_id' => $organization->id]);

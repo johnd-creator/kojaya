@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3";
 import { useForm, router } from "@inertiajs/vue3";
-import axios from "axios";
 import {
   ArrowLeft,
   Users,
@@ -14,6 +13,8 @@ import {
   Wallet,
 } from "lucide-vue-next";
 import { defineAsyncComponent, ref, watch } from "vue";
+import { uploadProjectDocument } from "@/api/projectDocuments";
+import { fetchProjectTeamAvailability } from "@/api/projectTeam";
 import ProjectFinancials from "@/components/project/ProjectFinancials.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import TeamCalendar from "@/components/project/TeamCalendar.vue";
@@ -124,17 +125,14 @@ const checkTeamAvailability = async () => {
 
   availabilityLoading.value = true;
   try {
-    const { data } = await axios.get(
-      `/projects/${props.project.id}/team/availability`,
+    teamAvailability.value = await fetchProjectTeamAvailability(
+      props.project.id,
       {
-        params: {
-          employee_id: teamForm.employee_id,
-          start_date: teamForm.start_date,
-          end_date: teamForm.end_date || undefined,
-        },
+        employee_id: teamForm.employee_id,
+        start_date: teamForm.start_date,
+        end_date: teamForm.end_date || undefined,
       },
     );
-    teamAvailability.value = data;
   } finally {
     availabilityLoading.value = false;
   }
@@ -210,12 +208,7 @@ const submitDocument = () => {
     formData.append("expiry_date", documentForm.expiry_date);
   }
 
-  axios
-    .post(`/projects/${props.project.id}/documents`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    })
+  uploadProjectDocument(props.project.id, formData)
     .then(() => {
       showDocumentDialog.value = false;
       documentForm.reset();

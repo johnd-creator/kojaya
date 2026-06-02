@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
@@ -10,6 +11,7 @@ use App\Models\CooperativeShuPeriod;
 use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
+use App\Services\Cooperative\NplTrackingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -45,6 +47,15 @@ class CooperativeReportController extends Controller
         ]);
     }
 
+    public function nplAging(Request $request, NplTrackingService $service): JsonResponse
+    {
+        abort_unless($request->user()?->can('view_cooperative_report'), 403);
+
+        return response()->json([
+            'data' => $service->agingReport($request->filled('as_of') ? \Illuminate\Support\Carbon::parse($request->input('as_of')) : null),
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -52,7 +63,7 @@ class CooperativeReportController extends Controller
     {
         $year = now()->year;
         $latestClosedShu = CooperativeShuPeriod::query()
-            ->where('status', 'CLOSED')
+            ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
             ->latest('year')
             ->first();
 

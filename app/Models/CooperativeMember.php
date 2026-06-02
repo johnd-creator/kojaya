@@ -55,6 +55,11 @@ class CooperativeMember extends Model
         return $this->hasMany(CooperativeMemberDocument::class);
     }
 
+    public function onboardingProgress(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MemberOnboardingProgress::class);
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(CooperativeDuesInvoice::class);
@@ -63,6 +68,11 @@ class CooperativeMember extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(CooperativePayment::class);
+    }
+
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(CooperativeReceipt::class);
     }
 
     public function loans(): HasMany

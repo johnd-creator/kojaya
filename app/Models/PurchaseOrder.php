@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\VendorStatus;
 use App\Models\Traits\HasApprovalLog;
 use App\Models\Traits\HasOrganizationScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 class PurchaseOrder extends Model
 {
@@ -32,6 +34,27 @@ class PurchaseOrder extends Model
             'total_amount' => 'decimal:2',
             'issued_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (PurchaseOrder $purchaseOrder): void {
+            if (! $purchaseOrder->vendor_id) {
+                return;
+            }
+
+            $vendor = $purchaseOrder->relationLoaded('vendor')
+                ? $purchaseOrder->vendor
+                : Vendor::query()->find($purchaseOrder->vendor_id);
+
+            if (! $vendor || ! in_array($vendor->status, [VendorStatus::Suspended, VendorStatus::Blacklisted], true)) {
+                return;
+            }
+
+            throw ValidationException::withMessages([
+                'vendor_id' => 'Vendor suspended atau blacklisted tidak dapat dipakai untuk purchase order.',
+            ]);
+        });
     }
 
     public function organization(): BelongsTo

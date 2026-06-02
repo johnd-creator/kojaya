@@ -13,7 +13,8 @@ class CorrelationIdProcessor implements ProcessorInterface
             return $record;
         }
 
-        $correlationId = request()->header('X-Correlation-ID');
+        $correlationId = request()->attributes->get('correlation_id')
+            ?: request()->header('X-Correlation-ID');
 
         if ($correlationId) {
             $record->extra['correlation_id'] = $correlationId;

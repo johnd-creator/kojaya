@@ -22,6 +22,7 @@ class LoanTypeFactory extends Factory
             'max_amount' => 25000000,
             'min_term_months' => 3,
             'max_term_months' => 24,
+            'eligibility_rules' => null,
             'is_active' => true,
         ];
     }

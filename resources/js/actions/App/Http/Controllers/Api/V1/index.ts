@@ -6,6 +6,7 @@ import LoanApiController from './LoanApiController'
 import PointApiController from './PointApiController'
 import RewardApiController from './RewardApiController'
 import PosApiController from './PosApiController'
+import ProcurementApiController from './ProcurementApiController'
 
 const V1 = {
     MemberSelfServiceController: Object.assign(MemberSelfServiceController, MemberSelfServiceController),
@@ -16,6 +17,7 @@ const V1 = {
     PointApiController: Object.assign(PointApiController, PointApiController),
     RewardApiController: Object.assign(RewardApiController, RewardApiController),
     PosApiController: Object.assign(PosApiController, PosApiController),
+    ProcurementApiController: Object.assign(ProcurementApiController, ProcurementApiController),
 }
 
 export default V1

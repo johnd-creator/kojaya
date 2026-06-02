@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\SalaryComponentType;
 use App\Models\SalaryStructure;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -15,9 +16,17 @@ class SalaryStructureManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
     public function test_user_can_filter_salary_structure_index(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('HR Pusat');
         $organization = Organization::factory()->create();
         $jobGrade = JobGrade::factory()->create();
         $otherJobGrade = JobGrade::factory()->create();
@@ -60,6 +69,7 @@ class SalaryStructureManagementTest extends TestCase
     public function test_user_can_create_update_and_delete_salary_structure(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('HR Pusat');
         $organization = Organization::factory()->create();
         $jobGrade = JobGrade::factory()->create();
         $baseSalary = SalaryComponentType::factory()->create(['code' => 'P1']);

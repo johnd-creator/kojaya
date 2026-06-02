@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
@@ -34,7 +35,7 @@ class CooperativeDashboardService
         $monthlyDues = CooperativeDuesInvoice::query()
             ->where('period', $currentPeriod);
         $latestClosedShu = CooperativeShuPeriod::query()
-            ->where('status', 'CLOSED')
+            ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
             ->latest('year')
             ->first();
 

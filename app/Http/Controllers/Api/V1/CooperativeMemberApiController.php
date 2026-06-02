@@ -7,6 +7,7 @@ use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Models\CooperativeMember;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
+use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\MemberNumberGenerator;
@@ -17,10 +18,11 @@ class CooperativeMemberApiController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorizeCooperativeAccess($request);
+        $this->authorize('viewAny', CooperativeMember::class);
 
         $members = CooperativeMember::query()
             ->with('organization')
+            ->when(! $this->canViewAllMembers($request), fn ($query) => $query->where('user_id', $request->user()?->id))
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
                 $query->where(function ($query) use ($search): void {
@@ -43,7 +45,7 @@ class CooperativeMemberApiController extends Controller
         CooperativeMemberUserProvisioningService $userProvisioningService,
         CooperativeOpeningBalanceService $openingBalanceService,
     ): JsonResponse {
-        $this->authorizeCooperativeAccess($request);
+        $this->authorize('create', CooperativeMember::class);
 
         $member = CooperativeMember::query()->create([
             ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
@@ -61,7 +63,7 @@ class CooperativeMemberApiController extends Controller
 
     public function show(Request $request, CooperativeMember $member): JsonResponse
     {
-        $this->authorizeCooperativeAccess($request, $member);
+        $this->authorize('view', $member);
 
         return response()->json([
             'data' => $member->load(['organization', 'documents', 'invoices.contributionType', 'ledgerEntries']),
@@ -75,7 +77,7 @@ class CooperativeMemberApiController extends Controller
         CooperativeMemberUserProvisioningService $userProvisioningService,
         CooperativeOpeningBalanceService $openingBalanceService,
     ): JsonResponse {
-        $this->authorizeCooperativeAccess($request, $member);
+        $this->authorize('update', $member);
 
         $member->update([
             ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
@@ -93,7 +95,7 @@ class CooperativeMemberApiController extends Controller
         CooperativeMember $member,
         CooperativeMemberUserProvisioningService $userProvisioningService,
     ): JsonResponse {
-        $this->authorizeCooperativeAccess($request, $member);
+        $this->authorize('activate', $member);
 
         $member->update([
             'status' => 'ACTIVE',
@@ -106,32 +108,23 @@ class CooperativeMemberApiController extends Controller
         return response()->json(['data' => $member->refresh()]);
     }
 
-    public function resign(Request $request, CooperativeMember $member): JsonResponse
+    public function resign(Request $request, CooperativeMember $member, CooperativeMemberService $memberService): JsonResponse
     {
-        $this->authorizeCooperativeAccess($request, $member);
+        $this->authorize('resign', $member);
 
-        $member->update([
-            'status' => 'RESIGNED',
-            'resigned_at' => now()->toDateString(),
-        ]);
+        $memberService->resign($member);
 
         return response()->json(['data' => $member->refresh()]);
     }
 
-    private function authorizeCooperativeAccess(Request $request, ?CooperativeMember $member = null): void
+    private function canViewAllMembers(Request $request): bool
     {
         $user = $request->user();
 
-        abort_unless($user, 401);
-
-        if ($user->can('manage_cooperative_member')) {
-            return;
-        }
-
-        if ($member && $user->can('view_cooperative_member') && $member->user_id === $user->id) {
-            return;
-        }
-
-        abort(403);
+        return $user?->can('view_cooperative_all')
+            || $user?->can('manage_cooperative_member')
+            || $user?->can('manage_cooperative_payment')
+            || $user?->can('access_cooperative_pos')
+            || $user?->can('view_cooperative_report');
     }
 }

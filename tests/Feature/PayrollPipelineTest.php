@@ -7,9 +7,9 @@ use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PayrollApproval;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PayrollPipelineTest extends TestCase
@@ -20,8 +20,7 @@ class PayrollPipelineTest extends TestCase
     {
         parent::setUp();
 
-        Role::create(['name' => 'Finance Pusat', 'guard_name' => 'web']);
-        Role::create(['name' => 'Employee', 'guard_name' => 'web']);
+        $this->seed(RolePermissionSeeder::class);
     }
 
     public function test_finance_can_generate_payroll_for_active_employees(): void

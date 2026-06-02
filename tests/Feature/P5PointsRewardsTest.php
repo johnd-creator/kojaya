@@ -11,14 +11,21 @@ use App\Models\PointTransaction;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class P5PointsRewardsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
 
     public function test_member_portal_pages_render_with_points_and_rewards_data(): void
     {
@@ -330,8 +337,6 @@ class P5PointsRewardsTest extends TestCase
 
     private function createMemberUser(): array
     {
-        Role::query()->firstOrCreate(['name' => 'Anggota', 'guard_name' => 'web']);
-
         $organization = Organization::factory()->create();
         $user = User::factory()->create([
             'organization_id' => $organization->id,
@@ -349,8 +354,6 @@ class P5PointsRewardsTest extends TestCase
 
     private function createCooperativeAdmin(Organization $organization): User
     {
-        Role::query()->firstOrCreate(['name' => 'Pengurus Koperasi', 'guard_name' => 'web']);
-
         $admin = User::factory()->create([
             'organization_id' => $organization->id,
             'email_verified_at' => now(),

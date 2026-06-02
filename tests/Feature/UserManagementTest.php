@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Organization;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -16,12 +17,21 @@ class UserManagementTest extends TestCase
 
         Role::create(['name' => 'System Admin', 'guard_name' => 'web']);
         Role::create(['name' => 'HR Unit', 'guard_name' => 'web']);
+        Permission::create(['name' => 'manage_users', 'guard_name' => 'web']);
+    }
+
+    private function adminUser(array $attributes = []): User
+    {
+        $admin = User::factory()->create($attributes);
+        $admin->givePermissionTo('manage_users');
+
+        return $admin;
     }
 
     public function test_user_can_view_user_management_index(): void
     {
         $organization = Organization::factory()->create();
-        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin = $this->adminUser(['organization_id' => $organization->id]);
         $managedUser = User::factory()->create(['organization_id' => $organization->id]);
         $managedUser->assignRole('HR Unit');
 
@@ -39,7 +49,7 @@ class UserManagementTest extends TestCase
     public function test_user_can_create_user_and_assign_role_and_organization(): void
     {
         $organization = Organization::factory()->create();
-        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin = $this->adminUser(['organization_id' => $organization->id]);
 
         $this->actingAs($admin)
             ->from(route('users.index'))
@@ -63,7 +73,7 @@ class UserManagementTest extends TestCase
     {
         $firstOrganization = Organization::factory()->create();
         $secondOrganization = Organization::factory()->create();
-        $admin = User::factory()->create(['organization_id' => $firstOrganization->id]);
+        $admin = $this->adminUser(['organization_id' => $firstOrganization->id]);
         $managedUser = User::factory()->create([
             'organization_id' => $firstOrganization->id,
             'email' => 'managed@example.test',
@@ -91,7 +101,7 @@ class UserManagementTest extends TestCase
     public function test_user_can_delete_other_user(): void
     {
         $organization = Organization::factory()->create();
-        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin = $this->adminUser(['organization_id' => $organization->id]);
         $managedUser = User::factory()->create(['organization_id' => $organization->id]);
 
         $this->actingAs($admin)
@@ -107,7 +117,7 @@ class UserManagementTest extends TestCase
     public function test_user_cannot_delete_self(): void
     {
         $organization = Organization::factory()->create();
-        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin = $this->adminUser(['organization_id' => $organization->id]);
 
         $this->actingAs($admin)
             ->from(route('users.index'))

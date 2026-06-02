@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 const props = defineProps<{
     loans: { data: Array<{ id: number; principal_amount: number | string; installment_amount: number | string; outstanding_amount: number | string; term_months: number; first_due_date: string; status: string; loan_type?: { name: string } | null }> };
     loanTypes: Array<{ id: number; name: string; interest_rate: number | string; admin_fee: number | string; late_fee_per_day: number | string; min_amount: number | string; max_amount: number | string; min_term_months: number; max_term_months: number }>;
+    journey: { title: string; current_status: string; reference?: string | null; amount?: number | string | null; steps: Array<{ label: string; completed: boolean; completed_at?: string | null }> };
 }>();
 
 const form = useForm({
@@ -46,6 +48,8 @@ const submit = (): void => {
     <Head title="Pinjaman Saya" />
     <AppLayout :breadcrumbs="[{ title: 'Kojayaku', href: '/member' }, { title: 'Pinjaman', href: '/member/loans' }]">
         <PageContainer>
+            <StatusJourney :title="journey.title" :current-status="journey.current_status" :reference="journey.reference" :amount="journey.amount" :steps="journey.steps" />
+
             <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                 <div class="rounded-lg border p-4">
                     <h2 class="text-lg font-semibold">Ajukan Pinjaman</h2>

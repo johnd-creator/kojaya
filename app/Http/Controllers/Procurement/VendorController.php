@@ -23,7 +23,7 @@ class VendorController extends Controller
                 'name' => $v->name,
                 'email' => $v->email,
                 'phone' => $v->phone,
-                'status' => $v->status,
+                'status' => $v->status->value,
                 'rating' => $v->rating,
             ]);
 

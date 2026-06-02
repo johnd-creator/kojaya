@@ -8,7 +8,6 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class EmployeeTransferTest extends TestCase
@@ -35,8 +34,8 @@ class EmployeeTransferTest extends TestCase
         $this->orgB = Organization::factory()->create(['code' => 'UNIT-B', 'level' => 'L2', 'type' => 'BRANCH']);
         $this->orgC = Organization::factory()->create(['code' => 'UNIT-C', 'level' => 'L2', 'type' => 'BRANCH']);
 
-        Role::firstOrCreate(['name' => 'HR Unit', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'Admin Pusat', 'guard_name' => 'web']);
+        // Seed all roles with correct permissions (including manage_employee_transfer / approve_employee_transfer)
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
 
         $this->hrUnit = User::factory()->create(['organization_id' => $this->orgA->id]);
         $this->hrUnit->assignRole('HR Unit');

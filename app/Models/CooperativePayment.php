@@ -6,6 +6,7 @@ use App\Models\Traits\HasApprovalLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CooperativePayment extends Model
 {
@@ -60,5 +61,10 @@ class CooperativePayment extends Model
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(CooperativeLedgerEntry::class);
+    }
+
+    public function receipt(): HasOne
+    {
+        return $this->hasOne(CooperativeReceipt::class);
     }
 }

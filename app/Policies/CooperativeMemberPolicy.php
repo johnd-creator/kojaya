@@ -15,7 +15,8 @@ class CooperativeMemberPolicy extends BasePolicy
 
     public function view(User $user, CooperativeMember $cooperativeMember): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_VIEW->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)
+            || ($this->can($user, PermissionEnum::COOPERATIVE_MEMBER_VIEW->value) && $cooperativeMember->user_id === $user->id);
     }
 
     public function create(User $user): bool
@@ -26,6 +27,16 @@ class CooperativeMemberPolicy extends BasePolicy
     public function update(User $user, CooperativeMember $cooperativeMember): bool
     {
         return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+    }
+
+    public function activate(User $user, CooperativeMember $cooperativeMember): bool
+    {
+        return $this->update($user, $cooperativeMember);
+    }
+
+    public function resign(User $user, CooperativeMember $cooperativeMember): bool
+    {
+        return $this->update($user, $cooperativeMember);
     }
 
     public function delete(User $user, CooperativeMember $cooperativeMember): bool

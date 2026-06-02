@@ -126,17 +126,14 @@ class SystemAdminAccessTest extends TestCase
 
     public function test_system_admin_has_wildcard_token_ability_for_mobile_api(): void
     {
-        $this->markTestIncomplete(
-            'Mobile API token ability test - requires API endpoint testing',
-        );
-
-        // TODO: Test POST /api/auth/login returns abilities: ['*']
-        // $response = $this->postJson('/api/auth/login', [
-        //     'email' => 'admin@erp.com',
-        //     'password' => 'password',
-        //     'app' => 'admin',
-        // ]);
-        //
-        // $response->assertJsonPath('abilities', ['*']);
+        $this->postJson('/api/auth/login', [
+            'email' => 'admin@erp.com',
+            'password' => 'password',
+            'app' => 'admin',
+            'device_name' => 'System Admin Test',
+        ])
+            ->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('abilities', ['*']);
     }
 }

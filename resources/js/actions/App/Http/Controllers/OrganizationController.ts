@@ -427,7 +427,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:55
+* @see app/Http/Controllers/OrganizationController.php:54
 * @route '/organizations/{organization}'
 */
 export const destroy = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -442,7 +442,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:55
+* @see app/Http/Controllers/OrganizationController.php:54
 * @route '/organizations/{organization}'
 */
 destroy.url = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -469,7 +469,7 @@ destroy.url = (args: { organization: string | number } | [organization: string |
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:55
+* @see app/Http/Controllers/OrganizationController.php:54
 * @route '/organizations/{organization}'
 */
 destroy.delete = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -479,7 +479,7 @@ destroy.delete = (args: { organization: string | number } | [organization: strin
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:55
+* @see app/Http/Controllers/OrganizationController.php:54
 * @route '/organizations/{organization}'
 */
 const destroyForm = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -494,7 +494,7 @@ const destroyForm = (args: { organization: string | number } | [organization: st
 
 /**
 * @see \App\Http\Controllers\OrganizationController::destroy
-* @see app/Http/Controllers/OrganizationController.php:55
+* @see app/Http/Controllers/OrganizationController.php:54
 * @route '/organizations/{organization}'
 */
 destroyForm.delete = (args: { organization: string | number } | [organization: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

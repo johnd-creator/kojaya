@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\LoanStatus;
+use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\Cooperative\RedeemRewardRequest;
 use App\Http\Requests\StoreMemberLoanApplicationRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
@@ -12,7 +14,8 @@ use App\Models\Loan;
 use App\Models\LoanType;
 use App\Models\PosTransaction;
 use App\Models\Reward;
-use App\Services\Cooperative\LoanService;
+use App\Services\Cooperative\MemberOnboardingService;
+use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,8 +24,12 @@ use Inertia\Response;
 
 class MemberPortalController extends Controller
 {
-    public function dashboard(Request $request, PointService $pointService): Response
-    {
+    public function dashboard(
+        Request $request,
+        PointService $pointService,
+        MemberOnboardingService $onboardingService,
+        MemberStatusJourneyService $journeyService,
+    ): Response {
         $member = $this->memberOrAbort($request);
         $pointSummary = $pointService->balanceSummary($member);
 
@@ -37,6 +44,8 @@ class MemberPortalController extends Controller
                 'member_tier' => $pointSummary['member_tier'],
                 'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
+            'onboarding' => $onboardingService->status($member),
+            'journeys' => $journeyService->summary($member),
             'recentTransactions' => PosTransaction::query()
                 ->with(['payments'])
                 ->where('cooperative_member_id', $member->id)
@@ -52,7 +61,26 @@ class MemberPortalController extends Controller
         ]);
     }
 
-    public function savings(Request $request): Response
+    public function onboarding(Request $request, MemberOnboardingService $service): Response
+    {
+        $member = $this->memberOrAbort($request);
+
+        return Inertia::render('Kojayaku/Onboarding', [
+            'member' => $member->load('organization'),
+            'onboarding' => $service->status($member),
+        ]);
+    }
+
+    public function markOnboardingStep(
+        MarkMemberOnboardingStepRequest $request,
+        MemberOnboardingService $service,
+    ): RedirectResponse {
+        $service->markStep($this->memberOrAbort($request), $request->validated('step'));
+
+        return back()->with('success', 'Progress onboarding diperbarui.');
+    }
+
+    public function savings(Request $request, MemberStatusJourneyService $journeyService): Response
     {
         $member = $this->memberOrAbort($request);
 
@@ -65,22 +93,25 @@ class MemberPortalController extends Controller
             'entries' => $member->ledgerEntries()->latest('posted_at')->paginate(12)->withQueryString(),
             'invoices' => $member->invoices()->with('contributionType')->latest('period')->paginate(10, ['*'], 'invoices')->withQueryString(),
             'payments' => $member->payments()->with('invoice.contributionType')->latest('paid_at')->paginate(10, ['*'], 'payments')->withQueryString(),
+            'journey' => $journeyService->paymentJourney($member),
         ]);
     }
 
-    public function loans(Request $request): Response
+    public function loans(Request $request, MemberOnboardingService $onboardingService, MemberStatusJourneyService $journeyService): Response
     {
         $member = $this->memberOrAbort($request);
+        $onboardingService->markStep($member, 'loans');
 
         return Inertia::render('Kojayaku/Loans', [
             'loans' => $member->loans()->with(['loanType', 'installments'])->latest()->paginate(12)->withQueryString(),
             'loanTypes' => LoanType::query()->where('is_active', true)->orderBy('name')->get(),
+            'journey' => $journeyService->loanJourney($member),
         ]);
     }
 
     public function applyLoan(
         StoreMemberLoanApplicationRequest $request,
-        LoanService $loanService
+        LoanServiceContract $loanService
     ): RedirectResponse {
         $member = $this->memberOrAbort($request);
 
@@ -107,9 +138,14 @@ class MemberPortalController extends Controller
         ]);
     }
 
-    public function rewards(Request $request, PointService $pointService): Response
-    {
+    public function rewards(
+        Request $request,
+        PointService $pointService,
+        MemberOnboardingService $onboardingService,
+        MemberStatusJourneyService $journeyService,
+    ): Response {
         $member = $this->memberOrAbort($request);
+        $onboardingService->markStep($member, 'rewards');
 
         return Inertia::render('Kojayaku/Rewards', [
             'summary' => $pointService->balanceSummary($member),
@@ -119,6 +155,7 @@ class MemberPortalController extends Controller
                 ->paginate(12)
                 ->withQueryString(),
             'redemptions' => $member->rewardRedemptions()->with('reward')->latest('redeemed_at')->paginate(10, ['*'], 'redemptions')->withQueryString(),
+            'journey' => $journeyService->rewardJourney($member),
         ]);
     }
 

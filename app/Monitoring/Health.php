@@ -125,9 +125,36 @@ class Health
     {
         return [
             'pending_approvals' => $this->pendingApprovalCount(),
-            'failed_jobs' => DB::table('failed_jobs')->count(),
+            'failed_jobs' => $this->failedJobsCount(),
+            'failed_notification_outboxes' => $this->failedNotificationOutboxesCount(),
             'overdue_loans' => $this->overdueLoanCount(),
         ];
+    }
+
+    protected function failedNotificationOutboxesCount(): int
+    {
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('notification_outboxes')) {
+                return 0;
+            }
+
+            return DB::table('notification_outboxes')->where('status', 'failed')->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    protected function failedJobsCount(): int
+    {
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('failed_jobs')) {
+                return 0;
+            }
+
+            return DB::table('failed_jobs')->count();
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     protected function pendingApprovalCount(): int

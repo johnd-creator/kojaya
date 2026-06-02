@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\VendorStatus;
 use App\Models\Traits\HasOrganizationScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,6 +29,13 @@ class Vendor extends Model
         'bank_account_name',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'status' => VendorStatus::class,
+        ];
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
@@ -36,5 +44,10 @@ class Vendor extends Model
     public function purchaseOrders(): HasMany
     {
         return $this->hasMany(PurchaseOrder::class);
+    }
+
+    public function performanceSnapshots(): HasMany
+    {
+        return $this->hasMany(VendorPerformanceSnapshot::class);
     }
 }

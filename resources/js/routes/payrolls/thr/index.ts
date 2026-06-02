@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\PayrollController::preview
-* @see app/Http/Controllers/PayrollController.php:224
+* @see app/Http/Controllers/PayrollController.php:225
 * @route '/payrolls/thr/preview'
 */
 export const preview = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ preview.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::preview
-* @see app/Http/Controllers/PayrollController.php:224
+* @see app/Http/Controllers/PayrollController.php:225
 * @route '/payrolls/thr/preview'
 */
 preview.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ preview.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PayrollController::preview
-* @see app/Http/Controllers/PayrollController.php:224
+* @see app/Http/Controllers/PayrollController.php:225
 * @route '/payrolls/thr/preview'
 */
 preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::preview
-* @see app/Http/Controllers/PayrollController.php:224
+* @see app/Http/Controllers/PayrollController.php:225
 * @route '/payrolls/thr/preview'
 */
 const previewForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const previewForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =
 
 /**
 * @see \App\Http\Controllers\PayrollController::preview
-* @see app/Http/Controllers/PayrollController.php:224
+* @see app/Http/Controllers/PayrollController.php:225
 * @route '/payrolls/thr/preview'
 */
 previewForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -57,7 +57,7 @@ preview.form = previewForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:243
 * @route '/payrolls/thr/generate'
 */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -72,7 +72,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:243
 * @route '/payrolls/thr/generate'
 */
 generate.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:243
 * @route '/payrolls/thr/generate'
 */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -91,7 +91,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:243
 * @route '/payrolls/thr/generate'
 */
 const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -101,7 +101,7 @@ const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:243
 * @route '/payrolls/thr/generate'
 */
 generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

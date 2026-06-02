@@ -164,16 +164,17 @@ KojayaPro dan Kojayaku adalah **dua aplikasi terpisah** yang saling terintegrasi
 - ✅ **Approval System** - Workflow persetujuan multi-level
 - ✅ **Laporan** - Keuangan, operasional, simpan pinjam, compliance
 - ✅ **Web Admin Panel** - Vue 3 + Inertia.js interface
-- ✅ **API Terintegrasi** - 50+ endpoints untuk mobile
+- ✅ **API Terintegrasi** - 100+ endpoints untuk mobile
 
-### **Kojayaku (Aplikasi Anggota) - Planned ⏳:**
-- ⏳ **Web & Mobile App** - Responsive web + native mobile (Flutter/React Native)
-- ⏳ **Profil Anggota** - Data diri, status keanggotaan, dokumen
-- ⏳ **Simpanan** - Cek saldo, riwayat, bunga, sertifikat deposit
-- ⏳ **Pinjaman** - Ajukan online, tracking status, riwayat angsuran
-- ⏳ **Poin & Reward** - Cek poin transaksi, tukar poin, reward catalog
-- ⏳ **Transaksi** - Riwayat belanja di toko koperasi
-- ⏳ **Notifikasi** - Push notifikasi untuk pembayaran, jatuh tempo, dll.
+### **Kojayaku (Aplikasi Anggota) - Completed ✅:**
+- ✅ **Web App** - Responsive web (Vue 3 + Inertia.js)
+- ✅ **Profil Anggota** - Data diri, status keanggotaan, dokumen
+- ✅ **Simpanan** - Cek saldo, riwayat, bunga, penarikan simpanan
+- ✅ **Pinjaman** - Ajukan online, tracking status, riwayat angsuran, restrukturisasi
+- ✅ **Poin & Reward** - Cek poin transaksi, tukar poin, reward catalog
+- ✅ **Transaksi** - Riwayat belanja di toko koperasi, retur/refund
+- ✅ **Notifikasi** - Push notifikasi, WhatsApp notification untuk pembayaran, jatuh tempo
+- ✅ **Onboarding** - Flow onboarding untuk anggota baru
 
 ### **Integrasi:**
 - Kojayaku mengakses API KojayaPro untuk data simpanan, pinjaman, transaksi
@@ -259,14 +260,17 @@ KojayaPro dan Kojayaku adalah **dua aplikasi terpisah** yang saling terintegrasi
 - ✅ Reporting system (100%)
 
 ### In Progress:
-- 🔄 Mobile app development (0% - planned)
-- 🔄 Payment gateway integration (0% - planned)
+- 🔄 Native mobile app development (0% - planned)
+- 🔄 Payment gateway production validation (foundation ready)
 
 ### Technical Debt:
-- API documentation (OpenAPI/Swagger) needed
-- Token expiration for Sanctum (security improvement)
-- Rate limiting for API endpoints
-- Automated testing coverage expansion
+- ~~API documentation (OpenAPI/Swagger) needed~~ ✅ OpenAPI snapshot available at `docs/openapi.json`
+- ~~Token expiration for Sanctum~~ ✅ Configured with 30-day expiration
+- ~~Rate limiting for API endpoints~~ ✅ 3-tier throttle implemented
+- ~~Automated testing coverage expansion~~ ✅ 108 test files, 53 factories
+- Vendor status enum (SUSPENDED/BLACKLISTED) — pending
+- Loan status enum (WrittenOff) — pending
+- API Resource for Savings — pending
 
 ---
 
@@ -383,4 +387,4 @@ KojayaPro → Kojayaku:
 
 ---
 
-*Last Updated: May 2, 2026*
+*Last Updated: May 17, 2026*

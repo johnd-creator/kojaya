@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ShiftRoster;
 use App\Models\User;
 use App\Models\WorkShift;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -13,9 +14,17 @@ class ShiftRosterManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
     public function test_user_can_generate_shift_roster_for_month(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('HR Pusat');
 
         WorkShift::factory()->create(['name' => 'Shift Pagi', 'type' => 'SHIFT', 'start_time' => '06:00', 'end_time' => '14:00']);
         WorkShift::factory()->create(['name' => 'Shift Siang', 'type' => 'SHIFT', 'start_time' => '14:00', 'end_time' => '22:00']);
@@ -35,6 +44,7 @@ class ShiftRosterManagementTest extends TestCase
     public function test_user_can_view_and_filter_shift_roster_index(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('HR Pusat');
         $shift = WorkShift::factory()->create(['type' => 'SHIFT']);
         ShiftRoster::factory()->create(['date' => '2026-02-01', 'shift_group' => 'A', 'work_shift_id' => $shift->id]);
         ShiftRoster::factory()->create(['date' => '2026-02-02', 'shift_group' => 'B', 'work_shift_id' => $shift->id]);
@@ -56,6 +66,7 @@ class ShiftRosterManagementTest extends TestCase
     public function test_user_can_update_roster_entry_to_off_day(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('HR Pusat');
         $shift = WorkShift::factory()->create(['type' => 'SHIFT']);
         $roster = ShiftRoster::factory()->create([
             'date' => '2026-02-10',

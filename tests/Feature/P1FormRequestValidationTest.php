@@ -10,12 +10,20 @@ use App\Models\OvertimeRequest;
 use App\Models\OvertimeRule;
 use App\Models\Reimbursement;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class P1FormRequestValidationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
 
     public function test_hr_cannot_reject_overtime_without_reason(): void
     {

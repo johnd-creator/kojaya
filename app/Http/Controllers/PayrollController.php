@@ -14,6 +14,7 @@ use App\Models\PayrollComponent;
 use App\Models\User;
 use App\Services\BankExportService;
 use App\Services\BpjsCalculationService;
+use App\Services\Hr\ThrEntitlementService;
 use App\Services\OvertimeCalculationService;
 use App\Services\Pph21TerService;
 use Illuminate\Http\Request;
@@ -221,55 +222,25 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function previewThr(PreviewThrRequest $request)
+    public function previewThr(PreviewThrRequest $request, ThrEntitlementService $thrEntitlementService)
     {
         $this->authorize('create', Payroll::class);
 
         $validated = $request->validated();
 
-        $cutoffDate = \Carbon\Carbon::create($validated['year'], 5, 31);
-
-        $employees = Employee::where('organization_id', $validated['organization_id'])
-            ->where('status', 'ACTIVE')
-            ->get();
-
-        $totalThr = 0;
-        $breakdown = [];
-        $monthsWorkedCounts = [];
-
-        foreach ($employees as $employee) {
-            $hireDate = \Carbon\Carbon::parse($employee->hire_date);
-            $monthsWorked = min(12, $hireDate->diffInMonths($cutoffDate) + 1);
-
-            if (! isset($monthsWorkedCounts[$monthsWorked])) {
-                $monthsWorkedCounts[$monthsWorked] = 0;
-            }
-            $monthsWorkedCounts[$monthsWorked]++;
-
-            $basicSalary = $employee->basic_salary ?? 0;
-            $thrAmount = ($basicSalary / 12) * $monthsWorked;
-            $totalThr += $thrAmount;
-        }
-
-        ksort($monthsWorkedCounts);
-        foreach ($monthsWorkedCounts as $months => $count) {
-            $breakdown[] = [
-                'months' => $months,
-                'count' => $count,
-            ];
-        }
+        $preview = $thrEntitlementService->previewOrganization($validated['organization_id'], (int) $validated['year']);
 
         $organization = Organization::find($validated['organization_id']);
 
         return response()->json([
-            'total_employees' => $employees->count(),
-            'total_thr' => $totalThr,
+            'total_employees' => $preview['total_employees'],
+            'total_thr' => $preview['total_thr'],
             'organization_name' => $organization->name,
-            'breakdown' => $breakdown,
+            'breakdown' => $preview['breakdown'],
         ]);
     }
 
-    public function generateThr(PreviewThrRequest $request)
+    public function generateThr(PreviewThrRequest $request, ThrEntitlementService $thrEntitlementService)
     {
         $this->authorize('create', Payroll::class);
 
@@ -277,47 +248,19 @@ class PayrollController extends Controller
 
         $thrPeriod = $validated['year'].'-05';
 
-        $employees = Employee::where('organization_id', $validated['organization_id'])
-            ->where('status', 'ACTIVE')
-            ->get();
+        $entitlements = $thrEntitlementService->calculateForOrganization($validated['organization_id'], (int) $validated['year']);
 
         $generated = 0;
 
-        foreach ($employees as $employee) {
-            if (Payroll::where('employee_id', $employee->id)
+        foreach ($entitlements as $entitlement) {
+            if (Payroll::where('employee_id', $entitlement->employee_id)
                 ->where('is_thr', true)
                 ->where('period', $thrPeriod)
                 ->exists()) {
                 continue;
             }
 
-            $hireDate = \Carbon\Carbon::parse($employee->hire_date);
-            $cutoffDate = \Carbon\Carbon::create($validated['year'], 5, 31);
-            $monthsWorked = min(12, $hireDate->diffInMonths($cutoffDate) + 1);
-
-            $basicSalary = $employee->basic_salary ?? 0;
-            $thrAmount = ($basicSalary / 12) * $monthsWorked;
-
-            Payroll::create([
-                'employee_id' => $employee->id,
-                'organization_id' => $employee->organization_id,
-                'period' => $thrPeriod,
-                'basic_salary' => 0,
-                'total_allowance' => $thrAmount,
-                'total_deduction' => 0,
-                'tax_amount' => 0,
-                'bpjs_amount' => 0,
-                'net_salary' => $thrAmount,
-                'status' => 'DRAFT',
-                'is_thr' => true,
-                'thr_proportion_months' => $monthsWorked,
-                'thr_amount' => $thrAmount,
-                'thr_calculation_breakdown' => json_encode([
-                    'basic_salary' => $basicSalary,
-                    'months_worked' => $monthsWorked,
-                    'thr_calculation' => "({$basicSalary} / 12) * {$monthsWorked}",
-                ]),
-            ]);
+            $thrEntitlementService->createPayrollFromEntitlement($entitlement, $thrPeriod);
 
             $generated++;
         }

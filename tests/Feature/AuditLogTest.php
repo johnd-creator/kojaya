@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AuditLogTest extends TestCase
@@ -15,9 +18,20 @@ class AuditLogTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(RolePermissionSeeder::class);
+
+        // Tests in this class exercise both read and export endpoints,
+        // so grant both view + export permissions to the acting user.
+        $role = Role::query()->firstOrCreate(['name' => 'Audit Viewer', 'guard_name' => 'web']);
+        $role->syncPermissions([
+            Permission::query()->firstOrCreate(['name' => 'view_audit_logs', 'guard_name' => 'web']),
+            Permission::query()->firstOrCreate(['name' => 'export_audit_logs', 'guard_name' => 'web']),
+        ]);
+
         $user = User::factory()->create();
         $user->email_verified_at = now();
         $user->save();
+        $user->assignRole($role);
         $this->actingAs($user);
     }
 

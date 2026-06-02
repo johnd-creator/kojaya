@@ -88,6 +88,8 @@ class RolePermissionSeeder extends Seeder
             'access_ess_portal',
             'manage_employee_contract',
             'manage_employee_family',
+            'manage_employee_transfer',
+            'approve_employee_transfer',
         ]);
 
         // HR Unit
@@ -98,8 +100,11 @@ class RolePermissionSeeder extends Seeder
             'view_payroll_unit',
             'process_payroll',
             'view_leave_unit',
+            'approve_leave',
             'view_overtime_unit',
+            'approve_overtime',
             'access_ess_portal',
+            'manage_employee_transfer',
         ]);
 
         // Finance Pusat
@@ -134,13 +139,15 @@ class RolePermissionSeeder extends Seeder
             'view_pr_all',
             'view_po_all',
             'view_grn_all',
-            'view_budget_all',
             'manage_petty_cash',
             'manage_bank_batch',
+            'manage_bank_reconciliation',
             'view_chart_of_accounts',
             'view_trial_balance',
             'view_balance_sheet',
             'view_income_statement',
+            'manage_reimbursement',
+            'approve_reimbursement',
         ]);
 
         // Project Manager
@@ -161,6 +168,9 @@ class RolePermissionSeeder extends Seeder
             'manage_work_order',
             'manage_clients',
             'manage_vendors',
+            'manage_spare_parts',
+            'manage_warehouses',
+            'view_stock',
         ]);
 
         // Site Manager

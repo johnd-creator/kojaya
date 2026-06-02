@@ -17,11 +17,20 @@ class RoleManagementTest extends TestCase
         Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
         Permission::create(['name' => 'users.manage', 'guard_name' => 'web']);
         Permission::create(['name' => 'roles.manage', 'guard_name' => 'web']);
+        Permission::create(['name' => 'manage_roles', 'guard_name' => 'web']);
+    }
+
+    private function adminUser(): User
+    {
+        $admin = User::factory()->create();
+        $admin->givePermissionTo('manage_roles');
+
+        return $admin;
     }
 
     public function test_user_can_view_role_index_with_user_counts(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
         $role = Role::create(['name' => 'HR Unit', 'guard_name' => 'web']);
         User::factory()->count(2)->create()->each(fn (User $user) => $user->assignRole($role));
 
@@ -38,7 +47,7 @@ class RoleManagementTest extends TestCase
 
     public function test_user_can_view_role_edit_page_with_permissions(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
         $role = Role::create(['name' => 'Finance Unit', 'guard_name' => 'web']);
         $role->givePermissionTo('users.view');
 
@@ -49,13 +58,13 @@ class RoleManagementTest extends TestCase
                 ->component('Role/Edit')
                 ->where('role.name', 'Finance Unit')
                 ->has('role.permissions', 1)
-                ->has('permissions', 3)
+                ->has('permissions', 4)
             );
     }
 
     public function test_user_can_update_role_permissions(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
         $role = Role::create(['name' => 'Project Manager', 'guard_name' => 'web']);
 
         $this->actingAs($admin)
@@ -71,7 +80,7 @@ class RoleManagementTest extends TestCase
 
     public function test_role_update_validates_unknown_permissions(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->adminUser();
         $role = Role::create(['name' => 'Admin Unit', 'guard_name' => 'web']);
 
         $this->actingAs($admin)

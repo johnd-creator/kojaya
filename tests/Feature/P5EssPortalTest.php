@@ -11,14 +11,21 @@ use App\Models\MedicalCheckup;
 use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class P5EssPortalTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
 
     public function test_ess_pages_render_for_linked_employee(): void
     {
@@ -103,8 +110,6 @@ class P5EssPortalTest extends TestCase
 
     private function createEmployeeUser(): array
     {
-        Role::query()->firstOrCreate(['name' => 'Employee', 'guard_name' => 'web']);
-
         $organization = Organization::factory()->create();
         $user = User::factory()->create([
             'organization_id' => $organization->id,

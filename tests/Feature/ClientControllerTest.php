@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Client;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ClientControllerTest extends TestCase
@@ -16,15 +19,31 @@ class ClientControllerTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(RolePermissionSeeder::class);
+
+        // Single-permission role granting clients management to test users.
+        $role = Role::query()->firstOrCreate(['name' => 'Client Manager', 'guard_name' => 'web']);
+        $role->syncPermissions([
+            Permission::query()->firstOrCreate(['name' => 'manage_clients', 'guard_name' => 'web']),
+        ]);
+
         Client::factory()->count(5)->create(['client_type' => 'PLN']);
         Client::factory()->count(3)->create(['client_type' => 'PRIVATE']);
 
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
     }
 
-    public function test_user_can_view_clients_index(): void
+    private function actingUser(): User
     {
         $user = User::factory()->create();
+        $user->assignRole('Client Manager');
+
+        return $user;
+    }
+
+    public function test_user_can_view_clients_index(): void
+    {
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->get(route('clients.index'))
@@ -42,7 +61,7 @@ class ClientControllerTest extends TestCase
     public function test_can_search_clients_by_name(): void
     {
         $client = Client::factory()->create(['name' => 'PT Test Company']);
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->get(route('clients.index', ['search' => 'Test Company']))
@@ -56,7 +75,7 @@ class ClientControllerTest extends TestCase
 
     public function test_can_filter_clients_by_type(): void
     {
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->get(route('clients.index', ['client_type' => 'PLN']))
@@ -70,7 +89,7 @@ class ClientControllerTest extends TestCase
 
     public function test_can_view_create_client_form(): void
     {
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->get(route('clients.create'))
@@ -83,7 +102,7 @@ class ClientControllerTest extends TestCase
 
     public function test_can_create_client(): void
     {
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $clientData = [
             'code' => 'CLI-001',
@@ -111,7 +130,7 @@ class ClientControllerTest extends TestCase
     public function test_client_code_must_be_unique(): void
     {
         $existingClient = Client::factory()->create(['code' => 'CLI-001']);
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $clientData = [
             'code' => 'CLI-001',
@@ -130,7 +149,7 @@ class ClientControllerTest extends TestCase
     public function test_can_view_client_details(): void
     {
         $client = Client::factory()->create();
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->get(route('clients.show', $client))
@@ -144,7 +163,7 @@ class ClientControllerTest extends TestCase
     public function test_can_view_edit_client_form(): void
     {
         $client = Client::factory()->create();
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->get(route('clients.edit', $client))
@@ -159,7 +178,7 @@ class ClientControllerTest extends TestCase
     public function test_can_update_client(): void
     {
         $client = Client::factory()->create(['name' => 'Old Name']);
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $updatedData = [
             'code' => $client->code,
@@ -186,7 +205,7 @@ class ClientControllerTest extends TestCase
     public function test_can_delete_client(): void
     {
         $client = Client::factory()->create();
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->delete(route('clients.destroy', $client))
@@ -199,7 +218,7 @@ class ClientControllerTest extends TestCase
 
     public function test_validates_required_fields(): void
     {
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $this->actingAs($user)
             ->post(route('clients.store'), [])
@@ -208,7 +227,7 @@ class ClientControllerTest extends TestCase
 
     public function test_validates_email_format(): void
     {
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $clientData = [
             'code' => 'CLI-001',
@@ -226,7 +245,7 @@ class ClientControllerTest extends TestCase
 
     public function test_validates_client_type_values(): void
     {
-        $user = User::factory()->create();
+        $user = $this->actingUser();
 
         $clientData = [
             'code' => 'CLI-001',

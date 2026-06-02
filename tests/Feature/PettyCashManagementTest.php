@@ -5,14 +5,30 @@ namespace Tests\Feature;
 use App\Models\Organization;
 use App\Models\PettyCashAccount;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class PettyCashManagementTest extends TestCase
 {
-    public function test_user_can_view_petty_cash_index(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    private function financeUser(): User
     {
         $user = User::factory()->create();
+        $user->assignRole('Finance Pusat');
+
+        return $user;
+    }
+
+    public function test_user_can_view_petty_cash_index(): void
+    {
+        $user = $this->financeUser();
         PettyCashAccount::factory()->count(2)->create();
 
         $this->actingAs($user)
@@ -27,7 +43,7 @@ class PettyCashManagementTest extends TestCase
 
     public function test_user_can_create_petty_cash_account(): void
     {
-        $user = User::factory()->create();
+        $user = $this->financeUser();
         $organization = Organization::factory()->create();
 
         $this->actingAs($user)
@@ -50,7 +66,7 @@ class PettyCashManagementTest extends TestCase
 
     public function test_user_can_record_debit_transaction_and_balance_is_increased(): void
     {
-        $user = User::factory()->create();
+        $user = $this->financeUser();
         $account = PettyCashAccount::factory()->create(['balance' => 1000000]);
 
         $this->actingAs($user)
@@ -79,7 +95,7 @@ class PettyCashManagementTest extends TestCase
 
     public function test_credit_transaction_cannot_exceed_account_balance(): void
     {
-        $user = User::factory()->create();
+        $user = $this->financeUser();
         $account = PettyCashAccount::factory()->create(['balance' => 100000]);
 
         $this->actingAs($user)
@@ -101,7 +117,7 @@ class PettyCashManagementTest extends TestCase
 
     public function test_account_with_transactions_cannot_be_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->financeUser();
         $account = PettyCashAccount::factory()->create();
 
         $this->actingAs($user)->post(route('petty-cash.transactions.store'), [

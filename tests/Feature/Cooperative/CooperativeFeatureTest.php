@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
@@ -271,6 +272,8 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('System Admin');
+        $approver = User::factory()->create();
+        $approver->assignRole('System Admin');
         $member = $this->member(['status' => 'ACTIVE']);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
@@ -298,8 +301,8 @@ class CooperativeFeatureTest extends TestCase
             'status' => 'PENDING',
         ]);
 
-        $this->actingAs($user)->post(route('cooperative.payments.approve', $payment))->assertRedirect();
-        $this->actingAs($user)->post(route('cooperative.payments.approve', $payment))->assertRedirect();
+        $this->actingAs($approver)->post(route('cooperative.payments.approve', $payment))->assertRedirect();
+        $this->actingAs($approver)->post(route('cooperative.payments.approve', $payment))->assertRedirect();
 
         $this->assertSame('PAID', $invoice->refresh()->status);
         $this->assertSame('50000.00', $invoice->paid_amount);
@@ -601,7 +604,7 @@ class CooperativeFeatureTest extends TestCase
 
         $period = $service->close(2026, 100000, null, $user);
 
-        $this->assertSame('CLOSED', $period->status);
+        $this->assertSame(CooperativeShuPeriodStatus::Closed, $period->status);
         $this->assertDatabaseHas('cooperative_shu_periods', [
             'year' => 2026,
             'status' => 'CLOSED',

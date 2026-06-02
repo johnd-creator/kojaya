@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\Position;
 use App\Models\User;
 use App\Models\WorkShift;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -16,9 +17,22 @@ class HrMasterDataManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected User $hrUser;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+
+        // HR Pusat has manage_departments/positions/job_grades/work_shifts
+        $this->hrUser = User::factory()->create();
+        $this->hrUser->assignRole('HR Pusat');
+    }
+
     public function test_user_can_filter_department_index_by_search_and_organization(): void
     {
-        $user = User::factory()->create();
+        $user = $this->hrUser;
         $organization = Organization::factory()->create();
         $otherOrganization = Organization::factory()->create();
 
@@ -55,7 +69,7 @@ class HrMasterDataManagementTest extends TestCase
 
     public function test_user_can_create_update_and_delete_department(): void
     {
-        $user = User::factory()->create();
+        $user = $this->hrUser;
         $organization = Organization::factory()->create();
 
         $this->actingAs($user)
@@ -93,7 +107,7 @@ class HrMasterDataManagementTest extends TestCase
 
     public function test_user_can_filter_position_index_and_manage_position(): void
     {
-        $user = User::factory()->create();
+        $user = $this->hrUser;
         $organization = Organization::factory()->create();
         $department = Department::factory()->create(['organization_id' => $organization->id]);
         $jobGrade = JobGrade::factory()->create(['level' => 2]);
@@ -156,7 +170,7 @@ class HrMasterDataManagementTest extends TestCase
 
     public function test_user_can_manage_job_grades(): void
     {
-        $user = User::factory()->create();
+        $user = $this->hrUser;
         JobGrade::factory()->create(['code' => 'JG-A', 'level' => 1]);
         JobGrade::factory()->create(['code' => 'JG-B', 'level' => 3]);
 
@@ -196,7 +210,7 @@ class HrMasterDataManagementTest extends TestCase
 
     public function test_user_can_manage_work_shifts(): void
     {
-        $user = User::factory()->create();
+        $user = $this->hrUser;
         WorkShift::factory()->create(['name' => 'Shift Pagi', 'type' => 'SHIFT', 'start_time' => '08:00', 'end_time' => '16:00']);
         WorkShift::factory()->create(['name' => 'Non Shift', 'type' => 'NON_SHIFT', 'start_time' => '09:00', 'end_time' => '17:00']);
 

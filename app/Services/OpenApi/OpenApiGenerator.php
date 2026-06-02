@@ -176,7 +176,9 @@ class OpenApiGenerator
         return [
             'SuccessEnvelope' => [
                 'type' => 'object',
+                'required' => ['success'],
                 'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => true],
                     'data' => ['type' => 'object'],
                     'message' => ['type' => 'string'],
                 ],
@@ -255,6 +257,13 @@ class OpenApiGenerator
                     'last_seen_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                 ],
             ],
+            'MemberOnboardingStepRequest' => [
+                'type' => 'object',
+                'required' => ['step'],
+                'properties' => [
+                    'step' => ['type' => 'string', 'enum' => ['profile', 'kyc', 'first_savings', 'loans', 'rewards'], 'example' => 'loans'],
+                ],
+            ],
             'Loan' => [
                 'type' => 'object',
                 'properties' => [
@@ -287,7 +296,12 @@ class OpenApiGenerator
             'Error' => [
                 'type' => 'object',
                 'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => false],
                     'message' => ['type' => 'string'],
+                    'error' => ['type' => 'string'],
+                    'error_code' => ['type' => 'string'],
+                    'error_details' => ['type' => 'object'],
+                    'request_id' => ['type' => 'string', 'nullable' => true],
                     'errors' => ['type' => 'object', 'additionalProperties' => ['type' => 'array', 'items' => ['type' => 'string']]],
                 ],
             ],
@@ -430,6 +444,7 @@ class OpenApiGenerator
             str_ends_with($uri, 'api/payments/charge') => ['$ref' => '#/components/schemas/CreatePaymentChargeRequest'],
             str_ends_with($uri, 'api/payments/webhook') => ['$ref' => '#/components/schemas/PaymentGatewayWebhookRequest'],
             str_ends_with($uri, 'api/devices/push-token') => ['$ref' => '#/components/schemas/RegisterDeviceTokenRequest'],
+            str_ends_with($uri, 'api/v1/member/onboarding/steps') => ['$ref' => '#/components/schemas/MemberOnboardingStepRequest'],
             default => null,
         };
     }

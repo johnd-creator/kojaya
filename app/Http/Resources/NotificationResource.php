@@ -12,7 +12,7 @@ class NotificationResource extends JsonResource
         return [
             'id' => $this->id,
             'type' => $this->type,
-            'data' => json_decode($this->data, true) ?? [],
+            'data' => is_array($this->data) ? $this->data : (json_decode((string) $this->data, true) ?? []),
             'read_at' => $this->read_at?->toISOString(),
             'created_at' => $this->created_at->toISOString(),
             'is_read' => ! is_null($this->read_at),

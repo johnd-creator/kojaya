@@ -12,6 +12,8 @@ class NotificationPreference extends Model
         'email_enabled',
         'database_enabled',
         'push_enabled',
+        'whatsapp_enabled',
+        'whatsapp_phone',
         'channels',
     ];
 
@@ -21,6 +23,7 @@ class NotificationPreference extends Model
             'email_enabled' => 'boolean',
             'database_enabled' => 'boolean',
             'push_enabled' => 'boolean',
+            'whatsapp_enabled' => 'boolean',
             'channels' => 'array',
         ];
     }
@@ -36,6 +39,7 @@ class NotificationPreference extends Model
             'mail' => $this->email_enabled,
             'database' => $this->database_enabled,
             'push' => $this->push_enabled,
+            'whatsapp' => $this->whatsapp_enabled,
             default => true,
         };
     }
@@ -54,6 +58,10 @@ class NotificationPreference extends Model
 
         if ($this->push_enabled) {
             $channels[] = 'push';
+        }
+
+        if ($this->whatsapp_enabled) {
+            $channels[] = 'whatsapp';
         }
 
         return $this->channels ?? $channels;

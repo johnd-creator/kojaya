@@ -13,6 +13,8 @@ class PosAnnualShuController extends Controller
 {
     public function index(Request $request, AnnualShuDistributionService $service): Response
     {
+        $this->authorize('viewAny', CooperativeShuPeriod::class);
+
         $year = (int) $request->input('year', now()->year);
 
         return Inertia::render('Cooperative/Pos/Shu/Index', [

@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +16,11 @@ class EfakturBatchExportTest extends TestCase
 
     public function test_create_batch_and_download_csv_for_multiple_invoices(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->assignRole('Finance Pusat');
         $client = Client::factory()->create([
             'tax_id' => '01.234.567.8-901.000',
             'address' => 'Jl. Gatot Subroto No. 1',

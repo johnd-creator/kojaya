@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\VendorStatus;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +22,7 @@ class VendorFactory extends Factory
             'organization_id' => Organization::factory(),
             'code' => fake()->unique()->numerify('VND-#####'),
             'name' => fake()->company(),
-            'status' => fake()->randomElement(['ACTIVE', 'INACTIVE']),
+            'status' => fake()->randomElement([VendorStatus::Active, VendorStatus::Inactive]),
             'rating' => fake()->numberBetween(1, 5),
             'email' => fake()->companyEmail(),
             'phone' => fake()->phoneNumber(),

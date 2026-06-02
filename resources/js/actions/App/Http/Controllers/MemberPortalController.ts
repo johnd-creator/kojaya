@@ -602,7 +602,7 @@ rewards.form = rewardsForm
 * @see app/Http/Controllers/MemberPortalController.php:162
 * @route '/member/rewards/{reward}/redeem'
 */
-export const redeemReward = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const redeemReward = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeemReward.url(args, options),
     method: 'post',
 })
@@ -617,7 +617,7 @@ redeemReward.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:162
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemReward.url = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+redeemReward.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reward: args }
     }
@@ -650,7 +650,7 @@ redeemReward.url = (args: { reward: string | number | { id: string | number } } 
 * @see app/Http/Controllers/MemberPortalController.php:162
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemReward.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+redeemReward.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeemReward.url(args, options),
     method: 'post',
 })
@@ -660,7 +660,7 @@ redeemReward.post = (args: { reward: string | number | { id: string | number } }
 * @see app/Http/Controllers/MemberPortalController.php:162
 * @route '/member/rewards/{reward}/redeem'
 */
-const redeemRewardForm = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const redeemRewardForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: redeemReward.url(args, options),
     method: 'post',
 })
@@ -670,7 +670,7 @@ const redeemRewardForm = (args: { reward: string | number | { id: string | numbe
 * @see app/Http/Controllers/MemberPortalController.php:162
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemRewardForm.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+redeemRewardForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: redeemReward.url(args, options),
     method: 'post',
 })

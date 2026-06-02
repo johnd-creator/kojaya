@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 export const selfService = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ selfService.definition = {
 
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 selfService.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ selfService.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 selfService.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ selfService.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:20
+* @see app/Http/Controllers/LeaveController.php:21
 * @route '/leaves/self-service'
 */
 selfServiceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ selfService.form = selfServiceForm
 
 /**
 * @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:44
+* @see app/Http/Controllers/LeaveController.php:45
 * @route '/leaves/self-service'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:44
+* @see app/Http/Controllers/LeaveController.php:45
 * @route '/leaves/self-service'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:44
+* @see app/Http/Controllers/LeaveController.php:45
 * @route '/leaves/self-service'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:44
+* @see app/Http/Controllers/LeaveController.php:45
 * @route '/leaves/self-service'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:44
+* @see app/Http/Controllers/LeaveController.php:45
 * @route '/leaves/self-service'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -138,7 +138,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -153,7 +153,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -162,7 +162,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -172,7 +172,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -182,7 +182,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -192,7 +192,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -202,7 +202,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:94
+* @see app/Http/Controllers/LeaveController.php:95
 * @route '/leaves'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -219,10 +219,10 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:115
+* @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-export const updateStatus = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateStatus = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
@@ -234,10 +234,10 @@ updateStatus.definition = {
 
 /**
 * @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:115
+* @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-updateStatus.url = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+updateStatus.url = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { leave: args }
     }
@@ -267,20 +267,20 @@ updateStatus.url = (args: { leave: string | number | { id: string | number } } |
 
 /**
 * @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:115
+* @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-updateStatus.put = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateStatus.put = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
 
 /**
 * @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:115
+* @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-const updateStatusForm = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const updateStatusForm = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: updateStatus.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -292,10 +292,10 @@ const updateStatusForm = (args: { leave: string | number | { id: string | number
 
 /**
 * @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:115
+* @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-updateStatusForm.put = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateStatusForm.put = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: updateStatus.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',

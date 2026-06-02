@@ -8,24 +8,27 @@
 !.env.example
 
 # Build & dependency artifacts
-/node_modules
+/node_modules/
+/vendor/
 /public/hot
 /public/storage
-/public/build
+/public/build/
 /storage/*.key
-/vendor
 npm-debug.log
 yarn-error.log
 pnpm-debug.log
+package-lock.json.debug
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Laravel specific
-/bootstrap/cache/
-.cache
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+.cache/
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
-npm-debug.log
-yarn-error.log
 
 # Laravel 12+ specific
 /bootstrap/ssr/
@@ -35,7 +38,10 @@ yarn-error.log
 # ==========================================
 
 # Vite build artifacts
-/public/build/assets
+/dist/
+/.vite/
+/public/mix-manifest.json
+/public/build/assets/
 /public/build/*.hot-update.*
 /public/build/manifest.json
 
@@ -49,6 +55,15 @@ yarn-error.log
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Local AI/MCP agent state
+.agents/
+.claude/
+.gemini/
+.codex/
+.commandcode/
+!.claude/settings.json
+!.gemini/settings.json
 
 # JetBrains IDEs (IntelliJ, PhpStorm, etc.)
 .idea/
@@ -93,8 +108,8 @@ $RECYCLE.BIN/
 # ==========================================
 
 # Laravel logs
-/storage/logs
-/storage/logs/laravel.log
+storage/logs/*
+!storage/logs/.gitignore
 
 # Application logs
 *.log
@@ -112,14 +127,33 @@ logs/
 # MySQL dumps
 *.sql
 *.sql.gz
+*.dump
+*.dump.gz
+*.backup.sql
+*.backup.sql.gz
 
 # Storage (uploaded files)
-/storage/app/*
+storage/app/*
 !storage/app/.gitignore
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/views/*
-/storage/framework/testing/*
+!storage/app/private/
+!storage/app/private/.gitignore
+!storage/app/public/
+!storage/app/public/.gitignore
+
+# Framework runtime files
+storage/framework/cache/*
+!storage/framework/cache/.gitignore
+!storage/framework/cache/data/
+!storage/framework/cache/data/.gitignore
+storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+storage/framework/views/*
+!storage/framework/views/.gitignore
+storage/framework/testing/*
+!storage/framework/testing/.gitignore
+storage/pail/*
+!storage/pail/.gitignore
+storage/openapi.snapshot.json
 
 # ==========================================
 # SECURITY SENSITIVE FILES
@@ -132,15 +166,29 @@ logs/
 *.crt
 *.p12
 *.pfx
+*.jks
+*.keystore
+*.mobileprovision
 
 # OAuth & API credentials
 oauth-private.key
 oauth-public.key
 passport-keys/
+auth.json
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+credentials*.json
+secrets*.json
 
 # AWS & Cloud credentials
 .aws/
 .credentials
+.envrc
+.npmrc
+.netrc
+.vault*
 
 # ==========================================
 # TESTING & COVERAGE
@@ -167,6 +215,9 @@ passport-keys/
 
 # AWS Lambda
 .lambda-sAM-artifacts/
+.terraform/
+*.tfstate
+*.tfstate.*
 
 # ==========================================
 # TEMPORARY FILES
@@ -179,6 +230,13 @@ temp/
 *.bak
 *.backup
 *.old
+*.orig
+*.rej
+*.swp
+*.swo
+*.pid
+*.seed
+*.pid.lock
 
 # ==========================================
 # PROJECT SPECIFIC
@@ -188,6 +246,13 @@ temp/
 rencana-pengembangan-sikopin.html
 *.md.bak
 /docs/internal
+
+# Local scratch/report artifacts
+grep-count.txt
+s15-*.txt
+harga.md
+presentasi.html
+artifacts/
 
 # Claude Code memory (optional, contains project notes)
 /.claude/memory/

@@ -1,0 +1,14 @@
+parameters:
+    level: 3
+    paths:
+        - app
+        - database/factories
+        - database/seeders
+        - tests
+    excludePaths:
+        analyse:
+            - resources/js
+            - storage
+            - bootstrap/cache
+    checkMissingIterableValueType: false
+    treatPhpDocTypesAsCertain: false

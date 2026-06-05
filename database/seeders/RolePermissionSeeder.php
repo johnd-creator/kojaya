@@ -34,6 +34,7 @@ class RolePermissionSeeder extends Seeder
             'Technician',
             'Employee',
             'Pengurus Koperasi',
+            'Admin Koperasi',
             'Kasir Koperasi',
             'Anggota',
         ];
@@ -220,6 +221,26 @@ class RolePermissionSeeder extends Seeder
             'manage_cooperative_ledger',
             'view_cooperative_all',
             'manage_cooperative_settings',
+        ]);
+
+        // Admin Koperasi
+        Role::where('name', 'Admin Koperasi')->first()?->syncPermissions([
+            'view_cooperative_member',
+            'manage_cooperative_member',
+            'manage_cooperative_dues',
+            'manage_cooperative_payment',
+            'view_cooperative_loan',
+            'manage_cooperative_loan',
+            'access_cooperative_pos',
+            'manage_cooperative_points',
+            'manage_cooperative_rewards',
+            'manage_cooperative_redemption',
+            'manage_cooperative_loan_types',
+            'manage_pos_categories',
+            'manage_pos_products',
+            'view_pos_reports',
+            'view_cooperative_ledger',
+            'manage_cooperative_ledger',
         ]);
 
         // Kasir Koperasi

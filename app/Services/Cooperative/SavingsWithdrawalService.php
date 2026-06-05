@@ -3,6 +3,7 @@
 namespace App\Services\Cooperative;
 
 use App\Enums\WithdrawalStatus;
+use App\Models\CooperativeContributionType;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\SavingsWithdrawal;
@@ -68,12 +69,21 @@ class SavingsWithdrawalService
                 'processed_at' => now(),
             ])->save();
 
+            $sukarela = CooperativeContributionType::query()
+                ->where('category', 'SUKARELA')
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->first();
+
             CooperativeLedgerEntry::query()->create([
                 'cooperative_member_id' => $locked->cooperative_member_id,
                 'cooperative_payment_id' => null,
                 'source_type' => SavingsWithdrawal::class,
                 'source_id' => $locked->id,
                 'entry_type' => 'SAVING_WITHDRAWAL',
+                'cooperative_contribution_type_id' => $sukarela?->id,
+                'ledger_scope' => 'SAVINGS',
+                'category_snapshot' => $sukarela?->category ?? 'SUKARELA',
                 'debit' => $locked->amount,
                 'credit' => 0,
                 'period' => now()->format('Y-m'),
@@ -89,7 +99,11 @@ class SavingsWithdrawalService
     {
         return (float) CooperativeLedgerEntry::query()
             ->where('cooperative_member_id', $member->id)
-            ->whereIn('entry_type', self::VOLUNTARY_ENTRY_TYPES)
+            ->where(function ($query): void {
+                $query->whereIn('entry_type', self::VOLUNTARY_ENTRY_TYPES)
+                    ->orWhere('category_snapshot', 'SUKARELA')
+                    ->orWhereHas('contributionType', fn ($typeQuery) => $typeQuery->where('category', 'SUKARELA'));
+            })
             ->selectRaw('COALESCE(SUM(credit - debit), 0) as balance')
             ->value('balance');
     }

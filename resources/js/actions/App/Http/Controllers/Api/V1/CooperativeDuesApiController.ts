@@ -82,7 +82,7 @@ invoices.form = invoicesForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:27
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:43
 * @route '/api/v1/dues/generate'
 */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:27
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:43
 * @route '/api/v1/dues/generate'
 */
 generate.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:27
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:43
 * @route '/api/v1/dues/generate'
 */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:27
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:43
 * @route '/api/v1/dues/generate'
 */
 const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:27
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:43
 * @route '/api/v1/dues/generate'
 */
 generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

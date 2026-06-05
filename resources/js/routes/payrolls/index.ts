@@ -2,7 +2,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFo
 import thrBf742c from './thr'
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -17,7 +17,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -26,7 +26,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -36,7 +36,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -46,7 +46,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -56,7 +56,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -66,7 +66,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:35
+* @see app/Http/Controllers/PayrollController.php:31
 * @route '/payrolls'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -83,10 +83,10 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-export const show = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -98,10 +98,10 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-show.url = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payroll: args }
     }
@@ -131,50 +131,50 @@ show.url = (args: { payroll: number | { id: number } } | [payroll: number | { id
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-show.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-show.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-const showForm = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-showForm.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:73
+* @see app/Http/Controllers/PayrollController.php:69
 * @route '/payrolls/{payroll}'
 */
-showForm.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -188,7 +188,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:80
+* @see app/Http/Controllers/PayrollController.php:76
 * @route '/payrolls/generate'
 */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -203,7 +203,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:80
+* @see app/Http/Controllers/PayrollController.php:76
 * @route '/payrolls/generate'
 */
 generate.url = (options?: RouteQueryOptions) => {
@@ -212,7 +212,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:80
+* @see app/Http/Controllers/PayrollController.php:76
 * @route '/payrolls/generate'
 */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -222,7 +222,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:80
+* @see app/Http/Controllers/PayrollController.php:76
 * @route '/payrolls/generate'
 */
 const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -232,7 +232,7 @@ const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:80
+* @see app/Http/Controllers/PayrollController.php:76
 * @route '/payrolls/generate'
 */
 generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -244,10 +244,10 @@ generate.form = generateForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-export const downloadPdf = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const downloadPdf = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadPdf.url(args, options),
     method: 'get',
 })
@@ -259,10 +259,10 @@ downloadPdf.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-downloadPdf.url = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+downloadPdf.url = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payroll: args }
     }
@@ -292,50 +292,50 @@ downloadPdf.url = (args: { payroll: number | { id: number } } | [payroll: number
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-downloadPdf.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+downloadPdf.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadPdf.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-downloadPdf.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+downloadPdf.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: downloadPdf.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-const downloadPdfForm = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const downloadPdfForm = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadPdf.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-downloadPdfForm.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadPdfForm.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadPdf.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:166
+* @see app/Http/Controllers/PayrollController.php:89
 * @route '/payrolls/{payroll}/download-pdf'
 */
-downloadPdfForm.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadPdfForm.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadPdf.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -349,7 +349,7 @@ downloadPdf.form = downloadPdfForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 export const thr = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -364,7 +364,7 @@ thr.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 thr.url = (options?: RouteQueryOptions) => {
@@ -373,7 +373,7 @@ thr.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 thr.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -383,7 +383,7 @@ thr.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 thr.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -393,7 +393,7 @@ thr.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 const thrForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -403,7 +403,7 @@ const thrForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 thrForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -413,7 +413,7 @@ thrForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\PayrollController::thr
-* @see app/Http/Controllers/PayrollController.php:188
+* @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
 */
 thrForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -430,7 +430,7 @@ thr.form = thrForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::submitApproval
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:195
 * @route '/payrolls/submit-for-approval'
 */
 export const submitApproval = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -445,7 +445,7 @@ submitApproval.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::submitApproval
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:195
 * @route '/payrolls/submit-for-approval'
 */
 submitApproval.url = (options?: RouteQueryOptions) => {
@@ -454,7 +454,7 @@ submitApproval.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PayrollController::submitApproval
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:195
 * @route '/payrolls/submit-for-approval'
 */
 submitApproval.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -464,7 +464,7 @@ submitApproval.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\PayrollController::submitApproval
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:195
 * @route '/payrolls/submit-for-approval'
 */
 const submitApprovalForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -474,7 +474,7 @@ const submitApprovalForm = (options?: RouteQueryOptions): RouteFormDefinition<'p
 
 /**
 * @see \App\Http\Controllers\PayrollController::submitApproval
-* @see app/Http/Controllers/PayrollController.php:272
+* @see app/Http/Controllers/PayrollController.php:195
 * @route '/payrolls/submit-for-approval'
 */
 submitApprovalForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -486,7 +486,7 @@ submitApproval.form = submitApprovalForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 export const exportBank = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -501,7 +501,7 @@ exportBank.definition = {
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 exportBank.url = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -528,7 +528,7 @@ exportBank.url = (args: { batch: string | number } | [batch: string | number ] |
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 exportBank.get = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -538,7 +538,7 @@ exportBank.get = (args: { batch: string | number } | [batch: string | number ] |
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 exportBank.head = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -548,7 +548,7 @@ exportBank.head = (args: { batch: string | number } | [batch: string | number ] 
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 const exportBankForm = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -558,7 +558,7 @@ const exportBankForm = (args: { batch: string | number } | [batch: string | numb
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 exportBankForm.get = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -568,7 +568,7 @@ exportBankForm.get = (args: { batch: string | number } | [batch: string | number
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBank
-* @see app/Http/Controllers/PayrollController.php:309
+* @see app/Http/Controllers/PayrollController.php:232
 * @route '/payrolls/export/{batch}/bank-transfer'
 */
 exportBankForm.head = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

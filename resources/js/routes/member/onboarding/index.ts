@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::steps
-* @see app/Http/Controllers/MemberPortalController.php:74
+* @see app/Http/Controllers/MemberPortalController.php:76
 * @route '/member/onboarding/steps'
 */
 export const steps = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ steps.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::steps
-* @see app/Http/Controllers/MemberPortalController.php:74
+* @see app/Http/Controllers/MemberPortalController.php:76
 * @route '/member/onboarding/steps'
 */
 steps.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ steps.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::steps
-* @see app/Http/Controllers/MemberPortalController.php:74
+* @see app/Http/Controllers/MemberPortalController.php:76
 * @route '/member/onboarding/steps'
 */
 steps.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ steps.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::steps
-* @see app/Http/Controllers/MemberPortalController.php:74
+* @see app/Http/Controllers/MemberPortalController.php:76
 * @route '/member/onboarding/steps'
 */
 const stepsForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const stepsForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::steps
-* @see app/Http/Controllers/MemberPortalController.php:74
+* @see app/Http/Controllers/MemberPortalController.php:76
 * @route '/member/onboarding/steps'
 */
 stepsForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Listeners\FailedJobListener;
 use App\Models\User;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Events\JobFailed;
 use Tests\TestCase;
@@ -85,6 +86,14 @@ class PhaseD1ObservabilityTest extends TestCase
         $response->assertHeader('X-Correlation-ID');
     }
 
+    public function test_api_response_time_header_is_recorded(): void
+    {
+        $response = $this->getJson('/api/openapi.json');
+
+        $response->assertHeader('X-Response-Time-Ms');
+        $this->assertIsNumeric($response->headers->get('X-Response-Time-Ms'));
+    }
+
     public function test_failed_job_listener_sends_notification(): void
     {
         $this->seed(\Database\Seeders\RolePermissionSeeder::class);
@@ -118,6 +127,13 @@ class PhaseD1ObservabilityTest extends TestCase
             'notifiable_id' => $admin->id,
             'type' => 'job_failed',
         ]);
+    }
+
+    public function test_failed_job_listener_is_registered_with_event_dispatcher(): void
+    {
+        $listeners = app(Dispatcher::class)->getListeners(JobFailed::class);
+
+        $this->assertNotEmpty($listeners);
     }
 
     public function test_metrics_page_contains_operational_data(): void

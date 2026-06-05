@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
+import InputError from "@/components/InputError.vue";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -76,6 +78,8 @@ const form = useForm({
 
 const openModal = (user: any = null) => {
   editingUser.value = user;
+  form.clearErrors();
+
   if (user) {
     form.name = user.name;
     form.email = user.email;
@@ -280,12 +284,27 @@ const columns = [
         <form @submit.prevent="submit" class="space-y-4 py-4">
           <div class="space-y-2">
             <Label for="name">Full Name</Label>
-            <Input id="name" v-model="form.name" required />
+            <Input
+              id="name"
+              v-model="form.name"
+              autocomplete="name"
+              :aria-invalid="!!form.errors.name"
+              required
+            />
+            <InputError :message="form.errors.name" />
           </div>
 
           <div class="space-y-2">
             <Label for="email">Email Address</Label>
-            <Input id="email" type="email" v-model="form.email" required />
+            <Input
+              id="email"
+              type="email"
+              v-model="form.email"
+              autocomplete="username"
+              :aria-invalid="!!form.errors.email"
+              required
+            />
+            <InputError :message="form.errors.email" />
           </div>
 
           <div class="space-y-2" v-if="!editingUser">
@@ -294,8 +313,11 @@ const columns = [
               id="password"
               type="password"
               v-model="form.password"
+              autocomplete="new-password"
+              :aria-invalid="!!form.errors.password"
               required
             />
+            <InputError :message="form.errors.password" />
           </div>
           <div class="space-y-2" v-else>
             <Label for="password_edit">New Password (optional)</Label>
@@ -303,14 +325,20 @@ const columns = [
               id="password_edit"
               type="password"
               v-model="form.password"
+              autocomplete="new-password"
+              :aria-invalid="!!form.errors.password"
               placeholder="Leave blank to keep current"
             />
+            <InputError :message="form.errors.password" />
           </div>
 
           <div class="space-y-2">
             <Label>System Role</Label>
             <Select v-model="form.role">
-              <SelectTrigger class="w-full">
+              <SelectTrigger
+                class="w-full"
+                :aria-invalid="!!form.errors.role"
+              >
                 <SelectValue placeholder="Select a PRD Role" />
               </SelectTrigger>
               <SelectContent>
@@ -323,12 +351,16 @@ const columns = [
                 </SelectItem>
               </SelectContent>
             </Select>
+            <InputError :message="form.errors.role" />
           </div>
 
           <div class="space-y-2">
             <Label>Organization Unit (Cabang)</Label>
             <Select v-model="form.organization_id">
-              <SelectTrigger class="w-full">
+              <SelectTrigger
+                class="w-full"
+                :aria-invalid="!!form.errors.organization_id"
+              >
                 <SelectValue placeholder="Select an Organization Level" />
               </SelectTrigger>
               <SelectContent>
@@ -341,6 +373,7 @@ const columns = [
                 </SelectItem>
               </SelectContent>
             </Select>
+            <InputError :message="form.errors.organization_id" />
           </div>
 
           <DialogFooter class="pt-4">

@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use PHPUnit\Framework\TestCase;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 
 class RepoHygieneTest extends TestCase
 {
@@ -40,26 +38,14 @@ class RepoHygieneTest extends TestCase
 
     public function test_no_backup_or_temp_files_are_tracked_in_repo(): void
     {
-        $repoRoot = $this->repoRoot();
         $offending = [];
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($repoRoot, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::LEAVES_ONLY,
-        );
-
-        foreach ($iterator as $file) {
-            if (! $file->isFile()) {
-                continue;
-            }
-
-            $relativePath = ltrim(str_replace($repoRoot, '', $file->getPathname()), DIRECTORY_SEPARATOR);
-
+        foreach ($this->trackedFiles() as $relativePath) {
             if ($this->isExcluded($relativePath)) {
                 continue;
             }
 
-            $extension = strtolower($file->getExtension());
+            $extension = strtolower(pathinfo($relativePath, PATHINFO_EXTENSION));
 
             if (in_array($extension, self::FORBIDDEN_EXTENSIONS, true)) {
                 $offending[] = $relativePath;
@@ -89,6 +75,27 @@ class RepoHygieneTest extends TestCase
         }
     }
 
+    public function test_root_probe_artifacts_are_not_tracked(): void
+    {
+        $offending = [];
+
+        foreach ($this->trackedFiles() as $path) {
+            if (! file_exists($this->repoRoot().DIRECTORY_SEPARATOR.$path)) {
+                continue;
+            }
+
+            if (preg_match('/^(grep-count\.txt|harga\.md|presentasi\.html|s15-.*\.txt|rencana-pengembangan-sikopin\.html)$/', $path)) {
+                $offending[] = $path;
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $offending,
+            "Root probe/presentation artifacts should live under docs/internal or stay untracked:\n - ".implode("\n - ", $offending),
+        );
+    }
+
     private function isExcluded(string $relativePath): bool
     {
         foreach (self::EXCLUDED_PREFIXES as $prefix) {
@@ -103,5 +110,15 @@ class RepoHygieneTest extends TestCase
     private function repoRoot(): string
     {
         return realpath(__DIR__.'/../..') ?: dirname(__DIR__, 2);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function trackedFiles(): array
+    {
+        $output = shell_exec('git -C '.escapeshellarg($this->repoRoot()).' ls-files') ?: '';
+
+        return array_values(array_filter(explode("\n", trim($output))));
     }
 }

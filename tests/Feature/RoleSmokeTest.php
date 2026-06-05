@@ -46,11 +46,6 @@ class RoleSmokeTest extends TestCase
     /**
      * Provides role access matrix based on actual application behavior.
      *
-     * Note: Many cooperative web routes lack authorization middleware and are
-     * accessible to any authenticated user. This matrix reflects current reality,
-     * not desired state. The "forbidden" entries only include routes that actually
-     * have middleware/controller-level authorization.
-     *
      * @return array<string, array{0: string, 1: list<string>, 2: list<string>}>
      */
     public static function roleAccessMatrixProvider(): array
@@ -78,6 +73,37 @@ class RoleSmokeTest extends TestCase
                 ],
                 [
                     '/cooperative/operator/closing',
+                ],
+            ],
+            'Admin Koperasi' => [
+                'Admin Koperasi',
+                [
+                    '/dashboard',
+                    '/cooperative/members',
+                    '/cooperative/dues',
+                    '/cooperative/payments',
+                    '/cooperative/ledger',
+                    '/cooperative/loans',
+                    '/cooperative/loans/calculator',
+                    '/cooperative/loan-types',
+                    '/cooperative/points',
+                    '/cooperative/rewards',
+                    '/cooperative/redemptions',
+                    '/cooperative/pos',
+                    '/cooperative/pos/transactions',
+                    '/cooperative/pos/reports',
+                    '/cooperative/pos-products',
+                    '/cooperative/pos-categories',
+                ],
+                [
+                    '/cooperative/shu',
+                    '/cooperative/pos/shu',
+                    '/cooperative/reports',
+                    '/cooperative/operator/dashboard',
+                    '/cooperative/operator/closing',
+                    '/reports',
+                    '/departments',
+                    '/finance/chart-of-accounts',
                 ],
             ],
             'Pengurus Koperasi' => [
@@ -231,6 +257,34 @@ class RoleSmokeTest extends TestCase
         $this->actingAs($admin)->get('/cooperative/operator/dashboard')->assertOk();
         $this->actingAs($admin)->get('/cooperative/members')->assertOk();
         $this->actingAs($admin)->get('/cooperative/loans')->assertOk();
+    }
+
+    public function test_admin_koperasi_has_only_operational_cooperative_sidebar_permissions(): void
+    {
+        $adminKoperasi = $this->user('Admin Koperasi');
+
+        $permissions = $adminKoperasi->getAllPermissions()->pluck('name');
+
+        $this->assertTrue($permissions->contains('manage_cooperative_member'));
+        $this->assertTrue($permissions->contains('manage_cooperative_dues'));
+        $this->assertTrue($permissions->contains('manage_cooperative_payment'));
+        $this->assertTrue($permissions->contains('view_cooperative_ledger'));
+        $this->assertTrue($permissions->contains('view_cooperative_loan'));
+        $this->assertTrue($permissions->contains('manage_cooperative_loan'));
+        $this->assertTrue($permissions->contains('manage_cooperative_points'));
+        $this->assertTrue($permissions->contains('manage_cooperative_rewards'));
+        $this->assertTrue($permissions->contains('manage_cooperative_redemption'));
+        $this->assertTrue($permissions->contains('access_cooperative_pos'));
+        $this->assertTrue($permissions->contains('manage_pos_products'));
+        $this->assertTrue($permissions->contains('manage_pos_categories'));
+
+        $this->assertFalse($permissions->contains('view_cooperative_report'));
+        $this->assertFalse($permissions->contains('manage_cooperative_shu'));
+        $this->assertFalse($permissions->contains('manage_pos_shu'));
+        $this->assertFalse($permissions->contains('manage_cooperative_settings'));
+        $this->assertFalse($permissions->contains('view_reports'));
+        $this->assertFalse($permissions->contains('manage_departments'));
+        $this->assertFalse($permissions->contains('view_chart_of_accounts'));
     }
 
     public function test_operator_dashboard_is_protected_for_unauthorized_roles(): void

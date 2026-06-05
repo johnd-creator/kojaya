@@ -1022,7 +1022,7 @@ storeLeave.form = storeLeaveForm
 * @see app/Http/Controllers/Api/EssController.php:326
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-export const cancelLeave = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const cancelLeave = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelLeave.url(args, options),
     method: 'post',
 })
@@ -1037,7 +1037,7 @@ cancelLeave.definition = {
 * @see app/Http/Controllers/Api/EssController.php:326
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-cancelLeave.url = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+cancelLeave.url = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { leave: args }
     }
@@ -1070,7 +1070,7 @@ cancelLeave.url = (args: { leave: number | { id: number } } | [leave: number | {
 * @see app/Http/Controllers/Api/EssController.php:326
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-cancelLeave.post = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+cancelLeave.post = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelLeave.url(args, options),
     method: 'post',
 })
@@ -1080,7 +1080,7 @@ cancelLeave.post = (args: { leave: number | { id: number } } | [leave: number | 
 * @see app/Http/Controllers/Api/EssController.php:326
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-const cancelLeaveForm = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const cancelLeaveForm = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: cancelLeave.url(args, options),
     method: 'post',
 })
@@ -1090,7 +1090,7 @@ const cancelLeaveForm = (args: { leave: number | { id: number } } | [leave: numb
 * @see app/Http/Controllers/Api/EssController.php:326
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-cancelLeaveForm.post = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+cancelLeaveForm.post = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: cancelLeave.url(args, options),
     method: 'post',
 })
@@ -1457,7 +1457,7 @@ payslips.form = payslipsForm
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-export const downloadPayslip = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const downloadPayslip = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadPayslip.url(args, options),
     method: 'get',
 })
@@ -1472,7 +1472,7 @@ downloadPayslip.definition = {
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslip.url = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+downloadPayslip.url = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payroll: args }
     }
@@ -1505,7 +1505,7 @@ downloadPayslip.url = (args: { payroll: number | { id: number } } | [payroll: nu
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslip.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+downloadPayslip.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadPayslip.url(args, options),
     method: 'get',
 })
@@ -1515,7 +1515,7 @@ downloadPayslip.get = (args: { payroll: number | { id: number } } | [payroll: nu
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslip.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+downloadPayslip.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: downloadPayslip.url(args, options),
     method: 'head',
 })
@@ -1525,7 +1525,7 @@ downloadPayslip.head = (args: { payroll: number | { id: number } } | [payroll: n
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-const downloadPayslipForm = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const downloadPayslipForm = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadPayslip.url(args, options),
     method: 'get',
 })
@@ -1535,7 +1535,7 @@ const downloadPayslipForm = (args: { payroll: number | { id: number } } | [payro
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslipForm.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadPayslipForm.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadPayslip.url(args, options),
     method: 'get',
 })
@@ -1545,7 +1545,7 @@ downloadPayslipForm.get = (args: { payroll: number | { id: number } } | [payroll
 * @see app/Http/Controllers/Api/EssController.php:456
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslipForm.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadPayslipForm.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: downloadPayslip.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

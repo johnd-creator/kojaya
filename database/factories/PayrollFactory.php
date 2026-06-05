@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PayrollStatus;
 use App\Models\Employee;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -36,7 +37,11 @@ class PayrollFactory extends Factory
             'tax_amount' => $tax,
             'bpjs_amount' => $bpjs,
             'net_salary' => $netSalary,
-            'status' => fake()->randomElement(['DRAFT', 'PROCESSED', 'PAID']),
+            'status' => fake()->randomElement([
+                PayrollStatus::Draft->value,
+                PayrollStatus::Processed->value,
+                PayrollStatus::Paid->value,
+            ]),
             'pph21_calculation_breakdown' => ['gross' => $basicSalary + $allowance],
             'bpjs_calculation_breakdown' => ['total' => $bpjs],
         ];

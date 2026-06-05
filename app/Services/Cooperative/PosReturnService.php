@@ -106,6 +106,7 @@ class PosReturnService
                     'source_type' => PosReturn::class,
                     'source_id' => $return->id,
                     'entry_type' => 'POS_RETURN',
+                    'ledger_scope' => 'POS',
                     'debit' => 0,
                     'credit' => $total,
                     'period' => now()->format('Y-m'),

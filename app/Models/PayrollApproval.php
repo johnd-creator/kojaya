@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PayrollApprovalStatus;
 use App\Models\Traits\HasApprovalLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -55,17 +56,17 @@ class PayrollApproval extends Model
 
     public function scopePending(Builder $query): Builder
     {
-        return $query->where('status', 'PENDING');
+        return $query->where('status', PayrollApprovalStatus::Pending->value);
     }
 
     public function scopeApproved(Builder $query): Builder
     {
-        return $query->where('status', 'APPROVED');
+        return $query->where('status', PayrollApprovalStatus::Approved->value);
     }
 
     public function scopeRejected(Builder $query): Builder
     {
-        return $query->where('status', 'REJECTED');
+        return $query->where('status', PayrollApprovalStatus::Rejected->value);
     }
 
     public function approve(User $approver, ?string $notes = null): void
@@ -77,24 +78,24 @@ class PayrollApproval extends Model
         }
 
         $this->update([
-            'status' => 'APPROVED',
+            'status' => PayrollApprovalStatus::Approved->value,
             'approver_id' => $approver->id,
             'approver_notes' => $notes,
             'approved_at' => now(),
         ]);
 
-        $this->logApproval('PENDING', 'APPROVED', $approver, $notes);
+        $this->logApproval(PayrollApprovalStatus::Pending->value, PayrollApprovalStatus::Approved->value, $approver, $notes);
     }
 
     public function reject(User $approver, ?string $notes = null): void
     {
         $this->update([
-            'status' => 'REJECTED',
+            'status' => PayrollApprovalStatus::Rejected->value,
             'approver_id' => $approver->id,
             'approver_notes' => $notes,
             'approved_at' => now(),
         ]);
 
-        $this->logApproval('PENDING', 'REJECTED', $approver, $notes);
+        $this->logApproval(PayrollApprovalStatus::Pending->value, PayrollApprovalStatus::Rejected->value, $approver, $notes);
     }
 }

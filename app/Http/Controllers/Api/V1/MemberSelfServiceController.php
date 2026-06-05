@@ -33,6 +33,7 @@ use App\Services\Cooperative\LoanRestructureService;
 use App\Services\Cooperative\MemberOnboardingService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
+use App\Services\Cooperative\SavingsSummaryService;
 use App\Services\Cooperative\SavingsWithdrawalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,15 +47,17 @@ class MemberSelfServiceController extends Controller
         PointService $pointService,
         MemberOnboardingService $onboardingService,
         MemberStatusJourneyService $journeyService,
+        SavingsSummaryService $savingsSummary,
     ): JsonResponse {
         $member = $this->memberOrAbort($request);
         $pointSummary = $pointService->balanceSummary($member);
+        $savingSummary = $savingsSummary->summary($member);
 
         return response()->json([
             'data' => [
                 'member' => new MemberSelfServiceResource($member->load(['organization', 'user'])),
                 'summary' => [
-                    'savings_balance' => $this->savingsBalance($member),
+                    'savings_balance' => $savingSummary['total_balance'],
                     'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                     'active_loans' => $member->loans()->where('status', 'ACTIVE')->count(),
                     'loan_outstanding' => (float) $member->loans()->where('status', 'ACTIVE')->sum('outstanding_amount'),
@@ -118,27 +121,16 @@ class MemberSelfServiceController extends Controller
         ]);
     }
 
-    public function savingsSummary(Request $request): JsonResponse
+    public function savingsSummary(Request $request, SavingsSummaryService $savingsSummary): JsonResponse
     {
         $member = $this->memberOrAbort($request);
-
-        $ledgerTotals = CooperativeLedgerEntry::query()
-            ->where('cooperative_member_id', $member->id)
-            ->selectRaw('entry_type, COALESCE(SUM(credit), 0) as credit_total, COALESCE(SUM(debit), 0) as debit_total')
-            ->groupBy('entry_type')
-            ->get()
-            ->mapWithKeys(fn ($row): array => [
-                $row->entry_type => [
-                    'credit' => (float) $row->credit_total,
-                    'debit' => (float) $row->debit_total,
-                    'balance' => (float) $row->credit_total - (float) $row->debit_total,
-                ],
-            ]);
+        $summary = $savingsSummary->summary($member);
 
         return response()->json([
             'data' => [
-                'total_balance' => $this->savingsBalance($member),
-                'by_entry_type' => $ledgerTotals,
+                'total_balance' => $summary['total_balance'],
+                'by_category' => $summary['by_category'],
+                'uncategorized' => $summary['uncategorized'],
                 'total_paid' => (float) $member->payments()->where('status', 'APPROVED')->sum('amount'),
                 'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                 'pending_invoice_amount' => (float) $member->invoices()
@@ -149,35 +141,33 @@ class MemberSelfServiceController extends Controller
         ]);
     }
 
-    public function savingsLedger(Request $request): JsonResponse
+    public function savingsLedger(Request $request, SavingsSummaryService $savingsSummary): JsonResponse
     {
         $member = $this->memberOrAbort($request);
-        $runningBalance = 0.0;
 
-        $entries = CooperativeLedgerEntry::query()
-            ->where('cooperative_member_id', $member->id)
-            ->when($request->filled('start_date'), fn ($query) => $query->whereDate('posted_at', '>=', $request->input('start_date')))
-            ->when($request->filled('end_date'), fn ($query) => $query->whereDate('posted_at', '<=', $request->input('end_date')))
-            ->orderBy('posted_at')
-            ->orderBy('id')
-            ->get()
-            ->map(function (CooperativeLedgerEntry $entry) use (&$runningBalance): array {
-                $runningBalance += (float) $entry->credit - (float) $entry->debit;
-
-                return [
+        return response()->json(
+            $savingsSummary->ledgerQuery($member, $request->only(['category', 'contribution_type_id', 'start_date', 'end_date']))
+                ->orderByDesc('posted_at')
+                ->orderByDesc('id')
+                ->paginate($request->integer('per_page', 15))
+                ->through(fn (CooperativeLedgerEntry $entry): array => [
                     'id' => $entry->id,
                     'entry_type' => $entry->entry_type,
+                    'ledger_scope' => $entry->ledger_scope,
+                    'category' => $entry->contributionType?->category ?? $entry->category_snapshot,
+                    'contribution_type' => $entry->contributionType ? [
+                        'id' => $entry->contributionType->id,
+                        'code' => $entry->contributionType->code,
+                        'name' => $entry->contributionType->name,
+                        'category' => $entry->contributionType->category,
+                    ] : null,
                     'description' => $entry->description,
-                    'posted_at' => $entry->posted_at,
+                    'posted_at' => $entry->posted_at?->toDateString(),
                     'debit' => (float) $entry->debit,
                     'credit' => (float) $entry->credit,
-                    'running_balance' => round($runningBalance, 2),
-                ];
-            })
-            ->reverse()
-            ->values();
-
-        return response()->json(['data' => $entries]);
+                    'balance_delta' => round((float) $entry->credit - (float) $entry->debit, 2),
+                ])
+        );
     }
 
     public function requestSavingsWithdrawal(
@@ -199,6 +189,8 @@ class MemberSelfServiceController extends Controller
         return MemberInvoiceResource::collection($member->invoices()
             ->with('contributionType')
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
+            ->when($request->filled('period'), fn ($query) => $query->where('period', $request->input('period')))
+            ->when($request->filled('category'), fn ($query) => $query->whereHas('contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category'))))
             ->orderByDesc('period')
             ->paginate($request->integer('per_page', 15)))
             ->response();
@@ -210,6 +202,10 @@ class MemberSelfServiceController extends Controller
 
         return MemberPaymentResource::collection($member->payments()
             ->with(['invoice.contributionType', 'receipt'])
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
+            ->when($request->filled('category'), fn ($query) => $query->whereHas('invoice.contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category'))))
+            ->when($request->filled('start_date'), fn ($query) => $query->whereDate('paid_at', '>=', $request->input('start_date')))
+            ->when($request->filled('end_date'), fn ($query) => $query->whereDate('paid_at', '<=', $request->input('end_date')))
             ->orderByDesc('paid_at')
             ->paginate($request->integer('per_page', 15)))
             ->response();
@@ -382,13 +378,5 @@ class MemberSelfServiceController extends Controller
         abort_unless($member, 403, 'Akun ini belum terhubung ke anggota koperasi.');
 
         return $member;
-    }
-
-    private function savingsBalance(CooperativeMember $member): float
-    {
-        return (float) CooperativeLedgerEntry::query()
-            ->where('cooperative_member_id', $member->id)
-            ->selectRaw('COALESCE(SUM(credit - debit), 0) as balance')
-            ->value('balance');
     }
 }

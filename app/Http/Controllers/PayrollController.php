@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PayrollApprovalStatus;
+use App\Enums\PayrollStatus;
 use App\Http\Requests\ExportPayrollBankTransferRequest;
 use App\Http\Requests\GeneratePayrollRequest;
 use App\Http\Requests\PreviewThrRequest;
 use App\Http\Requests\SubmitPayrollApprovalRequest;
-use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PayrollApproval;
-use App\Models\PayrollComponent;
 use App\Models\User;
 use App\Services\BankExportService;
-use App\Services\BpjsCalculationService;
 use App\Services\Hr\ThrEntitlementService;
-use App\Services\OvertimeCalculationService;
-use App\Services\Pph21TerService;
+use App\Services\PayrollGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -26,9 +24,7 @@ use Inertia\Response;
 class PayrollController extends Controller
 {
     public function __construct(
-        private readonly Pph21TerService $pph21Service,
-        private readonly BpjsCalculationService $bpjsService,
-        private readonly OvertimeCalculationService $overtimeService,
+        private readonly PayrollGenerationService $payrollGenerationService,
         private readonly BankExportService $bankExportService,
     ) {}
 
@@ -81,86 +77,13 @@ class PayrollController extends Controller
     {
         $validated = $request->validated();
 
-        $employees = Employee::where('organization_id', $validated['organization_id'])
-            ->where('status', 'ACTIVE')
-            ->get();
-
-        $generated = 0;
-
-        foreach ($employees as $employee) {
-            if (Payroll::where('employee_id', $employee->id)->where('period', $validated['period'])->exists()) {
-                continue;
-            }
-
-            $basicSalary = $employee->basic_salary ?? 0;
-
-            $pph21Result = $this->pph21Service->calculate($employee, $basicSalary, 0);
-            $bpjsResult = $this->bpjsService->calculate($basicSalary);
-
-            $hourlyRate = $this->overtimeService->calculateHourlyRate($employee);
-            $overtimeResult = $this->overtimeService->calculateTotalOvertimeForPeriod($employee->id, $validated['period'], $hourlyRate);
-
-            $totalBpjsEmployee = $bpjsResult['total_employee_deduction'];
-            $taxAmount = $pph21Result['monthly_tax'];
-            $overtimeAmount = $overtimeResult['total_amount'];
-            $totalAllowance = $overtimeAmount;
-            $netSalary = $basicSalary + $totalAllowance - $totalBpjsEmployee - $taxAmount;
-
-            $payroll = Payroll::create([
-                'employee_id' => $employee->id,
-                'organization_id' => $employee->organization_id,
-                'period' => $validated['period'],
-                'basic_salary' => $basicSalary,
-                'total_allowance' => $totalAllowance,
-                'total_deduction' => $totalBpjsEmployee,
-                'tax_amount' => $taxAmount,
-                'bpjs_amount' => $totalBpjsEmployee,
-                'net_salary' => $netSalary,
-                'status' => 'DRAFT',
-                'pph21_calculation_breakdown' => $pph21Result,
-                'bpjs_kesehatan_amount' => $bpjsResult['bpjs_kesehatan']['employee'],
-                'bpjs_jht_amount' => $bpjsResult['bpjs_jht']['employee'],
-                'bpjs_jp_amount' => $bpjsResult['bpjs_jp']['employee'],
-                'bpjs_jkk_amount' => $bpjsResult['bpjs_jkk']['amount'],
-                'bpjs_jkm_amount' => $bpjsResult['bpjs_jkm']['amount'],
-                'bpjs_calculation_breakdown' => $bpjsResult,
-            ]);
-
-            $components = [
-                ['payroll_id' => $payroll->id, 'type' => 'EARNING', 'description' => 'Gaji Pokok', 'amount' => $basicSalary, 'created_at' => now(), 'updated_at' => now()],
-            ];
-
-            if ($overtimeAmount > 0) {
-                $components[] = ['payroll_id' => $payroll->id, 'type' => 'EARNING', 'description' => 'Lembur ('.$overtimeResult['total_hours'].' jam)', 'amount' => $overtimeAmount, 'created_at' => now(), 'updated_at' => now()];
-            }
-
-            $components = array_merge($components, [
-                ['payroll_id' => $payroll->id, 'type' => 'BPJS', 'description' => 'BPJS Kesehatan (1%)', 'amount' => -$bpjsResult['bpjs_kesehatan']['employee'], 'created_at' => now(), 'updated_at' => now()],
-                ['payroll_id' => $payroll->id, 'type' => 'BPJS', 'description' => 'JHT (2%)', 'amount' => -$bpjsResult['bpjs_jht']['employee'], 'created_at' => now(), 'updated_at' => now()],
-                ['payroll_id' => $payroll->id, 'type' => 'BPJS', 'description' => 'JP (1%)', 'amount' => -$bpjsResult['bpjs_jp']['employee'], 'created_at' => now(), 'updated_at' => now()],
-                ['payroll_id' => $payroll->id, 'type' => 'TAX', 'description' => 'PPh 21 TER', 'amount' => -$taxAmount, 'created_at' => now(), 'updated_at' => now()],
-            ]);
-
-            PayrollComponent::insert($components);
-
-            if ($overtimeAmount > 0) {
-                foreach ($overtimeResult['breakdown'] as $otBreakdown) {
-                    \App\Models\OvertimePayment::create([
-                        'payroll_id' => $payroll->id,
-                        'overtime_request_id' => $otBreakdown['request_id'] ?? null,
-                        'hours' => $otBreakdown['hours'],
-                        'hourly_rate' => $otBreakdown['hourly_rate'],
-                        'multiplier' => $otBreakdown['multiplier'],
-                        'amount' => $otBreakdown['amount'],
-                    ]);
-                }
-            }
-
-            $generated++;
-        }
+        $result = $this->payrollGenerationService->generateForOrganization(
+            $validated['organization_id'],
+            $validated['period'],
+        );
 
         return redirect()->route('payrolls.index', ['period' => $validated['period'], 'organization_id' => $validated['organization_id']])
-            ->with('success', "Generated payroll for {$generated} employees.");
+            ->with('success', "Generated payroll for {$result['generated']} employees.");
     }
 
     public function downloadPdf(Payroll $payroll)
@@ -280,13 +203,13 @@ class PayrollController extends Controller
         foreach ($validated['payroll_ids'] as $payrollId) {
             $payroll = Payroll::find($payrollId);
 
-            if (! $payroll || $payroll->status !== 'DRAFT') {
+            if (! $payroll || $payroll->status !== PayrollStatus::Draft->value) {
                 continue;
             }
 
             $hasPendingApproval = PayrollApproval::query()
                 ->where('payroll_id', $payrollId)
-                ->where('status', 'PENDING')
+                ->where('status', PayrollApprovalStatus::Pending->value)
                 ->exists();
 
             if ($hasPendingApproval) {
@@ -297,7 +220,7 @@ class PayrollController extends Controller
                 'payroll_id' => $payrollId,
                 'payroll_batch_id' => $batchId,
                 'requester_id' => Auth::id(),
-                'status' => 'PENDING',
+                'status' => PayrollApprovalStatus::Pending->value,
                 'requester_notes' => $validated['notes'],
                 'requested_at' => now(),
             ]);
@@ -314,7 +237,7 @@ class PayrollController extends Controller
 
         $payrolls = Payroll::whereHas('approval', function ($query) use ($batchId) {
             $query->where('payroll_batch_id', $batchId)
-                ->where('status', 'APPROVED');
+                ->where('status', PayrollApprovalStatus::Approved->value);
         })->get();
 
         if ($payrolls->isEmpty()) {

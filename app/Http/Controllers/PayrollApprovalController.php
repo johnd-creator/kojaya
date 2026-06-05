@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PayrollStatus;
 use App\Http\Requests\ApprovePayrollApprovalRequest;
 use App\Http\Requests\RejectPayrollApprovalRequest;
 use App\Models\PayrollApproval;
@@ -50,7 +51,7 @@ class PayrollApprovalController extends Controller
 
         $approval->approve(Auth::user(), $validated['notes']);
 
-        $approval->payroll->update(['status' => 'APPROVED']);
+        $approval->payroll->update(['status' => PayrollStatus::Approved->value]);
 
         return back()->with('success', 'Payroll approved successfully.');
     }
@@ -63,7 +64,7 @@ class PayrollApprovalController extends Controller
 
         $approval->reject(Auth::user(), $validated['notes']);
 
-        $approval->payroll->update(['status' => 'DRAFT']);
+        $approval->payroll->update(['status' => PayrollStatus::Draft->value]);
 
         return back()->with('success', 'Payroll rejected and returned to draft.');
     }

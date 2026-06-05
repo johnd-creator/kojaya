@@ -33,6 +33,7 @@ class CooperativeOpeningBalanceService
             [
                 'source_type' => CooperativeMember::class,
                 'source_id' => $member->id,
+                'ledger_scope' => 'SAVINGS',
                 'debit' => 0,
                 'credit' => $amount,
                 'period' => null,

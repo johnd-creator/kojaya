@@ -294,7 +294,7 @@ Authorization: Bearer {token}
 ### **Savings**
 ```http
 GET /api/v1/member/savings/summary
-GET /api/v1/member/savings/ledger?start_date=2026-01-01&end_date=2026-05-31
+GET /api/v1/member/savings/ledger?category=WAJIB&start_date=2026-01-01&end_date=2026-05-31&page=1&per_page=15
 POST /api/v1/member/savings/withdraw
 Authorization: Bearer {token}
 ```
@@ -304,11 +304,13 @@ Authorization: Bearer {token}
 {
   "data": {
     "total_balance": 15000000,
-    "by_entry_type": {
-      "SIMPANAN_POKOK": { "credit": 500000, "debit": 0, "balance": 500000 },
-      "SIMPANAN_WAJIB": { "credit": 5000000, "debit": 0, "balance": 5000000 },
-      "SIMPANAN_SUKARELA": { "credit": 10000000, "debit": 500000, "balance": 9500000 }
+    "by_category": {
+      "POKOK": 200000,
+      "WAJIB": 600000,
+      "SUKARELA": 300000,
+      "KHUSUS": 150000
     },
+    "uncategorized": 0,
     "total_paid": 14500000,
     "pending_invoices": 2,
     "pending_invoice_amount": 1000000
@@ -339,21 +341,31 @@ Authorization: Bearer {token}
   "data": [
     {
       "id": "uuid",
-      "entry_type": "SIMPANAN_WAJIB",
+      "entry_type": "SAVING_PAYMENT",
+      "ledger_scope": "SAVINGS",
+      "category": "WAJIB",
+      "contribution_type": {
+        "id": 2,
+        "code": "WAJIB",
+        "name": "Simpanan Wajib",
+        "category": "WAJIB"
+      },
       "description": "Setoran bulan Mei",
-      "posted_at": "2026-05-01T10:30:00Z",
+      "posted_at": "2026-05-01",
       "debit": 0,
       "credit": 500000,
-      "running_balance": 5000000
+      "balance_delta": 500000
     }
-  ]
+  ],
+  "links": {},
+  "meta": {}
 }
 ```
 
 ### **Dues and Payments**
 ```http
-GET /api/v1/member/dues/invoices
-GET /api/v1/member/payments
+GET /api/v1/member/dues/invoices?status=UNPAID&category=WAJIB&period=2026-05
+GET /api/v1/member/payments?status=APPROVED&category=WAJIB&start_date=2026-01-01&end_date=2026-05-31
 GET /api/v1/member/payments/{payment}/receipt
 POST /api/v1/member/payments/proof
 Authorization: Bearer {token}
@@ -963,14 +975,19 @@ Content-Type: application/json
 
 ### **List Invoices**
 ```http
-GET /api/v1/dues/invoices?member_id=uuid&status=PENDING
+GET /api/v1/dues/invoices?member_id=1&member_search=Ahmad&period=2026-05&status=UNPAID&category=WAJIB&contribution_type_id=2&page=1&per_page=15
 Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
 - `member_id` (optional): Filter by member
-- `status` (optional): `PENDING`, `PAID`, `OVERDUE`
+- `member_search` (optional): Filter by member name or member number
+- `period` (optional): `YYYY-MM`
+- `status` (optional): `UNPAID`, `PARTIAL`, `PAID`, `VOID`
+- `category` (optional): `POKOK`, `WAJIB`, `SUKARELA`, `KHUSUS`
+- `contribution_type_id` (optional): Filter by contribution type
 - `page` (optional): Page number
+- `per_page` (optional): Page size
 
 **Response (200):**
 ```json
@@ -1018,6 +1035,22 @@ Content-Type: application/json
 }
 ```
 
+### **Savings Categories**
+```http
+GET /api/v1/savings/categories
+Authorization: Bearer {token}
+```
+
+Returns active contribution types grouped by standard savings categories: `POKOK`, `WAJIB`, `SUKARELA`, and `KHUSUS`.
+
+### **Savings Ledger**
+```http
+GET /api/v1/savings/ledger?member_search=Ahmad&ledger_scope=SAVINGS&category=WAJIB&start_date=2026-01-01&end_date=2026-05-31
+Authorization: Bearer {token}
+```
+
+Returns paginated savings ledger entries plus a `summary` object using the same `by_category` contract as the member savings summary.
+
 ### **Submit Payment**
 ```http
 POST /api/v1/dues/payments
@@ -1049,6 +1082,32 @@ Content-Type: application/json
     "payment_method": "CASH",
     "status": "PENDING",
     "paid_at": "2026-05-05"
+  }
+}
+```
+
+### **Submit Batch Payment**
+```http
+POST /api/v1/dues/payments/batch
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "invoice_ids": [1, 2, 3],
+  "payment_method": "TRANSFER",
+  "paid_at": "2026-06-04",
+  "reference_no": "BATCH-20260604-01",
+  "notes": "Batch payment operator"
+}
+```
+
+**Response (201):**
+```json
+{
+  "data": {
+    "processed_count": 3,
+    "total_amount": 150000,
+    "payments": []
   }
 }
 ```
@@ -1996,6 +2055,32 @@ WHATSAPP_DEFAULT_COUNTRY_CODE=62
 ## 📋 Common Response Format
 
 API responses under `/api/*` are normalized by middleware. Legacy payload shapes are preserved for backward compatibility, but every JSON API response includes a `success` boolean.
+
+### **Idempotency for Financial Writes**
+
+Selected mobile/API financial write endpoints accept an `Idempotency-Key` header. Clients should send a stable key when retrying the same create/charge operation after network failure.
+
+Covered examples:
+- `POST /api/payments/charge`
+- `POST /api/v1/member/savings/withdraw`
+- `POST /api/v1/member/payments/proof`
+- `POST /api/v1/member/loans`
+- `POST /api/v1/member/loans/{loan}/restructure`
+- `POST /api/v1/dues/payments`
+- `POST /api/v1/loans/apply`
+- `POST /api/v1/rewards/{reward}/redeem`
+- `POST /api/v1/pos/transactions`
+- `POST /api/v1/pos/returns`
+
+Rules:
+- Key format: 8-128 characters, letters/numbers plus `:`, `_`, or `-`.
+- Reusing the same key with the same payload returns the original response and header `X-Idempotency-Replayed: true`.
+- Reusing the same key with a different payload returns `409 CONFLICT`.
+- Idempotency records are retained in cache for 24 hours.
+
+### **Response Timing**
+
+API responses include `X-Response-Time-Ms`, and timing metadata is logged with the request id for p95/p99 monitoring.
 
 ### **Success: `{ success: true, data?: ..., message?: ... }`**
 ```json

@@ -6,15 +6,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CooperativeMember extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'organization_id',
         'employee_id',
         'user_id',
+        'no_anggota',
+        'tanggal_aktif',
+        'nama_anggota',
         'member_no',
         'name',
         'email',
@@ -24,14 +28,30 @@ class CooperativeMember extends Model
         'joined_at',
         'resigned_at',
         'status',
+        'npwp',
+        'no_telp',
+        'jenis_anggota',
+        'jenis_kelamin',
+        'kategori',
+        'autodebet',
+        'no_rekening',
         'notes',
+    ];
+
+    protected $appends = [
+        'nama_anggota_clean',
+        'jenis_anggota_label',
+        'status_badge',
+        'no_anggota_display',
     ];
 
     protected function casts(): array
     {
         return [
+            'tanggal_aktif' => 'date',
             'joined_at' => 'date',
             'resigned_at' => 'date',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -113,5 +133,42 @@ class CooperativeMember extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'ACTIVE');
+    }
+
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'ACTIVE');
+    }
+
+    public function scopeNonAktif($query)
+    {
+        return $query->where('status', 'INACTIVE');
+    }
+
+    public function getNamaAnggotaCleanAttribute(): string
+    {
+        return rtrim(rtrim($this->nama_anggota ?: $this->name, '*'));
+    }
+
+    public function getJenisAnggotaLabelAttribute(): string
+    {
+        return match ($this->jenis_anggota) {
+            'ALB' => 'Anggota Luar Biasa',
+            default => 'Anggota Biasa',
+        };
+    }
+
+    public function getStatusBadgeAttribute(): array
+    {
+        return match ($this->status) {
+            'ACTIVE' => ['label' => 'AKTIF', 'variant' => 'success'],
+            'INACTIVE', 'RESIGNED' => ['label' => 'NON-AKTIF', 'variant' => 'secondary'],
+            default => ['label' => $this->status, 'variant' => 'warning'],
+        };
+    }
+
+    public function getNoAnggotaDisplayAttribute(): string
+    {
+        return $this->no_anggota ?: $this->member_no;
     }
 }

@@ -10,9 +10,9 @@ import RewardController from './RewardController'
 import RewardRedemptionController from './RewardRedemptionController'
 import AnnualShuController from './AnnualShuController'
 import PosRegisterController from './PosRegisterController'
+import PosTransactionHistoryController from './PosTransactionHistoryController'
 import PosSalesReportController from './PosSalesReportController'
 import PosAnnualShuController from './PosAnnualShuController'
-import PosTransactionHistoryController from './PosTransactionHistoryController'
 import PosCategoryController from './PosCategoryController'
 import PosProductController from './PosProductController'
 import OperatorProcedureController from './OperatorProcedureController'
@@ -30,9 +30,9 @@ const Cooperative = {
     RewardRedemptionController: Object.assign(RewardRedemptionController, RewardRedemptionController),
     AnnualShuController: Object.assign(AnnualShuController, AnnualShuController),
     PosRegisterController: Object.assign(PosRegisterController, PosRegisterController),
+    PosTransactionHistoryController: Object.assign(PosTransactionHistoryController, PosTransactionHistoryController),
     PosSalesReportController: Object.assign(PosSalesReportController, PosSalesReportController),
     PosAnnualShuController: Object.assign(PosAnnualShuController, PosAnnualShuController),
-    PosTransactionHistoryController: Object.assign(PosTransactionHistoryController, PosTransactionHistoryController),
     PosCategoryController: Object.assign(PosCategoryController, PosCategoryController),
     PosProductController: Object.assign(PosProductController, PosProductController),
     OperatorProcedureController: Object.assign(OperatorProcedureController, OperatorProcedureController),

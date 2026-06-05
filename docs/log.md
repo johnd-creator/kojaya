@@ -4,7 +4,67 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** May 17, 2026
+**Last Updated:** June 3, 2026
+
+---
+
+## 🎯 2026-06: M3 P0 Hardening
+
+### **June 5, 2026 - Cooperative Dues Operational Correction**
+
+**🏦 Iuran & Simpanan Workflow Alignment:**
+- ✅ Made the cooperative dues page auto-generate current/selected period invoices idempotently on page load.
+- ✅ Changed the dues page default view to keep paid invoices visible in the selected period.
+- ✅ Added System Admin-only correction to return mistakenly paid dues invoices to unpaid while voiding payment effects from ledger and receipt records.
+
+**👥 Detail Anggota & Simpanan:**
+- ✅ Added an explicit view action on the cooperative members list.
+- ✅ Expanded cooperative member detail pages with savings totals by category and recent savings ledger mutations.
+
+### **June 3, 2026 - Kritik dan Saran M3 P0 Execution**
+
+**🧱 Payroll & Observability Hardening:**
+- ✅ Activated failed job listener registration in `AppServiceProvider` so Laravel `JobFailed` events dispatch through `FailedJobListener`.
+- ✅ Added regression coverage proving the failed job listener is registered with the event dispatcher.
+- ✅ Refactored payroll generation orchestration from `PayrollController::generate` into `PayrollGenerationService`.
+- ✅ Wrapped payroll generation in a database transaction and preserved idempotency for duplicate generation requests in the same period.
+- ✅ Added `PayrollStatus` and `PayrollApprovalStatus` enums for the payroll domain and replaced touched magic-string status writes/queries.
+- ✅ Added payroll generation idempotency coverage in `PayrollPipelineTest`.
+
+**📡 API Reliability & Repo Hygiene:**
+- ✅ Added `EnsureIdempotentWrite` middleware for selected mobile/API financial write endpoints using the `Idempotency-Key` header.
+- ✅ Added replay/conflict coverage for member loan application idempotency.
+- ✅ Added `MeasureResponseTime` middleware for API response timing and `X-Response-Time-Ms` response headers.
+- ✅ Moved the tracked SIKOPIN planning HTML from repo root to `docs/` and ignored local probe artifacts (`s15-*.txt`, `grep-count.txt`, etc.).
+- ✅ Expanded repo hygiene coverage to prevent root probe/presentation artifacts from being tracked.
+
+**🧾 P2 Compliance & Smoke Coverage:**
+- ✅ Added `tax_rules` as data-backed PPh21 configuration with effective date windows, PTKP amounts, progressive tax layers, regulation reference, and NPWP surcharge settings.
+- ✅ Refactored `Pph21TerService` to resolve the effective tax rule for the payroll period with a default fallback for pre-migration contexts.
+- ✅ Seeded the default PPh21 TER 2024 rule and added payroll calculator coverage proving tax data changes calculation output.
+- ✅ Added initial `phpstan.neon` baseline config. PHPStan/Larastan dependency installation remains pending approval.
+- ✅ Added PHPUnit smoke coverage for the member loan application API through cooperative admin review routes.
+
+### **June 4, 2026 - Cooperative Member Master Data Alignment**
+
+**👥 Daftar Anggota Koperasi:**
+- ✅ Extended `cooperative_members` with anggota master-data fields: no urut, no anggota, tanggal aktif, nama anggota, NPWP, no telp, jenis anggota, jenis kelamin, kategori, autodebet, and no rekening.
+- ✅ Updated `cooperative/members` list, filters, create/edit/detail pages, validation, export, and soft delete behavior to match the anggota data structure.
+- ✅ Added `AnggotaSeeder`, `AnggotaResource`, and Excel export coverage for the new member structure.
+
+**🔐 Admin Koperasi Access Alignment:**
+- ✅ Restricted `Admin Koperasi` to operational cooperative modules: keanggotaan, iuran & simpanan, simpan pinjam, poin & reward, POS toko, and POS inventory.
+- ✅ Added cooperative web route permission middleware so direct URL access matches sidebar visibility.
+- ✅ Added role smoke coverage for allowed and forbidden `Admin Koperasi` routes and sidebar-driving permissions.
+
+**🏦 Iuran & Simpanan Go-Live Readiness:**
+- ✅ Added savings ledger classification with `ledger_scope`, contribution type linkage, category snapshots, and backfill mapping for savings, loan, and POS entries.
+- ✅ Standardized default savings categories with `POKOK` at 200000 and active `KHUSUS` master data.
+- ✅ Added automatic one-time `POKOK` invoice creation during member registration/activation.
+- ✅ Improved dues and ledger admin pages with category/member filters, visible pagination, batch payment confirmation, and savings summary cards.
+- ✅ Updated member savings API and portal to use paginated `SAVINGS` ledger data and `by_category` summary for Flutter readiness.
+- ✅ Set the dues page default list to unpaid/partial invoices, kept paid invoices available through explicit filtering, and made batch payment actions visible for authorized cooperative admins.
+- ✅ Fixed approval log storage for mixed integer/UUID polymorphic subjects so cooperative batch payments can approve without PostgreSQL UUID casting errors.
 
 ---
 

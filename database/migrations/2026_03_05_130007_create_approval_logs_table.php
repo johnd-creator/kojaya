@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('approval_logs', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('subject_type');
-            $table->uuid('subject_id');
+            $table->string('subject_id', 64);
             $table->string('from_status')->nullable();
             $table->string('to_status');
             $table->foreignId('approved_by')->nullable();

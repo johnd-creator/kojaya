@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\TaxDetail;
+use App\Models\TaxRule;
 use App\Services\PayrollCalculatorService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
@@ -122,5 +123,29 @@ class PayrollCalculatorTest extends TestCase
         );
 
         $this->assertNull($result);
+    }
+
+    public function test_calculate_uses_effective_tax_rule_data_for_period(): void
+    {
+        $defaultRule = TaxRule::defaultPph21Ter2024();
+
+        TaxRule::query()->create([
+            ...$defaultRule,
+            'code' => 'PPH21_TEST_HIGH_PTKP',
+            'name' => 'PPh21 Test High PTKP',
+            'year' => 2026,
+            'effective_from' => '2026-01-01',
+            'effective_until' => '2026-12-31',
+            'ptkp_amounts' => [
+                ...$defaultRule['ptkp_amounts'],
+                'TK/0' => 999_000_000,
+            ],
+        ]);
+
+        $result = $this->service->calculate($this->employee, 20_000_000, 0, '2026-03');
+
+        $this->assertSame('PPH21_TEST_HIGH_PTKP', $result['pph21']['tax_rule_code']);
+        $this->assertSame(0.0, $result['pph21']['monthly_amount']);
+        $this->assertSame(999_000_000.0, $result['pph21']['ptkp_amount']);
     }
 }

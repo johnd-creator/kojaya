@@ -1,28 +1,45 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from "@inertiajs/vue3";
-import { index, update } from "@/routes/cooperative/members";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { index, update } from "@/routes/cooperative/members";
 
 const props = defineProps<{
   member: any;
   employees: any[];
   users: any[];
   openingSavingBalance: number | string | null;
+  options: {
+    statuses: Array<{ value: string; label: string }>;
+    jenisAnggota: Array<{ value: string; label: string }>;
+    jenisKelamin: Array<{ value: string; label: string }>;
+    kategori: Array<{ value: string; label: string }>;
+    autodebet: Array<{ value: string; label: string }>;
+  };
 }>();
 
 const form = useForm({
   employee_id: props.member.employee_id ?? "",
   user_id: props.member.user_id ?? "",
+  no_anggota: props.member.no_anggota ?? props.member.member_no ?? "",
+  tanggal_aktif: props.member.tanggal_aktif ?? props.member.joined_at ?? "",
+  nama_anggota: props.member.nama_anggota ?? props.member.name ?? "",
   name: props.member.name ?? "",
   email: props.member.email ?? "",
   member_login_password: "",
+  npwp: props.member.npwp ?? "",
+  no_telp: props.member.no_telp ?? props.member.phone ?? "",
   phone: props.member.phone ?? "",
   identity_number: props.member.identity_number ?? "",
   address: props.member.address ?? "",
   joined_at: props.member.joined_at ?? "",
-  status: props.member.status ?? "PENDING",
+  status: props.member.status === "RESIGNED" ? "INACTIVE" : props.member.status ?? "ACTIVE",
+  jenis_anggota: props.member.jenis_anggota ?? "AB",
+  jenis_kelamin: props.member.jenis_kelamin ?? "L",
+  kategori: props.member.kategori ?? "IP",
+  autodebet: props.member.autodebet ?? "MANUAL",
+  no_rekening: props.member.no_rekening ?? "",
   opening_saving_balance: props.openingSavingBalance ?? 0,
   notes: props.member.notes ?? "",
 });
@@ -51,22 +68,24 @@ const submit = () => form.put(update(props.member.id).url);
         class="grid gap-4 rounded-lg border bg-white p-6 dark:bg-zinc-900 md:grid-cols-2"
       >
         <label class="space-y-1"
-          ><span class="text-sm">Nama</span><Input v-model="form.name" required
+          ><span class="text-sm">No Anggota</span
+          ><Input v-model="form.no_anggota" maxlength="10" required
+        /></label>
+        <label class="space-y-1"
+          ><span class="text-sm">Tanggal Aktif</span
+          ><Input v-model="form.tanggal_aktif" type="date" required
+        /></label>
+        <label class="space-y-1"
+          ><span class="text-sm">Tanggal Bergabung</span
+          ><Input v-model="form.joined_at" type="date"
         /></label>
         <label class="space-y-1"
           ><span class="text-sm">Email</span
-          ><Input v-model="form.email" type="email"
-        /></label>
-        <label class="space-y-1"
-          ><span class="text-sm">Telepon</span><Input v-model="form.phone"
-        /></label>
-        <label class="space-y-1"
-          ><span class="text-sm">NIK</span
-          ><Input v-model="form.identity_number"
-        /></label>
-        <label class="space-y-1"
-          ><span class="text-sm">Tanggal Gabung</span
-          ><Input v-model="form.joined_at" type="date"
+          ><Input
+            v-model="form.email"
+            type="email"
+            maxlength="255"
+            placeholder="nama@email.com"
         /></label>
         <label class="space-y-1">
           <span class="text-sm">Status</span>
@@ -74,24 +93,94 @@ const submit = () => form.put(update(props.member.id).url);
             v-model="form.status"
             class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
           >
-            <option>PENDING</option>
-            <option>ACTIVE</option>
-            <option>INACTIVE</option>
-            <option>RESIGNED</option>
+            <option
+              v-for="option in props.options.statuses"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
           </select>
         </label>
         <label class="space-y-1 md:col-span-2"
-          ><span class="text-sm">Alamat</span
-          ><textarea
-            v-model="form.address"
-            class="min-h-24 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-zinc-950"
-          />
+          ><span class="text-sm">Nama Anggota</span
+          ><Input v-model="form.nama_anggota" maxlength="100" required
+        /></label>
+        <label class="space-y-1"
+          ><span class="text-sm">NPWP</span
+          ><Input v-model="form.npwp" maxlength="30"
+        /></label>
+        <label class="space-y-1"
+          ><span class="text-sm">No Telp</span
+          ><Input v-model="form.no_telp" maxlength="20"
+        /></label>
+        <label class="space-y-1">
+          <span class="text-sm">Jenis Anggota</span>
+          <select
+            v-model="form.jenis_anggota"
+            class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+          >
+            <option
+              v-for="option in props.options.jenisAnggota"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </label>
-        <label class="space-y-1 md:col-span-2"
-          ><span class="text-sm">Catatan</span
-          ><textarea
-            v-model="form.notes"
-            class="min-h-20 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-zinc-950"
+        <label class="space-y-1">
+          <span class="text-sm">Jenis Kelamin</span>
+          <select
+            v-model="form.jenis_kelamin"
+            class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+          >
+            <option
+              v-for="option in props.options.jenisKelamin"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <span class="text-sm">Kategori</span>
+          <select
+            v-model="form.kategori"
+            class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+          >
+            <option
+              v-for="option in props.options.kategori"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <span class="text-sm">Autodebet</span>
+          <select
+            v-model="form.autodebet"
+            class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+          >
+            <option
+              v-for="option in props.options.autodebet"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+        <label class="space-y-1"
+          ><span class="text-sm">No Rekening</span
+          ><Input
+            v-model="form.no_rekening"
+            maxlength="30"
+            :disabled="form.autodebet === 'MANUAL'"
+            placeholder="Kosong untuk manual"
           />
         </label>
       </div>

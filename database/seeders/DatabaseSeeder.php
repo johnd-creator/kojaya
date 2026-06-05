@@ -12,8 +12,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            TaxRuleSeeder::class,
             RolePermissionSeeder::class,
             CooperativeSeeder::class,
+            AnggotaSeeder::class,
         ]);
 
         if (app()->environment('local')) {

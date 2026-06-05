@@ -2,6 +2,7 @@
 
 namespace App\Services\Hr;
 
+use App\Enums\PayrollStatus;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\ThrEntitlement;
@@ -30,7 +31,7 @@ class ThrEntitlementService
                 'months_worked' => $monthsWorked,
                 'base_salary' => $baseSalary,
                 'amount' => $amount,
-                'status' => 'DRAFT',
+                'status' => PayrollStatus::Draft->value,
                 'calculated_at' => now(),
                 'calculation_breakdown' => [
                     'cutoff_date' => $cutoffDate->toDateString(),
@@ -89,7 +90,7 @@ class ThrEntitlementService
             'tax_amount' => 0,
             'bpjs_amount' => 0,
             'net_salary' => $entitlement->amount,
-            'status' => 'DRAFT',
+            'status' => PayrollStatus::Draft->value,
             'is_thr' => true,
             'thr_proportion_months' => $entitlement->months_worked,
             'thr_amount' => $entitlement->amount,

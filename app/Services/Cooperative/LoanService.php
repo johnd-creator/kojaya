@@ -153,6 +153,7 @@ class LoanService implements LoanServiceContract
                     [
                         'cooperative_member_id' => $loan->cooperative_member_id,
                         'cooperative_payment_id' => null,
+                        'ledger_scope' => 'LOAN',
                         'debit' => $loan->principal_amount,
                         'credit' => 0,
                         'period' => $loan->applied_at?->format('Y-m'),
@@ -260,6 +261,7 @@ class LoanService implements LoanServiceContract
                 'source_type' => LoanPayment::class,
                 'source_id' => $payment->id,
                 'entry_type' => 'LOAN_PAYMENT',
+                'ledger_scope' => 'LOAN',
                 'debit' => 0,
                 'credit' => $data['amount'],
                 'period' => substr((string) $data['paid_at'], 0, 7),

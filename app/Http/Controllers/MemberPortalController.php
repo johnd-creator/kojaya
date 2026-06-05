@@ -8,7 +8,6 @@ use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\Cooperative\RedeemRewardRequest;
 use App\Http\Requests\StoreMemberLoanApplicationRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
-use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanType;
@@ -17,6 +16,7 @@ use App\Models\Reward;
 use App\Services\Cooperative\MemberOnboardingService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
+use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,14 +29,16 @@ class MemberPortalController extends Controller
         PointService $pointService,
         MemberOnboardingService $onboardingService,
         MemberStatusJourneyService $journeyService,
+        SavingsSummaryService $savingsSummary,
     ): Response {
         $member = $this->memberOrAbort($request);
         $pointSummary = $pointService->balanceSummary($member);
+        $savingSummary = $savingsSummary->summary($member);
 
         return Inertia::render('Kojayaku/Dashboard', [
             'member' => $member->load(['organization', 'user']),
             'summary' => [
-                'savings_balance' => $this->savingsBalance($member),
+                'savings_balance' => $savingSummary['total_balance'],
                 'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                 'active_loans' => $member->loans()->where('status', LoanStatus::Active)->count(),
                 'loan_outstanding' => (float) $member->loans()->where('status', LoanStatus::Active)->sum('outstanding_amount'),
@@ -80,17 +82,23 @@ class MemberPortalController extends Controller
         return back()->with('success', 'Progress onboarding diperbarui.');
     }
 
-    public function savings(Request $request, MemberStatusJourneyService $journeyService): Response
-    {
+    public function savings(
+        Request $request,
+        MemberStatusJourneyService $journeyService,
+        SavingsSummaryService $savingsSummary,
+    ): Response {
         $member = $this->memberOrAbort($request);
+        $summary = $savingsSummary->summary($member);
 
         return Inertia::render('Kojayaku/Savings', [
             'summary' => [
-                'savings_balance' => $this->savingsBalance($member),
+                'savings_balance' => $summary['total_balance'],
+                'by_category' => $summary['by_category'],
+                'uncategorized' => $summary['uncategorized'],
                 'total_paid' => (float) $member->payments()->where('status', 'APPROVED')->sum('amount'),
                 'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
             ],
-            'entries' => $member->ledgerEntries()->latest('posted_at')->paginate(12)->withQueryString(),
+            'entries' => $savingsSummary->ledgerQuery($member)->latest('posted_at')->paginate(12)->withQueryString(),
             'invoices' => $member->invoices()->with('contributionType')->latest('period')->paginate(10, ['*'], 'invoices')->withQueryString(),
             'payments' => $member->payments()->with('invoice.contributionType')->latest('paid_at')->paginate(10, ['*'], 'payments')->withQueryString(),
             'journey' => $journeyService->paymentJourney($member),
@@ -234,13 +242,5 @@ class MemberPortalController extends Controller
         abort_unless($member, 403, 'Akun ini belum terhubung ke anggota koperasi.');
 
         return $member;
-    }
-
-    private function savingsBalance(CooperativeMember $member): float
-    {
-        return (float) CooperativeLedgerEntry::query()
-            ->where('cooperative_member_id', $member->id)
-            ->selectRaw('COALESCE(SUM(credit - debit), 0) as balance')
-            ->value('balance');
     }
 }

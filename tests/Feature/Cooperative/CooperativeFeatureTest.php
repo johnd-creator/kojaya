@@ -8,6 +8,7 @@ use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
+use App\Models\CooperativeReceipt;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Organization;
 use App\Models\PosCategory;
@@ -21,6 +22,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Sanctum\Sanctum;
@@ -71,6 +73,14 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('System Admin');
+        $pokok = CooperativeContributionType::query()->create([
+            'code' => 'POKOK',
+            'name' => 'Simpanan Pokok',
+            'category' => 'POKOK',
+            'default_amount' => 200000,
+            'frequency' => 'ONCE',
+            'is_active' => true,
+        ]);
 
         $this->actingAs($user)->post(route('cooperative.members.store'), [
             'name' => 'Anggota Login',
@@ -91,8 +101,16 @@ class CooperativeFeatureTest extends TestCase
         $this->assertDatabaseHas('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'OPENING_BALANCE',
+            'ledger_scope' => 'SAVINGS',
             'credit' => 125000,
             'posted_at' => '2026-05-01 00:00:00',
+        ]);
+        $this->assertDatabaseHas('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $pokok->id,
+            'period' => '2026-05',
+            'amount' => 200000,
+            'status' => 'UNPAID',
         ]);
     }
 
@@ -226,6 +244,95 @@ class CooperativeFeatureTest extends TestCase
         ]);
     }
 
+    public function test_dues_page_auto_generates_current_period_invoices(): void
+    {
+        Carbon::setTestNow('2026-05-15 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('filters.period', '2026-05')
+                ->where('filters.status', '')
+                ->has('invoices.data', 1)
+            );
+
+        $this->assertDatabaseHas('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'status' => 'UNPAID',
+        ]);
+    }
+
+    public function test_dues_page_defaults_to_all_statuses_for_the_period(): void
+    {
+        Carbon::setTestNow('2026-05-15 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $paidMember = $this->member(['status' => 'ACTIVE']);
+        $unpaidMember = $this->member(['status' => 'ACTIVE']);
+        $partialMember = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $paidMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 50000,
+            'status' => 'PAID',
+        ]);
+        $unpaidInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $unpaidMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        $partialInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $partialMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 25000,
+            'status' => 'PARTIAL',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('filters.status', '')
+                ->has('invoices.data', 3)
+                ->where('invoices.data.0.id', $partialInvoice->id)
+                ->where('invoices.data.1.id', $unpaidInvoice->id)
+                ->where('invoices.data.2.status', 'PAID')
+            );
+    }
+
     public function test_approved_payment_updates_invoice_and_ledger(): void
     {
         $this->seed(RolePermissionSeeder::class);
@@ -263,6 +370,9 @@ class CooperativeFeatureTest extends TestCase
         $this->assertDatabaseHas('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'SAVING_PAYMENT',
+            'cooperative_contribution_type_id' => $type->id,
+            'ledger_scope' => 'SAVINGS',
+            'category_snapshot' => 'WAJIB',
             'credit' => 50000,
         ]);
     }
@@ -314,7 +424,7 @@ class CooperativeFeatureTest extends TestCase
     {
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
-        $user->assignRole('System Admin');
+        $user->assignRole('Admin Koperasi');
         $firstMember = $this->member(['status' => 'ACTIVE']);
         $secondMember = $this->member(['status' => 'ACTIVE']);
         $type = CooperativeContributionType::query()->create([
@@ -358,12 +468,136 @@ class CooperativeFeatureTest extends TestCase
             'amount' => 50000,
             'status' => 'APPROVED',
         ]);
+        $firstPayment = CooperativePayment::query()
+            ->where('cooperative_dues_invoice_id', $firstInvoice->id)
+            ->firstOrFail();
         $this->assertDatabaseHas('cooperative_payments', [
             'cooperative_dues_invoice_id' => $secondInvoice->id,
             'amount' => 50000,
             'status' => 'APPROVED',
         ]);
+        $this->assertDatabaseHas('approval_logs', [
+            'subject_type' => CooperativePayment::class,
+            'subject_id' => (string) $firstPayment->id,
+            'to_status' => 'APPROVED',
+        ]);
         $this->assertSame(2, $firstMember->ledgerEntries()->where('entry_type', 'SAVING_PAYMENT')->count() + $secondMember->ledgerEntries()->where('entry_type', 'SAVING_PAYMENT')->count());
+    }
+
+    public function test_system_admin_can_reset_paid_dues_invoice_to_unpaid(): void
+    {
+        Storage::fake('local');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 50000,
+            'status' => 'PAID',
+        ]);
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'user_id' => $user->id,
+            'amount' => 50000,
+            'payment_method' => 'CASH',
+            'paid_at' => '2026-05-10',
+            'status' => 'APPROVED',
+            'receipt_no' => 'RC-202605-000001',
+            'receipt_issued_at' => now(),
+        ]);
+        CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_payment_id' => $payment->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'source_type' => CooperativePayment::class,
+            'source_id' => $payment->id,
+            'entry_type' => 'SAVING_PAYMENT',
+            'ledger_scope' => 'SAVINGS',
+            'category_snapshot' => 'WAJIB',
+            'debit' => 0,
+            'credit' => 50000,
+            'period' => '2026-05',
+            'description' => 'Pembayaran iuran/simpanan koperasi',
+            'posted_at' => '2026-05-10',
+        ]);
+        CooperativeReceipt::query()->create([
+            'receipt_no' => 'RC-202605-000001',
+            'cooperative_payment_id' => $payment->id,
+            'cooperative_member_id' => $member->id,
+            'pdf_path' => 'cooperative/receipts/RC-202605-000001.pdf',
+            'issued_at' => now(),
+            'issued_by' => $user->id,
+        ]);
+        Storage::disk('local')->put('cooperative/receipts/RC-202605-000001.pdf', 'receipt');
+
+        $this->actingAs($user)
+            ->post(route('cooperative.dues.mark-unpaid', $invoice))
+            ->assertRedirect();
+
+        $this->assertSame('UNPAID', $invoice->refresh()->status);
+        $this->assertSame('0.00', $invoice->paid_amount);
+        $this->assertSame('VOID', $payment->refresh()->status);
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count());
+        $this->assertDatabaseMissing('cooperative_receipts', [
+            'cooperative_payment_id' => $payment->id,
+        ]);
+        Storage::disk('local')->assertMissing('cooperative/receipts/RC-202605-000001.pdf');
+    }
+
+    public function test_dues_batch_payment_api_processes_full_settlement(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+
+        Sanctum::actingAs($user, ['cooperative:write']);
+
+        $this->postJson('/api/v1/dues/payments/batch', [
+            'invoice_ids' => [$invoice->id],
+            'payment_method' => 'TRANSFER',
+            'paid_at' => '2026-05-10',
+            'reference_no' => 'API-BATCH-001',
+        ])->assertCreated()
+            ->assertJsonPath('data.processed_count', 1)
+            ->assertJsonPath('data.total_amount', 50000);
+
+        $this->assertSame('PAID', $invoice->refresh()->status);
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'ledger_scope' => 'SAVINGS',
+            'category_snapshot' => 'WAJIB',
+        ]);
     }
 
     public function test_dues_mark_paid_skips_already_paid_invoices_without_duplicate_payment(): void
@@ -430,6 +664,7 @@ class CooperativeFeatureTest extends TestCase
         $this->assertDatabaseHas('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'POS_MEMBER_CREDIT',
+            'ledger_scope' => 'POS',
             'debit' => 20000,
         ]);
     }

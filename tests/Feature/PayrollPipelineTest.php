@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PayrollApprovalStatus;
+use App\Enums\PayrollStatus;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\Payroll;
@@ -50,7 +52,7 @@ class PayrollPipelineTest extends TestCase
         $payroll = Payroll::query()->where('employee_id', $employee->id)->first();
 
         $this->assertNotNull($payroll);
-        $this->assertSame('DRAFT', $payroll->status);
+        $this->assertSame(PayrollStatus::Draft->value, $payroll->status);
         $this->assertDatabaseHas('payroll_components', [
             'payroll_id' => $payroll->id,
             'description' => 'Gaji Pokok',
@@ -88,7 +90,7 @@ class PayrollPipelineTest extends TestCase
         $payroll = Payroll::factory()->create([
             'employee_id' => $employee->id,
             'organization_id' => $organization->id,
-            'status' => 'DRAFT',
+            'status' => PayrollStatus::Draft->value,
         ]);
 
         $this->actingAs($requester)
@@ -102,7 +104,7 @@ class PayrollPipelineTest extends TestCase
         $approval = PayrollApproval::query()->where('payroll_id', $payroll->id)->first();
 
         $this->assertNotNull($approval);
-        $this->assertSame('PENDING', $approval->status);
+        $this->assertSame(PayrollApprovalStatus::Pending->value, $approval->status);
 
         $this->actingAs($approver)
             ->from(route('payroll-approvals.index'))
@@ -114,9 +116,9 @@ class PayrollPipelineTest extends TestCase
         $approval->refresh();
         $payroll->refresh();
 
-        $this->assertSame('APPROVED', $approval->status);
+        $this->assertSame(PayrollApprovalStatus::Approved->value, $approval->status);
         $this->assertSame($approver->id, $approval->approver_id);
-        $this->assertSame('APPROVED', $payroll->status);
+        $this->assertSame(PayrollStatus::Approved->value, $payroll->status);
     }
 
     public function test_non_finance_user_cannot_approve_payroll_submission(): void
@@ -133,14 +135,14 @@ class PayrollPipelineTest extends TestCase
         $payroll = Payroll::factory()->create([
             'employee_id' => $employee->id,
             'organization_id' => $organization->id,
-            'status' => 'DRAFT',
+            'status' => PayrollStatus::Draft->value,
         ]);
         $approval = PayrollApproval::create([
             'id' => Str::uuid()->toString(),
             'payroll_id' => $payroll->id,
             'payroll_batch_id' => Str::uuid()->toString(),
             'requester_id' => $requester->id,
-            'status' => 'PENDING',
+            'status' => PayrollApprovalStatus::Pending->value,
             'requester_notes' => 'Menunggu approval',
             'requested_at' => now(),
         ]);
@@ -151,8 +153,8 @@ class PayrollPipelineTest extends TestCase
             ])
             ->assertForbidden();
 
-        $this->assertSame('PENDING', $approval->fresh()->status);
-        $this->assertSame('DRAFT', $payroll->fresh()->status);
+        $this->assertSame(PayrollApprovalStatus::Pending->value, $approval->fresh()->status);
+        $this->assertSame(PayrollStatus::Draft->value, $payroll->fresh()->status);
     }
 
     public function test_submit_for_approval_does_not_create_duplicate_pending_approvals_for_same_payroll(): void
@@ -167,7 +169,7 @@ class PayrollPipelineTest extends TestCase
         $payroll = Payroll::factory()->create([
             'employee_id' => $employee->id,
             'organization_id' => $organization->id,
-            'status' => 'DRAFT',
+            'status' => PayrollStatus::Draft->value,
         ]);
 
         $payload = [
@@ -185,6 +187,29 @@ class PayrollPipelineTest extends TestCase
             ->post(route('payrolls.submit-approval'), $payload)
             ->assertRedirect(route('payrolls.index'));
 
-        $this->assertSame(1, PayrollApproval::query()->where('payroll_id', $payroll->id)->where('status', 'PENDING')->count());
+        $this->assertSame(1, PayrollApproval::query()->where('payroll_id', $payroll->id)->where('status', PayrollApprovalStatus::Pending->value)->count());
+    }
+
+    public function test_generate_payroll_is_idempotent_for_same_period(): void
+    {
+        $organization = Organization::factory()->create();
+        $finance = User::factory()->create(['organization_id' => $organization->id]);
+        $finance->assignRole('Finance Pusat');
+        $employee = Employee::factory()->create([
+            'organization_id' => $organization->id,
+            'basic_salary' => 8000000,
+            'hire_date' => now()->subYear()->toDateString(),
+            'npwp_number' => '123456789012345',
+        ]);
+
+        $payload = [
+            'period' => now()->format('Y-m'),
+            'organization_id' => $organization->id,
+        ];
+
+        $this->actingAs($finance)->post(route('payrolls.generate'), $payload)->assertRedirect();
+        $this->actingAs($finance)->post(route('payrolls.generate'), $payload)->assertRedirect();
+
+        $this->assertSame(1, Payroll::query()->where('employee_id', $employee->id)->where('period', $payload['period'])->count());
     }
 }

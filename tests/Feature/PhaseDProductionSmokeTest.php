@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\CooperativeMember;
+use App\Models\Loan;
+use App\Models\LoanType;
 use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PhaseDProductionSmokeTest extends TestCase
@@ -191,5 +196,44 @@ class PhaseDProductionSmokeTest extends TestCase
 
         $response = $this->actingAs($user)->get('/monitoring/exceptions');
         $this->assertNotEquals(500, $response->status());
+    }
+
+    public function test_member_loan_application_to_admin_review_smoke_flow(): void
+    {
+        Role::firstOrCreate(['name' => 'Anggota']);
+        $memberUser = User::factory()->create([
+            'organization_id' => $this->org->id,
+            'email_verified_at' => now(),
+        ]);
+        $memberUser->assignRole('Anggota');
+        $member = CooperativeMember::factory()->active()->create([
+            'user_id' => $memberUser->id,
+            'name' => $memberUser->name,
+            'email' => $memberUser->email,
+        ]);
+        $loanType = LoanType::factory()->create(['is_active' => true]);
+
+        Sanctum::actingAs($memberUser, ['member:read', 'member:write']);
+
+        $loanId = $this->postJson('/api/v1/member/loans', [
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 1_500_000,
+            'term_months' => 6,
+            'first_due_date' => now()->addMonth()->toDateString(),
+            'purpose' => 'Modal usaha',
+        ], [
+            'Idempotency-Key' => 'p2-smoke-loan-application',
+        ])->assertCreated()
+            ->assertJsonPath('data.member_id', $member->id)
+            ->json('data.id');
+
+        $admin = $this->createUser('Admin Pusat');
+        $loan = Loan::query()->findOrFail($loanId);
+
+        $listResponse = $this->actingAs($admin)->get('/cooperative/loans');
+        $this->assertNotEquals(500, $listResponse->status());
+
+        $detailResponse = $this->actingAs($admin)->get('/cooperative/loans/'.$loan->id);
+        $this->assertNotEquals(500, $detailResponse->status());
     }
 }

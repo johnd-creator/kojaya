@@ -103,7 +103,7 @@ payslip.form = payslipForm
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-export const medicalCheckup = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const medicalCheckup = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: medicalCheckup.url(args, options),
     method: 'get',
 })
@@ -118,7 +118,7 @@ medicalCheckup.definition = {
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckup.url = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+medicalCheckup.url = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { mcu: args }
     }
@@ -151,7 +151,7 @@ medicalCheckup.url = (args: { mcu: number | { id: number } } | [mcu: number | { 
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckup.get = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+medicalCheckup.get = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: medicalCheckup.url(args, options),
     method: 'get',
 })
@@ -161,7 +161,7 @@ medicalCheckup.get = (args: { mcu: number | { id: number } } | [mcu: number | { 
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckup.head = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+medicalCheckup.head = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: medicalCheckup.url(args, options),
     method: 'head',
 })
@@ -171,7 +171,7 @@ medicalCheckup.head = (args: { mcu: number | { id: number } } | [mcu: number | {
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-const medicalCheckupForm = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const medicalCheckupForm = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: medicalCheckup.url(args, options),
     method: 'get',
 })
@@ -181,7 +181,7 @@ const medicalCheckupForm = (args: { mcu: number | { id: number } } | [mcu: numbe
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckupForm.get = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+medicalCheckupForm.get = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: medicalCheckup.url(args, options),
     method: 'get',
 })
@@ -191,7 +191,7 @@ medicalCheckupForm.get = (args: { mcu: number | { id: number } } | [mcu: number 
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckupForm.head = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+medicalCheckupForm.head = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: medicalCheckup.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -208,7 +208,7 @@ medicalCheckup.form = medicalCheckupForm
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-export const certificate = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const certificate = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: certificate.url(args, options),
     method: 'get',
 })
@@ -223,7 +223,7 @@ certificate.definition = {
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificate.url = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions) => {
+certificate.url = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             employee: args[0],
@@ -253,7 +253,7 @@ certificate.url = (args: { employee: number | { id: number }, certificate: numbe
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificate.get = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+certificate.get = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: certificate.url(args, options),
     method: 'get',
 })
@@ -263,7 +263,7 @@ certificate.get = (args: { employee: number | { id: number }, certificate: numbe
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificate.head = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+certificate.head = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: certificate.url(args, options),
     method: 'head',
 })
@@ -273,7 +273,7 @@ certificate.head = (args: { employee: number | { id: number }, certificate: numb
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-const certificateForm = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const certificateForm = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: certificate.url(args, options),
     method: 'get',
 })
@@ -283,7 +283,7 @@ const certificateForm = (args: { employee: number | { id: number }, certificate:
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificateForm.get = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+certificateForm.get = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: certificate.url(args, options),
     method: 'get',
 })
@@ -293,7 +293,7 @@ certificateForm.get = (args: { employee: number | { id: number }, certificate: n
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificateForm.head = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+certificateForm.head = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: certificate.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

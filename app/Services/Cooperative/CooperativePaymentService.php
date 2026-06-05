@@ -7,6 +7,7 @@ use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativePayment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CooperativePaymentService
 {
@@ -63,9 +64,12 @@ class CooperativePaymentService
                 'approved_by' => $approver?->id,
             ])->save();
 
+            $invoice = null;
+
             if ($payment->cooperative_dues_invoice_id) {
                 $invoice = CooperativeDuesInvoice::query()
                     ->lockForUpdate()
+                    ->with('contributionType')
                     ->findOrFail($payment->cooperative_dues_invoice_id);
 
                 $paidAmount = (float) $invoice->paid_amount + (float) $payment->amount;
@@ -85,9 +89,12 @@ class CooperativePaymentService
                     'cooperative_member_id' => $payment->cooperative_member_id,
                     'source_type' => CooperativePayment::class,
                     'source_id' => $payment->id,
+                    'cooperative_contribution_type_id' => $invoice?->cooperative_contribution_type_id,
+                    'ledger_scope' => 'SAVINGS',
+                    'category_snapshot' => $invoice?->contributionType?->category,
                     'debit' => 0,
                     'credit' => $payment->amount,
-                    'period' => $payment->invoice?->period,
+                    'period' => $invoice?->period,
                     'description' => 'Pembayaran iuran/simpanan koperasi',
                     'posted_at' => $payment->paid_at,
                 ],
@@ -121,6 +128,56 @@ class CooperativePaymentService
             $payment->logApproval('APPROVED', 'RECONCILED', $user, "Referensi: {$reference}");
 
             return $payment->refresh();
+        });
+    }
+
+    public function voidDuesInvoicePayments(CooperativeDuesInvoice $invoice, User $user): int
+    {
+        return DB::transaction(function () use ($invoice, $user): int {
+            $invoice = CooperativeDuesInvoice::query()
+                ->lockForUpdate()
+                ->with(['payments.receipt', 'payments.ledgerEntries'])
+                ->findOrFail($invoice->id);
+
+            $this->periodLockService->assertUnlocked($invoice->period);
+
+            $payments = $invoice->payments->filter(
+                fn (CooperativePayment $payment): bool => $payment->status === 'APPROVED' && $payment->reconciled_at === null,
+            );
+
+            if ($payments->isEmpty()) {
+                return 0;
+            }
+
+            foreach ($payments as $payment) {
+                foreach ($payment->ledgerEntries as $entry) {
+                    $entry->delete();
+                }
+
+                if ($payment->receipt) {
+                    if ($payment->receipt->pdf_path) {
+                        Storage::disk('local')->delete($payment->receipt->pdf_path);
+                    }
+
+                    $payment->receipt->delete();
+                }
+
+                $payment->forceFill([
+                    'status' => 'VOID',
+                    'notes' => trim((string) $payment->notes."\nDibatalkan oleh System Admin karena koreksi input pembayaran."),
+                    'receipt_no' => null,
+                    'receipt_issued_at' => null,
+                ])->save();
+
+                $payment->logApproval('APPROVED', 'VOID', $user, 'Koreksi pembayaran iuran: status tagihan dikembalikan menjadi belum bayar.');
+            }
+
+            $invoice->forceFill([
+                'paid_amount' => 0,
+                'status' => 'UNPAID',
+            ])->save();
+
+            return $payments->count();
         });
     }
 }

@@ -14,9 +14,12 @@ class CooperativeLedgerEntry extends Model
     protected $fillable = [
         'cooperative_member_id',
         'cooperative_payment_id',
+        'cooperative_contribution_type_id',
         'source_type',
         'source_id',
         'entry_type',
+        'ledger_scope',
+        'category_snapshot',
         'debit',
         'credit',
         'period',
@@ -41,6 +44,11 @@ class CooperativeLedgerEntry extends Model
     public function payment(): BelongsTo
     {
         return $this->belongsTo(CooperativePayment::class, 'cooperative_payment_id');
+    }
+
+    public function contributionType(): BelongsTo
+    {
+        return $this->belongsTo(CooperativeContributionType::class, 'cooperative_contribution_type_id');
     }
 
     public function source(): MorphTo

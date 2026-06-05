@@ -22,6 +22,8 @@ class CooperativeLedgerEntryFactory extends Factory
             'source_type' => null,
             'source_id' => null,
             'entry_type' => fake()->randomElement(['SAVINGS_DEPOSIT', 'LOAN_PAYMENT', 'LOAN_DISBURSEMENT']),
+            'ledger_scope' => 'SAVINGS',
+            'category_snapshot' => null,
             'debit' => 0,
             'credit' => fake()->randomFloat(2, 50000, 500000),
             'period' => now()->format('Y-m'),

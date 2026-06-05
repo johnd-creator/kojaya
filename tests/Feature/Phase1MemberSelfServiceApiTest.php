@@ -56,6 +56,9 @@ class Phase1MemberSelfServiceApiTest extends TestCase
         CooperativeLedgerEntry::factory()->create([
             'cooperative_member_id' => $member->id,
             'entry_type' => 'SAVINGS_DEPOSIT',
+            'cooperative_contribution_type_id' => $type->id,
+            'ledger_scope' => 'SAVINGS',
+            'category_snapshot' => 'WAJIB',
             'credit' => 250000,
             'debit' => 0,
             'posted_at' => now()->subDay()->toDateString(),
@@ -63,6 +66,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
         CooperativeLedgerEntry::factory()->create([
             'cooperative_member_id' => $member->id,
             'entry_type' => 'LOAN_DISBURSEMENT',
+            'ledger_scope' => 'LOAN',
             'credit' => 0,
             'debit' => 50000,
             'posted_at' => now()->toDateString(),
@@ -81,13 +85,15 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
         $this->getJson('/api/v1/member/savings/summary')
             ->assertOk()
-            ->assertJsonPath('data.total_balance', 200000)
+            ->assertJsonPath('data.total_balance', 250000)
+            ->assertJsonPath('data.by_category.WAJIB', 250000)
             ->assertJsonPath('data.pending_invoices', 1);
 
         $this->getJson('/api/v1/member/savings/ledger')
             ->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.running_balance', 200000);
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.category', 'WAJIB')
+            ->assertJsonPath('data.0.balance_delta', 250000);
 
         $this->getJson('/api/v1/member/dues/invoices')
             ->assertOk()
@@ -166,6 +172,64 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
         $this->getJson('/api/v1/member/loans/'.$otherLoan->id)
             ->assertForbidden();
+    }
+
+    public function test_member_loan_application_is_idempotent_with_matching_key(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $loanType = LoanType::factory()->create(['is_active' => true]);
+        $payload = [
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 1000000,
+            'term_months' => 6,
+            'first_due_date' => now()->addMonth()->toDateString(),
+            'purpose' => 'Modal usaha',
+        ];
+
+        Sanctum::actingAs($user, ['member:read', 'member:write']);
+
+        $firstLoanId = $this->postJson('/api/v1/member/loans', $payload, [
+            'Idempotency-Key' => 'loan-apply-key-001',
+        ])->assertCreated()
+            ->json('data.id');
+
+        $this->postJson('/api/v1/member/loans', $payload, [
+            'Idempotency-Key' => 'loan-apply-key-001',
+        ])->assertCreated()
+            ->assertHeader('X-Idempotency-Replayed', 'true')
+            ->assertJsonPath('data.id', $firstLoanId);
+
+        $this->assertSame(1, Loan::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('loan_type_id', $loanType->id)
+            ->count());
+    }
+
+    public function test_idempotency_key_rejects_different_payload_reuse(): void
+    {
+        [$user] = $this->memberUser();
+        $loanType = LoanType::factory()->create(['is_active' => true]);
+
+        Sanctum::actingAs($user, ['member:read', 'member:write']);
+
+        $this->postJson('/api/v1/member/loans', [
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 1000000,
+            'term_months' => 6,
+            'first_due_date' => now()->addMonth()->toDateString(),
+        ], [
+            'Idempotency-Key' => 'loan-apply-key-002',
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/member/loans', [
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 2000000,
+            'term_months' => 6,
+            'first_due_date' => now()->addMonth()->toDateString(),
+        ], [
+            'Idempotency-Key' => 'loan-apply-key-002',
+        ])->assertConflict()
+            ->assertJsonPath('error_code', 'CONFLICT');
     }
 
     public function test_member_shu_notifications_and_support_ticket_endpoints(): void

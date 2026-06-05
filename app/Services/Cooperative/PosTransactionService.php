@@ -124,6 +124,7 @@ class PosTransactionService
                         'source_type' => PosTransaction::class,
                         'source_id' => $transaction->id,
                         'entry_type' => 'POS_MEMBER_CREDIT',
+                        'ledger_scope' => 'POS',
                         'debit' => $total,
                         'credit' => 0,
                         'description' => "Kredit belanja POS {$transaction->transaction_no}",

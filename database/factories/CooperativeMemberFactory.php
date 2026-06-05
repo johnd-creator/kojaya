@@ -25,6 +25,9 @@ class CooperativeMemberFactory extends Factory
             'organization_id' => $organization,
             'employee_id' => Employee::factory()->state(['organization_id' => $organization]),
             'user_id' => User::factory()->state(['organization_id' => $organization]),
+            'no_anggota' => fake()->unique()->numerify('###'),
+            'tanggal_aktif' => now()->subMonths(fake()->numberBetween(1, 24))->toDateString(),
+            'nama_anggota' => fake()->name(),
             'member_no' => fake()->unique()->numerify('MBR-######'),
             'name' => fake()->name(),
             'email' => fake()->safeEmail(),
@@ -34,6 +37,13 @@ class CooperativeMemberFactory extends Factory
             'joined_at' => now()->subMonths(fake()->numberBetween(1, 24))->toDateString(),
             'resigned_at' => null,
             'status' => fake()->randomElement(['PENDING', 'ACTIVE']),
+            'npwp' => fake()->optional()->numerify('##.###.###.#-###.###'),
+            'no_telp' => fake()->phoneNumber(),
+            'jenis_anggota' => fake()->randomElement(['AB', 'ALB']),
+            'jenis_kelamin' => fake()->randomElement(['L', 'P']),
+            'kategori' => fake()->randomElement(['IP', 'CDB', 'KOP']),
+            'autodebet' => fake()->randomElement(['BNI', 'BRI', 'MANUAL']),
+            'no_rekening' => fake()->optional()->numerify('##########'),
             'notes' => fake()->optional()->sentence(),
         ];
     }

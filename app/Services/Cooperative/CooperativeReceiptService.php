@@ -50,10 +50,13 @@ class CooperativeReceiptService
     private function nextReceiptNo(string $period): string
     {
         $prefix = 'RC-'.str_replace('-', '', $period).'-';
-        $sequence = CooperativeReceipt::query()
+        $last = CooperativeReceipt::query()
             ->where('receipt_no', 'like', $prefix.'%')
+            ->orderByDesc('receipt_no')
             ->lockForUpdate()
-            ->count() + 1;
+            ->first();
+
+        $sequence = $last ? ((int) substr($last->receipt_no, -6)) + 1 : 1;
 
         return sprintf('%s%06d', $prefix, $sequence);
     }

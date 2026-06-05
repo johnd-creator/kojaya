@@ -243,15 +243,15 @@ temp/
 # ==========================================
 
 # Documentation (internal)
-rencana-pengembangan-sikopin.html
+/rencana-pengembangan-sikopin.html
 *.md.bak
 /docs/internal
 
 # Local scratch/report artifacts
-grep-count.txt
-s15-*.txt
-harga.md
-presentasi.html
+/grep-count.txt
+/s15-*.txt
+/harga.md
+/presentasi.html
 artifacts/
 
 # Claude Code memory (optional, contains project notes)

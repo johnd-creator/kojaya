@@ -559,6 +559,81 @@ Add scheduled Laravel commands for operational retention and database backups, i
 
 ---
 
+## 🎯 ADR-018: Payroll Generation Boundary and Payroll Status Enums
+
+**Status:** ✅ Accepted
+**Date:** June 3, 2026
+**Deciders:** Engineering
+
+### Context
+M3 P0 review found payroll generation orchestration living directly in `PayrollController::generate`, plus repeated payroll status strings across controller/model/service paths. Payroll generation is financial domain behavior and needs stronger transactional and testing boundaries.
+
+### Decision
+Move regular payroll generation into `PayrollGenerationService`, keep controller responsibilities limited to HTTP validation/redirects, wrap generation in a database transaction, and use payroll-domain enums for touched status values.
+
+### Consequences
+
+**Positive:**
+- Payroll generation is easier to test independently from Inertia routing.
+- Duplicate generation for the same employee and period remains idempotent.
+- Payroll status values have a typed source of truth in `PayrollStatus` and `PayrollApprovalStatus`.
+- Future payroll generation variants can reuse the service boundary.
+
+**Trade-off:**
+- Existing model status casts remain string-based for compatibility, so enum adoption is incremental rather than complete.
+
+---
+
+## 🎯 ADR-019: Idempotency Keys and API Timing Headers
+
+**Status:** ✅ Accepted
+**Date:** June 3, 2026
+**Deciders:** Engineering
+
+### Context
+Mobile clients can retry financial write requests during unstable connections. Without idempotency, repeated loan applications, payment proof uploads, POS transactions, or payment charges can create duplicate records. Architecture targets also cite p95 latency, but API responses did not expose request duration.
+
+### Decision
+Selected financial write API routes use an `Idempotency-Key` header through `EnsureIdempotentWrite`. Matching repeat requests replay the original JSON response, while the same key with a different payload returns `409 CONFLICT`. API responses also include `X-Response-Time-Ms` and log timing metadata with request id, method, route, status, and duration.
+
+### Consequences
+
+**Positive:**
+- Mobile retries can be made safely for covered financial write operations.
+- Duplicate writes are prevented without changing existing controller/service contracts.
+- API latency can be collected from headers/logs and aligned with the p95 target.
+
+**Trade-off:**
+- Idempotency state currently uses cache storage with a 24-hour retention window, so production cache persistence affects replay availability.
+
+---
+
+## 🎯 ADR-020: Tax Rules as Data and P2 Smoke Coverage
+
+**Status:** ✅ Accepted
+**Date:** June 3, 2026
+**Deciders:** Engineering
+
+### Context
+M3 P2 review noted that PPh21 parameters should not remain permanent code constants because PTKP values, progressive layers, effective periods, and regulation references can change. P2 also called for early static analysis and smoke coverage, but PHPStan/Larastan and browser E2E runners are not installed in the project dependencies.
+
+### Decision
+Store PPh21 rule parameters in `tax_rules` with effective date windows and seed the current default rule. `Pph21TerService` resolves the active rule for the requested payroll period and falls back to the default rule if the table is not available yet. Add `phpstan.neon` as the initial static analysis config, while keeping dependency installation pending explicit approval. Use PHPUnit smoke coverage for the member loan API to cooperative admin review path until a browser E2E runner is approved.
+
+### Consequences
+
+**Positive:**
+- Payroll tax calculation can adapt to regulation changes through data and seed updates.
+- Payroll calculation records expose the tax rule code/reference used by the service.
+- P2 smoke coverage protects a high-value mobile-to-admin cooperative flow without adding dependencies.
+- Static analysis has a baseline config ready for Larastan/PHPStan adoption.
+
+**Trade-off:**
+- Static analysis cannot run in CI until PHPStan/Larastan is added to `require-dev`.
+- Browser-level E2E remains pending because no browser test runner is installed.
+
+---
+
 ## 🔮 Future Decisions (Pending)
 
 ### ADR-011: Payment Gateway Provider

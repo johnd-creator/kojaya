@@ -61,7 +61,7 @@ class CooperativeSeeder extends Seeder
 
         $pokok = CooperativeContributionType::query()->updateOrCreate(
             ['code' => 'POKOK'],
-            ['name' => 'Simpanan Pokok', 'category' => 'POKOK', 'default_amount' => 150000, 'frequency' => 'ONCE', 'is_active' => true],
+            ['name' => 'Simpanan Pokok', 'category' => 'POKOK', 'default_amount' => 200000, 'frequency' => 'ONCE', 'is_active' => true],
         );
         $wajib = CooperativeContributionType::query()->updateOrCreate(
             ['code' => 'WAJIB'],
@@ -71,8 +71,23 @@ class CooperativeSeeder extends Seeder
             ['code' => 'SUKARELA'],
             ['name' => 'Simpanan Sukarela', 'category' => 'SUKARELA', 'default_amount' => 0, 'frequency' => 'ADHOC', 'is_active' => true],
         );
+        CooperativeContributionType::query()->updateOrCreate(
+            ['code' => 'KHUSUS'],
+            ['name' => 'Simpanan Khusus', 'category' => 'KHUSUS', 'default_amount' => 0, 'frequency' => 'ADHOC', 'is_active' => true],
+        );
 
         $pengurus = User::query()->where('email', 'admin@erp.com')->first();
+        $adminKop = User::query()->updateOrCreate(
+            ['email' => 'admin.kop@koperasijayabersama.id'],
+            [
+                'name' => 'Admin Koperasi',
+                'password' => 'password',
+                'organization_id' => $headOffice->id,
+            ],
+        );
+        $adminKop->forceFill(['email_verified_at' => now()])->save();
+        $adminKop->syncRoles(['Admin Koperasi']);
+
         $kasir = User::query()->updateOrCreate(
             ['email' => 'kasir@koperasijayabersama.id'],
             [

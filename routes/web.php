@@ -174,50 +174,101 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Cooperative ERP
     Route::prefix('cooperative')->name('cooperative.')->group(function () {
-        Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
-        Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
-        Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');
-        Route::get('dues', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'index'])->name('dues.index');
-        Route::post('dues/generate', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'generate'])->name('dues.generate');
-        Route::post('dues/mark-paid', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'markPaid'])->name('dues.mark-paid');
-        Route::get('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'index'])->name('payments.index');
-        Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
-        Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
-        Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])->name('ledger.index');
-        Route::get('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'index'])->name('loan-types.index');
-        Route::post('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'store'])->name('loan-types.store');
-        Route::put('loan-types/{loan_type}', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'update'])->name('loan-types.update');
-        Route::delete('loan-types/{loan_type}', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'destroy'])->name('loan-types.destroy');
-        Route::get('loans/calculator', [\App\Http\Controllers\Cooperative\LoanController::class, 'calculator'])->name('loans.calculator');
-        Route::get('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'index'])->name('loans.index');
-        Route::get('loans/create', [\App\Http\Controllers\Cooperative\LoanController::class, 'create'])->name('loans.create');
-        Route::post('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'store'])->name('loans.store');
-        Route::get('loans/{loan}', [\App\Http\Controllers\Cooperative\LoanController::class, 'show'])->name('loans.show');
-        Route::post('loans/{loan}/approve', [\App\Http\Controllers\Cooperative\LoanController::class, 'approve'])->name('loans.approve');
-        Route::post('loans/{loan}/reject', [\App\Http\Controllers\Cooperative\LoanController::class, 'reject'])->name('loans.reject');
-        Route::post('loans/{loan}/disburse', [\App\Http\Controllers\Cooperative\LoanController::class, 'disburse'])->name('loans.disburse');
-        Route::post('loans/{loan}/payments', [\App\Http\Controllers\Cooperative\LoanController::class, 'pay'])->name('loans.pay');
-        Route::get('points', [\App\Http\Controllers\Cooperative\PointController::class, 'index'])->name('points.index');
-        Route::get('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'index'])->name('rewards.index');
-        Route::post('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'store'])->name('rewards.store');
-        Route::put('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'update'])->name('rewards.update');
-        Route::delete('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'destroy'])->name('rewards.destroy');
-        Route::get('redemptions', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'index'])->name('redemptions.index');
-        Route::get('redemptions/{redemption}', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'show'])->name('redemptions.show');
-        Route::put('redemptions/{redemption}/status', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'updateStatus'])->name('redemptions.update-status');
-        Route::get('shu', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'index'])->name('shu.index');
-        Route::post('shu/close', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'close'])->name('shu.close');
-        Route::post('shu/{period}/request-revision', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'requestRevision'])->name('shu.request-revision');
-        Route::get('pos', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'index'])->name('pos.index');
-        Route::get('pos/reports', [\App\Http\Controllers\Cooperative\PosSalesReportController::class, 'index'])->name('pos.reports.index');
-        Route::get('pos/shu', [\App\Http\Controllers\Cooperative\PosAnnualShuController::class, 'index'])->name('pos.shu.index');
-        Route::post('pos/transactions', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'store'])->name('pos.transactions.store');
-        Route::get('pos/transactions', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'index'])->name('pos.transactions.index');
-        Route::get('pos/transactions/{transaction}', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'show'])->name('pos.transactions.show');
-        Route::resource('pos-categories', \App\Http\Controllers\Cooperative\PosCategoryController::class)->only(['index', 'store', 'update', 'destroy'])->parameters(['pos-categories' => 'category']);
-        Route::resource('pos-products', \App\Http\Controllers\Cooperative\PosProductController::class)->only(['index', 'store', 'show', 'update', 'destroy'])->parameters(['pos-products' => 'product']);
-        Route::post('pos-products/{product}/adjust-stock', [\App\Http\Controllers\Cooperative\PosProductController::class, 'adjustStock'])->name('pos-products.adjust-stock');
-        Route::get('reports', [\App\Http\Controllers\Cooperative\CooperativeReportController::class, 'index'])->name('reports.index');
+        Route::middleware('can:view_cooperative_member')->group(function () {
+            Route::get('members/export', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'export'])->name('members.export');
+            Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
+            Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
+            Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');
+        });
+
+        Route::middleware('can:manage_cooperative_dues')->group(function () {
+            Route::get('dues', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'index'])->name('dues.index');
+            Route::post('dues/generate', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'generate'])->name('dues.generate');
+            Route::post('dues/mark-paid', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'markPaid'])->name('dues.mark-paid');
+            Route::post('dues/{invoice}/mark-unpaid', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'markUnpaid'])->name('dues.mark-unpaid');
+        });
+
+        Route::middleware('can:manage_cooperative_payment')->group(function () {
+            Route::get('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'index'])->name('payments.index');
+            Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
+            Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
+        });
+
+        Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])
+            ->middleware('can:view_cooperative_ledger')
+            ->name('ledger.index');
+
+        Route::middleware('can:manage_cooperative_loan_types')->group(function () {
+            Route::get('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'index'])->name('loan-types.index');
+            Route::post('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'store'])->name('loan-types.store');
+            Route::put('loan-types/{loan_type}', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'update'])->name('loan-types.update');
+            Route::delete('loan-types/{loan_type}', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'destroy'])->name('loan-types.destroy');
+        });
+
+        Route::middleware('can:view_cooperative_loan')->group(function () {
+            Route::get('loans/calculator', [\App\Http\Controllers\Cooperative\LoanController::class, 'calculator'])->name('loans.calculator');
+            Route::get('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'index'])->name('loans.index');
+            Route::get('loans/create', [\App\Http\Controllers\Cooperative\LoanController::class, 'create'])->name('loans.create');
+            Route::post('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'store'])->name('loans.store');
+            Route::get('loans/{loan}', [\App\Http\Controllers\Cooperative\LoanController::class, 'show'])->name('loans.show');
+            Route::post('loans/{loan}/approve', [\App\Http\Controllers\Cooperative\LoanController::class, 'approve'])->name('loans.approve');
+            Route::post('loans/{loan}/reject', [\App\Http\Controllers\Cooperative\LoanController::class, 'reject'])->name('loans.reject');
+            Route::post('loans/{loan}/disburse', [\App\Http\Controllers\Cooperative\LoanController::class, 'disburse'])->name('loans.disburse');
+            Route::post('loans/{loan}/payments', [\App\Http\Controllers\Cooperative\LoanController::class, 'pay'])->name('loans.pay');
+        });
+
+        Route::get('points', [\App\Http\Controllers\Cooperative\PointController::class, 'index'])
+            ->middleware('can:manage_cooperative_points')
+            ->name('points.index');
+
+        Route::middleware('can:manage_cooperative_rewards')->group(function () {
+            Route::get('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'index'])->name('rewards.index');
+            Route::post('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'store'])->name('rewards.store');
+            Route::put('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'update'])->name('rewards.update');
+            Route::delete('rewards/{reward}', [\App\Http\Controllers\Cooperative\RewardController::class, 'destroy'])->name('rewards.destroy');
+        });
+
+        Route::middleware('can:manage_cooperative_redemption')->group(function () {
+            Route::get('redemptions', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'index'])->name('redemptions.index');
+            Route::get('redemptions/{redemption}', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'show'])->name('redemptions.show');
+            Route::put('redemptions/{redemption}/status', [\App\Http\Controllers\Cooperative\RewardRedemptionController::class, 'updateStatus'])->name('redemptions.update-status');
+        });
+
+        Route::middleware('can:manage_cooperative_shu')->group(function () {
+            Route::get('shu', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'index'])->name('shu.index');
+            Route::post('shu/close', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'close'])->name('shu.close');
+            Route::post('shu/{period}/request-revision', [\App\Http\Controllers\Cooperative\AnnualShuController::class, 'requestRevision'])->name('shu.request-revision');
+        });
+
+        Route::middleware('can:access_cooperative_pos')->group(function () {
+            Route::get('pos', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'index'])->name('pos.index');
+            Route::post('pos/transactions', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'store'])->name('pos.transactions.store');
+            Route::get('pos/transactions', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'index'])->name('pos.transactions.index');
+            Route::get('pos/transactions/{transaction}', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'show'])->name('pos.transactions.show');
+        });
+
+        Route::get('pos/reports', [\App\Http\Controllers\Cooperative\PosSalesReportController::class, 'index'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.reports.index');
+
+        Route::get('pos/shu', [\App\Http\Controllers\Cooperative\PosAnnualShuController::class, 'index'])
+            ->middleware('can:manage_pos_shu')
+            ->name('pos.shu.index');
+
+        Route::resource('pos-categories', \App\Http\Controllers\Cooperative\PosCategoryController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->middleware('can:manage_pos_categories')
+            ->parameters(['pos-categories' => 'category']);
+        Route::resource('pos-products', \App\Http\Controllers\Cooperative\PosProductController::class)
+            ->only(['index', 'store', 'show', 'update', 'destroy'])
+            ->middleware('can:manage_pos_products')
+            ->parameters(['pos-products' => 'product']);
+        Route::post('pos-products/{product}/adjust-stock', [\App\Http\Controllers\Cooperative\PosProductController::class, 'adjustStock'])
+            ->middleware('can:manage_pos_products')
+            ->name('pos-products.adjust-stock');
+        Route::get('reports', [\App\Http\Controllers\Cooperative\CooperativeReportController::class, 'index'])
+            ->middleware('can:view_cooperative_report')
+            ->name('reports.index');
         Route::get('operator/dashboard', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'dashboard'])->name('operator.dashboard');
         Route::get('operator/approval-inbox', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'approvalInbox'])->name('operator.approval-inbox');
         Route::get('operator/exceptions', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'exceptions'])->name('operator.exceptions');

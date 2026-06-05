@@ -15,16 +15,19 @@ class PayrollCalculatorService
 
     public function calculate(Employee $employee, float $basicSalary, float $allowance = 0, ?string $period = null): array
     {
-        $pph21Result = $this->pph21Service->calculate($employee, $basicSalary, $allowance);
+        $pph21Result = $this->pph21Service->calculate($employee, $basicSalary, $allowance, $period);
         $bpjsResult = $this->bpjsService->calculate($basicSalary);
 
         return [
             'gross_income' => $pph21Result['monthly_gross'],
             'pph21' => [
+                'tax_rule_code' => $pph21Result['tax_rule_code'],
+                'tax_rule_reference' => $pph21Result['tax_rule_reference'],
                 'monthly_amount' => $pph21Result['monthly_tax'],
                 'annual_amount' => $pph21Result['annual_tax'],
                 'breakdown' => $pph21Result['breakdown'],
                 'ptkp_status' => $pph21Result['ptkp_status'],
+                'ptkp_amount' => $pph21Result['ptkp_amount'],
                 'has_npwp' => $pph21Result['has_npwp'],
             ],
             'bpjs' => [

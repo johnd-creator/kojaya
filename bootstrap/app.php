@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Middleware\CorrelationIdMiddleware;
+use App\Http\Middleware\EnsureIdempotentWrite;
 use App\Http\Middleware\EnsureIsMember;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogActivity;
+use App\Http\Middleware\MeasureResponseTime;
 use App\Http\Middleware\NormalizeApiResponse;
 use App\Support\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
@@ -33,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(append: [
             CorrelationIdMiddleware::class,
+            MeasureResponseTime::class,
         ]);
 
         $middleware->web(append: [
@@ -52,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'abilities' => CheckAbilities::class,
             'ability' => CheckForAnyAbility::class,
+            'idempotent' => EnsureIdempotentWrite::class,
             'member' => EnsureIsMember::class,
         ]);
     })

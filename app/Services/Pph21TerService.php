@@ -3,58 +3,36 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Models\TaxRule;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class Pph21TerService
 {
-    private const PTKP_TK0 = 54_000_000;
-
-    private const PTKP_TK1 = 58_500_000;
-
-    private const PTKP_TK2 = 63_000_000;
-
-    private const PTKP_TK3 = 67_500_000;
-
-    private const PTKP_K0 = 58_500_000;
-
-    private const PTKP_K1 = 63_000_000;
-
-    private const PTKP_K2 = 67_500_000;
-
-    private const PTKP_K3 = 72_000_000;
-
-    private const BIAYA_JABATAN_MAX = 6_000_000;
-
-    private const BIAYA_JABATAN_RATE = 0.05;
-
-    private const TARIF_LAYER_1 = ['max' => 60_000_000, 'rate' => 0.05];
-
-    private const TARIF_LAYER_2 = ['max' => 250_000_000, 'rate' => 0.15];
-
-    private const TARIF_LAYER_3 = ['max' => 500_000_000, 'rate' => 0.25];
-
-    private const TARIF_LAYER_4 = ['max' => 5_000_000_000, 'rate' => 0.30];
-
-    private const TARIF_LAYER_5 = ['max' => PHP_INT_MAX, 'rate' => 0.35];
-
-    public function calculate(Employee $employee, float $monthlyBasicSalary, float $monthlyAllowance = 0): array
+    public function calculate(Employee $employee, float $monthlyBasicSalary, float $monthlyAllowance = 0, ?string $period = null): array
     {
+        $rule = $this->resolveRule($period);
         $monthlyGross = $monthlyBasicSalary + $monthlyAllowance;
         $annualGross = $monthlyGross * 12;
 
-        $biayaJabatan = $this->calculateBiayaJabatan($annualGross);
+        $biayaJabatan = $this->calculateBiayaJabatan($annualGross, $rule);
         $netto = $annualGross - $biayaJabatan;
 
-        $ptkp = $this->getPtkpAmount($employee->phtkp_status ?? 'TK/0');
+        $ptkp = $this->getPtkpAmount($employee->phtkp_status ?? 'TK/0', $rule);
         $pkp = max(0, $netto - $ptkp);
 
-        $annualTax = $this->calculateProgressiveTax($pkp);
+        $annualTax = $this->calculateProgressiveTax($pkp, $rule);
         $monthlyTax = $annualTax / 12;
+        $hasNpwp = $employee->is_npwp_available || ! empty($employee->npwp_number);
 
-        if (! $employee->is_npwp_available && ! $employee->npwp_number) {
-            $monthlyTax *= 1.20;
+        if (! $hasNpwp) {
+            $monthlyTax *= (1 + (float) $rule['no_npwp_surcharge_rate']);
         }
 
         return [
+            'tax_rule_code' => $rule['code'],
+            'tax_rule_reference' => $rule['regulation_reference'],
             'monthly_gross' => $monthlyGross,
             'annual_gross' => $annualGross,
             'biaya_jabatan' => $biayaJabatan,
@@ -64,35 +42,92 @@ class Pph21TerService
             'pkp' => $pkp,
             'annual_tax' => $annualTax,
             'monthly_tax' => round($monthlyTax, 2),
-            'has_npwp' => $employee->is_npwp_available || ! empty($employee->npwp_number),
-            'no_npwp_surcharge' => (! $employee->is_npwp_available && ! $employee->npwp_number) ? 20 : 0,
-            'breakdown' => $this->getTaxBreakdown($pkp),
+            'has_npwp' => $hasNpwp,
+            'no_npwp_surcharge' => $hasNpwp ? 0 : (float) $rule['no_npwp_surcharge_rate'] * 100,
+            'breakdown' => $this->getTaxBreakdown($pkp, $rule),
         ];
     }
 
-    private function calculateBiayaJabatan(float $annualGross): float
+    /**
+     * @return array{
+     *     code: string,
+     *     regulation_reference: string|null,
+     *     ptkp_amounts: array<string, int|float>,
+     *     progressive_layers: list<array{name: string, max: int|float|null, rate: float}>,
+     *     biaya_jabatan_rate: float,
+     *     biaya_jabatan_max: int|float,
+     *     no_npwp_surcharge_rate: float
+     * }
+     */
+    private function resolveRule(?string $period): array
     {
-        $biayaJabatan = $annualGross * self::BIAYA_JABATAN_RATE;
+        $default = TaxRule::defaultPph21Ter2024();
+        $effectiveDate = $this->effectiveDate($period);
 
-        return min($biayaJabatan, self::BIAYA_JABATAN_MAX);
+        try {
+            if (! Schema::hasTable('tax_rules')) {
+                return $default;
+            }
+
+            $rule = TaxRule::query()
+                ->where('is_active', true)
+                ->whereDate('effective_from', '<=', $effectiveDate)
+                ->where(function ($query) use ($effectiveDate): void {
+                    $query
+                        ->whereNull('effective_until')
+                        ->orWhereDate('effective_until', '>=', $effectiveDate);
+                })
+                ->orderByDesc('effective_from')
+                ->first();
+
+            if ($rule instanceof TaxRule) {
+                return [
+                    ...$default,
+                    ...$rule->toArray(),
+                ];
+            }
+        } catch (Throwable) {
+            return $default;
+        }
+
+        return $default;
     }
 
-    private function getPtkpAmount(string $status): int
+    private function effectiveDate(?string $period): string
     {
-        return match ($status) {
-            'TK/0' => self::PTKP_TK0,
-            'TK/1' => self::PTKP_TK1,
-            'TK/2' => self::PTKP_TK2,
-            'TK/3' => self::PTKP_TK3,
-            'K/0' => self::PTKP_K0,
-            'K/1' => self::PTKP_K1,
-            'K/2' => self::PTKP_K2,
-            'K/3' => self::PTKP_K3,
-            default => self::PTKP_TK0,
-        };
+        if ($period === null || $period === '') {
+            return now()->toDateString();
+        }
+
+        if (preg_match('/^\d{4}-\d{2}$/', $period) === 1) {
+            return CarbonImmutable::createFromFormat('Y-m-d', $period.'-01')->toDateString();
+        }
+
+        return CarbonImmutable::parse($period)->toDateString();
     }
 
-    private function calculateProgressiveTax(float $pkp): float
+    /**
+     * @param  array{biaya_jabatan_rate: float, biaya_jabatan_max: int|float}  $rule
+     */
+    private function calculateBiayaJabatan(float $annualGross, array $rule): float
+    {
+        $biayaJabatan = $annualGross * (float) $rule['biaya_jabatan_rate'];
+
+        return min($biayaJabatan, (float) $rule['biaya_jabatan_max']);
+    }
+
+    /**
+     * @param  array{ptkp_amounts: array<string, int|float>}  $rule
+     */
+    private function getPtkpAmount(string $status, array $rule): float
+    {
+        return (float) ($rule['ptkp_amounts'][$status] ?? $rule['ptkp_amounts']['TK/0']);
+    }
+
+    /**
+     * @param  array{progressive_layers: list<array{name: string, max: int|float|null, rate: float}>}  $rule
+     */
+    private function calculateProgressiveTax(float $pkp, array $rule): float
     {
         if ($pkp <= 0) {
             return 0;
@@ -101,24 +136,27 @@ class Pph21TerService
         $tax = 0.0;
         $remainingPkp = $pkp;
 
-        $layers = [self::TARIF_LAYER_1, self::TARIF_LAYER_2, self::TARIF_LAYER_3, self::TARIF_LAYER_4, self::TARIF_LAYER_5];
         $previousMax = 0;
 
-        foreach ($layers as $layer) {
+        foreach ($rule['progressive_layers'] as $layer) {
             if ($remainingPkp <= 0) {
                 break;
             }
 
-            $taxableInLayer = min($remainingPkp, $layer['max'] - $previousMax);
-            $tax += $taxableInLayer * $layer['rate'];
+            $layerMax = $layer['max'] ?? PHP_INT_MAX;
+            $taxableInLayer = min($remainingPkp, (float) $layerMax - $previousMax);
+            $tax += $taxableInLayer * (float) $layer['rate'];
             $remainingPkp -= $taxableInLayer;
-            $previousMax = $layer['max'];
+            $previousMax = (float) $layerMax;
         }
 
         return $tax;
     }
 
-    private function getTaxBreakdown(float $pkp): array
+    /**
+     * @param  array{progressive_layers: list<array{name: string, max: int|float|null, rate: float}>}  $rule
+     */
+    private function getTaxBreakdown(float $pkp, array $rule): array
     {
         if ($pkp <= 0) {
             return [];
@@ -127,33 +165,26 @@ class Pph21TerService
         $breakdown = [];
         $remainingPkp = $pkp;
 
-        $layers = [
-            ['name' => 'Layer 1 (0-60jt)', 'max' => 60_000_000, 'rate' => 0.05],
-            ['name' => 'Layer 2 (60-250jt)', 'max' => 250_000_000, 'rate' => 0.15],
-            ['name' => 'Layer 3 (250-500jt)', 'max' => 500_000_000, 'rate' => 0.25],
-            ['name' => 'Layer 4 (500jt-5M)', 'max' => 5_000_000_000, 'rate' => 0.30],
-            ['name' => 'Layer 5 (>5M)', 'max' => PHP_INT_MAX, 'rate' => 0.35],
-        ];
-
         $previousMax = 0;
 
-        foreach ($layers as $layer) {
+        foreach ($rule['progressive_layers'] as $layer) {
             if ($remainingPkp <= 0) {
                 break;
             }
 
-            $taxableInLayer = min($remainingPkp, $layer['max'] - $previousMax);
+            $layerMax = $layer['max'] ?? PHP_INT_MAX;
+            $taxableInLayer = min($remainingPkp, (float) $layerMax - $previousMax);
             if ($taxableInLayer > 0) {
-                $taxInLayer = $taxableInLayer * $layer['rate'];
+                $taxInLayer = $taxableInLayer * (float) $layer['rate'];
                 $breakdown[] = [
                     'layer' => $layer['name'],
                     'taxable_amount' => $taxableInLayer,
-                    'rate' => $layer['rate'] * 100,
+                    'rate' => (float) $layer['rate'] * 100,
                     'tax_amount' => $taxInLayer,
                 ];
             }
             $remainingPkp -= $taxableInLayer;
-            $previousMax = $layer['max'];
+            $previousMax = (float) $layerMax;
         }
 
         return $breakdown;

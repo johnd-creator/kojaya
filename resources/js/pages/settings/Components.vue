@@ -5,8 +5,6 @@ import {
   Trash2,
   Eye,
   Download,
-  Save,
-  X,
   AlertCircle,
   CheckCircle2,
   Info,
@@ -109,9 +107,7 @@ const columns = [
   { header: "Actions", slot: "actions", align: "right" as const },
 ];
 
-const handleRowClick = (row: any) => {
-  console.log("Row clicked:", row);
-};
+const handleRowClick = (_row: any) => {};
 </script>
 
 <template>
@@ -124,10 +120,13 @@ const handleRowClick = (row: any) => {
     <SettingsLayout>
       <div class="space-y-8">
         <!-- Intro -->
-        <div>
-          <h2 class="text-2xl font-bold tracking-tight mb-2">UI Components</h2>
-          <p class="text-zinc-500 dark:text-zinc-400">
-            Reusable components for consistent application styling.
+        <div
+          class="rounded-lg border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950"
+        >
+          <h2 class="mb-2 text-2xl font-bold tracking-tight">UI Components</h2>
+          <p class="max-w-3xl text-sm text-zinc-600 dark:text-zinc-400">
+            Reusable components for consistent application styling with clear
+            contrast in light and dark mode.
           </p>
         </div>
 
@@ -140,10 +139,39 @@ const handleRowClick = (row: any) => {
             >
           </CardHeader>
           <CardContent class="space-y-6">
+            <div class="grid gap-4 lg:grid-cols-2">
+              <div
+                class="rounded-lg border border-zinc-200 bg-white p-4 text-zinc-950"
+              >
+                <div class="mb-3 text-sm font-medium text-zinc-600">
+                  Light surface
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <Button>Primary Action</Button>
+                  <Button variant="secondary">Secondary Action</Button>
+                  <Button variant="outline">Outline Action</Button>
+                </div>
+              </div>
+              <div
+                class="rounded-lg border border-zinc-700 bg-zinc-950 p-4 text-zinc-50 dark"
+              >
+                <div class="mb-3 text-sm font-medium text-zinc-400">
+                  Dark surface
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <Button>Primary Action</Button>
+                  <Button variant="secondary">Secondary Action</Button>
+                  <Button variant="outline">Outline Action</Button>
+                </div>
+              </div>
+            </div>
+
             <!-- Variants -->
             <div class="space-y-2">
               <h3 class="text-sm font-medium text-zinc-500">Variants</h3>
-              <div class="flex flex-wrap gap-2">
+              <div
+                class="flex flex-wrap gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950"
+              >
                 <Button>Default</Button>
                 <Button variant="secondary">Secondary</Button>
                 <Button variant="destructive">Destructive</Button>
@@ -156,7 +184,9 @@ const handleRowClick = (row: any) => {
             <!-- Sizes -->
             <div class="space-y-2">
               <h3 class="text-sm font-medium text-zinc-500">Sizes</h3>
-              <div class="flex flex-wrap items-center gap-2">
+              <div
+                class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950"
+              >
                 <Button size="lg">Large</Button>
                 <Button>Default</Button>
                 <Button size="sm">Small</Button>
@@ -167,7 +197,9 @@ const handleRowClick = (row: any) => {
             <!-- With Icons -->
             <div class="space-y-2">
               <h3 class="text-sm font-medium text-zinc-500">With Icons</h3>
-              <div class="flex flex-wrap gap-2">
+              <div
+                class="flex flex-wrap gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950"
+              >
                 <Button>
                   <Mail class="mr-2 h-4 w-4" /> Login with Email
                 </Button>
@@ -181,7 +213,9 @@ const handleRowClick = (row: any) => {
             <!-- Action Buttons (Icon Only) -->
             <div class="space-y-2">
               <h3 class="text-sm font-medium text-zinc-500">Action Buttons</h3>
-              <div class="flex flex-wrap gap-2">
+              <div
+                class="flex flex-wrap gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950"
+              >
                 <Button variant="outline" size="icon" title="Edit">
                   <Edit class="h-4 w-4" />
                 </Button>
@@ -253,7 +287,7 @@ const handleRowClick = (row: any) => {
           <CardContent>
             <Dialog>
               <DialogTrigger as-child>
-                <Button variant="outline">Open Dialog</Button>
+                <Button>Open Dialog</Button>
               </DialogTrigger>
               <DialogContent class="sm:max-w-[425px]">
                 <DialogHeader>
@@ -315,7 +349,7 @@ const handleRowClick = (row: any) => {
             >
           </CardHeader>
           <CardContent
-            class="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800"
+            class="rounded-lg border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <PageHeader
               title="Example Page"

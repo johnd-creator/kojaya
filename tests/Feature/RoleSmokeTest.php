@@ -91,6 +91,7 @@ class RoleSmokeTest extends TestCase
                     '/cooperative/points',
                     '/cooperative/rewards',
                     '/cooperative/redemptions',
+                    '/cooperative/shu',
                     '/cooperative/pos',
                     '/cooperative/pos/transactions',
                     '/cooperative/pos/reports',
@@ -98,7 +99,6 @@ class RoleSmokeTest extends TestCase
                     '/cooperative/pos-categories',
                 ],
                 [
-                    '/cooperative/shu',
                     '/cooperative/pos/shu',
                     '/cooperative/reports',
                     '/cooperative/operator/dashboard',
@@ -276,12 +276,12 @@ class RoleSmokeTest extends TestCase
         $this->assertTrue($permissions->contains('manage_cooperative_points'));
         $this->assertTrue($permissions->contains('manage_cooperative_rewards'));
         $this->assertTrue($permissions->contains('manage_cooperative_redemption'));
+        $this->assertTrue($permissions->contains('manage_cooperative_shu'));
         $this->assertTrue($permissions->contains('access_cooperative_pos'));
         $this->assertTrue($permissions->contains('manage_pos_products'));
         $this->assertTrue($permissions->contains('manage_pos_categories'));
 
         $this->assertFalse($permissions->contains('view_cooperative_report'));
-        $this->assertFalse($permissions->contains('manage_cooperative_shu'));
         $this->assertFalse($permissions->contains('manage_pos_shu'));
         $this->assertFalse($permissions->contains('manage_cooperative_settings'));
         $this->assertFalse($permissions->contains('view_reports'));
@@ -297,7 +297,7 @@ class RoleSmokeTest extends TestCase
 
         $permissionNames = $adminKoperasi->permissions->pluck('name');
 
-        $this->assertCount(16, $permissionNames);
+        $this->assertCount(17, $permissionNames);
 
         foreach ([
             'view_cooperative_member',
@@ -310,6 +310,7 @@ class RoleSmokeTest extends TestCase
             'manage_cooperative_points',
             'manage_cooperative_rewards',
             'manage_cooperative_redemption',
+            'manage_cooperative_shu',
             'manage_cooperative_loan_types',
             'manage_pos_categories',
             'manage_pos_products',
@@ -326,7 +327,6 @@ class RoleSmokeTest extends TestCase
         foreach ([
             'approve_cooperative_loan',
             'view_cooperative_report',
-            'manage_cooperative_shu',
             'manage_pos_shu',
             'view_cooperative_all',
             'manage_cooperative_settings',
@@ -350,7 +350,7 @@ class RoleSmokeTest extends TestCase
         $this->assertTrue($adminKoperasi->can('manage_cooperative_dues'));
         $this->assertTrue($adminKoperasi->can('manage_cooperative_payment'));
         $this->assertTrue($adminKoperasi->can('view_cooperative_ledger'));
-        $this->assertFalse($adminKoperasi->can('manage_cooperative_shu'));
+        $this->assertTrue($adminKoperasi->can('manage_cooperative_shu'));
     }
 
     public function test_operator_dashboard_is_protected_for_unauthorized_roles(): void

@@ -161,6 +161,103 @@ class CooperativePaymentService
         });
     }
 
+    /**
+     * @param  array{reason: string}  $data
+     */
+    public function cancelLedgerPayment(CooperativeLedgerEntry $entry, User $user, array $data): CooperativePayment
+    {
+        return DB::transaction(function () use ($entry, $user, $data): CooperativePayment {
+            $entry = CooperativeLedgerEntry::query()
+                ->lockForUpdate()
+                ->with('payment.invoice')
+                ->findOrFail($entry->id);
+
+            $payment = $this->editablePaymentForLedgerEntry($entry);
+
+            $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
+
+            $this->adjustInvoicePaidAmount($payment, -((float) $payment->amount));
+
+            foreach ($payment->ledgerEntries()->lockForUpdate()->get() as $ledgerEntry) {
+                $ledgerEntry->delete();
+            }
+
+            $this->deleteReceipt($payment);
+
+            $reason = trim($data['reason']);
+            $payment->forceFill([
+                'status' => 'VOID',
+                'notes' => trim((string) $payment->notes."\nDibatalkan oleh {$user->name}: {$reason}"),
+                'receipt_no' => null,
+                'receipt_issued_at' => null,
+            ])->save();
+
+            $payment->logApproval('APPROVED', 'VOID', $user, $reason);
+
+            return $payment->refresh();
+        });
+    }
+
+    /**
+     * @param  array{amount: numeric, payment_method: string, paid_at: string, notes?: ?string, reason: string}  $data
+     */
+    public function reviseLedgerPayment(CooperativeLedgerEntry $entry, User $user, array $data): CooperativePayment
+    {
+        return DB::transaction(function () use ($entry, $user, $data): CooperativePayment {
+            $entry = CooperativeLedgerEntry::query()
+                ->lockForUpdate()
+                ->with(['payment.invoice', 'payment.contributionType'])
+                ->findOrFail($entry->id);
+
+            $payment = $this->editablePaymentForLedgerEntry($entry);
+            $contributionType = $payment->contributionType;
+            $newAmount = round((float) $data['amount'], 2);
+
+            if ($contributionType && in_array($contributionType->code, ['POKOK', 'WAJIB'], true)) {
+                $expectedAmount = round((float) $contributionType->default_amount, 2);
+
+                if ($newAmount !== $expectedAmount) {
+                    throw ValidationException::withMessages([
+                        'amount' => "Nominal {$contributionType->name} harus ".number_format($expectedAmount, 0, ',', '.').'.',
+                    ]);
+                }
+            }
+
+            $oldAmount = round((float) $payment->amount, 2);
+
+            $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
+            $this->periodLockService->assertUnlocked($payment->invoice?->period ?? substr($data['paid_at'], 0, 7));
+
+            $payment->forceFill([
+                'amount' => $newAmount,
+                'payment_method' => $data['payment_method'],
+                'paid_at' => $data['paid_at'],
+                'notes' => $data['notes'] ?? null,
+            ])->save();
+
+            $this->adjustInvoicePaidAmount($payment, $newAmount - $oldAmount);
+
+            $ledgerPeriod = $payment->invoice?->period ?? $payment->paid_at?->format('Y-m');
+
+            foreach ($payment->ledgerEntries()->lockForUpdate()->get() as $ledgerEntry) {
+                $ledgerEntry->forceFill([
+                    'credit' => $newAmount,
+                    'debit' => 0,
+                    'period' => $ledgerPeriod,
+                    'description' => $payment->notes ?: 'Pembayaran iuran/simpanan koperasi',
+                    'posted_at' => $payment->paid_at,
+                ])->save();
+            }
+
+            $this->deleteReceipt($payment);
+            $this->receiptService->issue($payment->refresh(), $user);
+
+            $payment->logApproval('APPROVED', 'APPROVED', $user, 'Revisi pembayaran: '.trim($data['reason']));
+
+            return $payment->refresh()->load('receipt');
+        });
+    }
+
     public function voidDuesInvoicePayments(CooperativeDuesInvoice $invoice, User $user): int
     {
         return DB::transaction(function () use ($invoice, $user): int {
@@ -253,5 +350,75 @@ class CooperativePaymentService
         }
 
         return null;
+    }
+
+    private function editablePaymentForLedgerEntry(CooperativeLedgerEntry $entry): CooperativePayment
+    {
+        if ($entry->entry_type !== 'SAVING_PAYMENT' || ! $entry->cooperative_payment_id) {
+            throw ValidationException::withMessages([
+                'ledger_entry' => 'Hanya transaksi pembayaran simpanan yang dapat dikoreksi dari ledger.',
+            ]);
+        }
+
+        $payment = CooperativePayment::query()
+            ->lockForUpdate()
+            ->with(['invoice', 'contributionType', 'receipt'])
+            ->findOrFail($entry->cooperative_payment_id);
+
+        if ($payment->status !== 'APPROVED') {
+            throw ValidationException::withMessages([
+                'ledger_entry' => 'Hanya pembayaran berstatus approved yang dapat dikoreksi.',
+            ]);
+        }
+
+        if ($payment->reconciled_at !== null) {
+            throw ValidationException::withMessages([
+                'ledger_entry' => 'Pembayaran yang sudah direkonsiliasi tidak dapat dikoreksi dari ledger.',
+            ]);
+        }
+
+        return $payment;
+    }
+
+    private function adjustInvoicePaidAmount(CooperativePayment $payment, float $delta): void
+    {
+        if (! $payment->cooperative_dues_invoice_id) {
+            return;
+        }
+
+        $invoice = CooperativeDuesInvoice::query()
+            ->lockForUpdate()
+            ->findOrFail($payment->cooperative_dues_invoice_id);
+
+        $paidAmount = max(0, round((float) $invoice->paid_amount + $delta, 2));
+
+        $invoice->forceFill([
+            'paid_amount' => $paidAmount,
+            'status' => match (true) {
+                $paidAmount <= 0 => 'UNPAID',
+                $paidAmount >= (float) $invoice->amount => 'PAID',
+                default => 'PARTIAL',
+            },
+        ])->save();
+    }
+
+    private function deleteReceipt(CooperativePayment $payment): void
+    {
+        $payment->loadMissing('receipt');
+
+        if (! $payment->receipt) {
+            return;
+        }
+
+        if ($payment->receipt->pdf_path) {
+            Storage::disk('local')->delete($payment->receipt->pdf_path);
+        }
+
+        $payment->receipt->delete();
+
+        $payment->forceFill([
+            'receipt_no' => null,
+            'receipt_issued_at' => null,
+        ])->save();
     }
 }

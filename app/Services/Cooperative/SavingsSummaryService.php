@@ -55,16 +55,20 @@ class SavingsSummaryService
             : 'SAVINGS';
 
         return CooperativeLedgerEntry::query()
-            ->with(['member', 'contributionType'])
+            ->with(['member', 'contributionType', 'payment'])
             ->when($member, fn (Builder $query) => $query->where('cooperative_member_id', $member->id))
             ->when($ledgerScope !== null && $ledgerScope !== '', fn (Builder $query) => $query->where('ledger_scope', $ledgerScope))
             ->when($filters['member_id'] ?? null, fn (Builder $query, mixed $memberId) => $query->where('cooperative_member_id', $memberId))
             ->when($filters['member_search'] ?? null, function (Builder $query, mixed $search): void {
                 $query->whereHas('member', function (Builder $memberQuery) use ($search): void {
-                    $memberQuery->where('name', 'like', "%{$search}%")
-                        ->orWhere('member_no', 'like', "%{$search}%")
-                        ->orWhere('no_anggota', 'like', "%{$search}%")
-                        ->orWhere('nama_anggota', 'like', "%{$search}%");
+                    $keyword = '%'.mb_strtolower((string) $search).'%';
+                    $columns = ['name', 'member_no', 'no_anggota', 'nama_anggota'];
+
+                    $memberQuery->whereRaw("LOWER(COALESCE({$columns[0]}, '')) LIKE ?", [$keyword]);
+
+                    foreach (array_slice($columns, 1) as $column) {
+                        $memberQuery->orWhereRaw("LOWER(COALESCE({$column}, '')) LIKE ?", [$keyword]);
+                    }
                 });
             })
             ->when($filters['entry_type'] ?? null, fn (Builder $query, mixed $entryType) => $query->where('entry_type', $entryType))

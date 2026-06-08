@@ -235,6 +235,7 @@ class RolePermissionSeeder extends Seeder
             'manage_cooperative_points',
             'manage_cooperative_rewards',
             'manage_cooperative_redemption',
+            'manage_cooperative_shu',
             'manage_cooperative_loan_types',
             'manage_pos_categories',
             'manage_pos_products',

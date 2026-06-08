@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Cooperative;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\CancelLedgerPaymentRequest;
+use App\Http\Requests\Cooperative\ReviseLedgerPaymentRequest;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeLedgerEntry;
+use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -46,7 +50,22 @@ class CooperativeLedgerController extends Controller
                 ->distinct()
                 ->orderBy('entry_type')
                 ->pluck('entry_type'),
+            'canManageLedger' => $request->user()?->hasRole('System Admin') ?? false,
         ]);
+    }
+
+    public function cancelPayment(CancelLedgerPaymentRequest $request, CooperativeLedgerEntry $entry, CooperativePaymentService $service): RedirectResponse
+    {
+        $service->cancelLedgerPayment($entry, $request->user(), $request->validated());
+
+        return back()->with('success', 'Transaksi ledger berhasil dibatalkan.');
+    }
+
+    public function revisePayment(ReviseLedgerPaymentRequest $request, CooperativeLedgerEntry $entry, CooperativePaymentService $service): RedirectResponse
+    {
+        $service->reviseLedgerPayment($entry, $request->user(), $request->validated());
+
+        return back()->with('success', 'Transaksi ledger berhasil direvisi.');
     }
 
     private function savingsContributionTypes(): Builder

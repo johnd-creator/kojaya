@@ -44,11 +44,11 @@ class CooperativePaymentController extends Controller
             $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin', 'public');
         }
 
+        $data['status'] = 'APPROVED';
+
         $payment = $service->record($data, $request->user());
 
-        if ($payment->status === 'APPROVED') {
-            $service->approve($payment, $request->user());
-        }
+        $service->approve($payment, $request->user());
 
         return back()->with('success', 'Pembayaran simpanan berhasil dicatat.');
     }

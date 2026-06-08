@@ -198,6 +198,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])
             ->middleware('can:view_cooperative_ledger')
             ->name('ledger.index');
+        Route::middleware('can:manage_cooperative_ledger')->group(function () {
+            Route::post('ledger/{entry}/cancel-payment', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'cancelPayment'])->name('ledger.cancel-payment');
+            Route::post('ledger/{entry}/revise-payment', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'revisePayment'])->name('ledger.revise-payment');
+        });
 
         Route::middleware('can:manage_cooperative_loan_types')->group(function () {
             Route::get('loan-types', [\App\Http\Controllers\Cooperative\LoanTypeController::class, 'index'])->name('loan-types.index');

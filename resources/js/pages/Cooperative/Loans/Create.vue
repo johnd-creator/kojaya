@@ -37,7 +37,7 @@ const submit = () => form.post(store().url);
       { title: 'Pengajuan Baru', href: '#' },
     ]"
   >
-    <PageContainer variant="form">
+    <PageContainer variant="form" class="max-w-none">
       <form class="grid gap-6" @submit.prevent="submit">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -51,7 +51,7 @@ const submit = () => form.post(store().url);
           </Link>
         </div>
 
-        <div class="grid gap-4 rounded-lg border bg-white p-6 dark:bg-zinc-900 md:grid-cols-2">
+        <div class="grid gap-4 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900 md:grid-cols-2">
           <label class="space-y-1">
             <span class="text-sm">Anggota</span>
             <select v-model="form.cooperative_member_id" required class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950">

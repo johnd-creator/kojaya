@@ -16,7 +16,7 @@ defineProps<{ transaction: any }>();
       { title: transaction.transaction_no, href: '#' },
     ]"
   >
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
+    <div class="flex w-full flex-col gap-6 p-6">
       <div>
         <Link :href="index().url" class="text-sm text-indigo-600">Kembali</Link>
         <h1 class="mt-2 text-3xl font-bold tracking-tight">
@@ -27,22 +27,22 @@ defineProps<{ transaction: any }>();
         </p>
       </div>
       <div class="grid gap-4 md:grid-cols-3">
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Kasir</div>
           <div class="font-medium">{{ transaction.cashier?.name || "-" }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Anggota</div>
           <div class="font-medium">{{ transaction.member?.name || "-" }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Total</div>
           <div class="font-medium">
             {{ formatCurrency(transaction.total_amount) }}
           </div>
         </div>
       </div>
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <table class="w-full text-left text-sm">
           <thead
             class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900"

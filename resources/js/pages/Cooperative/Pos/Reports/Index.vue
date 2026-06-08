@@ -35,7 +35,7 @@ const refreshReport = () => {
       { title: 'Report Penjualan', href: index().url },
     ]"
   >
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
+    <div class="flex w-full flex-col gap-6 p-6">
       <div
         class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
       >
@@ -48,7 +48,7 @@ const refreshReport = () => {
             tahun.
           </p>
         </div>
-        <div class="flex gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="flex gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <Input
             v-model.number="filter.year"
             type="number"
@@ -63,25 +63,25 @@ const refreshReport = () => {
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Transaksi</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ summary.transactions }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Omzet</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ formatCurrency(summary.revenue) }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Profit Kotor</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ formatCurrency(summary.gross_profit) }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Transaksi Anggota</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ summary.member_transactions }}
@@ -89,7 +89,7 @@ const refreshReport = () => {
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <table class="w-full text-sm">
           <thead
             class="border-b bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-950"

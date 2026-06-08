@@ -28,4 +28,9 @@ class CooperativeContributionType extends Model
     {
         return $this->hasMany(CooperativeDuesInvoice::class);
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(CooperativePayment::class);
+    }
 }

@@ -10,6 +10,31 @@
 
 ## 🎯 2026-06: M3 P0 Hardening
 
+### **June 7, 2026 - Cooperative Payment UX Alignment**
+
+**💳 Pembayaran Simpanan Admin:**
+- ✅ Reworked the cooperative payments page into a clearer savings deposit flow with explicit submit action.
+- ✅ Replaced the member dropdown with searchable member lookup while keeping operator-visible `nama + no anggota`.
+- ✅ Removed the awkward specific-invoice picker from the admin form and aligned payment type choices with the ledger savings filter (`POKOK`, `WAJIB`, `SUKARELA`).
+- ✅ Replaced reference-first input with descriptive notes plus optional image proof upload for admin payment evidence.
+- ✅ Enforced savings rules so `Simpanan Pokok` remains `200000`, `Simpanan Wajib` remains `100000` per month, and `Simpanan Sukarela` stays flexible.
+- ✅ Added direct `cooperative_contribution_type_id` support on payments, including automatic linking to the first matching unpaid invoice and SQLite-safe migration backfill coverage.
+
+### **June 7, 2026 - Savings Settings Extraction**
+
+**🏦 Iuran & Simpanan Settings:**
+- ✅ Moved editable default savings amounts out of `cooperative/dues` into a dedicated cooperative `Simpanan` settings page.
+- ✅ Added sidebar navigation for `Simpanan` so cooperative admins can manage `Simpanan Wajib` and `Simpanan Pokok` from one place.
+- ✅ Updated the dues page to show the active savings amounts as read-only operational context while keeping invoice generation driven by the saved settings.
+- ✅ Relocated the savings settings page into the account settings area as `/settings/savings` so it sits alongside other application settings.
+
+### **June 7, 2026 - Admin Koperasi Seed Hardening**
+
+**🔐 Role & Permission Seeder:**
+- ✅ Added regression coverage that `RolePermissionSeeder` creates `Admin Koperasi` with the intended operational cooperative permissions.
+- ✅ Verified `CooperativeSeeder` can assign the `Admin Koperasi` role after role seeding, matching the required production deployment order.
+- ✅ Updated role documentation from 14 to 15 roles so `Admin Koperasi` is documented as an official seeded role.
+
 ### **June 5, 2026 - Cooperative Dues Operational Correction**
 
 **🏦 Iuran & Simpanan Workflow Alignment:**
@@ -697,4 +722,4 @@
 
 ---
 
-*This log is maintained throughout the project lifecycle. Last updated: May 17, 2026*
+*This log is maintained throughout the project lifecycle. Last updated: June 7, 2026*

@@ -55,7 +55,7 @@ const submit = () => form.post(store().url);
     ]"
   >
     <form
-      class="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6"
+      class="flex w-full flex-col gap-6 p-6"
       @submit.prevent="submit"
     >
       <div>
@@ -65,7 +65,7 @@ const submit = () => form.post(store().url);
         </p>
       </div>
       <div
-        class="grid gap-4 rounded-lg border bg-white p-6 dark:bg-zinc-900 md:grid-cols-2"
+        class="grid gap-4 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900 md:grid-cols-2"
       >
         <label class="space-y-1"
           ><span class="text-sm">No Anggota</span
@@ -185,7 +185,7 @@ const submit = () => form.post(store().url);
         </label>
       </div>
       <div
-        class="grid gap-4 rounded-lg border bg-white p-6 dark:bg-zinc-900 md:grid-cols-2"
+        class="grid gap-4 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900 md:grid-cols-2"
       >
         <div class="md:col-span-2">
           <h2 class="text-lg font-semibold">Akses Login Anggota</h2>

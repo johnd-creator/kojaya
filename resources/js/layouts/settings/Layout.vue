@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
+import type { HTMLAttributes } from "vue";
 import Heading from "@/components/Heading.vue";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCurrentUrl } from "@/composables/useCurrentUrl";
-import { toUrl } from "@/lib/utils";
+import { cn, toUrl } from "@/lib/utils";
 import { edit as editAppearance } from "@/routes/appearance";
 import { edit as editProfile } from "@/routes/profile";
+import { edit as editSavings } from "@/routes/settings/savings";
 import { show } from "@/routes/two-factor";
 import { edit as editPassword } from "@/routes/user-password";
 import type { NavItem } from "@/types";
+
+const props = defineProps<{
+  contentClass?: HTMLAttributes["class"];
+  contentWrapperClass?: HTMLAttributes["class"];
+}>();
 
 const sidebarNavItems: NavItem[] = [
   {
@@ -27,6 +34,10 @@ const sidebarNavItems: NavItem[] = [
   {
     title: "Appearance",
     href: editAppearance(),
+  },
+  {
+    title: "Simpanan",
+    href: editSavings(),
   },
   {
     title: "UI Components",
@@ -58,7 +69,9 @@ const { isCurrentUrl } = useCurrentUrl();
             as-child
           >
             <Link :href="item.href">
-              <span class="shrink-0"><component :is="item.icon" class="h-4 w-4" /></span>
+              <span class="shrink-0"
+                ><component :is="item.icon" class="h-4 w-4"
+              /></span>
               {{ item.title }}
             </Link>
           </Button>
@@ -67,8 +80,8 @@ const { isCurrentUrl } = useCurrentUrl();
 
       <Separator class="my-6 lg:hidden" />
 
-      <div class="flex-1 md:max-w-2xl">
-        <section class="max-w-xl space-y-12">
+      <div :class="cn('flex-1 md:max-w-2xl', props.contentWrapperClass)">
+        <section :class="cn('max-w-xl space-y-12', props.contentClass)">
           <slot />
         </section>
       </div>

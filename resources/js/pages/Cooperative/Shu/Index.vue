@@ -75,7 +75,7 @@ const closePeriod = () => {
           </p>
         </div>
         <div
-          class="grid gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900 sm:grid-cols-[120px_180px_180px_auto_auto]"
+          class="grid gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900 sm:grid-cols-[120px_180px_180px_auto_auto]"
         >
           <Input v-model.number="filter.year" type="number" min="2020" />
           <Input
@@ -107,31 +107,31 @@ const closePeriod = () => {
       </div>
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Pool SHU Koperasi</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ formatCurrency(totals.cooperative_pool) }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Total Skor SHU</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ totals.total_shu_score }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Skor Keanggotaan</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ totals.total_membership_score }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Skor Iuran Wajib</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ totals.total_dues_score }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-5 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Status Tahun</div>
           <div class="mt-2 text-2xl font-semibold">
             {{ isClosed ? "CLOSED" : "PREVIEW" }}
@@ -139,7 +139,7 @@ const closePeriod = () => {
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <table class="w-full text-sm">
           <thead
             class="border-b bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-950"

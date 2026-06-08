@@ -830,7 +830,7 @@ payments.form = paymentsForm
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-export const paymentReceipt = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const paymentReceipt = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: paymentReceipt.url(args, options),
     method: 'get',
 })
@@ -845,7 +845,7 @@ paymentReceipt.definition = {
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-paymentReceipt.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+paymentReceipt.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -878,7 +878,7 @@ paymentReceipt.url = (args: { payment: string | number | { id: string | number }
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-paymentReceipt.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+paymentReceipt.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: paymentReceipt.url(args, options),
     method: 'get',
 })
@@ -888,7 +888,7 @@ paymentReceipt.get = (args: { payment: string | number | { id: string | number }
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-paymentReceipt.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+paymentReceipt.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: paymentReceipt.url(args, options),
     method: 'head',
 })
@@ -898,7 +898,7 @@ paymentReceipt.head = (args: { payment: string | number | { id: string | number 
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-const paymentReceiptForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const paymentReceiptForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: paymentReceipt.url(args, options),
     method: 'get',
 })
@@ -908,7 +908,7 @@ const paymentReceiptForm = (args: { payment: string | number | { id: string | nu
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-paymentReceiptForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+paymentReceiptForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: paymentReceipt.url(args, options),
     method: 'get',
 })
@@ -918,7 +918,7 @@ paymentReceiptForm.get = (args: { payment: string | number | { id: string | numb
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:219
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
-paymentReceiptForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+paymentReceiptForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: paymentReceipt.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -1128,7 +1128,7 @@ applyLoan.form = applyLoanForm
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-export const loan = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const loan = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loan.url(args, options),
     method: 'get',
 })
@@ -1143,7 +1143,7 @@ loan.definition = {
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-loan.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+loan.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -1176,7 +1176,7 @@ loan.url = (args: { loan: string | number | { id: string | number } } | [loan: s
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-loan.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+loan.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: loan.url(args, options),
     method: 'get',
 })
@@ -1186,7 +1186,7 @@ loan.get = (args: { loan: string | number | { id: string | number } } | [loan: s
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-loan.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+loan.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: loan.url(args, options),
     method: 'head',
 })
@@ -1196,7 +1196,7 @@ loan.head = (args: { loan: string | number | { id: string | number } } | [loan: 
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-const loanForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const loanForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: loan.url(args, options),
     method: 'get',
 })
@@ -1206,7 +1206,7 @@ const loanForm = (args: { loan: string | number | { id: string | number } } | [l
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-loanForm.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+loanForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: loan.url(args, options),
     method: 'get',
 })
@@ -1216,7 +1216,7 @@ loanForm.get = (args: { loan: string | number | { id: string | number } } | [loa
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:296
 * @route '/api/v1/member/loans/{loan}'
 */
-loanForm.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+loanForm.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: loan.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -1233,7 +1233,7 @@ loan.form = loanForm
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:307
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
-export const requestLoanRestructure = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const requestLoanRestructure = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: requestLoanRestructure.url(args, options),
     method: 'post',
 })
@@ -1248,7 +1248,7 @@ requestLoanRestructure.definition = {
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:307
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
-requestLoanRestructure.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+requestLoanRestructure.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -1281,7 +1281,7 @@ requestLoanRestructure.url = (args: { loan: string | number | { id: string | num
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:307
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
-requestLoanRestructure.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+requestLoanRestructure.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: requestLoanRestructure.url(args, options),
     method: 'post',
 })
@@ -1291,7 +1291,7 @@ requestLoanRestructure.post = (args: { loan: string | number | { id: string | nu
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:307
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
-const requestLoanRestructureForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const requestLoanRestructureForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: requestLoanRestructure.url(args, options),
     method: 'post',
 })
@@ -1301,7 +1301,7 @@ const requestLoanRestructureForm = (args: { loan: string | number | { id: string
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:307
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
-requestLoanRestructureForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+requestLoanRestructureForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: requestLoanRestructure.url(args, options),
     method: 'post',
 })

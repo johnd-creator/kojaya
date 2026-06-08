@@ -34,6 +34,7 @@ class P5PointsRewardsTest extends TestCase
         CooperativeLedgerEntry::query()->create([
             'cooperative_member_id' => $member->id,
             'entry_type' => 'SAVING_PAYMENT',
+            'ledger_scope' => 'SAVINGS',
             'debit' => 0,
             'credit' => 750000,
             'period' => now()->format('Y-m'),

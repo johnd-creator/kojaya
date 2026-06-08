@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Deferred, Head, Link, router } from "@inertiajs/vue3";
+import { Deferred, Head, Link, router, useForm } from "@inertiajs/vue3";
 import {
   Download,
   Eye,
@@ -14,11 +14,22 @@ import {
 import { computed, ref } from "vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import FilterBar from "@/components/FilterBar.vue";
+import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
 import StatsCard from "@/components/StatsCard.vue";
 import { Button } from "@/components/ui/button";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { useCan } from "@/composables/useCan";
@@ -26,13 +37,13 @@ import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import {
   activate,
-  create,
+  deactivate,
   destroy,
-  edit,
   exportMethod,
   index,
-  resign,
   show,
+  store,
+  update,
 } from "@/routes/cooperative/members";
 
 const props = defineProps<{
@@ -46,7 +57,9 @@ const props = defineProps<{
   options: {
     statuses: Array<{ value: string; label: string }>;
     jenisAnggota: Array<{ value: string; label: string }>;
+    jenisKelamin: Array<{ value: string; label: string }>;
     kategori: Array<{ value: string; label: string }>;
+    autodebet: Array<{ value: string; label: string }>;
   };
   stats?: { active: number; inactive: number; alb: number };
 }>();
@@ -59,13 +72,90 @@ const filters = ref({
 });
 const { can } = useCan();
 const canManageMember = computed(() => can("manage_cooperative_member"));
+const createMemberDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
-const memberPendingDelete = ref<{ id: string | number; name: string } | null>(null);
+const memberPendingDelete = ref<{ id: string | number; name: string } | null>(
+  null,
+);
+const editMemberDialogOpen = ref(false);
+const editMemberId = ref<number | null>(null);
+const editMemberForm = useForm({
+  employee_id: "",
+  user_id: "",
+  no_anggota: "",
+  tanggal_aktif: "",
+  nama_anggota: "",
+  name: "",
+  email: "",
+  member_login_password: "",
+  npwp: "",
+  no_telp: "",
+  phone: "",
+  identity_number: "",
+  address: "",
+  joined_at: "",
+  status: "ACTIVE",
+  jenis_anggota: "AB",
+  jenis_kelamin: "L",
+  kategori: "IP",
+  autodebet: "MANUAL",
+  no_rekening: "",
+  opening_saving_balance: 0,
+  notes: "",
+});
+const createMemberForm = useForm({
+  employee_id: "",
+  user_id: "",
+  no_anggota: "",
+  tanggal_aktif: new Date().toISOString().slice(0, 10),
+  nama_anggota: "",
+  name: "",
+  email: "",
+  member_login_password: "",
+  npwp: "",
+  no_telp: "",
+  phone: "",
+  identity_number: "",
+  address: "",
+  joined_at: new Date().toISOString().slice(0, 10),
+  status: "ACTIVE",
+  jenis_anggota: "AB",
+  jenis_kelamin: "L",
+  kategori: "IP",
+  autodebet: "MANUAL",
+  no_rekening: "",
+  opening_saving_balance: 0,
+  notes: "",
+});
+
+const resetCreateMemberForm = (): void => {
+  createMemberForm.reset();
+  createMemberForm.clearErrors();
+  createMemberForm.tanggal_aktif = new Date().toISOString().slice(0, 10);
+  createMemberForm.joined_at = createMemberForm.tanggal_aktif;
+  createMemberForm.status = "ACTIVE";
+  createMemberForm.jenis_anggota = "AB";
+  createMemberForm.jenis_kelamin = "L";
+  createMemberForm.kategori = "IP";
+  createMemberForm.autodebet = "MANUAL";
+  createMemberForm.opening_saving_balance = 0;
+};
+
+const submitCreateMember = (): void => {
+  createMemberForm.post(store().url, {
+    preserveScroll: true,
+    onSuccess: () => {
+      createMemberDialogOpen.value = false;
+      resetCreateMemberForm();
+    },
+  });
+};
 
 const askDelete = (row: any): void => {
   memberPendingDelete.value = {
     id: row.id,
-    name: row.nama_anggota_clean || row.nama_anggota || row.name || "anggota ini",
+    name:
+      row.nama_anggota_clean || row.nama_anggota || row.name || "anggota ini",
   };
   deleteDialogOpen.value = true;
 };
@@ -82,6 +172,52 @@ const confirmDelete = (): void => {
     onFinish: () => {
       deleteDialogOpen.value = false;
       memberPendingDelete.value = null;
+    },
+  });
+};
+
+const deactivateMember = (row: any): void => {
+  router.post(deactivate(row.id).url, undefined, {
+    preserveScroll: true,
+  });
+};
+
+const openEditDialog = (row: any): void => {
+  editMemberId.value = row.id;
+  editMemberForm.reset();
+  editMemberForm.clearErrors();
+  editMemberForm.employee_id = row.employee_id ?? "";
+  editMemberForm.user_id = row.user_id ?? "";
+  editMemberForm.no_anggota = row.no_anggota ?? row.member_no ?? "";
+  editMemberForm.tanggal_aktif = row.tanggal_aktif ?? row.joined_at ?? "";
+  editMemberForm.nama_anggota = row.nama_anggota ?? row.name ?? "";
+  editMemberForm.name = row.name ?? "";
+  editMemberForm.email = row.email ?? "";
+  editMemberForm.member_login_password = "";
+  editMemberForm.npwp = row.npwp ?? "";
+  editMemberForm.no_telp = row.no_telp ?? row.phone ?? "";
+  editMemberForm.phone = row.phone ?? "";
+  editMemberForm.identity_number = row.identity_number ?? "";
+  editMemberForm.address = row.address ?? "";
+  editMemberForm.joined_at = row.joined_at ?? "";
+  editMemberForm.status = row.status === "RESIGNED" ? "INACTIVE" : row.status ?? "ACTIVE";
+  editMemberForm.jenis_anggota = row.jenis_anggota ?? "AB";
+  editMemberForm.jenis_kelamin = row.jenis_kelamin ?? "L";
+  editMemberForm.kategori = row.kategori ?? "IP";
+  editMemberForm.autodebet = row.autodebet ?? "MANUAL";
+  editMemberForm.no_rekening = row.no_rekening ?? "";
+  editMemberForm.opening_saving_balance = 0;
+  editMemberForm.notes = row.notes ?? "";
+  editMemberDialogOpen.value = true;
+};
+
+const submitEditMember = (): void => {
+  if (!editMemberId.value) return;
+  editMemberForm.put(update(editMemberId.value).url, {
+    preserveScroll: true,
+    onSuccess: () => {
+      editMemberDialogOpen.value = false;
+      editMemberId.value = null;
     },
   });
 };
@@ -147,13 +283,17 @@ const getMemberStatusVariant = (
   }
 };
 
-const statusLabel = (status: string) => (status === "ACTIVE" ? "AKTIF" : "NON-AKTIF");
+const statusLabel = (status: string) =>
+  status === "ACTIVE" ? "AKTIF" : "NON-AKTIF";
 const jenisAnggotaLabel = (value: string) =>
-  props.options.jenisAnggota.find((option) => option.value === value)?.label ?? value;
+  props.options.jenisAnggota.find((option) => option.value === value)?.label ??
+  value;
 const jenisKelaminLabel = (value: string) =>
   value === "L" ? "Laki-laki" : value === "P" ? "Perempuan" : "-";
 const kategoriLabel = (value: string) =>
-  props.options.kategori.find((option) => option.value === value)?.label ?? value ?? "-";
+  props.options.kategori.find((option) => option.value === value)?.label ??
+  value ??
+  "-";
 const exportUrl = computed(() => {
   const params = new URLSearchParams();
 
@@ -165,7 +305,9 @@ const exportUrl = computed(() => {
 
   const query = params.toString();
 
-  return exportMethod.url(query ? { query: Object.fromEntries(params) } : undefined);
+  return exportMethod.url(
+    query ? { query: Object.fromEntries(params) } : undefined,
+  );
 });
 </script>
 
@@ -188,9 +330,9 @@ const exportUrl = computed(() => {
               <Download class="mr-2 h-4 w-4" />Export Excel
             </Button>
           </a>
-          <Link :href="create().url" prefetch>
-            <Button v-can="'manage_cooperative_member'"><Plus class="mr-2 h-4 w-4" />Anggota Baru</Button>
-          </Link>
+          <Button v-if="canManageMember" @click="createMemberDialogOpen = true">
+            <Plus class="mr-2 h-4 w-4" />Tambah Anggota
+          </Button>
         </div>
       </div>
 
@@ -219,11 +361,7 @@ const exportUrl = computed(() => {
             :value="stats?.inactive ?? 0"
             :icon="UserX"
           />
-          <StatsCard
-            label="ALB"
-            :value="stats?.alb ?? 0"
-            :icon="WalletCards"
-          />
+          <StatsCard label="ALB" :value="stats?.alb ?? 0" :icon="WalletCards" />
         </div>
       </Deferred>
 
@@ -270,8 +408,12 @@ const exportUrl = computed(() => {
             prefetch
             >{{ row.nama_anggota_clean || row.nama_anggota || row.name }}</Link
           >
-          <div class="text-xs text-zinc-500">{{ row.no_telp || row.phone || "-" }}</div>
-          <div v-if="row.email" class="text-xs text-zinc-500">{{ row.email }}</div>
+          <div class="text-xs text-zinc-500">
+            {{ row.no_telp || row.phone || "-" }}
+          </div>
+          <div v-if="row.email" class="text-xs text-zinc-500">
+            {{ row.email }}
+          </div>
         </template>
 
         <template #status="{ value }">
@@ -312,15 +454,13 @@ const exportUrl = computed(() => {
             </Button>
             <Button
               v-if="canManageMember"
-              as-child
               size="sm"
               variant="outline"
               :aria-label="`Edit anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
+              @click="openEditDialog(row)"
             >
-              <Link :href="edit(row.id).url" prefetch>
-                <Pencil class="h-4 w-4" />
-                <span class="sr-only">Edit</span>
-              </Link>
+              <Pencil class="h-4 w-4" />
+              <span class="sr-only">Edit</span>
             </Button>
             <Button
               v-if="canManageMember && row.status !== 'ACTIVE'"
@@ -336,7 +476,7 @@ const exportUrl = computed(() => {
               size="sm"
               variant="outline"
               :aria-label="`Nonaktifkan anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="router.post(resign(row.id).url)"
+              @click="deactivateMember(row)"
             >
               <UserX class="h-4 w-4" />
             </Button>
@@ -362,5 +502,417 @@ const exportUrl = computed(() => {
       variant="danger"
       @confirm="confirmDelete"
     />
+
+    <Dialog v-model:open="createMemberDialogOpen">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Tambah Anggota Baru</DialogTitle>
+          <DialogDescription>
+            Isi data utama anggota. Nomor anggota boleh dikosongkan agar dibuat
+            otomatis.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form class="space-y-5" @submit.prevent="submitCreateMember">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="member-no">No Anggota</Label>
+              <Input
+                id="member-no"
+                v-model="createMemberForm.no_anggota"
+                maxlength="10"
+                placeholder="Otomatis jika kosong"
+              />
+              <InputError :message="createMemberForm.errors.no_anggota" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-active-date">Tanggal Aktif</Label>
+              <Input
+                id="member-active-date"
+                v-model="createMemberForm.tanggal_aktif"
+                type="date"
+                required
+              />
+              <InputError :message="createMemberForm.errors.tanggal_aktif" />
+            </div>
+
+            <div class="space-y-2 md:col-span-2">
+              <Label for="member-name">Nama Anggota</Label>
+              <Input
+                id="member-name"
+                v-model="createMemberForm.nama_anggota"
+                maxlength="100"
+                required
+              />
+              <InputError :message="createMemberForm.errors.nama_anggota" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-email">Email</Label>
+              <Input
+                id="member-email"
+                v-model="createMemberForm.email"
+                type="email"
+                maxlength="255"
+                placeholder="nama@email.com"
+              />
+              <InputError :message="createMemberForm.errors.email" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-phone">No Telp</Label>
+              <Input
+                id="member-phone"
+                v-model="createMemberForm.no_telp"
+                maxlength="20"
+              />
+              <InputError :message="createMemberForm.errors.no_telp" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-type">Jenis Anggota</Label>
+              <select
+                id="member-type"
+                v-model="createMemberForm.jenis_anggota"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.jenisAnggota"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="createMemberForm.errors.jenis_anggota" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-gender">Jenis Kelamin</Label>
+              <select
+                id="member-gender"
+                v-model="createMemberForm.jenis_kelamin"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option value="L">Laki-laki</option>
+                <option value="P">Perempuan</option>
+              </select>
+              <InputError :message="createMemberForm.errors.jenis_kelamin" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-category">Kategori</Label>
+              <select
+                id="member-category"
+                v-model="createMemberForm.kategori"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.kategori"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="createMemberForm.errors.kategori" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-autodebet">Autodebet</Label>
+              <select
+                id="member-autodebet"
+                v-model="createMemberForm.autodebet"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.autodebet"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="createMemberForm.errors.autodebet" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-account">No Rekening</Label>
+              <Input
+                id="member-account"
+                v-model="createMemberForm.no_rekening"
+                maxlength="30"
+                :disabled="createMemberForm.autodebet === 'MANUAL'"
+                placeholder="Kosong untuk manual"
+              />
+              <InputError :message="createMemberForm.errors.no_rekening" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="member-opening-balance">Saldo Awal Simpanan</Label>
+              <Input
+                id="member-opening-balance"
+                v-model="createMemberForm.opening_saving_balance"
+                type="number"
+                min="0"
+                step="1000"
+              />
+              <InputError
+                :message="createMemberForm.errors.opening_saving_balance"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              @click="createMemberDialogOpen = false"
+            >
+              Batal
+            </Button>
+            <Button type="submit" :disabled="createMemberForm.processing">
+              Simpan Anggota
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog v-model:open="editMemberDialogOpen">
+      <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Edit Anggota</DialogTitle>
+          <DialogDescription>
+            Perbarui data anggota koperasi.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form class="space-y-5" @submit.prevent="submitEditMember">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="edit-member-no">No Anggota</Label>
+              <Input
+                id="edit-member-no"
+                v-model="editMemberForm.no_anggota"
+                maxlength="10"
+                required
+              />
+              <InputError :message="editMemberForm.errors.no_anggota" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-active-date">Tanggal Aktif</Label>
+              <Input
+                id="edit-member-active-date"
+                v-model="editMemberForm.tanggal_aktif"
+                type="date"
+                required
+              />
+              <InputError :message="editMemberForm.errors.tanggal_aktif" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-join-date">Tanggal Bergabung</Label>
+              <Input
+                id="edit-member-join-date"
+                v-model="editMemberForm.joined_at"
+                type="date"
+              />
+              <InputError :message="editMemberForm.errors.joined_at" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-email">Email</Label>
+              <Input
+                id="edit-member-email"
+                v-model="editMemberForm.email"
+                type="email"
+                maxlength="255"
+                placeholder="nama@email.com"
+              />
+              <InputError :message="editMemberForm.errors.email" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-status">Status</Label>
+              <select
+                id="edit-member-status"
+                v-model="editMemberForm.status"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.statuses"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="editMemberForm.errors.status" />
+            </div>
+
+            <div class="space-y-2 md:col-span-2">
+              <Label for="edit-member-name">Nama Anggota</Label>
+              <Input
+                id="edit-member-name"
+                v-model="editMemberForm.nama_anggota"
+                maxlength="100"
+                required
+              />
+              <InputError :message="editMemberForm.errors.nama_anggota" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-npwp">NPWP</Label>
+              <Input
+                id="edit-member-npwp"
+                v-model="editMemberForm.npwp"
+                maxlength="30"
+              />
+              <InputError :message="editMemberForm.errors.npwp" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-phone">No Telp</Label>
+              <Input
+                id="edit-member-phone"
+                v-model="editMemberForm.no_telp"
+                maxlength="20"
+              />
+              <InputError :message="editMemberForm.errors.no_telp" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-type">Jenis Anggota</Label>
+              <select
+                id="edit-member-type"
+                v-model="editMemberForm.jenis_anggota"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.jenisAnggota"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="editMemberForm.errors.jenis_anggota" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-gender">Jenis Kelamin</Label>
+              <select
+                id="edit-member-gender"
+                v-model="editMemberForm.jenis_kelamin"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.jenisKelamin"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="editMemberForm.errors.jenis_kelamin" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-category">Kategori</Label>
+              <select
+                id="edit-member-category"
+                v-model="editMemberForm.kategori"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.kategori"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="editMemberForm.errors.kategori" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-autodebet">Autodebet</Label>
+              <select
+                id="edit-member-autodebet"
+                v-model="editMemberForm.autodebet"
+                class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
+              >
+                <option
+                  v-for="option in props.options.autodebet"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="editMemberForm.errors.autodebet" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="edit-member-account">No Rekening</Label>
+              <Input
+                id="edit-member-account"
+                v-model="editMemberForm.no_rekening"
+                maxlength="30"
+                :disabled="editMemberForm.autodebet === 'MANUAL'"
+                placeholder="Kosong untuk manual"
+              />
+              <InputError :message="editMemberForm.errors.no_rekening" />
+            </div>
+          </div>
+
+          <div
+            class="grid gap-4 rounded-xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900 md:grid-cols-2"
+          >
+            <div class="md:col-span-2">
+              <h2 class="text-lg font-semibold">Akses Login & Simpanan</h2>
+            </div>
+            <div class="space-y-2">
+              <Label for="edit-member-password">Password Login Baru</Label>
+              <Input
+                id="edit-member-password"
+                v-model="editMemberForm.member_login_password"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Kosongkan jika tidak berubah"
+              />
+              <InputError :message="editMemberForm.errors.member_login_password" />
+            </div>
+            <div class="space-y-2">
+              <Label for="edit-member-opening-balance">Saldo Awal Simpanan</Label>
+              <Input
+                id="edit-member-opening-balance"
+                v-model="editMemberForm.opening_saving_balance"
+                type="number"
+                min="0"
+                step="1000"
+              />
+              <InputError :message="editMemberForm.errors.opening_saving_balance" />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              @click="editMemberDialogOpen = false"
+            >
+              Batal
+            </Button>
+            <Button type="submit" :disabled="editMemberForm.processing">
+              Simpan
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Search, Bell } from "lucide-vue-next";
+import { Bell, Moon, Sun } from "lucide-vue-next";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAppearance } from "@/composables/useAppearance";
 import type { BreadcrumbItem } from "@/types";
 
 withDefaults(
@@ -14,6 +15,37 @@ withDefaults(
     breadcrumbs: () => [],
   },
 );
+
+const { resolvedAppearance, updateAppearance } = useAppearance();
+const now = ref(new Date());
+let clockTimer: number | undefined;
+
+const formattedDateTime = computed(() =>
+  new Intl.DateTimeFormat("id-ID", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(now.value),
+);
+
+const toggleAppearance = (): void => {
+  updateAppearance(resolvedAppearance.value === "dark" ? "light" : "dark");
+};
+
+onMounted(() => {
+  clockTimer = window.setInterval(() => {
+    now.value = new Date();
+  }, 1000);
+});
+
+onUnmounted(() => {
+  if (clockTimer) {
+    window.clearInterval(clockTimer);
+  }
+});
 </script>
 
 <template>
@@ -26,17 +58,26 @@ withDefaults(
         <Breadcrumbs :breadcrumbs="breadcrumbs" />
       </template>
     </div>
-    <div class="flex items-center gap-4">
-      <div class="relative hidden sm:block">
-        <Search
-          class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
-        />
-        <Input
-          type="search"
-          placeholder="Search..."
-          class="w-64 rounded-lg bg-background pl-8"
-        />
+    <div class="flex items-center gap-2">
+      <div
+        class="hidden items-center rounded-md border border-sidebar-border/70 px-3 py-1.5 text-sm text-muted-foreground sm:flex"
+      >
+        {{ formattedDateTime }}
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="rounded-full"
+        :aria-label="
+          resolvedAppearance === 'dark'
+            ? 'Aktifkan mode terang'
+            : 'Aktifkan mode gelap'
+        "
+        @click="toggleAppearance"
+      >
+        <Sun v-if="resolvedAppearance === 'dark'" class="h-5 w-5" />
+        <Moon v-else class="h-5 w-5" />
+      </Button>
       <Button variant="ghost" size="icon" class="rounded-full">
         <Bell class="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
       </Button>

@@ -1,15 +1,15 @@
 # Analisis Roles & Permission — Kojaya
 
-> **Diperbarui:** 6 Mei 2026 (Phase A — regenerasi dari `RolePermissionSeeder` dan `PermissionEnum`)  
+> **Diperbarui:** 7 Juni 2026 (Admin Koperasi seed hardening)  
 > **Status:** Sinkron dengan implementasi terbaru
 
 ---
 
 ## Ringkasan
 
-Saat ini ada **14 role** dan **126 permission** di `PermissionEnum`. Map dari role ke permission sudah terdefinisi di `RolePermissionSeeder`. Dokumen ini menyajikan matrix role dan aturan permission, dihasilkan dari kode, bukan snapshot manual.
+Saat ini ada **15 role** dan **126 permission** di `PermissionEnum`. Map dari role ke permission sudah terdefinisi di `RolePermissionSeeder`. Dokumen ini menyajikan matrix role dan aturan permission, dihasilkan dari kode, bukan snapshot manual.
 
-## 14 Role yang Terdaftar di `RolePermissionSeeder`
+## 15 Role yang Terdaftar di `RolePermissionSeeder`
 
 | Role | Permission Count | Deskripsi |
 |------|-----------------|-----------|
@@ -25,6 +25,7 @@ Saat ini ada **14 role** dan **126 permission** di `PermissionEnum`. Map dari ro
 | Technician | 2 | Asset unit view, work order unit view |
 | Employee | 5 | ESS portal, own attendance, own payroll, own payslip |
 | Pengurus Koperasi | 22 | Semua modul cooperative: members, dues, payments, loans, points, rewards, SHU, POS, ledger, settings |
+| Admin Koperasi | 16 | Operasional cooperative: members, dues, payments, loans, points, rewards, redemptions, POS inventory, POS reports, ledger |
 | Kasir Koperasi | 6 | Cooperative members view, payments, loans view, POS, reports |
 | Anggota | 2 | Member self-service view: own member data, own loan |
 
@@ -125,7 +126,7 @@ Setiap role utama diuji:
 Dokumen ini menggantikan snapshot manual yang lama. Semua gap yang diidentifikasi di analisis sebelumnya sudah diatasi:
 
 - ✅ Technician ada di seeder (126 permission penuh)
-- ✅ Semua 14 role memiliki permission yang sesuai di seeder
+- ✅ Semua 15 role memiliki permission yang sesuai di seeder
 - ✅ Finance, HR Master Data, Projects, Asset, WorkOrder, Leave, Overtime sudah memiliki permission
 - ✅ Cooperative extended (points, rewards, SHU, POS categories, reports, loan types, ledger) sudah memiliki permission
 - ✅ Storage, clients, vendors, audit logs, reports sudah memiliki permission

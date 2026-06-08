@@ -194,10 +194,10 @@ markPaid.form = markPaidForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:120
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:125
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
-export const markUnpaid = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const markUnpaid = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: markUnpaid.url(args, options),
     method: 'post',
 })
@@ -209,10 +209,10 @@ markUnpaid.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:120
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:125
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
-markUnpaid.url = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+markUnpaid.url = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { invoice: args }
     }
@@ -242,30 +242,30 @@ markUnpaid.url = (args: { invoice: string | number | { id: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:120
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:125
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
-markUnpaid.post = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+markUnpaid.post = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: markUnpaid.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:120
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:125
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
-const markUnpaidForm = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const markUnpaidForm = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: markUnpaid.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:120
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:125
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
-markUnpaidForm.post = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+markUnpaidForm.post = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: markUnpaid.url(args, options),
     method: 'post',
 })

@@ -6,9 +6,11 @@ namespace Tests\Feature;
 
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\CooperativeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RoleSmokeTest extends TestCase
@@ -285,6 +287,70 @@ class RoleSmokeTest extends TestCase
         $this->assertFalse($permissions->contains('view_reports'));
         $this->assertFalse($permissions->contains('manage_departments'));
         $this->assertFalse($permissions->contains('view_chart_of_accounts'));
+    }
+
+    public function test_role_permission_seeder_creates_admin_koperasi_with_required_operational_permissions(): void
+    {
+        $adminKoperasi = Role::query()->where('name', 'Admin Koperasi')->first();
+
+        $this->assertNotNull($adminKoperasi);
+
+        $permissionNames = $adminKoperasi->permissions->pluck('name');
+
+        $this->assertCount(16, $permissionNames);
+
+        foreach ([
+            'view_cooperative_member',
+            'manage_cooperative_member',
+            'manage_cooperative_dues',
+            'manage_cooperative_payment',
+            'view_cooperative_loan',
+            'manage_cooperative_loan',
+            'access_cooperative_pos',
+            'manage_cooperative_points',
+            'manage_cooperative_rewards',
+            'manage_cooperative_redemption',
+            'manage_cooperative_loan_types',
+            'manage_pos_categories',
+            'manage_pos_products',
+            'view_pos_reports',
+            'view_cooperative_ledger',
+            'manage_cooperative_ledger',
+        ] as $permission) {
+            $this->assertTrue(
+                $permissionNames->contains($permission),
+                "Admin Koperasi missing required permission [{$permission}]."
+            );
+        }
+
+        foreach ([
+            'approve_cooperative_loan',
+            'view_cooperative_report',
+            'manage_cooperative_shu',
+            'manage_pos_shu',
+            'view_cooperative_all',
+            'manage_cooperative_settings',
+        ] as $permission) {
+            $this->assertFalse(
+                $permissionNames->contains($permission),
+                "Admin Koperasi should not receive restricted permission [{$permission}]."
+            );
+        }
+    }
+
+    public function test_cooperative_seeder_can_assign_admin_koperasi_after_role_permission_seeder_runs(): void
+    {
+        $this->seed(CooperativeSeeder::class);
+
+        $adminKoperasi = User::query()
+            ->where('email', 'admin.kop@koperasijayabersama.id')
+            ->firstOrFail();
+
+        $this->assertTrue($adminKoperasi->hasRole('Admin Koperasi'));
+        $this->assertTrue($adminKoperasi->can('manage_cooperative_dues'));
+        $this->assertTrue($adminKoperasi->can('manage_cooperative_payment'));
+        $this->assertTrue($adminKoperasi->can('view_cooperative_ledger'));
+        $this->assertFalse($adminKoperasi->can('manage_cooperative_shu'));
     }
 
     public function test_operator_dashboard_is_protected_for_unauthorized_roles(): void

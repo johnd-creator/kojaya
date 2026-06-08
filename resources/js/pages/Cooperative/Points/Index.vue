@@ -63,7 +63,7 @@ const columns = [
       { title: 'Points', href: '/cooperative/points' },
     ]"
   >
-    <PageContainer>
+    <PageContainer class="max-w-none">
       <div class="flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold">Points & Loyalty</h1>

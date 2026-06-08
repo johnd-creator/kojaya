@@ -187,6 +187,22 @@ class CooperativeMemberController extends Controller
         return back()->with('success', 'Cooperative member activated successfully.');
     }
 
+    public function deactivate(CooperativeMember $member): RedirectResponse
+    {
+        $this->authorize('update', $member);
+
+        if ($member->status !== 'ACTIVE') {
+            return back()->with('error', 'Hanya anggota aktif yang dapat dinonaktifkan.');
+        }
+
+        $member->forceFill([
+            'status' => 'INACTIVE',
+            'resigned_at' => null,
+        ])->save();
+
+        return back()->with('success', 'Anggota berhasil dinonaktifkan.');
+    }
+
     public function resign(CooperativeMember $member, CooperativeMemberService $memberService): RedirectResponse
     {
         $this->authorize('resign', $member);

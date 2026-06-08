@@ -58,23 +58,23 @@ const applyFilters = () =>
         </p>
       </div>
       <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Total Simpanan</div>
           <div class="mt-2 text-xl font-semibold">
             {{ formatCurrency(summary.total_balance) }}
           </div>
         </div>
         <div
-          v-for="key in ['POKOK', 'WAJIB', 'SUKARELA', 'KHUSUS']"
-          :key="key"
-          class="rounded-lg border bg-white p-4 dark:bg-zinc-900"
+          v-for="type in contributionTypes"
+          :key="type.id"
+          class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
         >
-          <div class="text-sm text-zinc-500">Simpanan {{ key }}</div>
+          <div class="text-sm text-zinc-500">{{ type.name }}</div>
           <div class="mt-2 text-xl font-semibold">
-            {{ formatCurrency(summary.by_category?.[key] ?? 0) }}
+            {{ formatCurrency(summary.by_category?.[type.category] ?? 0) }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Belum Dikategorikan</div>
           <div class="mt-2 text-xl font-semibold">
             {{ formatCurrency(summary.uncategorized) }}
@@ -82,7 +82,7 @@ const applyFilters = () =>
         </div>
       </div>
       <div
-        class="grid gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900 md:grid-cols-3 xl:grid-cols-7"
+        class="grid gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900 md:grid-cols-3 xl:grid-cols-7"
       >
         <Input
           v-model="memberSearch"
@@ -133,7 +133,7 @@ const applyFilters = () =>
         <Input v-model="endDate" type="date" />
         <Button variant="outline" @click="applyFilters">Filter</Button>
       </div>
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <table class="w-full text-left text-sm">
           <thead
             class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900"

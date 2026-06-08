@@ -47,7 +47,7 @@ const submit = () => {
       { title: 'Kalkulator', href: '#' },
     ]"
   >
-    <PageContainer variant="detail">
+    <PageContainer variant="detail" class="max-w-none">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Kalkulator Pinjaman</h1>
         <p class="mt-1 text-sm text-zinc-500">
@@ -55,7 +55,7 @@ const submit = () => {
         </p>
       </div>
 
-      <form class="grid gap-4 rounded-lg border bg-white p-6 dark:bg-zinc-900 md:grid-cols-2" @submit.prevent="submit">
+      <form class="grid gap-4 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900 md:grid-cols-2" @submit.prevent="submit">
         <label class="space-y-1">
           <span class="text-sm">Tipe Pinjaman</span>
           <select v-model="form.loan_type_id" required class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950">
@@ -83,25 +83,25 @@ const submit = () => {
       </form>
 
       <div v-if="preview" class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Angsuran / Bulan</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(preview.installment_amount) }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Total Bunga</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(preview.total_interest_amount) }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Biaya Admin</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(preview.admin_fee) }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Total Kewajiban</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(preview.total_amount) }}</div>
         </div>
       </div>
 
-      <div v-if="preview" class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+      <div v-if="preview" class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
         <h2 class="text-lg font-semibold">Jadwal Simulasi</h2>
         <div class="mt-4 overflow-x-auto">
           <table class="w-full text-left text-sm">

@@ -88,7 +88,7 @@ const submit = () => {
     >
       <div class="flex flex-col gap-4">
         <div
-          class="flex flex-col gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900 md:flex-row"
+          class="flex flex-col gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900 md:flex-row"
         >
           <div class="relative flex-1">
             <Search
@@ -119,7 +119,7 @@ const submit = () => {
             v-for="product in products"
             :key="product.id"
             type="button"
-            class="rounded-lg border bg-white p-4 text-left hover:border-indigo-400 dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 text-left hover:border-indigo-400 dark:bg-zinc-900"
             @click="addProduct(product)"
           >
             <div class="font-medium">{{ product.name }}</div>
@@ -133,7 +133,7 @@ const submit = () => {
         </div>
       </div>
       <aside
-        class="flex flex-col rounded-lg border bg-white p-4 dark:bg-zinc-900"
+        class="flex flex-col rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
       >
         <div class="flex items-center gap-2 border-b pb-3">
           <ShoppingCart class="h-5 w-5" />

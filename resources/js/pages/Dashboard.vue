@@ -298,7 +298,7 @@ const managementStats = [
   <AppLayout :breadcrumbs="breadcrumbs">
     <Deferred data="dashboard">
       <template #fallback>
-        <PageContainer>
+        <PageContainer class="max-w-none">
           <div aria-live="polite" class="sr-only">
             Memuat dashboard operasional.
           </div>
@@ -313,7 +313,7 @@ const managementStats = [
         </PageContainer>
       </template>
 
-      <PageContainer>
+      <PageContainer class="max-w-none">
         <div
           class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
         >
@@ -335,7 +335,7 @@ const managementStats = [
             </p>
           </div>
           <div
-            class="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm text-zinc-500 shadow-sm dark:bg-zinc-900"
+            class="flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/95 px-3 py-2 text-sm text-zinc-500 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
           >
             <CheckCircle2 class="size-4 text-emerald-600" />
             <span>Update {{ formatDateTime(dashboard.generatedAt) }}</span>
@@ -348,7 +348,7 @@ const managementStats = [
             v-for="card in kpiCards"
             :key="card.label"
             :href="card.href"
-            class="group rounded-lg border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-900"
+            class="group rounded-xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-zinc-950/10 dark:border-zinc-800/80 dark:bg-zinc-900/90"
           >
             <div class="flex items-start justify-between gap-4">
               <div>
@@ -391,7 +391,7 @@ const managementStats = [
 
         <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <section
-            class="rounded-lg border bg-white shadow-sm dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
           >
             <div class="border-b p-5 dark:border-zinc-800">
               <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
@@ -434,7 +434,7 @@ const managementStats = [
           </section>
 
           <section
-            class="rounded-lg border bg-white p-5 shadow-sm dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
           >
             <div class="flex items-start justify-between gap-4">
               <div>
@@ -502,7 +502,7 @@ const managementStats = [
 
         <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
           <section
-            class="rounded-lg border bg-white shadow-sm dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
           >
             <div
               class="flex items-start justify-between gap-4 border-b p-5 dark:border-zinc-800"
@@ -605,7 +605,7 @@ const managementStats = [
           </section>
 
           <section
-            class="rounded-lg border bg-white shadow-sm dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
           >
             <div
               class="flex items-start justify-between gap-4 border-b p-5 dark:border-zinc-800"
@@ -669,7 +669,7 @@ const managementStats = [
         </div>
 
         <section
-          class="rounded-lg border bg-white p-5 shadow-sm dark:bg-zinc-900"
+          class="rounded-xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
         >
           <div
             class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"

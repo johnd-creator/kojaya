@@ -7,6 +7,7 @@ import TwoFactorRecoveryCodes from "@/components/TwoFactorRecoveryCodes.vue";
 import TwoFactorSetupModal from "@/components/TwoFactorSetupModal.vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useTwoFactorAuth } from "@/composables/useTwoFactorAuth";
 import AppLayout from "@/layouts/AppLayout.vue";
 import SettingsLayout from "@/layouts/settings/Layout.vue";
@@ -52,59 +53,69 @@ onUnmounted(() => {
           description="Manage your two-factor authentication settings"
         />
 
-        <div
-          v-if="!twoFactorEnabled"
-          class="flex flex-col items-start justify-start space-y-4"
+        <Card
+          class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
         >
-          <Badge variant="destructive">Disabled</Badge>
-
-          <p class="text-muted-foreground">
-            When you enable two-factor authentication, you will be prompted for
-            a secure pin during login. This pin can be retrieved from a
-            TOTP-supported application on your phone.
-          </p>
-
-          <div>
-            <Button v-if="hasSetupData" @click="showSetupModal = true">
-              <ShieldCheck />Continue Setup
-            </Button>
-            <Form
-              v-else
-              v-bind="enable.form()"
-              @success="showSetupModal = true"
-              #default="{ processing }"
+          <CardContent
+            class="space-y-6 bg-gradient-to-br from-white to-zinc-50 py-6 dark:from-zinc-900 dark:to-zinc-950"
+          >
+            <div
+              v-if="!twoFactorEnabled"
+              class="flex flex-col items-start justify-start space-y-4"
             >
-              <Button type="submit" :disabled="processing">
-                <ShieldCheck />Enable 2FA</Button
-              ></Form
-            >
-          </div>
-        </div>
+              <Badge variant="destructive">Disabled</Badge>
 
-        <div v-else class="flex flex-col items-start justify-start space-y-4">
-          <Badge variant="default">Enabled</Badge>
+              <p class="text-muted-foreground">
+                When you enable two-factor authentication, you will be prompted for
+                a secure pin during login. This pin can be retrieved from a
+                TOTP-supported application on your phone.
+              </p>
 
-          <p class="text-muted-foreground">
-            With two-factor authentication enabled, you will be prompted for a
-            secure, random pin during login, which you can retrieve from the
-            TOTP-supported application on your phone.
-          </p>
+              <div>
+                <Button v-if="hasSetupData" @click="showSetupModal = true">
+                  <ShieldCheck />
+                  Continue Setup
+                </Button>
+                <Form
+                  v-else
+                  v-bind="enable.form()"
+                  @success="showSetupModal = true"
+                  #default="{ processing }"
+                >
+                  <Button type="submit" :disabled="processing">
+                    <ShieldCheck />
+                    Enable 2FA
+                  </Button>
+                </Form>
+              </div>
+            </div>
 
-          <TwoFactorRecoveryCodes />
+            <div v-else class="flex flex-col items-start justify-start space-y-4">
+              <Badge variant="default">Enabled</Badge>
 
-          <div class="relative inline">
-            <Form v-bind="disable.form()" #default="{ processing }">
-              <Button
-                variant="destructive"
-                type="submit"
-                :disabled="processing"
-              >
-                <ShieldBan />
-                Disable 2FA
-              </Button>
-            </Form>
-          </div>
-        </div>
+              <p class="text-muted-foreground">
+                With two-factor authentication enabled, you will be prompted for a
+                secure, random pin during login, which you can retrieve from the
+                TOTP-supported application on your phone.
+              </p>
+
+              <TwoFactorRecoveryCodes />
+
+              <div class="relative inline">
+                <Form v-bind="disable.form()" #default="{ processing }">
+                  <Button
+                    variant="destructive"
+                    type="submit"
+                    :disabled="processing"
+                  >
+                    <ShieldBan />
+                    Disable 2FA
+                  </Button>
+                </Form>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <TwoFactorSetupModal
           v-model:isOpen="showSetupModal"

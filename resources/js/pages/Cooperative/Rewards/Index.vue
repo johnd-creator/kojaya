@@ -69,7 +69,7 @@ const submit = (): void => {
       { title: 'Rewards', href: '/cooperative/rewards' },
     ]"
   >
-    <PageContainer>
+    <PageContainer class="max-w-none">
       <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <DataTable :columns="columns" :data="props.rewards" :searchable="false">
           <template #reward="{ row }">

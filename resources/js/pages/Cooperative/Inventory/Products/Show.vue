@@ -30,7 +30,7 @@ const submit = () =>
     ]"
   >
     <div
-      class="mx-auto grid w-full max-w-6xl gap-6 p-6 lg:grid-cols-[360px_1fr]"
+      class="grid w-full gap-6 p-6 lg:grid-cols-[360px_1fr]"
     >
       <div class="space-y-4">
         <Link
@@ -38,7 +38,7 @@ const submit = () =>
           class="inline-flex items-center gap-2 text-sm text-indigo-600"
           ><ArrowLeft class="h-4 w-4" />Kembali</Link
         >
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <h1 class="text-2xl font-semibold">{{ product.name }}</h1>
           <p class="text-sm text-zinc-500">
             {{ product.sku }} · {{ product.category?.name || "-" }}
@@ -67,7 +67,7 @@ const submit = () =>
           </dl>
         </div>
         <form
-          class="rounded-lg border bg-white p-4 dark:bg-zinc-900"
+          class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
           @submit.prevent="submit"
         >
           <h2 class="text-lg font-semibold">Adjustment Stok</h2>
@@ -92,7 +92,7 @@ const submit = () =>
         </form>
       </div>
 
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <div class="border-b p-4">
           <h2 class="text-lg font-semibold">Riwayat Stock Movement</h2>
         </div>

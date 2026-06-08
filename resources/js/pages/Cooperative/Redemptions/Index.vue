@@ -51,7 +51,7 @@ const columns = [
       { title: 'Redemptions', href: '/cooperative/redemptions' },
     ]"
   >
-    <PageContainer>
+    <PageContainer class="max-w-none">
       <div>
         <h1 class="text-2xl font-semibold">Reward Redemptions</h1>
         <p class="text-sm text-muted-foreground">

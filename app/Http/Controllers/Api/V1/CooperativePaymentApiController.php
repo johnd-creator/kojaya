@@ -18,13 +18,19 @@ class CooperativePaymentApiController extends Controller
     {
         $this->authorizeCooperativeAccess($request);
 
-        $payment = $service->record($request->validated(), $request->user());
+        $data = $request->validated();
+
+        if ($request->hasFile('proof')) {
+            $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin-api', 'public');
+        }
+
+        $payment = $service->record($data, $request->user());
 
         if ($payment->status === 'APPROVED') {
             $payment = $service->approve($payment, $request->user());
         }
 
-        return response()->json(['data' => $payment->load(['member', 'invoice'])], 201);
+        return response()->json(['data' => $payment->load(['member', 'invoice.contributionType', 'contributionType'])], 201);
     }
 
     public function approve(Request $request, CooperativePayment $payment, CooperativePaymentService $service): JsonResponse

@@ -90,8 +90,8 @@ const statusBadgeClass = (value: string | null | undefined): string =>
       { title: member.member_no, href: '#' },
     ]"
   >
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
-      <div class="rounded-2xl border bg-white p-6 shadow-sm dark:bg-zinc-900">
+    <div class="flex w-full flex-col gap-6 p-6">
+      <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
         <Link :href="index().url" class="text-sm font-medium text-indigo-600">
           Kembali ke daftar anggota
         </Link>
@@ -131,7 +131,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
           </div>
 
           <div class="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
-            <div class="rounded-xl border bg-zinc-50 p-4 dark:bg-zinc-950">
+            <div class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-4 dark:border-zinc-800/70 dark:bg-zinc-950">
               <div class="text-xs uppercase tracking-wide text-zinc-500">
                 Tanggal Aktif
               </div>
@@ -140,7 +140,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
               </div>
             </div>
 
-            <div class="rounded-xl border bg-zinc-50 p-4 dark:bg-zinc-950">
+            <div class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-4 dark:border-zinc-800/70 dark:bg-zinc-950">
               <div class="text-xs uppercase tracking-wide text-zinc-500">
                 Tanggal Bergabung
               </div>
@@ -155,7 +155,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
       <div>
         <h2 class="text-lg font-semibold">Ringkasan Simpanan</h2>
         <div class="mt-3 grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-          <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
             <div class="text-sm text-zinc-500">Total Simpanan</div>
             <div class="mt-2 text-xl font-semibold">
               {{ formatCurrency(savingsSummary.total_balance) }}
@@ -164,7 +164,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
           <div
             v-for="category in savingCategories"
             :key="category.key"
-            class="rounded-lg border bg-white p-4 dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
           >
             <div class="text-sm text-zinc-500">{{ category.label }}</div>
             <div class="mt-2 text-xl font-semibold">
@@ -177,7 +177,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
       </div>
 
       <div class="space-y-6">
-        <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-zinc-900">
+        <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
           <h2 class="text-lg font-semibold">Informasi Keanggotaan</h2>
           <dl class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div class="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-950">
@@ -235,7 +235,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
           </dl>
         </div>
 
-        <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-zinc-900">
+        <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
           <h2 class="text-lg font-semibold">Kontak & Administrasi</h2>
           <dl class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div class="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-950">
@@ -296,7 +296,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
         </div>
       </div>
 
-      <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-zinc-900">
+      <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
         <h2 class="mb-3 text-lg font-semibold">Mutasi Simpanan Terbaru</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm">
@@ -339,7 +339,7 @@ const statusBadgeClass = (value: string | null | undefined): string =>
         </div>
       </div>
 
-      <div class="rounded-2xl border bg-white p-5 shadow-sm dark:bg-zinc-900">
+      <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
         <div
           class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
         >

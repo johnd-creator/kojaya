@@ -65,7 +65,7 @@ class CooperativeSeeder extends Seeder
         );
         $wajib = CooperativeContributionType::query()->updateOrCreate(
             ['code' => 'WAJIB'],
-            ['name' => 'Simpanan Wajib', 'category' => 'WAJIB', 'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true],
+            ['name' => 'Simpanan Wajib', 'category' => 'WAJIB', 'default_amount' => 100000, 'frequency' => 'MONTHLY', 'is_active' => true],
         );
         $sukarela = CooperativeContributionType::query()->updateOrCreate(
             ['code' => 'SUKARELA'],

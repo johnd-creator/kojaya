@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
+import savings from './savings'
 /**
 * @see \Inertia\Controller::__invoke
 * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
@@ -82,6 +83,7 @@ components.form = componentsForm
 
 const settings = {
     components: Object.assign(components, components),
+    savings: Object.assign(savings, savings),
 }
 
 export default settings

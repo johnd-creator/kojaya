@@ -62,7 +62,7 @@ function submitStatus(): void {
       { title: redemption.member.name, href: '#' },
     ]"
   >
-    <PageContainer variant="detail">
+    <PageContainer variant="detail" class="max-w-none">
       <div
         class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
       >
@@ -78,25 +78,25 @@ function submitStatus(): void {
       </div>
 
       <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Quantity</div>
           <div class="mt-1 text-lg font-semibold">
             {{ redemption.quantity }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Poin Dipakai</div>
           <div class="mt-1 text-lg font-semibold">
             {{ formatNumber(redemption.points_used) }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Poin per Item</div>
           <div class="mt-1 text-lg font-semibold">
             {{ formatNumber(redemption.reward.points_required) }}
           </div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Stok Reward</div>
           <div class="mt-1 text-lg font-semibold">
             {{ redemption.reward.stock ?? "Unlimited" }}
@@ -106,7 +106,7 @@ function submitStatus(): void {
 
       <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div class="space-y-6">
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Informasi Redemption</h2>
             <dl class="mt-4 grid gap-4 text-sm md:grid-cols-2">
               <div>
@@ -136,7 +136,7 @@ function submitStatus(): void {
             </dl>
           </div>
 
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Data Anggota</h2>
             <dl class="mt-4 grid gap-4 text-sm md:grid-cols-2">
               <div>
@@ -160,7 +160,7 @@ function submitStatus(): void {
         </div>
 
         <div class="space-y-6">
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Update Status</h2>
             <form class="mt-4 space-y-4" @submit.prevent="submitStatus">
               <div class="space-y-2">
@@ -196,7 +196,7 @@ function submitStatus(): void {
             </form>
           </div>
 
-          <div class="rounded-lg border bg-white p-6 text-sm dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 text-sm dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Dampak Poin</h2>
             <div class="mt-4 space-y-3">
               <div class="flex justify-between">

@@ -2,12 +2,14 @@
 
 namespace App\Services\Cooperative;
 
+use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativePayment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class CooperativePaymentService
 {
@@ -21,14 +23,32 @@ class CooperativePaymentService
      */
     public function record(array $data, ?User $user = null): CooperativePayment
     {
-        $invoice = isset($data['cooperative_dues_invoice_id'])
-            ? CooperativeDuesInvoice::query()->find($data['cooperative_dues_invoice_id'])
-            : null;
+        $invoice = $this->resolveInvoice($data);
+        $contributionType = $this->resolveContributionType($data, $invoice);
+
+        if (! $invoice && ! $contributionType) {
+            throw ValidationException::withMessages([
+                'cooperative_contribution_type_id' => 'Jenis simpanan wajib dipilih.',
+            ]);
+        }
+
+        if ($contributionType && in_array($contributionType->code, ['POKOK', 'WAJIB'], true)) {
+            $expectedAmount = round((float) $contributionType->default_amount, 2);
+            $submittedAmount = round((float) $data['amount'], 2);
+
+            if ($submittedAmount !== $expectedAmount) {
+                throw ValidationException::withMessages([
+                    'amount' => "Nominal {$contributionType->name} harus ".number_format($expectedAmount, 0, ',', '.').'.',
+                ]);
+            }
+        }
 
         $this->periodLockService->assertUnlocked($invoice?->period ?? substr((string) $data['paid_at'], 0, 7));
 
         return CooperativePayment::query()->create([
             ...$data,
+            'cooperative_dues_invoice_id' => $invoice?->id,
+            'cooperative_contribution_type_id' => $contributionType?->id,
             'user_id' => $user?->id,
             'status' => $data['status'] ?? 'PENDING',
         ]);
@@ -80,6 +100,16 @@ class CooperativePaymentService
                 ])->save();
             }
 
+            $contributionType = $payment->contributionType;
+
+            if (! $contributionType && $invoice?->cooperative_contribution_type_id) {
+                $contributionType = $invoice->contributionType;
+
+                $payment->forceFill([
+                    'cooperative_contribution_type_id' => $invoice->cooperative_contribution_type_id,
+                ])->save();
+            }
+
             CooperativeLedgerEntry::query()->firstOrCreate(
                 [
                     'cooperative_payment_id' => $payment->id,
@@ -89,13 +119,13 @@ class CooperativePaymentService
                     'cooperative_member_id' => $payment->cooperative_member_id,
                     'source_type' => CooperativePayment::class,
                     'source_id' => $payment->id,
-                    'cooperative_contribution_type_id' => $invoice?->cooperative_contribution_type_id,
+                    'cooperative_contribution_type_id' => $contributionType?->id,
                     'ledger_scope' => 'SAVINGS',
-                    'category_snapshot' => $invoice?->contributionType?->category,
+                    'category_snapshot' => $contributionType?->category,
                     'debit' => 0,
                     'credit' => $payment->amount,
-                    'period' => $invoice?->period,
-                    'description' => 'Pembayaran iuran/simpanan koperasi',
+                    'period' => $invoice?->period ?? $payment->paid_at?->format('Y-m'),
+                    'description' => $payment->notes ?: 'Pembayaran iuran/simpanan koperasi',
                     'posted_at' => $payment->paid_at,
                 ],
             );
@@ -179,5 +209,49 @@ class CooperativePaymentService
 
             return $payments->count();
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveInvoice(array &$data): ?CooperativeDuesInvoice
+    {
+        if (! empty($data['cooperative_dues_invoice_id'])) {
+            return CooperativeDuesInvoice::query()->find($data['cooperative_dues_invoice_id']);
+        }
+
+        if (empty($data['cooperative_member_id']) || empty($data['cooperative_contribution_type_id'])) {
+            return null;
+        }
+
+        $invoice = CooperativeDuesInvoice::query()
+            ->where('cooperative_member_id', $data['cooperative_member_id'])
+            ->where('cooperative_contribution_type_id', $data['cooperative_contribution_type_id'])
+            ->whereIn('status', ['UNPAID', 'PARTIAL'])
+            ->orderBy('period')
+            ->orderBy('id')
+            ->first();
+
+        if ($invoice) {
+            $data['cooperative_dues_invoice_id'] = $invoice->id;
+        }
+
+        return $invoice;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveContributionType(array $data, ?CooperativeDuesInvoice $invoice): ?CooperativeContributionType
+    {
+        if (! empty($data['cooperative_contribution_type_id'])) {
+            return CooperativeContributionType::query()->find($data['cooperative_contribution_type_id']);
+        }
+
+        if ($invoice?->cooperative_contribution_type_id) {
+            return $invoice->contributionType()->first();
+        }
+
+        return null;
     }
 }

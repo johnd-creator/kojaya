@@ -178,6 +178,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('members/export', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'export'])->name('members.export');
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
             Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
+            Route::post('members/{member}/deactivate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'deactivate'])->name('members.deactivate');
             Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');
         });
 

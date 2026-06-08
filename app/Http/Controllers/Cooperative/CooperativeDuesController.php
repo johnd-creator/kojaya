@@ -67,7 +67,7 @@ class CooperativeDuesController extends Controller
                 'period' => $period,
                 'status' => $status,
             ],
-            'canResetPaidDues' => $request->user()?->hasRole('System Admin') ?? false,
+            'canResetPaidDues' => $this->canResetPaidDues($request),
         ]);
     }
 
@@ -81,6 +81,7 @@ class CooperativeDuesController extends Controller
     public function markPaid(MarkDuesPaidRequest $request, CooperativePaymentService $paymentService): RedirectResponse
     {
         $paidCount = 0;
+        $requestedAmount = $request->validated('amount');
 
         $invoices = CooperativeDuesInvoice::query()
             ->whereIn('id', $request->validated('invoice_ids'))
@@ -94,11 +95,15 @@ class CooperativeDuesController extends Controller
                 continue;
             }
 
+            $paymentAmount = $requestedAmount === null
+                ? $remainingAmount
+                : min((float) $requestedAmount, $remainingAmount);
+
             $payment = CooperativePayment::query()->create([
                 'cooperative_member_id' => $invoice->cooperative_member_id,
                 'cooperative_dues_invoice_id' => $invoice->id,
                 'user_id' => $request->user()?->id,
-                'amount' => $remainingAmount,
+                'amount' => $paymentAmount,
                 'payment_method' => $request->validated('payment_method') ?: 'CASH',
                 'paid_at' => $request->validated('paid_at'),
                 'status' => 'APPROVED',
@@ -119,7 +124,7 @@ class CooperativeDuesController extends Controller
 
     public function markUnpaid(CooperativeDuesInvoice $invoice, Request $request, CooperativePaymentService $paymentService): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole('System Admin'), 403);
+        abort_unless($this->canResetPaidDues($request), 403);
 
         if ($invoice->status !== 'PAID') {
             return back()->with('error', 'Hanya tagihan berstatus sudah bayar yang dapat dikembalikan menjadi belum bayar.');
@@ -143,5 +148,18 @@ class CooperativeDuesController extends Controller
         }
 
         return CarbonImmutable::now()->format('Y-m');
+    }
+
+    private function canResetPaidDues(Request $request): bool
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        return $user->can('manage_cooperative_dues')
+            && $user->can('manage_cooperative_settings')
+            && $user->can('view_user_all');
     }
 }

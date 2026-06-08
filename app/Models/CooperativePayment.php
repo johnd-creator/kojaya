@@ -15,6 +15,7 @@ class CooperativePayment extends Model
     protected $fillable = [
         'cooperative_member_id',
         'cooperative_dues_invoice_id',
+        'cooperative_contribution_type_id',
         'user_id',
         'amount',
         'payment_method',
@@ -56,6 +57,11 @@ class CooperativePayment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(CooperativeDuesInvoice::class, 'cooperative_dues_invoice_id');
+    }
+
+    public function contributionType(): BelongsTo
+    {
+        return $this->belongsTo(CooperativeContributionType::class, 'cooperative_contribution_type_id');
     }
 
     public function ledgerEntries(): HasMany

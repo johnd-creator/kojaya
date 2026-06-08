@@ -92,7 +92,7 @@ const submitDelete = () => {
       { title: 'Tipe Pinjaman', href: index().url },
     ]"
   >
-    <PageContainer variant="detail">
+    <PageContainer variant="detail" class="max-w-none">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Tipe Pinjaman</h1>
         <p class="mt-1 text-sm text-zinc-500">
@@ -100,7 +100,7 @@ const submitDelete = () => {
         </p>
       </div>
 
-      <form class="grid gap-4 rounded-lg border bg-white p-6 dark:bg-zinc-900 md:grid-cols-3" @submit.prevent="submitCreate">
+      <form class="grid gap-4 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900 md:grid-cols-3" @submit.prevent="submitCreate">
         <Input v-model="createForm.code" placeholder="Kode" required />
         <Input v-model="createForm.name" placeholder="Nama tipe pinjaman" required />
         <Input v-model="createForm.interest_rate" type="number" step="0.01" min="0" placeholder="Bunga %" required />
@@ -124,7 +124,7 @@ const submitDelete = () => {
         <div
           v-for="loanType in loanTypes"
           :key="loanType.id"
-          class="rounded-lg border bg-white p-6 dark:bg-zinc-900"
+          class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900"
         >
           <div v-if="editId !== loanType.id" class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>

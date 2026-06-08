@@ -19,7 +19,7 @@ withDefaults(defineProps<Props>(), {
 
 <template>
   <div
-    class="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    class="flex items-center justify-between rounded-xl border border-zinc-200/80 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:from-zinc-900 dark:to-zinc-950"
   >
     <div>
       <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">

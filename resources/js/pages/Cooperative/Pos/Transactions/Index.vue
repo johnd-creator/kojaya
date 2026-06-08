@@ -26,19 +26,19 @@ const applyFilters = () =>
       { title: 'Riwayat Transaksi', href: index().url },
     ]"
   >
-    <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
+    <div class="flex w-full flex-col gap-6 p-6">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Riwayat Transaksi POS</h1>
         <p class="mt-1 text-sm text-zinc-500">Transaksi kasir toko koperasi.</p>
       </div>
       <div
-        class="flex flex-col gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900 md:flex-row"
+        class="flex flex-col gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900 md:flex-row"
       >
         <Input v-model="dateFrom" type="date" class="md:w-48" />
         <Input v-model="dateTo" type="date" class="md:w-48" />
         <Button variant="outline" @click="applyFilters">Filter</Button>
       </div>
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <table class="w-full text-left text-sm">
           <thead
             class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900"

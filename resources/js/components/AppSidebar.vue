@@ -194,7 +194,7 @@ const allNavItems: NavItem[] = [
     ],
   },
   {
-    title: "Simpan Pinjam",
+    title: "Pinjaman",
     href: "#",
     icon: WalletCards,
     items: [

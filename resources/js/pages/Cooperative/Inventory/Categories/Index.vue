@@ -51,10 +51,10 @@ const submit = () => {
     ]"
   >
     <div
-      class="mx-auto grid w-full max-w-6xl gap-6 p-6 lg:grid-cols-[360px_1fr]"
+      class="grid w-full gap-6 p-6 lg:grid-cols-[360px_1fr]"
     >
       <form
-        class="rounded-lg border bg-white p-4 dark:bg-zinc-900"
+        class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
         @submit.prevent="submit"
       >
         <div class="flex items-center gap-2">
@@ -87,7 +87,7 @@ const submit = () => {
         </div>
       </form>
 
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
         <table class="w-full text-left text-sm">
           <thead
             class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900"

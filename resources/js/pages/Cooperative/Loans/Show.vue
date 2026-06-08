@@ -37,7 +37,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
       { title: loan.member?.name ?? 'Detail', href: '#' },
     ]"
   >
-    <PageContainer variant="detail">
+    <PageContainer variant="detail" class="max-w-none">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 class="text-3xl font-bold tracking-tight">{{ loan.member?.name }}</h1>
@@ -49,19 +49,19 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
       </div>
 
       <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Pokok</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(loan.principal_amount) }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Total Pinjaman</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(loan.total_amount) }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Sisa Outstanding</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(loan.outstanding_amount) }}</div>
         </div>
-        <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <div class="text-xs text-zinc-500">Angsuran / Bulan</div>
           <div class="mt-1 text-lg font-semibold">{{ formatCurrency(loan.installment_amount) }}</div>
         </div>
@@ -69,7 +69,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
 
       <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div class="space-y-6">
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Informasi Pinjaman</h2>
             <dl class="mt-4 grid gap-4 text-sm md:grid-cols-2">
               <div><dt class="text-zinc-500">Tanggal Pengajuan</dt><dd>{{ formatDate(loan.applied_at) }}</dd></div>
@@ -83,7 +83,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
             </dl>
           </div>
 
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Jadwal Angsuran</h2>
             <div class="mt-4 overflow-x-auto">
               <table class="w-full text-left text-sm">
@@ -109,13 +109,13 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
             </div>
           </div>
 
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Riwayat Approval</h2>
             <div class="mt-4 space-y-3">
               <div
                 v-for="log in approvalLogs"
                 :key="log.id"
-                class="rounded-md border bg-zinc-50 p-3 text-sm dark:bg-zinc-950/40"
+                class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-3 text-sm dark:border-zinc-800/70 dark:bg-zinc-950/40"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div class="font-medium">
@@ -132,7 +132,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
         <div class="space-y-6">
           <div
             v-if="loan.status === 'APPLIED'"
-            class="rounded-lg border bg-white p-6 dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900"
           >
             <h2 class="text-lg font-semibold">Approval</h2>
             <form class="mt-4 space-y-3" @submit.prevent="submitApprove">
@@ -147,7 +147,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
 
           <div
             v-if="loan.status === 'APPROVED'"
-            class="rounded-lg border bg-white p-6 dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900"
           >
             <h2 class="text-lg font-semibold">Pencairan</h2>
             <form class="mt-4 space-y-3" @submit.prevent="submitDisburse">
@@ -158,7 +158,7 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
 
           <div
             v-if="loan.status === 'ACTIVE'"
-            class="rounded-lg border bg-white p-6 dark:bg-zinc-900"
+            class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900"
           >
             <h2 class="text-lg font-semibold">Catat Angsuran</h2>
             <form class="mt-4 space-y-3" @submit.prevent="submitPayment">
@@ -175,13 +175,13 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
             </form>
           </div>
 
-          <div class="rounded-lg border bg-white p-6 dark:bg-zinc-900">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900">
             <h2 class="text-lg font-semibold">Pembayaran Tercatat</h2>
             <div class="mt-4 space-y-3">
               <div
                 v-for="payment in loan.payments"
                 :key="payment.id"
-                class="rounded-md border bg-zinc-50 p-3 text-sm dark:bg-zinc-950/40"
+                class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-3 text-sm dark:border-zinc-800/70 dark:bg-zinc-950/40"
               >
                 <div class="flex items-center justify-between gap-4">
                   <div class="font-medium">{{ formatCurrency(payment.amount) }}</div>

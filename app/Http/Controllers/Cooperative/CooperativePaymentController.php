@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Cooperative;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\StoreCooperativePaymentRequest;
-use App\Models\CooperativeDuesInvoice;
+use App\Models\CooperativeContributionType;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Services\Cooperative\CooperativePaymentService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,7 +20,7 @@ class CooperativePaymentController extends Controller
     {
         $this->authorize('viewAny', CooperativePayment::class);
 
-        $query = CooperativePayment::query()->with(['member', 'invoice.contributionType']);
+        $query = CooperativePayment::query()->with(['member', 'invoice.contributionType', 'contributionType']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -28,7 +29,7 @@ class CooperativePaymentController extends Controller
         return Inertia::render('Cooperative/Payments/Index', [
             'payments' => $query->orderByDesc('paid_at')->orderByDesc('id')->paginate(20)->withQueryString(),
             'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
-            'invoices' => CooperativeDuesInvoice::query()->with(['member', 'contributionType'])->whereIn('status', ['UNPAID', 'PARTIAL'])->orderByDesc('period')->get(),
+            'contributionTypes' => $this->paymentContributionTypes()->get(),
             'filters' => $request->only(['status']),
         ]);
     }
@@ -37,13 +38,19 @@ class CooperativePaymentController extends Controller
     {
         $this->authorize('create', CooperativePayment::class);
 
-        $payment = $service->record($request->validated(), $request->user());
+        $data = $request->validated();
+
+        if ($request->hasFile('proof')) {
+            $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin', 'public');
+        }
+
+        $payment = $service->record($data, $request->user());
 
         if ($payment->status === 'APPROVED') {
             $service->approve($payment, $request->user());
         }
 
-        return back()->with('success', 'Cooperative payment recorded successfully.');
+        return back()->with('success', 'Pembayaran simpanan berhasil dicatat.');
     }
 
     public function approve(CooperativePayment $payment, CooperativePaymentService $service, Request $request): RedirectResponse
@@ -52,6 +59,14 @@ class CooperativePaymentController extends Controller
 
         $service->approve($payment, $request->user());
 
-        return back()->with('success', 'Cooperative payment approved successfully.');
+        return back()->with('success', 'Pembayaran simpanan berhasil disetujui.');
+    }
+
+    private function paymentContributionTypes(): Builder
+    {
+        return CooperativeContributionType::query()
+            ->where('is_active', true)
+            ->whereIn('code', ['POKOK', 'SUKARELA'])
+            ->orderBy('name');
     }
 }

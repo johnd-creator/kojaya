@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
-import { CheckCircle2, RotateCcw, X } from "lucide-vue-next";
+import { CheckCircle2, Funnel, RotateCcw, Settings2, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { index, markPaid, markUnpaid } from "@/routes/cooperative/dues";
+import { edit as editSavings } from "@/routes/settings/savings";
 
 const props = defineProps<{
   invoices: any;
@@ -30,21 +31,23 @@ const contributionTypeId = ref(props.filters.contribution_type_id ?? "");
 const category = ref(props.filters.category ?? "");
 const selectedInvoiceIds = ref<number[]>([]);
 const showBatchConfirm = ref(false);
+const rowPaymentAmounts = ref<Record<number, string>>({});
 const resetPaidForm = useForm({});
 const markPaidForm = useForm<{
   invoice_ids: number[];
+  amount: string | number | null;
   paid_at: string;
   payment_method: string;
   reference_no: string;
   notes: string;
 }>({
   invoice_ids: [],
+  amount: null,
   paid_at: new Date().toISOString().slice(0, 10),
   payment_method: "CASH",
   reference_no: "",
   notes: "",
 });
-
 const applyFilters = () =>
   router.get(
     index().url,
@@ -82,6 +85,18 @@ const selectedRemainingTotal = computed(() =>
     0,
   ),
 );
+const wajibContributionType = computed(
+  () =>
+    props.contributionTypes.find((type) => type.code === "WAJIB") ??
+    props.contributionTypes.find((type) => type.category === "WAJIB") ??
+    null,
+);
+const pokokContributionType = computed(
+  () =>
+    props.contributionTypes.find((type) => type.code === "POKOK") ??
+    props.contributionTypes.find((type) => type.category === "POKOK") ??
+    null,
+);
 
 const toggleAllPayable = () => {
   selectedInvoiceIds.value = allPayableSelected.value
@@ -89,15 +104,20 @@ const toggleAllPayable = () => {
     : [...payableInvoiceIds.value];
 };
 
-const submitMarkPaid = (invoiceIds: number[]) => {
+const submitMarkPaid = (invoiceIds: number[], amount?: string | number) => {
   markPaidForm.invoice_ids = invoiceIds;
+  markPaidForm.amount = amount || null;
   markPaidForm.post(markPaid().url, {
     preserveScroll: true,
     onSuccess: () => {
       selectedInvoiceIds.value = selectedInvoiceIds.value.filter(
         (id) => !invoiceIds.includes(id),
       );
+      invoiceIds.forEach((id) => {
+        delete rowPaymentAmounts.value[id];
+      });
       showBatchConfirm.value = false;
+      markPaidForm.amount = null;
     },
   });
 };
@@ -133,14 +153,16 @@ const clearSelection = () => {
         class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
       >
         <div>
-          <h1 class="text-3xl font-bold tracking-tight">Iuran Simpanan Wajib</h1>
+          <h1 class="text-3xl font-bold tracking-tight">
+            Iuran Simpanan Wajib
+          </h1>
           <p class="mt-1 text-sm text-zinc-500">
             Monitoring tagihan iuran simpanan wajib anggota per periode.
           </p>
         </div>
       </div>
       <div
-        class="grid gap-3 rounded-lg border bg-white p-4 dark:bg-zinc-900 md:grid-cols-3 xl:grid-cols-6"
+        class="grid gap-3 rounded-xl border border-zinc-200/80 bg-white/95 p-4 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900 md:grid-cols-3 xl:grid-cols-6"
       >
         <Input
           v-model="memberSearch"
@@ -181,9 +203,89 @@ const clearSelection = () => {
             {{ type.name }}
           </option>
         </select>
-        <Button variant="outline" @click="applyFilters">Filter</Button>
+        <Button class="shadow-sm" @click="applyFilters">
+          <Funnel class="mr-2 h-4 w-4" />Filter
+        </Button>
       </div>
-      <div class="rounded-lg border bg-white p-4 dark:bg-zinc-900">
+
+      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.4fr)]">
+        <div
+          class="rounded-xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
+        >
+          <div
+            class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
+          >
+            <div>
+              <div
+                class="text-sm font-semibold text-zinc-950 dark:text-zinc-50"
+              >
+                Nominal simpanan aktif
+              </div>
+              <p class="mt-1 text-sm text-zinc-500">
+                Pengaturan nominal sekarang dikelola dari menu `Simpanan`, bukan
+                dari halaman tagihan.
+              </p>
+            </div>
+            <Button as-child variant="outline">
+              <Link :href="editSavings().url">
+                <Settings2 class="mr-2 h-4 w-4" />
+                Atur Simpanan
+              </Link>
+            </Button>
+          </div>
+          <div class="mt-4 grid gap-3 md:grid-cols-2">
+            <div
+              class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-4 dark:border-zinc-800/70 dark:bg-zinc-950"
+            >
+              <div class="text-xs uppercase tracking-wide text-zinc-500">
+                Simpanan Wajib
+              </div>
+              <div
+                class="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-50"
+              >
+                {{ formatCurrency(wajibContributionType?.default_amount ?? 0) }}
+              </div>
+              <div class="mt-1 text-xs text-zinc-500">
+                Dipakai untuk generate tagihan bulanan berikutnya.
+              </div>
+            </div>
+            <div
+              class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-4 dark:border-zinc-800/70 dark:bg-zinc-950"
+            >
+              <div class="text-xs uppercase tracking-wide text-zinc-500">
+                Simpanan Pokok
+              </div>
+              <div
+                class="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-50"
+              >
+                {{ formatCurrency(pokokContributionType?.default_amount ?? 0) }}
+              </div>
+              <div class="mt-1 text-xs text-zinc-500">
+                Dipakai untuk tagihan satu kali anggota baru.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="rounded-xl border border-emerald-200/80 bg-emerald-50/80 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/20 dark:bg-emerald-500/10"
+        >
+          <div class="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+            Catatan
+          </div>
+          <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            Perubahan nominal dari menu `Simpanan` akan langsung tampil di kartu
+            ringkasan ini, tetapi tagihan yang sudah terbit tidak diubah otomatis.
+          </p>
+          <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            Untuk menerapkan nominal baru ke periode baru, lanjutkan generate
+            tagihan pada periode yang diinginkan.
+          </p>
+        </div>
+      </div>
+      <div
+        class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
+      >
         <div
           class="mb-4 flex flex-col justify-between gap-2 md:flex-row md:items-center"
         >
@@ -236,7 +338,9 @@ const clearSelection = () => {
           </Button>
         </div>
       </div>
-      <div class="overflow-hidden rounded-lg border bg-white dark:bg-zinc-900">
+      <div
+        class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900"
+      >
         <table class="w-full text-left text-sm">
           <thead
             class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900"
@@ -257,6 +361,7 @@ const clearSelection = () => {
               <th class="px-4 py-3 text-right">Nominal</th>
               <th class="px-4 py-3 text-right">Terbayar</th>
               <th class="px-4 py-3 text-right">Sisa</th>
+              <th class="px-4 py-3 text-right">Collect</th>
               <th class="px-4 py-3 text-right">Aksi</th>
             </tr>
           </thead>
@@ -293,13 +398,31 @@ const clearSelection = () => {
                 {{ formatCurrency(remainingAmount(invoice)) }}
               </td>
               <td class="px-4 py-3 text-right">
+                <Input
+                  v-if="isPayable(invoice)"
+                  v-model="rowPaymentAmounts[invoice.id]"
+                  type="number"
+                  min="1"
+                  :max="remainingAmount(invoice)"
+                  step="1000"
+                  class="ml-auto w-36 text-right"
+                  :placeholder="String(remainingAmount(invoice))"
+                />
+                <span v-else class="text-xs text-zinc-400">-</span>
+              </td>
+              <td class="px-4 py-3 text-right">
                 <Button
                   v-if="isPayable(invoice)"
                   size="sm"
                   variant="outline"
                   :disabled="markPaidForm.processing"
-                  @click="submitMarkPaid([invoice.id])"
-                  >Sudah Bayar</Button
+                  @click="
+                    submitMarkPaid(
+                      [invoice.id],
+                      rowPaymentAmounts[invoice.id] || remainingAmount(invoice),
+                    )
+                  "
+                  >Collect</Button
                 >
                 <Button
                   v-else-if="canResetPaidDues && invoice.status === 'PAID'"
@@ -313,7 +436,7 @@ const clearSelection = () => {
               </td>
             </tr>
             <tr v-if="invoices.data.length === 0">
-              <td colspan="9" class="px-4 py-10 text-center text-zinc-500">
+              <td colspan="10" class="px-4 py-10 text-center text-zinc-500">
                 Belum ada tagihan.
               </td>
             </tr>
@@ -353,7 +476,7 @@ const clearSelection = () => {
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       >
         <div
-          class="w-full max-w-2xl rounded-lg border bg-white p-5 shadow-xl dark:bg-zinc-950"
+          class="w-full max-w-2xl rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 shadow-xl dark:bg-zinc-950"
         >
           <div class="flex items-start justify-between gap-4">
             <div>

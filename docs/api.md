@@ -1055,17 +1055,28 @@ Returns paginated savings ledger entries plus a `summary` object using the same 
 ```http
 POST /api/v1/dues/payments
 Authorization: Bearer {token}
-Content-Type: application/json
+Content-Type: multipart/form-data
 
 {
   "cooperative_member_id": "uuid",
+  "cooperative_dues_invoice_id": "uuid",
+  "cooperative_contribution_type_id": 2,
   "amount": 500000,
   "payment_method": "CASH",
   "paid_at": "2026-05-05",
   "reference_no": "REF-001",
-  "notes": "Pembayaran iuran Mei"
+  "notes": "Setoran simpanan wajib bulan Juni",
+  "proof": "<file>"
 }
 ```
+
+**Rules:**
+- `cooperative_dues_invoice_id` optional jika admin mencatat pembayaran langsung dari tagihan yang sudah ada.
+- `cooperative_contribution_type_id` optional jika `cooperative_dues_invoice_id` dikirim; wajib bila admin mencatat setoran langsung berbasis jenis simpanan.
+- Jenis simpanan admin dibatasi ke `POKOK`, `WAJIB`, dan `SUKARELA`.
+- Jika hanya `cooperative_member_id` + `cooperative_contribution_type_id` yang dikirim, sistem otomatis menghubungkan pembayaran ke invoice `UNPAID`/`PARTIAL` paling awal yang cocok.
+- `proof` optional, menerima gambar `jpg`, `jpeg`, atau `png` maksimal 4MB.
+- `POKOK` harus `200000` dan `WAJIB` harus `100000`; `SUKARELA` bebas nominal.
 
 **Response (201):**
 ```json
@@ -1075,13 +1086,20 @@ Content-Type: application/json
     "member": {
       "name": "Ahmad Subarjo"
     },
+    "contribution_type": {
+      "id": 2,
+      "code": "WAJIB",
+      "name": "Simpanan Wajib",
+      "category": "WAJIB"
+    },
     "invoice": {
       "invoice_number": "INV-2026-001"
     },
     "amount": 500000,
     "payment_method": "CASH",
     "status": "PENDING",
-    "paid_at": "2026-05-05"
+    "paid_at": "2026-05-05",
+    "proof_path": "cooperative/payment-proofs/admin-api/example.jpg"
   }
 }
 ```
@@ -2351,4 +2369,4 @@ final checkIn = await api.post('/ess/attendance/check-in', {
 
 ---
 
-*Last Updated: May 15, 2026*
+*Last Updated: June 7, 2026*

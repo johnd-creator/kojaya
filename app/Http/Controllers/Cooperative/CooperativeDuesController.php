@@ -11,6 +11,7 @@ use App\Models\CooperativePayment;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\DuesGenerationService;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -35,14 +36,15 @@ class CooperativeDuesController extends Controller
             $query->where('status', $status);
         }
 
+        if ($request->filled('member_id')) {
+            $query->where('cooperative_member_id', $request->input('member_id'));
+        }
+
         if ($request->filled('member_search')) {
-            $search = $request->string('member_search')->toString();
-            $query->whereHas('member', function ($memberQuery) use ($search): void {
-                $memberQuery->where('name', 'like', "%{$search}%")
-                    ->orWhere('member_no', 'like', "%{$search}%")
-                    ->orWhere('no_anggota', 'like', "%{$search}%")
-                    ->orWhere('nama_anggota', 'like', "%{$search}%");
-            });
+            $query->whereHas('member', fn (Builder $memberQuery) => $this->applyMemberSearch(
+                $memberQuery,
+                $request->string('member_search')->toString(),
+            ));
         }
 
         if ($request->filled('contribution_type_id')) {
@@ -63,7 +65,7 @@ class CooperativeDuesController extends Controller
                 ->orderBy('category')
                 ->pluck('category'),
             'filters' => [
-                ...$request->only(['period', 'member_search', 'contribution_type_id', 'category']),
+                ...$request->only(['period', 'member_id', 'member_search', 'contribution_type_id', 'category']),
                 'period' => $period,
                 'status' => $status,
             ],
@@ -161,5 +163,16 @@ class CooperativeDuesController extends Controller
         return $user->can('manage_cooperative_dues')
             && $user->can('manage_cooperative_settings')
             && $user->can('view_user_all');
+    }
+
+    private function applyMemberSearch(Builder $query, string $search): void
+    {
+        $keyword = '%'.mb_strtolower(trim($search)).'%';
+
+        $query->where(function (Builder $memberQuery) use ($keyword): void {
+            foreach (['name', 'member_no', 'no_anggota', 'nama_anggota'] as $column) {
+                $memberQuery->orWhereRaw("LOWER(COALESCE({$column}, '')) LIKE ?", [$keyword]);
+            }
+        });
     }
 }

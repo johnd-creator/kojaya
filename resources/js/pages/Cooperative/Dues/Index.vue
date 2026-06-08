@@ -1,12 +1,35 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
-import { CheckCircle2, Funnel, RotateCcw, Settings2, X } from "lucide-vue-next";
-import { computed, ref } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import {
+  CalendarPlus,
+  CheckCircle2,
+  Funnel,
+  RotateCcw,
+  Settings2,
+  X,
+} from "lucide-vue-next";
+import { computed, ref, watch } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
-import { index, markPaid, markUnpaid } from "@/routes/cooperative/dues";
+import {
+  generate,
+  index,
+  markPaid,
+  markUnpaid,
+} from "@/routes/cooperative/dues";
 import { edit as editSavings } from "@/routes/settings/savings";
 
 const props = defineProps<{
@@ -14,6 +37,7 @@ const props = defineProps<{
   filters: {
     period?: string;
     status?: string;
+    member_id?: number | null;
     member_search?: string;
     contribution_type_id?: string | number;
     category?: string;
@@ -27,6 +51,7 @@ const period = ref(
 );
 const status = ref(props.filters.status ?? "");
 const memberSearch = ref(props.filters.member_search ?? "");
+const memberId = ref<number | null>(props.filters.member_id ?? null);
 const contributionTypeId = ref(props.filters.contribution_type_id ?? "");
 const category = ref(props.filters.category ?? "");
 const selectedInvoiceIds = ref<number[]>([]);
@@ -54,12 +79,26 @@ const applyFilters = () =>
     {
       period: period.value,
       status: status.value,
-      member_search: memberSearch.value,
+      member_id: memberId.value || undefined,
+      member_search: memberSearch.value || undefined,
       contribution_type_id: contributionTypeId.value,
       category: category.value,
     },
     { preserveState: true, replace: true },
   );
+
+watch(memberId, () => {
+  applyFilters();
+});
+
+const debouncedApplyMemberSearch = useDebounceFn(() => {
+  memberId.value = null;
+  applyFilters();
+}, 350);
+
+watch(memberSearch, () => {
+  debouncedApplyMemberSearch();
+});
 const remainingAmount = (invoice: any) =>
   Number(invoice.amount ?? 0) - Number(invoice.paid_amount ?? 0);
 const isPayable = (invoice: any) =>
@@ -84,18 +123,6 @@ const selectedRemainingTotal = computed(() =>
     (total: number, invoice: any) => total + remainingAmount(invoice),
     0,
   ),
-);
-const wajibContributionType = computed(
-  () =>
-    props.contributionTypes.find((type) => type.code === "WAJIB") ??
-    props.contributionTypes.find((type) => type.category === "WAJIB") ??
-    null,
-);
-const pokokContributionType = computed(
-  () =>
-    props.contributionTypes.find((type) => type.code === "POKOK") ??
-    props.contributionTypes.find((type) => type.category === "POKOK") ??
-    null,
 );
 
 const toggleAllPayable = () => {
@@ -162,11 +189,11 @@ const clearSelection = () => {
         </div>
       </div>
       <div
-        class="grid gap-3 rounded-xl border border-zinc-200/80 bg-white/95 p-4 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900 md:grid-cols-3 xl:grid-cols-6"
+        class="grid gap-3 rounded-xl border border-zinc-200/80 bg-white/95 p-4 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900 md:grid-cols-3 xl:grid-cols-7"
       >
         <Input
           v-model="memberSearch"
-          placeholder="Cari anggota"
+          placeholder="Cari nama / no anggota"
           @keyup.enter="applyFilters"
         />
         <Input v-model="period" type="month" />
@@ -206,83 +233,14 @@ const clearSelection = () => {
         <Button class="shadow-sm" @click="applyFilters">
           <Funnel class="mr-2 h-4 w-4" />Filter
         </Button>
+        <Button as-child variant="outline">
+          <Link :href="editSavings().url">
+            <Settings2 class="mr-2 h-4 w-4" />
+            Atur Simpanan
+          </Link>
+        </Button>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.4fr)]">
-        <div
-          class="rounded-xl border border-zinc-200/80 bg-white/95 p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90"
-        >
-          <div
-            class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
-          >
-            <div>
-              <div
-                class="text-sm font-semibold text-zinc-950 dark:text-zinc-50"
-              >
-                Nominal simpanan aktif
-              </div>
-              <p class="mt-1 text-sm text-zinc-500">
-                Pengaturan nominal sekarang dikelola dari menu `Simpanan`, bukan
-                dari halaman tagihan.
-              </p>
-            </div>
-            <Button as-child variant="outline">
-              <Link :href="editSavings().url">
-                <Settings2 class="mr-2 h-4 w-4" />
-                Atur Simpanan
-              </Link>
-            </Button>
-          </div>
-          <div class="mt-4 grid gap-3 md:grid-cols-2">
-            <div
-              class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-4 dark:border-zinc-800/70 dark:bg-zinc-950"
-            >
-              <div class="text-xs uppercase tracking-wide text-zinc-500">
-                Simpanan Wajib
-              </div>
-              <div
-                class="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-50"
-              >
-                {{ formatCurrency(wajibContributionType?.default_amount ?? 0) }}
-              </div>
-              <div class="mt-1 text-xs text-zinc-500">
-                Dipakai untuk generate tagihan bulanan berikutnya.
-              </div>
-            </div>
-            <div
-              class="rounded-xl border border-zinc-200/70 bg-zinc-50/90 p-4 dark:border-zinc-800/70 dark:bg-zinc-950"
-            >
-              <div class="text-xs uppercase tracking-wide text-zinc-500">
-                Simpanan Pokok
-              </div>
-              <div
-                class="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-50"
-              >
-                {{ formatCurrency(pokokContributionType?.default_amount ?? 0) }}
-              </div>
-              <div class="mt-1 text-xs text-zinc-500">
-                Dipakai untuk tagihan satu kali anggota baru.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="rounded-xl border border-emerald-200/80 bg-emerald-50/80 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-500/20 dark:bg-emerald-500/10"
-        >
-          <div class="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-            Catatan
-          </div>
-          <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-            Perubahan nominal dari menu `Simpanan` akan langsung tampil di kartu
-            ringkasan ini, tetapi tagihan yang sudah terbit tidak diubah otomatis.
-          </p>
-          <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-            Untuk menerapkan nominal baru ke periode baru, lanjutkan generate
-            tagihan pada periode yang diinginkan.
-          </p>
-        </div>
-      </div>
       <div
         class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900"
       >
@@ -320,6 +278,16 @@ const clearSelection = () => {
               <option>TRANSFER</option>
               <option>QRIS</option>
             </select>
+          </label>
+          <label class="space-y-1">
+            <span class="text-sm">Nominal</span>
+            <Input
+              v-model="markPaidForm.amount"
+              type="number"
+              min="0"
+              step="1000"
+              :placeholder="formatCurrency(selectedRemainingTotal)"
+            />
           </label>
           <label class="space-y-1 lg:flex-1">
             <span class="text-sm">Referensi</span>

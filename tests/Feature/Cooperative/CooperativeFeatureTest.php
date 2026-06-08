@@ -366,6 +366,57 @@ class CooperativeFeatureTest extends TestCase
             );
     }
 
+    public function test_dues_page_filters_members_by_partial_name_or_member_number(): void
+    {
+        Carbon::setTestNow('2026-05-15 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $matchingMember = $this->member([
+            'status' => 'ACTIVE',
+            'member_no' => 'KOP-2026-7788',
+            'no_anggota' => '7788',
+            'name' => 'Budi Santoso',
+            'nama_anggota' => 'Budi Santoso',
+        ]);
+        $otherMember = $this->member([
+            'status' => 'ACTIVE',
+            'member_no' => 'KOP-2026-9900',
+            'no_anggota' => '9900',
+            'name' => 'Siti Aminah',
+            'nama_anggota' => 'Siti Aminah',
+        ]);
+
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index', ['member_search' => 'sAnT']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('filters.member_search', 'sAnT')
+                ->has('invoices.data', 1)
+                ->where('invoices.data.0.cooperative_member_id', $matchingMember->id)
+            );
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index', ['member_search' => '990']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('filters.member_search', '990')
+                ->has('invoices.data', 1)
+                ->where('invoices.data.0.cooperative_member_id', $otherMember->id)
+            );
+    }
+
     public function test_savings_settings_page_is_displayed_with_required_amounts(): void
     {
         $this->seed(RolePermissionSeeder::class);

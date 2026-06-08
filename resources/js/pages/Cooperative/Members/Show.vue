@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Head, Link } from "@inertiajs/vue3";
+import { ArrowLeft } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { index } from "@/routes/cooperative/members";
@@ -91,13 +93,16 @@ const statusBadgeClass = (value: string | null | undefined): string =>
     ]"
   >
     <div class="flex w-full flex-col gap-6 p-6">
-      <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
-        <Link :href="index().url" class="text-sm font-medium text-indigo-600">
+      <Button as-child variant="outline" size="sm" class="w-fit">
+        <Link :href="index().url">
+          <ArrowLeft class="mr-2 h-4 w-4" />
           Kembali ke daftar anggota
         </Link>
+      </Button>
 
+      <div class="rounded-2xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
         <div
-          class="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+          class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
         >
           <div class="space-y-3">
             <div class="flex flex-wrap items-center gap-3">

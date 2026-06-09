@@ -127,6 +127,7 @@ enum PermissionEnum: string
     case COOPERATIVE_LEDGER_MANAGE = 'manage_cooperative_ledger';
     case COOPERATIVE_VIEW_ALL = 'view_cooperative_all';
     case COOPERATIVE_SETTINGS_MANAGE = 'manage_cooperative_settings';
+    case COOPERATIVE_MEMBER_VALIDATE = 'validate_cooperative_member';
 
     // --- NEW: System / Admin ---
     case CLIENTS_MANAGE = 'manage_clients';

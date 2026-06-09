@@ -4,6 +4,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login')->name('home');
 
+// Google SSO
+Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleSsoController::class, 'redirect'])
+    ->middleware('guest')
+    ->name('auth.google.redirect');
+Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleSsoController::class, 'callback'])
+    ->name('auth.google.callback');
+Route::get('/auth/google/link', [\App\Http\Controllers\Auth\GoogleSsoController::class, 'link'])
+    ->middleware(['auth', 'verified'])
+    ->name('auth.google.link');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'show'])->name('dashboard');
 
@@ -115,17 +125,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
+        Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
-        Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
-        Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
-        Route::post('/loans', [\App\Http\Controllers\MemberPortalController::class, 'applyLoan'])->name('loans.store');
-        Route::get('/points', [\App\Http\Controllers\MemberPortalController::class, 'points'])->name('points');
-        Route::get('/rewards', [\App\Http\Controllers\MemberPortalController::class, 'rewards'])->name('rewards');
-        Route::post('/rewards/{reward}/redeem', [\App\Http\Controllers\MemberPortalController::class, 'redeemReward'])->name('rewards.redeem');
-        Route::get('/transactions', [\App\Http\Controllers\MemberPortalController::class, 'transactions'])->name('transactions');
         Route::get('/profile', [\App\Http\Controllers\MemberPortalController::class, 'profile'])->name('profile');
         Route::put('/profile', [\App\Http\Controllers\MemberPortalController::class, 'updateProfile'])->name('profile.update');
         Route::get('/notifications', [\App\Http\Controllers\MemberPortalController::class, 'notifications'])->name('notifications');
+
+        // Fitur finansial sensitif hanya untuk anggota fully active
+        Route::middleware('member.active')->group(function () {
+            Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
+            Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
+            Route::post('/loans', [\App\Http\Controllers\MemberPortalController::class, 'applyLoan'])->name('loans.store');
+            Route::get('/points', [\App\Http\Controllers\MemberPortalController::class, 'points'])->name('points');
+            Route::get('/rewards', [\App\Http\Controllers\MemberPortalController::class, 'rewards'])->name('rewards');
+            Route::post('/rewards/{reward}/redeem', [\App\Http\Controllers\MemberPortalController::class, 'redeemReward'])->name('rewards.redeem');
+            Route::get('/transactions', [\App\Http\Controllers\MemberPortalController::class, 'transactions'])->name('transactions');
+        });
     });
     Route::resource('employees.contracts', \App\Http\Controllers\EmployeeContractController::class)->only(['index', 'store', 'update']);
     Route::resource('payrolls', \App\Http\Controllers\PayrollController::class)->only(['index', 'show']);
@@ -180,6 +195,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
             Route::post('members/{member}/deactivate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'deactivate'])->name('members.deactivate');
             Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');
+        });
+
+        Route::middleware('can:validate_cooperative_member')->group(function () {
+            Route::post('members/{member}/validate', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'approve'])->name('members.validate');
+            Route::post('members/{member}/request-revision', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'requestRevision'])->name('members.request-revision');
+            Route::post('members/{member}/reject', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'reject'])->name('members.reject');
         });
 
         Route::middleware('can:manage_cooperative_dues')->group(function () {

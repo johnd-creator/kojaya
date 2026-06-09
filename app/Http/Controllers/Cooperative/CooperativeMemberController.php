@@ -59,6 +59,10 @@ class CooperativeMemberController extends Controller
             }
         }
 
+        if ($request->filled('validation_status')) {
+            $query->where('validation_status', $request->input('validation_status'));
+        }
+
         foreach (['jenis_anggota', 'kategori'] as $filter) {
             if ($request->filled($filter)) {
                 $query->where($filter, $request->input($filter));
@@ -67,12 +71,16 @@ class CooperativeMemberController extends Controller
 
         return Inertia::render('Cooperative/Members/Index', [
             'members' => $query->orderBy('no_anggota')->paginate(15)->withQueryString(),
-            'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
+            'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori', 'validation_status']),
             'options' => $this->options(),
             'stats' => Inertia::defer(fn () => [
                 'active' => CooperativeMember::query()->where('status', 'ACTIVE')->count(),
                 'inactive' => CooperativeMember::query()->whereIn('status', ['INACTIVE', 'RESIGNED'])->count(),
                 'alb' => CooperativeMember::query()->where('jenis_anggota', 'ALB')->count(),
+                'pending_validation' => CooperativeMember::query()
+                    ->whereIn('validation_status', ['PENDING', 'PENDING_VALIDATION'])
+                    ->count(),
+                'rejected' => CooperativeMember::query()->where('validation_status', 'REJECTED')->count(),
             ], 'member-stats'),
         ]);
     }
@@ -286,6 +294,13 @@ class CooperativeMemberController extends Controller
             'statuses' => [
                 ['value' => 'ACTIVE', 'label' => 'AKTIF'],
                 ['value' => 'INACTIVE', 'label' => 'NON-AKTIF'],
+            ],
+            'validationStatuses' => [
+                ['value' => 'PENDING', 'label' => 'Menunggu Validasi'],
+                ['value' => 'PENDING_VALIDATION', 'label' => 'Sedang Direview'],
+                ['value' => 'REVISION', 'label' => 'Perlu Revisi'],
+                ['value' => 'REJECTED', 'label' => 'Ditolak'],
+                ['value' => 'ACTIVE', 'label' => 'Disetujui'],
             ],
             'jenisAnggota' => [
                 ['value' => 'AB', 'label' => 'Anggota Biasa'],

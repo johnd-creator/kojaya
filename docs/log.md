@@ -4,11 +4,70 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** June 3, 2026
+**Last Updated:** June 7, 2026
 
 ---
 
 ## 🎯 2026-06: M3 P0 Hardening
+
+### **June 9, 2026 - Google SSO Review Fixes**
+
+**🔐 SSO Linking & Validation Hardening:**
+- ✅ Added authenticated Google account linking via `/auth/google/link` so profile/settings users no longer use the guest-only login redirect.
+- ✅ Removed stateless Socialite usage for browser SSO so the normal OAuth session state protection is used.
+- ✅ Enforced `GOOGLE_SSO_HOSTED_DOMAINS` during callback and blocked authenticated callbacks without explicit link intent from switching accounts.
+- ✅ Marked Google-verified users as email verified locally when linking or creating accounts.
+- ✅ Kept member lifecycle `status` separate from onboarding review state: revision only updates `validation_status`; rejection sets lifecycle status to `INACTIVE` and validation status to `REJECTED`.
+- ✅ Changed new Google SSO registrations into restricted calon anggota accounts: no `Anggota` role until Admin Koperasi approves, only the member onboarding/status page is accessible while pending.
+- ✅ Added validation-status backfill so existing active members remain active after introducing onboarding validation.
+- ✅ Restored the repo agent documentation section that was accidentally removed during the SSO implementation.
+
+### **June 7, 2026 - Google SSO Phase 4, 7, 8 (Continuation)**
+
+**🧭 Onboarding Multi-step (Phase 4):**
+- ✅ Added migration `2026_06_07_210000_add_onboarding_fields_to_cooperative_members.php` (tanggal_lahir, tempat_lahir, pekerjaan, perusahaan, nama_bank, nama_pemilik_rekening, onboarding_submitted_at).
+- ✅ Added `CompleteMemberOnboardingRequest` to validate multi-step form (data pribadi, kontak, identitas, keanggotaan, rekening).
+- ✅ Added `MemberOnboardingSubmitService` for transactional submit that sets `validation_status = PENDING_VALIDATION`, updates `profile_completed_at` and `onboarding_submitted_at`, syncs `users.email`, and writes an audit log entry.
+- ✅ Extended `MemberPortalController` with `submitOnboarding` action and richer onboarding page props (`submitted`, `review_state`, `validation_status`, dropdown options).
+- ✅ Rewrote `Kojayaku/Onboarding.vue` into a 6-step wizard (Personal → Contact → Identity → Membership → Bank → Review) with state-aware locking once submitted.
+- ✅ Updated `MemberOnboardingService::profileIsComplete` to require `onboarding_submitted_at` so the checklist reflects the new flow.
+
+**🚧 Access Control (Phase 7):**
+- ✅ Added `EnsureMemberFullyActive` middleware that checks `validation_status = ACTIVE` and redirects to `/member/onboarding` with contextual warning; logs blocked attempts as `sso.member.gated_access_denied`.
+- ✅ Registered the middleware alias as `member.active` in `bootstrap/app.php`.
+- ✅ Reorganized the `/member` route group so the sensitive routes (savings, loans, points, rewards, transactions, reward redemption) require `member.active`. Onboarding, profile, and notifications remain accessible to pending members.
+- ✅ Added a dynamic access banner in `Kojayaku/Dashboard.vue` (`member-access-banner`) showing pending/revision/rejected status with deep links back to onboarding.
+- ✅ Strengthened `CooperativeMemberFactory` with `active()` (also sets `validation_status = ACTIVE` and `onboarding_submitted_at`), `pendingReview()`, and `pending()` states so tests and fixtures align with the gating logic.
+
+**🧪 Testing & Hardening (Phase 8):**
+- ✅ Added `tests/Feature/MemberPortal/MemberOnboardingSubmitTest.php` covering happy-path submit, duplicate `identity_number` rejection, required field validation, repeated submit on already-approved, and non-member redirect.
+- ✅ Added `tests/Feature/MemberPortal/MemberAccessGatingTest.php` covering pending/revision/rejected blocking, active member access, and whitelist for onboarding & profile.
+- ✅ Ran full targeted suite (SSO + Cooperative + Member Portal + Hardening + Roles) and `CooperativeFeatureTest` to confirm no regressions: `70/70 passed`.
+
+**⚠️ Issues encountered & fixes during this phase:**
+- `P5PointsRewardsTest` regressions caused by the new gating: the existing `CooperativeMember::factory()->active()` only set `status = ACTIVE`, not `validation_status`. Fixed by extending the factory state to set `validation_status = ACTIVE` and `onboarding_submitted_at` so test fixtures and production gating stay consistent.
+- Initial onboarding submit test passed `jenis_anggota = null` while the column is `NOT NULL`; corrected fixture to use valid `AB/L/IP` values that match the new field requirements.
+- Initial gating test for "non-member cannot submit onboarding" expected 404, but the `member` middleware redirects to dashboard. Adjusted the expectation to `302 → /dashboard`.
+- Two stale intelephense hints in `bootstrap/app.php` and unused `attributes` parameter in factory states are non-blocking and remain for cosmetic cleanup in a later pass.
+
+### **June 7, 2026 - Google SSO Phase 1, 2, 3, 5, 6**
+
+**🔐 Google SSO End-to-End Foundation:**
+- ✅ Installed `laravel/socialite` and registered Google config, env vars, and feature flag.
+- ✅ Added `social_accounts` table (unique per `provider` + `provider_id`) with encrypted access/refresh tokens and last-login tracking.
+- ✅ Extended `cooperative_members` with `validation_status`, `validated_at`, `validated_by`, `validation_notes`, `profile_completed_at`, `sso_provider`, and `last_sso_login_at` for explicit admin validation state.
+- ✅ Implemented `GoogleSsoService` and `MemberAccountLinkingService` covering existing-user, existing-member, and new-pending-member flows with conflict detection and email-match priority.
+- ✅ Added `GoogleSsoController` with redirect/callback routes, email-verified enforcement, and audit log emission for every login, linking, and conflict.
+- ✅ Updated `LoginResponse` so pending members land on `/member/onboarding`; existing members go to `/member/dashboard`; non-members go to admin dashboard or main dashboard.
+- ✅ Added `validate_cooperative_member` permission and assigned it to `Pengurus Koperasi` and `Admin Koperasi` roles.
+- ✅ Created `CooperativeMemberValidationController` with `approve`, `requestRevision`, `reject` actions backed by `MemberValidationService` (transactional, audit-logged, status-aware).
+- ✅ Added `validation_status` filter, status badge, and inline approve/revision/reject actions to the cooperative members index for validators.
+- ✅ Added `MemberProfileCompletenessService` and refreshed `Kojayaku/Profile.vue` with progress meter, missing-field list, and Google link status.
+- ✅ Added `Akun Login` section in `settings/Profile.vue` showing Google linkage state via shared Inertia props (`googleSsoEnabled`, `googleLinked`, `googleProviderEmail`, `googleLastLoginAt`).
+- ✅ Added `tests/Feature/Auth/Sso/GoogleSsoFlowTest.php` and `tests/Feature/Cooperative/CooperativeMemberValidationTest.php` covering SSO happy paths, conflict, registration blocking, admin approve/reject/revision, and completeness summary.
+- ✅ Fixed SQLite-safe `down()` for the new migration by splitting `dropForeign` + `dropColumn` and gating on column existence.
+- ✅ Replaced one residual role-literal in `CooperativeLedgerController` with `can('manage_cooperative_ledger')` to keep `Sprint3ArchitectureHardeningTest` green.
+- ✅ Verification: `vendor/bin/pint --dirty --format agent` passed; targeted SSO + cooperative + hardening suites passed `91/91` tests in `123.10s`.
 
 ### **June 7, 2026 - Cooperative Payment UX Alignment**
 

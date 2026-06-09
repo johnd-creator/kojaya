@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\User;
@@ -37,6 +38,12 @@ class CooperativeMemberFactory extends Factory
             'joined_at' => now()->subMonths(fake()->numberBetween(1, 24))->toDateString(),
             'resigned_at' => null,
             'status' => fake()->randomElement(['PENDING', 'ACTIVE']),
+            'tanggal_lahir' => fake()->optional()->date(),
+            'tempat_lahir' => fake()->optional()->city(),
+            'pekerjaan' => fake()->optional()->jobTitle(),
+            'perusahaan' => fake()->optional()->company(),
+            'nama_bank' => fake()->optional()->randomElement(['BNI', 'BRI', 'Mandiri', 'BCA']),
+            'nama_pemilik_rekening' => fake()->optional()->name(),
             'npwp' => fake()->optional()->numerify('##.###.###.#-###.###'),
             'no_telp' => fake()->phoneNumber(),
             'jenis_anggota' => fake()->randomElement(['AB', 'ALB']),
@@ -50,6 +57,28 @@ class CooperativeMemberFactory extends Factory
 
     public function active(): static
     {
-        return $this->state(fn (array $attributes) => ['status' => 'ACTIVE']);
+        return $this->state(fn (array $attributes) => [
+            'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+            'onboarding_submitted_at' => now()->subDay(),
+        ]);
+    }
+
+    public function pendingReview(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+            'onboarding_submitted_at' => now(),
+        ]);
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'onboarding_submitted_at' => null,
+        ]);
     }
 }

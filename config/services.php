@@ -53,4 +53,19 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/auth/google/callback'),
+        'sso_enabled' => env('GOOGLE_SSO_ENABLED', false),
+        'auto_link_existing_members' => env('GOOGLE_SSO_AUTO_LINK_EXISTING_MEMBERS', true),
+        'allow_new_member_registration' => env('GOOGLE_SSO_ALLOW_NEW_MEMBER_REGISTRATION', true),
+        'hosted_domains' => array_filter(array_map('trim', explode(',', (string) env('GOOGLE_SSO_HOSTED_DOMAINS', '')))),
+    ],
+
+    'auth_sso' => [
+        'enabled' => env('GOOGLE_SSO_ENABLED', false),
+        'state_ttl' => (int) env('GOOGLE_SSO_STATE_TTL', 300),
+    ],
+
 ];

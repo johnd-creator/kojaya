@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Form, Head } from "@inertiajs/vue3";
+import { Form, Head, usePage } from "@inertiajs/vue3";
 import {
   BarChart3,
   Calculator,
   Check,
+  Chrome,
   Eye,
   EyeOff,
   FileText,
@@ -14,7 +15,7 @@ import {
   UserRound,
   Users,
 } from "lucide-vue-next";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import InputError from "@/components/InputError.vue";
 import TextLink from "@/components/TextLink.vue";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { store } from "@/routes/login";
 import { request } from "@/routes/password";
 
+const googleSsoRedirectUrl = "/auth/google/redirect";
+
 defineProps<{
   status?: string;
   canResetPassword: boolean;
@@ -33,6 +36,23 @@ defineProps<{
 }>();
 
 const passwordVisible = ref(false);
+const googleLoading = ref(false);
+const page = usePage();
+const googleSsoEnabled = computed<boolean>(
+  () => Boolean((page.props as { googleSsoEnabled?: boolean }).googleSsoEnabled),
+);
+const flashErrors = computed<{ sso?: string }>(() => {
+  const errors = (page.props as { errors?: Record<string, string> }).errors;
+  if (errors && typeof errors === "object" && "sso" in errors) {
+    return { sso: errors.sso };
+  }
+  return {};
+});
+
+const startGoogleLogin = (): void => {
+  googleLoading.value = true;
+  window.location.href = googleSsoRedirectUrl;
+};
 
 const modules = [
   { label: "Manajemen Anggota", icon: Users },
@@ -183,6 +203,34 @@ const modules = [
             class="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-center text-sm font-semibold text-green-700"
           >
             {{ status }}
+          </div>
+
+          <div
+            v-if="flashErrors.sso"
+            class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700"
+          >
+            {{ flashErrors.sso }}
+          </div>
+
+          <div v-if="googleSsoEnabled" class="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              class="h-12.5 w-full rounded-lg border-slate-300 bg-white text-sm font-extrabold text-slate-900 hover:bg-slate-50"
+              :disabled="googleLoading"
+              data-test="google-login-button"
+              @click="startGoogleLogin"
+            >
+              <Spinner v-if="googleLoading" />
+              <Chrome v-else class="size-4.5 text-[#0b8f2e]" />
+              Masuk dengan Google
+            </Button>
+
+            <div class="my-5 flex items-center gap-3 text-slate-500">
+              <div class="h-px flex-1 bg-slate-200" />
+              <span class="text-xs font-semibold tracking-wider uppercase">atau</span>
+              <div class="h-px flex-1 bg-slate-200" />
+            </div>
           </div>
 
           <Form

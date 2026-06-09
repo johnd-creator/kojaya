@@ -5,6 +5,7 @@ import EmployeeCertificateController from './EmployeeCertificateController'
 import MedicalCheckupController from './MedicalCheckupController'
 import ComplianceReportController from './ComplianceReportController'
 import AuditLogController from './AuditLogController'
+import Auth from './Auth'
 import DashboardController from './DashboardController'
 import ReportController from './ReportController'
 import NotificationController from './NotificationController'
@@ -68,6 +69,7 @@ const Controllers = {
     MedicalCheckupController: Object.assign(MedicalCheckupController, MedicalCheckupController),
     ComplianceReportController: Object.assign(ComplianceReportController, ComplianceReportController),
     AuditLogController: Object.assign(AuditLogController, AuditLogController),
+    Auth: Object.assign(Auth, Auth),
     DashboardController: Object.assign(DashboardController, DashboardController),
     ReportController: Object.assign(ReportController, ReportController),
     NotificationController: Object.assign(NotificationController, NotificationController),

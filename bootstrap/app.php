@@ -57,6 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ability' => CheckForAnyAbility::class,
             'idempotent' => EnsureIdempotentWrite::class,
             'member' => EnsureIsMember::class,
+            'member.active' => \App\Http\Middleware\EnsureMemberFullyActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

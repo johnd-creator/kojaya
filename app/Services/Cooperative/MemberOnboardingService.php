@@ -119,6 +119,10 @@ class MemberOnboardingService
             && filled($member->email)
             && filled($member->phone)
             && filled($member->identity_number)
-            && filled($member->address);
+            && filled($member->address)
+            && filled($member->jenis_anggota)
+            && filled($member->jenis_kelamin)
+            && filled($member->kategori)
+            && $member->onboarding_submitted_at !== null;
     }
 }

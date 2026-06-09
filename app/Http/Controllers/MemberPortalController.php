@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\LoanStatus;
 use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
+use App\Http\Requests\CompleteMemberOnboardingRequest;
 use App\Http\Requests\Cooperative\RedeemRewardRequest;
 use App\Http\Requests\StoreMemberLoanApplicationRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
@@ -14,6 +15,8 @@ use App\Models\LoanType;
 use App\Models\PosTransaction;
 use App\Models\Reward;
 use App\Services\Cooperative\MemberOnboardingService;
+use App\Services\Cooperative\MemberOnboardingSubmitService;
+use App\Services\Cooperative\MemberProfileCompletenessService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use App\Services\Cooperative\SavingsSummaryService;
@@ -66,11 +69,45 @@ class MemberPortalController extends Controller
     public function onboarding(Request $request, MemberOnboardingService $service): Response
     {
         $member = $this->memberOrAbort($request);
+        $member->loadMissing(['organization', 'user']);
+
+        $validation = $member->validation_status ?: $member->status;
+        $submitted = $member->onboarding_submitted_at !== null;
+        $reviewState = $this->resolveOnboardingReviewState($validation, $submitted);
 
         return Inertia::render('Kojayaku/Onboarding', [
-            'member' => $member->load('organization'),
+            'member' => $member,
             'onboarding' => $service->status($member),
+            'submitted' => $submitted,
+            'review_state' => $reviewState,
+            'validation_status' => $validation,
+            'options' => [
+                'jenisAnggota' => [
+                    ['value' => 'AB', 'label' => 'Anggota Biasa'],
+                    ['value' => 'ALB', 'label' => 'Anggota Luar Biasa'],
+                ],
+                'jenisKelamin' => [
+                    ['value' => 'L', 'label' => 'Laki-laki'],
+                    ['value' => 'P', 'label' => 'Perempuan'],
+                ],
+                'kategori' => [
+                    ['value' => 'IP', 'label' => 'Indonesia Power'],
+                    ['value' => 'CDB', 'label' => 'Cogindo DayaBersama'],
+                    ['value' => 'KOP', 'label' => 'Koperasi'],
+                ],
+            ],
         ]);
+    }
+
+    public function submitOnboarding(
+        CompleteMemberOnboardingRequest $request,
+        MemberOnboardingSubmitService $service,
+    ): RedirectResponse {
+        $member = $this->memberOrAbort($request);
+
+        $service->submit($member, $request->validated(), $request->user());
+
+        return back()->with('success', 'Onboarding terkirim. Pengurus akan memvalidasi data Anda.');
     }
 
     public function markOnboardingStep(
@@ -198,13 +235,16 @@ class MemberPortalController extends Controller
         ]);
     }
 
-    public function profile(Request $request): Response
+    public function profile(Request $request, MemberProfileCompletenessService $completeness): Response
     {
         $member = $this->memberOrAbort($request);
+        $member->load(['user.socialAccounts', 'organization', 'validator']);
 
         return Inertia::render('Kojayaku/Profile', [
             'user' => $request->user(),
             'member' => $member,
+            'completeness' => $completeness->summarize($member),
+            'googleSsoEnabled' => (bool) config('services.google.sso_enabled', false),
         ]);
     }
 
@@ -238,9 +278,23 @@ class MemberPortalController extends Controller
     private function memberOrAbort(Request $request): CooperativeMember
     {
         $member = $request->user()?->cooperativeMember;
-
-        abort_unless($member, 403, 'Akun ini belum terhubung ke anggota koperasi.');
+        abort_unless($member, 404, 'Anda belum terdaftar sebagai anggota koperasi.');
 
         return $member;
+    }
+
+    private function resolveOnboardingReviewState(string $validation, bool $submitted): string
+    {
+        if (! $submitted) {
+            return 'draft';
+        }
+
+        return match ($validation) {
+            \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW => 'review',
+            \App\Models\CooperativeMember::VALIDATION_REVISION => 'revision',
+            \App\Models\CooperativeMember::VALIDATION_REJECTED => 'rejected',
+            \App\Models\CooperativeMember::VALIDATION_ACTIVE => 'approved',
+            default => 'pending',
+        };
     }
 }

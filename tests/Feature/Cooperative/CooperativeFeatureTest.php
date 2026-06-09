@@ -639,6 +639,83 @@ class CooperativeFeatureTest extends TestCase
         $this->assertDatabaseHas('cooperative_receipts', ['cooperative_payment_id' => $payment->id]);
     }
 
+    public function test_admin_koperasi_cannot_cancel_or_revise_payment_from_ledger(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $adminKoperasi = User::factory()->create();
+        $adminKoperasi->assignRole('Admin Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 50000,
+            'status' => 'PAID',
+        ]);
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'user_id' => $adminKoperasi->id,
+            'amount' => 50000,
+            'payment_method' => 'CASH',
+            'paid_at' => '2026-05-10',
+            'status' => 'APPROVED',
+        ]);
+        $entry = CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_payment_id' => $payment->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'source_type' => CooperativePayment::class,
+            'source_id' => $payment->id,
+            'entry_type' => 'SAVING_PAYMENT',
+            'ledger_scope' => 'SAVINGS',
+            'category_snapshot' => 'WAJIB',
+            'debit' => 0,
+            'credit' => 50000,
+            'period' => '2026-05',
+            'description' => 'Pembayaran simpanan wajib',
+            'posted_at' => '2026-05-10',
+        ]);
+
+        $response = $this->actingAs($adminKoperasi)
+            ->get(route('cooperative.ledger.index'));
+        $response->assertOk();
+        $response->assertInertia(
+            fn (Assert $page) => $page
+                ->component('Cooperative/Ledger/Index')
+                ->where('canManageLedger', false),
+        );
+
+        $this->actingAs($adminKoperasi)
+            ->post(route('cooperative.ledger.cancel-payment', $entry), [
+                'reason' => 'Admin koperasi tidak boleh cancel',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($adminKoperasi)
+            ->post(route('cooperative.ledger.revise-payment', $entry), [
+                'amount' => 60000,
+                'payment_method' => 'CASH',
+                'paid_at' => '2026-05-10',
+                'notes' => 'Test',
+                'reason' => 'Admin koperasi tidak boleh revisi',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('APPROVED', $payment->refresh()->status);
+        $this->assertSame(50000.0, (float) $entry->refresh()->credit);
+    }
+
     public function test_savings_settings_page_is_displayed_with_required_amounts(): void
     {
         $this->seed(RolePermissionSeeder::class);

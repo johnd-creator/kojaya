@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Bell, CreditCard, Gift, ReceiptText, WalletCards } from 'lucide-vue-next';
+import {
+  AlertCircle,
+  Bell,
+  CreditCard,
+  Gift,
+  Info,
+  ReceiptText,
+  WalletCards,
+  type LucideIcon,
+} from 'lucide-vue-next';
+import { computed } from 'vue';
 import OnboardingChecklist from '@/components/Kojayaku/OnboardingChecklist.vue';
 import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
@@ -8,14 +18,112 @@ import StatsCard from '@/components/StatsCard.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatCurrency } from '@/lib/formatters';
 
-defineProps<{
-    member: { name: string; member_no: string; organization?: { name: string } | null };
-    summary: { savings_balance: number; pending_invoices: number; active_loans: number; loan_outstanding: number; points_balance: number; member_tier: string; unread_notifications: number };
-    onboarding: { completed_steps: number; total_steps: number; progress_percent: number; is_complete: boolean; is_dismissed: boolean; steps: Array<{ key: string; label: string; description: string; href: string; completed: boolean }> };
-    journeys: Record<string, { title: string; current_status: string; reference?: string | null; amount?: number | string | null; steps: Array<{ label: string; completed: boolean; completed_at?: string | null }> }>;
-    recentTransactions: Array<{ id: number; transaction_no: string; total_amount: number | string; sold_at: string }>;
-    recentLoans: Array<{ id: number; status: string; outstanding_amount: number | string; loan_type?: { name: string } | null }>;
+const props = defineProps<{
+    member: {
+        name: string;
+        member_no: string;
+        validation_status?: string | null;
+        onboarding_submitted_at?: string | null;
+        organization?: { name: string } | null;
+    };
+    summary: {
+        savings_balance: number;
+        pending_invoices: number;
+        active_loans: number;
+        loan_outstanding: number;
+        points_balance: number;
+        member_tier: string;
+        unread_notifications: number;
+    };
+    onboarding: {
+        completed_steps: number;
+        total_steps: number;
+        progress_percent: number;
+        is_complete: boolean;
+        is_dismissed: boolean;
+        steps: Array<{ key: string; label: string; description: string; href: string; completed: boolean }>;
+    };
+    journeys: Record<
+        string,
+        {
+            title: string;
+            current_status: string;
+            reference?: string | null;
+            amount?: number | string | null;
+            steps: Array<{ label: string; completed: boolean; completed_at?: string | null }>;
+        }
+    >;
+    recentTransactions: Array<{
+        id: number;
+        transaction_no: string;
+        total_amount: number | string;
+        sold_at: string;
+    }>;
+    recentLoans: Array<{
+        id: number;
+        status: string;
+        outstanding_amount: number | string;
+        loan_type?: { name: string } | null;
+    }>;
 }>();
+
+const validationStatus = computed<string>(() => props.member.validation_status ?? '');
+
+const accessBanner = computed<{
+    tone: 'warning' | 'success' | 'destructive' | 'info';
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    cta?: { href: string; label: string };
+} | null>(() => {
+    switch (validationStatus.value) {
+        case 'PENDING':
+        case 'PENDING_VALIDATION':
+            return {
+                tone: 'warning',
+                title: 'Lengkapi onboarding Anda',
+                description:
+                    'Data pribadi dan keanggotaan Anda belum lengkap. Simpanan, pinjaman, dan reward akan terbuka setelah pengurus menyetujui keanggotaan Anda.',
+                icon: AlertCircle,
+                cta: { href: '/member/onboarding', label: 'Lanjutkan Onboarding' },
+            };
+        case 'REVISION':
+            return {
+                tone: 'warning',
+                title: 'Pengurus meminta revisi',
+                description:
+                    'Mohon tinjau catatan pengurus dan perbarui data Anda, lalu submit ulang agar proses validasi dapat dilanjutkan.',
+                icon: Info,
+                cta: { href: '/member/onboarding', label: 'Perbarui Data' },
+            };
+        case 'REJECTED':
+            return {
+                tone: 'destructive',
+                title: 'Pendaftaran ditolak',
+                description:
+                    'Pengurus menolak pendaftaran Anda. Hubungi admin untuk informasi lebih lanjut.',
+                icon: AlertCircle,
+            };
+        case 'ACTIVE':
+            return null;
+        default:
+            return null;
+    }
+});
+
+const bannerClass = computed(() => {
+    const tone = accessBanner.value?.tone;
+    if (tone === 'destructive') {
+        return 'border-red-200 bg-red-50 text-red-900';
+    }
+    if (tone === 'warning') {
+        return 'border-amber-200 bg-amber-50 text-amber-900';
+    }
+    if (tone === 'success') {
+        return 'border-emerald-200 bg-emerald-50 text-emerald-900';
+    }
+    return 'border-sky-200 bg-sky-50 text-sky-900';
+});
 </script>
 
 <template>
@@ -33,6 +141,28 @@ defineProps<{
                         Tier poin: <span class="font-semibold">{{ summary.member_tier }}</span>
                     </div>
                 </div>
+            </div>
+
+            <div
+                v-if="accessBanner"
+                data-test="member-access-banner"
+                class="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                :class="bannerClass"
+            >
+                <div class="flex items-start gap-3">
+                    <component :is="accessBanner.icon" class="mt-0.5 h-5 w-5 shrink-0" />
+                    <div>
+                        <p class="font-semibold">{{ accessBanner.title }}</p>
+                        <p class="text-sm">{{ accessBanner.description }}</p>
+                    </div>
+                </div>
+                <Link
+                    v-if="accessBanner.cta"
+                    :href="accessBanner.cta.href"
+                    class="inline-flex items-center justify-center rounded-md bg-current/10 px-3 py-1.5 text-sm font-semibold underline-offset-2 hover:underline"
+                >
+                    {{ accessBanner.cta.label }}
+                </Link>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

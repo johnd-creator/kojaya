@@ -19,9 +19,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $googleAccount = $user?->socialAccounts()->where('provider', 'google')->latest('last_login_at')->first();
+
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'googleSsoEnabled' => (bool) config('services.google.sso_enabled', false),
+            'googleLinked' => $googleAccount !== null,
+            'googleProviderEmail' => $googleAccount?->provider_email,
+            'googleLastLoginAt' => $googleAccount?->last_login_at?->toIso8601String(),
         ]);
     }
 

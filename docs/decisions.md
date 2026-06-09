@@ -711,6 +711,38 @@ For future architectural decisions, use this template:
 
 ---
 
+## 🎯 ADR-021: Google SSO dengan Socialite, Social Accounts, dan Admin Validation
+
+**Status:** ✅ Accepted
+**Date:** June 7, 2026
+**Deciders:** Engineering
+
+### Context
+Kojayaku butuh login yang familiar untuk anggota tanpa password baru, tetapi tidak boleh otomatis menganggap semua pengguna Google sebagai anggota aktif. Tanpa kontrol yang jelas, akun Gmail yang salah ketik atau duplikat bisa membuat akses anggota yang sensitif terbuka sebelum Admin Koperasi memvalidasi data.
+
+### Decision
+- Pakai `laravel/socialite` untuk Google OAuth.
+- Simpan identitas provider di tabel `social_accounts` (bukan kolom di `users`) untuk konsistensi multi-provider di masa depan.
+- `cooperative_members` memakai `validation_status` dengan nilai `PENDING`, `PENDING_VALIDATION`, `ACTIVE`, `REJECTED`, `REVISION`, dan field `validated_at`, `validated_by`, `validation_notes`, `profile_completed_at`.
+- Email Google dicocokkan lowercase, hanya untuk email dengan `email_verified = true`. Konflik provider_id ditolak dengan audit event.
+- Redirect pasca-login dan pasca-onboarding mengikuti aturan prioritas di `docs/google_sso.md` Bagian 9.
+- Aktifkan Google SSO hanya bila `GOOGLE_SSO_ENABLED=true` agar rollout aman.
+
+### Consequences
+
+**Positive:**
+- Login anggota familiar dan cepat, mengurangi beban admin untuk pembuatan akun manual.
+- Tabel `social_accounts` siap jika nanti ada provider lain tanpa migrasi besar.
+- Validasi admin Koperasi tetap menjadi gate akhir sebelum akses fitur finansial.
+- Audit log memberi jejak untuk setiap login, linking, dan konflik.
+
+**Trade-off:**
+- Tambah satu paket Composer (`laravel/socialite`) ke dependency.
+- Perlu update `Login.vue` dan `MemberPortalController` agar konsisten dengan aturan redirect baru.
+- Rollout produksi harus bertahap lewat `GOOGLE_SSO_ENABLED` agar admin siap memvalidasi calon anggota baru.
+
+---
+
 ## 📚 References
 
 - [Laravel Documentation](https://laravel.com/docs)

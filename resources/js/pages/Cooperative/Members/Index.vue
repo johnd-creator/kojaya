@@ -41,9 +41,12 @@ import {
   destroy,
   exportMethod,
   index,
+  reject,
+  requestRevision,
   show,
   store,
   update,
+  validate as validateMember,
 } from "@/routes/cooperative/members";
 
 const props = defineProps<{
@@ -53,15 +56,23 @@ const props = defineProps<{
     status?: string;
     jenis_anggota?: string;
     kategori?: string;
+    validation_status?: string;
   };
   options: {
     statuses: Array<{ value: string; label: string }>;
+    validationStatuses: Array<{ value: string; label: string }>;
     jenisAnggota: Array<{ value: string; label: string }>;
     jenisKelamin: Array<{ value: string; label: string }>;
     kategori: Array<{ value: string; label: string }>;
     autodebet: Array<{ value: string; label: string }>;
   };
-  stats?: { active: number; inactive: number; alb: number };
+  stats?: {
+    active: number;
+    inactive: number;
+    alb: number;
+    pending_validation?: number;
+    rejected?: number;
+  };
 }>();
 
 const filters = ref({
@@ -69,9 +80,11 @@ const filters = ref({
   status: props.filters.status ?? "",
   jenis_anggota: props.filters.jenis_anggota ?? "",
   kategori: props.filters.kategori ?? "",
+  validation_status: props.filters.validation_status ?? "",
 });
 const { can } = useCan();
 const canManageMember = computed(() => can("manage_cooperative_member"));
+const canValidateMember = computed(() => can("validate_cooperative_member"));
 const createMemberDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
 const memberPendingDelete = ref<{ id: string | number; name: string } | null>(
@@ -225,6 +238,10 @@ const statusOptions = [
   { label: "Semua status", value: "" },
   ...props.options.statuses,
 ];
+const validationStatusOptions = [
+  { label: "Semua validasi", value: "" },
+  ...(props.options.validationStatuses ?? []),
+];
 const jenisAnggotaOptions = [
   { label: "Semua jenis", value: "" },
   ...props.options.jenisAnggota,
@@ -249,6 +266,7 @@ const columns = [
   { header: "No Anggota", key: "no_anggota", slot: "memberNo" },
   { header: "Nama", key: "nama_anggota", slot: "member" },
   { header: "Status", key: "status", slot: "status" },
+  { header: "Validasi", key: "validation_status", slot: "validationStatus" },
   { header: "Jenis Anggota", key: "jenis_anggota", slot: "jenisAnggota" },
   { header: "Jenis Kelamin", key: "jenis_kelamin", slot: "jenisKelamin" },
   { header: "Kategori", key: "kategori", slot: "kategori" },
@@ -281,6 +299,55 @@ const getMemberStatusVariant = (
     default:
       return "warning";
   }
+};
+
+const validationStatusLabel = (value: string | null | undefined): string => {
+  if (!value) return "-";
+  const match = (props.options.validationStatuses ?? []).find(
+    (option) => option.value === value,
+  );
+  return match?.label ?? value;
+};
+
+const getValidationVariant = (
+  value: string | null | undefined,
+): "success" | "warning" | "secondary" | "destructive" => {
+  switch (value) {
+    case "ACTIVE":
+      return "success";
+    case "PENDING":
+    case "PENDING_VALIDATION":
+      return "warning";
+    case "REVISION":
+      return "secondary";
+    case "REJECTED":
+      return "destructive";
+    default:
+      return "secondary";
+  }
+};
+
+const isPendingReview = (row: any): boolean =>
+  ["PENDING", "PENDING_VALIDATION", "REVISION"].includes(row.validation_status);
+
+const validateMemberAction = (row: any): void => {
+  router.post(validateMember(row.id).url, undefined, { preserveScroll: true });
+};
+
+const requestRevisionAction = (row: any): void => {
+  const notes = window.prompt(
+    "Tuliskan catatan revisi yang akan dikirim ke anggota:",
+  );
+  if (!notes) return;
+  router.post(requestRevision(row.id).url, { notes }, { preserveScroll: true });
+};
+
+const rejectMemberAction = (row: any): void => {
+  const notes = window.prompt(
+    "Tuliskan alasan penolakan (wajib, minimal 5 karakter):",
+  );
+  if (!notes || notes.length < 5) return;
+  router.post(reject(row.id).url, { notes }, { preserveScroll: true });
 };
 
 const statusLabel = (status: string) =>
@@ -350,7 +417,7 @@ const exportUrl = computed(() => {
           </div>
         </template>
 
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
           <StatsCard
             label="Aktif"
             :value="stats?.active ?? 0"
@@ -362,6 +429,16 @@ const exportUrl = computed(() => {
             :icon="UserX"
           />
           <StatsCard label="ALB" :value="stats?.alb ?? 0" :icon="WalletCards" />
+          <StatsCard
+            label="Menunggu Validasi"
+            :value="stats?.pending_validation ?? 0"
+            :icon="UserCheck"
+          />
+          <StatsCard
+            label="Ditolak"
+            :value="stats?.rejected ?? 0"
+            :icon="UserX"
+          />
         </div>
       </Deferred>
 
@@ -375,6 +452,12 @@ const exportUrl = computed(() => {
           :options="statusOptions"
           placeholder="Semua status"
           class="w-full sm:max-w-[180px]"
+        />
+        <SelectFilter
+          v-model="filters.validation_status"
+          :options="validationStatusOptions"
+          placeholder="Status validasi"
+          class="w-full sm:max-w-[200px]"
         />
         <SelectFilter
           v-model="filters.jenis_anggota"
@@ -423,6 +506,13 @@ const exportUrl = computed(() => {
           />
         </template>
 
+        <template #validationStatus="{ row }">
+          <StatusBadge
+            :status="validationStatusLabel(row.validation_status)"
+            :variant="getValidationVariant(row.validation_status)"
+          />
+        </template>
+
         <template #jenisAnggota="{ value }">
           {{ jenisAnggotaLabel(value) }}
         </template>
@@ -440,7 +530,7 @@ const exportUrl = computed(() => {
         </template>
 
         <template #actions="{ row }">
-          <div class="flex justify-end gap-2">
+          <div class="flex flex-wrap justify-end gap-2">
             <Button
               as-child
               size="sm"
@@ -451,6 +541,36 @@ const exportUrl = computed(() => {
                 <Eye class="h-4 w-4" />
                 <span class="sr-only">Lihat</span>
               </Link>
+            </Button>
+            <Button
+              v-if="canValidateMember && isPendingReview(row)"
+              size="sm"
+              variant="default"
+              data-test="member-approve"
+              :aria-label="`Setujui anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
+              @click="validateMemberAction(row)"
+            >
+              <UserCheck class="h-4 w-4" />
+            </Button>
+            <Button
+              v-if="canValidateMember && isPendingReview(row)"
+              size="sm"
+              variant="outline"
+              data-test="member-revision"
+              :aria-label="`Minta revisi data ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
+              @click="requestRevisionAction(row)"
+            >
+              <Pencil class="h-4 w-4" />
+            </Button>
+            <Button
+              v-if="canValidateMember && isPendingReview(row)"
+              size="sm"
+              variant="destructive"
+              data-test="member-reject"
+              :aria-label="`Tolak anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
+              @click="rejectMemberAction(row)"
+            >
+              <UserX class="h-4 w-4" />
             </Button>
             <Button
               v-if="canManageMember"

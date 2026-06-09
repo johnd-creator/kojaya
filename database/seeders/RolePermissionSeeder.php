@@ -201,6 +201,7 @@ class RolePermissionSeeder extends Seeder
         Role::where('name', 'Pengurus Koperasi')->first()?->syncPermissions([
             'view_cooperative_member',
             'manage_cooperative_member',
+            'validate_cooperative_member',
             'manage_cooperative_dues',
             'manage_cooperative_payment',
             'view_cooperative_loan',
@@ -227,6 +228,7 @@ class RolePermissionSeeder extends Seeder
         Role::where('name', 'Admin Koperasi')->first()?->syncPermissions([
             'view_cooperative_member',
             'manage_cooperative_member',
+            'validate_cooperative_member',
             'manage_cooperative_dues',
             'manage_cooperative_payment',
             'view_cooperative_loan',
@@ -241,7 +243,6 @@ class RolePermissionSeeder extends Seeder
             'manage_pos_products',
             'view_pos_reports',
             'view_cooperative_ledger',
-            'manage_cooperative_ledger',
         ]);
 
         // Kasir Koperasi

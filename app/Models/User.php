@@ -81,6 +81,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the social accounts linked to this user.
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
+    /**
      * Get the notification preferences for the user.
      */
     public function notificationPreference(): HasOne

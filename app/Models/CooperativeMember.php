@@ -28,6 +28,14 @@ class CooperativeMember extends Model
         'joined_at',
         'resigned_at',
         'status',
+        'validation_status',
+        'validated_at',
+        'validated_by',
+        'validation_notes',
+        'profile_completed_at',
+        'onboarding_submitted_at',
+        'sso_provider',
+        'last_sso_login_at',
         'npwp',
         'no_telp',
         'jenis_anggota',
@@ -35,8 +43,28 @@ class CooperativeMember extends Model
         'kategori',
         'autodebet',
         'no_rekening',
+        'nama_bank',
+        'nama_pemilik_rekening',
+        'tanggal_lahir',
+        'tempat_lahir',
+        'pekerjaan',
+        'perusahaan',
         'notes',
     ];
+
+    public const VALIDATION_PENDING = 'PENDING';
+
+    public const VALIDATION_PENDING_REVIEW = 'PENDING_VALIDATION';
+
+    public const VALIDATION_ACTIVE = 'ACTIVE';
+
+    public const VALIDATION_INACTIVE = 'INACTIVE';
+
+    public const VALIDATION_REJECTED = 'REJECTED';
+
+    public const VALIDATION_REVISION = 'REVISION';
+
+    public const VALIDATION_RESIGNED = 'RESIGNED';
 
     protected $appends = [
         'nama_anggota_clean',
@@ -51,7 +79,12 @@ class CooperativeMember extends Model
             'tanggal_aktif' => 'date',
             'joined_at' => 'date',
             'resigned_at' => 'date',
+            'tanggal_lahir' => 'date',
             'deleted_at' => 'datetime',
+            'validated_at' => 'datetime',
+            'profile_completed_at' => 'datetime',
+            'onboarding_submitted_at' => 'datetime',
+            'last_sso_login_at' => 'datetime',
         ];
     }
 
@@ -68,6 +101,11 @@ class CooperativeMember extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
     }
 
     public function documents(): HasMany

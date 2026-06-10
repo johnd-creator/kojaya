@@ -276,7 +276,6 @@
                         "type": "string",
                         "enum": [
                             "profile",
-                            "kyc",
                             "first_savings",
                             "loans",
                             "rewards"
@@ -1800,6 +1799,78 @@
             "get": {
                 "summary": "Mengambil Member/Shu",
                 "operationId": "get_api_v1_member_shu",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            }
+        },
+        "/api/v1/member/reward-redemptions": {
+            "get": {
+                "summary": "Mengambil Member/Reward-Redemptions",
+                "operationId": "get_api_v1_member_reward-redemptions",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            }
+        },
+        "/api/v1/member/transactions": {
+            "get": {
+                "summary": "Mengambil Member/Transactions",
+                "operationId": "get_api_v1_member_transactions",
                 "tags": [
                     "Member"
                 ],

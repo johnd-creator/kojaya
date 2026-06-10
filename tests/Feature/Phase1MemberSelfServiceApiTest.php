@@ -11,6 +11,12 @@ use App\Models\CooperativeShuAllocation;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Loan;
 use App\Models\LoanType;
+use App\Models\PosPayment;
+use App\Models\PosProduct;
+use App\Models\PosTransaction;
+use App\Models\PosTransactionItem;
+use App\Models\Reward;
+use App\Models\RewardRedemption;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -299,6 +305,92 @@ class Phase1MemberSelfServiceApiTest extends TestCase
         $this->getJson('/api/v1/member/support-tickets')
             ->assertOk()
             ->assertJsonPath('data.0.subject', 'Pembayaran belum diverifikasi');
+    }
+
+    public function test_member_transactions_endpoint_returns_own_pos_history_and_summary(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $otherMember = CooperativeMember::factory()->active()->create();
+        $product = PosProduct::factory()->create([
+            'name' => 'Beras Koperasi',
+            'sku' => 'BR-KOP-001',
+        ]);
+        $transaction = PosTransaction::query()->create([
+            'transaction_no' => 'POS-20260610-001',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $user->id,
+            'subtotal' => 300000,
+            'discount_amount' => 0,
+            'total_amount' => 300000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $transaction->id,
+            'pos_product_id' => $product->id,
+            'quantity' => 2,
+            'unit_price' => 150000,
+            'line_total' => 300000,
+        ]);
+        PosPayment::query()->create([
+            'pos_transaction_id' => $transaction->id,
+            'payment_method' => 'CASH',
+            'amount' => 300000,
+        ]);
+        PosTransaction::query()->create([
+            'transaction_no' => 'POS-20260610-OTHER',
+            'cooperative_member_id' => $otherMember->id,
+            'subtotal' => 100000,
+            'discount_amount' => 0,
+            'total_amount' => 100000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/transactions')
+            ->assertOk()
+            ->assertJsonPath('summary.total_transactions', 1)
+            ->assertJsonPath('summary.total_amount', 300000)
+            ->assertJsonPath('summary.total_items', 2)
+            ->assertJsonPath('transactions.data.0.transaction_no', 'POS-20260610-001')
+            ->assertJsonPath('transactions.data.0.items.0.product.name', 'Beras Koperasi')
+            ->assertJsonPath('transactions.data.0.payments.0.payment_method', 'CASH')
+            ->assertJsonMissingPath('transactions.data.1');
+    }
+
+    public function test_member_reward_redemptions_endpoint_returns_own_redemptions(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $otherMember = CooperativeMember::factory()->active()->create();
+        $reward = Reward::factory()->create([
+            'name' => 'Voucher Belanja',
+            'points_required' => 500,
+        ]);
+        RewardRedemption::factory()->create([
+            'reward_id' => $reward->id,
+            'cooperative_member_id' => $member->id,
+            'quantity' => 2,
+            'points_used' => 1000,
+            'status' => 'PENDING',
+            'redeemed_at' => now(),
+        ]);
+        RewardRedemption::factory()->create([
+            'reward_id' => $reward->id,
+            'cooperative_member_id' => $otherMember->id,
+            'status' => 'PENDING',
+            'redeemed_at' => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/reward-redemptions')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.reward.name', 'Voucher Belanja')
+            ->assertJsonPath('data.0.quantity', 2)
+            ->assertJsonPath('data.0.points_used', 1000);
     }
 
     /**

@@ -72,6 +72,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::get('/loans/{loan}', [MemberSelfServiceController::class, 'loan'])->middleware('ability:member:read');
         Route::post('/loans/{loan}/restructure', [MemberSelfServiceController::class, 'requestLoanRestructure'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/shu', [MemberSelfServiceController::class, 'shu'])->middleware('ability:member:read');
+        Route::get('/reward-redemptions', [MemberSelfServiceController::class, 'rewardRedemptions'])->middleware('ability:member:read');
+        Route::get('/transactions', [MemberSelfServiceController::class, 'transactions'])->middleware('ability:member:read');
         Route::get('/notifications', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
         Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
         Route::post('/support-tickets', [MemberSelfServiceController::class, 'storeSupportTicket'])->middleware(['ability:member:write', 'throttle:api-write']);

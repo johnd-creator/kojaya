@@ -179,6 +179,18 @@ Authorization: Bearer {token}
 
 All endpoints require `auth:sanctum` and a `CooperativeMember` record linked to the authenticated user. Read endpoints require `member:read`; write endpoints require `member:write`.
 
+### **Kojayaku Mobile Menu Endpoint Map**
+
+| Menu | Primary API |
+|------|-------------|
+| Kojayaku / Beranda | `GET /api/v1/member/dashboard` |
+| Simpanan | `GET /api/v1/member/savings/summary`, `GET /api/v1/member/savings/ledger`, `GET /api/v1/member/dues/invoices`, `GET /api/v1/member/payments` |
+| Pinjaman | `GET /api/v1/member/loans`, `POST /api/v1/member/loans`, `GET /api/v1/member/loans/{loan}` |
+| Poin Saya | `GET /api/v1/points/balance`, `GET /api/v1/points/history` |
+| Rewards | `GET /api/v1/rewards`, `POST /api/v1/rewards/{reward}/redeem`, `GET /api/v1/member/reward-redemptions` |
+| Transaksi | `GET /api/v1/member/transactions` |
+| Profil | `GET /api/v1/member/profile`, `PUT /api/v1/member/profile` |
+
 ### **Dashboard**
 ```http
 GET /api/v1/member/dashboard
@@ -207,8 +219,8 @@ Authorization: Bearer {token}
     },
     "onboarding": {
       "completed_steps": 3,
-      "total_steps": 5,
-      "progress_percent": 60,
+      "total_steps": 4,
+      "progress_percent": 75,
       "is_complete": false,
       "is_dismissed": false,
       "steps": [
@@ -249,7 +261,7 @@ GET /api/v1/member/status-journey
 Authorization: Bearer {token}
 ```
 
-`onboarding/status` mengembalikan checklist onboarding anggota: kelengkapan profil, dokumen KYC, setoran simpanan pertama, intro pinjaman, dan intro reward. Langkah profil/KYC/simpanan dihitung dari data live anggota; langkah pinjaman/reward bisa ditandai saat anggota membuka fitur.
+`onboarding/status` mengembalikan checklist onboarding anggota: kelengkapan profil, setoran simpanan pertama, intro pinjaman, dan intro reward. Langkah profil/simpanan dihitung dari data live anggota; langkah pinjaman/reward bisa ditandai saat anggota membuka fitur.
 
 **Mark Onboarding Step Request:**
 ```json
@@ -258,7 +270,7 @@ Authorization: Bearer {token}
 }
 ```
 
-Nilai `step` yang valid: `profile`, `kyc`, `first_savings`, `loans`, `rewards`.
+Nilai `step` yang valid: `profile`, `first_savings`, `loans`, `rewards`.
 
 `status-journey` mengembalikan status ringkas dan timeline untuk pembayaran terakhir, pinjaman terakhir, dan redeem reward terakhir agar aplikasi Kojayaku bisa menampilkan perjalanan proses yang konsisten.
 
@@ -533,6 +545,102 @@ Authorization: Bearer {token}
       ]
     }
   ]
+}
+```
+
+### **Reward Redemptions**
+```http
+GET /api/v1/member/reward-redemptions?status=PENDING&per_page=15
+Authorization: Bearer {token}
+```
+
+Returns paginated reward redemption history scoped to the authenticated member. Use this together with `GET /api/v1/rewards` and `POST /api/v1/rewards/{reward}/redeem` for the Rewards mobile page.
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "reward_id": "uuid",
+      "reward": {
+        "id": "uuid",
+        "name": "Voucher Belanja",
+        "category": "VOUCHER",
+        "points_required": 500
+      },
+      "quantity": 2,
+      "points_used": 1000,
+      "status": "PENDING",
+      "delivery_address": "Jl. Koperasi No. 1",
+      "redeemed_at": "2026-06-10T10:00:00Z",
+      "processed_at": null
+    }
+  ],
+  "links": {},
+  "meta": {}
+}
+```
+
+### **Transactions**
+```http
+GET /api/v1/member/transactions?date_from=2026-06-01&date_to=2026-06-30&status=COMPLETED&per_page=15
+Authorization: Bearer {token}
+```
+
+Returns POS purchase history scoped to the authenticated member. This endpoint powers the Kojayaku **Transaksi** page in the mobile app.
+
+**Response (200):**
+```json
+{
+  "summary": {
+    "total_transactions": 1,
+    "total_amount": 300000,
+    "total_items": 2,
+    "last_transaction_at": "2026-06-10T15:30:00Z"
+  },
+  "transactions": {
+    "data": [
+      {
+        "id": 1,
+        "transaction_no": "POS-20260610-001",
+        "client_reference": null,
+        "subtotal": 300000,
+        "discount_amount": 0,
+        "total_amount": 300000,
+        "status": "COMPLETED",
+        "sold_at": "2026-06-10T15:30:00Z",
+        "cashier": {
+          "id": "uuid",
+          "name": "Kasir Koperasi"
+        },
+        "items": [
+          {
+            "id": 1,
+            "product_id": 10,
+            "product": {
+              "id": 10,
+              "name": "Beras Koperasi",
+              "sku": "BR-KOP-001"
+            },
+            "quantity": 2,
+            "unit_price": 150000,
+            "line_total": 300000
+          }
+        ],
+        "payments": [
+          {
+            "id": 1,
+            "payment_method": "CASH",
+            "amount": 300000,
+            "reference_no": null
+          }
+        ]
+      }
+    ],
+    "links": {},
+    "meta": {}
+  }
 }
 ```
 
@@ -1271,6 +1379,8 @@ Content-Type: application/json
 ## 🎁 Points & Rewards API
 
 **Base Path:** `/api/v1/points` and `/api/v1/rewards`
+
+For the Kojayaku Rewards page, combine these endpoints with `GET /api/v1/member/reward-redemptions` to show the authenticated member's redemption history.
 
 ### **Get Points Balance**
 ```http
@@ -2369,4 +2479,4 @@ final checkIn = await api.post('/ess/attendance/check-in', {
 
 ---
 
-*Last Updated: June 7, 2026*
+*Last Updated: June 10, 2026*

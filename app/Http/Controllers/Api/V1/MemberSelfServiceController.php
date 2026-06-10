@@ -28,6 +28,8 @@ use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
 use App\Models\CooperativeSupportTicket;
 use App\Models\Loan;
+use App\Models\PosTransaction;
+use App\Models\RewardRedemption;
 use App\Services\Cooperative\CooperativeReceiptService;
 use App\Services\Cooperative\LoanRestructureService;
 use App\Services\Cooperative\MemberOnboardingService;
@@ -330,6 +332,100 @@ class MemberSelfServiceController extends Controller
             ->get();
 
         return response()->json(['data' => $periods]);
+    }
+
+    public function rewardRedemptions(Request $request): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        return response()->json(
+            $member->rewardRedemptions()
+                ->with('reward')
+                ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
+                ->orderByDesc('redeemed_at')
+                ->paginate($request->integer('per_page', 15))
+                ->through(fn (RewardRedemption $redemption): array => [
+                    'id' => $redemption->id,
+                    'reward_id' => $redemption->reward_id,
+                    'reward' => $redemption->reward ? [
+                        'id' => $redemption->reward->id,
+                        'name' => $redemption->reward->name,
+                        'category' => $redemption->reward->category,
+                        'points_required' => (int) $redemption->reward->points_required,
+                    ] : null,
+                    'quantity' => (int) $redemption->quantity,
+                    'points_used' => (int) $redemption->points_used,
+                    'status' => $redemption->status,
+                    'delivery_address' => $redemption->delivery_address,
+                    'redeemed_at' => $redemption->redeemed_at?->toISOString(),
+                    'processed_at' => $redemption->processed_at?->toISOString(),
+                ])
+        );
+    }
+
+    public function transactions(Request $request): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+        $filters = $request->only(['date_from', 'date_to', 'status']);
+
+        $baseQuery = PosTransaction::query()
+            ->where('cooperative_member_id', $member->id)
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('sold_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('sold_at', '<=', $date))
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status));
+
+        $summaryQuery = clone $baseQuery;
+        $itemsQuery = clone $baseQuery;
+        $latestQuery = clone $baseQuery;
+
+        $transactions = $baseQuery
+            ->with(['items.product', 'payments', 'cashier:id,name'])
+            ->orderByDesc('sold_at')
+            ->paginate($request->integer('per_page', 15))
+            ->through(fn (PosTransaction $transaction): array => [
+                'id' => $transaction->id,
+                'transaction_no' => $transaction->transaction_no,
+                'client_reference' => $transaction->client_reference,
+                'subtotal' => (float) $transaction->subtotal,
+                'discount_amount' => (float) $transaction->discount_amount,
+                'total_amount' => (float) $transaction->total_amount,
+                'status' => $transaction->status,
+                'sold_at' => $transaction->sold_at?->toISOString(),
+                'cashier' => $transaction->cashier ? [
+                    'id' => $transaction->cashier->id,
+                    'name' => $transaction->cashier->name,
+                ] : null,
+                'items' => $transaction->items->map(fn ($item): array => [
+                    'id' => $item->id,
+                    'product_id' => $item->pos_product_id,
+                    'product' => $item->product ? [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'sku' => $item->product->sku,
+                    ] : null,
+                    'quantity' => (int) $item->quantity,
+                    'unit_price' => (float) $item->unit_price,
+                    'line_total' => (float) $item->line_total,
+                ])->values(),
+                'payments' => $transaction->payments->map(fn ($payment): array => [
+                    'id' => $payment->id,
+                    'payment_method' => $payment->payment_method,
+                    'amount' => (float) $payment->amount,
+                    'reference_no' => $payment->reference_no,
+                ])->values(),
+            ]);
+
+        return response()->json([
+            'summary' => [
+                'total_transactions' => (int) $summaryQuery->count(),
+                'total_amount' => (float) $summaryQuery->sum('total_amount'),
+                'total_items' => (int) $itemsQuery
+                    ->join('pos_transaction_items', 'pos_transactions.id', '=', 'pos_transaction_items.pos_transaction_id')
+                    ->sum('quantity'),
+                'last_transaction_at' => $latestQuery->latest('sold_at')->value('sold_at'),
+            ],
+            'transactions' => $transactions,
+        ]);
     }
 
     public function notifications(Request $request): JsonResponse

@@ -10,8 +10,8 @@ export function useCan() {
   });
 
   const userRoles = computed<string[]>(() => {
-    const user = page.props.auth?.user as any;
-    return (user?.roles ?? []).map((r: any) => r.name ?? r);
+    const auth = page.props.auth as any;
+    return (auth?.roles ?? []).map((r: any) => (typeof r === "string" ? r : r.name ?? ""));
   });
 
   const isSystemAdmin = computed(() =>

@@ -20,19 +20,23 @@ class CooperativeMemberValidationTest extends TestCase
 
         Role::firstOrCreate(['name' => 'Pengurus Koperasi']);
         Role::firstOrCreate(['name' => 'Admin Koperasi']);
+        Role::firstOrCreate(['name' => 'System Admin']);
         Role::firstOrCreate(['name' => 'Anggota']);
         Permission::firstOrCreate(['name' => 'validate_cooperative_member']);
+        Permission::firstOrCreate(['name' => 'verify_cooperative_member']);
+        Permission::firstOrCreate(['name' => 'approve_cooperative_member']);
     }
 
-    public function test_validator_can_approve_pending_member(): void
+    public function test_admin_can_verify_pending_member_without_assigning_member_role(): void
     {
         $validator = User::factory()->create();
-        $validator->givePermissionTo('validate_cooperative_member');
+        $validator->givePermissionTo('verify_cooperative_member');
         Role::firstOrCreate(['name' => 'Anggota']);
         $user = User::factory()->create();
 
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
 
@@ -42,15 +46,85 @@ class CooperativeMemberValidationTest extends TestCase
             ->post(route('cooperative.members.validate', $member))
             ->assertRedirect();
 
-        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->fresh()->validation_status);
-        $this->assertNotNull($member->fresh()->validated_at);
+        $fresh = $member->fresh();
+
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->status);
+        $this->assertNotNull($fresh->admin_validated_at);
+        $this->assertSame($validator->id, $fresh->admin_validated_by);
+        $this->assertNull($fresh->validated_at);
+        $this->assertFalse($user->fresh()->hasRole('Anggota'));
+    }
+
+    public function test_pengurus_can_final_approve_admin_verified_member(): void
+    {
+        $validator = User::factory()->create();
+        $validator->givePermissionTo('approve_cooperative_member');
+        Role::firstOrCreate(['name' => 'Anggota']);
+        $user = User::factory()->create();
+
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+            'admin_validated_at' => now(),
+            'admin_validated_by' => User::factory()->create()->id,
+        ]);
+
+        $this->assertFalse($user->hasRole('Anggota'));
+
+        $this->actingAs($validator)
+            ->post(route('cooperative.members.approve-final', $member))
+            ->assertRedirect();
+
+        $fresh = $member->fresh();
+
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->status);
+        $this->assertNotNull($fresh->validated_at);
+        $this->assertSame($validator->id, $fresh->validated_by);
         $this->assertTrue($user->fresh()->hasRole('Anggota'));
+    }
+
+    public function test_system_admin_can_final_approve_admin_verified_member(): void
+    {
+        $validator = User::factory()->create();
+        $validator->assignRole('System Admin');
+        Role::firstOrCreate(['name' => 'Anggota']);
+        $user = User::factory()->create();
+
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+
+        $this->actingAs($validator)
+            ->post(route('cooperative.members.approve-final', $member))
+            ->assertRedirect();
+
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->fresh()->validation_status);
+        $this->assertTrue($user->fresh()->hasRole('Anggota'));
+    }
+
+    public function test_admin_cannot_final_approve_member(): void
+    {
+        $admin = User::factory()->create();
+        $admin->givePermissionTo('verify_cooperative_member');
+
+        $member = CooperativeMember::factory()->create([
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('cooperative.members.approve-final', $member))
+            ->assertForbidden();
     }
 
     public function test_validator_can_reject_pending_member_with_notes(): void
     {
         $validator = User::factory()->create();
-        $validator->givePermissionTo('validate_cooperative_member');
+        $validator->givePermissionTo('verify_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
@@ -69,7 +143,7 @@ class CooperativeMemberValidationTest extends TestCase
     public function test_revision_does_not_overwrite_member_lifecycle_status(): void
     {
         $validator = User::factory()->create();
-        $validator->givePermissionTo('validate_cooperative_member');
+        $validator->givePermissionTo('verify_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
             'status' => CooperativeMember::VALIDATION_PENDING,
@@ -86,7 +160,7 @@ class CooperativeMemberValidationTest extends TestCase
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->status);
     }
 
-    public function test_non_validator_cannot_approve(): void
+    public function test_non_validator_cannot_verify(): void
     {
         $other = User::factory()->create();
         $member = CooperativeMember::factory()->create([
@@ -101,7 +175,7 @@ class CooperativeMemberValidationTest extends TestCase
     public function test_reject_requires_notes_minimum_length(): void
     {
         $validator = User::factory()->create();
-        $validator->givePermissionTo('validate_cooperative_member');
+        $validator->givePermissionTo('verify_cooperative_member');
         $member = CooperativeMember::factory()->create([
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
@@ -135,13 +209,13 @@ class CooperativeMemberValidationTest extends TestCase
         $this->assertContains('identity_number', collect($summary['missing'])->pluck('key')->all());
     }
 
-    public function test_service_rejects_double_validation(): void
+    public function test_service_rejects_double_admin_verification(): void
     {
         $validator = User::factory()->create();
-        $validator->givePermissionTo('validate_cooperative_member');
+        $validator->givePermissionTo('verify_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
-            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
 
         $this->actingAs($validator)

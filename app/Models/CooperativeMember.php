@@ -32,6 +32,9 @@ class CooperativeMember extends Model
         'validated_at',
         'validated_by',
         'validation_notes',
+        'admin_validated_at',
+        'admin_validated_by',
+        'admin_validation_notes',
         'profile_completed_at',
         'onboarding_submitted_at',
         'sso_provider',
@@ -82,6 +85,7 @@ class CooperativeMember extends Model
             'tanggal_lahir' => 'date',
             'deleted_at' => 'datetime',
             'validated_at' => 'datetime',
+            'admin_validated_at' => 'datetime',
             'profile_completed_at' => 'datetime',
             'onboarding_submitted_at' => 'datetime',
             'last_sso_login_at' => 'datetime',
@@ -106,6 +110,11 @@ class CooperativeMember extends Model
     public function validator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function adminValidator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_validated_by');
     }
 
     public function documents(): HasMany

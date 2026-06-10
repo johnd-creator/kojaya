@@ -39,6 +39,16 @@ class MemberAccessGatingTest extends TestCase
             ->assertSessionHas('warning');
     }
 
+    public function test_admin_verified_member_still_cannot_access_dashboard_until_final_approval(): void
+    {
+        [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING_REVIEW);
+
+        $this->actingAs($user)
+            ->get(route('member.dashboard'))
+            ->assertRedirect(route('member.onboarding'))
+            ->assertSessionHas('warning');
+    }
+
     public function test_active_member_can_access_savings(): void
     {
         [$user] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
@@ -77,6 +87,33 @@ class MemberAccessGatingTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.savings'))
+            ->assertRedirect(route('member.onboarding'));
+    }
+
+    public function test_active_member_is_redirected_from_erp_dashboard_to_kojayaku(): void
+    {
+        [$user] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('member.dashboard'));
+    }
+
+    public function test_pending_member_is_redirected_from_erp_dashboard_to_onboarding(): void
+    {
+        [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('member.onboarding'));
+    }
+
+    public function test_admin_verified_member_is_redirected_from_erp_dashboard_to_onboarding(): void
+    {
+        [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING_REVIEW);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
             ->assertRedirect(route('member.onboarding'));
     }
 

@@ -4,14 +4,14 @@ namespace App\Http\Requests\Cooperative;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ValidateCooperativeMemberRequest extends FormRequest
+class ApproveCooperativeMemberRequest extends FormRequest
 {
     public function authorize(): bool
     {
         $user = $this->user();
 
-        return $user?->can('verify_cooperative_member')
-            || $user?->can('validate_cooperative_member')
+        return $user?->can('approve_cooperative_member')
+            || $user?->hasRole('System Admin')
             || false;
     }
 

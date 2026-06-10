@@ -37,6 +37,7 @@ import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import {
   activate,
+  approveFinal,
   deactivate,
   destroy,
   exportMethod,
@@ -84,7 +85,13 @@ const filters = ref({
 });
 const { can } = useCan();
 const canManageMember = computed(() => can("manage_cooperative_member"));
-const canValidateMember = computed(() => can("validate_cooperative_member"));
+const canVerifyMember = computed(() =>
+  can(["verify_cooperative_member", "validate_cooperative_member"]),
+);
+const canApproveMember = computed(() => can("approve_cooperative_member"));
+const canReviewMember = computed(
+  () => canVerifyMember.value || canApproveMember.value,
+);
 const createMemberDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
 const memberPendingDelete = ref<{ id: string | number; name: string } | null>(
@@ -327,11 +334,18 @@ const getValidationVariant = (
   }
 };
 
-const isPendingReview = (row: any): boolean =>
-  ["PENDING", "PENDING_VALIDATION", "REVISION"].includes(row.validation_status);
+const isAdminVerificationReady = (row: any): boolean =>
+  ["PENDING", "REVISION"].includes(row.validation_status);
 
-const validateMemberAction = (row: any): void => {
+const isFinalApprovalReady = (row: any): boolean =>
+  row.validation_status === "PENDING_VALIDATION";
+
+const verifyMemberAction = (row: any): void => {
   router.post(validateMember(row.id).url, undefined, { preserveScroll: true });
+};
+
+const approveFinalAction = (row: any): void => {
+  router.post(approveFinal(row.id).url, undefined, { preserveScroll: true });
 };
 
 const requestRevisionAction = (row: any): void => {
@@ -543,17 +557,29 @@ const exportUrl = computed(() => {
               </Link>
             </Button>
             <Button
-              v-if="canValidateMember && isPendingReview(row)"
+              v-if="canVerifyMember && isAdminVerificationReady(row)"
               size="sm"
               variant="default"
               data-test="member-approve"
-              :aria-label="`Setujui anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="validateMemberAction(row)"
+              :aria-label="`Verifikasi admin untuk anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
+              @click="verifyMemberAction(row)"
             >
               <UserCheck class="h-4 w-4" />
+              <span class="hidden sm:inline">Verifikasi</span>
             </Button>
             <Button
-              v-if="canValidateMember && isPendingReview(row)"
+              v-if="canApproveMember && isFinalApprovalReady(row)"
+              size="sm"
+              variant="default"
+              data-test="member-approve-final"
+              :aria-label="`Approve final anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
+              @click="approveFinalAction(row)"
+            >
+              <UserCheck class="h-4 w-4" />
+              <span class="hidden sm:inline">Approve Final</span>
+            </Button>
+            <Button
+              v-if="canReviewMember && (isAdminVerificationReady(row) || isFinalApprovalReady(row))"
               size="sm"
               variant="outline"
               data-test="member-revision"
@@ -563,7 +589,7 @@ const exportUrl = computed(() => {
               <Pencil class="h-4 w-4" />
             </Button>
             <Button
-              v-if="canValidateMember && isPendingReview(row)"
+              v-if="canReviewMember && (isAdminVerificationReady(row) || isFinalApprovalReady(row))"
               size="sm"
               variant="destructive"
               data-test="member-reject"

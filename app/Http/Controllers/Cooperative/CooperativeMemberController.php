@@ -297,7 +297,7 @@ class CooperativeMemberController extends Controller
             ],
             'validationStatuses' => [
                 ['value' => 'PENDING', 'label' => 'Menunggu Validasi'],
-                ['value' => 'PENDING_VALIDATION', 'label' => 'Sedang Direview'],
+                ['value' => 'PENDING_VALIDATION', 'label' => 'Menunggu Pengurus'],
                 ['value' => 'REVISION', 'label' => 'Perlu Revisi'],
                 ['value' => 'REJECTED', 'label' => 'Ditolak'],
                 ['value' => 'ACTIVE', 'label' => 'Disetujui'],

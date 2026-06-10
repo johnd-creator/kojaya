@@ -240,7 +240,7 @@ class GoogleSsoService
         $name = $googleUser->getName() ?: 'Anggota Baru';
         $organization = \App\Models\Organization::query()->orderBy('id')->first()
             ?? \App\Models\Organization::factory()->create();
-        $memberNo = sprintf('TMP-%s', strtoupper(Str::random(8)));
+        $memberNo = $this->generateTemporaryMemberNo();
 
         return DB::transaction(function () use ($googleUser, $email, $name, $organization, $memberNo): array {
             $user = User::query()->create([
@@ -273,6 +273,21 @@ class GoogleSsoService
 
             return ['user' => $user, 'social' => $social, 'member' => $member];
         });
+    }
+
+    private function generateTemporaryMemberNo(): string
+    {
+        do {
+            $memberNo = 'TMP'.strtoupper(Str::random(7));
+        } while (CooperativeMember::query()
+            ->withTrashed()
+            ->where(function ($query) use ($memberNo): void {
+                $query->where('member_no', $memberNo)
+                    ->orWhere('no_anggota', $memberNo);
+            })
+            ->exists());
+
+        return $memberNo;
     }
 
     public function recordLogin(SocialAccount $social): void

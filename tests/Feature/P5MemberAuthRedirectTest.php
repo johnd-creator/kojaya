@@ -28,7 +28,7 @@ class P5MemberAuthRedirectTest extends TestCase
         ]);
         $user->assignRole('Anggota');
 
-        CooperativeMember::factory()->create([
+        CooperativeMember::factory()->active()->create([
             'user_id' => $user->id,
             'organization_id' => $organization->id,
         ]);
@@ -62,7 +62,7 @@ class P5MemberAuthRedirectTest extends TestCase
         $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('Anggota');
 
-        CooperativeMember::factory()->create([
+        CooperativeMember::factory()->active()->create([
             'user_id' => $user->id,
             'organization_id' => $organization->id,
         ]);

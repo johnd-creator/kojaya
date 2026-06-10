@@ -37,13 +37,12 @@ type Member = {
   phone?: string | null;
   address?: string | null;
   identity_number?: string | null;
-  jenis_anggota?: string | null;
   jenis_kelamin?: string | null;
   kategori?: string | null;
   tanggal_lahir?: string | null;
   tempat_lahir?: string | null;
   pekerjaan?: string | null;
-  perusahaan?: string | null;
+  npwp?: string | null;
   no_rekening?: string | null;
   nama_bank?: string | null;
   nama_pemilik_rekening?: string | null;
@@ -68,9 +67,9 @@ type OnboardingStatus = {
 };
 
 type Options = {
-  jenisAnggota: Array<{ value: string; label: string }>;
   jenisKelamin: Array<{ value: string; label: string }>;
-  kategori: Array<{ value: string; label: string }>;
+  perusahaan: Array<{ value: string; label: string }>;
+  bank: Array<{ value: string; label: string }>;
 };
 
 const props = defineProps<{
@@ -108,8 +107,29 @@ const isLocked = computed<boolean>(() => {
 const isApproved = computed<boolean>(() => props.review_state === "approved");
 
 const isAdmissionWaiting = computed<boolean>(() => {
-  return props.validation_status === "PENDING" && !props.submitted;
+  return (
+    ["PENDING", "PENDING_VALIDATION"].includes(props.validation_status) &&
+    !props.submitted
+  );
 });
+
+const admissionWaitingTitle = computed<string>(() =>
+  props.validation_status === "PENDING_VALIDATION"
+    ? "Menunggu approval Pengurus Koperasi"
+    : "Menunggu penerimaan Admin Koperasi",
+);
+
+const admissionWaitingDescription = computed<string>(() =>
+  props.validation_status === "PENDING_VALIDATION"
+    ? "Data Anda sudah diverifikasi Admin Koperasi. Akses Kojayaku akan dibuka setelah Pengurus Koperasi memberikan approval final."
+    : "Akun Google Anda sudah berhasil dibuat sebagai calon anggota. Untuk menjaga validasi data koperasi, akses Kojayaku baru akan dibuka setelah Admin Koperasi menerima pendaftaran ini.",
+);
+
+const admissionWaitingStatus = computed<string>(() =>
+  props.validation_status === "PENDING_VALIDATION"
+    ? "Menunggu Pengurus"
+    : "Menunggu Admin",
+);
 
 const form = useForm<{
   name: string;
@@ -117,13 +137,12 @@ const form = useForm<{
   phone: string;
   address: string;
   identity_number: string;
-  jenis_anggota: string;
+  npwp: string;
   jenis_kelamin: string;
   kategori: string;
   tanggal_lahir: string;
   tempat_lahir: string;
   pekerjaan: string;
-  perusahaan: string;
   no_rekening: string;
   nama_bank: string;
   nama_pemilik_rekening: string;
@@ -133,13 +152,12 @@ const form = useForm<{
   phone: props.member.phone ?? "",
   address: props.member.address ?? "",
   identity_number: props.member.identity_number ?? "",
-  jenis_anggota: props.member.jenis_anggota ?? "AB",
+  npwp: props.member.npwp ?? "",
   jenis_kelamin: props.member.jenis_kelamin ?? "L",
   kategori: props.member.kategori ?? "IP",
   tanggal_lahir: props.member.tanggal_lahir ?? "",
   tempat_lahir: props.member.tempat_lahir ?? "",
   pekerjaan: props.member.pekerjaan ?? "",
-  perusahaan: props.member.perusahaan ?? "",
   no_rekening: props.member.no_rekening ?? "",
   nama_bank: props.member.nama_bank ?? "",
   nama_pemilik_rekening: props.member.nama_pemilik_rekening ?? "",
@@ -168,15 +186,14 @@ const reviewItems = computed(() => [
   { label: "Nomor HP", value: form.phone },
   { label: "Alamat", value: form.address },
   { label: "Nomor Identitas", value: form.identity_number },
-  { label: "Jenis Anggota", value: form.jenis_anggota },
+  { label: "NPWP", value: form.npwp || "-" },
   { label: "Jenis Kelamin", value: form.jenis_kelamin },
-  { label: "Kategori", value: form.kategori },
+  { label: "Perusahaan", value: form.kategori },
   { label: "Tanggal Lahir", value: form.tanggal_lahir || "-" },
   { label: "Tempat Lahir", value: form.tempat_lahir || "-" },
-  { label: "Pekerjaan", value: form.pekerjaan || "-" },
-  { label: "Perusahaan", value: form.perusahaan || "-" },
+  { label: "Jabatan", value: form.pekerjaan || "-" },
   { label: "Bank", value: form.nama_bank || "-" },
-  { label: "Pemilik Rekening", value: form.nama_pemilik_rekening || "-" },
+  { label: "Nama Pemilik Rekening", value: form.nama_pemilik_rekening || "-" },
   { label: "Nomor Rekening", value: form.no_rekening || "-" },
 ]);
 
@@ -192,9 +209,9 @@ const reviewStateMeta = computed<{
     case "review":
       return {
         tone: "warning",
-        title: "Sedang Direview",
+        title: "Menunggu Approval Pengurus",
         description:
-          "Data Anda sudah kami teruskan ke pengurus. Mohon menunggu hasil validasi.",
+          "Data Anda sudah diverifikasi Admin Koperasi dan sedang menunggu approval final Pengurus Koperasi.",
         icon: Sparkles,
       };
     case "revision":
@@ -280,12 +297,10 @@ const stepClass = (key: string): string =>
           </div>
           <div class="space-y-2">
             <h2 class="text-lg font-semibold">
-              Menunggu penerimaan Admin Koperasi
+              {{ admissionWaitingTitle }}
             </h2>
             <p class="max-w-3xl text-sm leading-6 text-emerald-900/85">
-              Akun Google Anda sudah berhasil dibuat sebagai calon anggota.
-              Untuk menjaga validasi data koperasi, akses Kojayaku baru akan
-              dibuka setelah Admin Koperasi menerima pendaftaran ini.
+              {{ admissionWaitingDescription }}
             </p>
           </div>
         </div>
@@ -319,7 +334,7 @@ const stepClass = (key: string): string =>
             >
               Status
             </p>
-            <p class="mt-1 font-semibold">Menunggu Admin</p>
+            <p class="mt-1 font-semibold">{{ admissionWaitingStatus }}</p>
           </div>
         </div>
 
@@ -433,18 +448,10 @@ const stepClass = (key: string): string =>
               />
             </div>
             <div class="space-y-2">
-              <Label for="onb-pekerjaan">Pekerjaan</Label>
+              <Label for="onb-pekerjaan">Jabatan</Label>
               <Input
                 id="onb-pekerjaan"
                 v-model="form.pekerjaan"
-                :disabled="isLocked"
-              />
-            </div>
-            <div class="space-y-2 md:col-span-2">
-              <Label for="onb-perusahaan">Perusahaan / Unit Kerja</Label>
-              <Input
-                id="onb-perusahaan"
-                v-model="form.perusahaan"
                 :disabled="isLocked"
               />
             </div>
@@ -475,28 +482,23 @@ const stepClass = (key: string): string =>
                 Data identitas dipakai untuk validasi pengurus.
               </p>
             </div>
+            <div class="space-y-2">
+              <Label for="onb-npwp">NPWP</Label>
+              <Input
+                id="onb-npwp"
+                v-model="form.npwp"
+                placeholder="contoh: 12.345.678.9-012.000"
+                :disabled="isLocked"
+              />
+              <p class="text-xs text-muted-foreground">
+                Opsional. Digunakan untuk kebutuhan administrasi perpajakan koperasi.
+              </p>
+            </div>
           </div>
         </div>
 
         <div v-show="activeStep === 3" class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-3">
-            <div class="space-y-2">
-              <Label>Jenis Anggota</Label>
-              <Select v-model="form.jenis_anggota" :disabled="isLocked">
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih jenis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in options.jenisAnggota"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
               <Label>Jenis Kelamin</Label>
               <Select v-model="form.jenis_kelamin" :disabled="isLocked">
@@ -515,14 +517,14 @@ const stepClass = (key: string): string =>
               </Select>
             </div>
             <div class="space-y-2">
-              <Label>Kategori</Label>
+              <Label>Perusahaan</Label>
               <Select v-model="form.kategori" :disabled="isLocked">
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih kategori" />
+                  <SelectValue placeholder="Pilih perusahaan" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
-                    v-for="option in options.kategori"
+                    v-for="option in options.perusahaan"
                     :key="option.value"
                     :value="option.value"
                   >
@@ -537,15 +539,24 @@ const stepClass = (key: string): string =>
         <div v-show="activeStep === 4" class="space-y-4">
           <div class="grid gap-4 md:grid-cols-3">
             <div class="space-y-2">
-              <Label for="onb-bank">Nama Bank</Label>
-              <Input
-                id="onb-bank"
-                v-model="form.nama_bank"
-                :disabled="isLocked"
-              />
+              <Label>Nama Bank</Label>
+              <Select v-model="form.nama_bank" :disabled="isLocked">
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih bank" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in options.bank"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-2 md:col-span-2">
-              <Label for="onb-pemilik">Pemilik Rekening</Label>
+              <Label for="onb-pemilik">Nama Pemilik Rekening</Label>
               <Input
                 id="onb-pemilik"
                 v-model="form.nama_pemilik_rekening"

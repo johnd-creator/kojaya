@@ -723,7 +723,8 @@ Kojayaku butuh login yang familiar untuk anggota tanpa password baru, tetapi tid
 ### Decision
 - Pakai `laravel/socialite` untuk Google OAuth.
 - Simpan identitas provider di tabel `social_accounts` (bukan kolom di `users`) untuk konsistensi multi-provider di masa depan.
-- `cooperative_members` memakai `validation_status` dengan nilai `PENDING`, `PENDING_VALIDATION`, `ACTIVE`, `REJECTED`, `REVISION`, dan field `validated_at`, `validated_by`, `validation_notes`, `profile_completed_at`.
+- `cooperative_members` memakai `validation_status` dengan nilai `PENDING`, `PENDING_VALIDATION`, `ACTIVE`, `REJECTED`, `REVISION`, field final approval `validated_at`, `validated_by`, `validation_notes`, serta field verifikasi Admin Koperasi `admin_validated_at`, `admin_validated_by`, `admin_validation_notes`.
+- Validasi calon anggota memakai dua tahap: Admin Koperasi melakukan verifikasi awal, lalu Pengurus Koperasi atau System Admin melakukan approval final sebelum role `Anggota` diberikan.
 - Email Google dicocokkan lowercase, hanya untuk email dengan `email_verified = true`. Konflik provider_id ditolak dengan audit event.
 - Redirect pasca-login dan pasca-onboarding mengikuti aturan prioritas di `docs/google_sso.md` Bagian 9.
 - Aktifkan Google SSO hanya bila `GOOGLE_SSO_ENABLED=true` agar rollout aman.
@@ -733,7 +734,7 @@ Kojayaku butuh login yang familiar untuk anggota tanpa password baru, tetapi tid
 **Positive:**
 - Login anggota familiar dan cepat, mengurangi beban admin untuk pembuatan akun manual.
 - Tabel `social_accounts` siap jika nanti ada provider lain tanpa migrasi besar.
-- Validasi admin Koperasi tetap menjadi gate akhir sebelum akses fitur finansial.
+- Validasi berlapis membuat Admin Koperasi dapat menyaring data awal sementara Pengurus Koperasi/System Admin menjadi gate akhir sebelum akses fitur finansial.
 - Audit log memberi jejak untuk setiap login, linking, dan konflik.
 
 **Trade-off:**

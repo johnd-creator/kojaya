@@ -34,13 +34,12 @@ class CompleteMemberOnboardingRequest extends FormRequest
                     ->ignore($member?->id)
                     ->whereNull('deleted_at'),
             ],
-            'jenis_anggota' => ['required', Rule::in(['AB', 'ALB'])],
+            'npwp' => ['nullable', 'string', 'max:32'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
             'kategori' => ['required', Rule::in(['IP', 'CDB', 'KOP'])],
             'tanggal_lahir' => ['nullable', 'date'],
             'tempat_lahir' => ['nullable', 'string', 'max:120'],
             'pekerjaan' => ['nullable', 'string', 'max:120'],
-            'perusahaan' => ['nullable', 'string', 'max:160'],
             'no_rekening' => ['nullable', 'string', 'max:30'],
             'nama_bank' => ['nullable', 'string', 'max:60'],
             'nama_pemilik_rekening' => ['nullable', 'string', 'max:160'],
@@ -56,9 +55,8 @@ class CompleteMemberOnboardingRequest extends FormRequest
             'address.required' => 'Alamat wajib diisi.',
             'identity_number.required' => 'Nomor identitas wajib diisi.',
             'identity_number.unique' => 'Nomor identitas sudah dipakai anggota lain.',
-            'jenis_anggota.required' => 'Pilih jenis anggota.',
             'jenis_kelamin.required' => 'Pilih jenis kelamin.',
-            'kategori.required' => 'Pilih kategori keanggotaan.',
+            'kategori.required' => 'Pilih perusahaan.',
         ];
     }
 }

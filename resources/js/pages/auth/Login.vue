@@ -4,18 +4,16 @@ import {
   BarChart3,
   Calculator,
   Check,
-  Chrome,
   Eye,
   EyeOff,
   FileText,
-  Headphones,
   LockKeyhole,
   ShieldCheck,
   ShoppingCart,
   UserRound,
   Users,
 } from "lucide-vue-next";
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import InputError from "@/components/InputError.vue";
 import TextLink from "@/components/TextLink.vue";
 import { Button } from "@/components/ui/button";
@@ -32,11 +30,33 @@ const googleSsoRedirectUrl = "/auth/google/redirect";
 defineProps<{
   status?: string;
   canResetPassword: boolean;
-  canRegister: boolean;
 }>();
 
 const passwordVisible = ref(false);
 const googleLoading = ref(false);
+const previousDarkState = ref<boolean | null>(null);
+
+onMounted(() => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const root = document.documentElement;
+  previousDarkState.value = root.classList.contains("dark");
+  root.classList.remove("dark");
+  root.style.colorScheme = "light";
+});
+
+onBeforeUnmount(() => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.documentElement.style.colorScheme = "";
+  if (previousDarkState.value === true) {
+    document.documentElement.classList.add("dark");
+  }
+});
 const page = usePage();
 const googleSsoEnabled = computed<boolean>(
   () => Boolean((page.props as { googleSsoEnabled?: boolean }).googleSsoEnabled),
@@ -68,7 +88,7 @@ const modules = [
   <Head title="Masuk" />
 
   <main
-    class="relative flex h-svh flex-col overflow-hidden bg-[#f7fbf6] text-slate-950"
+    class="relative flex h-svh flex-col overflow-hidden bg-[#f7fbf6] text-slate-950 [color-scheme:light]"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(16,128,49,0.12),transparent_34%,rgba(16,128,49,0.11)_100%)]"
@@ -212,27 +232,6 @@ const modules = [
             {{ flashErrors.sso }}
           </div>
 
-          <div v-if="googleSsoEnabled" class="mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              class="h-12.5 w-full rounded-lg border-slate-300 bg-white text-sm font-extrabold text-slate-900 hover:bg-slate-50"
-              :disabled="googleLoading"
-              data-test="google-login-button"
-              @click="startGoogleLogin"
-            >
-              <Spinner v-if="googleLoading" />
-              <Chrome v-else class="size-4.5 text-[#0b8f2e]" />
-              Masuk dengan Google
-            </Button>
-
-            <div class="my-5 flex items-center gap-3 text-slate-500">
-              <div class="h-px flex-1 bg-slate-200" />
-              <span class="text-xs font-semibold tracking-wider uppercase">atau</span>
-              <div class="h-px flex-1 bg-slate-200" />
-            </div>
-          </div>
-
           <Form
             v-bind="store.form()"
             :reset-on-success="['password']"
@@ -333,28 +332,53 @@ const modules = [
                 <LockKeyhole v-else class="size-4.5" />
                 Masuk
               </Button>
-              <!-- <Button
-                type="button"
-                variant="outline"
-                class="h-11.5 w-full rounded-lg border-[#0b8f2e] bg-white text-sm font-extrabold text-[#0b8f2e] hover:bg-green-50 hover:text-[#087a28]"
-                :tabindex="6"
-              >
-                <Headphones class="size-4.5" />
-                Hubungi Admin
-              </Button> -->
             </div>
           </Form>
 
-          <div
-            v-if="canRegister"
-            class="mt-5 flex items-center justify-center border-t border-slate-200 pt-5"
-          >
-            <TextLink
-              href="/register"
-              class="text-sm font-bold text-[#087a28] no-underline hover:text-[#0b8f2e] hover:underline"
+          <div v-if="googleSsoEnabled" class="mt-5">
+            <div class="mb-5 flex items-center gap-3 text-slate-500">
+              <div class="h-px flex-1 bg-slate-200" />
+              <span class="text-xs font-semibold tracking-wider uppercase"
+                >atau masuk dengan</span
+              >
+              <div class="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              class="h-12.5 w-full rounded-lg border-slate-300 bg-white text-sm font-extrabold text-slate-900 shadow-none hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-[#0b8f2e]/25"
+              :tabindex="6"
+              :disabled="googleLoading"
+              data-test="google-login-button"
+              @click="startGoogleLogin"
             >
-              Belum punya akun anggota? Daftar di sini
-            </TextLink>
+              <Spinner v-if="googleLoading" />
+              <svg
+                v-else
+                class="size-4.5"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#4285F4"
+                  d="M21.805 12.23c0-.79-.071-1.55-.204-2.294H12v4.34h5.486a4.69 4.69 0 0 1-2.035 3.077v2.515h3.298c1.93-1.778 3.056-4.397 3.056-7.638Z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 22c2.756 0 5.069-.913 6.759-2.132l-3.298-2.515c-.913.612-2.08.974-3.461.974-2.659 0-4.908-1.795-5.711-4.207H2.88v2.595A10 10 0 0 0 12 22Z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M6.289 14.12A6.013 6.013 0 0 1 5.974 12c0-.735.112-1.45.315-2.12V7.285H2.88A10 10 0 0 0 2 12c0 1.614.386 3.14.88 4.715l3.409-2.595Z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.673c1.498 0 2.843.515 3.902 1.528l2.93-2.93C17.064 2.624 14.751 1.673 12 1.673a10 10 0 0 0-9.12 5.612L6.289 9.88C7.092 7.468 9.341 5.673 12 5.673Z"
+                />
+              </svg>
+              Masuk dengan Google
+            </Button>
           </div>
 
           <div

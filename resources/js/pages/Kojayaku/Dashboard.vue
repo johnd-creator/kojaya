@@ -11,7 +11,6 @@ import {
   type LucideIcon,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
-import OnboardingChecklist from '@/components/Kojayaku/OnboardingChecklist.vue';
 import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import StatsCard from '@/components/StatsCard.vue';
@@ -34,14 +33,6 @@ const props = defineProps<{
         points_balance: number;
         member_tier: string;
         unread_notifications: number;
-    };
-    onboarding: {
-        completed_steps: number;
-        total_steps: number;
-        progress_percent: number;
-        is_complete: boolean;
-        is_dismissed: boolean;
-        steps: Array<{ key: string; label: string; description: string; href: string; completed: boolean }>;
     };
     journeys: Record<
         string,
@@ -171,8 +162,6 @@ const bannerClass = computed(() => {
                 <StatsCard label="Poin Saya" :value="summary.points_balance" :icon="Gift" />
                 <StatsCard label="Notifikasi Baru" :value="summary.unread_notifications" :icon="Bell" />
             </div>
-
-            <OnboardingChecklist :onboarding="onboarding" compact />
 
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Link href="/member/savings" class="rounded-lg border p-4 transition hover:bg-muted/40">Simpanan & Tagihan</Link>

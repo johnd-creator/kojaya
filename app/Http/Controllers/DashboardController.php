@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Services\ConsolidatedReportService;
 use App\Services\Dashboard\CooperativeDashboardService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Inertia\Inertia;
@@ -13,8 +14,20 @@ use Inertia\Response as InertiaResponse;
 
 class DashboardController extends Controller
 {
-    public function show(CooperativeDashboardService $dashboard): InertiaResponse
+    public function show(CooperativeDashboardService $dashboard): InertiaResponse|RedirectResponse
     {
+        $user = request()->user();
+
+        if ($user && ($user->cooperativeMember || $user->hasRole('Anggota'))) {
+            $status = $user->cooperativeMember->validation_status ?: $user->cooperativeMember->status;
+
+            if (in_array($status, [\App\Models\CooperativeMember::VALIDATION_PENDING, \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW, \App\Models\CooperativeMember::VALIDATION_REVISION], true)) {
+                return redirect()->route('member.onboarding');
+            }
+
+            return redirect()->route('member.dashboard');
+        }
+
         return Inertia::render('Dashboard', [
             'dashboard' => Inertia::defer(fn () => $dashboard->data(), 'dashboard'),
         ]);

@@ -761,6 +761,7 @@
 | May 16, 2026 | Sprint 4 Reliability & DX | Engineering | Added transactional notification outbox with scheduled retry, service contracts for loans/payment gateway integration, versioned OpenAPI snapshot with CI drift check, and parallel PHPUnit coverage gate |
 | May 16, 2026 | Sprint 3 HR/Payroll Hardening | Engineering | Added THR entitlement tracking and ESS endpoint, attendance correction workflow, audited SHU revision requests, and vendor performance snapshots |
 | May 17, 2026 | Sprint 4 Production Infrastructure | Engineering | Added retention pruning, database backup automation, request-id API errors, and manual deployment workflow |
+| Jun 9, 2026 | Google SSO Two-Step Member Validation | Engineering | Added Admin Koperasi verification before Pengurus Koperasi/System Admin final approval for new Google SSO member activation |
 
 ---
 

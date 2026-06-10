@@ -90,7 +90,7 @@ Kolom anggota yang sudah relevan:
 
 1. Google SSO hanya membuktikan kepemilikan email, bukan otomatis membuktikan keanggotaan koperasi.
 2. Jika email Google cocok dengan anggota existing, sistem boleh melakukan linking otomatis dengan kontrol yang jelas.
-3. Jika email belum dikenal, sistem membuat user dan draft anggota, lalu mengarahkan user ke onboarding.
+3. Jika email belum dikenal, sistem membuat user dan draft anggota sebagai calon anggota, lalu mengarahkan user ke onboarding/welcome page calon anggota.
 4. Admin Koperasi menjadi validator final untuk aktivasi anggota baru.
 5. Data anggota harus lengkap sebelum akses fitur finansial sensitif.
 6. Semua perubahan identitas, linking, validasi, dan penolakan harus tercatat di audit log.
@@ -121,16 +121,22 @@ Kolom anggota yang sudah relevan:
 1. User klik "Masuk dengan Google".
 2. Sistem menerima email Google yang sudah verified.
 3. Sistem tidak menemukan user atau anggota existing.
-4. Sistem membuat user dengan role `Anggota`.
-5. Sistem membuat record `CooperativeMember` status `PENDING` atau `PENDING_VALIDATION`.
-6. User diarahkan ke onboarding untuk melengkapi data wajib.
-7. Setelah submit onboarding, status tetap menunggu validasi admin.
-8. Admin Koperasi meninjau dan memvalidasi.
-9. Jika valid:
+4. Sistem membuat user authenticated tanpa role `Anggota`.
+5. Sistem membuat record `CooperativeMember` sebagai calon anggota dengan `status=PENDING` dan `validation_status=PENDING`.
+6. User diarahkan ke `/member/onboarding`, yang menampilkan welcome/waiting page calon anggota.
+7. Selama masih pending, user hanya boleh mengakses onboarding/waiting page dan belum boleh memakai fitur Kojayaku lain.
+8. Admin Koperasi meninjau dan melakukan verifikasi awal.
+9. Jika verifikasi Admin valid:
+   - `validation_status` menjadi `PENDING_VALIDATION`.
+   - User tetap belum punya role `Anggota`.
+   - User tetap hanya dapat melihat onboarding/waiting page.
+10. Pengurus Koperasi atau System Admin melakukan approval final.
+11. Jika valid:
    - Status anggota menjadi `ACTIVE`.
+   - Role `Anggota` diberikan ke user.
    - Nomor anggota dibuat jika belum ada.
    - Onboarding dianggap selesai.
-10. Jika ditolak:
+12. Jika ditolak:
    - Status menjadi `REJECTED` atau tetap `PENDING` dengan catatan revisi.
    - Anggota melihat alasan dan dapat memperbaiki data.
 
@@ -255,9 +261,9 @@ Catatan: field sensitif seperti NIK, dokumen KTP, dan rekening harus memiliki ke
 Prioritas redirect:
 
 1. Jika user harus two-factor challenge, ikuti Fortify flow.
-2. Jika user punya role `Anggota` dan punya member status `PENDING` atau `PENDING_VALIDATION`, redirect ke `/member/onboarding`.
-3. Jika user punya role `Anggota` dan profile belum lengkap, redirect ke `/member/onboarding`.
-4. Jika user punya role `Anggota` dan status `ACTIVE`, redirect ke `/member`.
+2. Jika user punya `cooperativeMember` dengan `validation_status=PENDING`, `PENDING_VALIDATION`, atau `REVISION`, redirect ke `/member/onboarding` walaupun user belum punya role `Anggota`.
+3. Jika user punya `cooperativeMember` aktif tetapi profile belum lengkap, redirect ke `/member/onboarding`.
+4. Jika user punya role `Anggota` dan status anggota `ACTIVE`, redirect ke `/member`.
 5. Jika user punya role admin, redirect ke dashboard admin sesuai role.
 6. Jika user tidak punya role jelas, redirect ke halaman pemilihan role atau halaman support.
 
@@ -336,7 +342,14 @@ Tambahkan section:
 
 ### Menu Admin
 
-Tambahkan filter di page anggota:
+Gunakan page anggota yang sudah ada untuk tahap awal:
+
+- Calon anggota hasil Google SSO dapat dilihat di `/cooperative/members?validation_status=PENDING`.
+- Data yang menunggu approval Pengurus dapat dilihat dengan `validation_status=PENDING_VALIDATION`.
+- Data yang perlu diperbaiki dapat dilihat dengan `validation_status=REVISION`.
+- Page/menu khusus `Penerimaan Anggota Baru` belum dibuat pada fase ini; jika diperlukan nanti, page tersebut sebaiknya memakai data dan action validasi yang sama.
+
+Filter di page anggota:
 
 - `Menunggu validasi`
 - `Perlu revisi`
@@ -348,15 +361,14 @@ Admin Koperasi perlu dapat:
 - Melihat daftar anggota hasil Google SSO yang pending.
 - Membuka detail data onboarding.
 - Melihat dokumen upload.
-- Approve anggota.
+- Verifikasi data calon anggota agar masuk ke tahap approval Pengurus.
 - Reject anggota dengan alasan.
 - Request revision dengan catatan.
-- Generate nomor anggota jika belum ada.
 - Link anggota ke user existing jika terdeteksi duplikat.
 
 ### Approval Rules
 
-Admin dapat approve jika:
+Admin Koperasi dapat verifikasi awal jika:
 
 - Email verified.
 - Data wajib lengkap.
@@ -364,9 +376,20 @@ Admin dapat approve jika:
 - Tidak ada duplikasi email aktif.
 - Dokumen valid.
 
-Setelah approve:
+Setelah verifikasi Admin:
+
+- `CooperativeMember.validation_status = PENDING_VALIDATION`
+- `admin_validated_at` terisi
+- `admin_validated_by` terisi
+- role `Anggota` belum diberikan ke user
+- akses anggota tetap terkunci di onboarding/waiting page
+
+Pengurus Koperasi atau System Admin dapat approve final jika status sudah `PENDING_VALIDATION`.
+
+Setelah approval final:
 
 - `CooperativeMember.status = ACTIVE`
+- `CooperativeMember.validation_status = ACTIVE`
 - `validated_at` terisi
 - `validated_by` terisi
 - role `Anggota` dipastikan ada di user
@@ -475,12 +498,14 @@ Tambahkan:
 Tambahkan ke `.env.example`:
 
 ```env
+GOOGLE_SSO_ENABLED=false
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
-GOOGLE_SSO_ENABLED=false
 GOOGLE_SSO_AUTO_LINK_EXISTING_MEMBERS=true
 GOOGLE_SSO_ALLOW_NEW_MEMBER_REGISTRATION=true
+GOOGLE_SSO_HOSTED_DOMAINS=
+GOOGLE_SSO_STATE_TTL=300
 ```
 
 Tambahkan config:
@@ -602,7 +627,8 @@ Tasks:
 
 - Tambah filter validasi di page anggota.
 - Tambah detail validasi anggota.
-- Tambah action approve.
+- Tambah action verifikasi Admin.
+- Tambah action approval final Pengurus/System Admin.
 - Tambah action reject.
 - Tambah action request revision.
 - Tambah audit log.
@@ -610,11 +636,11 @@ Tasks:
 
 Acceptance criteria:
 
-- Admin Koperasi dapat melihat anggota pending.
-- Admin dapat approve anggota lengkap.
-- Admin dapat reject dengan alasan.
+- Admin Koperasi dapat melihat anggota pending dan melakukan verifikasi awal.
+- Pengurus Koperasi/System Admin dapat approve final anggota yang sudah diverifikasi Admin.
+- Admin/Pengurus dapat reject dengan alasan.
 - Admin dapat request revision.
-- Setelah approve, anggota menjadi aktif dan bisa masuk member dashboard.
+- Setelah approval final, anggota menjadi aktif dan bisa masuk member dashboard.
 
 ### Phase 6: Profile dan Settings Completeness
 
@@ -703,7 +729,7 @@ Acceptance criteria:
 
 ## 16. Migration Plan
 
-1. Deploy kode dengan `GOOGLE_SSO_ENABLED=false`.
+1. Deploy kode dengan `GOOGLE_SSO_ENABLED=false` sampai credential Google valid.
 2. Jalankan migration.
 3. Deploy UI tombol tetapi hidden oleh flag.
 4. Konfigurasi Google credentials di staging.

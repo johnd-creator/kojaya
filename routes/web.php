@@ -197,11 +197,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');
         });
 
-        Route::middleware('can:validate_cooperative_member')->group(function () {
-            Route::post('members/{member}/validate', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'approve'])->name('members.validate');
-            Route::post('members/{member}/request-revision', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'requestRevision'])->name('members.request-revision');
-            Route::post('members/{member}/reject', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'reject'])->name('members.reject');
-        });
+        Route::post('members/{member}/validate', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'approve'])->name('members.validate');
+        Route::post('members/{member}/approve-final', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'approveFinal'])->name('members.approve-final');
+        Route::post('members/{member}/request-revision', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'requestRevision'])->name('members.request-revision');
+        Route::post('members/{member}/reject', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'reject'])->name('members.reject');
 
         Route::middleware('can:manage_cooperative_dues')->group(function () {
             Route::get('dues', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'index'])->name('dues.index');

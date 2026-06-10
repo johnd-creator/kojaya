@@ -12,6 +12,8 @@ use Spatie\Permission\Models\Role;
 
 class MemberValidationService
 {
+    public const ACTION_VERIFIED = 'admin_verified';
+
     public const ACTION_APPROVED = 'approved';
 
     public const ACTION_REVISION = 'revision_requested';
@@ -22,7 +24,25 @@ class MemberValidationService
         private readonly AuditLogService $audit,
     ) {}
 
-    public function approve(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
+    public function verifyByAdmin(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
+    {
+        return DB::transaction(function () use ($member, $validator, $notes): CooperativeMember {
+            $member->forceFill([
+                'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+                'admin_validated_at' => Carbon::now(),
+                'admin_validated_by' => $validator->id,
+                'admin_validation_notes' => $notes,
+            ])->save();
+
+            $member->user?->removeRole('Anggota');
+
+            $this->logValidation($member, $validator, self::ACTION_VERIFIED, $notes);
+
+            return $member->refresh();
+        });
+    }
+
+    public function approveFinal(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
     {
         return DB::transaction(function () use ($member, $validator, $notes): CooperativeMember {
             $member->forceFill([
@@ -87,6 +107,19 @@ class MemberValidationService
             CooperativeMember::VALIDATION_PENDING,
             CooperativeMember::VALIDATION_PENDING_REVIEW,
         ], true);
+    }
+
+    public function canBeVerifiedByAdmin(CooperativeMember $member): bool
+    {
+        return in_array($member->validation_status, [
+            CooperativeMember::VALIDATION_PENDING,
+            CooperativeMember::VALIDATION_REVISION,
+        ], true);
+    }
+
+    public function canBeApprovedFinal(CooperativeMember $member): bool
+    {
+        return $member->validation_status === CooperativeMember::VALIDATION_PENDING_REVIEW;
     }
 
     private function logValidation(CooperativeMember $member, User $validator, string $action, ?string $notes): void

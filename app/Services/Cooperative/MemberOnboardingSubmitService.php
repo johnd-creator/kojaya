@@ -32,13 +32,12 @@ class MemberOnboardingSubmitService
                 'no_telp' => $data['phone'],
                 'address' => $data['address'],
                 'identity_number' => $data['identity_number'],
-                'jenis_anggota' => $data['jenis_anggota'],
+                'npwp' => $data['npwp'] ?? null,
                 'jenis_kelamin' => $data['jenis_kelamin'],
                 'kategori' => $data['kategori'],
                 'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
                 'tempat_lahir' => $data['tempat_lahir'] ?? null,
                 'pekerjaan' => $data['pekerjaan'] ?? null,
-                'perusahaan' => $data['perusahaan'] ?? null,
                 'no_rekening' => $data['no_rekening'] ?? null,
                 'nama_bank' => $data['nama_bank'] ?? null,
                 'nama_pemilik_rekening' => $data['nama_pemilik_rekening'] ?? null,
@@ -65,7 +64,7 @@ class MemberOnboardingSubmitService
      */
     private function missingRequiredFields(array $data): array
     {
-        $required = ['name', 'email', 'phone', 'address', 'identity_number', 'jenis_anggota', 'jenis_kelamin', 'kategori'];
+        $required = ['name', 'email', 'phone', 'address', 'identity_number', 'jenis_kelamin', 'kategori'];
         $missing = [];
         foreach ($required as $key) {
             $value = $data[$key] ?? null;

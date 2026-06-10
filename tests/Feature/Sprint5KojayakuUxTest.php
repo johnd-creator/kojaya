@@ -73,7 +73,6 @@ class Sprint5KojayakuUxTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Kojayaku/Dashboard')
-                ->has('onboarding.steps', 5)
                 ->has('journeys.payment.steps', 4)
                 ->has('journeys.loan.steps', 5)
                 ->has('journeys.reward.steps', 3)

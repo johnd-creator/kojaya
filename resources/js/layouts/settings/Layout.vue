@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link, usePage } from "@inertiajs/vue3";
+import { computed } from "vue";
 import type { HTMLAttributes } from "vue";
 import Heading from "@/components/Heading.vue";
 import { Button } from "@/components/ui/button";
@@ -18,32 +19,47 @@ const props = defineProps<{
   contentWrapperClass?: HTMLAttributes["class"];
 }>();
 
-const sidebarNavItems: NavItem[] = [
-  {
-    title: "Profile",
-    href: editProfile(),
-  },
-  {
-    title: "Password",
-    href: editPassword(),
-  },
-  {
-    title: "Two-Factor Auth",
-    href: show(),
-  },
-  {
-    title: "Appearance",
-    href: editAppearance(),
-  },
-  {
-    title: "Simpanan",
-    href: editSavings(),
-  },
-  {
+const page = usePage();
+const isMember = computed<boolean>(() => {
+  const auth = page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined;
+  const roles = (auth?.roles ?? []).map((r) => (typeof r === "string" ? r : r.name ?? ""));
+  return roles.includes("Anggota");
+});
+
+const sidebarNavItems = computed<NavItem[]>(() => {
+  const items: NavItem[] = [
+    {
+      title: "Profile",
+      href: editProfile(),
+    },
+    {
+      title: "Password",
+      href: editPassword(),
+    },
+    {
+      title: "Two-Factor Auth",
+      href: show(),
+    },
+    {
+      title: "Appearance",
+      href: editAppearance(),
+    },
+  ];
+
+  if (!isMember.value) {
+    items.push({
+      title: "Simpanan",
+      href: editSavings(),
+    });
+  }
+
+  items.push({
     title: "UI Components",
     href: "/settings/components",
-  },
-];
+  });
+
+  return items;
+});
 
 const { isCurrentUrl } = useCurrentUrl();
 </script>

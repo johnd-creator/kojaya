@@ -30,7 +30,6 @@ class MemberPortalController extends Controller
     public function dashboard(
         Request $request,
         PointService $pointService,
-        MemberOnboardingService $onboardingService,
         MemberStatusJourneyService $journeyService,
         SavingsSummaryService $savingsSummary,
     ): Response {
@@ -49,7 +48,6 @@ class MemberPortalController extends Controller
                 'member_tier' => $pointSummary['member_tier'],
                 'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
-            'onboarding' => $onboardingService->status($member),
             'journeys' => $journeyService->summary($member),
             'recentTransactions' => PosTransaction::query()
                 ->with(['payments'])
@@ -82,18 +80,19 @@ class MemberPortalController extends Controller
             'review_state' => $reviewState,
             'validation_status' => $validation,
             'options' => [
-                'jenisAnggota' => [
-                    ['value' => 'AB', 'label' => 'Anggota Biasa'],
-                    ['value' => 'ALB', 'label' => 'Anggota Luar Biasa'],
-                ],
                 'jenisKelamin' => [
                     ['value' => 'L', 'label' => 'Laki-laki'],
                     ['value' => 'P', 'label' => 'Perempuan'],
                 ],
-                'kategori' => [
+                'perusahaan' => [
                     ['value' => 'IP', 'label' => 'Indonesia Power'],
                     ['value' => 'CDB', 'label' => 'Cogindo DayaBersama'],
                     ['value' => 'KOP', 'label' => 'Koperasi'],
+                ],
+                'bank' => [
+                    ['value' => 'BNI', 'label' => 'BNI'],
+                    ['value' => 'BRI', 'label' => 'BRI'],
+                    ['value' => 'Mandiri', 'label' => 'Mandiri'],
                 ],
             ],
         ]);
@@ -285,12 +284,15 @@ class MemberPortalController extends Controller
 
     private function resolveOnboardingReviewState(string $validation, bool $submitted): string
     {
+        if ($validation === \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW) {
+            return 'review';
+        }
+
         if (! $submitted) {
             return 'draft';
         }
 
         return match ($validation) {
-            \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW => 'review',
             \App\Models\CooperativeMember::VALIDATION_REVISION => 'revision',
             \App\Models\CooperativeMember::VALIDATION_REJECTED => 'rejected',
             \App\Models\CooperativeMember::VALIDATION_ACTIVE => 'approved',

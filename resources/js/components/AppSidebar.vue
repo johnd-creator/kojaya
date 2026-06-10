@@ -86,8 +86,8 @@ import AppLogo from "./AppLogo.vue";
 
 const page = usePage();
 const userRoles = computed(() => {
-  const user = page.props.auth?.user as any;
-  return (user?.roles ?? []).map((r: any) => r.name ?? r);
+  const auth = page.props.auth as any;
+  return (auth?.roles ?? []).map((r: any) => (typeof r === "string" ? r : r.name ?? ""));
 });
 const isMember = computed(() => userRoles.value.includes("Anggota"));
 const isSystemAdmin = computed(() =>
@@ -621,6 +621,7 @@ const memberNavItems: NavItem[] = [
 const mainNavItems = computed(() =>
   isMember.value ? memberNavItems : filterNavByPermission(allNavItems),
 );
+const logoHref = computed(() => (isMember.value ? "/member" : dashboard()));
 </script>
 
 <template>
@@ -629,7 +630,7 @@ const mainNavItems = computed(() =>
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child>
-            <Link :href="dashboard()">
+            <Link :href="logoHref">
               <AppLogo />
             </Link>
           </SidebarMenuButton>

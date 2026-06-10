@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cooperative;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\ApproveCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\RejectCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\RequestCooperativeMemberRevisionRequest;
 use App\Http\Requests\Cooperative\ValidateCooperativeMemberRequest;
@@ -18,15 +19,32 @@ class CooperativeMemberValidationController extends Controller
 
     public function approve(ValidateCooperativeMemberRequest $request, CooperativeMember $member): RedirectResponse
     {
-        $this->ensurePending($member);
+        if (! $this->validation->canBeVerifiedByAdmin($member)) {
+            abort(409, 'Anggota tidak dalam status menunggu verifikasi admin.');
+        }
 
-        $this->validation->approve(
+        $this->validation->verifyByAdmin(
             $member,
             $request->user(),
             $request->validated('notes'),
         );
 
-        return back()->with('success', 'Anggota berhasil divalidasi dan diaktifkan.');
+        return back()->with('success', 'Data anggota berhasil diverifikasi. Menunggu approval Pengurus Koperasi.');
+    }
+
+    public function approveFinal(ApproveCooperativeMemberRequest $request, CooperativeMember $member): RedirectResponse
+    {
+        if (! $this->validation->canBeApprovedFinal($member)) {
+            abort(409, 'Anggota belum siap untuk approval final.');
+        }
+
+        $this->validation->approveFinal(
+            $member,
+            $request->user(),
+            $request->validated('notes'),
+        );
+
+        return back()->with('success', 'Anggota berhasil disetujui final dan diaktifkan.');
     }
 
     public function requestRevision(RequestCooperativeMemberRevisionRequest $request, CooperativeMember $member): RedirectResponse

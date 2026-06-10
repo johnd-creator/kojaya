@@ -62,6 +62,8 @@ class GoogleSsoFlowTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
         $this->assertFalse($user->hasRole('Anggota'));
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $user->cooperativeMember->validation_status);
+        $this->assertLessThanOrEqual(10, strlen($user->cooperativeMember->member_no));
+        $this->assertSame($user->cooperativeMember->member_no, $user->cooperativeMember->no_anggota);
         $this->assertNotNull(SocialAccount::query()->where('provider', 'google')->where('provider_id', '9001')->first());
 
         $this->assertAuthenticatedAs($user);

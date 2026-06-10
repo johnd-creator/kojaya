@@ -8,7 +8,12 @@ class RequestCooperativeMemberRevisionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('validate_cooperative_member') ?? false;
+        $user = $this->user();
+
+        return $user?->can('verify_cooperative_member')
+            || $user?->can('approve_cooperative_member')
+            || $user?->can('validate_cooperative_member')
+            || false;
     }
 
     public function rules(): array

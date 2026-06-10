@@ -12,7 +12,7 @@ class LoginResponse implements LoginResponseContract
     {
         $user = $request->user();
 
-        if ($user && $user->cooperativeMember) {
+        if ($user && ($user->cooperativeMember || $user->hasRole('Anggota'))) {
             $member = $user->cooperativeMember;
             $status = $member->validation_status ?: $member->status;
 

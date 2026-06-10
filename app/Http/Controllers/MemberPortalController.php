@@ -447,15 +447,12 @@ class MemberPortalController extends Controller
 
     private function resolveOnboardingReviewState(string $validation, bool $submitted): string
     {
-        if ($validation === \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW) {
-            return 'review';
-        }
-
         if (! $submitted) {
             return 'draft';
         }
 
         return match ($validation) {
+            \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW => 'review',
             \App\Models\CooperativeMember::VALIDATION_REVISION => 'revision',
             \App\Models\CooperativeMember::VALIDATION_REJECTED => 'rejected',
             \App\Models\CooperativeMember::VALIDATION_ACTIVE => 'approved',

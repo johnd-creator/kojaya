@@ -32,6 +32,19 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="{{ config('app.name', 'Kojaya') }}" />
+        <meta property="og:description" content="Sistem ERP Koperasi & Aplikasi Anggota Kojaya." />
+        <meta property="og:image" content="{{ asset('images/logo.png') }}" />
+        <meta property="og:url" content="{{ url()->current() }}" />
+
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="{{ config('app.name', 'Kojaya') }}" />
+        <meta name="twitter:description" content="Sistem ERP Koperasi & Aplikasi Anggota Kojaya." />
+        <meta name="twitter:image" content="{{ asset('images/logo.png') }}" />
+
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">

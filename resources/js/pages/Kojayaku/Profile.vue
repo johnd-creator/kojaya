@@ -145,18 +145,19 @@ const formatLoginAt = (iso: string | null): string => {
     ]"
   >
     <PageContainer variant="form">
-      <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="flex flex-wrap items-start justify-between gap-4 mb-2">
         <div>
-          <h1 class="text-2xl font-semibold">Profil Anggota</h1>
-          <p class="text-sm text-muted-foreground">
-            Nomor anggota {{ member.member_no }}
+          <h1 class="text-3xl font-extrabold text-zinc-900 tracking-tight">Profil Anggota</h1>
+          <p class="text-xs text-zinc-400 mt-1">
+            Nomor Anggota: <span class="font-mono font-bold text-zinc-800 bg-zinc-100 px-2 py-0.5 rounded">{{ member.member_no }}</span>
           </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-3">
           <StatusBadge :status="validationLabel" :variant="validationVariant" />
           <Button
             v-if="member.validation_status !== 'ACTIVE'"
             variant="outline"
+            class="rounded-xl px-4 font-bold text-xs uppercase"
             @click="goToOnboarding"
           >
             Lengkapi Onboarding
@@ -169,37 +170,33 @@ const formatLoginAt = (iso: string | null): string => {
       >
         <header class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="flex items-center gap-2 text-lg font-semibold">
-              <UserCircle2 class="h-5 w-5 text-[#0b8f2e]" />
+            <h2 class="flex items-center gap-2 text-lg font-bold text-zinc-900">
+              <UserCircle2 class="h-5 w-5 text-emerald-600" />
               Kelengkapan Profile
             </h2>
-            <p class="text-sm text-muted-foreground">
-              Lengkapi data di bawah ini agar pengurus dapat memvalidasi
-              keanggotaan Anda.
+            <p class="text-sm text-zinc-500">
+              Lengkapi data di bawah ini agar pengurus dapat memvalidasi keanggotaan Anda.
             </p>
           </div>
           <div class="text-right">
-            <p class="text-2xl font-bold leading-none">
-              {{ completeness.progress_percent }}%
+            <p class="text-3xl font-extrabold leading-none text-zinc-900">
+              {{ completeness.progress_percent }}<span class="text-lg text-zinc-400">%</span>
             </p>
-            <p class="text-xs text-muted-foreground">
-              {{ completeness.completed_fields }}/{{
-                completeness.total_fields
-              }}
-              field terisi
+            <p class="text-xs text-zinc-400 mt-0.5">
+              {{ completeness.completed_fields }} / {{ completeness.total_fields }} field terisi
             </p>
           </div>
         </header>
 
         <div
-          class="h-2 w-full overflow-hidden rounded-full bg-zinc-100"
+          class="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100"
           role="progressbar"
           :aria-valuenow="completeness.progress_percent"
           aria-valuemin="0"
           aria-valuemax="100"
         >
           <div
-            class="h-full transition-all"
+            class="h-full rounded-full transition-all duration-700"
             :class="progressColor"
             :style="{ width: completeness.progress_percent + '%' }"
           />
@@ -209,7 +206,7 @@ const formatLoginAt = (iso: string | null): string => {
           <div
             v-for="field in completeness.required_fields"
             :key="field.key"
-            class="flex items-start gap-3 rounded-lg border p-3"
+            class="flex items-start gap-3 rounded-xl border p-3.5 transition-all"
             :class="
               fieldClass(!completeness.missing.some((m) => m.key === field.key))
             "
@@ -220,11 +217,11 @@ const formatLoginAt = (iso: string | null): string => {
                   !completeness.missing.some((m) => m.key === field.key),
                 )
               "
-              class="mt-0.5 h-5 w-5"
+              class="mt-0.5 h-5 w-5 shrink-0"
             />
             <div>
-              <p class="text-sm font-semibold">{{ field.label }}</p>
-              <p class="text-xs">{{ field.description }}</p>
+              <p class="text-sm font-semibold text-zinc-800">{{ field.label }}</p>
+              <p class="text-xs text-zinc-500 mt-0.5">{{ field.description }}</p>
             </div>
           </div>
         </div>
@@ -233,24 +230,22 @@ const formatLoginAt = (iso: string | null): string => {
       <section
         class="space-y-5 rounded-xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5"
       >
-        <header class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="flex items-center gap-2 text-lg font-semibold">
-              <ShieldCheck class="h-5 w-5 text-[#0b8f2e]" />
-              Akun Login
-            </h2>
-            <p class="text-sm text-muted-foreground">
-              Kelola metode login dan keamanan akun Anda.
-            </p>
-          </div>
+        <header class="border-b border-zinc-100 pb-4">
+          <h2 class="flex items-center gap-2 text-lg font-bold text-zinc-900">
+            <ShieldCheck class="h-5 w-5 text-emerald-600" />
+            Akun Login
+          </h2>
+          <p class="text-sm text-zinc-500 mt-1">
+            Kelola metode login dan keamanan akun Anda.
+          </p>
         </header>
 
         <div class="grid gap-3 sm:grid-cols-2">
-          <div class="flex items-start gap-3 rounded-lg border p-3">
-            <Mail class="mt-0.5 h-5 w-5 text-zinc-500" />
+          <div class="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
+            <Mail class="mt-0.5 h-5 w-5 text-zinc-500 shrink-0" />
             <div>
-              <p class="text-sm font-semibold">Email</p>
-              <p class="text-xs text-muted-foreground">{{ user.email }}</p>
+              <p class="text-sm font-semibold text-zinc-800">Email</p>
+              <p class="text-xs text-zinc-500">{{ user.email }}</p>
               <p
                 class="mt-1 text-xs font-semibold"
                 :class="
@@ -268,14 +263,14 @@ const formatLoginAt = (iso: string | null): string => {
             </div>
           </div>
 
-          <div class="flex items-start gap-3 rounded-lg border p-3">
+          <div class="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
             <CircleSlash
               v-if="!completeness.login.google_linked"
-              class="mt-0.5 h-5 w-5 text-amber-500"
+              class="mt-0.5 h-5 w-5 text-amber-500 shrink-0"
             />
-            <CheckCircle2 v-else class="mt-0.5 h-5 w-5 text-green-600" />
+            <CheckCircle2 v-else class="mt-0.5 h-5 w-5 text-green-600 shrink-0" />
             <div class="flex-1">
-              <p class="text-sm font-semibold">Google</p>
+              <p class="text-sm font-semibold text-zinc-800">Google</p>
               <p
                 class="text-xs"
                 :class="
@@ -291,7 +286,7 @@ const formatLoginAt = (iso: string | null): string => {
                     : "Belum terhubung"
                 }}
               </p>
-              <p class="mt-1 text-[11px] text-muted-foreground">
+              <p class="mt-1 text-[11px] text-zinc-400">
                 Login terakhir:
                 {{ formatLoginAt(completeness.login.last_login_at) }}
               </p>
@@ -300,7 +295,7 @@ const formatLoginAt = (iso: string | null): string => {
                 type="button"
                 size="sm"
                 variant="outline"
-                class="mt-2"
+                class="mt-2 rounded-lg text-xs"
                 data-test="profile-link-google"
                 @click="startGoogleLogin"
               >
@@ -310,11 +305,11 @@ const formatLoginAt = (iso: string | null): string => {
           </div>
         </div>
 
-        <div class="flex items-start gap-3 rounded-lg border p-3">
-          <Phone class="mt-0.5 h-5 w-5 text-zinc-500" />
+        <div class="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5">
+          <Phone class="mt-0.5 h-5 w-5 text-blue-500 shrink-0" />
           <div>
-            <p class="text-sm font-semibold">Notifikasi</p>
-            <p class="text-xs text-muted-foreground">
+            <p class="text-sm font-semibold text-zinc-800">Notifikasi</p>
+            <p class="text-xs text-zinc-500 mt-0.5">
               Login Google digunakan untuk menerima notifikasi penting. Pastikan
               email dan nomor HP Anda valid.
             </p>
@@ -323,41 +318,42 @@ const formatLoginAt = (iso: string | null): string => {
       </section>
 
       <section
-        class="space-y-5 rounded-xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5"
+        class="space-y-6 rounded-xl border border-zinc-200/80 bg-white/95 p-6 shadow-sm shadow-zinc-950/5"
       >
-        <header>
-          <h2 class="text-lg font-semibold">Data Diri</h2>
-          <p class="text-sm text-muted-foreground">
-            Perbarui data anggota. Perubahan akan dikirim ke pengurus untuk
-            divalidasi.
+        <header class="border-b border-zinc-100 pb-4">
+          <h2 class="text-lg font-bold text-zinc-900">Data Diri</h2>
+          <p class="text-sm text-zinc-500 mt-1">
+            Perbarui data anggota. Perubahan akan dikirim ke pengurus untuk divalidasi.
           </p>
         </header>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="space-y-2">
-            <Label for="member-name">Nama</Label>
-            <Input id="member-name" v-model="form.name" />
+        <div class="grid gap-5 md:grid-cols-2">
+          <div class="space-y-1.5">
+            <Label for="member-name" class="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Nama Lengkap</Label>
+            <Input id="member-name" v-model="form.name" class="rounded-lg" />
           </div>
-          <div class="space-y-2">
-            <Label for="member-email">Email</Label>
-            <Input id="member-email" v-model="form.email" type="email" />
+          <div class="space-y-1.5">
+            <Label for="member-email" class="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Email</Label>
+            <Input id="member-email" v-model="form.email" type="email" class="rounded-lg" />
           </div>
-          <div class="space-y-2">
-            <Label for="member-phone">Telepon</Label>
-            <Input id="member-phone" v-model="form.phone" />
+          <div class="space-y-1.5">
+            <Label for="member-phone" class="text-xs font-semibold text-zinc-600 uppercase tracking-wide">No. Telepon</Label>
+            <Input id="member-phone" v-model="form.phone" class="rounded-lg" />
           </div>
-          <div class="space-y-2 md:col-span-2">
-            <Label for="member-address">Alamat</Label>
+          <div class="space-y-1.5 md:col-span-2">
+            <Label for="member-address" class="text-xs font-semibold text-zinc-600 uppercase tracking-wide">Alamat</Label>
             <textarea
               id="member-address"
               v-model="form.address"
-              class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm"
+              class="min-h-28 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             />
           </div>
         </div>
-        <div class="flex justify-end">
-          <Button :disabled="form.processing" @click="submit"
-            >Simpan Perubahan</Button
-          >
+        <div class="flex justify-end pt-2 border-t border-zinc-100">
+          <Button
+            :disabled="form.processing"
+            class="rounded-xl px-6 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+            @click="submit"
+          >Simpan Perubahan</Button>
         </div>
       </section>
     </PageContainer>

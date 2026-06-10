@@ -99,18 +99,13 @@ const stepOrder = [
 const activeStep = ref<number>(0);
 
 const isLocked = computed<boolean>(() => {
-  return ["review", "approved", "rejected", "revision"].includes(
-    props.review_state,
-  );
+  return ["approved", "rejected"].includes(props.review_state);
 });
 
 const isApproved = computed<boolean>(() => props.review_state === "approved");
 
 const isAdmissionWaiting = computed<boolean>(() => {
-  return (
-    ["PENDING", "PENDING_VALIDATION"].includes(props.validation_status) &&
-    !props.submitted
-  );
+  return props.validation_status === "PENDING" && !props.submitted;
 });
 
 const admissionWaitingTitle = computed<string>(() =>

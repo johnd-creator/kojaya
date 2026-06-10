@@ -32,6 +32,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useCan } from "@/composables/useCan";
 import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
@@ -544,98 +550,126 @@ const exportUrl = computed(() => {
         </template>
 
         <template #actions="{ row }">
-          <div class="flex flex-wrap justify-end gap-2">
-            <Button
-              as-child
-              size="sm"
-              variant="outline"
-              :aria-label="`Lihat detail anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-            >
-              <Link :href="show(row.id).url" prefetch>
-                <Eye class="h-4 w-4" />
-                <span class="sr-only">Lihat</span>
-              </Link>
-            </Button>
-            <Button
-              v-if="canVerifyMember && isAdminVerificationReady(row)"
-              size="sm"
-              variant="default"
-              data-test="member-approve"
-              :aria-label="`Verifikasi admin untuk anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="verifyMemberAction(row)"
-            >
-              <UserCheck class="h-4 w-4" />
-              <span class="hidden sm:inline">Verifikasi</span>
-            </Button>
-            <Button
-              v-if="canApproveMember && isFinalApprovalReady(row)"
-              size="sm"
-              variant="default"
-              data-test="member-approve-final"
-              :aria-label="`Approve final anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="approveFinalAction(row)"
-            >
-              <UserCheck class="h-4 w-4" />
-              <span class="hidden sm:inline">Approve Final</span>
-            </Button>
-            <Button
-              v-if="canReviewMember && (isAdminVerificationReady(row) || isFinalApprovalReady(row))"
-              size="sm"
-              variant="outline"
-              data-test="member-revision"
-              :aria-label="`Minta revisi data ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="requestRevisionAction(row)"
-            >
-              <Pencil class="h-4 w-4" />
-            </Button>
-            <Button
-              v-if="canReviewMember && (isAdminVerificationReady(row) || isFinalApprovalReady(row))"
-              size="sm"
-              variant="destructive"
-              data-test="member-reject"
-              :aria-label="`Tolak anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="rejectMemberAction(row)"
-            >
-              <UserX class="h-4 w-4" />
-            </Button>
-            <Button
-              v-if="canManageMember"
-              size="sm"
-              variant="outline"
-              :aria-label="`Edit anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="openEditDialog(row)"
-            >
-              <Pencil class="h-4 w-4" />
-              <span class="sr-only">Edit</span>
-            </Button>
-            <Button
-              v-if="canManageMember && row.status !== 'ACTIVE'"
-              size="sm"
-              variant="outline"
-              :aria-label="`Aktifkan anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="router.post(activate(row.id).url)"
-            >
-              <UserCheck class="h-4 w-4" />
-            </Button>
-            <Button
-              v-if="canManageMember && row.status === 'ACTIVE'"
-              size="sm"
-              variant="outline"
-              :aria-label="`Nonaktifkan anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="deactivateMember(row)"
-            >
-              <UserX class="h-4 w-4" />
-            </Button>
-            <Button
-              v-if="canManageMember"
-              size="sm"
-              variant="destructive"
-              :aria-label="`Hapus anggota ${row.nama_anggota_clean || row.nama_anggota || row.name}`"
-              @click="askDelete(row)"
-            >
-              <Trash2 class="h-4 w-4" />
-            </Button>
-          </div>
+          <TooltipProvider :delay-duration="300">
+            <div class="flex flex-wrap justify-end gap-2">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    as-child
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Link :href="show(row.id).url" prefetch>
+                      <Eye class="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Lihat detail</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canVerifyMember && isAdminVerificationReady(row)">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    data-test="member-approve"
+                    @click="verifyMemberAction(row)"
+                  >
+                    <UserCheck class="h-4 w-4" />
+                    <span class="hidden sm:inline">Verifikasi</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Verifikasi admin</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canApproveMember && isFinalApprovalReady(row)">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    data-test="member-approve-final"
+                    @click="approveFinalAction(row)"
+                  >
+                    <UserCheck class="h-4 w-4" />
+                    <span class="hidden sm:inline">Approve Final</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Approve final</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canReviewMember && (isAdminVerificationReady(row) || isFinalApprovalReady(row))">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    data-test="member-revision"
+                    @click="requestRevisionAction(row)"
+                  >
+                    <Pencil class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Minta revisi</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canReviewMember && (isAdminVerificationReady(row) || isFinalApprovalReady(row))">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    data-test="member-reject"
+                    @click="rejectMemberAction(row)"
+                  >
+                    <UserX class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Tolak anggota</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canManageMember">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    @click="openEditDialog(row)"
+                  >
+                    <Pencil class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit anggota</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canManageMember && row.status !== 'ACTIVE'">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    @click="router.post(activate(row.id).url)"
+                  >
+                    <UserCheck class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Aktifkan anggota</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canManageMember && row.status === 'ACTIVE'">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    @click="deactivateMember(row)"
+                  >
+                    <UserX class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Nonaktifkan anggota</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="canManageMember">
+                <TooltipTrigger as-child>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    @click="askDelete(row)"
+                  >
+                    <Trash2 class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Hapus anggota</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </template>
       </DataTable>
     </PageContainer>

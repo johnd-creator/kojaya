@@ -8,16 +8,18 @@ class MemberNumberGenerator
 {
     public function generate(): string
     {
-        $year = now()->format('Y');
-        $prefix = "KOP-{$year}-";
+        $candidates = CooperativeMember::query()
+            ->withTrashed()
+            ->where('no_anggota', 'like', 'KOP-%')
+            ->pluck('no_anggota');
 
-        $latest = CooperativeMember::query()
-            ->where('member_no', 'like', $prefix.'%')
-            ->orderByDesc('member_no')
-            ->value('member_no');
+        $max = $candidates
+            ->filter(fn (string $value): bool => preg_match('/^KOP-\d+$/', $value))
+            ->map(fn (string $value) => (int) substr($value, 4))
+            ->max();
 
-        $next = $latest ? ((int) substr($latest, -5)) + 1 : 1;
+        $next = ($max ?? 0) + 1;
 
-        return $prefix.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+        return 'KOP-'.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
     }
 }

@@ -47,10 +47,13 @@ class CooperativeMemberApiController extends Controller
     ): JsonResponse {
         $this->authorize('create', CooperativeMember::class);
 
+        $memberNo = $memberNumberGenerator->generate();
+
         $member = CooperativeMember::query()->create([
             ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
             'organization_id' => $headOfficeResolver->resolve()->id,
-            'member_no' => $memberNumberGenerator->generate(),
+            'no_anggota' => $memberNo,
+            'member_no' => $memberNo,
             'joined_at' => $request->input('joined_at') ?: now()->toDateString(),
             'status' => $request->input('status', 'PENDING'),
         ]);
@@ -94,14 +97,23 @@ class CooperativeMemberApiController extends Controller
         Request $request,
         CooperativeMember $member,
         CooperativeMemberUserProvisioningService $userProvisioningService,
+        MemberNumberGenerator $memberNumberGenerator,
     ): JsonResponse {
         $this->authorize('activate', $member);
 
-        $member->update([
+        $updateData = [
             'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'resigned_at' => null,
-        ]);
+        ];
+
+        if (str_starts_with($member->no_anggota ?? '', 'TMP')) {
+            $noAnggota = $memberNumberGenerator->generate();
+            $updateData['no_anggota'] = $noAnggota;
+            $updateData['member_no'] = $noAnggota;
+        }
+
+        $member->update($updateData);
 
         $userProvisioningService->provision($member->refresh());
 

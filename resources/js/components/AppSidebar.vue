@@ -90,6 +90,12 @@ const userRoles = computed(() => {
   return (auth?.roles ?? []).map((r: any) => (typeof r === "string" ? r : r.name ?? ""));
 });
 const isMember = computed(() => userRoles.value.includes("Anggota"));
+const hasNonMemberRole = computed(
+  () =>
+    isMember.value &&
+    userRoles.value.some((r) => r !== "Anggota"),
+);
+const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
 const isSystemAdmin = computed(() =>
   userRoles.value.includes("System Admin") || userRoles.value.includes("Admin Pusat"),
 );
@@ -116,13 +122,18 @@ const canAccess = (permissions?: string | string[]): boolean => {
 };
 const filterNavByPermission = (items: NavItem[]): NavItem[] =>
   items
+    .filter((item) => {
+      if ((item as any).memberOnly && !isMember.value) return false;
+      return true;
+    })
     .map((item) => ({
       ...item,
       items: item.items ? filterNavByPermission(item.items) : undefined,
     }))
     .filter(
       (item) =>
-        canAccess(item.permissions) && (!item.items || item.items.length > 0),
+        ((item as any).memberOnly || canAccess(item.permissions)) &&
+        (!item.items || item.items.length > 0),
     );
 
 const allNavItems: NavItem[] = [
@@ -574,6 +585,21 @@ const allNavItems: NavItem[] = [
     icon: FileSearch,
     permissions: "view_audit_logs",
   },
+  {
+    title: "Kojayaku",
+    href: "#",
+    icon: LayoutGrid,
+    memberOnly: true,
+    items: [
+      { title: "Dashboard", href: "/member" },
+      { title: "Simpanan", href: "/member/savings" },
+      { title: "Pinjaman", href: "/member/loans" },
+      { title: "Poin Saya", href: "/member/points" },
+      { title: "Rewards", href: "/member/rewards" },
+      { title: "Transaksi", href: "/member/transactions" },
+      { title: "Profil", href: "/member/profile" },
+    ],
+  },
 ] as any[];
 
 const footerNavItems: NavItem[] = [];
@@ -614,9 +640,11 @@ const memberNavItems: NavItem[] = [
   },
 ];
 const mainNavItems = computed(() =>
-  isMember.value ? memberNavItems : filterNavByPermission(allNavItems),
+  isMemberOnly.value
+    ? memberNavItems
+    : filterNavByPermission(allNavItems),
 );
-const logoHref = computed(() => (isMember.value ? "/member" : dashboard()));
+const logoHref = computed(() => (isMemberOnly.value ? "/member" : dashboard()));
 </script>
 
 <template>

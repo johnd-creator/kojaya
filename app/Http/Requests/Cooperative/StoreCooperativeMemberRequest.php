@@ -47,7 +47,7 @@ class StoreCooperativeMemberRequest extends FormRequest
         return [
             'employee_id' => ['nullable', 'exists:employees,id'],
             'user_id' => ['nullable', 'exists:users,id', Rule::unique('cooperative_members', 'user_id')],
-            'no_anggota' => ['nullable', 'string', 'max:10', Rule::unique('cooperative_members', 'no_anggota')],
+            'no_anggota' => ['nullable', 'string', 'max:20', Rule::unique('cooperative_members', 'no_anggota')],
             'tanggal_aktif' => ['required', 'date'],
             'nama_anggota' => ['required', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],

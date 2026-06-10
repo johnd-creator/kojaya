@@ -14,6 +14,7 @@ use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -182,12 +183,20 @@ class CooperativeMemberController extends Controller
     ): RedirectResponse {
         $this->authorize('activate', $member);
 
-        $member->update([
+        $updateData = [
             'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'tanggal_aktif' => $member->tanggal_aktif ?: now()->toDateString(),
             'resigned_at' => null,
-        ]);
+        ];
+
+        if (str_starts_with($member->no_anggota ?? '', 'TMP')) {
+            $noAnggota = app(MemberNumberGenerator::class)->generate();
+            $updateData['no_anggota'] = $noAnggota;
+            $updateData['member_no'] = $noAnggota;
+        }
+
+        $member->update($updateData);
 
         $userProvisioningService->provision($member->refresh());
         $duesGenerationService->ensureOneTimeInvoice($member->refresh());
@@ -256,7 +265,8 @@ class CooperativeMemberController extends Controller
         ?CooperativeMember $member = null,
     ): array {
         $data = $request->safe()->except(['member_login_password', 'opening_saving_balance']);
-        $noAnggota = $data['no_anggota'] ?? $member?->no_anggota ?? $this->nextNoAnggota();
+        $input = $data['no_anggota'] ?? null;
+        $noAnggota = filled($input) ? $input : ($member?->no_anggota ?? app(MemberNumberGenerator::class)->generate());
 
         return [
             ...$data,
@@ -268,24 +278,6 @@ class CooperativeMemberController extends Controller
             'joined_at' => $data['tanggal_aktif'],
             'no_rekening' => $data['autodebet'] === 'MANUAL' ? null : ($data['no_rekening'] ?? null),
         ];
-    }
-
-    private function nextNoAnggota(): string
-    {
-        $existing = CooperativeMember::query()
-            ->withTrashed()
-            ->pluck('no_anggota')
-            ->filter(fn ($value) => is_string($value) && ctype_digit($value))
-            ->map(fn ($value) => (int) $value);
-
-        $candidate = ($existing->max() ?? 0) + 1;
-
-        do {
-            $noAnggota = str_pad((string) $candidate, 3, '0', STR_PAD_LEFT);
-            $candidate++;
-        } while (CooperativeMember::query()->withTrashed()->where('no_anggota', $noAnggota)->exists());
-
-        return $noAnggota;
     }
 
     private function options(): array

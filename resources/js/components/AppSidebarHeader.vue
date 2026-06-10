@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Bell, Moon, Sun } from "lucide-vue-next";
+import { Link } from "@inertiajs/vue3";
+import { LogOut, Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
+import NotificationIcon from "@/components/Notification/NotificationIcon.vue";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAppearance } from "@/composables/useAppearance";
@@ -78,8 +80,17 @@ onUnmounted(() => {
         <Sun v-if="resolvedAppearance === 'dark'" class="h-5 w-5" />
         <Moon v-else class="h-5 w-5" />
       </Button>
-      <Button variant="ghost" size="icon" class="rounded-full">
-        <Bell class="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
+      <NotificationIcon :max-items="5" />
+      <Button
+        variant="ghost"
+        size="icon"
+        class="rounded-full"
+        aria-label="Keluar"
+        as-child
+      >
+        <Link href="/logout" method="post" as="button">
+          <LogOut class="h-5 w-5" />
+        </Link>
       </Button>
     </div>
   </header>

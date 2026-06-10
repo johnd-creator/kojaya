@@ -18,7 +18,7 @@ class MarkMemberOnboardingStepRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'step' => ['required', 'string', Rule::in(['profile', 'kyc', 'first_savings', 'loans', 'rewards'])],
+            'step' => ['required', 'string', Rule::in(['profile', 'first_savings', 'loans', 'rewards'])],
         ];
     }
 }

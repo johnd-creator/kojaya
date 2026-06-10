@@ -14,7 +14,6 @@ class MemberOnboardingService
     {
         $progress = $this->progressFor($member);
         $profileComplete = $this->profileIsComplete($member);
-        $kycUploaded = $member->documents()->exists();
         $firstSavingsPaid = $member->payments()->where('status', 'APPROVED')->exists()
             || $member->ledgerEntries()->where('credit', '>', 0)->exists();
 
@@ -26,14 +25,6 @@ class MemberOnboardingService
                 'href' => route('member.profile', absolute: false),
                 'completed' => $profileComplete,
                 'completed_at' => $progress->profile_completed_at?->toIso8601String(),
-            ],
-            [
-                'key' => 'kyc',
-                'label' => 'Upload dokumen KYC',
-                'description' => 'Dokumen identitas membantu pengurus memvalidasi keanggotaan.',
-                'href' => route('member.profile', absolute: false),
-                'completed' => $kycUploaded,
-                'completed_at' => $progress->kyc_uploaded_at?->toIso8601String(),
             ],
             [
                 'key' => 'first_savings',
@@ -83,7 +74,6 @@ class MemberOnboardingService
     {
         $column = match ($step) {
             'profile' => 'profile_completed_at',
-            'kyc' => 'kyc_uploaded_at',
             'first_savings' => 'first_savings_paid_at',
             'loans' => 'loan_intro_seen_at',
             'rewards' => 'reward_intro_seen_at',

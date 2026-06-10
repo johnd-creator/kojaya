@@ -6,8 +6,7 @@ import {
   fetchNotifications,
   markAsRead,
   markAllAsRead,
-  getUnreadCount,
-  navigateToNotifications,
+  fetchUnreadCount,
 } from "@/api/notifications.ts";
 import NotificationItem from "@/components/Notification/NotificationItem.vue";
 import { Button } from "@/components/ui/button";
@@ -36,10 +35,9 @@ const pollingInterval = ref<number | null>(null);
 const hasNotifications = computed(() => notifications.value.length > 0);
 const hasUnread = computed(() => unreadCount.value > 0);
 
-const fetchUnreadCount = async () => {
+const loadUnreadCount = async () => {
   try {
-    const response = await getUnreadCount();
-    unreadCount.value = response.count;
+    unreadCount.value = await fetchUnreadCount();
   } catch (error) {
     console.error("Failed to fetch unread count:", error);
   }
@@ -52,7 +50,7 @@ const fetchRecentNotifications = async () => {
       per_page: props.maxItems,
     });
     notifications.value = response.data;
-    await fetchUnreadCount();
+    await loadUnreadCount();
   } catch (error) {
     console.error("Failed to fetch notifications:", error);
   } finally {
@@ -68,7 +66,7 @@ const handleMarkAsRead = async (id: string) => {
       notification.is_read = true;
       notification.read_at = new Date().toISOString();
     }
-    await fetchUnreadCount();
+    await loadUnreadCount();
   } catch (error) {
     console.error("Failed to mark notification as read:", error);
   }
@@ -82,7 +80,7 @@ const handleMarkAllAsRead = async () => {
       n.is_read = true;
       n.read_at = new Date().toISOString();
     });
-    await fetchUnreadCount();
+    await loadUnreadCount();
   } catch (error) {
     console.error("Failed to mark all as read:", error);
   } finally {
@@ -92,7 +90,7 @@ const handleMarkAllAsRead = async () => {
 
 const startPolling = () => {
   pollingInterval.value = window.setInterval(() => {
-    fetchUnreadCount();
+    loadUnreadCount();
   }, 30000);
 };
 
@@ -149,7 +147,7 @@ onUnmounted(() => {
             v-if="hasUnread"
             :disabled="markingAllAsRead"
             class="rounded-md p-1 text-xs text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-            title="Mark all as read"
+            title="Tandai semua dibaca"
             @click="handleMarkAllAsRead"
           >
             <Loader2 v-if="markingAllAsRead" class="h-3.5 w-3.5 animate-spin" />
@@ -168,7 +166,7 @@ onUnmounted(() => {
             class="mx-auto mb-2 h-10 w-10 text-neutral-300 dark:text-neutral-700"
           />
           <p class="text-sm text-neutral-500 dark:text-neutral-400">
-            No notifications yet
+            Belum ada notifikasi
           </p>
         </div>
 
@@ -190,10 +188,10 @@ onUnmounted(() => {
         class="border-t border-neutral-200 p-2 dark:border-neutral-800"
       >
         <Link
-          :href="'/notifications'"
+          :href="'/member/notifications'"
           class="block rounded-md px-3 py-2 text-center text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
         >
-          View all notifications
+          Lihat semua notifikasi
         </Link>
       </div>
     </DropdownMenuContent>

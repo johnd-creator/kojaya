@@ -32,9 +32,11 @@ class EnsureIsMember
     private function isAllowedPendingRoute(Request $request): bool
     {
         return $request->routeIs([
+            'member.dashboard',
             'member.onboarding',
             'member.onboarding.submit',
             'member.onboarding.steps',
+            'member.payments.proof',
         ]);
     }
 }

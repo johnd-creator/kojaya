@@ -6,7 +6,6 @@ use App\Enums\LoanStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
-use App\Models\CooperativeMemberDocument;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeReceipt;
 use App\Models\Loan;
@@ -28,24 +27,22 @@ class Sprint5KojayakuUxTest extends TestCase
             'identity_number' => '3201010101010001',
             'address' => 'Jl. Koperasi No. 1',
         ]);
-        CooperativeMemberDocument::query()->create([
-            'cooperative_member_id' => $member->id,
-            'type' => 'KTP',
-            'file_path' => 'kyc/member-1.pdf',
-        ]);
 
         Sanctum::actingAs($user, ['member:read', 'member:write']);
 
         $this->getJson('/api/v1/member/onboarding/status')
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.completed_steps', 2)
+            ->assertJsonPath('data.completed_steps', 1)
+            ->assertJsonPath('data.total_steps', 4)
             ->assertJsonPath('data.steps.0.completed', true)
-            ->assertJsonPath('data.steps.1.completed', true);
+            ->assertJsonPath('data.steps.1.key', 'first_savings')
+            ->assertJsonPath('data.steps.1.completed', false);
 
         $this->postJson('/api/v1/member/onboarding/steps', ['step' => 'loans'])
             ->assertOk()
-            ->assertJsonPath('data.steps.3.completed', true);
+            ->assertJsonPath('data.steps.2.key', 'loans')
+            ->assertJsonPath('data.steps.2.completed', true);
     }
 
     public function test_member_dashboard_api_returns_payment_loan_and_reward_journeys(): void
@@ -73,9 +70,9 @@ class Sprint5KojayakuUxTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Kojayaku/Dashboard')
-                ->has('journeys.payment.steps', 4)
-                ->has('journeys.loan.steps', 5)
-                ->has('journeys.reward.steps', 3)
+                ->has('summary')
+                ->has('recentLoans')
+                ->has('recentTransactions')
             );
 
         $this->actingAs($user)
@@ -83,7 +80,7 @@ class Sprint5KojayakuUxTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->has('onboarding.steps', 5)
+                ->has('onboarding.steps', 4)
             );
     }
 

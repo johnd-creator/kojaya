@@ -261,7 +261,7 @@ class OpenApiGenerator
                 'type' => 'object',
                 'required' => ['step'],
                 'properties' => [
-                    'step' => ['type' => 'string', 'enum' => ['profile', 'kyc', 'first_savings', 'loans', 'rewards'], 'example' => 'loans'],
+                    'step' => ['type' => 'string', 'enum' => ['profile', 'first_savings', 'loans', 'rewards'], 'example' => 'loans'],
                 ],
             ],
             'Loan' => [

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:30
+* @see app/Http/Controllers/MemberPortalController.php:35
 * @route '/member'
 */
 dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 export const onboarding = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ onboarding.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 onboarding.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ onboarding.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 onboarding.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ onboarding.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 onboarding.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ onboarding.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 const onboardingForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const onboardingForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 onboardingForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ onboardingForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:67
+* @see app/Http/Controllers/MemberPortalController.php:176
 * @route '/member/onboarding'
 */
 onboardingForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ onboarding.form = onboardingForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:101
+* @see app/Http/Controllers/MemberPortalController.php:210
 * @route '/member/onboarding'
 */
 export const submitOnboarding = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ submitOnboarding.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:101
+* @see app/Http/Controllers/MemberPortalController.php:210
 * @route '/member/onboarding'
 */
 submitOnboarding.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ submitOnboarding.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:101
+* @see app/Http/Controllers/MemberPortalController.php:210
 * @route '/member/onboarding'
 */
 submitOnboarding.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ submitOnboarding.post = (options?: RouteQueryOptions): RouteDefinition<'post'> =
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:101
+* @see app/Http/Controllers/MemberPortalController.php:210
 * @route '/member/onboarding'
 */
 const submitOnboardingForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const submitOnboardingForm = (options?: RouteQueryOptions): RouteFormDefinition<
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:101
+* @see app/Http/Controllers/MemberPortalController.php:210
 * @route '/member/onboarding'
 */
 submitOnboardingForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ submitOnboarding.form = submitOnboardingForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:112
+* @see app/Http/Controllers/MemberPortalController.php:221
 * @route '/member/onboarding/steps'
 */
 export const markOnboardingStep = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -234,7 +234,7 @@ markOnboardingStep.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:112
+* @see app/Http/Controllers/MemberPortalController.php:221
 * @route '/member/onboarding/steps'
 */
 markOnboardingStep.url = (options?: RouteQueryOptions) => {
@@ -243,7 +243,7 @@ markOnboardingStep.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:112
+* @see app/Http/Controllers/MemberPortalController.php:221
 * @route '/member/onboarding/steps'
 */
 markOnboardingStep.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -253,7 +253,7 @@ markOnboardingStep.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:112
+* @see app/Http/Controllers/MemberPortalController.php:221
 * @route '/member/onboarding/steps'
 */
 const markOnboardingStepForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -263,7 +263,7 @@ const markOnboardingStepForm = (options?: RouteQueryOptions): RouteFormDefinitio
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:112
+* @see app/Http/Controllers/MemberPortalController.php:221
 * @route '/member/onboarding/steps'
 */
 markOnboardingStepForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -274,8 +274,64 @@ markOnboardingStepForm.post = (options?: RouteQueryOptions): RouteFormDefinition
 markOnboardingStep.form = markOnboardingStepForm
 
 /**
+* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
+* @see app/Http/Controllers/MemberPortalController.php:413
+* @route '/member/payments/proof'
+*/
+export const uploadPaymentProof = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: uploadPaymentProof.url(options),
+    method: 'post',
+})
+
+uploadPaymentProof.definition = {
+    methods: ["post"],
+    url: '/member/payments/proof',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
+* @see app/Http/Controllers/MemberPortalController.php:413
+* @route '/member/payments/proof'
+*/
+uploadPaymentProof.url = (options?: RouteQueryOptions) => {
+    return uploadPaymentProof.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
+* @see app/Http/Controllers/MemberPortalController.php:413
+* @route '/member/payments/proof'
+*/
+uploadPaymentProof.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: uploadPaymentProof.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
+* @see app/Http/Controllers/MemberPortalController.php:413
+* @route '/member/payments/proof'
+*/
+const uploadPaymentProofForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: uploadPaymentProof.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
+* @see app/Http/Controllers/MemberPortalController.php:413
+* @route '/member/payments/proof'
+*/
+uploadPaymentProofForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: uploadPaymentProof.url(options),
+    method: 'post',
+})
+
+uploadPaymentProof.form = uploadPaymentProofForm
+
+/**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 export const profile = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -290,7 +346,7 @@ profile.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 profile.url = (options?: RouteQueryOptions) => {
@@ -299,7 +355,7 @@ profile.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 profile.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -309,7 +365,7 @@ profile.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -319,7 +375,7 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -329,7 +385,7 @@ const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -339,7 +395,7 @@ profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:237
+* @see app/Http/Controllers/MemberPortalController.php:373
 * @route '/member/profile'
 */
 profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -356,7 +412,7 @@ profile.form = profileForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:250
+* @see app/Http/Controllers/MemberPortalController.php:386
 * @route '/member/profile'
 */
 export const updateProfile = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -371,7 +427,7 @@ updateProfile.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:250
+* @see app/Http/Controllers/MemberPortalController.php:386
 * @route '/member/profile'
 */
 updateProfile.url = (options?: RouteQueryOptions) => {
@@ -380,7 +436,7 @@ updateProfile.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:250
+* @see app/Http/Controllers/MemberPortalController.php:386
 * @route '/member/profile'
 */
 updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -390,7 +446,7 @@ updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:250
+* @see app/Http/Controllers/MemberPortalController.php:386
 * @route '/member/profile'
 */
 const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -405,7 +461,7 @@ const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'po
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:250
+* @see app/Http/Controllers/MemberPortalController.php:386
 * @route '/member/profile'
 */
 updateProfileForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -422,7 +478,7 @@ updateProfile.form = updateProfileForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 export const notifications = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -437,7 +493,7 @@ notifications.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 notifications.url = (options?: RouteQueryOptions) => {
@@ -446,7 +502,7 @@ notifications.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 notifications.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -456,7 +512,7 @@ notifications.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -466,7 +522,7 @@ notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -476,7 +532,7 @@ const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -486,7 +542,7 @@ notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:270
+* @see app/Http/Controllers/MemberPortalController.php:406
 * @route '/member/notifications'
 */
 notificationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -503,7 +559,7 @@ notifications.form = notificationsForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 export const savings = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -518,7 +574,7 @@ savings.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 savings.url = (options?: RouteQueryOptions) => {
@@ -527,7 +583,7 @@ savings.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 savings.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -537,7 +593,7 @@ savings.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 savings.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -547,7 +603,7 @@ savings.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 const savingsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -557,7 +613,7 @@ const savingsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 savingsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -567,7 +623,7 @@ savingsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:121
+* @see app/Http/Controllers/MemberPortalController.php:230
 * @route '/member/savings'
 */
 savingsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -584,7 +640,7 @@ savings.form = savingsForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 export const loans = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -599,7 +655,7 @@ loans.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 loans.url = (options?: RouteQueryOptions) => {
@@ -608,7 +664,7 @@ loans.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 loans.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -618,7 +674,7 @@ loans.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 loans.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -628,7 +684,7 @@ loans.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 const loansForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -638,7 +694,7 @@ const loansForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 loansForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -648,7 +704,7 @@ loansForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:144
+* @see app/Http/Controllers/MemberPortalController.php:253
 * @route '/member/loans'
 */
 loansForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -665,7 +721,7 @@ loans.form = loansForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:156
+* @see app/Http/Controllers/MemberPortalController.php:265
 * @route '/member/loans'
 */
 export const applyLoan = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -680,7 +736,7 @@ applyLoan.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:156
+* @see app/Http/Controllers/MemberPortalController.php:265
 * @route '/member/loans'
 */
 applyLoan.url = (options?: RouteQueryOptions) => {
@@ -689,7 +745,7 @@ applyLoan.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:156
+* @see app/Http/Controllers/MemberPortalController.php:265
 * @route '/member/loans'
 */
 applyLoan.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -699,7 +755,7 @@ applyLoan.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:156
+* @see app/Http/Controllers/MemberPortalController.php:265
 * @route '/member/loans'
 */
 const applyLoanForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -709,7 +765,7 @@ const applyLoanForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:156
+* @see app/Http/Controllers/MemberPortalController.php:265
 * @route '/member/loans'
 */
 applyLoanForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -721,7 +777,7 @@ applyLoan.form = applyLoanForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 export const points = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -736,7 +792,7 @@ points.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 points.url = (options?: RouteQueryOptions) => {
@@ -745,7 +801,7 @@ points.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 points.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -755,7 +811,7 @@ points.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 points.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -765,7 +821,7 @@ points.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 const pointsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -775,7 +831,7 @@ const pointsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 pointsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -785,7 +841,7 @@ pointsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:174
+* @see app/Http/Controllers/MemberPortalController.php:283
 * @route '/member/points'
 */
 pointsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -802,7 +858,7 @@ points.form = pointsForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 export const rewards = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -817,7 +873,7 @@ rewards.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 rewards.url = (options?: RouteQueryOptions) => {
@@ -826,7 +882,7 @@ rewards.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 rewards.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -836,7 +892,7 @@ rewards.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 rewards.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -846,7 +902,7 @@ rewards.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 const rewardsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -856,7 +912,7 @@ const rewardsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 rewardsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -866,7 +922,7 @@ rewardsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:185
+* @see app/Http/Controllers/MemberPortalController.php:294
 * @route '/member/rewards'
 */
 rewardsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -883,7 +939,7 @@ rewards.form = rewardsForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:206
+* @see app/Http/Controllers/MemberPortalController.php:315
 * @route '/member/rewards/{reward}/redeem'
 */
 export const redeemReward = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -898,7 +954,7 @@ redeemReward.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:206
+* @see app/Http/Controllers/MemberPortalController.php:315
 * @route '/member/rewards/{reward}/redeem'
 */
 redeemReward.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
@@ -931,7 +987,7 @@ redeemReward.url = (args: { reward: string | { id: string } } | [reward: string 
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:206
+* @see app/Http/Controllers/MemberPortalController.php:315
 * @route '/member/rewards/{reward}/redeem'
 */
 redeemReward.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -941,7 +997,7 @@ redeemReward.post = (args: { reward: string | { id: string } } | [reward: string
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:206
+* @see app/Http/Controllers/MemberPortalController.php:315
 * @route '/member/rewards/{reward}/redeem'
 */
 const redeemRewardForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -951,7 +1007,7 @@ const redeemRewardForm = (args: { reward: string | { id: string } } | [reward: s
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:206
+* @see app/Http/Controllers/MemberPortalController.php:315
 * @route '/member/rewards/{reward}/redeem'
 */
 redeemRewardForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -963,7 +1019,7 @@ redeemReward.form = redeemRewardForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 export const transactions = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -978,7 +1034,7 @@ transactions.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 transactions.url = (options?: RouteQueryOptions) => {
@@ -987,7 +1043,7 @@ transactions.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 transactions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -997,7 +1053,7 @@ transactions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 transactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1007,7 +1063,7 @@ transactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 const transactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1017,7 +1073,7 @@ const transactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 transactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1027,7 +1083,7 @@ transactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:223
+* @see app/Http/Controllers/MemberPortalController.php:332
 * @route '/member/transactions'
 */
 transactionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1042,6 +1098,6 @@ transactionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 transactions.form = transactionsForm
 
-const MemberPortalController = { dashboard, onboarding, submitOnboarding, markOnboardingStep, profile, updateProfile, notifications, savings, loans, applyLoan, points, rewards, redeemReward, transactions }
+const MemberPortalController = { dashboard, onboarding, submitOnboarding, markOnboardingStep, uploadPaymentProof, profile, updateProfile, notifications, savings, loans, applyLoan, points, rewards, redeemReward, transactions }
 
 export default MemberPortalController

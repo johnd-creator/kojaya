@@ -39,12 +39,16 @@ class MemberAccessGatingTest extends TestCase
             ->assertSessionHas('warning');
     }
 
-    public function test_admin_verified_member_still_cannot_access_dashboard_until_final_approval(): void
+    public function test_admin_verified_member_can_access_dashboard_but_not_financial_pages(): void
     {
         [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING_REVIEW);
 
         $this->actingAs($user)
             ->get(route('member.dashboard'))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('member.savings'))
             ->assertRedirect(route('member.onboarding'))
             ->assertSessionHas('warning');
     }
@@ -58,7 +62,7 @@ class MemberAccessGatingTest extends TestCase
             ->assertOk();
     }
 
-    public function test_pending_member_can_only_access_onboarding_page(): void
+    public function test_pending_member_can_access_dashboard_and_onboarding(): void
     {
         [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING);
 
@@ -67,12 +71,11 @@ class MemberAccessGatingTest extends TestCase
             ->assertOk();
 
         $this->actingAs($user)
-            ->get(route('member.profile'))
-            ->assertRedirect(route('member.onboarding'))
-            ->assertSessionHas('warning');
+            ->get(route('member.dashboard'))
+            ->assertOk();
 
         $this->actingAs($user)
-            ->get(route('member.dashboard'))
+            ->get(route('member.profile'))
             ->assertRedirect(route('member.onboarding'))
             ->assertSessionHas('warning');
     }

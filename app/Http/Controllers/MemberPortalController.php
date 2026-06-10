@@ -7,13 +7,18 @@ use App\Enums\LoanStatus;
 use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\CompleteMemberOnboardingRequest;
 use App\Http\Requests\Cooperative\RedeemRewardRequest;
+use App\Http\Requests\MemberPaymentProofRequest;
 use App\Http\Requests\StoreMemberLoanApplicationRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
+use App\Models\CooperativeContributionType;
+use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePayment;
 use App\Models\Loan;
 use App\Models\LoanType;
 use App\Models\PosTransaction;
 use App\Models\Reward;
+use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\MemberOnboardingService;
 use App\Services\Cooperative\MemberOnboardingSubmitService;
 use App\Services\Cooperative\MemberProfileCompletenessService;
@@ -32,35 +37,139 @@ class MemberPortalController extends Controller
         PointService $pointService,
         MemberStatusJourneyService $journeyService,
         SavingsSummaryService $savingsSummary,
+        DuesGenerationService $duesGenerationService,
+        MemberProfileCompletenessService $completenessService,
     ): Response {
         $member = $this->memberOrAbort($request);
         $pointSummary = $pointService->balanceSummary($member);
         $savingSummary = $savingsSummary->summary($member);
+        $isActive = ($member->validation_status ?: $member->status) === CooperativeMember::VALIDATION_ACTIVE;
+        $isPendingReview = $member->validation_status === CooperativeMember::VALIDATION_PENDING_REVIEW
+            && $member->onboarding_submitted_at !== null;
+
+        $onboardingCompleteness = $completenessService->summarize($member);
+
+        $simpananPokokInvoice = null;
+        $simpananPokokProgress = null;
+
+        $pokokType = CooperativeContributionType::query()
+            ->where('code', 'POKOK')
+            ->where('is_active', true)
+            ->first();
+
+        if ($pokokType) {
+            $existingPokok = CooperativeDuesInvoice::query()
+                ->where('cooperative_member_id', $member->id)
+                ->where('cooperative_contribution_type_id', $pokokType->id)
+                ->oldest('id')
+                ->first();
+
+            if (! $existingPokok) {
+                try {
+                    $existingPokok = $duesGenerationService->ensureOneTimeInvoice($member, 'POKOK');
+                } catch (\Exception $e) {
+                    // Invoice can't be created yet (e.g. period locked), skip silently
+                }
+            }
+
+            if ($existingPokok) {
+                $total = (float) $existingPokok->amount;
+                $paid = (float) $existingPokok->paid_amount;
+                $simpananPokokProgress = [
+                    'amount' => $total,
+                    'paid' => $paid,
+                    'remaining' => $total - $paid,
+                    'percent' => $total > 0 ? (int) round(($paid / $total) * 100) : 0,
+                    'is_paid' => in_array($existingPokok->status, ['PAID'], true),
+                ];
+
+                if (! $simpananPokokProgress['is_paid']) {
+                    $simpananPokokInvoice = [
+                        'id' => $existingPokok->id,
+                        'amount' => $total,
+                        'paid_amount' => $paid,
+                        'due_date' => $existingPokok->due_date,
+                        'status' => $existingPokok->status,
+                        'period' => $existingPokok->period,
+                    ];
+                }
+            }
+        }
+
+        $simpananWajibPending = null;
+        $simpananWajibProgress = null;
+        $simpananWajibInvoice = null;
+        if ($isActive || $isPendingReview) {
+            $wajibType = CooperativeContributionType::query()
+                ->where('code', 'WAJIB')
+                ->where('is_active', true)
+                ->first();
+
+            if ($wajibType) {
+                $allWajibInvoices = $member->invoices()
+                    ->where('cooperative_contribution_type_id', $wajibType->id)
+                    ->get();
+
+                $totalWajib = (float) $allWajibInvoices->sum('amount');
+                $totalPaid = (float) $allWajibInvoices->sum('paid_amount');
+
+                $simpananWajibProgress = [
+                    'total_amount' => $totalWajib,
+                    'total_paid' => $totalPaid,
+                    'total_invoices' => $allWajibInvoices->count(),
+                    'paid_invoices' => $allWajibInvoices->where('status', 'PAID')->count(),
+                    'percent' => $totalWajib > 0 ? (int) round(($totalPaid / $totalWajib) * 100) : 0,
+                ];
+
+                $wajibInvoices = $allWajibInvoices->whereIn('status', ['UNPAID', 'PARTIAL']);
+
+                if ($wajibInvoices->isNotEmpty()) {
+                    $oldestPending = $wajibInvoices->first();
+                    $simpananWajibPending = [
+                        'count' => $wajibInvoices->count(),
+                        'total_amount' => $totalWajib - $totalPaid,
+                        'latest_due_date' => $oldestPending?->due_date,
+                    ];
+                    $simpananWajibInvoice = [
+                        'id' => $oldestPending->id,
+                        'amount' => (float) $oldestPending->amount,
+                        'paid_amount' => (float) $oldestPending->paid_amount,
+                        'due_date' => $oldestPending->due_date,
+                    ];
+                }
+            }
+        }
 
         return Inertia::render('Kojayaku/Dashboard', [
             'member' => $member->load(['organization', 'user']),
+            'is_active_member' => $isActive || $isPendingReview,
+            'is_pending_review' => $isPendingReview,
+            'onboarding_completeness' => $onboardingCompleteness,
+            'simpanan_pokok_invoice' => $simpananPokokInvoice,
+            'simpanan_pokok_progress' => $simpananPokokProgress,
+            'simpanan_wajib_pending' => $simpananWajibPending,
+            'simpanan_wajib_progress' => $simpananWajibProgress,
+            'simpanan_wajib_invoice' => $simpananWajibInvoice,
             'summary' => [
                 'savings_balance' => $savingSummary['total_balance'],
-                'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                 'active_loans' => $member->loans()->where('status', LoanStatus::Active)->count(),
                 'loan_outstanding' => (float) $member->loans()->where('status', LoanStatus::Active)->sum('outstanding_amount'),
                 'points_balance' => $pointSummary['total_points'],
                 'member_tier' => $pointSummary['member_tier'],
                 'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
-            'journeys' => $journeyService->summary($member),
-            'recentTransactions' => PosTransaction::query()
+            'recentTransactions' => ($isActive || $isPendingReview) ? PosTransaction::query()
                 ->with(['payments'])
                 ->where('cooperative_member_id', $member->id)
                 ->latest('sold_at')
                 ->limit(5)
-                ->get(),
-            'recentLoans' => Loan::query()
+                ->get() : [],
+            'recentLoans' => ($isActive || $isPendingReview) ? Loan::query()
                 ->with('loanType')
                 ->where('cooperative_member_id', $member->id)
                 ->latest()
                 ->limit(5)
-                ->get(),
+                ->get() : [],
         ]);
     }
 
@@ -224,13 +333,40 @@ class MemberPortalController extends Controller
     {
         $member = $this->memberOrAbort($request);
 
+        $query = PosTransaction::query()
+            ->with(['items.product', 'payments'])
+            ->where('cooperative_member_id', $member->id);
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('sold_at', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('sold_at', '<=', $request->input('date_to'));
+        }
+
+        $summaryBase = PosTransaction::query()
+            ->where('cooperative_member_id', $member->id);
+
+        if ($request->filled('date_from')) {
+            $summaryBase->whereDate('sold_at', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $summaryBase->whereDate('sold_at', '<=', $request->input('date_to'));
+        }
+
+        $summaryQuery = clone $summaryBase;
+
         return Inertia::render('Kojayaku/Transactions', [
-            'transactions' => PosTransaction::query()
-                ->with(['items.product', 'payments'])
-                ->where('cooperative_member_id', $member->id)
-                ->latest('sold_at')
-                ->paginate(12)
-                ->withQueryString(),
+            'transactions' => $query->latest('sold_at')->paginate(12)->withQueryString(),
+            'summary' => [
+                'total_transactions' => $summaryQuery->count(),
+                'total_amount' => (float) $summaryBase->clone()->sum('total_amount'),
+                'total_items' => (int) $summaryBase->clone()->join('pos_transaction_items', 'pos_transactions.id', '=', 'pos_transaction_items.pos_transaction_id')->sum('quantity'),
+                'last_transaction_at' => $summaryBase->clone()->latest('sold_at')->value('sold_at'),
+            ],
+            'filters' => $request->only(['date_from', 'date_to']),
         ]);
     }
 
@@ -272,6 +408,33 @@ class MemberPortalController extends Controller
         return Inertia::render('Kojayaku/Notifications', [
             'notifications' => $request->user()?->notifications()->latest()->paginate(15)->withQueryString(),
         ]);
+    }
+
+    public function uploadPaymentProof(MemberPaymentProofRequest $request): RedirectResponse
+    {
+        $member = $this->memberOrAbort($request);
+        $invoice = CooperativeDuesInvoice::query()
+            ->where('cooperative_member_id', $member->id)
+            ->whereIn('status', ['UNPAID', 'PARTIAL'])
+            ->findOrFail($request->validated('cooperative_dues_invoice_id'));
+
+        $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, 'public');
+
+        CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'cooperative_contribution_type_id' => $invoice->cooperative_contribution_type_id,
+            'user_id' => $request->user()?->id,
+            'amount' => $request->validated('amount'),
+            'payment_method' => $request->validated('payment_method'),
+            'paid_at' => $request->validated('paid_at'),
+            'status' => 'PENDING',
+            'proof_path' => $proofPath,
+            'reference_no' => $request->validated('reference_no'),
+            'notes' => $request->validated('notes'),
+        ]);
+
+        return back()->with('success', 'Bukti pembayaran berhasil dikirim. Pengurus akan memverifikasi dalam 1-3 hari kerja.');
     }
 
     private function memberOrAbort(Request $request): CooperativeMember

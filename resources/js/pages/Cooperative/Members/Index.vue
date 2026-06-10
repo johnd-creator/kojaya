@@ -209,7 +209,7 @@ const openEditDialog = (row: any): void => {
   editMemberForm.employee_id = row.employee_id ?? "";
   editMemberForm.user_id = row.user_id ?? "";
   editMemberForm.no_anggota = row.no_anggota ?? row.member_no ?? "";
-  editMemberForm.tanggal_aktif = row.tanggal_aktif ?? row.joined_at ?? "";
+  editMemberForm.tanggal_aktif = (row.tanggal_aktif ?? row.joined_at ?? "").slice(0, 10);
   editMemberForm.nama_anggota = row.nama_anggota ?? row.name ?? "";
   editMemberForm.name = row.name ?? "";
   editMemberForm.email = row.email ?? "";
@@ -219,7 +219,7 @@ const openEditDialog = (row: any): void => {
   editMemberForm.phone = row.phone ?? "";
   editMemberForm.identity_number = row.identity_number ?? "";
   editMemberForm.address = row.address ?? "";
-  editMemberForm.joined_at = row.joined_at ?? "";
+  editMemberForm.joined_at = (row.joined_at ?? "").slice(0, 10);
   editMemberForm.status = row.status === "RESIGNED" ? "INACTIVE" : row.status ?? "ACTIVE";
   editMemberForm.jenis_anggota = row.jenis_anggota ?? "AB";
   editMemberForm.jenis_kelamin = row.jenis_kelamin ?? "L";

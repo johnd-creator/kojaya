@@ -127,6 +127,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
         Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
+        Route::post('/payments/proof', [\App\Http\Controllers\MemberPortalController::class, 'uploadPaymentProof'])->name('payments.proof');
         Route::get('/profile', [\App\Http\Controllers\MemberPortalController::class, 'profile'])->name('profile');
         Route::put('/profile', [\App\Http\Controllers\MemberPortalController::class, 'updateProfile'])->name('profile.update');
         Route::get('/notifications', [\App\Http\Controllers\MemberPortalController::class, 'notifications'])->name('notifications');

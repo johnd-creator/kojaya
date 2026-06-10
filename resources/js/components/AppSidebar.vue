@@ -608,11 +608,6 @@ const memberNavItems: NavItem[] = [
     icon: ReceiptText,
   },
   {
-    title: "Notifikasi",
-    href: "/member/notifications",
-    icon: Bell,
-  },
-  {
     title: "Profil",
     href: "/member/profile",
     icon: UserRound,

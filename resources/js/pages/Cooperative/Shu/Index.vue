@@ -1,12 +1,28 @@
 <script setup lang="ts">
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { LockKeyhole, RefreshCw } from "lucide-vue-next";
+import {
+  BadgeDollarSign,
+  CalendarCheck,
+  Layers,
+  LockKeyhole,
+  RefreshCw,
+  Sparkles,
+  Star,
+  Users,
+} from "lucide-vue-next";
 import { computed, reactive } from "vue";
+import type { Component } from "vue";
+import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
+import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { close, index } from "@/routes/cooperative/shu";
+
+type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
 
 const props = defineProps<{ preview: any; closedPeriod: any; filters: any }>();
 
@@ -33,6 +49,69 @@ const totals = computed(() =>
   isClosed.value ? props.closedPeriod : props.preview,
 );
 
+const sparklineFor = (value: number, points = 8): number[] => {
+  const safe = Math.max(0, value || 0);
+  const base = Math.min(1, Math.log10(safe + 1) / 7.5);
+  const seed = Math.abs(Math.sin(safe * 12.9898) * 43758.5453);
+  return Array.from({ length: points }, (_, i) => {
+    const t = i / (points - 1);
+    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
+    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
+  });
+};
+
+const kpiCards = computed(() => [
+  {
+    label: "Pool SHU Koperasi",
+    value: formatCurrency(Number(totals.value.cooperative_pool ?? 0)),
+    meta: "Total dana yang dialokasikan",
+    icon: BadgeDollarSign as Component,
+    tone: "emerald" as Tone,
+    href: index().url,
+    sparklinePoints: sparklineFor(Number(totals.value.cooperative_pool ?? 0)),
+  },
+  {
+    label: "Total Skor SHU",
+    value: String(Number(totals.value.total_shu_score ?? 0)),
+    meta: "Jumlah bulan aktif + iuran lunas",
+    icon: Star as Component,
+    tone: "amber" as Tone,
+    href: index().url,
+    sparklinePoints: sparklineFor(Number(totals.value.total_shu_score ?? 0)),
+  },
+  {
+    label: "Skor Keanggotaan",
+    value: String(Number(totals.value.total_membership_score ?? 0)),
+    meta: "Total bulan aktif seluruh anggota",
+    icon: Users as Component,
+    tone: "sky" as Tone,
+    href: index().url,
+    sparklinePoints: sparklineFor(
+      Number(totals.value.total_membership_score ?? 0),
+    ),
+  },
+  {
+    label: "Skor Iuran Wajib",
+    value: String(Number(totals.value.total_dues_score ?? 0)),
+    meta: "Total bulan iuran lunas",
+    icon: CalendarCheck as Component,
+    tone: "violet" as Tone,
+    href: index().url,
+    sparklinePoints: sparklineFor(Number(totals.value.total_dues_score ?? 0)),
+  },
+  {
+    label: "Status Tahun",
+    value: isClosed.value ? "TERTUTUP" : "PREVIEW",
+    meta: isClosed.value
+      ? `Ditutup ${props.closedPeriod?.closed_at ?? ""}`
+      : "Belum difinalisasi",
+    icon: LockKeyhole as Component,
+    tone: isClosed.value ? ("rose" as Tone) : ("amber" as Tone),
+    href: index().url,
+    sparklinePoints: sparklineFor(isClosed.value ? 100 : 0),
+  },
+]);
+
 const refreshPreview = () => {
   router.get(
     index().url,
@@ -55,128 +134,190 @@ const closePeriod = () => {
 
 <template>
   <Head title="SHU Koperasi Tahunan" />
+
   <AppLayout
     :breadcrumbs="[
       { title: 'Iuran & Simpanan', href: '#' },
       { title: 'SHU Koperasi', href: index().url },
     ]"
   >
-    <div class="flex w-full flex-col gap-6 p-6">
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+    <PageContainer class="max-w-none">
+      <section
+        class="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white via-violet-50/60 to-sky-50/40 p-6 shadow-sm shadow-violet-950/5 sm:p-7 dark:border-violet-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
       >
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight">
-            SHU Koperasi Tahunan
-          </h1>
-          <p class="mt-1 text-sm text-zinc-500">
-            Alokasi dari pool SHU koperasi berdasarkan bulan aktif dan
-            kedisiplinan iuran wajib.
-          </p>
-        </div>
         <div
-          class="grid gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900 sm:grid-cols-[120px_180px_180px_auto_auto]"
+          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/10"
+          aria-hidden="true"
+        />
+        <div
+          class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
+          aria-hidden="true"
+        />
+        <div
+          class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
         >
-          <Input v-model.number="filter.year" type="number" min="2020" />
-          <Input
-            v-model.number="filter.cooperative_pool"
-            type="number"
-            min="0"
-            placeholder="Pool SHU koperasi"
-          />
-          <Input
-            v-model="filter.pos_profit_pool"
-            type="number"
-            min="0"
-            placeholder="Pool POS opsional"
-          />
-          <Button type="button" variant="outline" @click="refreshPreview">
-            <RefreshCw class="mr-2 h-4 w-4" />
-            Preview
-          </Button>
-          <Button
-            v-can="'manage_cooperative_shu'"
-            type="button"
-            :disabled="isClosed || closeForm.processing"
-            @click="closePeriod"
-          >
-            <LockKeyhole class="mr-2 h-4 w-4" />
-            Tutup Tahun
-          </Button>
-        </div>
-      </div>
+          <div class="space-y-3">
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800 ring-1 ring-inset ring-violet-200/70 dark:bg-violet-900/40 dark:text-violet-200 dark:ring-violet-800/60"
+            >
+              <Sparkles class="size-3.5" />
+              Alokasi Tahunan
+            </span>
+            <h1
+              class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
+            >
+              SHU Koperasi Tahunan
+            </h1>
+            <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+              Alokasi dari pool SHU koperasi berdasarkan bulan aktif dan
+              kedisiplinan iuran wajib. Preview dulu, lalu finalisasi.
+            </p>
+          </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
-          <div class="text-sm text-zinc-500">Pool SHU Koperasi</div>
-          <div class="mt-2 text-2xl font-semibold">
-            {{ formatCurrency(totals.cooperative_pool) }}
-          </div>
-        </div>
-        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
-          <div class="text-sm text-zinc-500">Total Skor SHU</div>
-          <div class="mt-2 text-2xl font-semibold">
-            {{ totals.total_shu_score }}
-          </div>
-        </div>
-        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
-          <div class="text-sm text-zinc-500">Skor Keanggotaan</div>
-          <div class="mt-2 text-2xl font-semibold">
-            {{ totals.total_membership_score }}
-          </div>
-        </div>
-        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
-          <div class="text-sm text-zinc-500">Skor Iuran Wajib</div>
-          <div class="mt-2 text-2xl font-semibold">
-            {{ totals.total_dues_score }}
-          </div>
-        </div>
-        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
-          <div class="text-sm text-zinc-500">Status Tahun</div>
-          <div class="mt-2 text-2xl font-semibold">
-            {{ isClosed ? "CLOSED" : "PREVIEW" }}
-          </div>
-        </div>
-      </div>
-
-      <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900">
-        <table class="w-full text-sm">
-          <thead
-            class="border-b bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-950"
+          <div
+            class="grid min-w-0 grid-cols-2 gap-2 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm shadow-zinc-950/5 backdrop-blur sm:grid-cols-5 dark:border-zinc-800/80 dark:bg-zinc-950/40"
           >
-            <tr>
-              <th class="px-4 py-3">Anggota</th>
-              <th class="px-4 py-3 text-right">Bulan Aktif</th>
-              <th class="px-4 py-3 text-right">Iuran Lunas</th>
-              <th class="px-4 py-3 text-right">Skor</th>
-              <th class="px-4 py-3 text-right">Alokasi SHU</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr v-for="allocation in allocations" :key="allocation.member.id">
-              <td class="px-4 py-3">
-                <div class="font-medium">{{ allocation.member.member_no }}</div>
-                <div class="text-xs text-zinc-500">
-                  {{ allocation.member.name }}
-                </div>
-              </td>
-              <td class="px-4 py-3 text-right">
-                {{ allocation.membership_score }}
-              </td>
-              <td class="px-4 py-3 text-right">{{ allocation.dues_score }}</td>
-              <td class="px-4 py-3 text-right">{{ allocation.shu_score }}</td>
-              <td class="px-4 py-3 text-right font-medium">
-                {{ formatCurrency(allocation.cooperative_shu_amount) }}
-              </td>
-            </tr>
-            <tr v-if="allocations.length === 0">
-              <td colspan="5" class="px-4 py-10 text-center text-zinc-500">
-                Belum ada anggota aktif untuk periode ini.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+            <Input
+              id="shu_year"
+              v-model.number="filter.year"
+              type="number"
+              min="2020"
+              placeholder="Tahun"
+              aria-label="Tahun SHU"
+            />
+            <Input
+              id="shu_pool"
+              v-model.number="filter.cooperative_pool"
+              type="number"
+              min="0"
+              placeholder="Pool SHU"
+              aria-label="Pool SHU koperasi"
+            />
+            <Input
+              id="shu_pos"
+              v-model="filter.pos_profit_pool"
+              type="number"
+              min="0"
+              placeholder="Pool POS"
+              aria-label="Pool POS opsional"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              @click="refreshPreview"
+            >
+              <RefreshCw class="mr-1.5 h-3.5 w-3.5" />
+              Preview
+            </Button>
+            <Button
+              v-can="'manage_cooperative_shu'"
+              type="button"
+              size="sm"
+              :disabled="isClosed || closeForm.processing"
+              @click="closePeriod"
+            >
+              <LockKeyhole class="mr-1.5 h-3.5 w-3.5" />
+              {{ closeForm.processing ? "Menyimpan…" : "Tutup" }}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+        aria-label="Ringkasan SHU"
+      >
+        <GradientKpiCard
+          v-for="card in kpiCards"
+          :key="card.label"
+          :label="card.label"
+          :value="card.value"
+          :meta="card.meta"
+          :icon="card.icon"
+          :tone="card.tone"
+          :href="card.href"
+          :sparkline-points="card.sparklinePoints"
+        />
+      </section>
+
+      <Card
+        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+      >
+        <SectionHeader
+          title="Alokasi per Anggota"
+          :description="
+            allocations.length > 0
+              ? `${allocations.length} anggota dialokasikan`
+              : 'Belum ada anggota aktif untuk periode ini'
+          "
+          :icon="Layers"
+          tone="violet"
+        />
+        <CardContent class="px-0 pb-0">
+          <div class="overflow-x-auto">
+            <table
+              aria-label="Tabel alokasi SHU per anggota"
+              class="w-full text-sm"
+              role="table"
+            >
+              <thead
+                class="border-b bg-zinc-50 text-left text-xs uppercase text-zinc-500 dark:bg-zinc-950"
+              >
+                <tr>
+                  <th class="px-4 py-3">Anggota</th>
+                  <th class="px-4 py-3 text-right">Bulan Aktif</th>
+                  <th class="px-4 py-3 text-right">Iuran Lunas</th>
+                  <th class="px-4 py-3 text-right">Skor</th>
+                  <th class="px-4 py-3 text-right">Alokasi SHU</th>
+                </tr>
+              </thead>
+              <tbody
+                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+              >
+                <tr
+                  v-for="allocation in allocations"
+                  :key="allocation.member.id"
+                  class="transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-900/50"
+                >
+                  <td class="px-4 py-3">
+                    <div class="font-semibold text-zinc-950 dark:text-white">
+                      {{ allocation.member.name }}
+                    </div>
+                    <div class="text-xs text-zinc-500">
+                      {{ allocation.member.member_no }}
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-right tabular-nums">
+                    {{ allocation.membership_score }}
+                  </td>
+                  <td class="px-4 py-3 text-right tabular-nums">
+                    {{ allocation.dues_score }}
+                  </td>
+                  <td class="px-4 py-3 text-right tabular-nums font-semibold">
+                    {{ allocation.shu_score }}
+                  </td>
+                  <td
+                    class="px-4 py-3 text-right font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
+                  >
+                    {{ formatCurrency(allocation.cooperative_shu_amount) }}
+                  </td>
+                </tr>
+                <tr v-if="allocations.length === 0">
+                  <td colspan="5" class="px-4 py-16 text-center text-zinc-500">
+                    <div class="flex flex-col items-center gap-2">
+                      <Users class="size-8 text-zinc-300 dark:text-zinc-700" />
+                      <p class="text-sm">
+                        Belum ada anggota aktif untuk periode ini.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </PageContainer>
   </AppLayout>
 </template>

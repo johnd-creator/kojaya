@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::generate
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:76
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:97
 * @route '/cooperative/dues/generate'
 */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::generate
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:76
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:97
 * @route '/cooperative/dues/generate'
 */
 generate.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::generate
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:76
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:97
 * @route '/cooperative/dues/generate'
 */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::generate
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:76
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:97
 * @route '/cooperative/dues/generate'
 */
 const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::generate
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:76
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:97
 * @route '/cooperative/dues/generate'
 */
 generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -138,7 +138,7 @@ generate.form = generateForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markPaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:83
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:104
 * @route '/cooperative/dues/mark-paid'
 */
 export const markPaid = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -153,7 +153,7 @@ markPaid.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markPaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:83
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:104
 * @route '/cooperative/dues/mark-paid'
 */
 markPaid.url = (options?: RouteQueryOptions) => {
@@ -162,7 +162,7 @@ markPaid.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markPaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:83
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:104
 * @route '/cooperative/dues/mark-paid'
 */
 markPaid.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -172,7 +172,7 @@ markPaid.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markPaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:83
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:104
 * @route '/cooperative/dues/mark-paid'
 */
 const markPaidForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -182,7 +182,7 @@ const markPaidForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markPaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:83
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:104
 * @route '/cooperative/dues/mark-paid'
 */
 markPaidForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -194,7 +194,7 @@ markPaid.form = markPaidForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:127
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:149
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
 export const markUnpaid = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -209,7 +209,7 @@ markUnpaid.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:127
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:149
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
 markUnpaid.url = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -242,7 +242,7 @@ markUnpaid.url = (args: { invoice: number | { id: number } } | [invoice: number 
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:127
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:149
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
 markUnpaid.post = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -252,7 +252,7 @@ markUnpaid.post = (args: { invoice: number | { id: number } } | [invoice: number
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:127
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:149
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
 const markUnpaidForm = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -262,7 +262,7 @@ const markUnpaidForm = (args: { invoice: number | { id: number } } | [invoice: n
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeDuesController::markUnpaid
-* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:127
+* @see app/Http/Controllers/Cooperative/CooperativeDuesController.php:149
 * @route '/cooperative/dues/{invoice}/mark-unpaid'
 */
 markUnpaidForm.post = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

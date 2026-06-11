@@ -15,9 +15,9 @@ import {
   Users,
 } from "lucide-vue-next";
 import { computed } from "vue";
+import StatusPill from "@/components/dashboard/StatusPill.vue";
 import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
-import StatusPill from "@/components/dashboard/StatusPill.vue";
 import { Button } from "@/components/ui/button";
 import {
   Card,

@@ -33,6 +33,7 @@ import AppLayout from "@/layouts/AppLayout.vue";
 type Member = {
   id: number;
   member_no: string;
+  status?: string | null;
   name?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -106,7 +107,11 @@ const isLocked = computed<boolean>(() => {
 const isApproved = computed<boolean>(() => props.review_state === "approved");
 
 const isAdmissionWaiting = computed<boolean>(() => {
-  return props.validation_status === "PENDING" && !props.submitted;
+  return (
+    props.validation_status === "PENDING" &&
+    props.member.status !== "ACTIVE" &&
+    !props.submitted
+  );
 });
 
 const admissionWaitingTitle = computed<string>(() =>

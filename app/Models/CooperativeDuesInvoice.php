@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -40,5 +41,10 @@ class CooperativeDuesInvoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(CooperativePayment::class);
+    }
+
+    public function scopeForActiveMembers(Builder $query): Builder
+    {
+        return $query->whereHas('member', fn (Builder $memberQuery) => $memberQuery->active());
     }
 }

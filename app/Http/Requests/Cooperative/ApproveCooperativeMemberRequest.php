@@ -10,9 +10,12 @@ class ApproveCooperativeMemberRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user?->can('approve_cooperative_member')
-            || $user?->hasRole('System Admin')
-            || false;
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('System Admin')
+            || ($user->hasRole('Pengurus Koperasi') && $user->can('approve_cooperative_member'));
     }
 
     public function rules(): array

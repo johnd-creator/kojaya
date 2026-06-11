@@ -366,6 +366,51 @@ class CooperativeFeatureTest extends TestCase
             );
     }
 
+    public function test_dues_page_hides_invoices_for_soft_deleted_members(): void
+    {
+        Carbon::setTestNow('2026-05-15 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $activeMember = $this->member(['status' => 'ACTIVE']);
+        $deletedMember = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $visibleInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $activeMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $deletedMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+
+        $deletedMember->delete();
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->has('invoices.data', 1)
+                ->where('invoices.data.0.id', $visibleInvoice->id)
+            );
+    }
+
     public function test_dues_page_filters_members_by_partial_name_or_member_number(): void
     {
         Carbon::setTestNow('2026-05-15 09:00:00');

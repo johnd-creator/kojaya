@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import Sparkline from "./Sparkline.vue";
 import TrendBadge from "./TrendBadge.vue";
 
-type Tone = "emerald" | "amber" | "rose" | "sky" | "violet";
+type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
 
 const props = withDefaults(
   defineProps<{

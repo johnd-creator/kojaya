@@ -10,6 +10,14 @@
 
 ## 🎯 2026-06: M3 P0 Hardening
 
+### **June 11, 2026 - Cooperative Member Validation & Dues Visibility Fixes**
+
+**🏦 Validasi Anggota & Tagihan:**
+- ✅ Hidupkan ulang aturan dua tahap: Admin Koperasi hanya verifikasi awal, sedangkan final approval hanya untuk Pengurus Koperasi atau System Admin.
+- ✅ Perbaiki onboarding agar anggota dengan lifecycle `ACTIVE` tetapi belum submit data tetap bisa mengisi `/member/onboarding`, bukan tertahan di status menunggu penerimaan Admin Koperasi.
+- ✅ Pertahankan lifecycle `ACTIVE` saat anggota aktif mengirim onboarding ulang sambil menunggu approval final.
+- ✅ Sembunyikan tagihan iuran milik anggota yang sudah soft-deleted/nonaktif dari daftar operasional `/cooperative/dues` dan API daftar tagihan koperasi.
+
 ### **June 9, 2026 - Google SSO Review Fixes**
 
 **🔐 SSO Linking & Validation Hardening:**

@@ -25,7 +25,9 @@ class CooperativeDuesController extends Controller
 
         $duesGenerationService->generateForPeriod($period);
 
-        $query = CooperativeDuesInvoice::query()->with(['member', 'contributionType']);
+        $query = CooperativeDuesInvoice::query()
+            ->forActiveMembers()
+            ->with(['member', 'contributionType']);
         $status = $request->input('status', '');
 
         $query->where('period', $period);
@@ -55,8 +57,26 @@ class CooperativeDuesController extends Controller
             $query->whereHas('contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category')));
         }
 
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = max(5, min($perPage, 100));
+
+        $aggregate = (clone $query)->selectRaw(
+            'COUNT(*) as total_invoices,
+             COALESCE(SUM(amount), 0) as total_nominal,
+             COALESCE(SUM(paid_amount), 0) as total_paid,
+             COALESCE(SUM(CASE WHEN amount - paid_amount > 0 THEN amount - paid_amount ELSE 0 END), 0) as total_outstanding,
+             SUM(CASE WHEN status IN (\'PAID\', \'VOID\') THEN 1 ELSE 0 END) as paid_count'
+        )->first();
+
         return Inertia::render('Cooperative/Dues/Index', [
-            'invoices' => $query->orderByDesc('period')->orderByDesc('id')->paginate(20)->withQueryString(),
+            'invoices' => $query->orderByDesc('period')->orderByDesc('id')->paginate($perPage)->withQueryString(),
+            'stats' => [
+                'total_invoices' => (int) ($aggregate->total_invoices ?? 0),
+                'total_nominal' => (float) ($aggregate->total_nominal ?? 0),
+                'total_paid' => (float) ($aggregate->total_paid ?? 0),
+                'total_outstanding' => (float) ($aggregate->total_outstanding ?? 0),
+                'paid_count' => (int) ($aggregate->paid_count ?? 0),
+            ],
             'contributionTypes' => CooperativeContributionType::query()->orderBy('name')->get(),
             'categories' => CooperativeContributionType::query()
                 ->where('is_active', true)
@@ -66,6 +86,7 @@ class CooperativeDuesController extends Controller
                 ->pluck('category'),
             'filters' => [
                 ...$request->only(['period', 'member_id', 'member_search', 'contribution_type_id', 'category']),
+                'per_page' => $perPage,
                 'period' => $period,
                 'status' => $status,
             ],
@@ -86,6 +107,7 @@ class CooperativeDuesController extends Controller
         $requestedAmount = $request->validated('amount');
 
         $invoices = CooperativeDuesInvoice::query()
+            ->forActiveMembers()
             ->whereIn('id', $request->validated('invoice_ids'))
             ->whereIn('status', ['UNPAID', 'PARTIAL'])
             ->get();

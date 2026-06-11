@@ -15,7 +15,9 @@ class CooperativeDuesApiController extends Controller
     {
         $this->authorizeCooperativeAccess($request);
 
-        $query = CooperativeDuesInvoice::query()->with(['member', 'contributionType']);
+        $query = CooperativeDuesInvoice::query()
+            ->forActiveMembers()
+            ->with(['member', 'contributionType']);
 
         if (! $request->user()?->can('manage_cooperative_dues') && $request->user()?->can('view_cooperative_member')) {
             $query->whereHas('member', fn ($query) => $query->where('user_id', $request->user()->id));

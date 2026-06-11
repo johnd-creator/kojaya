@@ -59,6 +59,7 @@ class CooperativeMemberValidationTest extends TestCase
     public function test_pengurus_can_final_approve_admin_verified_member(): void
     {
         $validator = User::factory()->create();
+        $validator->assignRole('Pengurus Koperasi');
         $validator->givePermissionTo('approve_cooperative_member');
         Role::firstOrCreate(['name' => 'Anggota']);
         $user = User::factory()->create();
@@ -110,7 +111,9 @@ class CooperativeMemberValidationTest extends TestCase
     public function test_admin_cannot_final_approve_member(): void
     {
         $admin = User::factory()->create();
+        $admin->assignRole('Admin Koperasi');
         $admin->givePermissionTo('verify_cooperative_member');
+        $admin->givePermissionTo('approve_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,

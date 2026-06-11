@@ -6,11 +6,11 @@ import {
   create as employeeCreate,
   edit as employeeEdit,
 } from "@/actions/App/Http/Controllers/EmployeeController";
-import { Button } from "@/components/ui/button";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
 import StatsCard from "@/components/StatsCard.vue";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";

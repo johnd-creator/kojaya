@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { FileText } from "lucide-vue-next";
 import type { Component } from "vue";
 import { computed } from "vue";
-import { FileText } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 
 interface Props {

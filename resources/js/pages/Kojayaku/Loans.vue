@@ -5,8 +5,8 @@ import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatCurrency, formatDate } from '@/lib/formatters';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { formatCurrency, formatDate } from '@/lib/formatters';
 
 const props = defineProps<{
     loans: { data: Array<{ id: number; principal_amount: number | string; installment_amount: number | string; outstanding_amount: number | string; term_months: number; first_due_date: string; status: string; loan_type?: { name: string } | null }> };

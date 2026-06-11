@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { useTableFilters } from "@/composables/useTableFilters";
-import { formatCurrency, formatDate } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import { calculator, create, index, show } from "@/routes/cooperative/loans";
 
 const props = defineProps<{

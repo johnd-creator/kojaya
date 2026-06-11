@@ -2,12 +2,12 @@
 import { Head, useForm } from "@inertiajs/vue3";
 import { Search, ShoppingCart } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { index } from "@/routes/cooperative/pos";
-import { store as storeTransaction } from "@/routes/cooperative/pos/transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
+import { index } from "@/routes/cooperative/pos";
+import { store as storeTransaction } from "@/routes/cooperative/pos/transactions";
 
 const props = defineProps<{
   products: any[];

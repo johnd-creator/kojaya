@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import { index } from "@/routes/cooperative/reports";
 
 defineProps<{ summary: any }>();

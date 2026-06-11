@@ -4,8 +4,8 @@ import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
 import { approve, disburse, index, pay, reject } from "@/routes/cooperative/loans";
 
 const props = defineProps<{ loan: any; approvalLogs: any[] }>();

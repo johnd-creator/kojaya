@@ -16,11 +16,11 @@ import {
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
 import StatsCard from "@/components/StatsCard.vue";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { Badge } from "@/components/ui/badge";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { approvalInbox, exceptions, analytics, exportMethod } from "@/routes/cooperative/operator";

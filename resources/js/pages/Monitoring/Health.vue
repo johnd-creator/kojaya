@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import AppLayout from "@/layouts/AppLayout.vue";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle,
   Database,
@@ -10,6 +7,9 @@ import {
   Server,
   Wifi,
 } from "lucide-vue-next";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AppLayout from "@/layouts/AppLayout.vue";
 
 const props = defineProps<{
   health: {

@@ -2,6 +2,10 @@
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
 import { Package, Search } from "lucide-vue-next";
 import { ref } from "vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import {
   destroy,
   index,
@@ -9,10 +13,6 @@ import {
   store,
   update,
 } from "@/routes/cooperative/pos-products";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
-import AppLayout from "@/layouts/AppLayout.vue";
 
 const props = defineProps<{ products: any; categories: any[]; filters: any }>();
 const search = ref(props.filters.search ?? "");

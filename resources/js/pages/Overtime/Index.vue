@@ -2,13 +2,11 @@
 import { Head, Link, useForm, router } from "@inertiajs/vue3";
 import { Clock, CheckCircle, XCircle, FileText, Plus } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
-import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { useTableFilters } from "@/composables/useTableFilters";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
+import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";
 

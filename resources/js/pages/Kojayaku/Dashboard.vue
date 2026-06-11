@@ -15,9 +15,10 @@ import {
   UserRound,
   Wallet,
   WalletCards,
-  X,
-  type LucideIcon,
+  X
+  
 } from "lucide-vue-next";
+import type {LucideIcon} from "lucide-vue-next";
 import { computed, ref } from "vue";
 import PaymentProofDialog from "@/components/Kojayaku/PaymentProofDialog.vue";
 import PageContainer from "@/components/PageContainer.vue";

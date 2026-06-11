@@ -256,3 +256,7 @@ artifacts/
 
 # Claude Code memory (optional, contains project notes)
 /.claude/memory/
+
+
+# Graphify
+graphify-out/

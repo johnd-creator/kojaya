@@ -9,8 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{

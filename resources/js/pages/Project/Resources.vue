@@ -2,8 +2,8 @@
 import { Head, useForm } from "@inertiajs/vue3";
 import { Truck, Plus, Calendar, Trash2, Edit2 } from "lucide-vue-next";
 import { ref } from "vue";
-import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,

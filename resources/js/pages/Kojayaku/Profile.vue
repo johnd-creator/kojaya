@@ -7,9 +7,10 @@ import {
   Mail,
   Phone,
   ShieldCheck,
-  UserCircle2,
-  type LucideIcon,
+  UserCircle2
+  
 } from "lucide-vue-next";
+import type {LucideIcon} from "lucide-vue-next";
 import { computed } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";

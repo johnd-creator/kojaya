@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3";
+import { Loader2, Upload } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/formatters";
-import { Loader2, Upload } from "lucide-vue-next";
 
 const props = defineProps<{
   open: boolean;

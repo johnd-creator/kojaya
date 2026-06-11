@@ -3,14 +3,12 @@ import { Deferred, Head, useForm } from "@inertiajs/vue3";
 import { Banknote, Building, Zap } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import { index as payrollsIndex } from "@/actions/App/Http/Controllers/PayrollController";
-import { Button } from "@/components/ui/button";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
 import StatsCard from "@/components/StatsCard.vue";
-import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
-import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { useTableFilters } from "@/composables/useTableFilters";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{

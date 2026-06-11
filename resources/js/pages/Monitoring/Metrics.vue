@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import AppLayout from "@/layouts/AppLayout.vue";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CreditCard,
   ListChecks,
@@ -10,6 +7,9 @@ import {
   TrendingDown,
   XCircle,
 } from "lucide-vue-next";
+import { computed } from "vue";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AppLayout from "@/layouts/AppLayout.vue";
 
 const props = defineProps<{
   metrics: {

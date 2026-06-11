@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import AppLayout from "@/layouts/AppLayout.vue";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle,
   Clock,
@@ -11,6 +7,10 @@ import {
   ShoppingCart,
   Users,
 } from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 
 interface ExceptionCounts {

@@ -13,8 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import AppLayout from "@/layouts/AppLayout.vue";
-import { formatCurrency } from "@/lib/formatters";
 import {
   Select,
   SelectContent,
@@ -22,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";
 
 type Project = { id: string; project_code: string; name: string };

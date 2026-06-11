@@ -4,8 +4,8 @@ import { LockKeyhole, RefreshCw } from "lucide-vue-next";
 import { computed, reactive } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import { close, index } from "@/routes/cooperative/shu";
 
 const props = defineProps<{ preview: any; closedPeriod: any; filters: any }>();

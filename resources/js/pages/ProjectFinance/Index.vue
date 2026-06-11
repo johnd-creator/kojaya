@@ -14,8 +14,8 @@ import {
 } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{

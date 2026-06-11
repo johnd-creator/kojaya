@@ -12,9 +12,10 @@ import {
   ReceiptText,
   ShieldCheck,
   UserCheck,
-  WalletCards,
-  type LucideIcon,
+  WalletCards
+  
 } from "lucide-vue-next";
+import type {LucideIcon} from "lucide-vue-next";
 import { computed } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import AppLayout from "@/layouts/AppLayout.vue";

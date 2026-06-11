@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from "@inertiajs/vue3";
 import { ArrowLeft } from "lucide-vue-next";
-import { adjustStock, index } from "@/routes/cooperative/pos-products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
+import { adjustStock, index } from "@/routes/cooperative/pos-products";
 
 const props = defineProps<{ product: any }>();
 const form = useForm({

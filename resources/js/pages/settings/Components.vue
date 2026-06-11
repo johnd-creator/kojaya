@@ -40,9 +40,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PageHeader from "@/components/ui/page-header/PageHeader.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import SettingsLayout from "@/layouts/settings/Layout.vue";
+import { formatCurrency } from "@/lib/formatters";
 
 const mockData = {
   data: [

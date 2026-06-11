@@ -2,15 +2,15 @@
 import { Head, router, useForm } from "@inertiajs/vue3";
 import { PackagePlus, Trash2 } from "lucide-vue-next";
 import { ref } from "vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import AppLayout from "@/layouts/AppLayout.vue";
 import {
   destroy,
   index,
   store,
   update,
 } from "@/routes/cooperative/pos-categories";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import AppLayout from "@/layouts/AppLayout.vue";
 
 const props = defineProps<{ categories: any[] }>();
 const editingId = ref<number | null>(null);

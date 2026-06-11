@@ -7,8 +7,8 @@ import DataTable from "@/components/ui/data-table/DataTable.vue";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { formatDate, formatNumber } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatDate, formatNumber } from "@/lib/formatters";
 
 const props = defineProps<{
   rewards: {

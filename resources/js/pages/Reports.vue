@@ -2,18 +2,18 @@
 import { Deferred, Head } from "@inertiajs/vue3";
 import { BarChart3 } from "lucide-vue-next";
 import { ref } from "vue";
-import type { Report } from "@/components/Report/helpers";
 import PageContainer from "@/components/PageContainer.vue";
+import type { Report } from "@/components/Report/helpers";
 import PayslipViewer from "@/components/Report/PayslipViewer.vue";
 import ReportGeneratorForm from "@/components/Report/ReportGeneratorForm.vue";
 import ReportList from "@/components/Report/ReportList.vue";
-import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";
 

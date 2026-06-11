@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3";
+import { computed, ref } from "vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import { index, store, update, destroy } from "@/routes/cooperative/loan-types";
-import { computed, ref } from "vue";
 
 const props = defineProps<{ loanTypes: any[] }>();
 

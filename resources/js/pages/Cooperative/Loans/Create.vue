@@ -3,8 +3,8 @@ import { Head, Link, useForm } from "@inertiajs/vue3";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import { calculator, index, store } from "@/routes/cooperative/loans";
 
 const props = defineProps<{ members: any[]; loanTypes: any[] }>();

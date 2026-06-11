@@ -14,8 +14,8 @@ import {
 } from "@/actions/App/Http/Controllers/InvoiceController";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{

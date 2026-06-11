@@ -4,8 +4,8 @@ import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { formatDateTime, formatNumber } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatDateTime, formatNumber } from "@/lib/formatters";
 
 const props = defineProps<{
   redemption: {

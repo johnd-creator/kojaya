@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3";
 import { ref } from "vue";
-import { index, show } from "@/routes/cooperative/pos/transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
+import { index, show } from "@/routes/cooperative/pos/transactions";
 
 const props = defineProps<{ transactions: any; filters: any }>();
 const dateFrom = ref(props.filters.date_from ?? "");

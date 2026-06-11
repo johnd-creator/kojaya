@@ -8,9 +8,9 @@ import {
   show as projectShow,
 } from "@/actions/App/Http/Controllers/ProjectController";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { useTableFilters } from "@/composables/useTableFilters";
-import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDateRange } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";

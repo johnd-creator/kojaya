@@ -17,13 +17,13 @@ import {
   show as clientShow,
   edit as clientEdit,
 } from "@/actions/App/Http/Controllers/ClientController";
-import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
 import StatsCard from "@/components/StatsCard.vue";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
 import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";

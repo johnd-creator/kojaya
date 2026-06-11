@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
 import { Download, Eye, RefreshCw, ScrollText } from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
 import { auditLogsApi } from "@/Actions/auditLogs";
 import type { AuditLog, AuditLogFilters } from "@/Actions/auditLogs";
-import { Button } from "@/components/ui/button";
 import FilterBar from "@/components/FilterBar.vue";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
-import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { Input } from "@/components/ui/input";
 import SelectFilter from "@/components/SelectFilter.vue";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
+import { Input } from "@/components/ui/input";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { formatDateTime } from "@/lib/formatters";
 import AuditLogDetail from "./AuditLogDetail.vue";
 

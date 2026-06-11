@@ -10,9 +10,10 @@ import {
   MapPin,
   ShieldCheck,
   Sparkles,
-  User,
-  type LucideIcon,
+  User
+  
 } from "lucide-vue-next";
+import type {LucideIcon} from "lucide-vue-next";
 import { computed, ref } from "vue";
 import OnboardingChecklist from "@/components/Kojayaku/OnboardingChecklist.vue";
 import PageContainer from "@/components/PageContainer.vue";

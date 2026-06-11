@@ -15,13 +15,11 @@ import {
   update as usersUpdate,
   destroy as usersDestroy,
 } from "@/actions/App/Http/Controllers/UserController";
-import { show as cooperativeMemberShow } from "@/routes/cooperative/members";
-import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
 import InputError from "@/components/InputError.vue";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -40,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { show as cooperativeMemberShow } from "@/routes/cooperative/members";
 import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{

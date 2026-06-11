@@ -4,8 +4,8 @@ import { Gift, Trophy } from "lucide-vue-next";
 import PageContainer from "@/components/PageContainer.vue";
 import StatsCard from "@/components/StatsCard.vue";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
-import { formatNumber } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatNumber } from "@/lib/formatters";
 
 defineProps<{
   members: {

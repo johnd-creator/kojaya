@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
+import { computed, ref } from "vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

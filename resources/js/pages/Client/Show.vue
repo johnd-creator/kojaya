@@ -14,8 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
-import { formatCurrency, formatDate } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";
 
 const props = defineProps<{

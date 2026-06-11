@@ -4,7 +4,6 @@ import { FileSpreadsheet, Plus, Eye, Pencil, Trash2 } from "lucide-vue-next";
 import { ref } from "vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import FilterBar from "@/components/FilterBar.vue";
-import { useTableFilters } from "@/composables/useTableFilters";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";
 

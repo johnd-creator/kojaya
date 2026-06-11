@@ -9,9 +9,9 @@ import {
 } from "@/actions/App/Http/Controllers/InvoiceController";
 import { Button } from "@/components/ui/button";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
+import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { useTableFilters } from "@/composables/useTableFilters";
-import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";

@@ -2,10 +2,10 @@
 import { Head, Link } from "@inertiajs/vue3";
 import { Plus, FileText } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { Button } from "@/components/ui/button";
-import DataTable from "@/components/ui/data-table/DataTable.vue";
 import FilterBar from "@/components/FilterBar.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
+import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";

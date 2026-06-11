@@ -15,8 +15,8 @@ import {
 import { defineAsyncComponent, ref, watch } from "vue";
 import { uploadProjectDocument } from "@/api/projectDocuments";
 import { fetchProjectTeamAvailability } from "@/api/projectTeam";
-import ProjectFinancials from "@/components/project/ProjectFinancials.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import ProjectFinancials from "@/components/project/ProjectFinancials.vue";
 import TeamCalendar from "@/components/project/TeamCalendar.vue";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,8 @@ import { Label } from "@/components/ui/label";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { formatCurrency, formatDate, formatDateRange } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency, formatDate, formatDateRange } from "@/lib/formatters";
 import { index } from "@/routes/projects";
 import type { BreadcrumbItem } from "@/types";
 

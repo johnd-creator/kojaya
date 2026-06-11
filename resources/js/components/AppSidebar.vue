@@ -65,22 +65,22 @@ import {
 import { dashboard } from "@/routes";
 import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
 import { index as cooperativeLedgerIndex } from "@/routes/cooperative/ledger";
+import { index as cooperativeLoanTypesIndex } from "@/routes/cooperative/loan-types";
 import {
   calculator as cooperativeLoansCalculator,
   index as cooperativeLoansIndex,
 } from "@/routes/cooperative/loans";
 import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
+import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
-import { index as cooperativePosCategoriesIndex } from "@/routes/cooperative/pos-categories";
-import { index as cooperativePosProductsIndex } from "@/routes/cooperative/pos-products";
 import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
 import { index as cooperativePosShuIndex } from "@/routes/cooperative/pos/shu";
 import { index as cooperativePosTransactionsIndex } from "@/routes/cooperative/pos/transactions";
+import { index as cooperativePosCategoriesIndex } from "@/routes/cooperative/pos-categories";
+import { index as cooperativePosProductsIndex } from "@/routes/cooperative/pos-products";
 import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
-import { index as cooperativeLoanTypesIndex } from "@/routes/cooperative/loan-types";
-import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
 import type { NavItem } from "@/types";
 import AppLogo from "./AppLogo.vue";
 

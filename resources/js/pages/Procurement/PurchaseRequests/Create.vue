@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3";
 import { computed } from "vue";
-import { formatCurrency } from "@/lib/formatters";
 import AppLayout from "@/layouts/AppLayout.vue";
+import { formatCurrency } from "@/lib/formatters";
 
 const props = defineProps<{
   glAccounts: string[];

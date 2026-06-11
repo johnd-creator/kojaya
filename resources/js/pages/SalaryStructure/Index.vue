@@ -4,7 +4,6 @@ import { DollarSign, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import { ref } from "vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import FilterBar from "@/components/FilterBar.vue";
-import { useTableFilters } from "@/composables/useTableFilters";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTableFilters } from "@/composables/useTableFilters";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import type { BreadcrumbItem } from "@/types";

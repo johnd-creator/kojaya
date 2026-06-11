@@ -21,15 +21,24 @@ class TokenAbilityResolver
         if ($user->cooperativeMember) {
             $abilities[] = 'member:read';
             $abilities[] = 'member:write';
-            $abilities[] = 'cooperative:read';
-            $abilities[] = 'cooperative:write';
         }
 
-        if ($user->cooperativeMember || $this->canAny($user, [
-            PermissionEnum::COOPERATIVE_MEMBER_VIEW->value,
-            PermissionEnum::COOPERATIVE_LOAN_VIEW->value,
-            PermissionEnum::COOPERATIVE_REPORT_VIEW->value,
+        if ($this->canAny($user, [
+            PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value,
+            PermissionEnum::COOPERATIVE_DUES_MANAGE->value,
+            PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value,
+            PermissionEnum::COOPERATIVE_LOAN_MANAGE->value,
+            PermissionEnum::COOPERATIVE_LOAN_APPROVE->value,
+            PermissionEnum::COOPERATIVE_POS_ACCESS->value,
             PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+            PermissionEnum::COOPERATIVE_REPORT_VIEW->value,
+            PermissionEnum::COOPERATIVE_POINTS_MANAGE->value,
+            PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value,
+            PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value,
+            PermissionEnum::COOPERATIVE_SHU_MANAGE->value,
+            PermissionEnum::COOPERATIVE_LOAN_TYPES_MANAGE->value,
+            PermissionEnum::COOPERATIVE_LEDGER_VIEW->value,
+            PermissionEnum::COOPERATIVE_SETTINGS_MANAGE->value,
         ])) {
             $abilities[] = 'cooperative:read';
         }
@@ -89,7 +98,7 @@ class TokenAbilityResolver
         $abilities = array_values(array_unique($abilities));
 
         return match ($app) {
-            'member' => $this->only($abilities, ['profile:read', 'member:read', 'member:write', 'cooperative:read', 'cooperative:write']),
+            'member' => $this->only($abilities, ['profile:read', 'member:read', 'member:write']),
             'ess' => $this->only($abilities, ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read']),
             'technician' => $this->only($abilities, ['profile:read', 'work-orders:read', 'work-orders:write', 'work-orders:review']),
             default => $abilities,

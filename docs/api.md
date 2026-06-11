@@ -50,7 +50,7 @@ Content-Type: application/json
 {
   "token_type": "Bearer",
   "token": "1|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "abilities": ["profile:read", "member:read", "member:write", "cooperative:read", "cooperative:write"],
+  "abilities": ["profile:read", "member:read", "member:write"],
   "user": {
     "id": "uuid",
     "name": "User Name",
@@ -63,7 +63,7 @@ Content-Type: application/json
 ```
 
 **App Parameter:**
-- `member` - Kojayaku member app (abilities: `profile:read`, `member:read`, `member:write`, `cooperative:read`, `cooperative:write`)
+- `member` - Kojayaku member app (abilities: `profile:read`, `member:read`, `member:write`)
 - `ess` - Employee Self-Service (abilities: `ess:read`, `ess:write`, `attendance:read`, `attendance:write`, `payroll:read`)
 - `technician` - Technician app (abilities: `work-orders:read`, `work-orders:write`)
 - `admin` - Admin panel (abilities: `*` wildcard for System Admin/Admin Pusat)
@@ -2305,7 +2305,7 @@ Business error envelopes may additionally expose `error_code` values such as `PE
 | `*` | System Admin, Admin Pusat |
 | `profile:read` | All authenticated users |
 | `member:read`, `member:write` | Anggota, cooperative members |
-| `cooperative:read`, `cooperative:write` | Anggota, Pengurus Koperasi, Kasir Koperasi |
+| `cooperative:read`, `cooperative:write` | Admin/Pengurus/Kasir Koperasi sesuai permission operasional; bukan untuk token app anggota |
 | `ess:read`, `ess:write` | Employees |
 | `attendance:read`, `attendance:write` | Employees |
 | `payroll:read` | Employees |

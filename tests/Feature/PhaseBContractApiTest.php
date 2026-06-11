@@ -31,7 +31,8 @@ class PhaseBContractApiTest extends TestCase
     public static function personaAbilityProvider(): array
     {
         return [
-            'Anggota - member app' => ['Anggota', 'member', ['profile:read', 'member:read', 'member:write', 'cooperative:read', 'cooperative:write']],
+            'Anggota - member app' => ['Anggota', 'member', ['profile:read', 'member:read', 'member:write']],
+            'Anggota - default app' => ['Anggota', null, ['profile:read', 'member:read', 'member:write']],
             'Employee - ess app' => ['Employee', 'ess', ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read']],
             'Teknisi - technician app' => ['Technician', 'technician', ['profile:read', 'work-orders:read', 'work-orders:write']],
             'Pengurus Koperasi - default app' => ['Pengurus Koperasi', null, ['profile:read', 'cooperative:read', 'cooperative:write', 'pos:read', 'pos:write', 'reports:read']],

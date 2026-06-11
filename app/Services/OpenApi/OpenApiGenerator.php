@@ -241,7 +241,7 @@ class OpenApiGenerator
                 'type' => 'object',
                 'required' => ['app', 'device_id', 'push_token'],
                 'properties' => [
-                    'app' => ['type' => 'string', 'enum' => ['member', 'ess', 'technician'], 'example' => 'member'],
+                    'app' => ['type' => 'string', 'enum' => ['member', 'ess', 'technician', 'admin'], 'example' => 'member'],
                     'device_id' => ['type' => 'string', 'example' => 'android-member-1'],
                     'platform' => ['type' => 'string', 'enum' => ['android', 'ios'], 'nullable' => true],
                     'push_token' => ['type' => 'string'],

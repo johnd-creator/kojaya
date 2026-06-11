@@ -30,13 +30,17 @@ class Phase0MobileApiTest extends TestCase
         ])->assertOk();
 
         $response->assertJsonPath('token_type', 'Bearer')
-            ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write', 'cooperative:read', 'cooperative:write'])
+            ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write'])
             ->assertJsonPath('user.cooperative_member_id', $user->cooperativeMember->id);
 
         $this->withHeader('Authorization', 'Bearer '.$response->json('token'))
             ->getJson('/api/auth/session')
             ->assertOk()
             ->assertJsonPath('user.id', $user->id);
+
+        $this->withHeader('Authorization', 'Bearer '.$response->json('token'))
+            ->getJson('/api/v1/members')
+            ->assertForbidden();
     }
 
     public function test_invalid_mobile_login_is_rejected(): void

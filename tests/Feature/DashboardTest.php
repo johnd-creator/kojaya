@@ -76,6 +76,27 @@ class DashboardTest extends TestCase
             'status' => 'PARTIAL',
         ]);
 
+        $deletedMember = CooperativeMember::query()->create([
+            'organization_id' => $organization->id,
+            'member_no' => 'MBR-003',
+            'name' => 'Anggota Terhapus',
+            'email' => 'deleted@example.test',
+            'status' => 'ACTIVE',
+            'joined_at' => now()->subMonths(2)->toDateString(),
+        ]);
+
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $deletedMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => now()->format('Y-m'),
+            'amount' => 900000,
+            'paid_amount' => 0,
+            'due_date' => now()->endOfMonth()->toDateString(),
+            'status' => 'UNPAID',
+        ]);
+
+        $deletedMember->delete();
+
         $paidInvoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $activeMember->id,
             'cooperative_contribution_type_id' => $type->id,
@@ -174,6 +195,10 @@ class DashboardTest extends TestCase
                     ->where('dashboard.summary.pending_payments', 1)
                     ->where('dashboard.summary.low_stock_products', 1)
                     ->where('dashboard.workQueue.pending_members', 1)
+                    ->where('dashboard.workQueue.unpaid_dues', 1)
+                    ->where('dashboard.summary.unpaid_dues_amount', 75000)
+                    ->where('dashboard.collections.total_due', 100000)
+                    ->where('dashboard.collections.outstanding', 75000)
                     ->where('dashboard.collections.collection_rate', 25)
                     ->where('dashboard.pos.annual_gross_profit', 40000)
                     ->where('dashboard.shu.annual_pos_points', 40)

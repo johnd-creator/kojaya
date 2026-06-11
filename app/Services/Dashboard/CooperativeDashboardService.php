@@ -33,6 +33,7 @@ class CooperativeDashboardService
         $yearlyTransactions = PosTransaction::query()
             ->whereYear('sold_at', $year);
         $monthlyDues = CooperativeDuesInvoice::query()
+            ->forActiveMembers()
             ->where('period', $currentPeriod);
         $latestClosedShu = CooperativeShuPeriod::query()
             ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
@@ -49,6 +50,7 @@ class CooperativeDashboardService
             ->count();
         $pendingMembersCount = CooperativeMember::query()->where('status', 'PENDING')->count();
         $openDues = CooperativeDuesInvoice::query()
+            ->forActiveMembers()
             ->whereIn('status', ['UNPAID', 'PARTIAL']);
         $unpaidDuesCount = (clone $openDues)
             ->count();

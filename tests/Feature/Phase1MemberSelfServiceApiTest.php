@@ -111,6 +111,50 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             ->assertJsonMissingPath('data.0.cooperative_member_id');
     }
 
+    public function test_member_dashboard_and_invoice_list_ignore_deleted_invoices(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $visibleInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => now()->format('Y-m'),
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => now()->addWeek()->toDateString(),
+            'status' => 'UNPAID',
+        ]);
+        $deletedInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => now()->subMonth()->format('Y-m'),
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => now()->addWeek()->toDateString(),
+            'status' => 'UNPAID',
+        ]);
+        $deletedInvoice->delete();
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.summary.pending_invoices', 1);
+
+        $this->getJson('/api/v1/member/dues/invoices')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $visibleInvoice->id)
+            ->assertJsonMissing(['id' => $deletedInvoice->id]);
+    }
+
     public function test_member_can_upload_payment_proof_for_own_invoice(): void
     {
         Storage::fake('public');

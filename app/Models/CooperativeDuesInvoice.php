@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CooperativeDuesInvoice extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'cooperative_member_id',
         'cooperative_contribution_type_id',
@@ -25,6 +28,7 @@ class CooperativeDuesInvoice extends Model
             'amount' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'due_date' => 'date',
+            'deleted_at' => 'datetime',
         ];
     }
 

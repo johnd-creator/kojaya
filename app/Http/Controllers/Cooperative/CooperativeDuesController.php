@@ -90,6 +90,7 @@ class CooperativeDuesController extends Controller
                 'period' => $period,
                 'status' => $status,
             ],
+            'monthlyDuesInfo' => $this->monthlyDuesInfo($period),
             'canResetPaidDues' => $this->canResetPaidDues($request),
         ]);
     }
@@ -185,6 +186,73 @@ class CooperativeDuesController extends Controller
         return $user->can('manage_cooperative_dues')
             && $user->can('manage_cooperative_settings')
             && $user->can('view_user_all');
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function monthlyDuesInfo(string $period): ?array
+    {
+        $type = CooperativeContributionType::query()
+            ->where('is_active', true)
+            ->where('frequency', 'MONTHLY')
+            ->where(function (Builder $query): void {
+                $query->where('code', 'WAJIB')
+                    ->orWhere('category', 'WAJIB');
+            })
+            ->orderByRaw("CASE WHEN code = 'WAJIB' THEN 0 ELSE 1 END")
+            ->first();
+
+        if (! $type) {
+            return null;
+        }
+
+        $periodDate = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
+        $aggregate = CooperativeDuesInvoice::query()
+            ->forActiveMembers()
+            ->where('period', $period)
+            ->where('cooperative_contribution_type_id', $type->id)
+            ->selectRaw(
+                'COUNT(*) as total_invoices,
+                 COALESCE(SUM(amount), 0) as total_nominal,
+                 COALESCE(SUM(paid_amount), 0) as total_paid,
+                 COALESCE(SUM(CASE WHEN amount - paid_amount > 0 THEN amount - paid_amount ELSE 0 END), 0) as total_outstanding'
+            )
+            ->first();
+
+        return [
+            'title' => $type->name.' '.$this->periodLabel($periodDate),
+            'period' => $period,
+            'period_label' => $this->periodLabel($periodDate),
+            'next_period_label' => $this->periodLabel($periodDate->addMonth()),
+            'type_name' => $type->name,
+            'amount' => (float) $type->default_amount,
+            'due_date' => $periodDate->day(10)->toDateString(),
+            'total_invoices' => (int) ($aggregate->total_invoices ?? 0),
+            'total_nominal' => (float) ($aggregate->total_nominal ?? 0),
+            'total_paid' => (float) ($aggregate->total_paid ?? 0),
+            'total_outstanding' => (float) ($aggregate->total_outstanding ?? 0),
+        ];
+    }
+
+    private function periodLabel(CarbonImmutable $periodDate): string
+    {
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        return ($months[(int) $periodDate->format('n')] ?? $periodDate->format('F')).' '.$periodDate->format('Y');
     }
 
     private function applyMemberSearch(Builder $query, string $search): void

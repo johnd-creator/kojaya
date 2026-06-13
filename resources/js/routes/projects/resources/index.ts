@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFo
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-export const index = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const index = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ index.definition = {
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-index.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+index.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -52,7 +52,7 @@ index.url = (args: { project: string | { id: string } } | [project: string | { i
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-index.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+index.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ index.get = (args: { project: string | { id: string } } | [project: string | { i
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-index.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+index.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(args, options),
     method: 'head',
 })
@@ -72,7 +72,7 @@ index.head = (args: { project: string | { id: string } } | [project: string | { 
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const indexForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url(args, options),
     method: 'get',
 })
@@ -82,7 +82,7 @@ const indexForm = (args: { project: string | { id: string } } | [project: string
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+indexForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url(args, options),
     method: 'get',
 })
@@ -92,7 +92,7 @@ indexForm.get = (args: { project: string | { id: string } } | [project: string |
 * @see app/Http/Controllers/ProjectResourceController.php:14
 * @route '/projects/{project}/resources'
 */
-indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+indexForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -109,7 +109,7 @@ index.form = indexForm
 * @see app/Http/Controllers/ProjectResourceController.php:34
 * @route '/projects/{project}/resources/assets'
 */
-export const storeAsset = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const storeAsset = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeAsset.url(args, options),
     method: 'post',
 })
@@ -124,7 +124,7 @@ storeAsset.definition = {
 * @see app/Http/Controllers/ProjectResourceController.php:34
 * @route '/projects/{project}/resources/assets'
 */
-storeAsset.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+storeAsset.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -157,7 +157,7 @@ storeAsset.url = (args: { project: string | { id: string } } | [project: string 
 * @see app/Http/Controllers/ProjectResourceController.php:34
 * @route '/projects/{project}/resources/assets'
 */
-storeAsset.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+storeAsset.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeAsset.url(args, options),
     method: 'post',
 })
@@ -167,7 +167,7 @@ storeAsset.post = (args: { project: string | { id: string } } | [project: string
 * @see app/Http/Controllers/ProjectResourceController.php:34
 * @route '/projects/{project}/resources/assets'
 */
-const storeAssetForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const storeAssetForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: storeAsset.url(args, options),
     method: 'post',
 })
@@ -177,7 +177,7 @@ const storeAssetForm = (args: { project: string | { id: string } } | [project: s
 * @see app/Http/Controllers/ProjectResourceController.php:34
 * @route '/projects/{project}/resources/assets'
 */
-storeAssetForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+storeAssetForm.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: storeAsset.url(args, options),
     method: 'post',
 })
@@ -189,7 +189,7 @@ storeAsset.form = storeAssetForm
 * @see app/Http/Controllers/ProjectResourceController.php:64
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-export const updateAsset = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateAsset = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateAsset.url(args, options),
     method: 'put',
 })
@@ -204,7 +204,7 @@ updateAsset.definition = {
 * @see app/Http/Controllers/ProjectResourceController.php:64
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-updateAsset.url = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions) => {
+updateAsset.url = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -234,7 +234,7 @@ updateAsset.url = (args: { project: string | { id: string }, allocation: string 
 * @see app/Http/Controllers/ProjectResourceController.php:64
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-updateAsset.put = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateAsset.put = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateAsset.url(args, options),
     method: 'put',
 })
@@ -244,7 +244,7 @@ updateAsset.put = (args: { project: string | { id: string }, allocation: string 
 * @see app/Http/Controllers/ProjectResourceController.php:64
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-const updateAssetForm = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const updateAssetForm = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: updateAsset.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -259,7 +259,7 @@ const updateAssetForm = (args: { project: string | { id: string }, allocation: s
 * @see app/Http/Controllers/ProjectResourceController.php:64
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-updateAssetForm.put = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateAssetForm.put = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: updateAsset.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -276,7 +276,7 @@ updateAsset.form = updateAssetForm
 * @see app/Http/Controllers/ProjectResourceController.php:93
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-export const destroyAsset = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroyAsset = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroyAsset.url(args, options),
     method: 'delete',
 })
@@ -291,7 +291,7 @@ destroyAsset.definition = {
 * @see app/Http/Controllers/ProjectResourceController.php:93
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-destroyAsset.url = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions) => {
+destroyAsset.url = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -321,7 +321,7 @@ destroyAsset.url = (args: { project: string | { id: string }, allocation: string
 * @see app/Http/Controllers/ProjectResourceController.php:93
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-destroyAsset.delete = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroyAsset.delete = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroyAsset.url(args, options),
     method: 'delete',
 })
@@ -331,7 +331,7 @@ destroyAsset.delete = (args: { project: string | { id: string }, allocation: str
 * @see app/Http/Controllers/ProjectResourceController.php:93
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-const destroyAssetForm = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const destroyAssetForm = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: destroyAsset.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'DELETE',
@@ -346,7 +346,7 @@ const destroyAssetForm = (args: { project: string | { id: string }, allocation: 
 * @see app/Http/Controllers/ProjectResourceController.php:93
 * @route '/projects/{project}/resources/assets/{allocation}'
 */
-destroyAssetForm.delete = (args: { project: string | { id: string }, allocation: string | { id: string } } | [project: string | { id: string }, allocation: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+destroyAssetForm.delete = (args: { project: string | number | { id: string | number }, allocation: string | number | { id: string | number } } | [project: string | number | { id: string | number }, allocation: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: destroyAsset.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'DELETE',

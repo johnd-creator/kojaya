@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\LoanApiController;
 use App\Http\Controllers\Api\V1\MemberSelfServiceController;
 use App\Http\Controllers\Api\V1\PointApiController;
 use App\Http\Controllers\Api\V1\PosApiController;
+use App\Http\Controllers\Api\V1\PosSyncApiController;
 use App\Http\Controllers\Api\V1\ProcurementApiController;
 use App\Http\Controllers\Api\V1\RewardApiController;
 use App\Http\Controllers\Api\V1\SavingsApiController;
@@ -103,6 +104,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::get('/pos/products', [PosApiController::class, 'products'])->middleware('ability:pos:read');
     Route::post('/pos/transactions', [PosApiController::class, 'store'])->middleware(['ability:pos:write', 'throttle:api-write', 'idempotent']);
     Route::post('/pos/returns', [PosApiController::class, 'processReturn'])->middleware(['ability:pos:write', 'throttle:api-write', 'idempotent']);
+
+    Route::get('/pos/sync/catalog', [PosSyncApiController::class, 'catalog'])->middleware('ability:pos:read');
+    Route::post('/pos/sync/enqueue', [PosSyncApiController::class, 'enqueue'])->middleware(['ability:pos:write', 'throttle:api-write']);
+    Route::post('/pos/sync/process/{idempotency_key}', [PosSyncApiController::class, 'process'])->middleware(['ability:pos:write', 'throttle:api-write']);
+    Route::post('/pos/sync/batch', [PosSyncApiController::class, 'processBatch'])->middleware(['ability:pos:write', 'throttle:api-write']);
+    Route::get('/pos/sync/status/{idempotency_key}', [PosSyncApiController::class, 'status'])->middleware('ability:pos:read');
     Route::get('/reports/cooperative-summary', [CooperativeReportController::class, 'summary'])->middleware('ability:reports:read');
     Route::get('/reports/sales', [CooperativeReportController::class, 'sales'])->middleware('ability:reports:read');
     Route::get('/reports/npl-aging', [CooperativeReportController::class, 'nplAging'])->middleware('ability:reports:read');

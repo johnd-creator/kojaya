@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3";
-import { Layers, Sparkles } from "lucide-vue-next";
-import { ref } from "vue";
+import { Layers, Sparkles, X } from "lucide-vue-next";
+import { computed, ref } from "vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Badge } from "@/components/ui/badge";
@@ -13,15 +13,60 @@ import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { index, show } from "@/routes/cooperative/pos/transactions";
 
-const props = defineProps<{ transactions: any; filters: any }>();
+const props = defineProps<{
+  transactions: any;
+  filters: {
+    date_from?: string;
+    date_to?: string;
+    transaction_no?: string;
+    member_id?: string;
+    cashier_id?: string;
+    payment_method?: string;
+  };
+  cashiers: { id: number; name: string }[];
+  members: { id: number; member_no: string; name: string }[];
+}>();
+
 const dateFrom = ref(props.filters.date_from ?? "");
 const dateTo = ref(props.filters.date_to ?? "");
+const transactionNo = ref(props.filters.transaction_no ?? "");
+const memberId = ref(props.filters.member_id ?? "");
+const cashierId = ref(props.filters.cashier_id ?? "");
+const paymentMethod = ref(props.filters.payment_method ?? "");
+
 const applyFilters = () =>
   router.get(
     index().url,
-    { date_from: dateFrom.value, date_to: dateTo.value },
+    {
+      date_from: dateFrom.value || undefined,
+      date_to: dateTo.value || undefined,
+      transaction_no: transactionNo.value || undefined,
+      member_id: memberId.value || undefined,
+      cashier_id: cashierId.value || undefined,
+      payment_method: paymentMethod.value || undefined,
+    },
     { preserveState: true, replace: true },
   );
+
+const resetFilters = () => {
+  dateFrom.value = "";
+  dateTo.value = "";
+  transactionNo.value = "";
+  memberId.value = "";
+  cashierId.value = "";
+  paymentMethod.value = "";
+  router.get(index().url, {}, { preserveState: true, replace: true });
+};
+
+const hasActiveFilters = computed(
+  () =>
+    dateFrom.value ||
+    dateTo.value ||
+    transactionNo.value ||
+    memberId.value ||
+    cashierId.value ||
+    paymentMethod.value,
+);
 
 const columns = [
   { header: "Transaksi", key: "transaction_no", slot: "transaction" },
@@ -73,32 +118,102 @@ const columns = [
               Transaksi kasir toko koperasi.
             </p>
           </div>
-          <div
-            class="flex items-end gap-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/40"
-          >
-            <div class="space-y-1">
-              <label
-                class="text-[11px] font-medium uppercase text-zinc-500"
-                for="tx-from"
-                >Mulai</label
-              >
-              <Input id="tx-from" v-model="dateFrom" type="date" class="w-36" />
-            </div>
-            <div class="space-y-1">
-              <label
-                class="text-[11px] font-medium uppercase text-zinc-500"
-                for="tx-to"
-                >Sampai</label
-              >
-              <Input id="tx-to" v-model="dateTo" type="date" class="w-36" />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              class="mb-0.5"
-              @click="applyFilters"
-              >Filter</Button
+        </div>
+
+        <div
+          class="relative mt-4 grid grid-cols-1 gap-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-6 dark:border-zinc-800/80 dark:bg-zinc-950/40"
+        >
+          <div class="space-y-1">
+            <label
+              class="text-[11px] font-medium uppercase text-zinc-500"
+              for="tx-from"
+              >Mulai</label
             >
+            <Input id="tx-from" v-model="dateFrom" type="date" class="w-full" />
+          </div>
+          <div class="space-y-1">
+            <label
+              class="text-[11px] font-medium uppercase text-zinc-500"
+              for="tx-to"
+              >Sampai</label
+            >
+            <Input id="tx-to" v-model="dateTo" type="date" class="w-full" />
+          </div>
+          <div class="space-y-1">
+            <label
+              class="text-[11px] font-medium uppercase text-zinc-500"
+              for="tx-no"
+              >No. Transaksi</label
+            >
+            <Input
+              id="tx-no"
+              v-model="transactionNo"
+              placeholder="POS-…"
+              class="w-full"
+            />
+          </div>
+          <div class="space-y-1">
+            <label
+              class="text-[11px] font-medium uppercase text-zinc-500"
+              for="tx-member"
+              >Anggota</label
+            >
+            <select
+              id="tx-member"
+              v-model="memberId"
+              class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              <option value="">Semua anggota</option>
+              <option v-for="m in members" :key="m.id" :value="m.id">
+                {{ m.member_no }} - {{ m.name }}
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label
+              class="text-[11px] font-medium uppercase text-zinc-500"
+              for="tx-cashier"
+              >Kasir</label
+            >
+            <select
+              id="tx-cashier"
+              v-model="cashierId"
+              class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              <option value="">Semua kasir</option>
+              <option v-for="c in cashiers" :key="c.id" :value="c.id">
+                {{ c.name }}
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label
+              class="text-[11px] font-medium uppercase text-zinc-500"
+              for="tx-method"
+              >Metode</label
+            >
+            <select
+              id="tx-method"
+              v-model="paymentMethod"
+              class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              <option value="">Semua metode</option>
+              <option value="CASH">CASH</option>
+              <option value="TRANSFER">TRANSFER</option>
+              <option value="QRIS">QRIS</option>
+              <option value="MEMBER_CREDIT">Kredit Anggota</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-6">
+            <Button class="flex-1" @click="applyFilters">Terapkan Filter</Button>
+            <Button
+              v-if="hasActiveFilters"
+              variant="outline"
+              type="button"
+              @click="resetFilters"
+            >
+              <X class="mr-1.5 size-4" /> Reset
+            </Button>
           </div>
         </div>
       </section>
@@ -148,6 +263,13 @@ const columns = [
               >
             </template>
           </DataTable>
+          <div
+            v-if="transactions.data?.length === 0"
+            class="flex flex-col items-center gap-2 px-6 py-12 text-sm text-zinc-500"
+          >
+            <Layers class="size-8 text-zinc-300 dark:text-zinc-700" />
+            <p>Belum ada transaksi dengan filter saat ini.</p>
+          </div>
         </CardContent>
       </Card>
     </PageContainer>

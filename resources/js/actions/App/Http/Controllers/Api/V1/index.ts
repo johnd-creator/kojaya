@@ -7,6 +7,7 @@ import LoanApiController from './LoanApiController'
 import PointApiController from './PointApiController'
 import RewardApiController from './RewardApiController'
 import PosApiController from './PosApiController'
+import PosSyncApiController from './PosSyncApiController'
 import ProcurementApiController from './ProcurementApiController'
 
 const V1 = {
@@ -19,6 +20,7 @@ const V1 = {
     PointApiController: Object.assign(PointApiController, PointApiController),
     RewardApiController: Object.assign(RewardApiController, RewardApiController),
     PosApiController: Object.assign(PosApiController, PosApiController),
+    PosSyncApiController: Object.assign(PosSyncApiController, PosSyncApiController),
     ProcurementApiController: Object.assign(ProcurementApiController, ProcurementApiController),
 }
 

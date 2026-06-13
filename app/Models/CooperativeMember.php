@@ -53,6 +53,10 @@ class CooperativeMember extends Model
         'pekerjaan',
         'perusahaan',
         'notes',
+        'credit_limit',
+        'outstanding_balance',
+        'credit_term_days',
+        'credit_tier',
     ];
 
     public const VALIDATION_PENDING = 'PENDING';
@@ -89,7 +93,29 @@ class CooperativeMember extends Model
             'profile_completed_at' => 'datetime',
             'onboarding_submitted_at' => 'datetime',
             'last_sso_login_at' => 'datetime',
+            'credit_limit' => 'decimal:2',
+            'outstanding_balance' => 'decimal:2',
         ];
+    }
+
+    public function creditPayments(): HasMany
+    {
+        return $this->hasMany(PosMemberCreditPayment::class);
+    }
+
+    public function availableCredit(): float
+    {
+        return max((float) $this->credit_limit - (float) $this->outstanding_balance, 0);
+    }
+
+    public function hasAvailableCredit(float $amount): bool
+    {
+        $limit = (float) $this->credit_limit;
+        if ($limit <= 0) {
+            return false;
+        }
+
+        return $this->availableCredit() >= $amount;
     }
 
     public function organization(): BelongsTo
@@ -155,6 +181,16 @@ class CooperativeMember extends Model
     public function posMemberPoints(): HasMany
     {
         return $this->hasMany(PosMemberPoint::class, 'cooperative_member_id');
+    }
+
+    public function posTransactions(): HasMany
+    {
+        return $this->hasMany(PosTransaction::class, 'cooperative_member_id');
+    }
+
+    public function posReturns(): HasMany
+    {
+        return $this->hasMany(PosReturn::class, 'cooperative_member_id');
     }
 
     public function pointTransactions(): HasMany

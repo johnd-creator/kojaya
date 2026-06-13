@@ -123,6 +123,7 @@ enum PermissionEnum: string
     case POS_PRODUCTS_MANAGE = 'manage_pos_products';
     case POS_REPORTS_VIEW = 'view_pos_reports';
     case POS_SHU_MANAGE = 'manage_pos_shu';
+    case POS_VOID_APPROVE = 'approve_pos_void';
     case COOPERATIVE_LEDGER_VIEW = 'view_cooperative_ledger';
     case COOPERATIVE_LEDGER_MANAGE = 'manage_cooperative_ledger';
     case COOPERATIVE_VIEW_ALL = 'view_cooperative_all';

@@ -12,10 +12,19 @@ import RewardRedemptionController from './RewardRedemptionController'
 import AnnualShuController from './AnnualShuController'
 import PosRegisterController from './PosRegisterController'
 import PosTransactionHistoryController from './PosTransactionHistoryController'
-import PosSalesReportController from './PosSalesReportController'
+import PosTransactionReceiptController from './PosTransactionReceiptController'
+import PosVoidController from './PosVoidController'
+import PosReturnController from './PosReturnController'
+import PosMemberCreditController from './PosMemberCreditController'
 import PosAnnualShuController from './PosAnnualShuController'
 import PosCategoryController from './PosCategoryController'
 import PosProductController from './PosProductController'
+import PosReportController from './PosReportController'
+import PosShiftController from './PosShiftController'
+import PosDailyClosingController from './PosDailyClosingController'
+import PosInventoryReceiptController from './PosInventoryReceiptController'
+import PosInventoryTransferController from './PosInventoryTransferController'
+import PosInventoryCountController from './PosInventoryCountController'
 import OperatorProcedureController from './OperatorProcedureController'
 
 const Cooperative = {
@@ -33,10 +42,19 @@ const Cooperative = {
     AnnualShuController: Object.assign(AnnualShuController, AnnualShuController),
     PosRegisterController: Object.assign(PosRegisterController, PosRegisterController),
     PosTransactionHistoryController: Object.assign(PosTransactionHistoryController, PosTransactionHistoryController),
-    PosSalesReportController: Object.assign(PosSalesReportController, PosSalesReportController),
+    PosTransactionReceiptController: Object.assign(PosTransactionReceiptController, PosTransactionReceiptController),
+    PosVoidController: Object.assign(PosVoidController, PosVoidController),
+    PosReturnController: Object.assign(PosReturnController, PosReturnController),
+    PosMemberCreditController: Object.assign(PosMemberCreditController, PosMemberCreditController),
     PosAnnualShuController: Object.assign(PosAnnualShuController, PosAnnualShuController),
     PosCategoryController: Object.assign(PosCategoryController, PosCategoryController),
     PosProductController: Object.assign(PosProductController, PosProductController),
+    PosReportController: Object.assign(PosReportController, PosReportController),
+    PosShiftController: Object.assign(PosShiftController, PosShiftController),
+    PosDailyClosingController: Object.assign(PosDailyClosingController, PosDailyClosingController),
+    PosInventoryReceiptController: Object.assign(PosInventoryReceiptController, PosInventoryReceiptController),
+    PosInventoryTransferController: Object.assign(PosInventoryTransferController, PosInventoryTransferController),
+    PosInventoryCountController: Object.assign(PosInventoryCountController, PosInventoryCountController),
     OperatorProcedureController: Object.assign(OperatorProcedureController, OperatorProcedureController),
 }
 

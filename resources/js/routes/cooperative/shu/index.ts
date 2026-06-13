@@ -141,7 +141,7 @@ close.form = closeForm
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-export const requestRevision = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const requestRevision = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: requestRevision.url(args, options),
     method: 'post',
 })
@@ -156,7 +156,7 @@ requestRevision.definition = {
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-requestRevision.url = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+requestRevision.url = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { period: args }
     }
@@ -189,7 +189,7 @@ requestRevision.url = (args: { period: number | { id: number } } | [period: numb
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-requestRevision.post = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+requestRevision.post = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: requestRevision.url(args, options),
     method: 'post',
 })
@@ -199,7 +199,7 @@ requestRevision.post = (args: { period: number | { id: number } } | [period: num
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-const requestRevisionForm = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const requestRevisionForm = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: requestRevision.url(args, options),
     method: 'post',
 })
@@ -209,7 +209,7 @@ const requestRevisionForm = (args: { period: number | { id: number } } | [period
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-requestRevisionForm.post = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+requestRevisionForm.post = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: requestRevision.url(args, options),
     method: 'post',
 })

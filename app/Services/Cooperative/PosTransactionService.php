@@ -5,8 +5,8 @@ namespace App\Services\Cooperative;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\PosProduct;
-use App\Models\PosStockMovement;
 use App\Models\PosTransaction;
+use App\Models\PosVoidRequest;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,12 @@ use Illuminate\Validation\ValidationException;
 
 class PosTransactionService
 {
-    public function __construct(private MemberPointService $memberPointService) {}
+    public function __construct(
+        private MemberPointService $memberPointService,
+        private PosInventoryService $inventory,
+        private PosClosingGuard $closingGuard,
+        private PosJournalPostingService $journal,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -29,23 +34,20 @@ class PosTransactionService
 
             if ($existing) {
                 $this->memberPointService->postFromTransaction($existing);
+                $this->journal->postSale($existing);
+                $this->journal->postCogs($existing);
+                $this->journal->postMemberCredit($existing);
 
                 return $existing;
             }
         }
 
-        try {
-            return DB::transaction(function () use ($data, $cashier): PosTransaction {
-                $paymentMethod = $data['payment_method'];
-                $memberId = $data['cooperative_member_id'] ?? null;
+        $saleDate = ($data['sold_at'] ?? null) ?: now()->toDateString();
+        $this->closingGuard->guardSale((string) $saleDate);
 
-                if ($paymentMethod === 'MEMBER_CREDIT') {
-                    if (! $memberId || ! CooperativeMember::query()->whereKey($memberId)->where('status', 'ACTIVE')->exists()) {
-                        throw ValidationException::withMessages([
-                            'cooperative_member_id' => 'Member credit requires an active cooperative member.',
-                        ]);
-                    }
-                }
+        try {
+            return DB::transaction(function () use ($data, $cashier, $saleDate): PosTransaction {
+                $memberId = $data['cooperative_member_id'] ?? null;
 
                 $subtotal = 0;
                 $grossProfit = 0;
@@ -55,9 +57,9 @@ class PosTransactionService
                     $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
                     $quantity = (int) $item['quantity'];
 
-                    if (! $product->is_active || $product->stock < $quantity) {
+                    if ($product->is_discontinued || ! $product->is_active || $product->stock < $quantity) {
                         throw ValidationException::withMessages([
-                            'items' => "Insufficient stock for {$product->name}.",
+                            'items' => "Produk {$product->name} tidak tersedia atau stok tidak cukup.",
                         ]);
                     }
 
@@ -70,20 +72,69 @@ class PosTransactionService
                 }
 
                 $discount = (float) ($data['discount_amount'] ?? 0);
+                if ($discount > $subtotal) {
+                    throw ValidationException::withMessages([
+                        'discount_amount' => 'Diskon tidak boleh melebihi subtotal.',
+                    ]);
+                }
                 $total = max($subtotal - $discount, 0);
+
+                $payments = $this->normalizePayments($data, $total);
+
+                $member = $memberId ? CooperativeMember::query()->whereKey($memberId)->first() : null;
+                if ($this->paymentsRequireMember($payments) && (! $member || $member->status !== 'ACTIVE')) {
+                    throw ValidationException::withMessages([
+                        'cooperative_member_id' => 'Pembayaran kredit anggota membutuhkan anggota aktif.',
+                    ]);
+                }
+
+                if ($member && $this->memberCreditAmount($payments) > 0 && ! $member->hasAvailableCredit($this->memberCreditAmount($payments))) {
+                    throw ValidationException::withMessages([
+                        'cooperative_member_id' => 'Limit kredit anggota tidak cukup. Sisa: Rp '.number_format($member->availableCredit(), 0, ',', '.'),
+                    ]);
+                }
+
+                $paymentTotal = array_sum(array_map(fn ($p) => (float) $p['amount'], $payments));
+                if (abs($paymentTotal - $total) > 0.005) {
+                    throw ValidationException::withMessages([
+                        'payments' => 'Total pembayaran harus sama dengan total tagihan.',
+                    ]);
+                }
+
+                $cashReceived = null;
+                $cashChange = null;
+                $hasMultiplePayments = count($payments) > 1;
+                foreach ($payments as $payment) {
+                    if ($payment['payment_method'] === 'CASH') {
+                        $cashReceived = isset($data['cash_received']) && $data['cash_received'] !== null
+                            ? (float) $data['cash_received']
+                            : (float) $payment['amount'];
+                        if (! $hasMultiplePayments && $cashReceived + 0.005 < $total) {
+                            throw ValidationException::withMessages([
+                                'cash_received' => 'Tunai diterima kurang dari total tagihan.',
+                            ]);
+                        }
+                        $cashChange = round(max($cashReceived - ($hasMultiplePayments ? $payment['amount'] : $total), 0), 2);
+                    }
+                }
 
                 $transaction = PosTransaction::query()->create([
                     'transaction_no' => $this->nextTransactionNo(),
                     'client_reference' => $data['client_reference'] ?? null,
                     'cooperative_member_id' => $memberId,
                     'cashier_id' => $cashier?->id,
+                    'pos_cashier_shift_id' => $data['pos_cashier_shift_id'] ?? null,
                     'subtotal' => $subtotal,
                     'discount_amount' => $discount,
                     'total_amount' => $total,
                     'gross_profit' => max($grossProfit - $discount, 0),
+                    'cash_received' => $cashReceived,
+                    'cash_change' => $cashChange,
                     'status' => 'COMPLETED',
-                    'sold_at' => now(),
+                    'sold_at' => $saleDate,
                 ]);
+
+                $location = $this->inventory->resolveLocationFor($data['pos_cashier_shift_id'] ?? null);
 
                 foreach ($items as [$product, $quantity, $lineTotal, $unitProfit, $lineProfit]) {
                     $transaction->items()->create([
@@ -96,43 +147,48 @@ class PosTransactionService
                         'line_profit' => $lineProfit,
                     ]);
 
-                    $stockBefore = $product->stock;
-                    $product->decrement('stock', $quantity);
-                    $product->refresh();
+                    $this->inventory->sellStock(
+                        product: $product,
+                        location: $location,
+                        quantity: $quantity,
+                        sourceType: PosTransaction::class,
+                        sourceId: $transaction->id,
+                        referenceNo: $transaction->transaction_no,
+                        movementType: 'SALE',
+                    );
+                }
 
-                    PosStockMovement::query()->create([
-                        'pos_product_id' => $product->id,
-                        'source_type' => PosTransaction::class,
-                        'source_id' => $transaction->id,
-                        'movement_type' => 'SALE',
-                        'quantity' => -$quantity,
-                        'stock_before' => $stockBefore,
-                        'stock_after' => $product->stock,
-                        'notes' => "POS transaction {$transaction->transaction_no}",
+                foreach ($payments as $payment) {
+                    $transaction->payments()->create([
+                        'payment_method' => $payment['payment_method'],
+                        'amount' => $payment['amount'],
+                        'reference_no' => $payment['reference_no'] ?? null,
                     ]);
                 }
 
-                $transaction->payments()->create([
-                    'payment_method' => $paymentMethod,
-                    'amount' => $total,
-                    'reference_no' => $data['reference_no'] ?? null,
-                ]);
+                foreach ($payments as $payment) {
+                    if ($payment['payment_method'] === 'MEMBER_CREDIT' && $member) {
+                        CooperativeLedgerEntry::query()->create([
+                            'cooperative_member_id' => $member->id,
+                            'source_type' => PosTransaction::class,
+                            'source_id' => $transaction->id,
+                            'entry_type' => 'POS_MEMBER_CREDIT',
+                            'ledger_scope' => 'POS',
+                            'debit' => $payment['amount'],
+                            'credit' => 0,
+                            'description' => "Kredit belanja POS {$transaction->transaction_no}",
+                            'posted_at' => now()->toDateString(),
+                        ]);
 
-                if ($paymentMethod === 'MEMBER_CREDIT' && $memberId) {
-                    CooperativeLedgerEntry::query()->create([
-                        'cooperative_member_id' => $memberId,
-                        'source_type' => PosTransaction::class,
-                        'source_id' => $transaction->id,
-                        'entry_type' => 'POS_MEMBER_CREDIT',
-                        'ledger_scope' => 'POS',
-                        'debit' => $total,
-                        'credit' => 0,
-                        'description' => "Kredit belanja POS {$transaction->transaction_no}",
-                        'posted_at' => now()->toDateString(),
-                    ]);
+                        $member->increment('outstanding_balance', (float) $payment['amount']);
+                    }
                 }
 
                 $this->memberPointService->postFromTransaction($transaction->refresh());
+
+                $this->journal->postSale($transaction);
+                $this->journal->postCogs($transaction);
+                $this->journal->postMemberCredit($transaction);
 
                 return $transaction->load(['items.product', 'payments', 'member']);
             });
@@ -146,6 +202,9 @@ class PosTransactionService
 
                     if ($existing) {
                         $this->memberPointService->postFromTransaction($existing);
+                        $this->journal->postSale($existing);
+                        $this->journal->postCogs($existing);
+                        $this->journal->postMemberCredit($existing);
 
                         return $existing;
                     }
@@ -158,8 +217,178 @@ class PosTransactionService
         }
     }
 
+    public function requestVoid(PosTransaction $transaction, User $requester, string $reason): PosVoidRequest
+    {
+        if ($transaction->isVoided()) {
+            throw ValidationException::withMessages([
+                'transaction' => 'Transaksi sudah di-void sebelumnya.',
+            ]);
+        }
+
+        if ($transaction->hasOpenVoidRequest()) {
+            throw ValidationException::withMessages([
+                'transaction' => 'Masih ada pengajuan void yang menunggu persetujuan.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($transaction, $requester, $reason) {
+            $request = PosVoidRequest::query()->create([
+                'pos_transaction_id' => $transaction->id,
+                'requested_by' => $requester->id,
+                'reason' => $reason,
+                'status' => PosVoidRequest::STATUS_PENDING,
+            ]);
+
+            $transaction->update(['status' => 'VOID_PENDING']);
+
+            return $request;
+        });
+    }
+
+    public function approveVoid(PosVoidRequest $request, User $supervisor): PosTransaction
+    {
+        if (! $request->isPending()) {
+            throw ValidationException::withMessages([
+                'request' => 'Pengajuan void sudah diproses.',
+            ]);
+        }
+
+        $transaction = $request->transaction()->lockForUpdate()->with('payments')->firstOrFail();
+
+        $this->closingGuard->guardVoid($transaction);
+
+        return DB::transaction(function () use ($request, $supervisor, $transaction): PosTransaction {
+            if ($transaction->isVoided()) {
+                throw ValidationException::withMessages([
+                    'transaction' => 'Transaksi sudah di-void.',
+                ]);
+            }
+
+            foreach ($transaction->items as $item) {
+                $product = PosProduct::query()->lockForUpdate()->find($item->pos_product_id);
+                if (! $product) {
+                    continue;
+                }
+                $location = $this->inventory->resolveLocationFor($transaction->pos_cashier_shift_id);
+                $this->inventory->restoreSaleStock(
+                    product: $product,
+                    location: $location,
+                    quantity: (int) $item->quantity,
+                    sourceType: PosTransaction::class,
+                    sourceId: $transaction->id,
+                    referenceNo: $transaction->transaction_no,
+                    movementType: 'VOID',
+                );
+            }
+
+            if ($transaction->cooperative_member_id) {
+                $member = CooperativeMember::query()->lockForUpdate()->find($transaction->cooperative_member_id);
+                $creditPayments = $transaction->payments->where('payment_method', 'MEMBER_CREDIT');
+
+                if ($member && $creditPayments->isNotEmpty()) {
+                    $amount = (float) $creditPayments->sum('amount');
+                    $newOutstanding = max((float) $member->outstanding_balance - $amount, 0);
+                    DB::table('cooperative_members')
+                        ->where('id', $member->id)
+                        ->update(['outstanding_balance' => $newOutstanding]);
+                }
+            }
+
+            $this->journal->postVoidReversal($transaction->refresh());
+
+            $transaction->update([
+                'status' => 'VOIDED',
+                'voided_at' => now(),
+                'voided_by' => $supervisor->id,
+                'void_reason' => $request->reason,
+                'gross_profit' => 0,
+            ]);
+
+            $request->update([
+                'status' => PosVoidRequest::STATUS_APPROVED,
+                'approved_by' => $supervisor->id,
+                'approved_at' => now(),
+            ]);
+
+            return $transaction->refresh();
+        });
+    }
+
+    public function rejectVoid(PosVoidRequest $request, User $supervisor, ?string $reason = null): PosVoidRequest
+    {
+        if (! $request->isPending()) {
+            throw ValidationException::withMessages([
+                'request' => 'Pengajuan void sudah diproses.',
+            ]);
+        }
+
+        $request->update([
+            'status' => PosVoidRequest::STATUS_REJECTED,
+            'approved_by' => $supervisor->id,
+            'approved_at' => now(),
+            'rejection_reason' => $reason,
+        ]);
+
+        $request->transaction()->update(['status' => 'COMPLETED']);
+
+        return $request;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<int, array{payment_method: string, amount: float, reference_no: ?string}>
+     */
+    private function normalizePayments(array $data, float $total = 0): array
+    {
+        if (isset($data['payments']) && is_array($data['payments'])) {
+            return collect($data['payments'])
+                ->map(fn ($p) => [
+                    'payment_method' => strtoupper((string) $p['payment_method']),
+                    'amount' => (float) $p['amount'],
+                    'reference_no' => $p['reference_no'] ?? null,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $method = strtoupper((string) ($data['payment_method'] ?? 'CASH'));
+
+        $amount = match (true) {
+            $method === 'CASH' => $total,
+            $method === 'MEMBER_CREDIT' => $total,
+            isset($data['amount']) => (float) $data['amount'],
+            $total > 0 => $total,
+            default => 0.0,
+        };
+
+        return [[
+            'payment_method' => $method,
+            'amount' => $amount,
+            'reference_no' => $data['reference_no'] ?? null,
+        ]];
+    }
+
+    private function paymentsRequireMember(array $payments): bool
+    {
+        foreach ($payments as $payment) {
+            if ($payment['payment_method'] === 'MEMBER_CREDIT') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function memberCreditAmount(array $payments): float
+    {
+        return (float) array_sum(array_map(
+            fn ($payment) => $payment['payment_method'] === 'MEMBER_CREDIT' ? (float) $payment['amount'] : 0,
+            $payments,
+        ));
+    }
+
     private function nextTransactionNo(): string
     {
-        return 'POS-'.now()->format('Ymd-His').'-'.str_pad((string) random_int(1, 999), 3, '0', STR_PAD_LEFT);
+        return 'POS-'.now()->format('Ymd-His-u').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
     }
 }

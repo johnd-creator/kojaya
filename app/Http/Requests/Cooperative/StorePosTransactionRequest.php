@@ -8,7 +8,7 @@ class StorePosTransactionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null;
     }
 
     public function rules(): array
@@ -16,12 +16,25 @@ class StorePosTransactionRequest extends FormRequest
         return [
             'client_reference' => ['nullable', 'string', 'max:80'],
             'cooperative_member_id' => ['nullable', 'exists:cooperative_members,id'],
-            'payment_method' => ['required', 'in:CASH,TRANSFER,QRIS,MEMBER_CREDIT'],
+            'payment_method' => ['required_without:payments', 'in:CASH,TRANSFER,QRIS,MEMBER_CREDIT'],
             'reference_no' => ['nullable', 'string', 'max:255'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'cash_received' => ['nullable', 'numeric', 'min:0'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.pos_product_id' => ['required', 'exists:pos_products,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
+            'payments' => ['required_without:payment_method', 'array', 'min:1'],
+            'payments.*.payment_method' => ['required_with:payments', 'in:CASH,TRANSFER,QRIS,MEMBER_CREDIT'],
+            'payments.*.amount' => ['required_with:payments', 'numeric', 'min:0'],
+            'payments.*.reference_no' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'items.*.quantity.max' => 'Kuantitas per item terlalu besar (maksimal 9999).',
         ];
     }
 }

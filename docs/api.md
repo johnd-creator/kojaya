@@ -1374,6 +1374,166 @@ Content-Type: application/json
 }
 ```
 
+### **POS Offline Sync (POS Mobile / Unreliable Network)**
+
+Endpoint di bawah ini dipakai oleh aplikasi POS untuk meng-antrikan transaksi yang
+dibuat saat mode offline. Server menjamin idempotency: payload yang sama dengan
+idempotency_key yang sama akan di-replay, sedangkan payload berbeda akan
+mengembalikan **409 Conflict**.
+
+**Base Path:** `/api/v1/pos/sync`
+
+#### **Get Catalog (katalog produk)**
+```http
+GET /api/v1/pos/sync/catalog
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "sku": "P-001",
+      "barcode": "8991234567",
+      "name": "Minyak Goreng 1L",
+      "cost_price": 10000,
+      "sale_price": 13000,
+      "stock": 24,
+      "image_path": "products/minyak-1l.png",
+      "brand": "Sania",
+      "variant": "1L",
+      "unit": "btl"
+    }
+  ],
+  "synced_at": "2026-06-13T12:00:00+07:00"
+}
+```
+
+#### **Enqueue Sync Request**
+```http
+POST /api/v1/pos/sync/enqueue
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "idempotency_key": "dev-A-20260613-001",
+  "client_id": "device-A",
+  "device_id": "DEVICE-A",
+  "pos_cashier_shift_id": 7,
+  "endpoint": "pos.transactions.store",
+  "method": "POST",
+  "payload": {
+    "client_reference": "OFFLINE-001",
+    "items": [
+      { "pos_product_id": 1, "quantity": 2 }
+    ],
+    "payments": [
+      { "payment_method": "CASH", "amount": 26000, "cash_received": 30000 }
+    ]
+  }
+}
+```
+
+**Response (202) - new request:**
+```json
+{ "idempotency_key": "dev-A-20260613-001", "status": "PENDING" }
+```
+
+**Response (202) - replay (payload sama):**
+Mengembalikan entry yang sama persis.
+
+**Response (409) - conflict (key sama, payload berbeda):**
+```json
+{
+  "message": "Idempotency key dipakai dengan payload berbeda.",
+  "errors": { "idempotency_key": ["..."] }
+}
+```
+
+**Response (422) - endpoint tidak didukung:**
+```json
+{ "errors": { "endpoint": ["Endpoint X belum didukung..."] } }
+```
+
+#### **Process Sync Request**
+```http
+POST /api/v1/pos/sync/process/{idempotency_key}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "idempotency_key": "dev-A-20260613-001",
+  "status": 201,
+  "data": { "id": 12, "transaction_no": "POS-..." },
+  "replay": false
+}
+```
+
+**Response (404):**
+`Sync request tidak ditemukan atau bukan milik user`.
+
+#### **Process Batch**
+```http
+POST /api/v1/pos/sync/batch
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{ "idempotency_keys": ["dev-A-20260613-001", "dev-A-20260613-002"] }
+```
+
+Hanya sync request milik user yang akan diproses. Yang bukan milik user di-skip
+diam-diam dari hasil.
+
+**Response (200):**
+```json
+{
+  "data": [
+    { "idempotency_key": "dev-A-20260613-001", "status": 201, "data": {...}, "replay": false }
+  ]
+}
+```
+
+#### **Get Sync Status**
+```http
+GET /api/v1/pos/sync/status/{idempotency_key}
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "idempotency_key": "dev-A-20260613-001",
+  "status": "DONE",
+  "response_status": 201,
+  "response_body": { "id": 12, "...": "..." },
+  "error_message": null,
+  "processed_at": "2026-06-13T12:01:23+07:00"
+}
+```
+
+#### **POS Transaction Payload (Split Payment)**
+Field `payments` menerima array (bukan single object). Contoh penjualan dengan
+split cash + member credit:
+```json
+{
+  "client_reference": "SPLIT-001",
+  "cooperative_member_id": 42,
+  "items": [
+    { "pos_product_id": 1, "quantity": 2 }
+  ],
+  "payments": [
+    { "payment_method": "CASH", "amount": 6000, "cash_received": 6000 },
+    { "payment_method": "MEMBER_CREDIT", "amount": 7000 }
+  ]
+}
+```
+Jumlah seluruh `payments.amount` harus sama dengan `total_amount` (dihitung dari
+subtotal - discount). Backend menolak dengan 422 jika selisih.
+
 ---
 
 ## 🎁 Points & Rewards API

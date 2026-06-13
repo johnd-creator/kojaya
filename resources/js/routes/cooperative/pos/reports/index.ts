@@ -1,7 +1,8 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
+import exportMethod from './export'
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -15,8 +16,8 @@ index.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -24,8 +25,8 @@ index.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,8 +35,8 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,8 +45,8 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,8 +55,8 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -64,8 +65,8 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosSalesReportController::index
-* @see app/Http/Controllers/Cooperative/PosSalesReportController.php:13
+* @see \App\Http\Controllers\Cooperative\PosReportController::index
+* @see app/Http/Controllers/Cooperative/PosReportController.php:19
 * @route '/cooperative/pos/reports'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,6 +83,7 @@ index.form = indexForm
 
 const reports = {
     index: Object.assign(index, index),
+    export: Object.assign(exportMethod, exportMethod),
 }
 
 export default reports

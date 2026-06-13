@@ -4,11 +4,123 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** June 7, 2026
+**Last Updated:** June 13, 2026
 
 ---
 
 ## 🎯 2026-06: M3 P0 Hardening
+
+### **June 13, 2026 - Codex POS/Dues Follow-up Fixes**
+
+**🛒 POS Inventory Image Fix:**
+- ✅ `PosProduct` now appends `image_url` during Inertia/API serialization so uploaded product images remain visible after inventory reload.
+- ✅ Added regression coverage for editing a POS product image using the actual browser/Inertia multipart payload (`POST` with `_method=PUT`).
+
+**📡 POS Offline Sync Correction:**
+- ✅ Removed global uniqueness from `pos_sync_requests.client_id`; uniqueness is scoped by `(device_id, client_id)`.
+- ✅ Duplicate client id on the same device now returns validation `409`, while another device can use the same local client id.
+
+**🏦 Dues Period Info:**
+- ✅ `/cooperative/dues` now exposes and displays monthly Simpanan Wajib context such as `Simpanan Wajib Juni 2026`, amount, due date, invoice count, and next period label.
+
+**Verification:**
+- ✅ POS hardening suite: `95 passed (381 assertions)`.
+- ✅ Cooperative/member regression suite: `55 passed (527 assertions)`.
+- ✅ `vendor/bin/pint --dirty --format agent` passed.
+- ✅ `npm run build` passed.
+
+### **June 13, 2026 - POS Platform Foundation (Phase 0–6) Delivered**
+
+**🛒 POS Phase 0 – Polishing:**
+- ✅ Gambar produk (`image_path` di `pos_products`) + upload dari form.
+- ✅ Diskon per item & total, validasi qty > 0, kembalian tunai, dan cetak receipt via `cooperative/pos/receipt.blade.php`.
+- ✅ 8 feature tests `PosPhase0PolishingTest` (semua passing).
+
+**💳 POS Phase 1 – Operational Hardening:**
+- ✅ Split payment (`payments[].payment_method` dengan `cash_received`).
+- ✅ Void request + approval berjenjang (`pos_void_requests` + `pos_void_controller`).
+- ✅ Retur dengan restock & refund payment (`pos_returns`).
+- ✅ Filter histori transaksi (tanggal, kasir, anggota, metode).
+- ✅ 8 feature tests `PosPhase1FeatureTest` (semua passing).
+
+**👥 POS Phase 2 – Member Engagement:**
+- ✅ Kredit anggota (`credit_limit`, `outstanding_balance`, `credit_term_days`, `credit_tier`) + payment (`pos_member_credit_payments`).
+- ✅ Void otomatis mengurangi `outstanding_balance`.
+- ✅ API member-self-service `transactions` & `summary` memfilter anggota.
+- ✅ 6 feature tests `PosPhase2MemberCreditTest` (semua passing).
+
+**🏬 POS Phase 3 – Multi-Location Inventory:**
+- ✅ Lokasi stok (`pos_inventory_locations`), stok per lokasi (`pos_inventory_stocks`).
+- ✅ Penerimaan barang (RCP) – otomatis tambah stok + `pos_stock_movements`.
+- ✅ Transfer antar lokasi (TRF) – dengan validasi stok cukup.
+- ✅ Stock opname (OPC) – draft → review → approved + penyesuaian stok.
+- ✅ 6 feature tests `PosPhase3InventoryTest` (semua passing).
+
+**📊 POS Phase 4 – Reporting & Analytics:**
+- ✅ `PosSalesReportService` dengan summary, payment reconciliation, product sales, top members/cashiers, daily trend.
+- ✅ `PosReportController` + Vue `Reports/Index.vue` dengan filter & chart tren.
+- ✅ Ekspor CSV (`PosReportCsvExport`) & PDF (`PosReportPdfExport` + DomPDF).
+- ✅ 7 feature tests `PosPhase4ReportsTest` (semua passing).
+
+**🧾 POS Phase 5 – Shift, Closing & Journals:**
+- ✅ Shift kasir (`pos_cashier_shifts`) dengan `opening_cash` / `expected_cash` / `cash_difference`.
+- ✅ Daily closing (`pos_daily_closings`) yang mengunci hari + payment summary.
+- ✅ `PosJournalPostingService` untuk POS_SALE/POS_COGS/POS_RETURN/POS_MEMBER_CREDIT/POS_SHIFT_DIFF/POS_DAILY_CLOSING ke `cooperative_ledger_entries`.
+- ✅ Audit trail via `pos_audit_logs`.
+- ✅ 10 feature tests `PosPhase5ShiftClosingTest` (semua passing).
+
+**📡 POS Phase 6 – Offline Sync:**
+- ✅ Tabel `pos_sync_requests` dengan `idempotency_key` UNIQUE.
+- ✅ Endpoint `/api/v1/pos/sync/{catalog,enqueue,process,batch,status}`.
+- ✅ Replay response untuk sync duplikat (idempotent).
+- ✅ Client-side `useOfflinePos` composable (localStorage queue + backoff).
+- ✅ 6 feature tests `PosPhase6OfflineSyncTest` (semua passing).
+
+**Total POS tests: 51 passed (226 assertions).**
+
+### **June 13, 2026 - POS Repair Sprints 1–6 (Hardening Round 2)**
+
+User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 repair sprint:
+
+**🛠️ Repair Sprint 1 (P0) – Stabilkan flow existing:**
+- ✅ Route duplikat `cooperative.pos.reports.index` dihapus; `PosSalesReportController` dihapus.
+- ✅ `StorePosReturnRequest::prepareForValidation()` merge `pos_transaction_id` dari route binding (web tidak wajibkan field).
+- ✅ Regression test: raw URL `/cooperative/pos/reports`, return web tanpa `pos_transaction_id`, return tidak bisa pakai item transaksi lain.
+
+**🛠️ Repair Sprint 2 (P0) – Multi-location stock sebagai source of truth:**
+- ✅ `PosInventoryService::syncDefaultLocationStocks()` backfill default location dari `pos_products.stock`.
+- ✅ `PosInventoryService::sellStock()` & `restoreSaleStock()` jadi entry-point stok untuk sale/return/void.
+- ✅ `PosTransactionService` & `PosReturnService` pakai inventory service (bukan direct decrement/increment).
+- ✅ `pos_stock_movements.pos_inventory_location_id` selalu terisi.
+- ✅ Test end-to-end: receipt 10 → sale 3 → return 1 → void, stok lokasi & global konsisten.
+
+**🛠️ Repair Sprint 3 (P0) – Enforce closing lock:**
+- ✅ `PosClosingGuard` service baru.
+- ✅ Guard dipasang di `PosTransactionService::create`, `approveVoid`, dan `PosReturnService::create`.
+- ✅ Test: closing day lock tolak sale/return/void di tanggal tersebut.
+
+**🛠️ Repair Sprint 4 (P1) – Harden offline sync:**
+- ✅ `payload_hash` ditambahkan ke `pos_sync_requests` (migrasi 000007).
+- ✅ Endpoint allowlist di enqueue (hanya `pos.transactions.store` untuk saat ini).
+- ✅ Same key + different payload → 409.
+- ✅ Scope query `process/status/batch` by `user_id` & `device_id`.
+- ✅ Test: replay, conflict, user isolation, unsupported endpoint, hash storage.
+
+**🛠️ Repair Sprint 5 (P1) – Akuntansi POS konsisten:**
+- ✅ `cooperative_ledger_entries.cooperative_member_id` nullable (migrasi 000008, handles SQLite & MySQL).
+- ✅ Unique `(source_type, source_id, entry_type)` untuk idempotency journal.
+- ✅ `PosJournalPostingService`: `postSale`, `postCogs` (snapshot cost), `postReturn`, `postMemberCredit`, `postShiftDifference`.
+- ✅ Dipanggil otomatis dari `PosTransactionService::create/approveVoid` & `PosReturnService::create`.
+- ✅ Test: cash non-member, member credit, return, void tanpa duplikat, repeated posting idempotent, COGS snapshot, zero-amount.
+
+**🛠️ Repair Sprint 6 (P1) – Reports dan API contract:**
+- ✅ `PosSalesReportService::baseReturnQuery()` terapkan filter product/cashier/member/payment.
+- ✅ Vue page `Reports/Index.vue`: export URL bawa semua filter aktif.
+- ✅ `docs/api.md` tambah section POS Offline Sync + catatan split payment.
+- ✅ `docs/openapi.json` tambah 5 endpoint POS sync (`catalog`, `enqueue`, `process`, `batch`, `status`).
+- ✅ Test: filter return by cashier/member/payment, export CSV/PDF dengan filter, OpenAPI contract.
+
+**Total POS tests setelah repair: 86 passed (339 assertions), build success.**
 
 ### **June 11, 2026 - Cooperative Member Validation & Dues Visibility Fixes**
 

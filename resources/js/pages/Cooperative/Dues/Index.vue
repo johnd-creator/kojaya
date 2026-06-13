@@ -77,6 +77,19 @@ const props = defineProps<{
   contributionTypes: any[];
   categories: string[];
   canResetPaidDues: boolean;
+  monthlyDuesInfo?: {
+    title: string;
+    period: string;
+    period_label: string;
+    next_period_label: string;
+    type_name: string;
+    amount: number;
+    due_date: string;
+    total_invoices: number;
+    total_nominal: number;
+    total_paid: number;
+    total_outstanding: number;
+  } | null;
   stats?: {
     total_invoices: number;
     total_nominal: number;
@@ -445,6 +458,69 @@ const kpiCards = computed(() => [
               </Link>
             </Button>
           </div>
+        </div>
+      </section>
+
+      <section
+        v-if="monthlyDuesInfo"
+        class="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_repeat(3,minmax(0,0.75fr))]"
+        aria-label="Informasi simpanan wajib periode"
+      >
+        <div
+          class="rounded-xl border border-emerald-200/70 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-emerald-900/50 dark:bg-zinc-900/80"
+        >
+          <div class="flex items-start gap-3">
+            <span
+              class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800/60"
+            >
+              <Info class="size-5" />
+            </span>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                Periode aktif
+              </p>
+              <h2 class="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+                {{ monthlyDuesInfo.title }}
+              </h2>
+              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Bulan berikutnya otomatis mengikuti periode berjalan:
+                {{ monthlyDuesInfo.next_period_label }}.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
+        >
+          <div class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <Wallet class="size-4" />
+            Nominal per anggota
+          </div>
+          <p class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+            {{ formatCurrency(monthlyDuesInfo.amount) }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
+        >
+          <div class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <Receipt class="size-4" />
+            Tagihan dibuat
+          </div>
+          <p class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+            {{ formatNumber(monthlyDuesInfo.total_invoices) }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
+        >
+          <div class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <Hash class="size-4" />
+            Jatuh tempo
+          </div>
+          <p class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+            {{ monthlyDuesInfo.due_date }}
+          </p>
         </div>
       </section>
 

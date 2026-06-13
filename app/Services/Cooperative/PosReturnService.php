@@ -2,13 +2,11 @@
 
 namespace App\Services\Cooperative;
 
-use App\Models\CooperativeLedgerEntry;
 use App\Models\PointTransaction;
 use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
-use App\Models\PosStockMovement;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
@@ -17,14 +15,26 @@ use Illuminate\Validation\ValidationException;
 
 class PosReturnService
 {
-    public function __construct(private readonly PointService $pointService) {}
+    public function __construct(
+        private readonly PointService $pointService,
+        private readonly PosInventoryService $inventory,
+        private readonly PosClosingGuard $closingGuard,
+        private readonly PosJournalPostingService $journal,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
      */
     public function create(array $data, ?User $cashier = null): PosReturn
     {
-        return DB::transaction(function () use ($cashier, $data): PosReturn {
+        $returnDate = ($data['returned_at'] ?? null) ?: now()->toDateString();
+        $transactionId = (int) $data['pos_transaction_id'];
+        $transaction = PosTransaction::query()->find($transactionId);
+        if ($transaction) {
+            $this->closingGuard->guardReturn($transaction, (string) $returnDate);
+        }
+
+        return DB::transaction(function () use ($cashier, $data, $returnDate): PosReturn {
             $transaction = PosTransaction::query()
                 ->with(['items', 'payments'])
                 ->lockForUpdate()
@@ -45,16 +55,22 @@ class PosReturnService
                 'total_amount' => 0,
                 'points_reversed' => 0,
                 'reason' => $data['reason'] ?? null,
-                'returned_at' => now(),
+                'returned_at' => $returnDate,
             ]);
 
             $total = 0.0;
 
-            foreach ($data['items'] as $item) {
+            foreach ($data['items'] as $index => $item) {
                 $transactionItem = PosTransactionItem::query()
                     ->where('pos_transaction_id', $transaction->id)
                     ->lockForUpdate()
-                    ->findOrFail($item['pos_transaction_item_id']);
+                    ->find($item['pos_transaction_item_id']);
+
+                if ($transactionItem === null) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.pos_transaction_item_id" => 'Item transaksi tidak cocok dengan transaksi ini.',
+                    ]);
+                }
 
                 $quantity = (int) $item['quantity'];
                 $returnedQuantity = (int) PosReturnItem::query()
@@ -78,46 +94,30 @@ class PosReturnService
                     'line_total' => $lineTotal,
                 ]);
 
-                $product = PosProduct::query()->lockForUpdate()->findOrFail($transactionItem->pos_product_id);
-                $stockBefore = (int) $product->stock;
-                $product->increment('stock', $quantity);
-                $product->refresh();
+                $location = $this->inventory->resolveLocationFor($transaction->pos_cashier_shift_id);
 
-                PosStockMovement::query()->create([
-                    'pos_product_id' => $product->id,
-                    'source_type' => PosReturn::class,
-                    'source_id' => $return->id,
-                    'movement_type' => 'RETURN',
-                    'quantity' => $quantity,
-                    'stock_before' => $stockBefore,
-                    'stock_after' => $product->stock,
-                    'notes' => "POS return {$return->return_no}",
-                ]);
+                $product = PosProduct::query()->lockForUpdate()->findOrFail($transactionItem->pos_product_id);
+
+                $this->inventory->restoreSaleStock(
+                    product: $product,
+                    location: $location,
+                    quantity: $quantity,
+                    sourceType: PosReturn::class,
+                    sourceId: $return->id,
+                    referenceNo: $return->return_no,
+                    movementType: 'RETURN',
+                );
             }
 
             $return->forceFill(['total_amount' => $total])->save();
 
             $pointsReversed = $this->reversePoints($transaction, $return->refresh());
 
-            if ($transaction->cooperative_member_id) {
-                CooperativeLedgerEntry::query()->create([
-                    'cooperative_member_id' => $transaction->cooperative_member_id,
-                    'cooperative_payment_id' => null,
-                    'source_type' => PosReturn::class,
-                    'source_id' => $return->id,
-                    'entry_type' => 'POS_RETURN',
-                    'ledger_scope' => 'POS',
-                    'debit' => 0,
-                    'credit' => $total,
-                    'period' => now()->format('Y-m'),
-                    'description' => "Retur POS {$transaction->transaction_no}",
-                    'posted_at' => now()->toDateString(),
-                ]);
-            }
-
             $return->forceFill([
                 'points_reversed' => $pointsReversed,
             ])->save();
+
+            $this->journal->postReturn($return->refresh());
 
             return $return->load(['items', 'transaction']);
         });

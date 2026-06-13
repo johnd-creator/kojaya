@@ -100,4 +100,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(AuditLog::class);
     }
+
+    public function posTransactions(): HasMany
+    {
+        return $this->hasMany(PosTransaction::class, 'cashier_id');
+    }
 }

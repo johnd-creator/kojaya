@@ -222,7 +222,8 @@
                         "enum": [
                             "member",
                             "ess",
-                            "technician"
+                            "technician",
+                            "admin"
                         ],
                         "example": "member"
                     },
@@ -3420,11 +3421,382 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "object"
+                                "type": "object",
+                                "required": [
+                                    "pos_transaction_id",
+                                    "reason",
+                                    "items"
+                                ],
+                                "properties": {
+                                    "pos_transaction_id": {
+                                        "type": "integer"
+                                    },
+                                    "reason": {
+                                        "type": "string"
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "pos_transaction_item_id",
+                                                "quantity"
+                                            ],
+                                            "properties": {
+                                                "pos_transaction_item_id": {
+                                                    "type": "integer"
+                                                },
+                                                "quantity": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/pos/sync/catalog": {
+            "get": {
+                "summary": "Mengambil Pos/Sync/Catalog (katalog produk untuk sinkronisasi offline)",
+                "operationId": "get_api_v1_pos_sync_catalog",
+                "tags": [
+                    "POS"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar produk aktif",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PosProduct"
+                                            }
+                                        },
+                                        "synced_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "x-required-abilities": [
+                    "pos:read"
+                ]
+            }
+        },
+        "/api/v1/pos/sync/enqueue": {
+            "post": {
+                "summary": "Mendaftarkan Pos/Sync/Enqueue (antrian sinkronisasi offline)",
+                "operationId": "post_api_v1_pos_sync_enqueue",
+                "tags": [
+                    "POS"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Sync request diterima",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "idempotency_key": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "409": {
+                        "description": "Idempotency key sudah dipakai dengan payload berbeda",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "x-required-abilities": [
+                    "pos:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "idempotency_key",
+                                    "endpoint",
+                                    "method",
+                                    "payload"
+                                ],
+                                "properties": {
+                                    "idempotency_key": {
+                                        "type": "string",
+                                        "maxLength": 120
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "maxLength": 80
+                                    },
+                                    "device_id": {
+                                        "type": "string",
+                                        "maxLength": 80
+                                    },
+                                    "pos_cashier_shift_id": {
+                                        "type": "integer"
+                                    },
+                                    "endpoint": {
+                                        "type": "string",
+                                        "enum": [
+                                            "pos.transactions.store"
+                                        ]
+                                    },
+                                    "method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "POST"
+                                        ]
+                                    },
+                                    "payload": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pos/sync/process/{idempotency_key}": {
+            "post": {
+                "summary": "Mengeksekusi Pos/Sync/Process (sinkronisasi offline)",
+                "operationId": "post_api_v1_pos_sync_process",
+                "tags": [
+                    "POS"
+                ],
+                "parameters": [
+                    {
+                        "name": "idempotency_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Hasil sinkronisasi (sukses, replay, atau 422 validasi)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "idempotency_key": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "integer"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        },
+                                        "replay": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Sync request tidak ditemukan atau bukan milik user"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "x-required-abilities": [
+                    "pos:write"
+                ]
+            }
+        },
+        "/api/v1/pos/sync/batch": {
+            "post": {
+                "summary": "Sinkronisasi batch (multi idempotency key)",
+                "operationId": "post_api_v1_pos_sync_batch",
+                "tags": [
+                    "POS"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Hasil sinkronisasi per idempotency_key (milik user)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                },
+                "x-required-abilities": [
+                    "pos:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "idempotency_keys"
+                                ],
+                                "properties": {
+                                    "idempotency_keys": {
+                                        "type": "array",
+                                        "maxItems": 100,
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pos/sync/status/{idempotency_key}": {
+            "get": {
+                "summary": "Status Pos/Sync/Status",
+                "operationId": "get_api_v1_pos_sync_status",
+                "tags": [
+                    "POS"
+                ],
+                "parameters": [
+                    {
+                        "name": "idempotency_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status sinkronisasi",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "idempotency_key": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "PENDING",
+                                                "PROCESSING",
+                                                "DONE",
+                                                "FAILED"
+                                            ]
+                                        },
+                                        "response_status": {
+                                            "type": "integer"
+                                        },
+                                        "response_body": {
+                                            "type": "object"
+                                        },
+                                        "error_message": {
+                                            "type": "string"
+                                        },
+                                        "processed_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Sync request tidak ditemukan atau bukan milik user"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "x-required-abilities": [
+                    "pos:read"
+                ]
             }
         },
         "/api/v1/reports/cooperative-summary": {

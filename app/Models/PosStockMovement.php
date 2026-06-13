@@ -10,9 +10,11 @@ class PosStockMovement extends Model
 {
     protected $fillable = [
         'pos_product_id',
+        'pos_inventory_location_id',
         'source_type',
         'source_id',
         'movement_type',
+        'reference_no',
         'quantity',
         'stock_before',
         'stock_after',

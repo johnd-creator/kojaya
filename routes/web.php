@@ -271,11 +271,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('pos/transactions', [\App\Http\Controllers\Cooperative\PosRegisterController::class, 'store'])->name('pos.transactions.store');
             Route::get('pos/transactions', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'index'])->name('pos.transactions.index');
             Route::get('pos/transactions/{transaction}', [\App\Http\Controllers\Cooperative\PosTransactionHistoryController::class, 'show'])->name('pos.transactions.show');
+            Route::get('pos/transactions/{transaction}/receipt', [\App\Http\Controllers\Cooperative\PosTransactionReceiptController::class, 'show'])->name('pos.transactions.receipt');
+            Route::get('pos/transactions/{transaction}/receipt.pdf', [\App\Http\Controllers\Cooperative\PosTransactionReceiptController::class, 'pdf'])->name('pos.transactions.receipt.pdf');
+            Route::post('pos/transactions/{transaction}/void-request', [\App\Http\Controllers\Cooperative\PosVoidController::class, 'store'])->name('pos.void-requests.store');
+            Route::post('pos/void-requests/{voidRequest}/process', [\App\Http\Controllers\Cooperative\PosVoidController::class, 'process'])->name('pos.void-requests.process')
+                ->middleware('can:approve_pos_void');
+            Route::get('pos/void-requests', [\App\Http\Controllers\Cooperative\PosVoidController::class, 'index'])->name('pos.void-requests.index')
+                ->middleware('can:approve_pos_void');
+            Route::get('pos/transactions/{transaction}/returns/create', [\App\Http\Controllers\Cooperative\PosReturnController::class, 'create'])->name('pos.returns.create');
+            Route::post('pos/transactions/{transaction}/returns', [\App\Http\Controllers\Cooperative\PosReturnController::class, 'store'])->name('pos.returns.store');
+            Route::get('pos/members/{member}/credit/pay', [\App\Http\Controllers\Cooperative\PosMemberCreditController::class, 'create'])->name('pos.credit.create');
+            Route::post('pos/members/{member}/credit/pay', [\App\Http\Controllers\Cooperative\PosMemberCreditController::class, 'store'])->name('pos.credit.store');
         });
-
-        Route::get('pos/reports', [\App\Http\Controllers\Cooperative\PosSalesReportController::class, 'index'])
-            ->middleware('can:view_pos_reports')
-            ->name('pos.reports.index');
 
         Route::get('pos/shu', [\App\Http\Controllers\Cooperative\PosAnnualShuController::class, 'index'])
             ->middleware('can:manage_pos_shu')
@@ -289,9 +296,51 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->only(['index', 'store', 'show', 'update', 'destroy'])
             ->middleware('can:manage_pos_products')
             ->parameters(['pos-products' => 'product']);
+        Route::get('pos/reports', [\App\Http\Controllers\Cooperative\PosReportController::class, 'index'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.reports.index');
+        Route::get('pos/reports/export.csv', [\App\Http\Controllers\Cooperative\PosReportController::class, 'exportCsv'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.reports.export.csv');
+        Route::get('pos/reports/export.pdf', [\App\Http\Controllers\Cooperative\PosReportController::class, 'exportPdf'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.reports.export.pdf');
+
+        Route::get('pos/shifts', [\App\Http\Controllers\Cooperative\PosShiftController::class, 'index'])
+            ->middleware('can:access_cooperative_pos')
+            ->name('pos.shifts.index');
+        Route::post('pos/shifts/open', [\App\Http\Controllers\Cooperative\PosShiftController::class, 'open'])
+            ->middleware('can:access_cooperative_pos')
+            ->name('pos.shifts.open');
+        Route::post('pos/shifts/{shift}/close', [\App\Http\Controllers\Cooperative\PosShiftController::class, 'close'])
+            ->middleware('can:manage_pos_products')
+            ->name('pos.shifts.close');
+
+        Route::get('pos/closings', [\App\Http\Controllers\Cooperative\PosDailyClosingController::class, 'index'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.closings.index');
+        Route::post('pos/closings', [\App\Http\Controllers\Cooperative\PosDailyClosingController::class, 'close'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.closings.close');
+
         Route::post('pos-products/{product}/adjust-stock', [\App\Http\Controllers\Cooperative\PosProductController::class, 'adjustStock'])
             ->middleware('can:manage_pos_products')
             ->name('pos-products.adjust-stock');
+
+        Route::middleware('can:manage_pos_products')->group(function () {
+            Route::get('pos/inventory/receipts', [\App\Http\Controllers\Cooperative\PosInventoryReceiptController::class, 'index'])->name('pos.inventory.receipts.index');
+            Route::get('pos/inventory/receipts/create', [\App\Http\Controllers\Cooperative\PosInventoryReceiptController::class, 'create'])->name('pos.inventory.receipts.create');
+            Route::post('pos/inventory/receipts', [\App\Http\Controllers\Cooperative\PosInventoryReceiptController::class, 'store'])->name('pos.inventory.receipts.store');
+            Route::get('pos/inventory/transfers', [\App\Http\Controllers\Cooperative\PosInventoryTransferController::class, 'index'])->name('pos.inventory.transfers.index');
+            Route::get('pos/inventory/transfers/create', [\App\Http\Controllers\Cooperative\PosInventoryTransferController::class, 'create'])->name('pos.inventory.transfers.create');
+            Route::post('pos/inventory/transfers', [\App\Http\Controllers\Cooperative\PosInventoryTransferController::class, 'store'])->name('pos.inventory.transfers.store');
+            Route::get('pos/inventory/counts', [\App\Http\Controllers\Cooperative\PosInventoryCountController::class, 'index'])->name('pos.inventory.counts.index');
+            Route::get('pos/inventory/counts/create', [\App\Http\Controllers\Cooperative\PosInventoryCountController::class, 'create'])->name('pos.inventory.counts.create');
+            Route::post('pos/inventory/counts', [\App\Http\Controllers\Cooperative\PosInventoryCountController::class, 'store'])->name('pos.inventory.counts.store');
+            Route::get('pos/inventory/counts/{count}', [\App\Http\Controllers\Cooperative\PosInventoryCountController::class, 'show'])->name('pos.inventory.counts.show');
+            Route::post('pos/inventory/counts/{count}/submit', [\App\Http\Controllers\Cooperative\PosInventoryCountController::class, 'submit'])->name('pos.inventory.counts.submit');
+            Route::post('pos/inventory/counts/{count}/approve', [\App\Http\Controllers\Cooperative\PosInventoryCountController::class, 'approve'])->name('pos.inventory.counts.approve');
+        });
         Route::get('reports', [\App\Http\Controllers\Cooperative\CooperativeReportController::class, 'index'])
             ->middleware('can:view_cooperative_report')
             ->name('reports.index');

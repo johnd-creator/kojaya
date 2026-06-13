@@ -744,6 +744,119 @@ Kojayaku butuh login yang familiar untuk anggota tanpa password baru, tetapi tid
 
 ---
 
+## 🎯 ADR-007: POS Platform Foundation (Phase 0–6)
+
+**Status:** ✅ Accepted
+**Date:** June 13, 2026
+**Deciders:** Development Team
+
+### Context
+Koperasi membutuhkan ekosistem POS yang tidak hanya memproses penjualan, tetapi juga mendukung split payment, retur, void dengan persetujuan, kredit anggota, multi-location inventory, laporan, shift kasir, dan kemampuan offline.
+
+### Decision
+Kami membangun **POS 6 fase** yang masing-masing berdiri sendiri tapi saling terintegrasi:
+
+- **Phase 0 – Polishing**: gambar produk, diskon per item, validasi qty, kembalian tunai, dan cetak receipt.
+- **Phase 1 – Operational Hardening**: split payment, retur (restock + refund), void request dengan approval berjenjang (`pos_void_requests`), serta filter histori transaksi.
+- **Phase 2 – Member Engagement**: kredit anggota (`cooperative_members.outstanding_balance`/`credit_limit`/`credit_term_days`), pembayaran cicilan anggota (`pos_member_credit_payments`), poin otomatis per transaksi, dan visibilitas transaksi khusus anggota via API member-self-service.
+- **Phase 3 – Multi-Location Inventory**: lokasi stok (`pos_inventory_locations`), stok per lokasi (`pos_inventory_stocks`), penerimaan barang (RCP), transfer antar lokasi (TRF), dan stock opname (OPC) dengan alur draft → review → approved.
+- **Phase 4 – Reporting & Analytics**: laporan harian/bulanan dengan filter produk/kasir/metode/payment, top produk/anggota/kasir, tren harian, dan ekspor CSV serta PDF menggunakan DomPDF.
+- **Phase 5 – Shift, Closing & Journals**: shift kasir (`pos_cashier_shifts`) dengan `expected_cash` vs `closing_cash`, daily closing (`pos_daily_closings`) yang mengunci hari, dan auto-posting ke `cooperative_ledger_entries` (POS_SALE/POS_COGS/POS_RETURN/POS_MEMBER_CREDIT/POS_SHIFT_DIFF/POS_DAILY_CLOSING).
+- **Phase 6 – Offline Sync**: queue idempotent (`pos_sync_requests` dengan `idempotency_key` UNIQUE), endpoint `/api/v1/pos/sync/{catalog,enqueue,process,batch,status}`, replay response untuk sync duplikat, dan client-side `useOfflinePos` composable yang memanfaatkan localStorage + backoff.
+
+### Consequences
+
+**Positive:**
+- POS siap untuk koperasi dengan banyak toko, kasir shift, dan keterbatasan jaringan.
+- Idempotency key memastikan penjualan offline yang disinkronkan ulang tidak membuat transaksi ganda.
+- Laporan dan jurnal koperasi terotomasi, mengurangi rekonsiliasi manual.
+- Member credit + poin terikat langsung ke API member-self-service, sehingga anggota Kojayaku bisa melihat status sendiri.
+
+**Trade-off:**
+- Penambahan banyak tabel baru membutuhkan migrasi bertahap (lihat `database/migrations/2026_06_13_*`).
+- Fitur offline mengandalkan endpoint RESTful + token, sehingga client perlu login ulang saat online.
+- Stock opname butuh peran supervisor (`manage_pos_products`) agar tidak bisa disetujui kasir yang sama.
+
+---
+
+## 🎯 ADR-022: POS Accounting Decision — cooperative_ledger_entries Sebagai Sumber Posting Sementara
+
+**Status:** ✅ Accepted
+**Date:** June 13, 2026
+**Deciders:** Engineering
+
+### Context
+
+POS Phase 0–6 (lihat ADR-007) mengirim uang, piutang anggota, HPP, retur, dan selisih kas ke `cooperative_ledger_entries`. Audit putaran kedua menemukan tiga keputusan yang harus dibuat eksplisit sebelum POS dipakai operasional:
+
+- `cooperative_ledger_entries` adalah tabel anggota. Bagaimana penjualan non-anggota dicatat tanpa menyalahi model anggota?
+- Kontrak lama `POS_RETURN` (`credit = $amount` ke ledger anggota) bentrok dengan kontrak akuntansi baru (debit kontra-revenue). Tidak mungkin memilih keduanya tanpa dokumentasi.
+- Void hanya menghapus status transaksi dan me-restore stok, tanpa `*_REVERSAL` entry, sehingga laporan historis tidak bisa membedakan transaksi yang di-cancel dan transaksi yang masih utuh.
+- Saat ini, entry `POS_SALE/COGS/MEMBER_CREDIT` hanya credit/debit satu sisi (tidak ada debit cash atau credit persediaan), sehingga belum bisa disebut jurnal akuntansi lengkap.
+
+### Decision
+
+POS tetap memakai `cooperative_ledger_entries` sebagai **sumber posting ledger POS sementara** dengan aturan berikut. ADR ini tidak mengklaim POS sudah menjadi jurnal akuntansi lengkap.
+
+#### 1. `cooperative_member_id` nullable, tidak ada “system member”
+
+- Kolom `cooperative_ledger_entries.cooperative_member_id` dibuat nullable (lihat migrasi `2026_06_13_000008_make_ledger_member_nullable_for_pos`) dengan branch eksplisit untuk SQLite, MySQL/MariaDB, dan PostgreSQL.
+- Penjualan, retur, void, dan shift difference untuk non-anggota tetap diposting dengan `cooperative_member_id = null` dan `ledger_scope = 'POS'`. Laporan koperasi memfilter `ledger_scope` sehingga entry tanpa anggota tidak ikut dalam SHU/ledger anggota.
+- Tidak ada anggota dummy “system member”. Membuat anggota fiktif akan mengotorkan laporan anggota dan SHU.
+
+#### 2. Kontrak `POS_RETURN`: dual entry
+
+- `POS_RETURN` tetap memakai kontrak lama: `credit = $amount` ke `cooperative_member_id` anggota. Ini konsisten dengan `POS_MEMBER_CREDIT_PAYMENT` dan anggota payment history.
+- Tambahan `POS_RETURN_REVERSAL`: `debit = $amount`, `cooperative_member_id = null`. Entry ini adalah kontra-revenue akuntansi agar laporan revenue tidak ikut double-count dengan member credit.
+- Migrasi `Sprint2BusinessCriticalFlowsTest` lama yang mengharapkan `credit = 20000` tetap valid. Test baru `PosSprint5JournalConsistencyTest::test_return_posts_credit_to_member_ledger_and_contra_revenue` memvalidasi kedua entry.
+- Batasan: `POS_RETURN_REVERSAL` tidak boleh dipakai untuk rekonsiliasi per akun sampai ada chart-of-accounts; untuk saat ini, ini hanya penanda untuk net_sales.
+
+#### 3. Kontrak void: 3 entry `*_REVERSAL`
+
+`PosJournalPostingService::postVoidReversal()` menulis tiga entry untuk satu transaksi void:
+
+| Entry | Member | Debit | Credit | Tujuan |
+| --- | --- | --- | --- | --- |
+| `POS_SALE_REVERSAL` | anggota/null (menyesuaikan sale asli) | total_amount | 0 | Batalkan `POS_SALE` |
+| `POS_COGS_REVERSAL` | null | 0 | snapshot_cogs | Batalkan `POS_COGS` (HPP kembali ke persediaan) |
+| `POS_MEMBER_CREDIT_REVERSAL` | anggota | 0 | member_credit_amount | Batalkan piutang anggota + kurangi `outstanding_balance` |
+
+- Semua reversal idempotent per source (lihat `firstOrCreateEntry`), sehingga approve void yang diulang tidak membuat entry ganda.
+- `PosTransactionService::approveVoid()` memanggil `postVoidReversal()` dalam transaksi DB yang sama dengan restock dan update status.
+
+#### 4. Batasan scope
+
+- **Bukan** jurnal akuntansi lengkap: tidak ada debit kas/persediaan/piutang ke akun COA eksplisit. POS hanya menandai debit/credit per entry, belum merepresentasikan akun.
+- **Bisa direkonsiliasi** untuk: gross sales (POS_SALE), COGS (POS_COGS), piutang anggota (POS_MEMBER_CREDIT), retur anggota (POS_RETURN + POS_RETURN_REVERSAL), void (3 reversal), dan selisih kas (POS_SHIFT_DIFF).
+- **Tidak** bisa direkonsiliasi (untuk saat ini): debit kas/QRIS/transfer/bank, credit persediaan dari COGS, dan pencatatan piutang non-anggota.
+- COGS memakai snapshot `pos_transaction_items.cost_price` (lihat `PosJournalPostingService::postCogs()`), bukan harga produk saat ini, sehingga laporan historis tidak bergeser saat harga beli berubah.
+
+#### 5. Migrasi data historis
+
+- Tidak ada migrasi data untuk entry `cooperative_ledger_entries` lama. Entry baru POS mengikuti kontrak di atas; entry lama tetap utuh.
+- Jika ke depan perlu migrasi debit/credit untuk entry baru (mis. `POS_SALE` jadi debit cash + credit revenue), lakukan ADR lanjutan, bukan update diam-diam.
+
+### Consequences
+
+**Positive:**
+- Kontrak `POS_RETURN` jelas dan stabil: `POS_RETURN` untuk ledger anggota, `POS_RETURN_REVERSAL` untuk net_sales. Tidak ada lagi dual-interpretasi antara test lama dan baru.
+- Void dapat diaudit: laporan bisa memfilter `*_REVERSAL` untuk membatalkan efek transaksi yang void.
+- Penambahan nullable FK tidak mengotorkan data anggota. Tidak ada “system member” palsu.
+- Migrasi driver-eksplisit membuat deployment SQLite (test), MySQL/MariaDB, dan PostgreSQL (dev/prod) sama-sama aman.
+- COGS snapshot memastikan laporan tidak bergeser saat harga produk berubah.
+
+**Trade-off:**
+- Entry POS masih satu sisi debit/credit per row, sehingga belum cukup untuk laporan keuangan formal (neraca, laba rugi per akun).
+- Rekonsiliasi kas/QRIS/transfer/persediaan saat ini dilakukan di luar ledger, oleh daily closing.
+- Penambahan dua enum entry baru (`POS_RETURN_REVERSAL`, `POS_*_REVERSAL`) menambah cardinality `entry_type`; report builder perlu mengenali prefix `*_REVERSAL` agar tidak ikut di gross_sales.
+
+**Mitigasi:**
+- Report builder koperasi perlu mengikuti `ledger_scope = 'POS'` dan skip entry `*_REVERSAL` dari gross_sales (cek `PosSalesReportService`).
+- ADR ini akan dievaluasi ulang saat fase accounting penuh dimulai; jika saat itu ada modul chart-of-accounts dedicated, ADR baru akan menambah/menggantikan keputusan ini, bukan tumpang tindih.
+- Operational runbook perlu menyebutkan: `cooperative_member_id` boleh null untuk scope POS, dan jangan membuat anggota “system” untuk menutupi ini.
+
+---
+
 ## 📚 References
 
 - [Laravel Documentation](https://laravel.com/docs)
@@ -754,4 +867,4 @@ Kojayaku butuh login yang familiar untuk anggota tanpa password baru, tetapi tid
 
 ---
 
-*Last Updated: May 2, 2026*
+*Last Updated: June 13, 2026*

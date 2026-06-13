@@ -300,6 +300,9 @@ class CooperativeFeatureTest extends TestCase
                 ->component('Cooperative/Dues/Index')
                 ->where('filters.period', '2026-05')
                 ->where('filters.status', '')
+                ->where('monthlyDuesInfo.title', 'Simpanan Wajib Mei 2026')
+                ->where('monthlyDuesInfo.amount', 50000)
+                ->where('monthlyDuesInfo.due_date', '2026-05-10')
                 ->has('invoices.data', 1)
             );
 
@@ -309,6 +312,35 @@ class CooperativeFeatureTest extends TestCase
             'period' => '2026-05',
             'status' => 'UNPAID',
         ]);
+    }
+
+    public function test_dues_page_shows_monthly_wajib_info_for_selected_period(): void
+    {
+        Carbon::setTestNow('2026-06-13 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $this->member(['status' => 'ACTIVE']);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index', ['period' => '2026-06']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('monthlyDuesInfo.title', 'Simpanan Wajib Juni 2026')
+                ->where('monthlyDuesInfo.period_label', 'Juni 2026')
+                ->where('monthlyDuesInfo.next_period_label', 'Juli 2026')
+                ->where('monthlyDuesInfo.amount', 100000)
+                ->where('monthlyDuesInfo.total_invoices', 1)
+            );
     }
 
     public function test_dues_page_defaults_to_all_statuses_for_the_period(): void
@@ -1316,7 +1348,7 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('Kasir Koperasi');
-        $member = $this->member(['status' => 'PENDING']);
+        $member = $this->member(['status' => 'PENDING', 'credit_limit' => 100000]);
         $product = $this->product(['stock' => 5, 'sale_price' => 10000]);
 
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [

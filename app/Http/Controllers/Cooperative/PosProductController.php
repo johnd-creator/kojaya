@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\StorePosStockAdjustmentRequest;
 use App\Http\Requests\Cooperative\UpdatePosProductRequest;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
+use App\Services\Cooperative\PosProductImageService;
 use App\Services\Cooperative\PosStockAdjustmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,8 @@ class PosProductController extends Controller
             $query->where(function ($query) use ($search): void {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
+                    ->orWhere('barcode', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%");
             });
         }
 
@@ -37,16 +39,32 @@ class PosProductController extends Controller
             $query->whereColumn('stock', '<=', 'minimum_stock');
         }
 
+        if ($request->boolean('discontinued')) {
+            $query->where('is_discontinued', true);
+        }
+
         return Inertia::render('Cooperative/Inventory/Products/Index', [
             'products' => $query->orderBy('name')->paginate(15)->withQueryString(),
             'categories' => PosCategory::query()->where('is_active', true)->orderBy('name')->get(),
-            'filters' => $request->only(['search', 'category_id', 'low_stock']),
+            'filters' => $request->only(['search', 'category_id', 'low_stock', 'discontinued']),
         ]);
     }
 
-    public function store(StorePosProductRequest $request): RedirectResponse
-    {
-        PosProduct::query()->create($request->validated());
+    public function store(
+        StorePosProductRequest $request,
+        PosProductImageService $imageService,
+    ): RedirectResponse {
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $imageService->storeImage(
+                new PosProduct(['sku' => $data['sku'], 'name' => $data['name']]),
+                $request->file('image'),
+            );
+            unset($data['image']);
+        }
+
+        PosProduct::query()->create($data);
 
         return back()->with('success', 'POS product created successfully.');
     }
@@ -60,19 +78,37 @@ class PosProductController extends Controller
         ]);
     }
 
-    public function update(UpdatePosProductRequest $request, PosProduct $product): RedirectResponse
-    {
-        $product->update($request->validated());
+    public function update(
+        UpdatePosProductRequest $request,
+        PosProduct $product,
+        PosProductImageService $imageService,
+    ): RedirectResponse {
+        $data = $request->validated();
+
+        if ($request->boolean('remove_image')) {
+            $imageService->deleteImage($product->image_path);
+            $data['image_path'] = null;
+        }
+
+        if ($request->hasFile('image')) {
+            $imageService->deleteImage($product->image_path);
+            $data['image_path'] = $imageService->storeImage($product, $request->file('image'));
+        }
+
+        unset($data['image'], $data['remove_image']);
+
+        $product->update($data);
 
         return back()->with('success', 'POS product updated successfully.');
     }
 
-    public function destroy(PosProduct $product): RedirectResponse
+    public function destroy(PosProduct $product, PosProductImageService $imageService): RedirectResponse
     {
         if ($product->stockMovements()->exists()) {
             return back()->with('error', 'Cannot delete product with stock movements.');
         }
 
+        $imageService->deleteImage($product->image_path);
         $product->delete();
 
         return back()->with('success', 'POS product deleted successfully.');

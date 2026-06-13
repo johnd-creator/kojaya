@@ -22,11 +22,17 @@ class PosProductFactory extends Factory
             'sku' => 'SKU-'.fake()->unique()->numerify('######'),
             'barcode' => fake()->optional()->ean13(),
             'name' => fake()->words(3, true),
+            'image_path' => null,
+            'brand' => fake()->optional()->company(),
+            'variant' => fake()->optional()->word(),
+            'unit' => fake()->randomElement(['pcs', 'box', 'pack', 'kg', 'liter']),
+            'rack_location' => fake()->optional()->regexify('[A-Z][0-9]{1,2}'),
             'cost_price' => fake()->numberBetween(5000, 25000),
             'sale_price' => fake()->numberBetween(26000, 50000),
             'stock' => fake()->numberBetween(0, 100),
             'minimum_stock' => fake()->numberBetween(0, 10),
             'is_active' => true,
+            'is_discontinued' => false,
         ];
     }
 
@@ -34,6 +40,13 @@ class PosProductFactory extends Factory
     {
         return $this->state(fn () => [
             'is_active' => false,
+        ]);
+    }
+
+    public function discontinued(): static
+    {
+        return $this->state(fn () => [
+            'is_discontinued' => true,
         ]);
     }
 

@@ -13,12 +13,18 @@ class PosTransaction extends Model
         'client_reference',
         'cooperative_member_id',
         'cashier_id',
+        'pos_cashier_shift_id',
         'subtotal',
         'discount_amount',
         'total_amount',
         'gross_profit',
+        'cash_received',
+        'cash_change',
         'status',
         'sold_at',
+        'voided_at',
+        'voided_by',
+        'void_reason',
     ];
 
     protected function casts(): array
@@ -28,7 +34,10 @@ class PosTransaction extends Model
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'gross_profit' => 'decimal:2',
+            'cash_received' => 'decimal:2',
+            'cash_change' => 'decimal:2',
             'sold_at' => 'datetime',
+            'voided_at' => 'datetime',
         ];
     }
 
@@ -55,5 +64,25 @@ class PosTransaction extends Model
     public function returns(): HasMany
     {
         return $this->hasMany(PosReturn::class);
+    }
+
+    public function voidRequests(): HasMany
+    {
+        return $this->hasMany(PosVoidRequest::class);
+    }
+
+    public function voidedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
+    }
+
+    public function isVoided(): bool
+    {
+        return $this->status === 'VOIDED' || $this->voided_at !== null;
+    }
+
+    public function hasOpenVoidRequest(): bool
+    {
+        return $this->voidRequests()->where('status', 'PENDING')->exists();
     }
 }

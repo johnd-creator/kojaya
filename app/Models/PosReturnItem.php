@@ -28,4 +28,9 @@ class PosReturnItem extends Model
     {
         return $this->belongsTo(PosReturn::class, 'pos_return_id');
     }
+
+    public function transactionItem(): BelongsTo
+    {
+        return $this->belongsTo(PosTransactionItem::class, 'pos_transaction_item_id');
+    }
 }

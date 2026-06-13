@@ -1,223 +1,251 @@
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3";
-import { BarChart3, Sparkles, TrendingUp } from "lucide-vue-next";
-import { reactive } from "vue";
-import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import { Head, Link, router } from "@inertiajs/vue3";
+import { ArrowLeft, Download, FileSpreadsheet, FileText, TrendingUp } from "lucide-vue-next";
+import { computed, ref } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
-import { index } from "@/routes/cooperative/pos/reports";
 
 const props = defineProps<{
-  summary: any;
-  productSales: any[];
-  filters: any;
+    from: string;
+    to: string;
+    summary: {
+        transactions: number;
+        voided_transactions: number;
+        gross_sales: number;
+        total_discount: number;
+        gross_profit: number;
+        voided_amount: number;
+        returns: { count: number; total: number };
+        net_sales: number;
+        member_transactions: number;
+    };
+    payment_reconciliation: Array<{ method: string; count: number; total: number }>;
+    daily_trend: Array<{ date: string; transactions: number; revenue: number }>;
+    top_products: Array<{ product_name: string; quantity: number; revenue: number; gross_profit: number; margin_percent: number }>;
+    top_members: Array<{ member_name: string; transactions: number; total: number }>;
+    cashier_performance: Array<{ cashier_name: string; transactions: number; total: number }>;
+    products: Array<{ id: number; name: string }>;
+    categories: Array<{ id: number; name: string }>;
+    cashiers: Array<{ id: number; name: string }>;
 }>();
 
-const filter = reactive({
-  year: Number(props.filters?.year ?? new Date().getFullYear()),
+const f = ref({
+    from: props.from,
+    to: props.to,
+    pos_product_id: "",
+    category_id: "",
+    cashier_id: "",
+    payment_method: "",
 });
 
-const refreshReport = () => {
-  router.get(
-    index().url,
-    { year: filter.year },
-    { preserveState: true, preserveScroll: true },
-  );
-};
+function applyFilters(): void {
+    router.get("/cooperative/pos/reports", f.value, { preserveState: true });
+}
+
+const exportQuery = computed(() => {
+    const params = new URLSearchParams();
+    if (f.value.from) {
+        params.set("from", f.value.from);
+    }
+    if (f.value.to) {
+        params.set("to", f.value.to);
+    }
+    if (f.value.pos_product_id) {
+        params.set("pos_product_id", f.value.pos_product_id);
+    }
+    if (f.value.category_id) {
+        params.set("category_id", f.value.category_id);
+    }
+    if (f.value.cashier_id) {
+        params.set("cashier_id", f.value.cashier_id);
+    }
+    if (f.value.payment_method) {
+        params.set("payment_method", f.value.payment_method);
+    }
+    return params.toString();
+});
+
+const csvHref = computed(() => `/cooperative/pos/reports/export.csv${exportQuery.value ? `?${exportQuery.value}` : ""}`);
+const pdfHref = computed(() => `/cooperative/pos/reports/export.pdf${exportQuery.value ? `?${exportQuery.value}` : ""}`);
+
+const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.revenue)));
 </script>
 
 <template>
-  <Head title="Report Penjualan POS" />
-  <AppLayout
-    :breadcrumbs="[
-      { title: 'POS Toko', href: '#' },
-      { title: 'Report Penjualan', href: index().url },
-    ]"
-  >
-    <PageContainer class="max-w-none">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-6 shadow-sm shadow-emerald-950/5 sm:p-7 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
-      >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
-        >
-          <div class="space-y-3">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
-            >
-              <Sparkles class="size-3.5" />
-              Laporan Tahunan
-            </span>
-            <h1
-              class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-            >
-              Report Penjualan POS
-            </h1>
-            <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Ringkasan omzet, profit kotor, dan performa produk toko koperasi
-              per tahun.
-            </p>
-          </div>
-          <div
-            class="flex items-end gap-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/40"
-          >
-            <div class="space-y-1">
-              <label
-                class="text-[11px] font-medium uppercase text-zinc-500"
-                for="rpt-year"
-                >Tahun</label
-              >
-              <Input
-                id="rpt-year"
-                v-model.number="filter.year"
-                type="number"
-                min="2020"
-                class="w-28"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              class="mb-0.5"
-              @click="refreshReport"
-              >Refresh</Button
-            >
-          </div>
-        </div>
-      </section>
-
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div
-          class="rounded-xl border border-zinc-200/80 bg-white/95 p-4 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900"
-        >
-          <div
-            class="text-xs font-medium uppercase tracking-wide text-zinc-500"
-          >
-            Transaksi
-          </div>
-          <div
-            class="mt-1 text-2xl font-bold tabular-nums text-zinc-950 dark:text-white"
-          >
-            {{ summary.transactions }}
-          </div>
-        </div>
-        <div
-          class="rounded-xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/60 to-white p-4 shadow-sm shadow-emerald-950/5 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:to-zinc-900"
-        >
-          <div
-            class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
-          >
-            Omzet
-          </div>
-          <div
-            class="mt-1 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
-          >
-            {{ formatCurrency(summary.revenue) }}
-          </div>
-        </div>
-        <div
-          class="rounded-xl border border-sky-200/60 bg-gradient-to-br from-sky-50/60 to-white p-4 shadow-sm shadow-sky-950/5 dark:border-sky-900/40 dark:from-sky-950/20 dark:to-zinc-900"
-        >
-          <div
-            class="text-xs font-medium uppercase tracking-wide text-sky-700 dark:text-sky-300"
-          >
-            Profit Kotor
-          </div>
-          <div
-            class="mt-1 text-2xl font-bold tabular-nums text-sky-700 dark:text-sky-300"
-          >
-            {{ formatCurrency(summary.gross_profit) }}
-          </div>
-        </div>
-        <div
-          class="rounded-xl border border-zinc-200/80 bg-white/95 p-4 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900"
-        >
-          <div
-            class="text-xs font-medium uppercase tracking-wide text-zinc-500"
-          >
-            Transaksi Anggota
-          </div>
-          <div
-            class="mt-1 text-2xl font-bold tabular-nums text-zinc-950 dark:text-white"
-          >
-            {{ summary.member_transactions }}
-          </div>
-        </div>
-      </div>
-
-      <Card
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
-      >
-        <SectionHeader
-          title="Penjualan per Produk"
-          :description="`${productSales.length} produk`"
-          :icon="BarChart3"
-          tone="emerald"
-        />
-        <CardContent class="px-0 pb-0">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm" role="table">
-              <thead
-                class="border-b bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-950"
-              >
-                <tr>
-                  <th class="px-4 py-3">Produk</th>
-                  <th class="px-4 py-3 text-right">Qty</th>
-                  <th class="px-4 py-3 text-right">Omzet</th>
-                  <th class="px-4 py-3 text-right">Profit Kotor</th>
-                </tr>
-              </thead>
-              <tbody
-                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
-              >
-                <tr
-                  v-for="product in productSales"
-                  :key="product.pos_product_id ?? product.product_name"
-                  class="transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-900/50"
-                >
-                  <td
-                    class="px-4 py-3 font-semibold text-zinc-950 dark:text-white"
-                  >
-                    {{ product.product_name }}
-                  </td>
-                  <td class="px-4 py-3 text-right tabular-nums">
-                    {{ product.quantity }}
-                  </td>
-                  <td class="px-4 py-3 text-right tabular-nums">
-                    {{ formatCurrency(product.revenue) }}
-                  </td>
-                  <td
-                    class="px-4 py-3 text-right font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
-                  >
-                    {{ formatCurrency(product.gross_profit) }}
-                  </td>
-                </tr>
-                <tr v-if="productSales.length === 0">
-                  <td colspan="4" class="px-4 py-16 text-center text-zinc-500">
-                    <div class="flex flex-col items-center gap-2">
-                      <TrendingUp
-                        class="size-8 text-zinc-300 dark:text-zinc-700"
-                      />
-                      <p class="text-sm">
-                        Belum ada penjualan POS untuk tahun ini.
-                      </p>
+    <Head title="Laporan POS" />
+    <AppLayout
+        :breadcrumbs="[
+            { title: 'Koperasi', href: '/cooperative' },
+            { title: 'POS', href: '/cooperative/pos' },
+            { title: 'Laporan', href: '/cooperative/pos/reports' },
+        ]"
+    >
+        <PageContainer>
+            <div class="flex flex-col gap-6">
+                <header class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <Link href="/cooperative/pos">
+                            <Button variant="ghost" size="icon" class="rounded-full">
+                                <ArrowLeft class="h-5 w-5" />
+                            </Button>
+                        </Link>
+                        <div>
+                            <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Laporan POS</h1>
+                            <p class="text-sm text-zinc-500">Ringkasan penjualan, pembayaran, dan tren.</p>
+                        </div>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-    </PageContainer>
-  </AppLayout>
+                    <div class="flex gap-2">
+                        <a :href="csvHref">
+                            <Button variant="outline" size="sm" class="rounded-xl">
+                                <FileSpreadsheet class="mr-2 h-4 w-4" /> CSV
+                            </Button>
+                        </a>
+                        <a :href="pdfHref">
+                            <Button variant="outline" size="sm" class="rounded-xl">
+                                <FileText class="mr-2 h-4 w-4" /> PDF
+                            </Button>
+                        </a>
+                    </div>
+                </header>
+
+                <div class="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm md:grid-cols-5">
+                    <div>
+                        <Label class="text-xs">Dari</Label>
+                        <Input v-model="f.from" type="date" class="mt-1 rounded-xl" />
+                    </div>
+                    <div>
+                        <Label class="text-xs">Sampai</Label>
+                        <Input v-model="f.to" type="date" class="mt-1 rounded-xl" />
+                    </div>
+                    <div>
+                        <Label class="text-xs">Kasir</Label>
+                        <select v-model="f.cashier_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                            <option value="">Semua</option>
+                            <option v-for="c in cashiers" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <Label class="text-xs">Metode</Label>
+                        <select v-model="f.payment_method" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                            <option value="">Semua</option>
+                            <option value="CASH">Tunai</option>
+                            <option value="TRANSFER">Transfer</option>
+                            <option value="QRIS">QRIS</option>
+                            <option value="MEMBER_CREDIT">Kredit Anggota</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <Button class="w-full rounded-xl" @click="applyFilters">
+                            <Download class="mr-2 h-4 w-4" /> Terapkan
+                        </Button>
+                    </div>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-4">
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Penjualan Kotor</p>
+                        <p class="mt-1 text-2xl font-extrabold text-zinc-900">{{ formatCurrency(summary.gross_sales) }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Laba Kotor</p>
+                        <p class="mt-1 text-2xl font-extrabold text-emerald-600">{{ formatCurrency(summary.gross_profit) }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Penjualan Bersih</p>
+                        <p class="mt-1 text-2xl font-extrabold text-blue-600">{{ formatCurrency(summary.net_sales) }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Transaksi</p>
+                        <p class="mt-1 text-2xl font-extrabold text-zinc-900">{{ summary.transactions }}</p>
+                        <p class="mt-1 text-xs text-zinc-500">{{ summary.voided_transactions }} void · {{ summary.returns.count }} retur</p>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-bold text-zinc-900">Tren Harian</h2>
+                        <div v-if="daily_trend.length === 0" class="mt-6 text-center text-sm text-zinc-500">Belum ada data</div>
+                        <div v-else class="mt-4 space-y-2">
+                            <div v-for="d in daily_trend" :key="d.date" class="flex items-center gap-3">
+                                <span class="w-24 text-xs text-zinc-500">{{ d.date }}</span>
+                                <div class="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100">
+                                    <div class="h-full bg-blue-500" :style="{ width: ((d.revenue / maxRevenue) * 100) + '%' }"></div>
+                                </div>
+                                <span class="w-32 text-right text-xs font-bold text-zinc-700">{{ formatCurrency(d.revenue) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-bold text-zinc-900">Rekonsiliasi Pembayaran</h2>
+                        <table class="mt-4 w-full text-left text-sm">
+                            <thead class="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                                <tr>
+                                    <th class="py-2">Metode</th>
+                                    <th class="py-2 text-right">Jumlah</th>
+                                    <th class="py-2 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="r in payment_reconciliation" :key="r.method" class="border-b border-zinc-50">
+                                    <td class="py-2 font-medium">{{ r.method }}</td>
+                                    <td class="py-2 text-right">{{ r.count }}</td>
+                                    <td class="py-2 text-right font-bold">{{ formatCurrency(r.total) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                    <h2 class="mb-4 text-lg font-bold text-zinc-900">Top 20 Produk</h2>
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                            <tr>
+                                <th class="py-2">Produk</th>
+                                <th class="py-2 text-right">Qty</th>
+                                <th class="py-2 text-right">Pendapatan</th>
+                                <th class="py-2 text-right">Laba</th>
+                                <th class="py-2 text-right">Margin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(p, idx) in top_products" :key="idx" class="border-b border-zinc-50">
+                                <td class="py-2 font-medium">{{ p.product_name }}</td>
+                                <td class="py-2 text-right">{{ p.quantity }}</td>
+                                <td class="py-2 text-right">{{ formatCurrency(p.revenue) }}</td>
+                                <td class="py-2 text-right text-emerald-600">{{ formatCurrency(p.gross_profit) }}</td>
+                                <td class="py-2 text-right">{{ p.margin_percent }}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <h2 class="mb-3 text-lg font-bold text-zinc-900">Top Anggota</h2>
+                        <ul class="divide-y divide-zinc-50">
+                            <li v-for="m in top_members" :key="m.member_name" class="flex items-center justify-between py-2 text-sm">
+                                <span class="font-medium">{{ m.member_name }}</span>
+                                <span class="text-right text-xs text-zinc-500">{{ m.transactions }} trx · {{ formatCurrency(m.total) }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
+                        <h2 class="mb-3 text-lg font-bold text-zinc-900">Performa Kasir</h2>
+                        <ul class="divide-y divide-zinc-50">
+                            <li v-for="c in cashier_performance" :key="c.cashier_name" class="flex items-center justify-between py-2 text-sm">
+                                <span class="font-medium">{{ c.cashier_name }}</span>
+                                <span class="text-right text-xs text-zinc-500">{{ c.transactions }} trx · {{ formatCurrency(c.total) }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </PageContainer>
+    </AppLayout>
 </template>

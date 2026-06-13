@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::index
-* @see app/Http/Controllers/Cooperative/PosProductController.php:19
+* @see app/Http/Controllers/Cooperative/PosProductController.php:20
 * @route '/cooperative/pos-products'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::store
-* @see app/Http/Controllers/Cooperative/PosProductController.php:47
+* @see app/Http/Controllers/Cooperative/PosProductController.php:53
 * @route '/cooperative/pos-products'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::store
-* @see app/Http/Controllers/Cooperative/PosProductController.php:47
+* @see app/Http/Controllers/Cooperative/PosProductController.php:53
 * @route '/cooperative/pos-products'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::store
-* @see app/Http/Controllers/Cooperative/PosProductController.php:47
+* @see app/Http/Controllers/Cooperative/PosProductController.php:53
 * @route '/cooperative/pos-products'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::store
-* @see app/Http/Controllers/Cooperative/PosProductController.php:47
+* @see app/Http/Controllers/Cooperative/PosProductController.php:53
 * @route '/cooperative/pos-products'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::store
-* @see app/Http/Controllers/Cooperative/PosProductController.php:47
+* @see app/Http/Controllers/Cooperative/PosProductController.php:53
 * @route '/cooperative/pos-products'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -138,10 +138,10 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-export const show = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -153,10 +153,10 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-show.url = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { product: args }
     }
@@ -186,50 +186,50 @@ show.url = (args: { product: number | { id: number } } | [product: number | { id
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-show.get = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-show.head = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-const showForm = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-showForm.get = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::show
-* @see app/Http/Controllers/Cooperative/PosProductController.php:54
+* @see app/Http/Controllers/Cooperative/PosProductController.php:72
 * @route '/cooperative/pos-products/{product}'
 */
-showForm.head = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -243,10 +243,10 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-export const update = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -258,10 +258,10 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-update.url = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+update.url = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { product: args }
     }
@@ -291,30 +291,30 @@ update.url = (args: { product: number | { id: number } } | [product: number | { 
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-update.put = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-update.patch = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-const updateForm = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const updateForm = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -326,10 +326,10 @@ const updateForm = (args: { product: number | { id: number } } | [product: numbe
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-updateForm.put = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateForm.put = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -341,10 +341,10 @@ updateForm.put = (args: { product: number | { id: number } } | [product: number 
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::update
-* @see app/Http/Controllers/Cooperative/PosProductController.php:63
+* @see app/Http/Controllers/Cooperative/PosProductController.php:81
 * @route '/cooperative/pos-products/{product}'
 */
-updateForm.patch = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateForm.patch = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PATCH',
@@ -358,10 +358,10 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::destroy
-* @see app/Http/Controllers/Cooperative/PosProductController.php:70
+* @see app/Http/Controllers/Cooperative/PosProductController.php:105
 * @route '/cooperative/pos-products/{product}'
 */
-export const destroy = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -373,10 +373,10 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::destroy
-* @see app/Http/Controllers/Cooperative/PosProductController.php:70
+* @see app/Http/Controllers/Cooperative/PosProductController.php:105
 * @route '/cooperative/pos-products/{product}'
 */
-destroy.url = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+destroy.url = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { product: args }
     }
@@ -406,20 +406,20 @@ destroy.url = (args: { product: number | { id: number } } | [product: number | {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::destroy
-* @see app/Http/Controllers/Cooperative/PosProductController.php:70
+* @see app/Http/Controllers/Cooperative/PosProductController.php:105
 * @route '/cooperative/pos-products/{product}'
 */
-destroy.delete = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::destroy
-* @see app/Http/Controllers/Cooperative/PosProductController.php:70
+* @see app/Http/Controllers/Cooperative/PosProductController.php:105
 * @route '/cooperative/pos-products/{product}'
 */
-const destroyForm = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const destroyForm = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: destroy.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'DELETE',
@@ -431,10 +431,10 @@ const destroyForm = (args: { product: number | { id: number } } | [product: numb
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::destroy
-* @see app/Http/Controllers/Cooperative/PosProductController.php:70
+* @see app/Http/Controllers/Cooperative/PosProductController.php:105
 * @route '/cooperative/pos-products/{product}'
 */
-destroyForm.delete = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+destroyForm.delete = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: destroy.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'DELETE',
@@ -448,10 +448,10 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::adjustStock
-* @see app/Http/Controllers/Cooperative/PosProductController.php:81
+* @see app/Http/Controllers/Cooperative/PosProductController.php:117
 * @route '/cooperative/pos-products/{product}/adjust-stock'
 */
-export const adjustStock = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const adjustStock = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: adjustStock.url(args, options),
     method: 'post',
 })
@@ -463,10 +463,10 @@ adjustStock.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::adjustStock
-* @see app/Http/Controllers/Cooperative/PosProductController.php:81
+* @see app/Http/Controllers/Cooperative/PosProductController.php:117
 * @route '/cooperative/pos-products/{product}/adjust-stock'
 */
-adjustStock.url = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+adjustStock.url = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { product: args }
     }
@@ -496,30 +496,30 @@ adjustStock.url = (args: { product: number | { id: number } } | [product: number
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::adjustStock
-* @see app/Http/Controllers/Cooperative/PosProductController.php:81
+* @see app/Http/Controllers/Cooperative/PosProductController.php:117
 * @route '/cooperative/pos-products/{product}/adjust-stock'
 */
-adjustStock.post = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+adjustStock.post = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: adjustStock.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::adjustStock
-* @see app/Http/Controllers/Cooperative/PosProductController.php:81
+* @see app/Http/Controllers/Cooperative/PosProductController.php:117
 * @route '/cooperative/pos-products/{product}/adjust-stock'
 */
-const adjustStockForm = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const adjustStockForm = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: adjustStock.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosProductController::adjustStock
-* @see app/Http/Controllers/Cooperative/PosProductController.php:81
+* @see app/Http/Controllers/Cooperative/PosProductController.php:117
 * @route '/cooperative/pos-products/{product}/adjust-stock'
 */
-adjustStockForm.post = (args: { product: number | { id: number } } | [product: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+adjustStockForm.post = (args: { product: string | number | { id: string | number } } | [product: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: adjustStock.url(args, options),
     method: 'post',
 })

@@ -25,6 +25,7 @@ use App\Services\Cooperative\MemberProfileCompletenessService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use App\Services\Cooperative\SavingsSummaryService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -156,6 +157,7 @@ class MemberPortalController extends Controller
                 'loan_outstanding' => (float) $member->loans()->where('status', LoanStatus::Active)->sum('outstanding_amount'),
                 'points_balance' => $pointSummary['total_points'],
                 'member_tier' => $pointSummary['member_tier'],
+                'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                 'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
             'recentTransactions' => ($isActive || $isPendingReview) ? PosTransaction::query()
@@ -231,9 +233,19 @@ class MemberPortalController extends Controller
         Request $request,
         MemberStatusJourneyService $journeyService,
         SavingsSummaryService $savingsSummary,
+        DuesGenerationService $duesGenerationService,
     ): Response {
         $member = $this->memberOrAbort($request);
+        $currentPeriod = CarbonImmutable::now()->format('Y-m');
+
+        try {
+            $duesGenerationService->generateForPeriod($currentPeriod);
+        } catch (\Throwable) {
+            // If the period is locked, keep the member page read-only.
+        }
+
         $summary = $savingsSummary->summary($member);
+        $wajibData = $this->wajibSavingsInvoiceData($member);
 
         return Inertia::render('Kojayaku/Savings', [
             'summary' => [
@@ -246,8 +258,111 @@ class MemberPortalController extends Controller
             'entries' => $savingsSummary->ledgerQuery($member)->latest('posted_at')->paginate(12)->withQueryString(),
             'invoices' => $member->invoices()->with('contributionType')->latest('period')->paginate(10, ['*'], 'invoices')->withQueryString(),
             'payments' => $member->payments()->with('invoice.contributionType')->latest('paid_at')->paginate(10, ['*'], 'payments')->withQueryString(),
+            'wajibInvoices' => $wajibData['invoices'],
+            'wajibSummary' => $wajibData['summary'],
             'journey' => $journeyService->paymentJourney($member),
         ]);
+    }
+
+    /**
+     * @return array{summary: array<string, mixed>, invoices: array<int, array<string, mixed>>}
+     */
+    private function wajibSavingsInvoiceData(CooperativeMember $member): array
+    {
+        $wajibType = CooperativeContributionType::query()
+            ->where('is_active', true)
+            ->where(function ($query): void {
+                $query->where('code', 'WAJIB')
+                    ->orWhere('category', 'WAJIB');
+            })
+            ->orderByRaw("CASE WHEN code = 'WAJIB' THEN 0 ELSE 1 END")
+            ->first();
+
+        if (! $wajibType) {
+            return [
+                'summary' => [
+                    'total_invoices' => 0,
+                    'paid_invoices' => 0,
+                    'open_invoices' => 0,
+                    'total_amount' => 0.0,
+                    'paid_amount' => 0.0,
+                    'outstanding_amount' => 0.0,
+                ],
+                'invoices' => [],
+            ];
+        }
+
+        $invoices = $member->invoices()
+            ->where('cooperative_contribution_type_id', $wajibType->id)
+            ->orderByDesc('period')
+            ->limit(24)
+            ->get();
+
+        $mapped = $invoices->map(function (CooperativeDuesInvoice $invoice): array {
+            $amount = (float) $invoice->amount;
+            $paidAmount = (float) $invoice->paid_amount;
+            $remainingAmount = max($amount - $paidAmount, 0);
+
+            return [
+                'id' => $invoice->id,
+                'period' => $invoice->period,
+                'period_label' => $this->periodLabel($invoice->period),
+                'amount' => $amount,
+                'paid_amount' => $paidAmount,
+                'remaining_amount' => $remainingAmount,
+                'due_date' => $invoice->due_date?->toDateString(),
+                'status' => $invoice->status,
+                'status_label' => $this->invoiceStatusLabel($invoice->status),
+                'is_paid' => $invoice->status === 'PAID',
+            ];
+        })->values()->all();
+
+        $totalAmount = (float) $invoices->sum('amount');
+        $paidAmount = (float) $invoices->sum('paid_amount');
+
+        return [
+            'summary' => [
+                'total_invoices' => $invoices->count(),
+                'paid_invoices' => $invoices->where('status', 'PAID')->count(),
+                'open_invoices' => $invoices->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
+                'total_amount' => $totalAmount,
+                'paid_amount' => $paidAmount,
+                'outstanding_amount' => max($totalAmount - $paidAmount, 0),
+            ],
+            'invoices' => $mapped,
+        ];
+    }
+
+    private function periodLabel(string $period): string
+    {
+        $date = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        return ($months[(int) $date->format('n')] ?? $date->format('F')).' '.$date->format('Y');
+    }
+
+    private function invoiceStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'PAID' => 'Sudah dibayar',
+            'PARTIAL' => 'Dibayar sebagian',
+            'UNPAID' => 'Belum dibayar',
+            'VOID' => 'Dibatalkan',
+            default => $status,
+        };
     }
 
     public function loans(Request $request, MemberOnboardingService $onboardingService, MemberStatusJourneyService $journeyService): Response

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::proof
-* @see app/Http/Controllers/MemberPortalController.php:413
+* @see app/Http/Controllers/MemberPortalController.php:528
 * @route '/member/payments/proof'
 */
 export const proof = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ proof.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::proof
-* @see app/Http/Controllers/MemberPortalController.php:413
+* @see app/Http/Controllers/MemberPortalController.php:528
 * @route '/member/payments/proof'
 */
 proof.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ proof.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::proof
-* @see app/Http/Controllers/MemberPortalController.php:413
+* @see app/Http/Controllers/MemberPortalController.php:528
 * @route '/member/payments/proof'
 */
 proof.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ proof.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::proof
-* @see app/Http/Controllers/MemberPortalController.php:413
+* @see app/Http/Controllers/MemberPortalController.php:528
 * @route '/member/payments/proof'
 */
 const proofForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const proofForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::proof
-* @see app/Http/Controllers/MemberPortalController.php:413
+* @see app/Http/Controllers/MemberPortalController.php:528
 * @route '/member/payments/proof'
 */
 proofForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

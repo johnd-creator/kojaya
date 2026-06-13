@@ -116,7 +116,7 @@ batch.form = batchForm
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:36
 * @route '/api/v1/dues/payments/{payment}/approve'
 */
-export const approve = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -131,7 +131,7 @@ approve.definition = {
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:36
 * @route '/api/v1/dues/payments/{payment}/approve'
 */
-approve.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+approve.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -164,7 +164,7 @@ approve.url = (args: { payment: string | number | { id: string | number } } | [p
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:36
 * @route '/api/v1/dues/payments/{payment}/approve'
 */
-approve.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -174,7 +174,7 @@ approve.post = (args: { payment: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:36
 * @route '/api/v1/dues/payments/{payment}/approve'
 */
-const approveForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const approveForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: approve.url(args, options),
     method: 'post',
 })
@@ -184,7 +184,7 @@ const approveForm = (args: { payment: string | number | { id: string | number } 
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:36
 * @route '/api/v1/dues/payments/{payment}/approve'
 */
-approveForm.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+approveForm.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: approve.url(args, options),
     method: 'post',
 })

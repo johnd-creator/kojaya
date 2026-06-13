@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\CooperativeContributionType;
+use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\LoanType;
@@ -73,6 +75,56 @@ class P5MemberPortalTest extends TestCase
             ->has('entries')
             ->has('invoices')
             ->has('payments')
+            ->has('wajibInvoices')
+            ->has('wajibSummary')
+        );
+    }
+
+    public function test_savings_shows_monthly_wajib_paid_and_unpaid_statuses(): void
+    {
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 100000,
+            'paid_amount' => 100000,
+            'due_date' => '2026-05-10',
+            'status' => 'PAID',
+        ]);
+
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-06',
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => '2026-06-10',
+            'status' => 'UNPAID',
+        ]);
+
+        $response = $this->actingAs($this->memberUser)->get(route('member.savings'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Kojayaku/Savings')
+            ->where('wajibSummary.total_invoices', 2)
+            ->where('wajibSummary.paid_invoices', 1)
+            ->where('wajibSummary.open_invoices', 1)
+            ->where('wajibSummary.outstanding_amount', 100000)
+            ->where('wajibInvoices.0.period', '2026-06')
+            ->where('wajibInvoices.0.period_label', 'Juni 2026')
+            ->where('wajibInvoices.0.status_label', 'Belum dibayar')
+            ->where('wajibInvoices.1.period_label', 'Mei 2026')
+            ->where('wajibInvoices.1.status_label', 'Sudah dibayar')
         );
     }
 

@@ -277,6 +277,38 @@ class CooperativeFeatureTest extends TestCase
         ]);
     }
 
+    public function test_dues_generation_skips_periods_before_member_join_month(): void
+    {
+        $member = $this->member([
+            'status' => 'ACTIVE',
+            'tanggal_aktif' => '2026-06-15',
+            'joined_at' => '2026-06-15',
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        $service = app(DuesGenerationService::class);
+
+        $this->assertSame(0, $service->generateForPeriod('2026-05'));
+        $this->assertSame(1, $service->generateForPeriod('2026-06'));
+
+        $this->assertDatabaseMissing('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'period' => '2026-05',
+        ]);
+        $this->assertDatabaseHas('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'period' => '2026-06',
+            'status' => 'UNPAID',
+        ]);
+    }
+
     public function test_dues_page_auto_generates_current_period_invoices(): void
     {
         Carbon::setTestNow('2026-05-15 09:00:00');
@@ -311,6 +343,41 @@ class CooperativeFeatureTest extends TestCase
             'cooperative_contribution_type_id' => $type->id,
             'period' => '2026-05',
             'status' => 'UNPAID',
+        ]);
+    }
+
+    public function test_dues_page_does_not_backbill_members_before_join_month(): void
+    {
+        Carbon::setTestNow('2026-06-13 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $member = $this->member([
+            'status' => 'ACTIVE',
+            'tanggal_aktif' => '2026-06-01',
+            'joined_at' => '2026-06-01',
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index', ['period' => '2026-05']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('filters.period', '2026-05')
+                ->has('invoices.data', 0)
+            );
+
+        $this->assertDatabaseMissing('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'period' => '2026-05',
         ]);
     }
 

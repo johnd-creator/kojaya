@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   UserCheck,
   WalletCards
-  
 } from "lucide-vue-next";
 import type {LucideIcon} from "lucide-vue-next";
 import { computed } from "vue";
@@ -63,6 +62,26 @@ const props = defineProps<{
       invoice?: { period: string } | null;
     }>;
   };
+  wajibSummary: {
+    total_invoices: number;
+    paid_invoices: number;
+    open_invoices: number;
+    total_amount: number;
+    paid_amount: number;
+    outstanding_amount: number;
+  };
+  wajibInvoices: Array<{
+    id: number;
+    period: string;
+    period_label: string;
+    amount: number;
+    paid_amount: number;
+    remaining_amount: number;
+    due_date: string | null;
+    status: string;
+    status_label: string;
+    is_paid: boolean;
+  }>;
   journey: {
     title: string;
     current_status: string;
@@ -140,6 +159,7 @@ const categoryCards = computed<
 const latestLedger = computed(() => props.entries.data.slice(0, 5));
 const latestInvoices = computed(() => props.invoices.data.slice(0, 4));
 const latestPayments = computed(() => props.payments.data.slice(0, 4));
+const wajibInvoices = computed(() => props.wajibInvoices ?? []);
 
 const statusClass = (status: string): string => {
   if (["PAID", "APPROVED", "ACTIVE", "COMPLETED"].includes(status)) {
@@ -217,6 +237,128 @@ const statusClass = (status: string): string => {
                 {{ card.value }}
               </p>
               <p class="mt-0.5 text-[10px] text-zinc-500 leading-normal">{{ card.caption }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="overflow-hidden rounded-3xl border border-zinc-100 bg-white shadow-sm"
+        >
+          <div
+            class="flex flex-col gap-4 border-b border-zinc-50 p-6 lg:flex-row lg:items-center lg:justify-between"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-sm"
+              >
+                <CalendarDays class="h-5 w-5" />
+              </div>
+              <div>
+                <h2 class="font-bold text-zinc-900 tracking-tight">
+                  Simpanan Wajib Bulanan
+                </h2>
+                <p class="mt-0.5 text-sm text-zinc-500">
+                  Pantau bulan apa saja yang sudah dibayar, belum dibayar, atau masih sebagian.
+                </p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center sm:min-w-[360px]">
+              <div class="rounded-2xl bg-zinc-50 px-3 py-2">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Total</p>
+                <p class="mt-1 text-sm font-extrabold text-zinc-900">
+                  {{ wajibSummary.total_invoices }}
+                </p>
+              </div>
+              <div class="rounded-2xl bg-emerald-50 px-3 py-2">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Lunas</p>
+                <p class="mt-1 text-sm font-extrabold text-emerald-800">
+                  {{ wajibSummary.paid_invoices }}
+                </p>
+              </div>
+              <div class="rounded-2xl bg-amber-50 px-3 py-2">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-amber-600">Belum</p>
+                <p class="mt-1 text-sm font-extrabold text-amber-800">
+                  {{ wajibSummary.open_invoices }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-4 p-6 lg:grid-cols-[0.85fr_1.15fr]">
+            <div class="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                Ringkasan Simpanan Wajib
+              </p>
+              <div class="mt-4 space-y-3">
+                <div class="flex items-center justify-between gap-4">
+                  <span class="text-sm text-emerald-900/70">Total tertagih</span>
+                  <span class="font-extrabold text-emerald-950">
+                    {{ formatCurrency(wajibSummary.total_amount) }}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <span class="text-sm text-emerald-900/70">Sudah dibayar</span>
+                  <span class="font-extrabold text-emerald-950">
+                    {{ formatCurrency(wajibSummary.paid_amount) }}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                  <span class="text-sm text-emerald-900/70">Sisa tagihan</span>
+                  <span class="font-extrabold text-amber-700">
+                    {{ formatCurrency(wajibSummary.outstanding_amount) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-zinc-100">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-zinc-50/70 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th class="px-4 py-3">Bulan Iuran</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3 text-right">Tagihan</th>
+                    <th class="px-4 py-3 text-right">Dibayar</th>
+                    <th class="px-4 py-3 text-right">Sisa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="invoice in wajibInvoices"
+                    :key="invoice.id"
+                    class="border-t border-zinc-50 transition-colors hover:bg-zinc-50/60"
+                  >
+                    <td class="px-4 py-3">
+                      <p class="font-bold text-zinc-900">{{ invoice.period_label }}</p>
+                      <p class="mt-0.5 text-xs text-zinc-400">
+                        Jatuh tempo {{ invoice.due_date ? formatDate(invoice.due_date) : "-" }}
+                      </p>
+                    </td>
+                    <td class="px-4 py-3">
+                      <span
+                        class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-extrabold tracking-wide"
+                        :class="statusClass(invoice.status)"
+                      >
+                        {{ invoice.status_label }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-semibold text-zinc-800">
+                      {{ formatCurrency(invoice.amount) }}
+                    </td>
+                    <td class="px-4 py-3 text-right font-semibold text-emerald-800">
+                      {{ formatCurrency(invoice.paid_amount) }}
+                    </td>
+                    <td class="px-4 py-3 text-right font-extrabold" :class="invoice.remaining_amount > 0 ? 'text-amber-700' : 'text-emerald-800'">
+                      {{ formatCurrency(invoice.remaining_amount) }}
+                    </td>
+                  </tr>
+                  <tr v-if="wajibInvoices.length === 0">
+                    <td colspan="5" class="px-4 py-10 text-center text-zinc-400">
+                      Belum ada tagihan Simpanan Wajib bulanan.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>

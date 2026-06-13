@@ -166,7 +166,7 @@ create.form = createForm
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-export const show = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -181,7 +181,7 @@ show.definition = {
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-show.url = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { workOrder: args }
     }
@@ -214,7 +214,7 @@ show.url = (args: { workOrder: string | number | { id: string | number } } | [wo
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-show.get = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -224,7 +224,7 @@ show.get = (args: { workOrder: string | number | { id: string | number } } | [wo
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-show.head = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -234,7 +234,7 @@ show.head = (args: { workOrder: string | number | { id: string | number } } | [w
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-const showForm = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -244,7 +244,7 @@ const showForm = (args: { workOrder: string | number | { id: string | number } }
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-showForm.get = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -254,7 +254,7 @@ showForm.get = (args: { workOrder: string | number | { id: string | number } } |
 * @see app/Http/Controllers/WorkOrderController.php:47
 * @route '/work-orders/{workOrder}'
 */
-showForm.head = (args: { workOrder: string | number | { id: string | number } } | [workOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { workOrder: string | { id: string } } | [workOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

@@ -10,6 +10,21 @@
 
 ## 🎯 2026-06: M3 P0 Hardening
 
+### **June 13, 2026 - Member Savings Monthly Wajib Visibility**
+
+**🏦 Kojayaku Simpanan:**
+- ✅ `/member/savings` now shows a dedicated Simpanan Wajib Bulanan section with per-month invoice status, including paid, partial, unpaid, due date, amount paid, and remaining balance.
+- ✅ Opening `/member/savings` ensures the current monthly dues period is generated when possible, so active members see the current Simpanan Wajib billing state.
+- ✅ Restored `summary.pending_invoices` on the member dashboard payload for consistent member-facing invoice status.
+- ✅ Monthly dues generation now respects the member join month (`tanggal_aktif` / `joined_at`), so a member who joins in June 2026 is not back-billed when operators open the May 2026 dues filter.
+
+**Verification:**
+- ✅ `P5MemberPortalTest`: `25 passed (194 assertions)`.
+- ✅ Member savings API scope test: `1 passed (13 assertions)`.
+- ✅ Cooperative dues join-month regression: `5 passed (66 assertions)`.
+- ✅ `vendor/bin/pint --dirty --format agent` passed.
+- ✅ `npm run build` passed.
+
 ### **June 13, 2026 - Codex POS/Dues Follow-up Fixes**
 
 **🛒 POS Inventory Image Fix:**

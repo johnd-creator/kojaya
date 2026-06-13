@@ -28,6 +28,10 @@ class DuesGenerationService
             ->orderBy('id')
             ->chunkById(100, function ($members) use ($period, $periodDate, $types, &$created): void {
                 foreach ($members as $member) {
+                    if (! $this->memberIsEligibleForPeriod($member, $periodDate)) {
+                        continue;
+                    }
+
                     foreach ($types as $type) {
                         if ($type->frequency === 'ONCE' && $this->hasPreviousInvoice($member->id, $type->id)) {
                             continue;
@@ -99,5 +103,16 @@ class DuesGenerationService
             ->where('cooperative_member_id', $memberId)
             ->where('cooperative_contribution_type_id', $typeId)
             ->exists();
+    }
+
+    private function memberIsEligibleForPeriod(CooperativeMember $member, CarbonImmutable $periodDate): bool
+    {
+        $joinedAt = $member->tanggal_aktif ?: $member->joined_at;
+
+        if (! $joinedAt) {
+            return true;
+        }
+
+        return CarbonImmutable::parse($joinedAt)->startOfMonth()->lessThanOrEqualTo($periodDate);
     }
 }

@@ -78,7 +78,7 @@ store.form = storeForm
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:39
 * @route '/cooperative/pos/void-requests/{voidRequest}/process'
 */
-export const process = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const process = (args: { voidRequest: number | { id: number } } | [voidRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
@@ -93,7 +93,7 @@ process.definition = {
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:39
 * @route '/cooperative/pos/void-requests/{voidRequest}/process'
 */
-process.url = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+process.url = (args: { voidRequest: number | { id: number } } | [voidRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { voidRequest: args }
     }
@@ -126,7 +126,7 @@ process.url = (args: { voidRequest: string | number | { id: string | number } } 
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:39
 * @route '/cooperative/pos/void-requests/{voidRequest}/process'
 */
-process.post = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+process.post = (args: { voidRequest: number | { id: number } } | [voidRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
@@ -136,7 +136,7 @@ process.post = (args: { voidRequest: string | number | { id: string | number } }
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:39
 * @route '/cooperative/pos/void-requests/{voidRequest}/process'
 */
-const processForm = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const processForm = (args: { voidRequest: number | { id: number } } | [voidRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: process.url(args, options),
     method: 'post',
 })
@@ -146,7 +146,7 @@ const processForm = (args: { voidRequest: string | number | { id: string | numbe
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:39
 * @route '/cooperative/pos/void-requests/{voidRequest}/process'
 */
-processForm.post = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+processForm.post = (args: { voidRequest: number | { id: number } } | [voidRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: process.url(args, options),
     method: 'post',
 })

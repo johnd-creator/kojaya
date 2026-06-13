@@ -151,12 +151,15 @@ class CooperativeSeeder extends Seeder
                     'phone' => '08123456'.str_pad((string) $number, 4, '0', STR_PAD_LEFT),
                     'identity_number' => '317400000000'.str_pad((string) $number, 4, '0', STR_PAD_LEFT),
                     'address' => 'Alamat anggota demo '.$number,
+                    'tanggal_aktif' => $joinedAt,
                     'joined_at' => $joinedAt,
                     'status' => 'ACTIVE',
+                    'credit_limit' => 500000,
+                    'credit_term_days' => 30,
                 ],
             );
 
-            $this->seedInvoicePayment($member, $pokok, '2025-01', (float) $pokok->default_amount, true, 'POKOK-'.$number, $pengurus);
+            $this->seedInvoicePayment($member, $pokok, Carbon::parse($joinedAt)->format('Y-m'), (float) $pokok->default_amount, true, 'POKOK-'.$number, $pengurus);
 
             foreach (range(1, 12) as $month) {
                 $period = '2025-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT);
@@ -187,6 +190,11 @@ class CooperativeSeeder extends Seeder
         string $reference,
         ?User $pengurus,
     ): void {
+        $memberStartPeriod = Carbon::parse($member->tanggal_aktif ?: $member->joined_at ?: now())->startOfMonth();
+        if (Carbon::parse($period.'-01')->startOfMonth()->lt($memberStartPeriod)) {
+            return;
+        }
+
         $invoice = CooperativeDuesInvoice::query()->updateOrCreate(
             [
                 'cooperative_member_id' => $member->id,

@@ -43,6 +43,40 @@ class MemberStatusJourneyService
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function pendingManualPaymentJourney(CooperativeMember $member): ?array
+    {
+        $payment = $member->payments()
+            ->with(['invoice.contributionType', 'receipt'])
+            ->where('status', 'PENDING')
+            ->whereNotNull('proof_path')
+            ->latest('created_at')
+            ->first();
+
+        if (! $payment) {
+            return null;
+        }
+
+        $invoice = $payment->invoice;
+        $reference = $payment->reference_no
+            ?: $invoice?->contributionType?->name.' '.$invoice?->period;
+
+        return [
+            'title' => 'Pembayaran simpanan manual',
+            'current_status' => $payment->status,
+            'reference' => trim((string) $reference) ?: null,
+            'amount' => (float) $payment->amount,
+            'steps' => [
+                $this->step('Tagihan dibuat', $invoice !== null, $invoice?->created_at?->toIso8601String()),
+                $this->step('Bukti pembayaran dikirim', true, $payment->created_at?->toIso8601String()),
+                $this->step('Diverifikasi pengurus', false),
+                $this->step('Kwitansi tersedia', false),
+            ],
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function loanJourney(CooperativeMember $member): array

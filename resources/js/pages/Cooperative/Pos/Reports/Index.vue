@@ -94,8 +94,8 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                             </Button>
                         </Link>
                         <div>
-                            <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Laporan POS</h1>
-                            <p class="text-sm text-zinc-500">Ringkasan penjualan, pembayaran, dan tren.</p>
+                            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">Laporan POS</h1>
+                            <p class="text-sm text-zinc-500 dark:text-zinc-400">Ringkasan penjualan, pembayaran, dan tren.</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -112,25 +112,31 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                     </div>
                 </header>
 
-                <div class="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm md:grid-cols-5">
+                <div class="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:grid-cols-5">
                     <div>
-                        <Label class="text-xs">Dari</Label>
+                        <Label class="text-xs text-zinc-600 dark:text-zinc-300">Dari</Label>
                         <Input v-model="f.from" type="date" class="mt-1 rounded-xl" />
                     </div>
                     <div>
-                        <Label class="text-xs">Sampai</Label>
+                        <Label class="text-xs text-zinc-600 dark:text-zinc-300">Sampai</Label>
                         <Input v-model="f.to" type="date" class="mt-1 rounded-xl" />
                     </div>
                     <div>
-                        <Label class="text-xs">Kasir</Label>
-                        <select v-model="f.cashier_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                        <Label class="text-xs text-zinc-600 dark:text-zinc-300">Kasir</Label>
+                        <select
+                            v-model="f.cashier_id"
+                            class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                        >
                             <option value="">Semua</option>
                             <option v-for="c in cashiers" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
                     </div>
                     <div>
-                        <Label class="text-xs">Metode</Label>
-                        <select v-model="f.payment_method" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                        <Label class="text-xs text-zinc-600 dark:text-zinc-300">Metode</Label>
+                        <select
+                            v-model="f.payment_method"
+                            class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                        >
                             <option value="">Semua</option>
                             <option value="CASH">Tunai</option>
                             <option value="TRANSFER">Transfer</option>
@@ -146,44 +152,44 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-4">
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Penjualan Kotor</p>
-                        <p class="mt-1 text-2xl font-extrabold text-zinc-900">{{ formatCurrency(summary.gross_sales) }}</p>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Penjualan Kotor</p>
+                        <p class="mt-1 text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{{ formatCurrency(summary.gross_sales) }}</p>
                     </div>
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Laba Kotor</p>
-                        <p class="mt-1 text-2xl font-extrabold text-emerald-600">{{ formatCurrency(summary.gross_profit) }}</p>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Laba Kotor</p>
+                        <p class="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ formatCurrency(summary.gross_profit) }}</p>
                     </div>
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Penjualan Bersih</p>
-                        <p class="mt-1 text-2xl font-extrabold text-blue-600">{{ formatCurrency(summary.net_sales) }}</p>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Penjualan Bersih</p>
+                        <p class="mt-1 text-2xl font-extrabold text-blue-600 dark:text-blue-400">{{ formatCurrency(summary.net_sales) }}</p>
                     </div>
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Transaksi</p>
-                        <p class="mt-1 text-2xl font-extrabold text-zinc-900">{{ summary.transactions }}</p>
-                        <p class="mt-1 text-xs text-zinc-500">{{ summary.voided_transactions }} void · {{ summary.returns.count }} retur</p>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Transaksi</p>
+                        <p class="mt-1 text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">{{ summary.transactions }}</p>
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ summary.voided_transactions }} void · {{ summary.returns.count }} retur</p>
                     </div>
                 </div>
 
                 <div class="grid gap-6 md:grid-cols-2">
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <h2 class="text-lg font-bold text-zinc-900">Tren Harian</h2>
-                        <div v-if="daily_trend.length === 0" class="mt-6 text-center text-sm text-zinc-500">Belum ada data</div>
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100">Tren Harian</h2>
+                        <div v-if="daily_trend.length === 0" class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Belum ada data</div>
                         <div v-else class="mt-4 space-y-2">
                             <div v-for="d in daily_trend" :key="d.date" class="flex items-center gap-3">
-                                <span class="w-24 text-xs text-zinc-500">{{ d.date }}</span>
-                                <div class="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100">
-                                    <div class="h-full bg-blue-500" :style="{ width: ((d.revenue / maxRevenue) * 100) + '%' }"></div>
+                                <span class="w-24 text-xs text-zinc-500 dark:text-zinc-400">{{ d.date }}</span>
+                                <div class="h-3 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div class="h-full bg-blue-500 dark:bg-blue-400" :style="{ width: ((d.revenue / maxRevenue) * 100) + '%' }"></div>
                                 </div>
-                                <span class="w-32 text-right text-xs font-bold text-zinc-700">{{ formatCurrency(d.revenue) }}</span>
+                                <span class="w-32 text-right text-xs font-bold text-zinc-700 dark:text-zinc-200">{{ formatCurrency(d.revenue) }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <h2 class="text-lg font-bold text-zinc-900">Rekonsiliasi Pembayaran</h2>
-                        <table class="mt-4 w-full text-left text-sm">
-                            <thead class="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100">Rekonsiliasi Pembayaran</h2>
+                        <table class="mt-4 w-full text-left text-sm text-zinc-700 dark:text-zinc-200">
+                            <thead class="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                                 <tr>
                                     <th class="py-2">Metode</th>
                                     <th class="py-2 text-right">Jumlah</th>
@@ -191,7 +197,7 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="r in payment_reconciliation" :key="r.method" class="border-b border-zinc-50">
+                                <tr v-for="r in payment_reconciliation" :key="r.method" class="border-b border-zinc-50 dark:border-zinc-800">
                                     <td class="py-2 font-medium">{{ r.method }}</td>
                                     <td class="py-2 text-right">{{ r.count }}</td>
                                     <td class="py-2 text-right font-bold">{{ formatCurrency(r.total) }}</td>
@@ -201,10 +207,10 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                    <h2 class="mb-4 text-lg font-bold text-zinc-900">Top 20 Produk</h2>
-                    <table class="w-full text-left text-sm">
-                        <thead class="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                    <h2 class="mb-4 text-lg font-bold text-zinc-900 dark:text-zinc-100">Top 20 Produk</h2>
+                    <table class="w-full text-left text-sm text-zinc-700 dark:text-zinc-200">
+                        <thead class="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                             <tr>
                                 <th class="py-2">Produk</th>
                                 <th class="py-2 text-right">Qty</th>
@@ -214,11 +220,11 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(p, idx) in top_products" :key="idx" class="border-b border-zinc-50">
+                            <tr v-for="(p, idx) in top_products" :key="idx" class="border-b border-zinc-50 dark:border-zinc-800">
                                 <td class="py-2 font-medium">{{ p.product_name }}</td>
                                 <td class="py-2 text-right">{{ p.quantity }}</td>
                                 <td class="py-2 text-right">{{ formatCurrency(p.revenue) }}</td>
-                                <td class="py-2 text-right text-emerald-600">{{ formatCurrency(p.gross_profit) }}</td>
+                                <td class="py-2 text-right text-emerald-600 dark:text-emerald-400">{{ formatCurrency(p.gross_profit) }}</td>
                                 <td class="py-2 text-right">{{ p.margin_percent }}%</td>
                             </tr>
                         </tbody>
@@ -226,21 +232,21 @@ const maxRevenue = computed(() => Math.max(1, ...props.daily_trend.map((d) => d.
                 </div>
 
                 <div class="grid gap-6 md:grid-cols-2">
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <h2 class="mb-3 text-lg font-bold text-zinc-900">Top Anggota</h2>
-                        <ul class="divide-y divide-zinc-50">
-                            <li v-for="m in top_members" :key="m.member_name" class="flex items-center justify-between py-2 text-sm">
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <h2 class="mb-3 text-lg font-bold text-zinc-900 dark:text-zinc-100">Top Anggota</h2>
+                        <ul class="divide-y divide-zinc-50 dark:divide-zinc-800">
+                            <li v-for="m in top_members" :key="m.member_name" class="flex items-center justify-between py-2 text-sm text-zinc-700 dark:text-zinc-200">
                                 <span class="font-medium">{{ m.member_name }}</span>
-                                <span class="text-right text-xs text-zinc-500">{{ m.transactions }} trx · {{ formatCurrency(m.total) }}</span>
+                                <span class="text-right text-xs text-zinc-500 dark:text-zinc-400">{{ m.transactions }} trx · {{ formatCurrency(m.total) }}</span>
                             </li>
                         </ul>
                     </div>
-                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm">
-                        <h2 class="mb-3 text-lg font-bold text-zinc-900">Performa Kasir</h2>
-                        <ul class="divide-y divide-zinc-50">
-                            <li v-for="c in cashier_performance" :key="c.cashier_name" class="flex items-center justify-between py-2 text-sm">
+                    <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                        <h2 class="mb-3 text-lg font-bold text-zinc-900 dark:text-zinc-100">Performa Kasir</h2>
+                        <ul class="divide-y divide-zinc-50 dark:divide-zinc-800">
+                            <li v-for="c in cashier_performance" :key="c.cashier_name" class="flex items-center justify-between py-2 text-sm text-zinc-700 dark:text-zinc-200">
                                 <span class="font-medium">{{ c.cashier_name }}</span>
-                                <span class="text-right text-xs text-zinc-500">{{ c.transactions }} trx · {{ formatCurrency(c.total) }}</span>
+                                <span class="text-right text-xs text-zinc-500 dark:text-zinc-400">{{ c.transactions }} trx · {{ formatCurrency(c.total) }}</span>
                             </li>
                         </ul>
                     </div>

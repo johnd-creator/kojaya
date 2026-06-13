@@ -6,6 +6,7 @@ use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePayment;
 use App\Models\LoanType;
 use App\Models\Organization;
 use App\Models\PointTransaction;
@@ -60,6 +61,52 @@ class P5MemberPortalTest extends TestCase
         );
     }
 
+    public function test_dashboard_recent_transactions_include_savings_payments(): void
+    {
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-06',
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => '2026-06-10',
+            'status' => 'UNPAID',
+        ]);
+
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $this->member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'user_id' => $this->memberUser->id,
+            'amount' => 100000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => '2026-06-14',
+            'status' => 'PENDING',
+            'proof_path' => 'cooperative/payment-proofs/demo.jpg',
+            'reference_no' => 'MANUAL-001',
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->get(route('member.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('recentTransactions.0.id', 'saving-'.$payment->id)
+                ->where('recentTransactions.0.type', 'SAVINGS_PAYMENT')
+                ->where('recentTransactions.0.title', 'Pembayaran Simpanan Wajib')
+                ->where('recentTransactions.0.subtitle', 'Iuran periode 2026-06')
+                ->where('recentTransactions.0.amount', 100000)
+                ->where('recentTransactions.0.status', 'PENDING')
+            );
+    }
+
     public function test_savings_returns_ok_with_ledger_and_invoices(): void
     {
         CooperativeLedgerEntry::factory()->create([
@@ -77,7 +124,53 @@ class P5MemberPortalTest extends TestCase
             ->has('payments')
             ->has('wajibInvoices')
             ->has('wajibSummary')
+            ->where('journey', null)
         );
+    }
+
+    public function test_savings_status_card_appears_only_for_pending_manual_payment(): void
+    {
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-06',
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => '2026-06-10',
+            'status' => 'UNPAID',
+        ]);
+
+        CooperativePayment::query()->create([
+            'cooperative_member_id' => $this->member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'user_id' => $this->memberUser->id,
+            'amount' => 100000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => '2026-06-14',
+            'status' => 'PENDING',
+            'proof_path' => 'cooperative/payment-proofs/demo.jpg',
+            'reference_no' => 'MANUAL-002',
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->get(route('member.savings'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('journey.current_status', 'PENDING')
+                ->where('journey.reference', 'MANUAL-002')
+                ->where('journey.amount', 100000)
+                ->where('journey.steps.1.completed', true)
+                ->where('journey.steps.2.completed', false)
+            );
     }
 
     public function test_savings_shows_monthly_wajib_paid_and_unpaid_statuses(): void

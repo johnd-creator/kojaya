@@ -18,6 +18,8 @@ class DuesGenerationService
         $periodDate = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
         $created = 0;
 
+        $this->pruneUnpaidIneligibleInvoices($period, $periodDate);
+
         $types = CooperativeContributionType::query()
             ->where('is_active', true)
             ->whereIn('frequency', ['MONTHLY', 'ONCE'])
@@ -114,5 +116,28 @@ class DuesGenerationService
         }
 
         return CarbonImmutable::parse($joinedAt)->startOfMonth()->lessThanOrEqualTo($periodDate);
+    }
+
+    private function pruneUnpaidIneligibleInvoices(string $period, CarbonImmutable $periodDate): int
+    {
+        $deleted = 0;
+
+        CooperativeDuesInvoice::query()
+            ->with('member')
+            ->where('period', $period)
+            ->where('status', 'UNPAID')
+            ->whereDoesntHave('payments')
+            ->chunkById(100, function ($invoices) use ($periodDate, &$deleted): void {
+                foreach ($invoices as $invoice) {
+                    if ($invoice->member && $this->memberIsEligibleForPeriod($invoice->member, $periodDate)) {
+                        continue;
+                    }
+
+                    $invoice->delete();
+                    $deleted++;
+                }
+            });
+
+        return $deleted;
     }
 }

@@ -123,7 +123,7 @@ class MemberDashboardConditionalTest extends TestCase
             );
     }
 
-    public function test_active_member_dashboard_no_longer_has_pending_invoices_in_summary(): void
+    public function test_active_member_dashboard_includes_pending_invoices_in_summary(): void
     {
         [$user] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
 
@@ -131,7 +131,7 @@ class MemberDashboardConditionalTest extends TestCase
             ->get(route('member.dashboard'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->missing('summary.pending_invoices')
+                ->has('summary.pending_invoices')
             );
     }
 

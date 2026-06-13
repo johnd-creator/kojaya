@@ -85,10 +85,14 @@ const props = defineProps<{
     member_tier: string;
   };
   recentTransactions: Array<{
-    id: number;
-    transaction_no: string;
-    total_amount: number | string;
-    sold_at: string;
+    id: string;
+    type: string;
+    title: string;
+    subtitle: string;
+    total_amount?: number | string;
+    amount?: number | string;
+    status?: string | null;
+    occurred_at: string | null;
   }>;
   recentLoans: Array<{
     id: number;
@@ -334,16 +338,21 @@ const visibleQuickLinks = computed(() =>
 const transactionRows = computed(() =>
   props.recentTransactions.slice(0, 3).map((transaction) => ({
     id: transaction.id,
-    title: transaction.transaction_no,
-    subtitle: "Transaksi POS",
-    amount: formatCurrency(transaction.total_amount),
-    date: new Intl.DateTimeFormat("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(transaction.sold_at)),
+    title: transaction.title,
+    subtitle:
+      transaction.type === "SAVINGS_PAYMENT" && transaction.status
+        ? `${transaction.subtitle} · ${transaction.status}`
+        : transaction.subtitle,
+    amount: formatCurrency(transaction.amount ?? transaction.total_amount),
+    date: transaction.occurred_at
+      ? new Intl.DateTimeFormat("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(transaction.occurred_at))
+      : "-",
   })),
 );
 </script>

@@ -10,6 +10,30 @@
 
 ## 🎯 2026-06: M3 P0 Hardening
 
+### **June 14, 2026 - POS Product Image Public Storage Fix**
+
+**🛒 POS Product Images:**
+- ✅ Fixed the `public/storage` symlink target so POS product images under `storage/app/public/pos-products` are served through `/storage/pos-products/...` instead of returning 403.
+- ✅ Verified the failing image path is readable through the public symlink.
+
+**Verification:**
+- ✅ `PosPhase0PolishingTest`: `9 passed (82 assertions)`.
+
+### **June 14, 2026 - Dues Demo Reset and Member Activity Refinement**
+
+**🏦 Iuran & Kojayaku:**
+- ✅ Dues generation now prunes unpaid invoices that were created before a member's active/join month, so demo resets and historical filters follow `tanggal_aktif` / `joined_at`.
+- ✅ `CooperativeSeeder` now seeds member `tanggal_aktif`, starts Simpanan Pokok from the member join month, skips pre-join monthly dues, and gives demo members credit limits required by POS member credit samples.
+- ✅ `/member/savings` now shows the payment status journey card only when a member has a pending manual payment proof.
+- ✅ `/member` latest transactions now include savings/dues payment history alongside POS transactions.
+
+**Verification:**
+- ✅ `P5MemberPortalTest`: `27 passed (236 assertions)`.
+- ✅ Cooperative dues targeted regression: `6 passed (68 assertions)`.
+- ✅ `MemberDashboardConditionalTest` targeted regression: `3 passed (26 assertions)`.
+- ✅ `vendor/bin/pint --dirty --format agent` passed.
+- ✅ `npm run build` passed.
+
 ### **June 13, 2026 - Member Savings Monthly Wajib Visibility**
 
 **🏦 Kojayaku Simpanan:**

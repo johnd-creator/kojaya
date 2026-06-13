@@ -92,7 +92,7 @@ const props = defineProps<{
       completed: boolean;
       completed_at?: string | null;
     }>;
-  };
+  } | null;
 }>();
 
 const topCards = computed(() => [
@@ -364,6 +364,7 @@ const statusClass = (status: string): string => {
         </section>
 
         <section
+          v-if="journey"
           class="rounded-3xl border border-zinc-100 bg-white p-6 shadow-sm"
         >
           <div

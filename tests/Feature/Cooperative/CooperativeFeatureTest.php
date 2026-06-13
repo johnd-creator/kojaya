@@ -309,6 +309,39 @@ class CooperativeFeatureTest extends TestCase
         ]);
     }
 
+    public function test_dues_generation_prunes_unpaid_invoices_before_member_join_month(): void
+    {
+        $member = $this->member([
+            'status' => 'ACTIVE',
+            'tanggal_aktif' => '2026-06-01',
+            'joined_at' => '2026-06-01',
+        ]);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        $invalidInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => '2026-05-10',
+            'status' => 'UNPAID',
+        ]);
+
+        $this->assertSame(0, app(DuesGenerationService::class)->generateForPeriod('2026-05'));
+
+        $this->assertSoftDeleted('cooperative_dues_invoices', [
+            'id' => $invalidInvoice->id,
+        ]);
+    }
+
     public function test_dues_page_auto_generates_current_period_invoices(): void
     {
         Carbon::setTestNow('2026-05-15 09:00:00');

@@ -31,6 +31,7 @@ class CooperativePaymentController extends Controller
             'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
             'contributionTypes' => $this->paymentContributionTypes()->get(),
             'filters' => $request->only(['status']),
+            'canApprovePayments' => $request->user()?->hasRole('Admin Koperasi') ?? false,
         ]);
     }
 
@@ -55,6 +56,8 @@ class CooperativePaymentController extends Controller
 
     public function approve(CooperativePayment $payment, CooperativePaymentService $service, Request $request): RedirectResponse
     {
+        abort_unless($request->user()?->hasRole('Admin Koperasi'), 403);
+
         $this->authorize('approve', $payment);
 
         $service->approve($payment, $request->user());

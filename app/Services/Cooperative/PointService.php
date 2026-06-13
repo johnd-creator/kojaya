@@ -16,23 +16,49 @@ class PointService
 {
     public function syncPosPoints(CooperativeMember $member): void
     {
-        $existingSources = PointTransaction::query()
-            ->where('cooperative_member_id', $member->id)
-            ->where('source_type', PosMemberPoint::class)
-            ->pluck('source_id')
-            ->all();
-
         $points = $member->posMemberPoints()
-            ->whereNotIn('id', $existingSources)
             ->orderBy('posted_at')
             ->orderBy('id')
             ->get();
 
+        $shouldRebuildBalances = false;
+
         foreach ($points as $point) {
+            $expectedPoints = MemberPointService::pointsForProfit((float) $point->profit_amount);
+
+            if ((int) $point->points !== $expectedPoints) {
+                $point->forceFill(['points' => $expectedPoints])->save();
+            }
+
+            $existingTransaction = PointTransaction::query()
+                ->where('cooperative_member_id', $member->id)
+                ->where('transaction_type', 'EARNED')
+                ->where('source_type', PosMemberPoint::class)
+                ->where('source_id', (string) $point->id)
+                ->first();
+
+            if ($existingTransaction) {
+                if ((int) $existingTransaction->points !== $expectedPoints) {
+                    $existingTransaction->forceFill([
+                        'points' => $expectedPoints,
+                        'description' => 'Poin dari transaksi POS koperasi',
+                        'posted_at' => Carbon::parse($point->posted_at)->toDateString(),
+                        'metadata' => [
+                            'profit_amount' => (float) $point->profit_amount,
+                            'point_rate' => '1 poin per Rp1.000 laba kotor POS',
+                        ],
+                    ])->save();
+
+                    $shouldRebuildBalances = true;
+                }
+
+                continue;
+            }
+
             $this->recordTransaction(
                 member: $member,
                 transactionType: 'EARNED',
-                points: (int) $point->points,
+                points: $expectedPoints,
                 description: 'Poin dari transaksi POS koperasi',
                 postedAt: Carbon::parse($point->posted_at),
                 sourceType: PosMemberPoint::class,
@@ -40,8 +66,13 @@ class PointService
                 referenceNumber: optional($point->transaction)->transaction_number,
                 metadata: [
                     'profit_amount' => (float) $point->profit_amount,
+                    'point_rate' => '1 poin per Rp1.000 laba kotor POS',
                 ],
             );
+        }
+
+        if ($shouldRebuildBalances) {
+            $this->rebuildBalances($member);
         }
     }
 
@@ -282,6 +313,26 @@ class PointService
             'expires_at' => $expiresAt?->toDateString(),
             'metadata' => $metadata,
         ]);
+    }
+
+    public function rebuildBalances(CooperativeMember $member): void
+    {
+        $balance = 0;
+
+        $member->pointTransactions()
+            ->orderBy('posted_at')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->each(function (PointTransaction $transaction) use (&$balance): void {
+                $before = $balance;
+                $balance = max($balance + (int) $transaction->points, 0);
+
+                $transaction->forceFill([
+                    'balance_before' => $before,
+                    'balance_after' => $balance,
+                ])->save();
+            });
     }
 
     private function refundRedemption(RewardRedemption $redemption): void

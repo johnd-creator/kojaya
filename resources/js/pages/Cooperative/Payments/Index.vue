@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3";
+import { Head, router, useForm } from "@inertiajs/vue3";
 import {
   Check,
+  CheckCircle2,
   ImagePlus,
   Layers,
   PiggyBank,
@@ -23,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { index, store } from "@/routes/cooperative/payments";
+import { approve, index, store } from "@/routes/cooperative/payments";
 
 type MemberOption = {
   id: number;
@@ -44,6 +45,7 @@ const props = defineProps<{
   members: MemberOption[];
   contributionTypes: ContributionTypeOption[];
   filters: any;
+  canApprovePayments: boolean;
 }>();
 
 const form = useForm({
@@ -170,14 +172,35 @@ const submit = () =>
     },
   });
 
-const columns = [
+const approvingPaymentId = ref<number | null>(null);
+
+const approvePayment = (payment: { id: number }) => {
+  approvingPaymentId.value = payment.id;
+
+  router.post(
+    approve(payment.id).url,
+    {},
+    {
+      preserveScroll: true,
+      onFinish: () => {
+        approvingPaymentId.value = null;
+      },
+    },
+  );
+};
+
+const columns = computed(() => [
   { header: "Tanggal", key: "paid_at", slot: "paid_at" },
   { header: "Anggota", key: "member.name", slot: "member" },
   { header: "Jenis Simpanan", key: "contribution_type.name", slot: "type" },
   { header: "Metode", key: "payment_method", slot: "method" },
+  { header: "Status", key: "status", slot: "status" },
   { header: "Nominal", key: "amount", slot: "amount", align: "right" as const },
   { header: "Keterangan", key: "notes", slot: "notes" },
-];
+  ...(props.canApprovePayments
+    ? [{ header: "Aksi", key: "actions", slot: "actions", align: "right" as const }]
+    : []),
+]);
 </script>
 
 <template>
@@ -568,6 +591,21 @@ const columns = [
                   </Badge>
                 </template>
 
+                <template #status="{ row }">
+                  <Badge
+                    variant="outline"
+                    :class="
+                      row.status === 'APPROVED'
+                        ? 'bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                        : row.status === 'PENDING'
+                          ? 'bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                          : 'bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                    "
+                  >
+                    {{ row.status }}
+                  </Badge>
+                </template>
+
                 <template #amount="{ value }">
                   <span
                     class="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300"
@@ -583,6 +621,20 @@ const columns = [
                   >
                     {{ row.notes || "-" }}
                   </span>
+                </template>
+
+                <template v-if="canApprovePayments" #actions="{ row }">
+                  <Button
+                    v-if="row.status === 'PENDING'"
+                    size="sm"
+                    class="h-8"
+                    :disabled="approvingPaymentId === row.id"
+                    @click="approvePayment(row)"
+                  >
+                    <CheckCircle2 class="size-4" />
+                    {{ approvingPaymentId === row.id ? "Memproses" : "Approve" }}
+                  </Button>
+                  <span v-else class="text-xs text-zinc-400">-</span>
                 </template>
               </DataTable>
             </CardContent>

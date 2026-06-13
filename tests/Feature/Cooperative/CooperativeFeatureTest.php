@@ -11,6 +11,7 @@ use App\Models\CooperativePayment;
 use App\Models\CooperativeReceipt;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Organization;
+use App\Models\PointTransaction;
 use App\Models\PosCategory;
 use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
@@ -18,6 +19,7 @@ use App\Models\PosStockMovement;
 use App\Models\User;
 use App\Services\Cooperative\AnnualShuDistributionService;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Services\Cooperative\PointService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
@@ -1049,7 +1051,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('System Admin');
         $approver = User::factory()->create();
-        $approver->assignRole('System Admin');
+        $approver->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
@@ -1084,6 +1086,56 @@ class CooperativeFeatureTest extends TestCase
         $this->assertSame('50000.00', $invoice->paid_amount);
         $this->assertSame('APPROVED', $payment->refresh()->status);
         $this->assertSame(1, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count());
+    }
+
+    public function test_only_admin_koperasi_can_approve_pending_cooperative_payment(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $creator = User::factory()->create();
+        $creator->assignRole('System Admin');
+        $systemAdmin = User::factory()->create();
+        $systemAdmin->assignRole('System Admin');
+        $adminKoperasi = User::factory()->create();
+        $adminKoperasi->assignRole('Admin Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'user_id' => $creator->id,
+            'amount' => 50000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => '2026-05-01',
+            'status' => 'PENDING',
+        ]);
+
+        $this->actingAs($systemAdmin)
+            ->post(route('cooperative.payments.approve', $payment))
+            ->assertForbidden();
+
+        $this->assertSame('PENDING', $payment->refresh()->status);
+
+        $this->actingAs($adminKoperasi)
+            ->post(route('cooperative.payments.approve', $payment))
+            ->assertRedirect();
+
+        $this->assertSame('APPROVED', $payment->refresh()->status);
+        $this->assertSame($adminKoperasi->id, $payment->approved_by);
     }
 
     public function test_dues_batch_mark_paid_creates_approved_payments_and_ledger_entries(): void
@@ -1287,9 +1339,25 @@ class CooperativeFeatureTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Cooperative/Payments/Index')
+                ->where('canApprovePayments', true)
                 ->has('contributionTypes', 2)
                 ->where('contributionTypes.0.code', 'POKOK')
                 ->where('contributionTypes.1.code', 'SUKARELA')
+            );
+    }
+
+    public function test_system_admin_can_view_payment_page_but_cannot_approve_from_ui_capability(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+
+        $this->actingAs($user)
+            ->get(route('cooperative.payments.index', ['status' => 'PENDING']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Payments/Index')
+                ->where('canApprovePayments', false)
             );
     }
 
@@ -1510,7 +1578,7 @@ class CooperativeFeatureTest extends TestCase
             'cooperative_member_id' => $member->id,
             'year' => 2026,
             'profit_amount' => 8000,
-            'points' => 8000,
+            'points' => 8,
         ]);
 
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
@@ -1554,8 +1622,109 @@ class CooperativeFeatureTest extends TestCase
         $this->assertDatabaseHas('pos_member_points', [
             'cooperative_member_id' => $member->id,
             'profit_amount' => 4000,
-            'points' => 4000,
+            'points' => 4,
         ]);
+    }
+
+    public function test_pos_rewards_use_profit_rate_and_do_not_promote_member_to_platinum_from_single_purchase(): void
+    {
+        Carbon::setTestNow('2026-06-14 10:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $product = $this->product([
+            'stock' => 5,
+            'cost_price' => 220000,
+            'sale_price' => 350000,
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'POINT-350K-001',
+            'payment_method' => 'CASH',
+            'cooperative_member_id' => $member->id,
+            'items' => [
+                ['pos_product_id' => $product->id, 'quantity' => 1],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('pos_member_points', [
+            'cooperative_member_id' => $member->id,
+            'profit_amount' => 130000,
+            'points' => 130,
+        ]);
+        $this->assertDatabaseHas('point_transactions', [
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'EARNED',
+            'points' => 130,
+            'balance_after' => 130,
+        ]);
+
+        $summary = app(PointService::class)->balanceSummary($member->refresh());
+
+        $this->assertSame(130, $summary['total_points']);
+        $this->assertSame('BRONZE', $summary['member_tier']);
+        $this->assertSame('SILVER', $summary['next_tier']);
+    }
+
+    public function test_recalculate_pos_points_command_repairs_existing_excessive_points(): void
+    {
+        Carbon::setTestNow('2026-06-14 10:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $product = $this->product([
+            'stock' => 5,
+            'cost_price' => 220000,
+            'sale_price' => 350000,
+        ]);
+
+        $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'POINT-REPAIR-001',
+            'payment_method' => 'CASH',
+            'cooperative_member_id' => $member->id,
+            'items' => [
+                ['pos_product_id' => $product->id, 'quantity' => 1],
+            ],
+        ])->assertRedirect();
+
+        $point = PosMemberPoint::query()->where('cooperative_member_id', $member->id)->firstOrFail();
+        $point->forceFill(['points' => 130000])->save();
+
+        PointTransaction::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('source_type', PosMemberPoint::class)
+            ->where('source_id', (string) $point->id)
+            ->firstOrFail()
+            ->forceFill([
+                'points' => 130000,
+                'balance_before' => 0,
+                'balance_after' => 130000,
+            ])
+            ->save();
+
+        $this->artisan('cooperative:recalculate-pos-points')
+            ->expectsOutput('Recalculated 1 POS point rows.')
+            ->expectsOutput('Rebuilt point balances for 1 members.')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('pos_member_points', [
+            'id' => $point->id,
+            'points' => 130,
+        ]);
+        $this->assertDatabaseHas('point_transactions', [
+            'cooperative_member_id' => $member->id,
+            'source_type' => PosMemberPoint::class,
+            'source_id' => (string) $point->id,
+            'points' => 130,
+            'balance_after' => 130,
+        ]);
+
+        $summary = app(PointService::class)->balanceSummary($member->refresh());
+
+        $this->assertSame(130, $summary['total_points']);
+        $this->assertSame('BRONZE', $summary['member_tier']);
     }
 
     public function test_annual_shu_score_rewards_long_membership_and_complete_mandatory_dues(): void
@@ -1641,7 +1810,7 @@ class CooperativeFeatureTest extends TestCase
         $preview = $service->preview(2026);
         $allocations = collect($preview['allocations'])->keyBy(fn (array $allocation) => $allocation['member']->id);
 
-        $this->assertSame(40000, $preview['total_pos_points']);
+        $this->assertSame(40, $preview['total_pos_points']);
         $this->assertSame(40000.0, $preview['pos_profit_pool']);
         $this->assertSame(10000.0, $allocations[$firstMember->id]['pos_shu_amount']);
         $this->assertSame(30000.0, $allocations[$secondMember->id]['pos_shu_amount']);
@@ -1652,7 +1821,7 @@ class CooperativeFeatureTest extends TestCase
         $this->assertDatabaseHas('cooperative_shu_periods', [
             'year' => 2026,
             'status' => 'CLOSED',
-            'total_pos_points' => 40000,
+            'total_pos_points' => 40,
         ]);
         $this->assertSame(2, CooperativeShuPeriod::query()->where('year', 2026)->firstOrFail()->allocations()->count());
         $this->expectException(ValidationException::class);

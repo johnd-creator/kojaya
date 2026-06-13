@@ -7,7 +7,18 @@ use App\Models\PosTransaction;
 
 class MemberPointService
 {
+    private const POS_POINT_RUPIAH_RATE = 1000;
+
     public function __construct(private readonly PointService $pointService) {}
+
+    public static function pointsForProfit(float $profit): int
+    {
+        if ($profit <= 0) {
+            return 0;
+        }
+
+        return max((int) floor($profit / self::POS_POINT_RUPIAH_RATE), 1);
+    }
 
     public function postFromTransaction(PosTransaction $transaction): ?PosMemberPoint
     {
@@ -16,7 +27,7 @@ class MemberPointService
         }
 
         $profit = (float) $transaction->gross_profit;
-        $points = max((int) floor($profit), 0);
+        $points = self::pointsForProfit($profit);
 
         if ($points === 0) {
             return null;
@@ -32,6 +43,14 @@ class MemberPointService
                 'posted_at' => $transaction->sold_at->toDateString(),
             ],
         );
+
+        if ((int) $point->points !== $points || (float) $point->profit_amount !== $profit) {
+            $point->forceFill([
+                'profit_amount' => $profit,
+                'points' => $points,
+                'posted_at' => $transaction->sold_at->toDateString(),
+            ])->save();
+        }
 
         $point->loadMissing('member', 'transaction');
 

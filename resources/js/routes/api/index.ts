@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 export const organizations = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ organizations.definition = {
 
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 organizations.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ organizations.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 organizations.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ organizations.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 organizations.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ organizations.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 const organizationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const organizationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 organizationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ organizationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
-* @see app/Http/Controllers/DashboardController.php:81
+* @see app/Http/Controllers/DashboardController.php:82
 * @route '/api/organizations'
 */
 organizationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

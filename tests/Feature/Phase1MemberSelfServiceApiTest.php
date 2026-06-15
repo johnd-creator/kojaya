@@ -437,6 +437,72 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             ->assertJsonPath('data.0.points_used', 1000);
     }
 
+    public function test_member_can_retrieve_points_balance_and_history(): void
+    {
+        [$user, $member] = $this->memberUser();
+
+        \App\Models\PointTransaction::query()->create([
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'EARNED',
+            'points' => 1200,
+            'balance_before' => 0,
+            'balance_after' => 1200,
+            'description' => 'Awal',
+            'posted_at' => now()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/points/balance')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.total_points', 1200);
+
+        $this->getJson('/api/v1/points/history')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.points', 1200);
+    }
+
+    public function test_member_can_retrieve_rewards_and_redeem(): void
+    {
+        [$user, $member] = $this->memberUser();
+
+        \App\Models\PointTransaction::query()->create([
+            'cooperative_member_id' => $member->id,
+            'transaction_type' => 'EARNED',
+            'points' => 1500,
+            'balance_before' => 0,
+            'balance_after' => 1500,
+            'description' => 'Awal',
+            'posted_at' => now()->toDateString(),
+        ]);
+
+        $reward = Reward::query()->create([
+            'organization_id' => $member->organization_id,
+            'name' => 'Voucher Keren',
+            'category' => 'DISKON',
+            'description' => 'Voucher keren',
+            'points_required' => 500,
+            'stock' => 10,
+            'valid_until' => now()->addMonth()->toDateString(),
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($user, ['member:read', 'member:write']);
+
+        $this->getJson('/api/v1/rewards')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $reward->id);
+
+        $this->postJson('/api/v1/rewards/'.$reward->id.'/redeem', [
+            'quantity' => 1,
+            'delivery_address' => 'Jl. Jalan 123',
+        ])->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.reward.id', $reward->id);
+    }
+
     /**
      * @return array{0: \App\Models\User, 1: \App\Models\CooperativeMember}
      */

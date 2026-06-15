@@ -18,8 +18,9 @@ class DashboardController extends Controller
     {
         $user = request()->user();
 
-        if ($user && ($user->cooperativeMember || $user->hasRole('Anggota'))) {
-            $status = $user->cooperativeMember->validation_status ?: $user->cooperativeMember->status;
+        if ($user && $user->cooperativeMember) {
+            $member = $user->cooperativeMember;
+            $status = $member->validation_status ?: $member->status;
 
             if (in_array($status, [\App\Models\CooperativeMember::VALIDATION_PENDING, \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW, \App\Models\CooperativeMember::VALIDATION_REVISION], true)) {
                 return redirect()->route('member.onboarding');

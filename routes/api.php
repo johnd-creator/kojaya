@@ -97,10 +97,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::post('/loans/apply', [LoanApiController::class, 'apply'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);
     Route::get('/loans/{loan}', [LoanApiController::class, 'show'])->middleware('ability:cooperative:read');
     Route::post('/loans/calculator', [LoanApiController::class, 'calculator'])->middleware(['ability:cooperative:read', 'throttle:api-write']);
-    Route::get('/points/balance', [PointApiController::class, 'balance'])->middleware('ability:cooperative:read');
-    Route::get('/points/history', [PointApiController::class, 'history'])->middleware('ability:cooperative:read');
-    Route::get('/rewards', [RewardApiController::class, 'index'])->middleware('ability:cooperative:read');
-    Route::post('/rewards/{reward}/redeem', [RewardApiController::class, 'redeem'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);
+    Route::get('/points/balance', [PointApiController::class, 'balance'])->middleware('ability:member:read');
+    Route::get('/points/history', [PointApiController::class, 'history'])->middleware('ability:member:read');
+    Route::get('/rewards', [RewardApiController::class, 'index'])->middleware('ability:member:read');
+    Route::post('/rewards/{reward}/redeem', [RewardApiController::class, 'redeem'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
     Route::get('/pos/products', [PosApiController::class, 'products'])->middleware('ability:pos:read');
     Route::post('/pos/transactions', [PosApiController::class, 'store'])->middleware(['ability:pos:write', 'throttle:api-write', 'idempotent']);
     Route::post('/pos/returns', [PosApiController::class, 'processReturn'])->middleware(['ability:pos:write', 'throttle:api-write', 'idempotent']);

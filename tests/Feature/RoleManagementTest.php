@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -10,6 +11,8 @@ use Tests\TestCase;
 
 class RoleManagementTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,7 +61,7 @@ class RoleManagementTest extends TestCase
                 ->component('Role/Edit')
                 ->where('role.name', 'Finance Unit')
                 ->has('role.permissions', 1)
-                ->has('permissions', 4)
+                ->has('permissions', 6)
             );
     }
 

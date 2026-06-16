@@ -213,10 +213,10 @@ const accessBanner = computed<{
 
 const bannerClass = computed(() => {
   const tone = accessBanner.value?.tone;
-  if (tone === "destructive") return "border-red-200 bg-red-50 text-red-900";
-  if (tone === "warning") return "border-amber-200 bg-amber-50 text-amber-900";
+  if (tone === "destructive") return "border-red-200 dark:border-rose-900/50 bg-red-50 dark:bg-rose-950/20 text-red-900 dark:text-rose-300";
+  if (tone === "warning") return "border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300";
 
-  return "border-emerald-200 bg-emerald-50 text-emerald-900";
+  return "border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300";
 });
 
 const pokokRemaining = computed(() => {
@@ -259,7 +259,7 @@ const progressColor = (percent: number) => {
   if (percent >= 100) return "bg-emerald-500";
   if (percent >= 50) return "bg-amber-500";
 
-  return "bg-red-500";
+  return "bg-rose-500";
 };
 
 const summaryCards = computed(() => [
@@ -267,21 +267,21 @@ const summaryCards = computed(() => [
     label: "Saldo Simpanan",
     value: formatCurrency(props.summary.savings_balance),
     icon: WalletCards,
-    iconClass: "bg-emerald-50 text-emerald-700",
+    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     href: "/member/savings",
   },
   {
     label: "Pinjaman Aktif",
     value: formatCurrency(props.summary.loan_outstanding),
     icon: CreditCard,
-    iconClass: "bg-blue-50 text-blue-700",
+    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     href: "/member/loans",
   },
   {
     label: "Poin Saya",
     value: props.summary.points_balance,
     icon: Star,
-    iconClass: "bg-amber-50 text-amber-600",
+    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
     href: "/member/points",
   },
 ]);
@@ -291,42 +291,42 @@ const quickLinks = computed(() => [
     label: "Simpanan & Tagihan",
     href: "/member/savings",
     icon: WalletCards,
-    iconClass: "bg-emerald-50 text-emerald-700",
+    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     activeOnly: true,
   },
   {
     label: "Pinjaman",
     href: "/member/loans",
     icon: CreditCard,
-    iconClass: "bg-blue-50 text-blue-700",
+    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     activeOnly: true,
   },
   {
     label: "Poin",
     href: "/member/points",
     icon: Star,
-    iconClass: "bg-amber-50 text-amber-600",
+    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
     activeOnly: true,
   },
   {
     label: "Transaksi POS",
     href: "/member/transactions",
     icon: ShoppingBag,
-    iconClass: "bg-violet-50 text-violet-700",
+    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     activeOnly: true,
   },
   {
     label: "Profil Saya",
     href: "/member/profile",
     icon: UserRound,
-    iconClass: "bg-green-50 text-green-700",
+    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     activeOnly: false,
   },
   {
     label: "Onboarding",
     href: "/member/onboarding",
     icon: ClipboardCheck,
-    iconClass: "bg-teal-50 text-teal-700",
+    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
     activeOnly: false,
   },
 ]);
@@ -364,14 +364,14 @@ const transactionRows = computed(() =>
       <div class="flex flex-col gap-6">
         <div
           v-if="flash.success"
-          class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-900 shadow-sm flex items-center gap-3 animate-fade-in"
+          class="rounded-2xl border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50 dark:bg-emerald-950/20 p-4 text-sm font-semibold text-emerald-900 dark:text-emerald-300 shadow-sm flex items-center gap-3 animate-fade-in"
         >
           <span class="flex h-2 w-2 rounded-full bg-emerald-600 animate-ping"></span>
           {{ flash.success }}
         </div>
 
         <section
-          class="grid gap-6 rounded-3xl border border-emerald-800/10 bg-gradient-to-br from-emerald-800 to-emerald-950 p-6 text-white shadow-xl shadow-emerald-950/20 lg:grid-cols-[1.1fr_0.9fr] lg:p-8 relative overflow-hidden"
+          class="grid gap-6 rounded-3xl border border-emerald-800/10 bg-gradient-to-br from-emerald-800 to-emerald-950 p-4 text-white shadow-xl shadow-emerald-950/20 sm:p-6 lg:grid-cols-[1.1fr_0.9fr] lg:p-8 relative overflow-hidden"
         >
           <!-- Decorative background glow -->
           <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -379,14 +379,14 @@ const transactionRows = computed(() =>
 
           <div class="flex flex-col gap-6 sm:flex-row sm:items-center relative z-10">
             <div
-              class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-white/20 bg-white/10 text-3xl font-bold text-white shadow-inner backdrop-blur-md"
+              class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 border-white/20 bg-white/10 text-xl font-bold text-white shadow-inner backdrop-blur-md sm:h-24 sm:w-24 sm:rounded-full sm:text-3xl"
             >
               {{ memberInitials }}
             </div>
             <div class="min-w-0">
               <p class="text-xs font-medium uppercase tracking-wider text-emerald-300">Selamat datang kembali,</p>
               <div class="mt-1 flex flex-wrap items-center gap-3">
-                <h2 class="text-3xl font-extrabold tracking-tight">
+                <h2 class="text-2xl font-extrabold tracking-tight sm:text-3xl">
                   {{ member.name }}
                 </h2>
                 <span
@@ -432,7 +432,7 @@ const transactionRows = computed(() =>
         <div
           v-if="accessBanner"
           data-test="member-access-banner"
-          class="flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between shadow-sm transition-all"
+          class="flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between shadow-sm transition-all dark:border-zinc-800"
           :class="bannerClass"
         >
           <div class="flex items-start gap-3.5">
@@ -456,37 +456,38 @@ const transactionRows = computed(() =>
           </Link>
         </div>
 
+        <!-- Onboarding Progress Alert -->
         <div
           v-if="showOnboardingAlert"
-          class="relative rounded-2xl border border-amber-200 bg-amber-50/50 backdrop-blur-sm p-6 shadow-sm"
+          class="relative rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 backdrop-blur-sm p-4 shadow-sm sm:p-6"
         >
           <button
             type="button"
-            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-amber-500 hover:bg-amber-100/50 hover:text-amber-800 transition"
+            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-amber-500 hover:bg-amber-100/50 hover:text-amber-800 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 transition"
             @click="dismiss('onboarding')"
           >
             <X class="h-4 w-4" />
           </button>
           <div class="flex items-start gap-4 pr-8">
             <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800 shadow-inner"
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 shadow-inner"
             >
               <ClipboardCheck class="h-6 w-6" />
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-4">
-                <h3 class="font-bold text-amber-900 text-base">
+                <h3 class="font-bold text-amber-900 dark:text-amber-400 text-base">
                   Lengkapi Profil Onboarding Anda
                 </h3>
-                <span class="text-sm font-extrabold text-amber-855 bg-amber-100/50 px-2.5 py-0.5 rounded-full border border-amber-200/50">
+                <span class="text-sm font-extrabold text-amber-800 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/20 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-900/30">
                   {{ onboarding_completeness.progress_percent }}%
                 </span>
               </div>
-              <p class="mt-1 text-sm text-amber-800/90 leading-relaxed">
+              <p class="mt-1 text-sm text-amber-800/90 dark:text-amber-300 leading-relaxed">
                 {{ onboarding_completeness.completed_fields }} dari
                 {{ onboarding_completeness.total_fields }} data wajib telah diisi. Silakan lengkapi sisa kolom untuk mengaktifkan seluruh fitur.
               </p>
-              <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100 border border-amber-200/30">
+              <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100 dark:bg-zinc-800 border border-amber-200/30 dark:border-zinc-700/50">
                 <div
                   class="h-full rounded-full transition-all duration-500 shadow-sm"
                   :class="
@@ -501,31 +502,32 @@ const transactionRows = computed(() =>
           </div>
         </div>
 
+        <!-- Simpanan Pokok Alert -->
         <div
           v-if="showPokokAlert && simpanan_pokok_invoice"
-          class="relative rounded-2xl border border-amber-200 bg-amber-50/50 backdrop-blur-sm p-6 shadow-sm animate-fade-in"
+          class="relative rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 backdrop-blur-sm p-4 shadow-sm animate-fade-in sm:p-6"
         >
           <button
             type="button"
-            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-amber-500 hover:bg-amber-100/50 hover:text-amber-800 transition"
+            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-amber-500 hover:bg-amber-100/50 hover:text-amber-800 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 transition"
             @click="dismiss('pokok')"
           >
             <X class="h-4 w-4" />
           </button>
           <div class="flex items-start gap-4 pr-8">
             <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800 shadow-inner"
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 shadow-inner"
             >
               <Banknote class="h-6 w-6" />
             </div>
             <div class="min-w-0 flex-1">
-              <h3 class="font-bold text-amber-900 text-base">Pembayaran Simpanan Pokok</h3>
-              <p class="mt-1 text-sm text-amber-800/90 leading-relaxed">
-                Harap lunasi Simpanan Pokok Anda. Sisa pembayaran: <span class="font-bold text-amber-950">{{ formatCurrency(pokokRemaining) }}</span>.
+              <h3 class="font-bold text-amber-900 dark:text-amber-400 text-base">Pembayaran Simpanan Pokok</h3>
+              <p class="mt-1 text-sm text-amber-800/90 dark:text-amber-300 leading-relaxed">
+                Harap lunasi Simpanan Pokok Anda. Sisa pembayaran: <span class="font-bold text-amber-950 dark:text-white">{{ formatCurrency(pokokRemaining) }}</span>.
               </p>
               <button
                 type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-800 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-amber-800/20 transition hover:bg-amber-950 hover:scale-105 active:scale-95"
+                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-800 dark:bg-amber-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-amber-800/20 dark:shadow-amber-950/20 transition hover:bg-amber-950 dark:hover:bg-amber-600 hover:scale-105 active:scale-95"
                 @click="openPaymentDialog(simpanan_pokok_invoice!)"
               >
                 Bayar Sekarang
@@ -534,34 +536,35 @@ const transactionRows = computed(() =>
           </div>
         </div>
 
+        <!-- Simpanan Wajib Alert (Emerald-themed to match Savings color) -->
         <div
           v-if="
             showWajibAlert && simpanan_wajib_pending && simpanan_wajib_progress
           "
-          class="relative rounded-2xl border border-blue-200 bg-blue-50/50 backdrop-blur-sm p-6 shadow-sm animate-fade-in"
+          class="relative rounded-2xl border border-emerald-200 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/10 backdrop-blur-sm p-4 shadow-sm animate-fade-in sm:p-6"
         >
           <button
             type="button"
-            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-blue-500 hover:bg-blue-100/50 hover:text-blue-800 transition"
+            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-emerald-500 hover:bg-emerald-100/50 hover:text-emerald-700 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 transition"
             @click="dismiss('wajib')"
           >
             <X class="h-4 w-4" />
           </button>
           <div class="flex items-start gap-4 pr-8">
             <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-800 shadow-inner"
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 shadow-inner"
             >
               <WalletCards class="h-6 w-6" />
             </div>
             <div class="min-w-0 flex-1">
-              <h3 class="font-bold text-blue-900 text-base">Pembayaran Simpanan Wajib</h3>
-              <p class="mt-1 text-sm text-blue-800/90 leading-relaxed">
-                Terdapat <span class="font-bold">{{ simpanan_wajib_pending.count }} tagihan</span> simpanan wajib belum terbayar, total tagihan sebesar <span class="font-bold text-blue-950">{{ formatCurrency(simpanan_wajib_pending.total_amount) }}</span>.
+              <h3 class="font-bold text-emerald-900 dark:text-emerald-400 text-base">Pembayaran Simpanan Wajib</h3>
+              <p class="mt-1 text-sm text-emerald-800/90 dark:text-emerald-300 leading-relaxed">
+                Terdapat <span class="font-bold">{{ simpanan_wajib_pending.count }} tagihan</span> simpanan wajib belum terbayar, total tagihan sebesar <span class="font-bold text-emerald-950 dark:text-white">{{ formatCurrency(simpanan_wajib_pending.total_amount) }}</span>.
               </p>
               <button
                 v-if="simpanan_wajib_invoice"
                 type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-800 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-800/20 transition hover:bg-blue-900 hover:scale-105 active:scale-95"
+                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-800/20 dark:shadow-emerald-950/20 transition hover:bg-emerald-950 dark:hover:bg-emerald-600 hover:scale-105 active:scale-95"
                 @click="openPaymentDialog(simpanan_wajib_invoice)"
               >
                 Bayar Sekarang
@@ -569,7 +572,7 @@ const transactionRows = computed(() =>
               <Link
                 v-else
                 href="/member/savings"
-                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-800 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-800/20 transition hover:bg-blue-900 hover:scale-105 active:scale-95"
+                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-800/20 dark:shadow-emerald-950/20 transition hover:bg-emerald-950 dark:hover:bg-emerald-600 hover:scale-105 active:scale-95"
               >
                 Lihat Semua Tagihan
               </Link>
@@ -577,29 +580,30 @@ const transactionRows = computed(() =>
           </div>
         </div>
 
-        <section class="grid gap-6 lg:grid-cols-3">
+        <!-- Summary Cards Section -->
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           <Link
             v-for="card in summaryCards"
             :key="card.label"
             :href="card.href"
-            class="group overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:border-emerald-300 transition-all duration-300"
+            class="group overflow-hidden rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300"
           >
-            <div class="flex items-center gap-5 p-6">
+            <div class="flex items-center gap-4 p-4 sm:gap-5 sm:p-6">
               <div
-                class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300"
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300 sm:h-16 sm:w-16"
                 :class="card.iconClass"
               >
                 <component :is="card.icon" class="h-8 w-8" />
               </div>
               <div class="min-w-0 flex-1">
-                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-400">{{ card.label }}</p>
-                <p class="mt-1.5 text-2xl font-extrabold text-zinc-900 tracking-tight">
+                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">{{ card.label }}</p>
+                <p class="mt-1.5 text-xl font-extrabold text-zinc-900 dark:text-white tracking-tight sm:text-2xl">
                   {{ card.value }}
                 </p>
               </div>
             </div>
             <div
-              class="flex items-center justify-between border-t border-zinc-50 bg-zinc-50/50 group-hover:bg-emerald-50/30 px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-emerald-800 transition-colors"
+              class="flex items-center justify-between border-t border-zinc-50 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 group-hover:bg-emerald-50/30 dark:group-hover:bg-emerald-950/20 px-4 py-3 sm:px-6 sm:py-3.5 text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 transition-colors"
             >
               Lihat Detail
               <ChevronRight
@@ -609,16 +613,17 @@ const transactionRows = computed(() =>
           </Link>
         </section>
 
+        <!-- Quick Links Section -->
         <section
-          class="rounded-3xl border border-zinc-100 bg-zinc-50/50 p-6 shadow-sm"
+          class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 p-4 shadow-sm sm:p-6"
         >
-          <h2 class="text-base font-bold text-zinc-900 tracking-tight">Akses Cepat</h2>
-          <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+          <h2 class="text-base font-bold text-zinc-900 dark:text-white tracking-tight">Akses Cepat</h2>
+          <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-6">
             <Link
               v-for="item in visibleQuickLinks"
               :key="item.label"
               :href="item.href"
-              class="group flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 text-sm font-semibold text-zinc-800 shadow-sm transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-50/20 hover:-translate-y-1 hover:shadow-md"
+              class="group flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200 shadow-sm transition-all duration-300 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 hover:-translate-y-1 hover:shadow-md"
             >
               <span
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110 shadow-sm"
@@ -626,22 +631,23 @@ const transactionRows = computed(() =>
               >
                 <component :is="item.icon" class="h-5 w-5" />
               </span>
-              <span class="min-w-0 leading-tight group-hover:text-emerald-955 transition-colors">{{ item.label }}</span>
+              <span class="min-w-0 leading-tight group-hover:text-emerald-900 dark:group-hover:text-emerald-400 transition-colors">{{ item.label }}</span>
             </Link>
           </div>
         </section>
 
+        <!-- Two Column Content Grid -->
         <section class="grid gap-6 xl:grid-cols-[0.95fr_1fr]">
           <!-- Transaksi Terbaru Card -->
           <div
-            class="rounded-3xl border border-zinc-100 bg-white p-6 shadow-sm flex flex-col justify-between"
+            class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col justify-between sm:p-6"
           >
             <div>
               <div class="flex items-center justify-between gap-4">
-                <h2 class="font-bold text-zinc-900 tracking-tight">Transaksi Terbaru</h2>
+                <h2 class="font-bold text-zinc-900 dark:text-white tracking-tight">Transaksi Terbaru</h2>
                 <Link
                   href="/member/transactions"
-                  class="text-xs font-bold uppercase tracking-wider text-emerald-800 hover:text-emerald-900 hover:underline"
+                  class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline"
                 >
                   Lihat semua
                 </Link>
@@ -650,42 +656,42 @@ const transactionRows = computed(() =>
                 <div
                   v-for="transaction in transactionRows"
                   :key="transaction.id"
-                  class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-50 p-4 transition-colors hover:bg-zinc-50/50"
+                  class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-50 dark:border-zinc-800 p-4 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
                 >
                   <div class="flex min-w-0 items-center gap-3">
                     <div
-                      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-sm"
+                      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/35 text-emerald-700 dark:text-emerald-400 shadow-sm"
                     >
                       <ReceiptText class="h-5 w-5" />
                     </div>
                     <div class="min-w-0">
-                      <p class="truncate font-bold text-zinc-800 text-sm">
+                      <p class="truncate font-bold text-zinc-800 dark:text-zinc-200 text-sm">
                         {{ transaction.title }}
                       </p>
-                      <p class="text-xs text-zinc-400">
+                      <p class="text-xs text-zinc-400 dark:text-zinc-500">
                         {{ transaction.subtitle }}
                       </p>
                     </div>
                   </div>
                   <div class="text-right">
-                    <p class="font-extrabold text-emerald-800 text-sm">
+                    <p class="font-extrabold text-emerald-800 dark:text-emerald-400 text-sm">
                       {{ transaction.amount }}
                     </p>
-                    <p class="text-[10px] font-medium text-zinc-400 mt-0.5">{{ transaction.date }}</p>
+                    <p class="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 mt-0.5">{{ transaction.date }}</p>
                   </div>
                 </div>
                 <div
                   v-if="transactionRows.length === 0"
-                  class="flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-zinc-400 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/30"
+                  class="flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-zinc-400 dark:text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/30 dark:bg-zinc-900/50"
                 >
-                  <History class="h-8 w-8 text-zinc-300" />
+                  <History class="h-8 w-8 text-zinc-300 dark:text-zinc-700" />
                   <span>Belum ada transaksi terbaru.</span>
                 </div>
               </div>
             </div>
             <Link
               href="/member/transactions"
-              class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+              class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
               Lihat Semua Transaksi
               <ChevronRight class="h-4 w-4" />
@@ -694,14 +700,14 @@ const transactionRows = computed(() =>
 
           <!-- Status Pinjaman Card -->
           <div
-            class="rounded-3xl border border-zinc-100 bg-white p-6 shadow-sm flex flex-col justify-between"
+            class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col justify-between sm:p-6"
           >
             <div>
               <div class="flex items-center justify-between gap-4">
-                <h2 class="font-bold text-zinc-900 tracking-tight">Status Pinjaman</h2>
+                <h2 class="font-bold text-zinc-900 dark:text-white tracking-tight">Status Pinjaman</h2>
                 <Link
                   href="/member/loans"
-                  class="text-xs font-bold uppercase tracking-wider text-emerald-800 hover:text-emerald-900 hover:underline"
+                  class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline"
                 >
                   Lihat semua
                 </Link>
@@ -709,22 +715,22 @@ const transactionRows = computed(() =>
 
               <div
                 v-if="recentLoans.length === 0"
-                class="mt-5 flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/20 p-6 text-center"
+                class="mt-5 flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-900/30 bg-emerald-50/20 dark:bg-emerald-950/10 p-6 text-center"
               >
                 <div
-                  class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-800 text-white shadow-lg shadow-emerald-800/20"
+                  class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-800 dark:bg-emerald-700 text-white shadow-lg shadow-emerald-800/20 dark:shadow-emerald-950/30"
                 >
                   <CheckCircle2 class="h-7 w-7" />
                 </div>
-                <p class="mt-4 font-bold text-emerald-950">
+                <p class="mt-4 font-bold text-emerald-950 dark:text-emerald-400">
                   Belum ada pinjaman aktif
                 </p>
-                <p class="mt-1 text-xs text-zinc-500 max-w-xs leading-relaxed">
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
                   Anda tidak memiliki pengajuan pinjaman aktif saat ini. Ajukan sekarang jika Anda butuh modal usaha atau dana darurat.
                 </p>
                 <Link
                   href="/member/loans"
-                  class="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-800/20 transition hover:bg-emerald-900 hover:scale-105 active:scale-95"
+                  class="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-800/20 dark:shadow-emerald-950/35 transition hover:bg-emerald-900 dark:hover:bg-emerald-600 hover:scale-105 active:scale-95"
                 >
                   Ajukan Pinjaman
                   <ChevronRight class="h-4 w-4" />
@@ -735,17 +741,17 @@ const transactionRows = computed(() =>
                 <div
                   v-for="loan in recentLoans"
                   :key="loan.id"
-                  class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-50 p-4 transition-colors hover:bg-zinc-50/50"
+                  class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-50 dark:border-zinc-800 p-4 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
                 >
                   <div class="min-w-0">
-                    <p class="font-bold text-zinc-800 text-sm">
+                    <p class="font-bold text-zinc-800 dark:text-zinc-200 text-sm">
                       {{ loan.loan_type?.name || "Pinjaman" }}
                     </p>
-                    <p class="text-xs text-zinc-400 mt-0.5">
-                      Status: <span class="font-semibold text-emerald-800">{{ loan.status }}</span>
+                    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                      Status: <span class="font-semibold text-emerald-800 dark:text-emerald-400">{{ loan.status }}</span>
                     </p>
                   </div>
-                  <p class="font-extrabold text-zinc-900 text-sm">
+                  <p class="font-extrabold text-zinc-900 dark:text-white text-sm">
                     {{ formatCurrency(loan.outstanding_amount) }}
                   </p>
                 </div>
@@ -753,7 +759,7 @@ const transactionRows = computed(() =>
             </div>
             <Link
               href="/member/loans"
-              class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+              class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
               Kelola Pinjaman
               <ChevronRight class="h-4 w-4" />
@@ -761,25 +767,26 @@ const transactionRows = computed(() =>
           </div>
         </section>
 
+        <!-- Help Section Banner -->
         <section
-          class="flex flex-col gap-4 rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-teal-50/30 p-6 sm:flex-row sm:items-center sm:justify-between shadow-sm"
+          class="flex flex-col gap-4 rounded-3xl border border-emerald-100 dark:border-emerald-900/35 bg-gradient-to-br from-emerald-50/60 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/10 p-6 sm:flex-row sm:items-center sm:justify-between shadow-sm"
         >
           <div class="flex items-center gap-4">
             <div
-              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-800 shadow-sm border border-emerald-50"
+              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-zinc-900 text-emerald-800 dark:text-emerald-400 shadow-sm border border-emerald-50 dark:border-zinc-800"
             >
               <Headphones class="h-7 w-7" />
             </div>
             <div>
-              <p class="font-bold text-emerald-955">Butuh bantuan atau informasi tambahan?</p>
-              <p class="text-sm text-emerald-900/70 mt-1 max-w-xl">
+              <p class="font-bold text-emerald-900 dark:text-emerald-300">Butuh bantuan atau informasi tambahan?</p>
+              <p class="text-sm text-emerald-900/70 dark:text-zinc-400 mt-1 max-w-xl">
                 Kami siap membantu Anda. Hubungi tim layanan anggota kami untuk bantuan cepat mengenai keanggotaan, simpanan, atau pinjaman.
               </p>
             </div>
           </div>
           <Link
             href="/member/profile"
-            class="inline-flex items-center justify-center gap-2.5 rounded-xl border border-emerald-200 bg-white px-5 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-50 transition hover:shadow-sm"
+            class="inline-flex items-center justify-center gap-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-white dark:bg-zinc-900 px-5 py-2.5 text-sm font-bold text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-zinc-800 transition hover:shadow-sm"
           >
             <Headphones class="h-4 w-4" />
             Hubungi Kami
@@ -794,4 +801,4 @@ const transactionRows = computed(() =>
       />
     </PageContainer>
   </AppLayout>
-</template>
+</template>>

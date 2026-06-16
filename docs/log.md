@@ -923,6 +923,7 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 | Jun 9, 2026 | Google SSO Two-Step Member Validation | Engineering | Added Admin Koperasi verification before Pengurus Koperasi/System Admin final approval for new Google SSO member activation |
 | Jun 11, 2026 | Kojaya App Mobile PRD & API Role Alignment | Engineering | Added Kojaya App mobile PRD, aligned member token abilities to self-service scope only, and documented Google SSO mobile as a native API requirement |
 | Jun 14, 2026 | POS Reward Point Calibration | Engineering | Changed POS reward earning from 1 point per Rp1 gross profit to 1 point per Rp1.000 gross profit, added recalculation command for existing demo data, and covered the Rp350.000 purchase regression |
+| Jun 15, 2026 | Member Loans UI/UX Redesign | Engineering | Revamped member loans portal page with interactive slider-based calculator, dynamic quick selection buttons, catalog cards, active loan repayment progress tracking, and installment schedule dialog |
 
 ---
 

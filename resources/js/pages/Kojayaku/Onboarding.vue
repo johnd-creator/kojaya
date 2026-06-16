@@ -255,8 +255,6 @@ const reviewStateMeta = computed<{
   }
 });
 
-const stepClass = (key: string): string =>
-  isLocked.value ? "text-zinc-500" : "text-zinc-900";
 </script>
 
 <template>
@@ -268,12 +266,17 @@ const stepClass = (key: string): string =>
     ]"
   >
     <PageContainer>
-      <div class="space-y-2 rounded-lg border p-5">
-        <p class="text-sm text-muted-foreground">
-          {{ member.member_no }} · {{ member.organization?.name || "Koperasi" }}
-        </p>
-        <h1 class="text-2xl font-semibold">Onboarding {{ member.name }}</h1>
-      </div>
+        <header class="flex items-center gap-3 sm:gap-5">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-lg shadow-emerald-600/20 sm:h-16 sm:w-16">
+            <Sparkles class="h-6 w-6 sm:h-8 sm:w-8" />
+          </div>
+          <div>
+            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Onboarding Anggota</h1>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              {{ member.member_no }} · {{ member.organization?.name || "Koperasi" }} — {{ member.name }}
+            </p>
+          </div>
+        </header>
 
       <Alert
         :variant="
@@ -287,12 +290,12 @@ const stepClass = (key: string): string =>
 
       <section
         v-if="isAdmissionWaiting"
-        class="grid gap-4 rounded-lg border border-emerald-200 bg-emerald-50/70 p-6 text-emerald-950 shadow-sm"
+        class="grid gap-4 rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/40 p-4 text-emerald-950 dark:text-emerald-300 dark:from-emerald-950/20 dark:to-teal-950/10 dark:border-emerald-900/30 shadow-sm sm:p-6"
         data-test="member-admission-waiting"
       >
         <div class="flex items-start gap-4">
           <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm"
+            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm border dark:border-zinc-800"
           >
             <ShieldCheck class="h-5 w-5" />
           </div>
@@ -300,18 +303,18 @@ const stepClass = (key: string): string =>
             <h2 class="text-lg font-semibold">
               {{ admissionWaitingTitle }}
             </h2>
-            <p class="max-w-3xl text-sm leading-6 text-emerald-900/85">
+            <p class="max-w-3xl text-sm leading-6 text-emerald-900/85 dark:text-emerald-400/80">
               {{ admissionWaitingDescription }}
             </p>
           </div>
         </div>
 
         <div
-          class="grid gap-3 rounded-md border border-emerald-200 bg-white/75 p-4 text-sm sm:grid-cols-3"
+          class="grid grid-cols-1 gap-3 rounded-md border border-emerald-200 dark:border-emerald-900/30 bg-white/75 dark:bg-zinc-900/40 p-4 text-sm sm:grid-cols-3"
         >
           <div>
             <p
-              class="text-xs font-medium uppercase tracking-wide text-emerald-700"
+              class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
             >
               Nama
             </p>
@@ -321,7 +324,7 @@ const stepClass = (key: string): string =>
           </div>
           <div>
             <p
-              class="text-xs font-medium uppercase tracking-wide text-emerald-700"
+              class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
             >
               Email Google
             </p>
@@ -331,7 +334,7 @@ const stepClass = (key: string): string =>
           </div>
           <div>
             <p
-              class="text-xs font-medium uppercase tracking-wide text-emerald-700"
+              class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
             >
               Status
             </p>
@@ -339,7 +342,7 @@ const stepClass = (key: string): string =>
           </div>
         </div>
 
-        <p class="text-xs leading-5 text-emerald-800">
+        <p class="text-xs leading-5 text-emerald-800 dark:text-emerald-400">
           Jika Anda sudah menghubungi Admin Koperasi, silakan tunggu sampai
           status diterima. Setelah diterima, menu anggota seperti simpanan,
           pinjaman, poin, dan transaksi akan otomatis terbuka.
@@ -351,9 +354,9 @@ const stepClass = (key: string): string =>
         :onboarding="onboarding"
       />
 
-      <section v-if="!isAdmissionWaiting" class="rounded-lg border p-5">
+      <section v-if="!isAdmissionWaiting" class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-5">
         <ol
-          class="flex flex-wrap items-center gap-2 text-sm"
+          class="flex flex-wrap items-center gap-2 text-xs sm:text-sm"
           data-test="onboarding-step-nav"
         >
           <li
@@ -367,8 +370,8 @@ const stepClass = (key: string): string =>
               class="flex items-center gap-2 rounded-full border px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-50"
               :class="[
                 activeStep === index
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                  : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50',
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
+                  : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40',
               ]"
               :disabled="isLocked"
               @click="setStep(index)"
@@ -378,13 +381,13 @@ const stepClass = (key: string): string =>
                 :class="
                   activeStep === index
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-zinc-100 text-zinc-500'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
                 "
               >
                 {{ index + 1 }}
               </span>
               <component :is="step.icon" class="h-3.5 w-3.5" />
-              <span :class="stepClass(step.key)">{{ step.label }}</span>
+              <span :class="[isLocked ? 'text-zinc-500' : 'text-zinc-900 dark:text-zinc-100']">{{ step.label }}</span>
             </button>
           </li>
         </ol>
@@ -392,7 +395,7 @@ const stepClass = (key: string): string =>
 
       <form
         v-if="!isAdmissionWaiting"
-        class="rounded-lg border p-5"
+        class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-6"
         data-test="onboarding-form"
         @submit.prevent="submit"
       >
@@ -405,6 +408,7 @@ const stepClass = (key: string): string =>
                 v-model="form.name"
                 :disabled="isLocked"
                 required
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
             <div class="space-y-2">
@@ -415,6 +419,7 @@ const stepClass = (key: string): string =>
                 type="email"
                 :disabled="isLocked"
                 required
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
             <div class="space-y-2">
@@ -424,6 +429,7 @@ const stepClass = (key: string): string =>
                 v-model="form.tanggal_lahir"
                 type="date"
                 :disabled="isLocked"
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
             <div class="space-y-2">
@@ -432,6 +438,7 @@ const stepClass = (key: string): string =>
                 id="onb-tempat-lahir"
                 v-model="form.tempat_lahir"
                 :disabled="isLocked"
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
           </div>
@@ -446,6 +453,7 @@ const stepClass = (key: string): string =>
                 v-model="form.phone"
                 :disabled="isLocked"
                 required
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
             <div class="space-y-2">
@@ -454,6 +462,7 @@ const stepClass = (key: string): string =>
                 id="onb-pekerjaan"
                 v-model="form.pekerjaan"
                 :disabled="isLocked"
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
             <div class="space-y-2 md:col-span-2">
@@ -461,7 +470,7 @@ const stepClass = (key: string): string =>
               <textarea
                 id="onb-address"
                 v-model="form.address"
-                class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:opacity-60"
+                class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:opacity-60 dark:border-zinc-800 dark:text-white"
                 :disabled="isLocked"
                 required
               />
@@ -478,6 +487,7 @@ const stepClass = (key: string): string =>
                 v-model="form.identity_number"
                 :disabled="isLocked"
                 required
+                class="rounded-xl dark:border-zinc-800"
               />
               <p class="text-xs text-muted-foreground">
                 Data identitas dipakai untuk validasi pengurus.
@@ -490,6 +500,7 @@ const stepClass = (key: string): string =>
                 v-model="form.npwp"
                 placeholder="contoh: 12.345.678.9-012.000"
                 :disabled="isLocked"
+                class="rounded-xl dark:border-zinc-800"
               />
               <p class="text-xs text-muted-foreground">
                 Opsional. Digunakan untuk kebutuhan administrasi perpajakan koperasi.
@@ -503,7 +514,7 @@ const stepClass = (key: string): string =>
             <div class="space-y-2">
               <Label>Jenis Kelamin</Label>
               <Select v-model="form.jenis_kelamin" :disabled="isLocked">
-                <SelectTrigger>
+                <SelectTrigger class="rounded-xl dark:border-zinc-800">
                   <SelectValue placeholder="Pilih jenis" />
                 </SelectTrigger>
                 <SelectContent>
@@ -520,7 +531,7 @@ const stepClass = (key: string): string =>
             <div class="space-y-2">
               <Label>Perusahaan</Label>
               <Select v-model="form.kategori" :disabled="isLocked">
-                <SelectTrigger>
+                <SelectTrigger class="rounded-xl dark:border-zinc-800">
                   <SelectValue placeholder="Pilih perusahaan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -542,7 +553,7 @@ const stepClass = (key: string): string =>
             <div class="space-y-2">
               <Label>Nama Bank</Label>
               <Select v-model="form.nama_bank" :disabled="isLocked">
-                <SelectTrigger>
+                <SelectTrigger class="rounded-xl dark:border-zinc-800">
                   <SelectValue placeholder="Pilih bank" />
                 </SelectTrigger>
                 <SelectContent>
@@ -562,6 +573,7 @@ const stepClass = (key: string): string =>
                 id="onb-pemilik"
                 v-model="form.nama_pemilik_rekening"
                 :disabled="isLocked"
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
             <div class="space-y-2 md:col-span-3">
@@ -570,14 +582,15 @@ const stepClass = (key: string): string =>
                 id="onb-norek"
                 v-model="form.no_rekening"
                 :disabled="isLocked"
+                class="rounded-xl dark:border-zinc-800"
               />
             </div>
           </div>
         </div>
 
         <div v-show="activeStep === 5" class="space-y-4">
-          <div class="rounded-lg border bg-zinc-50 p-4 text-sm">
-            <p class="font-semibold">Review Data Onboarding</p>
+          <div class="rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-sm">
+            <p class="font-semibold dark:text-white">Review Data Onboarding</p>
             <p class="text-muted-foreground">
               Pastikan data yang Anda kirim sudah benar. Setelah submit,
               pengurus akan memvalidasi.
@@ -587,10 +600,10 @@ const stepClass = (key: string): string =>
             <div
               v-for="item in reviewItems"
               :key="item.label"
-              class="rounded-lg border p-3"
+              class="rounded-lg border border-zinc-100 dark:border-zinc-800 p-3"
             >
               <dt class="text-xs text-muted-foreground">{{ item.label }}</dt>
-              <dd class="mt-1 text-sm font-medium">{{ item.value || "-" }}</dd>
+              <dd class="mt-1 text-sm font-medium dark:text-white">{{ item.value || "-" }}</dd>
             </div>
           </dl>
         </div>
@@ -639,7 +652,7 @@ const stepClass = (key: string): string =>
 
       <div
         v-if="!submitted && !isLocked"
-        class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        class="rounded-3xl border border-amber-200 dark:border-amber-900/35 bg-amber-50 dark:bg-amber-950/15 p-4 text-sm text-amber-900 dark:text-amber-400"
       >
         Onboarding akan dikirim ke pengurus setelah Anda menekan tombol
         <strong>Submit Onboarding</strong>. Sebelum submit, data dianggap masih
@@ -648,7 +661,7 @@ const stepClass = (key: string): string =>
 
       <div
         v-if="isApproved"
-        class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+        class="rounded-3xl border border-emerald-200 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-950/20 p-4 text-sm text-emerald-900 dark:text-emerald-400"
       >
         <p class="font-semibold">Selamat datang di koperasi.</p>
         <p>

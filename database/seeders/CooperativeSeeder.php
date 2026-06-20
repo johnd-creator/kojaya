@@ -142,7 +142,7 @@ class CooperativeSeeder extends Seeder
 
         foreach ($names as $index => [$name, $joinedAt, $paidMonths]) {
             $number = $index + 1;
-            $member = CooperativeMember::query()->updateOrCreate(
+            $member = CooperativeMember::withTrashed()->updateOrCreate(
                 ['member_no' => 'KOP-'.Carbon::parse($joinedAt)->format('Y').'-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT)],
                 [
                     'organization_id' => $headOffice->id,
@@ -158,6 +158,7 @@ class CooperativeSeeder extends Seeder
                     'credit_term_days' => 30,
                 ],
             );
+            $member->restore();
 
             $this->seedInvoicePayment($member, $pokok, Carbon::parse($joinedAt)->format('Y-m'), (float) $pokok->default_amount, true, 'POKOK-'.$number, $pengurus);
 

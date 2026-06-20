@@ -189,6 +189,7 @@ All endpoints require `auth:sanctum` and a `CooperativeMember` record linked to 
 | Poin Saya | `GET /api/v1/points/balance`, `GET /api/v1/points/history` |
 | Rewards | `GET /api/v1/rewards`, `POST /api/v1/rewards/{reward}/redeem`, `GET /api/v1/member/reward-redemptions` |
 | Transaksi | `GET /api/v1/member/transactions` |
+| Pesan Kopi | `GET /api/v1/member/coffee/menu`, `POST /api/v1/member/coffee/orders`, `GET /api/v1/member/coffee/orders/{coffeeOrder}` |
 | Profil | `GET /api/v1/member/profile`, `PUT /api/v1/member/profile` |
 
 ### **Dashboard**
@@ -252,6 +253,33 @@ Authorization: Bearer {token}
   }
 }
 ```
+
+### **Pesan Kopi**
+```http
+GET /api/v1/member/coffee/menu
+POST /api/v1/member/coffee/orders
+GET /api/v1/member/coffee/orders/{coffeeOrder}
+Authorization: Bearer {token}
+```
+
+`coffee/menu` mengembalikan katalog produk POS yang cocok dengan kategori/nama kopi untuk screen Flutter `/anggota/kopi`.
+
+**Order Request:**
+```json
+{
+  "pos_product_id": 1,
+  "quantity": 2,
+  "client_reference": "mobile-uuid",
+  "payment_method": "QRIS",
+  "sugar_level": "Less Sugar",
+  "ice_level": "Warm",
+  "cup_size": "Large"
+}
+```
+
+`coffee/orders` membuat transaksi POS dan record `coffee_orders` untuk anggota aktif yang sedang login, mengurangi stok, mencatat pembayaran default `QRIS`, dan mengembalikan status awal `RECEIVED` untuk tracker mobile.
+
+`coffee/orders/{coffeeOrder}` mengembalikan status tracker terbaru milik anggota yang sedang login. Status yang valid: `RECEIVED`, `BREWING`, `READY`, `PICKED_UP`, `CANCELLED`. Admin Koperasi mengelola antrian melalui web route `/cooperative/pos/coffee-orders`.
 
 ### **Onboarding & Status Journey**
 ```http

@@ -74,6 +74,7 @@ import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
 import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
+import { index as cooperativePosCoffeeOrdersIndex } from "@/routes/cooperative/pos/coffee-orders";
 import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
 import { index as cooperativePosShuIndex } from "@/routes/cooperative/pos/shu";
 import { index as cooperativePosTransactionsIndex } from "@/routes/cooperative/pos/transactions";
@@ -261,6 +262,11 @@ const allNavItems: NavItem[] = [
       {
         title: "Riwayat Transaksi",
         href: cooperativePosTransactionsIndex().url,
+        permissions: "access_cooperative_pos",
+      },
+      {
+        title: "Pesanan Kopi",
+        href: cooperativePosCoffeeOrdersIndex().url,
         permissions: "access_cooperative_pos",
       },
       {

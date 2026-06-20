@@ -1904,6 +1904,134 @@
                 ]
             }
         },
+        "/api/v1/member/coffee/menu": {
+            "get": {
+                "summary": "Mengambil Member/Coffee/Menu",
+                "operationId": "get_api_v1_member_coffee_menu",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            }
+        },
+        "/api/v1/member/coffee/orders": {
+            "post": {
+                "summary": "Membuat Member/Coffee/Orders",
+                "operationId": "post_api_v1_member_coffee_orders",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/member/coffee/orders/{coffeeOrder}": {
+            "get": {
+                "summary": "Mengambil Member/Coffee/Orders/{Coffeeorder}",
+                "operationId": "get_api_v1_member_coffee_orders__coffeeOrder",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "coffeeOrder",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/api/v1/member/notifications": {
             "get": {
                 "summary": "Mengambil Member/Notifications",
@@ -3132,7 +3260,7 @@
                     }
                 },
                 "x-required-abilities": [
-                    "cooperative:read"
+                    "member:read"
                 ]
             }
         },
@@ -3168,7 +3296,7 @@
                     }
                 },
                 "x-required-abilities": [
-                    "cooperative:read"
+                    "member:read"
                 ],
                 "parameters": [
                     {
@@ -3222,7 +3350,7 @@
                     }
                 },
                 "x-required-abilities": [
-                    "cooperative:read"
+                    "member:read"
                 ]
             }
         },
@@ -3258,7 +3386,7 @@
                     }
                 },
                 "x-required-abilities": [
-                    "cooperative:write"
+                    "member:write"
                 ],
                 "parameters": [
                     {

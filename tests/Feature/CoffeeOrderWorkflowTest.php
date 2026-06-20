@@ -1,0 +1,137 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\CoffeeOrder;
+use App\Models\CooperativeMember;
+use App\Models\PosCategory;
+use App\Models\PosProduct;
+use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class CoffeeOrderWorkflowTest extends TestCase
+{
+    use DatabaseMigrations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    public function test_member_order_creates_trackable_coffee_order(): void
+    {
+        $member = $this->actingMember(['member:write']);
+        $product = $this->coffeeProduct();
+
+        $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $product->id,
+            'quantity' => 1,
+            'client_reference' => 'COFFEE-TRACK-001',
+            'sugar_level' => 'No Sugar',
+            'ice_level' => 'Warm',
+            'cup_size' => 'Reguler',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', CoffeeOrder::STATUS_RECEIVED)
+            ->assertJsonPath('data.step', 0)
+            ->assertJsonPath('data.customization.sugar_level', 'No Sugar');
+
+        $order = CoffeeOrder::query()->with('transaction')->firstOrFail();
+        $this->assertSame($member->id, $order->cooperative_member_id);
+        $this->assertSame($product->id, $order->pos_product_id);
+        $this->assertSame('COFFEE-TRACK-001', $order->transaction->client_reference);
+    }
+
+    public function test_admin_status_update_is_visible_to_member_status_endpoint(): void
+    {
+        $member = $this->actingMember(['member:write']);
+        $product = $this->coffeeProduct();
+
+        $response = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $product->id,
+            'quantity' => 1,
+            'client_reference' => 'COFFEE-TRACK-002',
+        ])->assertCreated();
+
+        $orderId = $response->json('data.id');
+        $admin = $this->posAdmin();
+
+        $this->actingAs($admin)
+            ->put(route('cooperative.pos.coffee-orders.update-status', $orderId), [
+                'status' => CoffeeOrder::STATUS_BREWING,
+            ])
+            ->assertRedirect();
+
+        Sanctum::actingAs($member->user, ['member:read']);
+        $this->getJson("/api/v1/member/coffee/orders/{$orderId}")
+            ->assertOk()
+            ->assertJsonPath('data.status', CoffeeOrder::STATUS_BREWING)
+            ->assertJsonPath('data.step', 1)
+            ->assertJsonPath('data.status_label', 'Kopi Sedang Diseduh');
+    }
+
+    public function test_member_cannot_view_another_members_coffee_order(): void
+    {
+        $member = $this->actingMember(['member:write']);
+        $product = $this->coffeeProduct();
+
+        $response = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $product->id,
+            'quantity' => 1,
+            'client_reference' => 'COFFEE-TRACK-003',
+        ])->assertCreated();
+
+        $otherUser = User::factory()->create();
+        CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+        Sanctum::actingAs($otherUser, ['member:read']);
+
+        $this->getJson('/api/v1/member/coffee/orders/'.$response->json('data.id'))
+            ->assertForbidden();
+
+        $this->assertSame($member->id, CoffeeOrder::query()->firstOrFail()->cooperative_member_id);
+    }
+
+    private function coffeeProduct(): PosProduct
+    {
+        $category = PosCategory::factory()->create([
+            'name' => 'Espresso',
+            'slug' => 'espresso',
+        ]);
+
+        return PosProduct::factory()->create([
+            'pos_category_id' => $category->id,
+            'name' => 'Espresso Kojaya',
+            'cost_price' => 8000,
+            'sale_price' => 18000,
+            'stock' => 10,
+        ]);
+    }
+
+    /**
+     * @param  list<string>  $abilities
+     */
+    private function actingMember(array $abilities): CooperativeMember
+    {
+        $user = User::factory()->create();
+        $member = CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+        ]);
+
+        Sanctum::actingAs($user, $abilities);
+
+        return $member;
+    }
+
+    private function posAdmin(): User
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo('access_cooperative_pos');
+
+        return $user;
+    }
+}

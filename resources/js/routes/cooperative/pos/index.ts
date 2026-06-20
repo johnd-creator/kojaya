@@ -3,6 +3,7 @@ import transactions from './transactions'
 import voidRequests from './void-requests'
 import returns from './returns'
 import credit from './credit'
+import coffeeOrders from './coffee-orders'
 import shu from './shu'
 import reports from './reports'
 import shifts from './shifts'
@@ -95,6 +96,7 @@ const pos = {
     voidRequests: Object.assign(voidRequests, voidRequests),
     returns: Object.assign(returns, returns),
     credit: Object.assign(credit, credit),
+    coffeeOrders: Object.assign(coffeeOrders, coffeeOrders),
     shu: Object.assign(shu, shu),
     reports: Object.assign(reports, reports),
     shifts: Object.assign(shifts, shifts),

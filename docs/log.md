@@ -4,11 +4,24 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** June 13, 2026
+**Last Updated:** June 20, 2026
 
 ---
 
 ## 🎯 2026-06: M3 P0 Hardening
+
+### **June 20, 2026 - Kojayaku Coffee Ordering API**
+
+**☕ Pesan Kopi:**
+- ✅ Added member API endpoints for the Flutter coffee ordering screen: `GET /api/v1/member/coffee/menu` and `POST /api/v1/member/coffee/orders`.
+- ✅ Coffee orders now create POS transactions for the authenticated active cooperative member, reduce POS stock, and return an initial `RECEIVED` status for mobile order tracking.
+- ✅ Added persistent `coffee_orders` status tracking plus Admin Koperasi queue at `/cooperative/pos/coffee-orders`.
+- ✅ Added member status endpoint `GET /api/v1/member/coffee/orders/{coffeeOrder}` so Flutter can poll backend status changes (`RECEIVED`, `BREWING`, `READY`, `PICKED_UP`, `CANCELLED`).
+- ✅ Documented the Flutter app path in `AGENTS.md` so future Laravel work can inspect `/home/john-d/Videos/kojaya-app` before aligning mobile-facing contracts.
+
+**Verification:**
+- ✅ `MemberCoffeeOrderApiTest` covers catalog loading and order creation.
+- ✅ `CoffeeOrderWorkflowTest` covers backend status tracking and member-scoped status visibility.
 
 ### **June 14, 2026 - POS Product Image Public Storage Fix**
 

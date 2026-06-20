@@ -282,6 +282,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('pos/transactions/{transaction}/returns', [\App\Http\Controllers\Cooperative\PosReturnController::class, 'store'])->name('pos.returns.store');
             Route::get('pos/members/{member}/credit/pay', [\App\Http\Controllers\Cooperative\PosMemberCreditController::class, 'create'])->name('pos.credit.create');
             Route::post('pos/members/{member}/credit/pay', [\App\Http\Controllers\Cooperative\PosMemberCreditController::class, 'store'])->name('pos.credit.store');
+            Route::get('pos/coffee-orders', [\App\Http\Controllers\Cooperative\CoffeeOrderController::class, 'index'])->name('pos.coffee-orders.index');
+            Route::put('pos/coffee-orders/{coffeeOrder}/status', [\App\Http\Controllers\Cooperative\CoffeeOrderController::class, 'updateStatus'])->name('pos.coffee-orders.update-status');
         });
 
         Route::get('pos/shu', [\App\Http\Controllers\Cooperative\PosAnnualShuController::class, 'index'])

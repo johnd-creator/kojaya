@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PosTransaction extends Model
 {
@@ -69,6 +70,11 @@ class PosTransaction extends Model
     public function voidRequests(): HasMany
     {
         return $this->hasMany(PosVoidRequest::class);
+    }
+
+    public function coffeeOrder(): HasOne
+    {
+        return $this->hasOne(CoffeeOrder::class);
     }
 
     public function voidedByUser(): BelongsTo

@@ -9,6 +9,12 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
+## Related Flutter App
+
+- The Kojayaku Flutter mobile app lives at `/home/john-d/Videos/kojaya-app`.
+- When Laravel API or member-facing behavior must match the mobile app, inspect that Flutter project first and align endpoint contracts, menu names, payload fields, and screen expectations before changing this Laravel app.
+- Treat the Laravel application in this repository as the source of truth for persistence, authorization, validation, and accounting/POS side effects. Flutter screens may prototype UX locally before matching backend endpoints exist.
+
 - php - 8.5.6
 - inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/fortify (FORTIFY) - v1

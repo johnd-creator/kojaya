@@ -16,6 +16,7 @@ import PosTransactionReceiptController from './PosTransactionReceiptController'
 import PosVoidController from './PosVoidController'
 import PosReturnController from './PosReturnController'
 import PosMemberCreditController from './PosMemberCreditController'
+import CoffeeOrderController from './CoffeeOrderController'
 import PosAnnualShuController from './PosAnnualShuController'
 import PosCategoryController from './PosCategoryController'
 import PosProductController from './PosProductController'
@@ -46,6 +47,7 @@ const Cooperative = {
     PosVoidController: Object.assign(PosVoidController, PosVoidController),
     PosReturnController: Object.assign(PosReturnController, PosReturnController),
     PosMemberCreditController: Object.assign(PosMemberCreditController, PosMemberCreditController),
+    CoffeeOrderController: Object.assign(CoffeeOrderController, CoffeeOrderController),
     PosAnnualShuController: Object.assign(PosAnnualShuController, PosAnnualShuController),
     PosCategoryController: Object.assign(PosCategoryController, PosCategoryController),
     PosProductController: Object.assign(PosProductController, PosProductController),

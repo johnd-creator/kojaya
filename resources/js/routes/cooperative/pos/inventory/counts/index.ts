@@ -222,7 +222,7 @@ store.form = storeForm
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-export const show = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -237,7 +237,7 @@ show.definition = {
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-show.url = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { count: args }
     }
@@ -270,7 +270,7 @@ show.url = (args: { count: number | { id: number } } | [count: number | { id: nu
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-show.get = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -280,7 +280,7 @@ show.get = (args: { count: number | { id: number } } | [count: number | { id: nu
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-show.head = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -290,7 +290,7 @@ show.head = (args: { count: number | { id: number } } | [count: number | { id: n
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-const showForm = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -300,7 +300,7 @@ const showForm = (args: { count: number | { id: number } } | [count: number | { 
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-showForm.get = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
@@ -310,7 +310,7 @@ showForm.get = (args: { count: number | { id: number } } | [count: number | { id
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:51
 * @route '/cooperative/pos/inventory/counts/{count}'
 */
-showForm.head = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -327,7 +327,7 @@ show.form = showForm
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:60
 * @route '/cooperative/pos/inventory/counts/{count}/submit'
 */
-export const submit = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const submit = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: submit.url(args, options),
     method: 'post',
 })
@@ -342,7 +342,7 @@ submit.definition = {
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:60
 * @route '/cooperative/pos/inventory/counts/{count}/submit'
 */
-submit.url = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+submit.url = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { count: args }
     }
@@ -375,7 +375,7 @@ submit.url = (args: { count: number | { id: number } } | [count: number | { id: 
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:60
 * @route '/cooperative/pos/inventory/counts/{count}/submit'
 */
-submit.post = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+submit.post = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: submit.url(args, options),
     method: 'post',
 })
@@ -385,7 +385,7 @@ submit.post = (args: { count: number | { id: number } } | [count: number | { id:
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:60
 * @route '/cooperative/pos/inventory/counts/{count}/submit'
 */
-const submitForm = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const submitForm = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: submit.url(args, options),
     method: 'post',
 })
@@ -395,7 +395,7 @@ const submitForm = (args: { count: number | { id: number } } | [count: number | 
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:60
 * @route '/cooperative/pos/inventory/counts/{count}/submit'
 */
-submitForm.post = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+submitForm.post = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: submit.url(args, options),
     method: 'post',
 })
@@ -407,7 +407,7 @@ submit.form = submitForm
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:67
 * @route '/cooperative/pos/inventory/counts/{count}/approve'
 */
-export const approve = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -422,7 +422,7 @@ approve.definition = {
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:67
 * @route '/cooperative/pos/inventory/counts/{count}/approve'
 */
-approve.url = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+approve.url = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { count: args }
     }
@@ -455,7 +455,7 @@ approve.url = (args: { count: number | { id: number } } | [count: number | { id:
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:67
 * @route '/cooperative/pos/inventory/counts/{count}/approve'
 */
-approve.post = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -465,7 +465,7 @@ approve.post = (args: { count: number | { id: number } } | [count: number | { id
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:67
 * @route '/cooperative/pos/inventory/counts/{count}/approve'
 */
-const approveForm = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const approveForm = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: approve.url(args, options),
     method: 'post',
 })
@@ -475,7 +475,7 @@ const approveForm = (args: { count: number | { id: number } } | [count: number |
 * @see app/Http/Controllers/Cooperative/PosInventoryCountController.php:67
 * @route '/cooperative/pos/inventory/counts/{count}/approve'
 */
-approveForm.post = (args: { count: number | { id: number } } | [count: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+approveForm.post = (args: { count: string | number | { id: string | number } } | [count: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: approve.url(args, options),
     method: 'post',
 })

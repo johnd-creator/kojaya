@@ -7,6 +7,7 @@ use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\User;
+use Database\Seeders\CooperativeSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Laravel\Sanctum\Sanctum;
@@ -45,6 +46,20 @@ class MemberCoffeeOrderApiTest extends TestCase
             ->assertJsonPath('data.items.0.category', 'Signature');
 
         $this->assertSame('ACTIVE', $member->status);
+    }
+
+    public function test_seeded_coffee_products_are_available_in_member_menu(): void
+    {
+        $this->actingMember(['member:read']);
+        $this->seed(CooperativeSeeder::class);
+
+        $this->getJson('/api/v1/member/coffee/menu')
+            ->assertOk()
+            ->assertJsonPath('data.items.0.name', 'Cappuccino Velvet')
+            ->assertJsonFragment(['name' => 'Kopi Susu Gula Aren'])
+            ->assertJsonFragment(['category' => 'Signature'])
+            ->assertJsonFragment(['category' => 'Espresso'])
+            ->assertJsonFragment(['category' => 'Non-Coffee']);
     }
 
     public function test_member_can_place_coffee_order(): void

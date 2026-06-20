@@ -241,6 +241,9 @@ class CooperativeSeeder extends Seeder
             'sembako' => PosCategory::query()->updateOrCreate(['slug' => 'sembako'], ['name' => 'Sembako', 'is_active' => true]),
             'minuman' => PosCategory::query()->updateOrCreate(['slug' => 'minuman'], ['name' => 'Minuman', 'is_active' => true]),
             'atk' => PosCategory::query()->updateOrCreate(['slug' => 'atk'], ['name' => 'ATK & Kebutuhan Kantor', 'is_active' => true]),
+            'espresso' => PosCategory::query()->updateOrCreate(['slug' => 'espresso'], ['name' => 'Espresso', 'is_active' => true]),
+            'signature' => PosCategory::query()->updateOrCreate(['slug' => 'signature'], ['name' => 'Signature', 'is_active' => true]),
+            'non-coffee' => PosCategory::query()->updateOrCreate(['slug' => 'non-coffee'], ['name' => 'Non-Coffee', 'is_active' => true]),
         ];
 
         $products = [
@@ -250,6 +253,12 @@ class CooperativeSeeder extends Seeder
             ['category' => 'minuman', 'sku' => 'POS-WATER-600', 'barcode' => '8997001000042', 'name' => 'Air Mineral 600ml', 'cost_price' => 2200, 'sale_price' => 3500, 'stock' => 180, 'minimum_stock' => 40],
             ['category' => 'minuman', 'sku' => 'POS-TEA-350', 'barcode' => '8997001000059', 'name' => 'Teh Botol 350ml', 'cost_price' => 4200, 'sale_price' => 6500, 'stock' => 120, 'minimum_stock' => 30],
             ['category' => 'atk', 'sku' => 'POS-PEN-BLUE', 'barcode' => '8997001000066', 'name' => 'Pulpen Biru', 'cost_price' => 1800, 'sale_price' => 3500, 'stock' => 75, 'minimum_stock' => 20],
+            ['category' => 'espresso', 'sku' => 'COF-ESPRESSO-KOJAYA', 'barcode' => '8997002000010', 'name' => 'Espresso Kojaya', 'cost_price' => 8000, 'sale_price' => 18000, 'stock' => 80, 'minimum_stock' => 10],
+            ['category' => 'signature', 'sku' => 'COF-SUSU-GULA-AREN', 'barcode' => '8997002000027', 'name' => 'Kopi Susu Gula Aren', 'cost_price' => 11000, 'sale_price' => 22000, 'stock' => 90, 'minimum_stock' => 12],
+            ['category' => 'espresso', 'sku' => 'COF-CAPPUCCINO-VELVET', 'barcode' => '8997002000034', 'name' => 'Cappuccino Velvet', 'cost_price' => 12000, 'sale_price' => 24000, 'stock' => 70, 'minimum_stock' => 10],
+            ['category' => 'signature', 'sku' => 'COF-CARAMEL-MACCHIATO', 'barcode' => '8997002000041', 'name' => 'Caramel Macchiato', 'cost_price' => 13000, 'sale_price' => 26000, 'stock' => 70, 'minimum_stock' => 10],
+            ['category' => 'non-coffee', 'sku' => 'COF-MATCHA-CREAM-LATTE', 'barcode' => '8997002000058', 'name' => 'Matcha Cream Latte', 'cost_price' => 12500, 'sale_price' => 25000, 'stock' => 60, 'minimum_stock' => 10],
+            ['category' => 'non-coffee', 'sku' => 'COF-CHOCOLATE-LAVA', 'barcode' => '8997002000065', 'name' => 'Chocolate Lava Chilled', 'cost_price' => 11500, 'sale_price' => 23000, 'stock' => 60, 'minimum_stock' => 10],
         ];
 
         $seeded = [];

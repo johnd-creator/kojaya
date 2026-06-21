@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Enums\Co\Pos\BackgroundJobStatus;
 use App\Http\Controllers\Controller;
+use App\Jobs\GeneratePosReportPdf;
+use App\Models\BackgroundJob;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\User;
 use App\Services\Cooperative\PosSalesReportService;
 use App\Services\Export\PosReportCsvExport;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -50,14 +57,79 @@ class PosReportController extends Controller
         return $exporter->stream($this->service, $from, $to, $filters);
     }
 
-    public function exportPdf(): StreamedResponse
+    public function enqueuePdf(Request $request): JsonResponse
     {
-        $from = request()->input('from', now()->startOfMonth()->toDateString());
-        $to = request()->input('to', now()->toDateString());
-        $filters = $this->filters();
-        $exporter = new \App\Services\Export\PosReportPdfExport;
+        $validated = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'filters' => ['nullable', 'array'],
+            'filters.pos_product_id' => ['nullable', 'integer'],
+            'filters.category_id' => ['nullable', 'integer'],
+            'filters.cashier_id' => ['nullable', 'integer'],
+            'filters.cooperative_member_id' => ['nullable', 'integer'],
+            'filters.payment_method' => ['nullable', 'string', 'max:40'],
+        ]);
 
-        return $exporter->stream($this->service, $from, $to, $filters);
+        $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $validated['to'] ?? now()->toDateString();
+        $filters = array_filter($validated['filters'] ?? [], fn ($v) => $v !== null && $v !== '');
+
+        $job = BackgroundJob::query()->create([
+            'user_id' => $request->user()->id,
+            'type' => 'pos.report.pdf',
+            'status' => BackgroundJobStatus::Pending,
+            'progress' => 0,
+            'metadata' => [
+                'from' => $from,
+                'to' => $to,
+                'filters' => $filters,
+            ],
+        ]);
+
+        GeneratePosReportPdf::dispatch($job->id);
+
+        return response()->json([
+            'job_id' => $job->uuid,
+            'status' => $job->status->value,
+            'progress' => $job->progress,
+        ], 202);
+    }
+
+    public function pdfStatus(Request $request, BackgroundJob $job): JsonResponse
+    {
+        abort_unless($job->isOwnedBy($request->user()->id), 404);
+
+        return response()->json([
+            'job_id' => $job->uuid,
+            'status' => $job->status->value,
+            'progress' => $job->progress,
+            'error_message' => $job->error_message,
+            'file_size' => $job->file_size,
+            'original_name' => $job->original_name,
+            'started_at' => optional($job->started_at)->toIso8601String(),
+            'finished_at' => optional($job->finished_at)->toIso8601String(),
+            'download_url' => $job->status->isDownloadable()
+                ? route('cooperative.pos.reports.export.pdf.download', $job)
+                : null,
+        ]);
+    }
+
+    public function pdfDownload(Request $request, BackgroundJob $job): StreamedResponse|RedirectResponse
+    {
+        abort_unless($job->isOwnedBy($request->user()->id), 404);
+
+        if ($job->status !== BackgroundJobStatus::Completed) {
+            abort(409, 'File belum siap diunduh.');
+        }
+
+        abort_unless($job->file_path, 404);
+
+        $disk = Storage::disk($job->disk);
+        abort_unless($disk->exists($job->file_path), 404);
+
+        return $disk->download($job->file_path, $job->original_name ?? basename($job->file_path), [
+            'Content-Type' => $job->mime_type ?? 'application/pdf',
+        ]);
     }
 
     /**

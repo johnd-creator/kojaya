@@ -231,3 +231,113 @@ Verdict Plan 06: **Hampir selesai, tetapi belum boleh ditutup sampai otorisasi b
 - [ ] Tambahkan assertion urutan sort data aktual.
 - [ ] Tambahkan `preserveScroll` pada sort visit dan gunakan Wayfinder untuk URL bulk approve.
 - [ ] Pint dan review generated Wayfinder sebelum commit.
+
+---
+
+# Audit Lanjutan Minimax - Plan 06 sampai 08
+
+Tanggal audit lanjutan: 2026-06-22  
+Auditor: Codex  
+Sumber audit: `git diff`, scan codebase, `docs/improve/06-datatable-filtering-bulk-actions.md`, `docs/improve/07-background-jobs-export-progress.md`, `docs/improve/08-theming-dark-mode.md`, targeted PHPUnit, dan build.
+
+## Ringkasan Keputusan Plan 06-08
+
+Plan 06 sekarang bisa dianggap **selesai secara fungsional**. Gap otorisasi bulk approve yang sebelumnya P0 sudah ditutup dengan guard role `Admin Koperasi`; frontend sudah memakai Wayfinder untuk bulk route; sort visit sudah memakai `preserveScroll`; dan test urutan sort aktual sudah ditambahkan.
+
+Plan 07 sekarang **selesai secara fungsional**. Fondasi backend benar: tabel `background_jobs`, model status, job `ShouldQueue`, retry/backoff, endpoint enqueue/status/download, private storage via disk `local`, owner guard, dan test coverage untuk enqueue, status, download, failure, serta idempotency. Gap UI `pending` yang sebelumnya ditemukan sudah ditutup dengan `pdfJob.hasJobStarted.value`.
+
+Plan 08 sekarang **selesai untuk scope P3**. Audit doc sudah dibuat, manual smoke light/dark + mobile/desktop sudah dicatat sebagai hasil aktual, dan perubahan visual yang masuk akal sudah dilakukan (`Card.vue`, `JobProgressTracker.vue`, tabel `top_products`).
+
+Status keseluruhan: **Plan 06 selesai, Plan 07 selesai secara fungsional, Plan 08 selesai untuk scope P3.**
+
+## Checklist Final Plan 06 - Datatable Filtering dan Bulk Actions
+
+| Item | Status terbaru | Bukti | Catatan |
+| --- | --- | --- | --- |
+| Sorting backend memakai whitelist | Selesai | `CooperativePaymentController::SORT_WHITELIST` | `paid_at`, `status`, `amount`, `id` aman dari raw order bebas. |
+| Invalid sort field/direction dinormalisasi | Selesai | `PaymentSortBulkTest` | Invalid field kembali ke `paid_at`, invalid direction kembali ke `desc`. |
+| Sort URL dan pagination stabil | Selesai | `filters` prop + `withQueryString()` + `handleSort(... preserveScroll)` | Query sort/filter bertahan di URL dan pagination. |
+| Sort order aktual dites | Selesai | `test_payments_sort_order_by_amount_asc()` | Test memvalidasi urutan `payments.data`, bukan hanya prop filter. |
+| Bulk endpoint eksplisit | Selesai | `POST /cooperative/payments/bulk-approve` | Endpoint tidak lagi menjalankan banyak single request dari frontend. |
+| Bulk action memakai Wayfinder | Selesai | `bulkApprove().url` di `Cooperative/Payments/Index.vue` | Hardcoded URL lama sudah diganti. |
+| Bulk authorization sama ketat dengan single approve | Selesai | `abort_unless($request->user()?->hasRole('Admin Koperasi'), 403)` | Permission-only user ditolak. |
+| Bulk status validation | Selesai cukup | `bulkApprove()` skip non-`PENDING` | Behavior aman. Masih bisa ditingkatkan dengan flash `warning` untuk partial skip. |
+| Confirm dialog sebelum bulk action | Selesai | `ConfirmDialog` di payments page | Dialog menampilkan jumlah pembayaran dan aturan status `PENDING`. |
+| Test filter/sort/bulk | Selesai | `PaymentSortBulkTest.php` | Coverage sudah mencakup permission, role, validation, success, skip non-pending, dan sort order. |
+
+### Arahan Lanjutan Plan 06
+
+- [x] Tutup Plan 06 secara fungsional.
+- [ ] Enhancement kecil: ubah pesan bulk partial skip menjadi `warning` atau flash terpisah, agar user tidak membaca operasi campuran sebagai full success.
+- [ ] Enhancement kecil: jika ingin atomic batch, bungkus query bulk dalam transaksi dan lock row di level controller. Saat ini tiap item sudah aman melalui `CooperativePaymentService::approve()` yang melakukan lock per payment.
+
+Verdict Plan 06: **Selesai.**
+
+## Checklist Plan 07 - Background Jobs, Export, dan Progress Tracker
+
+| Item | Status terbaru | Bukti | Catatan |
+| --- | --- | --- | --- |
+| Operasi berat dipilih sebagai pilot | Selesai | POS report PDF | Sinkron PDF export diganti flow enqueue job. |
+| Endpoint enqueue cepat dan return job id | Selesai | `PosReportController::enqueuePdf()` | Return `202` dengan `job_id`, `status`, `progress`. |
+| Job memakai queue | Selesai | `GeneratePosReportPdf implements ShouldQueue` | Ada `tries`, `timeout`, `backoff()`, dan `WithoutOverlapping`. |
+| Status job disimpan | Selesai | `background_jobs` migration, `BackgroundJob` model | Kolom minimum plan tersedia: user, type, status, progress, file path, error, metadata, timestamps. |
+| Output disimpan private | Selesai | `Storage::disk($job->disk)` default `local` | Download lewat controller, bukan public URL. |
+| Endpoint status tersedia | Selesai | `pdfStatus()` | Return pending/processing/completed/failed metadata dan `download_url` saat completed. |
+| Download file hanya owner | Selesai | `abort_unless($job->isOwnedBy(...), 404)` | Test owner/intruder ada. |
+| Failure menyimpan pesan aman | Selesai | `markFailed(mb_substr(..., 0, 1000))` | Test failure ada. |
+| Job idempotent/retry safe | Selesai | `claimJob()` skip completed + `WithoutOverlapping` | Test run dua kali tidak reprocess file. |
+| UI progress tracker tersedia | Selesai | `JobProgressTracker.vue`, `useBackgroundJob.ts` | Polling, retry, download, dan reset sudah tersedia. |
+| User bisa melihat status pending | Selesai | `Reports/Index.vue` memakai `v-if="pdfJob.hasJobStarted.value"` | Gap lama sudah ditutup. Setelah enqueue selesai, `state.jobId` tetap membuat tracker terlihat walau status masih `pending`. |
+| Notification bell saat file siap | Tidak diimplementasi, masih acceptable | Plan memperbolehkan progress tracker atau notification item | Karena tracker ada, notification bell tidak wajib untuk pilot ini. |
+| Queue failure terlihat di monitoring existing | Selesai untuk pilot | `failed()` + status `failed` + endpoint status | Monitoring operasional queue tetap perlu worker/log dashboard, tetapi acceptance user-facing sudah ditutup oleh tracker dan status endpoint. |
+
+### Arahan Penutupan Plan 07 untuk Minimax
+
+- [x] Pertahankan model `BackgroundJob` dan enum status.
+- [x] Pertahankan endpoint owner-guarded untuk status dan download.
+- [x] Pertahankan job idempotent dengan skip jika status sudah `completed`.
+- [x] Render condition tracker sudah benar memakai `pdfJob.hasJobStarted.value`.
+- [x] Route enqueue/status di composable sudah memakai Wayfinder controller helper.
+- [x] Catatan smoke manual pending/processing sudah masuk di `docs/improve/theming-dark-mode-audit.md`.
+- [x] Status completed/download sudah tercakup oleh `Plan07BackgroundJobExportTest`.
+- [x] Requirement queue worker sudah terdokumentasi di `docs/decisions.md`; untuk environment local `.env.example` masih `QUEUE_CONNECTION=sync`, jadi flow tetap bisa berjalan tanpa worker saat development.
+
+Verdict Plan 07: **Selesai.** Backend, route, private download, UI tracker, retry/idempotency, dan verifikasi minimal sudah sesuai plan.
+
+## Checklist Plan 08 - Theming, Dark Mode, dan Aestetika Premium
+
+| Item | Status terbaru | Bukti | Catatan |
+| --- | --- | --- | --- |
+| Audit warna hardcoded dan inkonsistensi | Selesai | `docs/improve/theming-dark-mode-audit.md` | Audit doc memakai tanggal 21-22 Juni 2026 dan memuat keputusan per komponen/halaman. |
+| Komponen shared prioritas dirapikan | Selesai untuk P3 | `Card.vue`, audit `Button`, `DataTable`, `Input`, `Textarea`, `Select`, `EmptyState`, `PageContainer` | Perubahan kode kecil tetapi tepat; audit menunjukkan mayoritas shared component sudah sesuai token existing. |
+| Dark mode komponen shared konsisten | Selesai | Audit doc + manual smoke dark mode | Dashboard, Payments, POS Reports, Payroll, dan Reports dicatat OK di dark mode. |
+| Hover/focus state readable light/dark | Selesai | Audit doc bagian fokus, disabled, selected row | Button/link/input/select/checkbox punya `focus-visible`; disabled dan selected row sudah dicek. |
+| Table density dan sticky header dicek | Selesai cukup | `DataTable.vue`, `Reports/Index.vue` top products | POS Reports sudah ditambah `py-2.5`, `tabular-nums`, dan hover state. |
+| Tidak ada dekorasi berlebihan / gradient orb | Selesai dengan keputusan sadar | Audit doc bagian "Yang Tidak Diubah" + smoke manual | Hero gradient/orbs dipertahankan karena tidak overlap, tetap readable, dan elemen dekoratif `aria-hidden`. |
+| Screenshot/manual smoke light/dark | Selesai | `Manual Smoke Notes - Hasil Verifikasi` dan `Verifikasi Manual Lanjutan - Hasil` | Light/dark, mobile 375px, focus, disabled, skeleton, sticky header, dan selected row sudah dicatat. |
+
+### Arahan Penutupan Plan 08 untuk Minimax
+
+- [x] Audit doc `docs/improve/theming-dark-mode-audit.md` sudah dibuat.
+- [x] Gap visual langsung yang masuk akal sudah ditutup: `Card.vue` solid surface, `JobProgressTracker.vue` konsisten dengan POS Reports, dan tabel `top_products` punya density/hover/tabular numbers.
+- [x] `Manual Smoke Notes` sudah diubah menjadi hasil aktual per halaman dan mode.
+- [x] Bagian `Verifikasi Manual Lanjutan` sudah selesai dan tidak lagi menulis "belum selesai".
+- [x] Metadata audit sudah dikoreksi ke 21-22 Juni 2026.
+- [x] Keputusan mempertahankan hero gradient/orbs sudah disertai hasil smoke readability dan `aria-hidden`.
+- [x] Native `<select>` sudah ditulis sebagai P3 follow-up, bukan blocker Plan 08.
+- [ ] Enhancement dokumentasi kecil: path komponen di audit doc masih ringkas, misalnya `status-badge/StatusBadge.vue`. Itu masih bisa dipahami dari heading `resources/js/components/ui/**`, tetapi lebih baik ditulis penuh sebagai `ui/status-badge/StatusBadge.vue` saat cleanup berikutnya.
+
+Verdict Plan 08: **Selesai untuk scope P3.** Tidak ada gap blocking terhadap acceptance criteria Plan 08.
+
+## Verifikasi Audit Lanjutan
+
+Perintah yang dijalankan saat audit ini:
+
+```bash
+npm run build
+php artisan test --compact tests/Feature/Cooperative/Plan07BackgroundJobExportTest.php tests/Feature/Cooperative/PosSprint6ReportFiltersTest.php
+```
+
+Hasil terbaru: `npm run build` lulus; PHPUnit terkait Plan 07 dan POS report lulus **21 tests / 63 assertions**.
+
+Catatan: karena ada PHP files berubah di diff junior, Minimax/Deepseek tetap wajib memastikan `vendor/bin/pint --dirty --format agent` sudah dijalankan sebelum commit final.

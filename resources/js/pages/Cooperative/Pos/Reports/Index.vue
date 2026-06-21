@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from "@inertiajs/vue3";
-import { ArrowLeft, Download, FileSpreadsheet, FileText, TrendingUp, TrendingDown } from "lucide-vue-next";
+import { ArrowLeft, Download, FileSpreadsheet, FileText, TrendingDown } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import EmptyState from "@/components/EmptyState.vue";
+import JobProgressTracker from "@/components/JobProgressTracker.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
+import { useBackgroundJob } from "@/composables/useBackgroundJob";
 
 interface AnalyticsData {
     summary: {
@@ -88,7 +90,32 @@ const exportQuery = computed(() => {
 });
 
 const csvHref = computed(() => `/cooperative/pos/reports/export.csv${exportQuery.value ? `?${exportQuery.value}` : ""}`);
-const pdfHref = computed(() => `/cooperative/pos/reports/export.pdf${exportQuery.value ? `?${exportQuery.value}` : ""}`);
+
+const pdfJob = useBackgroundJob();
+
+function buildPdfPayload(): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
+        from: dateFilter.value.from,
+        to: dateFilter.value.to,
+    };
+    const cleaned = cleanFilters(f.value);
+    if (Object.keys(cleaned).length > 0) {
+        payload.filters = cleaned;
+    }
+    return payload;
+}
+
+function generatePdf(): void {
+    void pdfJob.enqueue(buildPdfPayload());
+}
+
+function retryPdf(): void {
+    void pdfJob.enqueue(buildPdfPayload());
+}
+
+function dismissPdf(): void {
+    pdfJob.reset();
+}
 
 const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?? []).map((d) => d.revenue)));
 </script>
@@ -122,13 +149,27 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                                 <FileSpreadsheet class="mr-2 h-4 w-4" /> CSV
                             </Button>
                         </a>
-                        <a :href="pdfHref">
-                            <Button variant="outline" size="sm" class="rounded-xl">
-                                <FileText class="mr-2 h-4 w-4" /> PDF
-                            </Button>
-                        </a>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            class="rounded-xl"
+                            :disabled="pdfJob.submitting.value"
+                            @click="generatePdf"
+                        >
+                            <FileText class="mr-2 h-4 w-4" /> Buat PDF
+                        </Button>
                     </div>
                 </header>
+
+                <JobProgressTracker
+                    v-if="pdfJob.hasJobStarted.value"
+                    :state="pdfJob.state.value"
+                    :submitting="pdfJob.submitting.value"
+                    :error="pdfJob.error.value"
+                    label="Laporan POS · PDF"
+                    @retry="retryPdf"
+                    @reset="dismissPdf"
+                />
 
                 <div class="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:grid-cols-6">
                     <div>
@@ -280,12 +321,12 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(p, idx) in analytics.top_products" :key="idx" class="border-b border-zinc-50 dark:border-zinc-800">
-                                <td class="py-2 font-medium">{{ p.product_name }}</td>
-                                <td class="py-2 text-right">{{ p.quantity }}</td>
-                                <td class="py-2 text-right">{{ formatCurrency(p.revenue) }}</td>
-                                <td class="py-2 text-right text-emerald-600 dark:text-emerald-400">{{ formatCurrency(p.gross_profit) }}</td>
-                                <td class="py-2 text-right">{{ p.margin_percent }}%</td>
+                            <tr v-for="(p, idx) in analytics.top_products" :key="idx" class="border-b border-zinc-50 transition-colors hover:bg-zinc-50/60 dark:border-zinc-800 dark:hover:bg-zinc-900/40">
+                                <td class="py-2.5 font-medium">{{ p.product_name }}</td>
+                                <td class="py-2.5 text-right tabular-nums">{{ p.quantity }}</td>
+                                <td class="py-2.5 text-right tabular-nums">{{ formatCurrency(p.revenue) }}</td>
+                                <td class="py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{{ formatCurrency(p.gross_profit) }}</td>
+                                <td class="py-2.5 text-right tabular-nums">{{ p.margin_percent }}%</td>
                             </tr>
                         </tbody>
                     </table>

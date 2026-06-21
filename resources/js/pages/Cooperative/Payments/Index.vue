@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { approve, index, store } from "@/routes/cooperative/payments";
+import { approve, bulkApprove, index, store } from "@/routes/cooperative/payments";
 
 type MemberOption = {
   id: number;
@@ -186,7 +186,7 @@ const sortDirection = ref<"asc" | "desc">(props.filters?.sort_direction ?? "asc"
 const handleSort = (field: string, dir: "asc" | "desc") => {
   sortField.value = field;
   sortDirection.value = dir;
-  router.get(index().url, { ...props.filters, sort_field: field, sort_direction: dir }, { preserveState: true });
+  router.get(index().url, { ...props.filters, sort_field: field, sort_direction: dir }, { preserveState: true, preserveScroll: true });
 };
 
 const handleBulkAction = (action: string, selected: any[]) => {
@@ -201,7 +201,7 @@ const confirmBulkAction = () => {
   if (action === "approve") {
     const ids = selected.map((p: any) => p.id);
     router.post(
-      "/cooperative/payments/bulk-approve",
+      bulkApprove().url,
       { ids },
       {
         preserveScroll: true,

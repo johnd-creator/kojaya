@@ -305,9 +305,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('pos/reports/export.csv', [\App\Http\Controllers\Cooperative\PosReportController::class, 'exportCsv'])
             ->middleware('can:view_pos_reports')
             ->name('pos.reports.export.csv');
-        Route::get('pos/reports/export.pdf', [\App\Http\Controllers\Cooperative\PosReportController::class, 'exportPdf'])
+        Route::post('pos/reports/export.pdf', [\App\Http\Controllers\Cooperative\PosReportController::class, 'enqueuePdf'])
             ->middleware('can:view_pos_reports')
-            ->name('pos.reports.export.pdf');
+            ->name('pos.reports.export.pdf.enqueue');
+        Route::get('pos/reports/export.pdf/jobs/{job}/status', [\App\Http\Controllers\Cooperative\PosReportController::class, 'pdfStatus'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.reports.export.pdf.status');
+        Route::get('pos/reports/export.pdf/jobs/{job}/download', [\App\Http\Controllers\Cooperative\PosReportController::class, 'pdfDownload'])
+            ->middleware('can:view_pos_reports')
+            ->name('pos.reports.export.pdf.download');
 
         Route::get('pos/shifts', [\App\Http\Controllers\Cooperative\PosShiftController::class, 'index'])
             ->middleware('can:access_cooperative_pos')

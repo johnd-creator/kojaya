@@ -69,6 +69,8 @@ class CooperativePaymentController extends Controller
 
     public function bulkApprove(BulkApprovePaymentsRequest $request, CooperativePaymentService $service): RedirectResponse
     {
+        abort_unless($request->user()?->hasRole('Admin Koperasi'), 403);
+
         $ids = $request->validated('ids');
 
         $payments = CooperativePayment::query()

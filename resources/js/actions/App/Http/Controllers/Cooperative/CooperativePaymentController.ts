@@ -138,7 +138,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:102
+* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:104
 * @route '/cooperative/payments/{payment}/approve'
 */
 export const approve = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -153,7 +153,7 @@ approve.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:102
+* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:104
 * @route '/cooperative/payments/{payment}/approve'
 */
 approve.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -186,7 +186,7 @@ approve.url = (args: { payment: string | number | { id: string | number } } | [p
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:102
+* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:104
 * @route '/cooperative/payments/{payment}/approve'
 */
 approve.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -196,7 +196,7 @@ approve.post = (args: { payment: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:102
+* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:104
 * @route '/cooperative/payments/{payment}/approve'
 */
 const approveForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -206,7 +206,7 @@ const approveForm = (args: { payment: string | number | { id: string | number } 
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:102
+* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:104
 * @route '/cooperative/payments/{payment}/approve'
 */
 approveForm.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -192,7 +192,7 @@ class PosSprint6ReportFiltersTest extends TestCase
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
-    public function test_export_pdf_includes_filters_in_url(): void
+    public function test_export_pdf_enqueues_background_job(): void
     {
         $user = $this->cashier('cashier');
         $user->givePermissionTo('view_pos_reports');
@@ -203,9 +203,12 @@ class PosSprint6ReportFiltersTest extends TestCase
             'pos_product_id' => 1,
         ]);
 
-        $this->actingAs($user)
-            ->get('/cooperative/pos/reports/export.pdf?'.$query)
-            ->assertOk();
+        $response = $this->actingAs($user)
+            ->postJson('/cooperative/pos/reports/export.pdf?'.$query)
+            ->assertStatus(202)
+            ->assertJsonStructure(['job_id', 'status', 'progress']);
+
+        $this->assertSame('pending', $response->json('status'));
     }
 
     private function makeSale(User $cashier, PosProduct $product, int $qty, string $clientRef, string $payment = 'CASH'): PosTransaction

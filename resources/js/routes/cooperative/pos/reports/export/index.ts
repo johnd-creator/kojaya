@@ -1,7 +1,8 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
+import pdf from './pdf'
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 export const csv = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +17,7 @@ csv.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 csv.url = (options?: RouteQueryOptions) => {
@@ -25,7 +26,7 @@ csv.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 csv.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +36,7 @@ csv.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 csv.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +46,7 @@ csv.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 const csvForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +56,7 @@ const csvForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 csvForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +66,7 @@ csvForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:43
+* @see app/Http/Controllers/Cooperative/PosReportController.php:50
 * @route '/cooperative/pos/reports/export.csv'
 */
 csvForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,87 +80,6 @@ csvForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 })
 
 csv.form = csvForm
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-export const pdf = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: pdf.url(options),
-    method: 'get',
-})
-
-pdf.definition = {
-    methods: ["get","head"],
-    url: '/cooperative/pos/reports/export.pdf',
-} satisfies RouteDefinition<["get","head"]>
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-pdf.url = (options?: RouteQueryOptions) => {
-    return pdf.definition.url + queryParams(options)
-}
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-pdf.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
-    url: pdf.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-pdf.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
-    url: pdf.url(options),
-    method: 'head',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-const pdfForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdf.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-pdfForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdf.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:53
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-pdfForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdf.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-pdf.form = pdfForm
 
 const exportMethod = {
     csv: Object.assign(csv, csv),

@@ -214,6 +214,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'index'])->name('payments.index');
             Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
             Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
+            Route::post('payments/bulk-approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'bulkApprove'])->name('payments.bulk-approve');
         });
 
         Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])

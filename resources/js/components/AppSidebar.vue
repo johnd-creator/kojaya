@@ -659,7 +659,7 @@ const logoHref = computed(() => (isMemberOnly.value ? "/member" : dashboard()));
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child>
-            <Link :href="logoHref">
+            <Link :href="logoHref" prefetch>
               <AppLogo />
             </Link>
           </SidebarMenuButton>

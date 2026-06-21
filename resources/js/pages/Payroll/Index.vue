@@ -287,7 +287,7 @@ const columns = [
         :columns="columns"
         :data="tableData"
         :searchable="false"
-        empty-message='No payroll records found. Use "Generate Payroll" to create records for a period.'
+        empty-message="Belum ada data penggajian. Gunakan 'Generate Payroll' untuk membuat periode baru."
         :empty-icon="Banknote"
       >
         <template #employee="{ row }">

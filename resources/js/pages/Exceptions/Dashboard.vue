@@ -10,6 +10,7 @@ import {
 import { computed, onMounted, ref } from "vue";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -124,7 +125,9 @@ function totalExceptions(module: string): number {
         </CardContent>
       </Card>
 
-      <div v-if="loading" class="mt-6 text-center text-zinc-500">Memuat data...</div>
+      <div v-if="loading" class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Skeleton v-for="n in 6" :key="n" class="h-[56px] rounded-lg" />
+      </div>
       <div v-else class="mt-6 text-sm text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-800 pt-4">
         Data di-refresh saat halaman dimuat. Gunakan endpoint <code class="text-xs bg-zinc-100 dark:bg-zinc-800 px-1 rounded">/exceptions/{module}</code> untuk detail per modul.
       </div>

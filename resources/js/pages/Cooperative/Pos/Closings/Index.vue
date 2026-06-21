@@ -50,7 +50,7 @@ function closeDay(): void {
             <div class="flex flex-col gap-6">
                 <header class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <Link href="/cooperative/pos">
+                        <Link href="/cooperative/pos" prefetch>
                             <Button variant="ghost" size="icon" class="rounded-full">
                                 <ArrowLeft class="h-5 w-5" />
                             </Button>

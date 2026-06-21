@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Deferred, Head } from "@inertiajs/vue3";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { index } from "@/routes/cooperative/reports";
@@ -22,13 +23,22 @@ defineProps<{ summary: any }>();
           Ringkasan anggota, simpanan, tunggakan, POS toko, dan SHU tahunan.
         </p>
       </div>
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
-          <div class="text-sm text-zinc-500">Anggota Aktif</div>
-          <div class="mt-2 text-2xl font-semibold">
-            {{ summary.active_members }}
+
+      <Deferred data="summary">
+        <template #fallback>
+          <div aria-live="polite" class="sr-only">Memuat ringkasan laporan koperasi.</div>
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Skeleton v-for="i in 11" :key="i" class="h-[108px] rounded-xl" />
           </div>
-        </div>
+        </template>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
+            <div class="text-sm text-zinc-500">Anggota Aktif</div>
+            <div class="mt-2 text-2xl font-semibold">
+              {{ summary.active_members }}
+            </div>
+          </div>
         <div class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-5 dark:bg-zinc-900">
           <div class="text-sm text-zinc-500">Saldo Simpanan</div>
           <div class="mt-2 text-2xl font-semibold">
@@ -90,6 +100,7 @@ defineProps<{ summary: any }>();
           </div>
         </div>
       </div>
+      </Deferred>
     </div>
   </AppLayout>
 </template>

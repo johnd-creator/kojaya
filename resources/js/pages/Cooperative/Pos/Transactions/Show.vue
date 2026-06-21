@@ -86,7 +86,7 @@ const isVoided = computed(
           </Button>
           <Link
             v-if="!isVoided"
-            :href="createReturn(transaction.id).url"
+            :href="createReturn(transaction.id).url" prefetch
           >
             <Button variant="outline">
               <RefreshCcw class="mr-1.5 size-4" /> Buat Retur

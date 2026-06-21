@@ -19,11 +19,13 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class OperatorProcedureController extends Controller
 {
-    public function dashboard(): Response
+    public function dashboard(OperatorProcedureService $service): Response
     {
         $this->authorizePermission('view_cooperative_report');
 
-        return Inertia::render('Cooperative/Operator/Dashboard');
+        return Inertia::render('Cooperative/Operator/Dashboard', [
+            'analytics' => Inertia::defer(fn (): array => $service->analytics(), 'analytics'),
+        ]);
     }
 
     public function approvalInbox(OperatorProcedureService $service): JsonResponse

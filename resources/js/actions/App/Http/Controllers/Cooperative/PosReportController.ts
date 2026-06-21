@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 export const exportCsv = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ exportCsv.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 exportCsv.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ exportCsv.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 exportCsv.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ exportCsv.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 exportCsv.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ exportCsv.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 const exportCsvForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const exportCsvForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 exportCsvForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ exportCsvForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:41
+* @see app/Http/Controllers/Cooperative/PosReportController.php:43
 * @route '/cooperative/pos/reports/export.csv'
 */
 exportCsvForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ exportCsv.form = exportCsvForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 export const exportPdf = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +178,7 @@ exportPdf.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 exportPdf.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ exportPdf.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 exportPdf.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +197,7 @@ exportPdf.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 exportPdf.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -207,7 +207,7 @@ exportPdf.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 const exportPdfForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -217,7 +217,7 @@ const exportPdfForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 exportPdfForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -227,7 +227,7 @@ exportPdfForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportPdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:51
+* @see app/Http/Controllers/Cooperative/PosReportController.php:53
 * @route '/cooperative/pos/reports/export.pdf'
 */
 exportPdfForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

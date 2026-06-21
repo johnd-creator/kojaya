@@ -192,21 +192,87 @@ class PosPhase4ReportsTest extends TestCase
         $user = User::factory()->create();
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
-        $response = $this->actingAs($user)
-            ->get('/cooperative/pos/reports')
+        $this->actingAs($user)
+            ->get(route('cooperative.pos.reports.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Cooperative/Pos/Reports/Index')
-                ->has('payment_reconciliation')
-                ->has('daily_trend')
-                ->has('top_products')
-                ->has('top_members')
-                ->has('cashier_performance'));
+                ->has('products')
+                ->has('categories')
+                ->has('cashiers'));
+    }
 
-        $payload = $response->original->getData();
-        $page = $payload['page'];
-        $this->assertArrayHasKey('props', $page);
-        $this->assertArrayHasKey('payment_reconciliation', $page['props']);
+    public function test_pos_reports_loads_deferred_analytics(): void
+    {
+        $cashier = User::factory()->create();
+        $cashier->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
+
+        $category = PosCategory::factory()->create();
+        $product = PosProduct::factory()->create([
+            'pos_category_id' => $category->id,
+            'cost_price' => 1000,
+            'sale_price' => 5000,
+            'stock' => 100,
+        ]);
+
+        app(PosTransactionService::class)->create([
+            'client_reference' => 'DEFERRED-POS-TEST',
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
+            'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+        ], $cashier);
+
+        $this->actingAs($cashier)
+            ->get(route('cooperative.pos.reports.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cooperative/Pos/Reports/Index')
+                ->loadDeferredProps('analytics', fn ($page) => $page
+                    ->has('analytics.summary')
+                    ->has('analytics.payment_reconciliation')
+                    ->has('analytics.daily_trend')
+                    ->has('analytics.top_products')
+                    ->has('analytics.top_members')
+                    ->has('analytics.cashier_performance')
+                    ->where('analytics.summary.transactions', 1)
+                    ->where('analytics.summary.gross_sales', 10000)
+                )
+            );
+    }
+
+    public function test_pos_reports_filters_sync_from_query_params(): void
+    {
+        $cashier = User::factory()->create();
+        $cashier->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
+
+        $category = PosCategory::factory()->create();
+        $product = PosProduct::factory()->create([
+            'pos_category_id' => $category->id,
+            'cost_price' => 1000,
+            'sale_price' => 5000,
+            'stock' => 100,
+        ]);
+
+        app(PosTransactionService::class)->create([
+            'client_reference' => 'FILTER-TEST',
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
+            'payments' => [['payment_method' => 'CASH', 'amount' => 5000, 'cash_received' => 5000]],
+        ], $cashier);
+
+        $this->actingAs($cashier)
+            ->get(route('cooperative.pos.reports.index', [
+                'payment_method' => 'CASH',
+                'cashier_id' => $cashier->id,
+            ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cooperative/Pos/Reports/Index')
+                ->where('filters.payment_method', 'CASH')
+                ->where('filters.cashier_id', (string) $cashier->id)
+                ->loadDeferredProps('analytics', fn ($page) => $page
+                    ->has('analytics.summary')
+                    ->where('analytics.summary.transactions', 1)
+                )
+            );
     }
 
     public function test_only_one_route_resolves_to_pos_reports_index(): void

@@ -25,6 +25,7 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+const errorMessage = ref("");
 const filters = ref<ReportFilter>({});
 const selectedFormat = ref<"pdf" | "excel">(props.report.formats[0] || "pdf");
 
@@ -79,6 +80,7 @@ const generateReport = async () => {
   if (!canGenerate.value || loading.value) return;
 
   loading.value = true;
+  errorMessage.value = "";
 
   try {
     let blob: Blob;
@@ -86,7 +88,7 @@ const generateReport = async () => {
     switch (props.report.id) {
       case "payslip":
         if (!filters.value.employee_id || !filters.value.period) {
-          alert("Employee ID and Period are required for Payslip");
+          errorMessage.value = "Employee ID and Period are required for Payslip";
           return;
         }
         blob = await generatePayslip(
@@ -167,13 +169,13 @@ const generateReport = async () => {
         break;
 
       default:
-        alert("Unknown report type");
+        errorMessage.value = "Unknown report type";
+        return;
     }
   } catch (error: any) {
     console.error("Error generating report:", error);
-    alert(
-      `Failed to generate report: ${error.response?.data?.message || error.message}`,
-    );
+    errorMessage.value =
+      `Failed to generate report: ${error.response?.data?.message || error.message}`;
   } finally {
     loading.value = false;
   }
@@ -293,6 +295,14 @@ const generateReport = async () => {
 
           <div v-if="!canGenerate" class="text-sm text-muted-foreground">
             Please fill in all required filters to generate the report
+          </div>
+
+          <div
+            v-if="errorMessage"
+            role="alert"
+            class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400"
+          >
+            {{ errorMessage }}
           </div>
         </form>
       </div>

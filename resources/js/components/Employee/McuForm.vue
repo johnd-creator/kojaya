@@ -38,6 +38,7 @@ const form = useForm<McuFormData>({
 
 const documentFile = ref<File | null>(null);
 const documentPreview = ref<string | null>(null);
+const fileError = ref("");
 const submitting = ref(false);
 
 const mcuResults: { value: McuResult; label: string }[] = [
@@ -82,8 +83,11 @@ const handleFileChange = (event: Event) => {
   if (target.files && target.files[0]) {
     const file = target.files[0];
 
+    fileError.value = "";
+
     if (file.size > 2 * 1024 * 1024) {
-      alert("File size must be less than 2MB");
+      fileError.value = "Ukuran file maksimal 2MB";
+      target.value = "";
       return;
     }
 
@@ -94,7 +98,8 @@ const handleFileChange = (event: Event) => {
       "image/jpg",
     ];
     if (!allowedTypes.includes(file.type)) {
-      alert("Only PDF, JPG, and PNG files are allowed");
+      fileError.value = "Hanya file PDF, JPG, dan PNG yang diizinkan";
+      target.value = "";
       return;
     }
 
@@ -235,6 +240,13 @@ const clearFile = () => {
           </div>
           <p class="text-xs text-neutral-500 dark:text-neutral-400">
             PDF, JPG, PNG only. Max 2MB.
+          </p>
+          <p
+            v-if="fileError"
+            role="alert"
+            class="text-xs text-red-600 dark:text-red-400"
+          >
+            {{ fileError }}
           </p>
           <div v-if="documentPreview" class="mt-2">
             <img

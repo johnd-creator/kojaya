@@ -6,6 +6,7 @@ import {
   attendancesIndex,
   selfService as attendancesSelfService,
 } from "@/actions/App/Http/Controllers/AttendanceController";
+import { useToast } from "@/composables/useToast";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { logout } from "@/routes";
 import { selfService as leavesSelfService } from "@/routes/leaves";
@@ -21,6 +22,7 @@ const user = ref<any>(null);
 const todayAttendance = ref<any>(null);
 const thisWeekAttendance = ref<any[]>([]);
 const loading = ref(false);
+const { toast } = useToast();
 
 onMounted(() => {
   loadAttendanceData();
@@ -85,7 +87,7 @@ const loadAttendanceData = async () => {
 const handleCheckIn = async () => {
   // In production, this would use geolocation API
   if (!navigator.geolocation) {
-    alert("Browser tidak mendukung geolocation");
+    toast({ title: "Browser tidak mendukung geolocation", variant: "error" });
     return;
   }
 
@@ -106,7 +108,7 @@ const handleCheckIn = async () => {
       };
     },
     (error) => {
-      alert("Gagal mendapatkan lokasi: " + error.message);
+      toast({ title: "Gagal mendapatkan lokasi: " + error.message, variant: "error" });
     },
   );
 };

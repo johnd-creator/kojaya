@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:76
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 export const complete = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ complete.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:76
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 complete.url = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ complete.url = (args: { period: string | number } | [period: string | number ] |
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:76
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 complete.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -53,7 +53,7 @@ complete.post = (args: { period: string | number } | [period: string | number ] 
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:76
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 const completeForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -63,7 +63,7 @@ const completeForm = (args: { period: string | number } | [period: string | numb
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:76
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 completeForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

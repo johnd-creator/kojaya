@@ -8,3 +8,17 @@
 # wayfinder
 - When regenerating Wayfinder routes, use `php artisan wayfinder:generate --with-form --no-interaction` to minimize churn in generated files; after generation, revert unrelated generated files to keep diff focused on actual changes. Confidence: 0.70
 
+# inertia
+- Always pass a group name as the second argument to `Inertia::defer()` (e.g., `Inertia::defer(fn () => $data, 'groupName')`) so that `loadDeferredProps('groupName')` works in PHPUnit tests. Confidence: 0.70
+- When a page's filter state must stay synced with query params (e.g., after deferred prop reloads), pass filters as a typed `filters` prop from the controller, initialize local reactive state from `props.filters`, and strip empty values with a `cleanFilters()` helper before calling `router.get()`. This prevents the mismatch where Vue state resets to defaults while the URL still carries active filters. Confidence: 0.60
+
+# php
+- When extracting a `Cache::remember()` closure into a typed private method, use `CarbonInterface` instead of `Carbon` in the type hint to accept both `Carbon` and `CarbonImmutable` instances. Confidence: 0.70
+
+# i18n
+- User-facing UI strings (empty states, button labels, aria-labels) should use Bahasa Indonesia, matching the project's primary language. Confidence: 0.70
+
+# a11y
+- Inline error messages in form components need `role="alert"` for screen reader announcement; file input errors should also reset `target.value = ""` so the same file can be re-selected after correction. Confidence: 0.65
+- For modal/dialog a11y hardening, prefer the existing dialog primitive (`resources/js/components/ui/dialog`) over custom overlay divs — it provides consistent focus trap, Escape handling, and focus restore. If custom overlay is unavoidable, add explicit focus management: focus close button on open, trap Tab within modal, restore focus to trigger on close. Confidence: 0.60
+

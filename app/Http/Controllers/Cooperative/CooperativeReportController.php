@@ -22,7 +22,7 @@ class CooperativeReportController extends Controller
     public function index(): Response
     {
         return Inertia::render('Cooperative/Reports', [
-            'summary' => $this->summaryData(),
+            'summary' => Inertia::defer(fn (): array => $this->summaryData(), 'summary'),
         ]);
     }
 

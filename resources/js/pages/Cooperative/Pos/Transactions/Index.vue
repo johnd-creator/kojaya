@@ -232,11 +232,12 @@ const columns = [
             :columns="columns"
             :data="transactions"
             :searchable="false"
+            empty-message="Belum ada transaksi POS."
           >
             <template #transaction="{ row }">
               <Link
                 class="font-semibold text-zinc-950 hover:text-indigo-600 dark:text-white"
-                :href="show(row.id).url"
+                :href="show(row.id).url" prefetch
                 >{{ row.transaction_no }}</Link
               >
               <div class="text-xs text-zinc-500">

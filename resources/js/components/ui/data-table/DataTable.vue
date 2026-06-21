@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Link } from "@inertiajs/vue3";
-import { Search, Loader2 } from "lucide-vue-next";
+import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-vue-next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 
 interface Column {
   header: string;
-  key?: string; // Key to access data in row (e.g. 'user.name' or 'status')
-  slot?: string; // Slot name for custom rendering
-  class?: string; // Custom classes for the cell
-  headerClass?: string; // Custom classes for the header
+  key?: string;
+  slot?: string;
+  class?: string;
+  headerClass?: string;
   align?: "left" | "center" | "right";
-  format?: (value: any) => string; // Optional formatter function
+  format?: (value: any) => string;
+  sortable?: boolean;
+  sortKey?: string;
 }
 
 interface PaginationLink {
@@ -43,27 +46,39 @@ interface Props {
   searchPlaceholder?: string;
   loading?: boolean;
   emptyMessage?: string;
-  emptyIcon?: any; // Icon component
+  emptyIcon?: any;
   rowClickable?: boolean;
+  selectable?: boolean;
+  selected?: any[];
+  sortField?: string;
+  sortDirection?: "asc" | "desc";
 }
 
 const props = withDefaults(defineProps<Props>(), {
   searchable: true,
-  searchPlaceholder: "Search...",
+  searchPlaceholder: "Cari...",
   loading: false,
-  emptyMessage: "No records found.",
+  emptyMessage: "Tidak ada data yang ditemukan.",
   rowClickable: false,
+  selectable: false,
+  selected: () => [],
+  sortField: "",
+  sortDirection: "asc",
 });
 
-const emit = defineEmits(["search", "row-click", "page-change"]);
+const emit = defineEmits<{
+  search: [value: string];
+  "row-click": [row: any];
+  "page-change": [url: string];
+  "selection-change": [selected: any[]];
+  sort: [field: string, direction: "asc" | "desc"];
+}>();
 
-// Handle search input with debounce (to be implemented by parent or added here)
 const onSearch = (e: Event) => {
   const target = e.target as HTMLInputElement;
   emit("search", target.value);
 };
 
-// Normalize data to array
 const tableData = computed(() => {
   if (Array.isArray(props.data)) return props.data;
   return props.data.data || [];
@@ -73,7 +88,6 @@ const paginationData = computed(() => {
   return Array.isArray(props.data) ? null : props.data;
 });
 
-// Helper to get nested value (e.g. user.name)
 const getValue = (obj: any, path: string) => {
   return path.split(".").reduce((o, i) => (o ? o[i] : null), obj);
 };
@@ -91,14 +105,59 @@ const getAlignmentClass = (align?: string) => {
 
 const tableLabel = computed(() => {
   const primaryColumn = props.columns[0]?.header;
-
   return primaryColumn ? `Tabel data ${primaryColumn}` : "Tabel data";
 });
+
+const isSelected = (row: any) => {
+  return props.selected.some((s) => s.id === row.id);
+};
+
+const toggleRow = (row: any) => {
+  const current = [...props.selected];
+  const idx = current.findIndex((s) => s.id === row.id);
+  if (idx >= 0) {
+    current.splice(idx, 1);
+  } else {
+    current.push(row);
+  }
+  emit("selection-change", current);
+};
+
+const toggleAll = () => {
+  if (allSelected.value) {
+    emit("selection-change", []);
+  } else {
+    emit("selection-change", [...tableData.value]);
+  }
+};
+
+const allSelected = computed(() => {
+  return tableData.value.length > 0 && tableData.value.every((row) => isSelected(row));
+});
+
+const someSelected = computed(() => {
+  return props.selected.length > 0 && !allSelected.value;
+});
+
+const rowId = (row: any) => row.id ?? JSON.stringify(row);
+
+const handleSort = (col: Column) => {
+  if (!col.sortable) return;
+  const sortKey = col.sortKey ?? col.key ?? "";
+  const newDir = props.sortField === sortKey && props.sortDirection === "asc" ? "desc" : "asc";
+  emit("sort", sortKey, newDir);
+};
+
+const sortIcon = (col: Column) => {
+  if (!col.sortable) return null;
+  const sortKey = col.sortKey ?? col.key ?? "";
+  if (props.sortField !== sortKey) return ArrowUpDown;
+  return props.sortDirection === "asc" ? ArrowUp : ArrowDown;
+};
 </script>
 
 <template>
   <div class="space-y-4">
-    <!-- Search Bar -->
     <div v-if="searchable" class="flex items-center justify-between">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
@@ -114,70 +173,115 @@ const tableLabel = computed(() => {
       </div>
     </div>
 
-    <!-- Table Container -->
     <div
       class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden"
     >
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto max-h-[calc(100vh-18rem)]">
         <table
           :aria-label="tableLabel"
           class="w-full text-left border-collapse"
           role="table"
         >
-          <thead>
+          <thead class="sticky top-0 z-10">
             <tr
               class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
             >
               <th
+                v-if="selectable"
+                class="w-10 py-4 px-4"
+              >
+                <input
+                  type="checkbox"
+                  class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
+                  :checked="allSelected"
+                  :indeterminate="someSelected"
+                  @change="toggleAll"
+                />
+              </th>
+              <th
                 v-for="(col, index) in columns"
                 :key="index"
                 class="py-4 px-6 font-medium text-sm text-zinc-500 uppercase tracking-wider"
-                :class="[getAlignmentClass(col.align), col.headerClass]"
+                :class="[
+                  getAlignmentClass(col.align),
+                  col.headerClass,
+                  { 'cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300': col.sortable },
+                ]"
+                :style="col.sortable ? { cursor: 'pointer' } : {}"
+                @click="handleSort(col)"
               >
-                {{ col.header }}
+                <span class="inline-flex items-center gap-1">
+                  {{ col.header }}
+                  <component
+                    :is="sortIcon(col)"
+                    v-if="col.sortable"
+                    class="size-3.5"
+                  />
+                </span>
               </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-            <!-- Loading State -->
-            <tr v-if="loading">
-              <td
-                :colspan="columns.length"
-                class="py-12 text-center text-zinc-500"
-              >
-                <Loader2
-                  class="mx-auto h-8 w-8 animate-spin text-zinc-400 mb-2"
-                />
-                Loading data...
+            <tr v-if="loading" aria-live="polite">
+              <td :colspan="columns.length + (selectable ? 1 : 0)" class="p-0">
+                <span class="sr-only">Memuat data tabel.</span>
+                <div class="space-y-3 p-4">
+                  <div
+                    v-for="row in 5"
+                    :key="row"
+                    class="grid gap-3"
+                    :style="{
+                      gridTemplateColumns: `repeat(${columns.length + (selectable ? 1 : 0)}, minmax(0, 1fr))`,
+                    }"
+                  >
+                    <Skeleton
+                      v-for="col in columns"
+                      :key="col.key ?? col.header"
+                      class="h-5 rounded-md"
+                    />
+                  </div>
+                </div>
               </td>
             </tr>
 
-            <!-- Empty State -->
             <tr v-else-if="tableData.length === 0">
               <td
-                :colspan="columns.length"
+                :colspan="columns.length + (selectable ? 1 : 0)"
                 class="py-12 text-center text-zinc-500"
               >
                 <EmptyState :icon="emptyIcon" :description="emptyMessage" />
               </td>
             </tr>
 
-            <!-- Data Rows -->
             <tr
               v-else
               v-for="(row, rowIndex) in tableData"
-              :key="rowIndex"
+              :key="rowId(row)"
               class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
-              :class="{ 'cursor-pointer': rowClickable }"
+              :class="{
+                'cursor-pointer': rowClickable,
+                'bg-sky-50/50 dark:bg-sky-950/20': isSelected(row),
+              }"
               @click="rowClickable && emit('row-click', row)"
             >
+              <td
+                v-if="selectable"
+                class="py-4 px-4"
+                @click.stop
+              >
+                <input
+                  type="checkbox"
+                  class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
+                  :checked="isSelected(row)"
+                  @change="toggleRow(row)"
+                />
+              </td>
               <td
                 v-for="(col, colIndex) in columns"
                 :key="colIndex"
                 class="py-4 px-6 text-sm text-zinc-600 dark:text-zinc-400"
                 :class="[getAlignmentClass(col.align), col.class]"
               >
-                <!-- Slot Content -->
                 <slot
                   v-if="col.slot"
                   :name="col.slot"
@@ -185,13 +289,11 @@ const tableLabel = computed(() => {
                   :value="col.key ? getValue(row, col.key) : null"
                 />
 
-                <!-- Status Badge Special Handling -->
                 <StatusBadge
                   v-else-if="col.key === 'status'"
                   :status="getValue(row, col.key)"
                 />
 
-                <!-- Formatted Value -->
                 <span v-else-if="col.format">
                   {{
                     col.key
@@ -200,7 +302,6 @@ const tableLabel = computed(() => {
                   }}
                 </span>
 
-                <!-- Default Value -->
                 <span v-else>
                   {{ col.key ? getValue(row, col.key) : null }}
                 </span>
@@ -210,15 +311,14 @@ const tableLabel = computed(() => {
         </table>
       </div>
 
-      <!-- Pagination -->
       <div
         v-if="paginationData && paginationData.last_page > 1"
         class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 px-6 py-4 flex items-center justify-between"
       >
         <p class="text-sm text-zinc-500">
-          Showing <span class="font-medium">{{ paginationData.from }}</span> to
-          <span class="font-medium">{{ paginationData.to }}</span> of
-          <span class="font-medium">{{ paginationData.total }}</span> results
+          Menampilkan <span class="font-medium">{{ paginationData.from }}</span> hingga
+          <span class="font-medium">{{ paginationData.to }}</span> dari
+          <span class="font-medium">{{ paginationData.total }}</span> data
         </p>
         <div class="flex items-center gap-1">
           <template v-for="(link, i) in paginationData.links" :key="i">

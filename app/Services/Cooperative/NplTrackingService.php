@@ -7,6 +7,7 @@ use App\Enums\LoanRiskRating;
 use App\Enums\LoanStatus;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 class NplTrackingService
@@ -18,6 +19,14 @@ class NplTrackingService
     {
         $asOf ??= today();
 
+        return $this->computeAgingReport($asOf);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function computeAgingReport(CarbonInterface $asOf): array
+    {
         $activeOutstanding = (float) Loan::query()
             ->where('status', LoanStatus::Active->value)
             ->sum('outstanding_amount');

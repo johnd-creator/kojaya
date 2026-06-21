@@ -3,6 +3,7 @@ import { Head, router, useForm } from "@inertiajs/vue3";
 import {
   Check,
   CheckCircle2,
+  CheckCheck,
   ImagePlus,
   Layers,
   PiggyBank,
@@ -13,11 +14,13 @@ import {
 } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import BulkActionBar from "@/components/ui/data-table/BulkActionBar.vue";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,6 +176,44 @@ const submit = () =>
   });
 
 const approvingPaymentId = ref<number | null>(null);
+const selectedPayments = ref<any[]>([]);
+const showBulkConfirm = ref(false);
+const pendingBulkAction = ref<{ action: string; selected: any[] } | null>(null);
+
+const sortField = ref<string>(props.filters?.sort_field ?? "");
+const sortDirection = ref<"asc" | "desc">(props.filters?.sort_direction ?? "asc");
+
+const handleSort = (field: string, dir: "asc" | "desc") => {
+  sortField.value = field;
+  sortDirection.value = dir;
+  router.get(index().url, { ...props.filters, sort_field: field, sort_direction: dir }, { preserveState: true });
+};
+
+const handleBulkAction = (action: string, selected: any[]) => {
+  pendingBulkAction.value = { action, selected };
+  showBulkConfirm.value = true;
+};
+
+const confirmBulkAction = () => {
+  if (!pendingBulkAction.value) return;
+  const { action, selected } = pendingBulkAction.value;
+
+  if (action === "approve") {
+    const ids = selected.map((p: any) => p.id);
+    router.post(
+      "/cooperative/payments/bulk-approve",
+      { ids },
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          selectedPayments.value = [];
+          showBulkConfirm.value = false;
+          pendingBulkAction.value = null;
+        },
+      },
+    );
+  }
+};
 
 const approvePayment = (payment: { id: number }) => {
   approvingPaymentId.value = payment.id;
@@ -190,12 +231,12 @@ const approvePayment = (payment: { id: number }) => {
 };
 
 const columns = computed(() => [
-  { header: "Tanggal", key: "paid_at", slot: "paid_at" },
+  { header: "Tanggal", key: "paid_at", slot: "paid_at", sortable: true, sortKey: "paid_at" },
   { header: "Anggota", key: "member.name", slot: "member" },
   { header: "Jenis Simpanan", key: "contribution_type.name", slot: "type" },
   { header: "Metode", key: "payment_method", slot: "method" },
-  { header: "Status", key: "status", slot: "status" },
-  { header: "Nominal", key: "amount", slot: "amount", align: "right" as const },
+  { header: "Status", key: "status", slot: "status", sortable: true, sortKey: "status" },
+  { header: "Nominal", key: "amount", slot: "amount", align: "right" as const, sortable: true, sortKey: "amount" },
   { header: "Keterangan", key: "notes", slot: "notes" },
   ...(props.canApprovePayments
     ? [{ header: "Aksi", key: "actions", slot: "actions", align: "right" as const }]
@@ -547,12 +588,24 @@ const columns = computed(() => [
               tone="emerald"
             />
             <CardContent class="px-0 pb-0">
+              <BulkActionBar
+                :selected="selectedPayments"
+                :actions="canApprovePayments ? [{ label: 'Approve Semua', action: 'approve', variant: 'default' as const }] : []"
+                @action="handleBulkAction"
+                @clear="selectedPayments = []"
+              />
               <DataTable
                 :columns="columns"
                 :data="payments"
                 :searchable="false"
                 :empty-icon="ReceiptText"
                 empty-message="Belum ada pembayaran yang tercatat."
+                :selectable="canApprovePayments"
+                :selected="selectedPayments"
+                :sort-field="sortField"
+                :sort-direction="sortDirection"
+                @selection-change="selectedPayments = $event"
+                @sort="handleSort"
               >
                 <template #paid_at="{ row }">
                   <span class="tabular-nums">{{
@@ -642,5 +695,14 @@ const columns = computed(() => [
         </div>
       </div>
     </PageContainer>
+
+    <ConfirmDialog
+      v-if="pendingBulkAction"
+      v-model:open="showBulkConfirm"
+      title="Konfirmasi Approve Massal"
+      confirm-label="Setujui"
+      :message="`${pendingBulkAction.selected.length} pembayaran akan disetujui. Hanya pembayaran berstatus PENDING yang akan diproses.`"
+      @confirm="confirmBulkAction"
+    />
   </AppLayout>
 </template>

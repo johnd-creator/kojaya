@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { X, Download, FileText, Loader2 } from "lucide-vue-next";
-import { ref, computed } from "vue";
+import { Download, FileText } from "lucide-vue-next";
+import { ref, watch } from "vue";
 import { generatePayslip, downloadBlob } from "@/components/Report/helpers";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 
 const props = defineProps<{
   open: boolean;
@@ -15,13 +22,31 @@ const emit = defineEmits<{
   close: [];
 }>();
 
+const dialogOpen = ref(false);
+
+watch(
+  () => props.open,
+  (val) => {
+    dialogOpen.value = val;
+  },
+  { immediate: true },
+);
+
+watch(dialogOpen, (val) => {
+  if (!val) {
+    emit("close");
+  }
+});
+
 const loading = ref(false);
+const errorMessage = ref("");
 const pdfUrl = ref<string | null>(null);
 
 const loadPayslip = async () => {
   if (!props.employeeId || !props.period) return;
 
   loading.value = true;
+  errorMessage.value = "";
   pdfUrl.value = null;
 
   try {
@@ -29,9 +54,8 @@ const loadPayslip = async () => {
     pdfUrl.value = URL.createObjectURL(blob);
   } catch (error: any) {
     console.error("Error loading payslip:", error);
-    alert(
-      `Failed to load payslip: ${error.response?.data?.message || error.message}`,
-    );
+    errorMessage.value =
+      error.response?.data?.message || error.message || "Gagal memuat payslip";
   } finally {
     loading.value = false;
   }
@@ -63,19 +87,16 @@ watch(
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-    @click.self="emit('close')"
-  >
-    <div
-      class="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+  <Dialog v-model:open="dialogOpen">
+    <DialogContent
+      class="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0"
+      aria-label="Pratinjau payslip"
     >
       <div
         class="flex items-center justify-between p-4 border-b dark:border-zinc-800"
       >
         <div>
-          <h3 class="text-lg font-semibold">Payslip Preview</h3>
+          <DialogTitle class="text-lg font-semibold">Pratinjau Payslip</DialogTitle>
           <p class="text-sm text-muted-foreground">
             {{ employeeName || `Employee #${employeeId}` }} - {{ period }}
           </p>
@@ -90,17 +111,23 @@ watch(
             <Download class="w-4 h-4 mr-2" />
             Download
           </Button>
-          <Button variant="ghost" size="sm" @click="emit('close')">
-            <X class="w-4 h-4" />
-          </Button>
+          <DialogClose as-child>
+            <Button variant="ghost" size="sm" aria-label="Tutup pratinjau payslip">
+              <span aria-hidden="true">&times;</span>
+            </Button>
+          </DialogClose>
         </div>
       </div>
 
-      <div class="flex-1 overflow-auto p-4">
-        <div v-if="loading" class="flex items-center justify-center h-full">
-          <div class="text-center">
-            <Loader2 class="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p class="text-sm text-muted-foreground">Loading payslip...</p>
+      <div class="flex-1 overflow-auto p-4 min-h-[400px]">
+        <div v-if="loading" aria-live="polite" class="h-full">
+          <span class="sr-only">Memuat payslip.</span>
+          <div class="flex h-full flex-col gap-4 rounded-lg border bg-zinc-50 p-6 dark:bg-zinc-800/50">
+            <Skeleton class="h-6 w-48 rounded-md" />
+            <Skeleton class="h-4 w-32 rounded-md" />
+            <div class="mt-4 flex-1 space-y-3">
+              <Skeleton v-for="n in 8" :key="n" class="h-4 w-full rounded-md" />
+            </div>
           </div>
         </div>
 
@@ -115,18 +142,18 @@ watch(
         <div v-else class="flex items-center justify-center h-full">
           <div class="text-center">
             <FileText class="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p class="text-sm text-muted-foreground">Unable to load payslip</p>
+            <p role="alert" class="text-sm text-muted-foreground">{{ errorMessage || 'Gagal memuat payslip' }}</p>
             <Button
               variant="outline"
               size="sm"
               class="mt-4"
               @click="loadPayslip"
             >
-              Retry
+              Coba Lagi
             </Button>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 </template>

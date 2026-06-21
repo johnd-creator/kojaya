@@ -17,6 +17,7 @@ class PointService
     public function syncPosPoints(CooperativeMember $member): void
     {
         $points = $member->posMemberPoints()
+            ->with('transaction')
             ->orderBy('posted_at')
             ->orderBy('id')
             ->get();

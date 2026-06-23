@@ -138,10 +138,10 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-export const show = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -153,10 +153,10 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-show.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -186,50 +186,50 @@ show.url = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-show.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-show.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-const showForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-showForm.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:67
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:78
 * @route '/api/v1/members/{member}'
 */
-showForm.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -243,10 +243,10 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:76
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:87
 * @route '/api/v1/members/{member}'
 */
-export const update = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -258,10 +258,10 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:76
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:87
 * @route '/api/v1/members/{member}'
 */
-update.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+update.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -291,20 +291,20 @@ update.url = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:76
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:87
 * @route '/api/v1/members/{member}'
 */
-update.put = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:76
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:87
 * @route '/api/v1/members/{member}'
 */
-const updateForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const updateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -316,10 +316,10 @@ const updateForm = (args: { member: string | number | { id: string | number } } 
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:76
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:87
 * @route '/api/v1/members/{member}'
 */
-updateForm.put = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateForm.put = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -333,10 +333,10 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:96
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:118
 * @route '/api/v1/members/{member}/activate'
 */
-export const activate = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const activate = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: activate.url(args, options),
     method: 'post',
 })
@@ -348,10 +348,10 @@ activate.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:96
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:118
 * @route '/api/v1/members/{member}/activate'
 */
-activate.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+activate.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -381,30 +381,30 @@ activate.url = (args: { member: string | number | { id: string | number } } | [m
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:96
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:118
 * @route '/api/v1/members/{member}/activate'
 */
-activate.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+activate.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: activate.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:96
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:118
 * @route '/api/v1/members/{member}/activate'
 */
-const activateForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const activateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: activate.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:96
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:118
 * @route '/api/v1/members/{member}/activate'
 */
-activateForm.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+activateForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: activate.url(args, options),
     method: 'post',
 })
@@ -413,10 +413,10 @@ activate.form = activateForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:123
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:145
 * @route '/api/v1/members/{member}/resign'
 */
-export const resign = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const resign = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: resign.url(args, options),
     method: 'post',
 })
@@ -428,10 +428,10 @@ resign.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:123
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:145
 * @route '/api/v1/members/{member}/resign'
 */
-resign.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+resign.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -461,30 +461,30 @@ resign.url = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:123
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:145
 * @route '/api/v1/members/{member}/resign'
 */
-resign.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+resign.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: resign.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:123
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:145
 * @route '/api/v1/members/{member}/resign'
 */
-const resignForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const resignForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: resign.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:123
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:145
 * @route '/api/v1/members/{member}/resign'
 */
-resignForm.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+resignForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: resign.url(args, options),
     method: 'post',
 })

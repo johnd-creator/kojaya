@@ -60,7 +60,7 @@ enqueue.form = enqueueForm
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-export const status = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const status = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: status.url(args, options),
     method: 'get',
 })
@@ -75,7 +75,7 @@ status.definition = {
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-status.url = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
+status.url = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { job: args }
     }
@@ -108,7 +108,7 @@ status.url = (args: { job: string | number | { uuid: string | number } } | [job:
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-status.get = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+status.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: status.url(args, options),
     method: 'get',
 })
@@ -118,7 +118,7 @@ status.get = (args: { job: string | number | { uuid: string | number } } | [job:
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-status.head = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+status.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: status.url(args, options),
     method: 'head',
 })
@@ -128,7 +128,7 @@ status.head = (args: { job: string | number | { uuid: string | number } } | [job
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-const statusForm = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const statusForm = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: status.url(args, options),
     method: 'get',
 })
@@ -138,7 +138,7 @@ const statusForm = (args: { job: string | number | { uuid: string | number } } |
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-statusForm.get = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+statusForm.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: status.url(args, options),
     method: 'get',
 })
@@ -148,7 +148,7 @@ statusForm.get = (args: { job: string | number | { uuid: string | number } } | [
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-statusForm.head = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+statusForm.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: status.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -165,7 +165,7 @@ status.form = statusForm
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-export const download = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const download = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: download.url(args, options),
     method: 'get',
 })
@@ -180,7 +180,7 @@ download.definition = {
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-download.url = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
+download.url = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { job: args }
     }
@@ -213,7 +213,7 @@ download.url = (args: { job: string | number | { uuid: string | number } } | [jo
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-download.get = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+download.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: download.url(args, options),
     method: 'get',
 })
@@ -223,7 +223,7 @@ download.get = (args: { job: string | number | { uuid: string | number } } | [jo
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-download.head = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+download.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: download.url(args, options),
     method: 'head',
 })
@@ -233,7 +233,7 @@ download.head = (args: { job: string | number | { uuid: string | number } } | [j
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-const downloadForm = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const downloadForm = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: download.url(args, options),
     method: 'get',
 })
@@ -243,7 +243,7 @@ const downloadForm = (args: { job: string | number | { uuid: string | number } }
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-downloadForm.get = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadForm.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: download.url(args, options),
     method: 'get',
 })
@@ -253,7 +253,7 @@ downloadForm.get = (args: { job: string | number | { uuid: string | number } } |
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-downloadForm.head = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+downloadForm.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: download.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

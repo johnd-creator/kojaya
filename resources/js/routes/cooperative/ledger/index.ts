@@ -85,7 +85,7 @@ index.form = indexForm
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:57
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-export const cancelPayment = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const cancelPayment = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelPayment.url(args, options),
     method: 'post',
 })
@@ -100,7 +100,7 @@ cancelPayment.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:57
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-cancelPayment.url = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+cancelPayment.url = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { entry: args }
     }
@@ -133,7 +133,7 @@ cancelPayment.url = (args: { entry: string | number | { id: string | number } } 
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:57
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-cancelPayment.post = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+cancelPayment.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelPayment.url(args, options),
     method: 'post',
 })
@@ -143,7 +143,7 @@ cancelPayment.post = (args: { entry: string | number | { id: string | number } }
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:57
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-const cancelPaymentForm = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const cancelPaymentForm = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: cancelPayment.url(args, options),
     method: 'post',
 })
@@ -153,7 +153,7 @@ const cancelPaymentForm = (args: { entry: string | number | { id: string | numbe
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:57
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-cancelPaymentForm.post = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+cancelPaymentForm.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: cancelPayment.url(args, options),
     method: 'post',
 })
@@ -165,7 +165,7 @@ cancelPayment.form = cancelPaymentForm
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:64
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-export const revisePayment = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const revisePayment = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revisePayment.url(args, options),
     method: 'post',
 })
@@ -180,7 +180,7 @@ revisePayment.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:64
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-revisePayment.url = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+revisePayment.url = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { entry: args }
     }
@@ -213,7 +213,7 @@ revisePayment.url = (args: { entry: string | number | { id: string | number } } 
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:64
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-revisePayment.post = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+revisePayment.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revisePayment.url(args, options),
     method: 'post',
 })
@@ -223,7 +223,7 @@ revisePayment.post = (args: { entry: string | number | { id: string | number } }
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:64
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-const revisePaymentForm = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const revisePaymentForm = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: revisePayment.url(args, options),
     method: 'post',
 })
@@ -233,7 +233,7 @@ const revisePaymentForm = (args: { entry: string | number | { id: string | numbe
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:64
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-revisePaymentForm.post = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+revisePaymentForm.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: revisePayment.url(args, options),
     method: 'post',
 })

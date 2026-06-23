@@ -730,7 +730,7 @@ unlock.form = unlockForm
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-export const reconcilePayment = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reconcilePayment = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcilePayment.url(args, options),
     method: 'post',
 })
@@ -745,7 +745,7 @@ reconcilePayment.definition = {
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePayment.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+reconcilePayment.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -778,7 +778,7 @@ reconcilePayment.url = (args: { payment: string | number | { id: string | number
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePayment.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reconcilePayment.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcilePayment.url(args, options),
     method: 'post',
 })
@@ -788,7 +788,7 @@ reconcilePayment.post = (args: { payment: string | number | { id: string | numbe
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-const reconcilePaymentForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const reconcilePaymentForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: reconcilePayment.url(args, options),
     method: 'post',
 })
@@ -798,7 +798,7 @@ const reconcilePaymentForm = (args: { payment: string | number | { id: string | 
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePaymentForm.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+reconcilePaymentForm.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: reconcilePayment.url(args, options),
     method: 'post',
 })

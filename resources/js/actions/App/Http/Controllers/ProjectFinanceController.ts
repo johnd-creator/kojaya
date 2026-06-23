@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFo
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-export const index = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const index = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ index.definition = {
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-index.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+index.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -52,7 +52,7 @@ index.url = (args: { project: string | number | { id: string | number } } | [pro
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-index.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+index.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ index.get = (args: { project: string | number | { id: string | number } } | [pro
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-index.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+index.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(args, options),
     method: 'head',
 })
@@ -72,7 +72,7 @@ index.head = (args: { project: string | number | { id: string | number } } | [pr
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-const indexForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url(args, options),
     method: 'get',
 })
@@ -82,7 +82,7 @@ const indexForm = (args: { project: string | number | { id: string | number } } 
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-indexForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url(args, options),
     method: 'get',
 })
@@ -92,7 +92,7 @@ indexForm.get = (args: { project: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/ProjectFinanceController.php:20
 * @route '/projects/{project}/financials'
 */
-indexForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: index.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -109,7 +109,7 @@ index.form = indexForm
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-export const summary = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const summary = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: summary.url(args, options),
     method: 'get',
 })
@@ -124,7 +124,7 @@ summary.definition = {
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-summary.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+summary.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -157,7 +157,7 @@ summary.url = (args: { project: string | number | { id: string | number } } | [p
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-summary.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+summary.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: summary.url(args, options),
     method: 'get',
 })
@@ -167,7 +167,7 @@ summary.get = (args: { project: string | number | { id: string | number } } | [p
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-summary.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+summary.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: summary.url(args, options),
     method: 'head',
 })
@@ -177,7 +177,7 @@ summary.head = (args: { project: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-const summaryForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const summaryForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: summary.url(args, options),
     method: 'get',
 })
@@ -187,7 +187,7 @@ const summaryForm = (args: { project: string | number | { id: string | number } 
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-summaryForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+summaryForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: summary.url(args, options),
     method: 'get',
 })
@@ -197,7 +197,7 @@ summaryForm.get = (args: { project: string | number | { id: string | number } } 
 * @see app/Http/Controllers/ProjectFinanceController.php:140
 * @route '/projects/{project}/financial-summary'
 */
-summaryForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+summaryForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: summary.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -214,7 +214,7 @@ summary.form = summaryForm
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-export const budgetAnalysis = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const budgetAnalysis = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: budgetAnalysis.url(args, options),
     method: 'get',
 })
@@ -229,7 +229,7 @@ budgetAnalysis.definition = {
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-budgetAnalysis.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+budgetAnalysis.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -262,7 +262,7 @@ budgetAnalysis.url = (args: { project: string | number | { id: string | number }
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-budgetAnalysis.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+budgetAnalysis.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: budgetAnalysis.url(args, options),
     method: 'get',
 })
@@ -272,7 +272,7 @@ budgetAnalysis.get = (args: { project: string | number | { id: string | number }
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-budgetAnalysis.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+budgetAnalysis.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: budgetAnalysis.url(args, options),
     method: 'head',
 })
@@ -282,7 +282,7 @@ budgetAnalysis.head = (args: { project: string | number | { id: string | number 
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-const budgetAnalysisForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const budgetAnalysisForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: budgetAnalysis.url(args, options),
     method: 'get',
 })
@@ -292,7 +292,7 @@ const budgetAnalysisForm = (args: { project: string | number | { id: string | nu
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-budgetAnalysisForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+budgetAnalysisForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: budgetAnalysis.url(args, options),
     method: 'get',
 })
@@ -302,7 +302,7 @@ budgetAnalysisForm.get = (args: { project: string | number | { id: string | numb
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
 */
-budgetAnalysisForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+budgetAnalysisForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: budgetAnalysis.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -319,7 +319,7 @@ budgetAnalysis.form = budgetAnalysisForm
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-export const transactions = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const transactions = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: transactions.url(args, options),
     method: 'get',
 })
@@ -334,7 +334,7 @@ transactions.definition = {
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-transactions.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+transactions.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -367,7 +367,7 @@ transactions.url = (args: { project: string | number | { id: string | number } }
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-transactions.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+transactions.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: transactions.url(args, options),
     method: 'get',
 })
@@ -377,7 +377,7 @@ transactions.get = (args: { project: string | number | { id: string | number } }
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-transactions.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+transactions.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: transactions.url(args, options),
     method: 'head',
 })
@@ -387,7 +387,7 @@ transactions.head = (args: { project: string | number | { id: string | number } 
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-const transactionsForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const transactionsForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: transactions.url(args, options),
     method: 'get',
 })
@@ -397,7 +397,7 @@ const transactionsForm = (args: { project: string | number | { id: string | numb
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-transactionsForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+transactionsForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: transactions.url(args, options),
     method: 'get',
 })
@@ -407,7 +407,7 @@ transactionsForm.get = (args: { project: string | number | { id: string | number
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
 */
-transactionsForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+transactionsForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: transactions.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

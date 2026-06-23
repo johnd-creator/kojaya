@@ -71,7 +71,7 @@ class CooperativeMemberController extends Controller
         }
 
         return Inertia::render('Cooperative/Members/Index', [
-            'members' => $query->orderBy('no_anggota')->paginate(10)->withQueryString(),
+            'members' => $query->orderBy('no_anggota')->paginate(15)->withQueryString(),
             'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori', 'validation_status']),
             'options' => $this->options(),
             'stats' => Inertia::defer(fn () => [

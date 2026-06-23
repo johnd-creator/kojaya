@@ -176,7 +176,7 @@ const sortIcon = (col: Column) => {
     <div
       class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden"
     >
-      <div class="overflow-x-auto max-h-[calc(100vh-18rem)]">
+      <div class="overflow-x-auto">
         <table
           :aria-label="tableLabel"
           class="w-full text-left border-collapse"

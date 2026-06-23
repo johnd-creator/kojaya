@@ -487,6 +487,13 @@ const transactionRows = computed(() =>
                 {{ onboarding_completeness.completed_fields }} dari
                 {{ onboarding_completeness.total_fields }} data wajib telah diisi. Silakan lengkapi sisa kolom untuk mengaktifkan seluruh fitur.
               </p>
+              <Link
+                href="/member/onboarding"
+                class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-700 px-4 py-2 text-sm font-bold text-white shadow-sm shadow-amber-900/10 transition hover:bg-amber-800"
+              >
+                Lanjutkan Onboarding
+                <ChevronRight class="h-4 w-4" />
+              </Link>
               <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100 dark:bg-zinc-800 border border-amber-200/30 dark:border-zinc-700/50">
                 <div
                   class="h-full rounded-full transition-all duration-500 shadow-sm"

@@ -224,6 +224,9 @@ class RolePermissionSeeder extends Seeder
             'view_cooperative_all',
             'manage_cooperative_settings',
             'approve_pos_void',
+            'manage_cooperative_opening_balance',
+            'approve_cooperative_opening_balance',
+            'void_cooperative_opening_balance',
         ]);
 
         // Admin Koperasi
@@ -247,6 +250,7 @@ class RolePermissionSeeder extends Seeder
             'view_pos_reports',
             'view_cooperative_ledger',
             'approve_pos_void',
+            'manage_cooperative_opening_balance',
         ]);
 
         // Kasir Koperasi

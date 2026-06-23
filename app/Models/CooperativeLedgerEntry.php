@@ -13,6 +13,7 @@ class CooperativeLedgerEntry extends Model
 
     protected $fillable = [
         'cooperative_member_id',
+        'organization_id',
         'cooperative_payment_id',
         'cooperative_contribution_type_id',
         'source_type',
@@ -24,6 +25,7 @@ class CooperativeLedgerEntry extends Model
         'credit',
         'period',
         'description',
+        'metadata',
         'posted_at',
     ];
 
@@ -33,6 +35,7 @@ class CooperativeLedgerEntry extends Model
             'debit' => 'decimal:2',
             'credit' => 'decimal:2',
             'posted_at' => 'date',
+            'metadata' => 'array',
         ];
     }
 

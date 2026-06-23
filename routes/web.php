@@ -203,6 +203,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('members/{member}/request-revision', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'requestRevision'])->name('members.request-revision');
         Route::post('members/{member}/reject', [\App\Http\Controllers\Cooperative\CooperativeMemberValidationController::class, 'reject'])->name('members.reject');
 
+        // Wizard Saldo Awal Anggota (opening balance)
+        Route::prefix('members/{member}/opening-balance')->name('members.opening-balance.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::class, 'show'])
+                ->middleware('can:manage_cooperative_opening_balance')
+                ->name('show');
+            Route::post('/preview', [\App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::class, 'preview'])
+                ->middleware('can:manage_cooperative_opening_balance')
+                ->name('preview');
+            Route::post('/draft', [\App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::class, 'store'])
+                ->middleware('can:manage_cooperative_opening_balance')
+                ->name('store');
+        });
+        Route::post('opening-balances/{batch}/post', [\App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::class, 'post'])
+            ->middleware('can:approve_cooperative_opening_balance')
+            ->name('opening-balances.post');
+        Route::post('opening-balances/{batch}/void', [\App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::class, 'void'])
+            ->middleware('can:void_cooperative_opening_balance')
+            ->name('opening-balances.void');
+
         Route::middleware('can:manage_cooperative_dues')->group(function () {
             Route::get('dues', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'index'])->name('dues.index');
             Route::post('dues/generate', [\App\Http\Controllers\Cooperative\CooperativeDuesController::class, 'generate'])->name('dues.generate');

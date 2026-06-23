@@ -131,6 +131,9 @@ enum PermissionEnum: string
     case COOPERATIVE_MEMBER_VALIDATE = 'validate_cooperative_member';
     case COOPERATIVE_MEMBER_VERIFY = 'verify_cooperative_member';
     case COOPERATIVE_MEMBER_APPROVE = 'approve_cooperative_member';
+    case COOPERATIVE_OPENING_BALANCE_MANAGE = 'manage_cooperative_opening_balance';
+    case COOPERATIVE_OPENING_BALANCE_APPROVE = 'approve_cooperative_opening_balance';
+    case COOPERATIVE_OPENING_BALANCE_VOID = 'void_cooperative_opening_balance';
 
     // --- NEW: System / Admin ---
     case CLIENTS_MANAGE = 'manage_clients';

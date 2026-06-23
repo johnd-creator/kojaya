@@ -1,4 +1,5 @@
 import members from './members'
+import openingBalances from './opening-balances'
 import dues from './dues'
 import payments from './payments'
 import ledger from './ledger'
@@ -16,6 +17,7 @@ import operator from './operator'
 
 const cooperative = {
     members: Object.assign(members, members),
+    openingBalances: Object.assign(openingBalances, openingBalances),
     dues: Object.assign(dues, dues),
     payments: Object.assign(payments, payments),
     ledger: Object.assign(ledger, ledger),

@@ -1,0 +1,429 @@
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+export const show = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: show.url(args, options),
+    method: 'get',
+})
+
+show.definition = {
+    methods: ["get","head"],
+    url: '/cooperative/members/{member}/opening-balance',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+show.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { member: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { member: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            member: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        member: typeof args.member === 'object'
+        ? args.member.id
+        : args.member,
+    }
+
+    return show.definition.url
+            .replace('{member}', parsedArgs.member.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+show.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+show.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: show.url(args, options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+const showForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+showForm.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::show
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:24
+* @route '/cooperative/members/{member}/opening-balance'
+*/
+showForm.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::preview
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:99
+* @route '/cooperative/members/{member}/opening-balance/preview'
+*/
+export const preview = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: preview.url(args, options),
+    method: 'post',
+})
+
+preview.definition = {
+    methods: ["post"],
+    url: '/cooperative/members/{member}/opening-balance/preview',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::preview
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:99
+* @route '/cooperative/members/{member}/opening-balance/preview'
+*/
+preview.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { member: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { member: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            member: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        member: typeof args.member === 'object'
+        ? args.member.id
+        : args.member,
+    }
+
+    return preview.definition.url
+            .replace('{member}', parsedArgs.member.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::preview
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:99
+* @route '/cooperative/members/{member}/opening-balance/preview'
+*/
+preview.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: preview.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::preview
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:99
+* @route '/cooperative/members/{member}/opening-balance/preview'
+*/
+const previewForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: preview.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::preview
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:99
+* @route '/cooperative/members/{member}/opening-balance/preview'
+*/
+previewForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: preview.url(args, options),
+    method: 'post',
+})
+
+preview.form = previewForm
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::store
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:108
+* @route '/cooperative/members/{member}/opening-balance/draft'
+*/
+export const store = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: store.url(args, options),
+    method: 'post',
+})
+
+store.definition = {
+    methods: ["post"],
+    url: '/cooperative/members/{member}/opening-balance/draft',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::store
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:108
+* @route '/cooperative/members/{member}/opening-balance/draft'
+*/
+store.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { member: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { member: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            member: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        member: typeof args.member === 'object'
+        ? args.member.id
+        : args.member,
+    }
+
+    return store.definition.url
+            .replace('{member}', parsedArgs.member.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::store
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:108
+* @route '/cooperative/members/{member}/opening-balance/draft'
+*/
+store.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: store.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::store
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:108
+* @route '/cooperative/members/{member}/opening-balance/draft'
+*/
+const storeForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::store
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:108
+* @route '/cooperative/members/{member}/opening-balance/draft'
+*/
+storeForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+store.form = storeForm
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+export const post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: post.url(args, options),
+    method: 'post',
+})
+
+post.definition = {
+    methods: ["post"],
+    url: '/cooperative/opening-balances/{batch}/post',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+post.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { batch: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { batch: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            batch: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        batch: typeof args.batch === 'object'
+        ? args.batch.id
+        : args.batch,
+    }
+
+    return post.definition.url
+            .replace('{batch}', parsedArgs.batch.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+post.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: post.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+const postForm = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: post.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+postForm.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: post.url(args, options),
+    method: 'post',
+})
+
+post.form = postForm
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+export const voidMethod = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: voidMethod.url(args, options),
+    method: 'post',
+})
+
+voidMethod.definition = {
+    methods: ["post"],
+    url: '/cooperative/opening-balances/{batch}/void',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+voidMethod.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { batch: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { batch: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            batch: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        batch: typeof args.batch === 'object'
+        ? args.batch.id
+        : args.batch,
+    }
+
+    return voidMethod.definition.url
+            .replace('{batch}', parsedArgs.batch.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+voidMethod.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: voidMethod.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+const voidMethodForm = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: voidMethod.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+voidMethodForm.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: voidMethod.url(args, options),
+    method: 'post',
+})
+
+voidMethod.form = voidMethodForm
+
+const CooperativeOpeningBalanceWizardController = { show, preview, store, post, voidMethod, void: voidMethod }
+
+export default CooperativeOpeningBalanceWizardController

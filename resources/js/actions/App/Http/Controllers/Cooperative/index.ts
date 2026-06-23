@@ -1,6 +1,7 @@
 import CooperativeReportController from './CooperativeReportController'
 import CooperativeMemberController from './CooperativeMemberController'
 import CooperativeMemberValidationController from './CooperativeMemberValidationController'
+import CooperativeOpeningBalanceWizardController from './CooperativeOpeningBalanceWizardController'
 import CooperativeDuesController from './CooperativeDuesController'
 import CooperativePaymentController from './CooperativePaymentController'
 import CooperativeLedgerController from './CooperativeLedgerController'
@@ -32,6 +33,7 @@ const Cooperative = {
     CooperativeReportController: Object.assign(CooperativeReportController, CooperativeReportController),
     CooperativeMemberController: Object.assign(CooperativeMemberController, CooperativeMemberController),
     CooperativeMemberValidationController: Object.assign(CooperativeMemberValidationController, CooperativeMemberValidationController),
+    CooperativeOpeningBalanceWizardController: Object.assign(CooperativeOpeningBalanceWizardController, CooperativeOpeningBalanceWizardController),
     CooperativeDuesController: Object.assign(CooperativeDuesController, CooperativeDuesController),
     CooperativePaymentController: Object.assign(CooperativePaymentController, CooperativePaymentController),
     CooperativeLedgerController: Object.assign(CooperativeLedgerController, CooperativeLedgerController),

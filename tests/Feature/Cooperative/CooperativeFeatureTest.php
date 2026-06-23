@@ -92,7 +92,6 @@ class CooperativeFeatureTest extends TestCase
             'joined_at' => '2026-05-01',
             'status' => 'ACTIVE',
             'member_login_password' => 'password-anggota',
-            'opening_saving_balance' => 125000,
         ])->assertRedirect(route('cooperative.members.index'));
 
         $member = CooperativeMember::query()->where('email', 'anggota-login@test.local')->firstOrFail();
@@ -101,19 +100,71 @@ class CooperativeFeatureTest extends TestCase
         $this->assertSame($memberUser->id, $member->user_id);
         $this->assertTrue($memberUser->hasRole('Anggota'));
         $this->assertTrue(Hash::check('password-anggota', $memberUser->password));
-        $this->assertDatabaseHas('cooperative_ledger_entries', [
-            'cooperative_member_id' => $member->id,
-            'entry_type' => 'OPENING_BALANCE',
-            'ledger_scope' => 'SAVINGS',
-            'credit' => 125000,
-            'posted_at' => '2026-05-01 00:00:00',
-        ]);
         $this->assertDatabaseHas('cooperative_dues_invoices', [
             'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $pokok->id,
             'period' => '2026-05',
             'amount' => 200000,
             'status' => 'UNPAID',
+        ]);
+    }
+
+    public function test_member_creation_with_opening_balance_redirects_to_wizard_for_admin(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+
+        $response = $this->actingAs($user)->post(route('cooperative.members.store'), [
+            'name' => 'Anggota Migrasi',
+            'email' => 'anggota-migrasi@test.local',
+            'phone' => '08123',
+            'joined_at' => '2020-01-01',
+            'status' => 'ACTIVE',
+            'opening_saving_balance' => 125000,
+        ]);
+
+        $member = CooperativeMember::query()->where('email', 'anggota-migrasi@test.local')->firstOrFail();
+
+        // Admin dengan permission wizard akan dialihkan ke wizard,
+        // bukan langsung menulis ledger legacy.
+        $response->assertRedirect(route('cooperative.members.opening-balance.show', $member));
+        $this->assertNull($member->activeOpeningBalanceBatch());
+        $this->assertSame(
+            0,
+            $member->ledgerEntries()->where('entry_type', 'OPENING_BALANCE')->count(),
+            'Admin dengan manage_cooperative_opening_balance harusnya tidak menulis ledger langsung.'
+        );
+    }
+
+    public function test_member_creation_legacy_opening_balance_used_when_user_lacks_permission(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        // Role ad-hoc: boleh create anggota TAPI tidak boleh wizard saldo awal,
+        // sehingga jalur legacy sync() dipakai.
+        $user = User::factory()->create();
+        $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Creator']);
+        $legacyRole->syncPermissions([
+            'view_cooperative_member',
+            'manage_cooperative_member',
+        ]);
+        $user->assignRole($legacyRole);
+
+        $this->actingAs($user)->post(route('cooperative.members.store'), [
+            'name' => 'Anggota Tanpa Wizard',
+            'email' => 'anggota-no-wizard@test.local',
+            'phone' => '08123',
+            'joined_at' => '2020-01-01',
+            'status' => 'ACTIVE',
+            'opening_saving_balance' => 75000,
+        ])->assertRedirect(route('cooperative.members.index'));
+
+        $member = CooperativeMember::query()->where('email', 'anggota-no-wizard@test.local')->firstOrFail();
+
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'cooperative_member_id' => $member->id,
+            'entry_type' => 'OPENING_BALANCE',
+            'credit' => 75000,
         ]);
     }
 
@@ -170,7 +221,14 @@ class CooperativeFeatureTest extends TestCase
     {
         $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
-        $admin->assignRole('System Admin');
+        // Buat role ad-hoc: boleh update anggota TAPI tidak boleh wizard saldo awal,
+        // supaya jalur legacy sync() masih dipakai di sini.
+        $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Tester']);
+        $legacyRole->syncPermissions([
+            'view_cooperative_member',
+            'manage_cooperative_member',
+        ]);
+        $admin->assignRole($legacyRole);
         $member = $this->member([
             'name' => 'Opening Balance',
             'email' => 'opening@test.local',

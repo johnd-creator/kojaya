@@ -114,7 +114,20 @@ class CooperativeMemberController extends Controller
         ]);
 
         $userProvisioningService->provision($member, $request->validated('member_login_password'));
-        $openingBalanceService->sync($member, $request->validated('opening_saving_balance'));
+        $openingSavingBalance = $request->validated('opening_saving_balance');
+
+        if ($this->shouldUseOpeningBalanceWizard($openingSavingBalance)) {
+            $duesGenerationService->ensureOneTimeInvoice($member);
+
+            return redirect()
+                ->route('cooperative.members.opening-balance.show', $member)
+                ->with(
+                    'info',
+                    'Anggota baru dibuat. Lengkapi saldo awal melalui Wizard Saldo Awal agar POKOK/WAJIB historis tercatat dengan benar.',
+                );
+        }
+
+        $openingBalanceService->sync($member, $openingSavingBalance);
         $duesGenerationService->ensureOneTimeInvoice($member);
 
         return redirect()->route('cooperative.members.index')
@@ -170,10 +183,53 @@ class CooperativeMemberController extends Controller
         ]);
 
         $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
-        $openingBalanceService->sync($member->refresh(), $request->validated('opening_saving_balance'));
+
+        $openingSavingBalance = $request->validated('opening_saving_balance');
+
+        if ($this->shouldUseOpeningBalanceWizard($openingSavingBalance, $member)) {
+            return redirect()
+                ->route('cooperative.members.opening-balance.show', $member)
+                ->with(
+                    'info',
+                    'Perubahan tersimpan. Lengkapi saldo awal melalui Wizard Saldo Awal agar POKOK/WAJIB historis tercatat dengan benar.',
+                );
+        }
+
+        $openingBalanceService->sync($member->refresh(), $openingSavingBalance);
 
         return redirect()->route('cooperative.members.index')
             ->with('success', 'Cooperative member updated successfully.');
+    }
+
+    /**
+     * Tentukan apakah wizard saldo awal baru harus diprioritaskan
+     * dibandingkan jalur legacy opening_saving_balance.
+     *
+     * Kapan wizard diprioritaskan:
+     * - User mengisi nominal saldo awal > 0.
+     * - User memiliki permission mengelola wizard saldo awal.
+     * - Untuk update: anggota belum pernah memiliki batch saldo awal
+     *   yang sudah diposting (untuk menghindari overwrite histori).
+     */
+    private function shouldUseOpeningBalanceWizard(mixed $openingSavingBalance, ?CooperativeMember $member = null): bool
+    {
+        $amount = is_numeric($openingSavingBalance) ? (float) $openingSavingBalance : 0.0;
+
+        if ($amount <= 0) {
+            return false;
+        }
+
+        $user = request()->user();
+
+        if ($user === null || ! $user->can('manage_cooperative_opening_balance')) {
+            return false;
+        }
+
+        if ($member !== null && $member->activeOpeningBalanceBatch() !== null) {
+            return false;
+        }
+
+        return true;
     }
 
     public function activate(

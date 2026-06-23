@@ -4,11 +4,26 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** June 20, 2026
+**Last Updated:** June 23, 2026
 
 ---
 
 ## 🎯 2026-06: M3 P0 Hardening
+
+### **June 23, 2026 - Wizard Saldo Awal Anggota**
+
+**🏦 Migrasi Saldo Awal Simpanan:**
+- ✅ Added `cooperative_member_opening_balance_batches` and `cooperative_member_opening_balance_lines` tables for the opening-balance wizard (per-member, per-category, per-period).
+- ✅ Added `CooperativeOpeningBalanceWizardService` with `monthsBetween`, `preview`, `createDraft`, `post`, and `void` methods. Posting writes `OPENING_BALANCE` entries (credit) per line; void emits matching `OPENING_BALANCE_REVERSAL` (debit) entries so the savings ledger nets back to zero.
+- ✅ Wired `manage_cooperative_opening_balance`, `approve_cooperative_opening_balance`, and `void_cooperative_opening_balance` permissions through `PermissionEnum` and `RolePermissionSeeder` (Pengurus + Admin Koperasi receive management permission; only Pengurus gets approve/void).
+- ✅ Added multi-step Vue wizard at `/cooperative/members/{member}/opening-balance` with pratinjau kalkulasi, override tarif + alasan audit, posting approval dialog, and void-with-reason dialog.
+- ✅ Added `OPENING_BALANCE_REVERSAL` friendly label in Member Show and Cooperative Ledger Vue pages.
+- ✅ Added metadata JSON column on `cooperative_ledger_entries` to track `opening_balance_batch_id`, `opening_balance_line_id`, reversal linkage, and audit reason.
+
+**Verification:**
+- ✅ `CooperativeOpeningBalanceWizardServiceTest` (7 unit tests) covering month calculations, default amounts, overrides, manual categories, current-month flag, and unknown/inactive types.
+- ✅ `OpeningBalanceWizardTest` (9 feature tests) covering draft persistence, posting, POKOK duplicate guard, void reversal, member eligibility, savings summary integration, and model relations.
+- ✅ `OpeningBalanceWizardHttpTest` (9 HTTP tests) covering permission gates, Inertia page rendering, JSON preview, draft store, post, void, and validation.
 
 ### **June 20, 2026 - Kojayaku Coffee Ordering API**
 

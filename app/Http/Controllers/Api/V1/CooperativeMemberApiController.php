@@ -59,9 +59,20 @@ class CooperativeMemberApiController extends Controller
         ]);
 
         $userProvisioningService->provision($member, $request->validated('member_login_password'));
-        $openingBalanceService->sync($member, $request->validated('opening_saving_balance'));
 
-        return response()->json(['data' => $member->load('organization')], 201);
+        $openingBalanceWarning = $this->resolveOpeningBalanceWarning(
+            $member,
+            $request->validated('opening_saving_balance'),
+            $request->user(),
+            $openingBalanceService,
+        );
+
+        return response()->json([
+            'data' => $member->load('organization'),
+            'meta' => array_filter([
+                'opening_balance' => $openingBalanceWarning,
+            ]),
+        ], 201);
     }
 
     public function show(Request $request, CooperativeMember $member): JsonResponse
@@ -88,9 +99,20 @@ class CooperativeMemberApiController extends Controller
         ]);
 
         $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
-        $openingBalanceService->sync($member->refresh(), $request->validated('opening_saving_balance'));
 
-        return response()->json(['data' => $member->refresh()->load('organization')]);
+        $openingBalanceWarning = $this->resolveOpeningBalanceWarning(
+            $member->refresh(),
+            $request->validated('opening_saving_balance'),
+            $request->user(),
+            $openingBalanceService,
+        );
+
+        return response()->json([
+            'data' => $member->refresh()->load('organization'),
+            'meta' => array_filter([
+                'opening_balance' => $openingBalanceWarning,
+            ]),
+        ]);
     }
 
     public function activate(
@@ -138,5 +160,56 @@ class CooperativeMemberApiController extends Controller
             || $user?->can('manage_cooperative_payment')
             || $user?->can('access_cooperative_pos')
             || $user?->can('view_cooperative_report');
+    }
+
+    /**
+     * Tentukan apakah API harus menulis ledger legacy atau hanya memberi
+     * warning bahwa wizard saldo awal adalah jalur yang benar.
+     *
+     * - Jika user punya permission wizard dan nominal > 0, **tidak** menulis
+     *   ledger sama sekali dan kembalikan metadata berisi URL/state wizard
+     *   agar client admin bisa mengarahkan operator ke wizard.
+     * - Jika anggota sudah punya batch aktif (POSTED/DRAFT), tolak tulis
+     *   legacy agar ledger wizard tidak tertimpa.
+     * - Jika user tidak punya permission wizard dan anggota belum punya
+     *   batch aktif, tulis entry legacy seperti perilaku lama.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolveOpeningBalanceWarning(
+        CooperativeMember $member,
+        mixed $openingSavingBalance,
+        mixed $user,
+        CooperativeOpeningBalanceService $openingBalanceService,
+    ): ?array {
+        $amount = is_numeric($openingSavingBalance) ? (float) $openingSavingBalance : 0.0;
+
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $hasWizardBatch = $member->activeOpeningBalanceBatch() !== null;
+
+        if ($hasWizardBatch) {
+            return [
+                'mode' => 'wizard_locked',
+                'message' => 'Anggota sudah memiliki batch saldo awal (wizard). Saldo awal tidak lagi dapat diisi lewat API; gunakan endpoint wizard untuk koreksi.',
+                'wizard_url' => route('cooperative.members.opening-balance.show', $member, false),
+            ];
+        }
+
+        if ($user !== null && method_exists($user, 'can') && $user->can('manage_cooperative_opening_balance')) {
+            return [
+                'mode' => 'wizard_required',
+                'message' => 'Saldo awal historis harus diisi melalui Wizard Saldo Awal agar tercatat rapi ke ledger per kategori dan periode.',
+                'wizard_url' => route('cooperative.members.opening-balance.show', $member, false),
+            ];
+        }
+
+        // User tanpa permission wizard: tulis ledger legacy sebagai fallback
+        // (untuk operator/admin lama yang belum bermigrasi ke wizard).
+        $openingBalanceService->sync($member, $amount);
+
+        return null;
     }
 }

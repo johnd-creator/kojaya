@@ -532,18 +532,33 @@ const submit = (): void => form.put(update(props.member.id).url);
                 />
                 <InputError :message="form.errors.member_login_password" />
               </div>
-              <div class="space-y-2">
-                <Label for="edit-member-opening-balance">
-                  Saldo Awal Simpanan
-                </Label>
-                <Input
-                  id="edit-member-opening-balance"
-                  v-model="form.opening_saving_balance"
-                  type="number"
-                  min="0"
-                  step="1000"
-                />
-                <InputError :message="form.errors.opening_saving_balance" />
+              <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <p class="font-medium">Saldo awal migrasi anggota lama?</p>
+                <p class="mt-1 text-xs">
+                  Gunakan
+                  <Link
+                    :href="`${index().url}/${props.member.id}/opening-balance`"
+                    class="font-semibold underline"
+                    prefetch
+                  >
+                    Wizard Saldo Awal
+                  </Link>
+                  untuk mencatat POKOK/WAJIB historis ke ledger simpanan.
+                  Angka di bawah hanya disimpan sebagai catatan ringkasan (legacy).
+                </p>
+                <div class="mt-2 space-y-1">
+                  <Label for="edit-member-opening-balance">
+                    Saldo Awal (legacy)
+                  </Label>
+                  <Input
+                    id="edit-member-opening-balance"
+                    v-model="form.opening_saving_balance"
+                    type="number"
+                    min="0"
+                    step="1000"
+                  />
+                  <InputError :message="form.errors.opening_saving_balance" />
+                </div>
               </div>
             </div>
           </CardContent>

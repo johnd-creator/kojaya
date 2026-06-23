@@ -103,6 +103,19 @@ class CooperativeMember extends Model
         return $this->hasMany(PosMemberCreditPayment::class);
     }
 
+    public function openingBalanceBatches(): HasMany
+    {
+        return $this->hasMany(CooperativeMemberOpeningBalanceBatch::class, 'cooperative_member_id');
+    }
+
+    public function activeOpeningBalanceBatch(): ?CooperativeMemberOpeningBalanceBatch
+    {
+        return $this->openingBalanceBatches()
+            ->where('status', \App\Enums\Cooperative\OpeningBalanceBatchStatus::Posted->value)
+            ->latest('posted_at')
+            ->first();
+    }
+
     public function availableCredit(): float
     {
         return max((float) $this->credit_limit - (float) $this->outstanding_balance, 0);

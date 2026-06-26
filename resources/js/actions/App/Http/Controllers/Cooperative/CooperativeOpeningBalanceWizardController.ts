@@ -269,7 +269,7 @@ store.form = storeForm
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-export const post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: post.url(args, options),
     method: 'post',
 })
@@ -284,7 +284,7 @@ post.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-post.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+post.url = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -317,7 +317,7 @@ post.url = (args: { batch: string | number | { id: string | number } } | [batch:
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-post.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+post.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: post.url(args, options),
     method: 'post',
 })
@@ -327,7 +327,7 @@ post.post = (args: { batch: string | number | { id: string | number } } | [batch
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-const postForm = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const postForm = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: post.url(args, options),
     method: 'post',
 })
@@ -337,7 +337,7 @@ const postForm = (args: { batch: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:128
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-postForm.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+postForm.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: post.url(args, options),
     method: 'post',
 })
@@ -349,7 +349,7 @@ post.form = postForm
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-export const voidMethod = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const voidMethod = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: voidMethod.url(args, options),
     method: 'post',
 })
@@ -364,7 +364,7 @@ voidMethod.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-voidMethod.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+voidMethod.url = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -397,7 +397,7 @@ voidMethod.url = (args: { batch: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-voidMethod.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+voidMethod.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: voidMethod.url(args, options),
     method: 'post',
 })
@@ -407,7 +407,7 @@ voidMethod.post = (args: { batch: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-const voidMethodForm = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const voidMethodForm = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: voidMethod.url(args, options),
     method: 'post',
 })
@@ -417,7 +417,7 @@ const voidMethodForm = (args: { batch: string | number | { id: string | number }
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:139
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-voidMethodForm.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+voidMethodForm.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: voidMethod.url(args, options),
     method: 'post',
 })

@@ -235,8 +235,19 @@ class AuthController extends Controller
      */
     private function verifyGoogleIdToken(string $idToken): array|JsonResponse
     {
+        if (substr_count($idToken, '.') !== 2) {
+            return response()->json([
+                'message' => 'Token Google tidak valid atau kedaluwarsa.',
+            ], 422);
+        }
+
+        $jwksResult = $this->verifyGoogleIdTokenWithJwks($idToken);
+        if (! ($jwksResult instanceof JsonResponse && $jwksResult->getStatusCode() === 503)) {
+            return $jwksResult;
+        }
+
         try {
-            $response = Http::timeout(5)
+            $response = Http::timeout(3)
                 ->acceptJson()
                 ->get('https://oauth2.googleapis.com/tokeninfo', [
                     'id_token' => $idToken,
@@ -246,7 +257,7 @@ class AuthController extends Controller
                 'message' => $exception->getMessage(),
             ]);
 
-            return $this->verifyGoogleIdTokenWithJwks($idToken);
+            return $jwksResult;
         }
 
         if ($response->serverError()) {
@@ -254,7 +265,7 @@ class AuthController extends Controller
                 'status' => $response->status(),
             ]);
 
-            return $this->verifyGoogleIdTokenWithJwks($idToken);
+            return $jwksResult;
         }
 
         if ($response->failed()) {

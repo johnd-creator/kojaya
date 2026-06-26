@@ -222,19 +222,22 @@ class GoogleSsoFlowTest extends TestCase
             'user_id' => $user->id,
             'email' => 'member-mobile@example.com',
         ]);
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'mobile-google-123',
+            'email' => 'member-mobile@example.com',
+            'email_verified' => true,
+            'name' => 'Member Mobile',
+        ]);
 
         Http::fake([
-            'https://oauth2.googleapis.com/tokeninfo*' => Http::response([
-                'sub' => 'mobile-google-123',
-                'aud' => 'web-client.apps.googleusercontent.com',
-                'email' => 'member-mobile@example.com',
-                'email_verified' => 'true',
-                'name' => 'Member Mobile',
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
             ]),
         ]);
 
         $this->postJson('/api/auth/google/mobile', [
-            'id_token' => 'valid-id-token',
+            'id_token' => $idToken,
             'device_name' => 'Android Member',
             'device_id' => 'android-device',
             'platform' => 'android',
@@ -250,18 +253,23 @@ class GoogleSsoFlowTest extends TestCase
 
     public function test_mobile_google_login_rejects_wrong_audience(): void
     {
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'aud' => 'android-client.apps.googleusercontent.com',
+            'sub' => 'mobile-google-456',
+            'email' => 'member-mobile@example.com',
+            'email_verified' => true,
+            'name' => 'Member Mobile',
+        ]);
+
         Http::fake([
-            'https://oauth2.googleapis.com/tokeninfo*' => Http::response([
-                'sub' => 'mobile-google-456',
-                'aud' => 'android-client.apps.googleusercontent.com',
-                'email' => 'member-mobile@example.com',
-                'email_verified' => 'true',
-                'name' => 'Member Mobile',
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
             ]),
         ]);
 
         $this->postJson('/api/auth/google/mobile', [
-            'id_token' => 'wrong-audience-token',
+            'id_token' => $idToken,
             'device_name' => 'Android Member',
         ])->assertUnprocessable()
             ->assertJsonPath('message', 'Token Google tidak ditujukan untuk aplikasi Kojaya.');
@@ -274,7 +282,7 @@ class GoogleSsoFlowTest extends TestCase
         });
 
         $this->postJson('/api/auth/google/mobile', [
-            'id_token' => 'network-failure-token',
+            'id_token' => 'header.payload.signature',
             'device_name' => 'Android Member',
         ])->assertStatus(503)
             ->assertJsonPath('message', 'Layanan verifikasi Google sedang tidak dapat dihubungi. Coba lagi beberapa saat.');
@@ -289,16 +297,12 @@ class GoogleSsoFlowTest extends TestCase
             'email' => 'jwks-member@example.com',
         ]);
         $keyPair = $this->fakeRsaJwk();
-        $idToken = JWT::encode([
-            'iss' => 'https://accounts.google.com',
-            'aud' => 'web-client.apps.googleusercontent.com',
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
             'sub' => 'jwks-google-123',
             'email' => 'jwks-member@example.com',
             'email_verified' => true,
             'name' => 'JWKS Member',
-            'iat' => time(),
-            'exp' => time() + 300,
-        ], $keyPair['private_key'], 'RS256', 'test-kid');
+        ]);
 
         Http::fake([
             'https://oauth2.googleapis.com/tokeninfo*' => function () {
@@ -351,6 +355,23 @@ class GoogleSsoFlowTest extends TestCase
         $user->attributes['token_type'] = 'Bearer';
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $claims
+     */
+    protected function fakeGoogleIdToken(string $privateKey, array $claims = []): string
+    {
+        return JWT::encode(array_merge([
+            'iss' => 'https://accounts.google.com',
+            'aud' => 'web-client.apps.googleusercontent.com',
+            'sub' => 'google-subject',
+            'email' => 'member@example.com',
+            'email_verified' => true,
+            'name' => 'Google Member',
+            'iat' => time(),
+            'exp' => time() + 300,
+        ], $claims), $privateKey, 'RS256', 'test-kid');
     }
 
     /**

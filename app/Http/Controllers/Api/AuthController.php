@@ -8,14 +8,18 @@ use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\Sso\GoogleSsoService;
 use App\Services\Auth\TokenAbilityResolver;
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -242,9 +246,15 @@ class AuthController extends Controller
                 'message' => $exception->getMessage(),
             ]);
 
-            return response()->json([
-                'message' => 'Layanan verifikasi Google sedang tidak dapat dihubungi. Coba lagi beberapa saat.',
-            ], 503);
+            return $this->verifyGoogleIdTokenWithJwks($idToken);
+        }
+
+        if ($response->serverError()) {
+            Log::warning('sso.google.mobile_tokeninfo_server_error', [
+                'status' => $response->status(),
+            ]);
+
+            return $this->verifyGoogleIdTokenWithJwks($idToken);
         }
 
         if ($response->failed()) {
@@ -260,6 +270,72 @@ class AuthController extends Controller
             ], 422);
         }
 
+        return $this->validateGoogleIdTokenPayload($payload);
+    }
+
+    /**
+     * @return array<string, mixed>|JsonResponse
+     */
+    private function verifyGoogleIdTokenWithJwks(string $idToken): array|JsonResponse
+    {
+        $jwks = $this->googleJwks();
+        if (! $jwks) {
+            return response()->json([
+                'message' => 'Layanan verifikasi Google sedang tidak dapat dihubungi. Coba lagi beberapa saat.',
+            ], 503);
+        }
+
+        try {
+            $payload = (array) JWT::decode($idToken, JWK::parseKeySet($jwks));
+        } catch (Throwable $exception) {
+            Log::info('sso.google.mobile_jwt_invalid', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Token Google tidak valid atau kedaluwarsa.',
+            ], 422);
+        }
+
+        return $this->validateGoogleIdTokenPayload($payload);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function googleJwks(): ?array
+    {
+        try {
+            $jwks = Cache::remember('sso.google.jwks', now()->addHours(6), function (): ?array {
+                $response = Http::timeout(5)
+                    ->acceptJson()
+                    ->get('https://www.googleapis.com/oauth2/v3/certs');
+
+                if ($response->failed()) {
+                    return null;
+                }
+
+                $payload = $response->json();
+
+                return is_array($payload) && isset($payload['keys']) ? $payload : null;
+            });
+
+            return is_array($jwks) ? $jwks : null;
+        } catch (Throwable $exception) {
+            Log::warning('sso.google.jwks_unreachable', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|JsonResponse
+     */
+    private function validateGoogleIdTokenPayload(array $payload): array|JsonResponse
+    {
         $expectedAudience = config('services.google.client_id');
         $audience = data_get($payload, 'aud');
         if ($expectedAudience && $audience !== $expectedAudience) {
@@ -270,6 +346,17 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Token Google tidak ditujukan untuk aplikasi Kojaya.',
+            ], 422);
+        }
+
+        $issuer = data_get($payload, 'iss');
+        if ($issuer && ! in_array($issuer, ['accounts.google.com', 'https://accounts.google.com'], true)) {
+            Log::warning('sso.google.mobile_issuer_mismatch', [
+                'issuer' => $issuer,
+            ]);
+
+            return response()->json([
+                'message' => 'Token Google tidak valid atau kedaluwarsa.',
             ], 422);
         }
 

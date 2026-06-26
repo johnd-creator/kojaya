@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\SocialAccount;
 use App\Models\User;
+use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -279,6 +280,48 @@ class GoogleSsoFlowTest extends TestCase
             ->assertJsonPath('message', 'Layanan verifikasi Google sedang tidak dapat dihubungi. Coba lagi beberapa saat.');
     }
 
+    public function test_mobile_google_login_falls_back_to_google_jwks_when_tokeninfo_is_unreachable(): void
+    {
+        $user = User::factory()->create(['email' => 'jwks-member@example.com']);
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+            'email' => 'jwks-member@example.com',
+        ]);
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = JWT::encode([
+            'iss' => 'https://accounts.google.com',
+            'aud' => 'web-client.apps.googleusercontent.com',
+            'sub' => 'jwks-google-123',
+            'email' => 'jwks-member@example.com',
+            'email_verified' => true,
+            'name' => 'JWKS Member',
+            'iat' => time(),
+            'exp' => time() + 300,
+        ], $keyPair['private_key'], 'RS256', 'test-kid');
+
+        Http::fake([
+            'https://oauth2.googleapis.com/tokeninfo*' => function () {
+                throw new ConnectionException('tokeninfo timeout');
+            },
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ])->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write'])
+            ->assertJsonPath('auth_result', 'login_linked')
+            ->assertJsonPath('user.email', 'jwks-member@example.com');
+    }
+
     protected function mockSocialite(string $googleId, string $email, bool $verified): void
     {
         $abstract = Mockery::mock(Provider::class);
@@ -308,6 +351,31 @@ class GoogleSsoFlowTest extends TestCase
         $user->attributes['token_type'] = 'Bearer';
 
         return $user;
+    }
+
+    /**
+     * @return array{private_key: string, jwk: array<string, string>}
+     */
+    protected function fakeRsaJwk(): array
+    {
+        $resource = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        openssl_pkey_export($resource, $privateKey);
+        $details = openssl_pkey_get_details($resource);
+
+        return [
+            'private_key' => $privateKey,
+            'jwk' => [
+                'kty' => 'RSA',
+                'alg' => 'RS256',
+                'use' => 'sig',
+                'kid' => 'test-kid',
+                'n' => rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '='),
+                'e' => rtrim(strtr(base64_encode($details['rsa']['e']), '+/', '-_'), '='),
+            ],
+        ];
     }
 
     protected function tearDown(): void

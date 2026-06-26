@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\AuthController::login
-* @see app/Http/Controllers/Api/AuthController.php:24
+* @see app/Http/Controllers/Api/AuthController.php:28
 * @route '/api/auth/login'
 */
 export const login = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ login.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::login
-* @see app/Http/Controllers/Api/AuthController.php:24
+* @see app/Http/Controllers/Api/AuthController.php:28
 * @route '/api/auth/login'
 */
 login.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ login.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::login
-* @see app/Http/Controllers/Api/AuthController.php:24
+* @see app/Http/Controllers/Api/AuthController.php:28
 * @route '/api/auth/login'
 */
 login.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ login.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::login
-* @see app/Http/Controllers/Api/AuthController.php:24
+* @see app/Http/Controllers/Api/AuthController.php:28
 * @route '/api/auth/login'
 */
 const loginForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const loginForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::login
-* @see app/Http/Controllers/Api/AuthController.php:24
+* @see app/Http/Controllers/Api/AuthController.php:28
 * @route '/api/auth/login'
 */
 loginForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -57,7 +57,7 @@ login.form = loginForm
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::loginWithGoogle
-* @see app/Http/Controllers/Api/AuthController.php:94
+* @see app/Http/Controllers/Api/AuthController.php:98
 * @route '/api/auth/google/mobile'
 */
 export const loginWithGoogle = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -72,7 +72,7 @@ loginWithGoogle.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::loginWithGoogle
-* @see app/Http/Controllers/Api/AuthController.php:94
+* @see app/Http/Controllers/Api/AuthController.php:98
 * @route '/api/auth/google/mobile'
 */
 loginWithGoogle.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ loginWithGoogle.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::loginWithGoogle
-* @see app/Http/Controllers/Api/AuthController.php:94
+* @see app/Http/Controllers/Api/AuthController.php:98
 * @route '/api/auth/google/mobile'
 */
 loginWithGoogle.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -91,7 +91,7 @@ loginWithGoogle.post = (options?: RouteQueryOptions): RouteDefinition<'post'> =>
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::loginWithGoogle
-* @see app/Http/Controllers/Api/AuthController.php:94
+* @see app/Http/Controllers/Api/AuthController.php:98
 * @route '/api/auth/google/mobile'
 */
 const loginWithGoogleForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -101,7 +101,7 @@ const loginWithGoogleForm = (options?: RouteQueryOptions): RouteFormDefinition<'
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::loginWithGoogle
-* @see app/Http/Controllers/Api/AuthController.php:94
+* @see app/Http/Controllers/Api/AuthController.php:98
 * @route '/api/auth/google/mobile'
 */
 loginWithGoogleForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -113,7 +113,7 @@ loginWithGoogle.form = loginWithGoogleForm
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 export const session = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -128,7 +128,7 @@ session.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 session.url = (options?: RouteQueryOptions) => {
@@ -137,7 +137,7 @@ session.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 session.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -147,7 +147,7 @@ session.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 session.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -157,7 +157,7 @@ session.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 const sessionForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -167,7 +167,7 @@ const sessionForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 sessionForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -177,7 +177,7 @@ sessionForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::session
-* @see app/Http/Controllers/Api/AuthController.php:51
+* @see app/Http/Controllers/Api/AuthController.php:55
 * @route '/api/auth/session'
 */
 sessionForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -194,7 +194,7 @@ session.form = sessionForm
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logout
-* @see app/Http/Controllers/Api/AuthController.php:66
+* @see app/Http/Controllers/Api/AuthController.php:70
 * @route '/api/auth/logout'
 */
 export const logout = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -209,7 +209,7 @@ logout.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logout
-* @see app/Http/Controllers/Api/AuthController.php:66
+* @see app/Http/Controllers/Api/AuthController.php:70
 * @route '/api/auth/logout'
 */
 logout.url = (options?: RouteQueryOptions) => {
@@ -218,7 +218,7 @@ logout.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logout
-* @see app/Http/Controllers/Api/AuthController.php:66
+* @see app/Http/Controllers/Api/AuthController.php:70
 * @route '/api/auth/logout'
 */
 logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -228,7 +228,7 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logout
-* @see app/Http/Controllers/Api/AuthController.php:66
+* @see app/Http/Controllers/Api/AuthController.php:70
 * @route '/api/auth/logout'
 */
 const logoutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -238,7 +238,7 @@ const logoutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logout
-* @see app/Http/Controllers/Api/AuthController.php:66
+* @see app/Http/Controllers/Api/AuthController.php:70
 * @route '/api/auth/logout'
 */
 logoutForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -250,7 +250,7 @@ logout.form = logoutForm
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logoutAll
-* @see app/Http/Controllers/Api/AuthController.php:77
+* @see app/Http/Controllers/Api/AuthController.php:81
 * @route '/api/auth/logout-all'
 */
 export const logoutAll = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -265,7 +265,7 @@ logoutAll.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logoutAll
-* @see app/Http/Controllers/Api/AuthController.php:77
+* @see app/Http/Controllers/Api/AuthController.php:81
 * @route '/api/auth/logout-all'
 */
 logoutAll.url = (options?: RouteQueryOptions) => {
@@ -274,7 +274,7 @@ logoutAll.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logoutAll
-* @see app/Http/Controllers/Api/AuthController.php:77
+* @see app/Http/Controllers/Api/AuthController.php:81
 * @route '/api/auth/logout-all'
 */
 logoutAll.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -284,7 +284,7 @@ logoutAll.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logoutAll
-* @see app/Http/Controllers/Api/AuthController.php:77
+* @see app/Http/Controllers/Api/AuthController.php:81
 * @route '/api/auth/logout-all'
 */
 const logoutAllForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -294,7 +294,7 @@ const logoutAllForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\Api\AuthController::logoutAll
-* @see app/Http/Controllers/Api/AuthController.php:77
+* @see app/Http/Controllers/Api/AuthController.php:81
 * @route '/api/auth/logout-all'
 */
 logoutAllForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

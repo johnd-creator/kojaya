@@ -86,6 +86,118 @@ class AuthController extends Controller
         };
     }
 
+    public function loginWithGoogle(
+        Request $request,
+        \App\Services\Auth\Sso\GoogleSsoService $googleSso
+    ): JsonResponse {
+        if (! $googleSso->isEnabled()) {
+            return response()->json([
+                'message' => 'Login dengan Google belum diaktifkan.',
+            ], 422);
+        }
+
+        $request->validate([
+            'id_token' => 'required|string',
+            'device_name' => 'nullable|string',
+            'device_id' => 'nullable|string',
+            'platform' => 'nullable|string',
+            'app' => 'nullable|string',
+        ]);
+
+        $idToken = $request->input('id_token');
+
+        // Verify ID Token with Google API
+        $response = \Illuminate\Support\Facades\Http::get('https://oauth2.googleapis.com/tokeninfo', [
+            'id_token' => $idToken,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Token Google tidak valid atau kedaluwarsa.',
+            ], 422);
+        }
+
+        $payload = $response->json();
+
+        // email_verified can be boolean or string 'true' in response
+        $emailVerified = data_get($payload, 'email_verified');
+        if (empty($payload['email']) || ($emailVerified !== true && $emailVerified !== 'true')) {
+            return response()->json([
+                'message' => 'Email Google tidak valid atau belum terverifikasi.',
+            ], 422);
+        }
+
+        $sub = $payload['sub'] ?? '';
+        $email = $payload['email'];
+        $name = $payload['name'] ?? 'Anggota Baru';
+        $picture = $payload['picture'] ?? null;
+        $hd = $payload['hd'] ?? null;
+
+        // Wrap the payload into a Laravel Socialite User object structure for compatibility
+        $socialiteUser = new class($sub, $name, $email, $picture, $hd) implements \Laravel\Socialite\Contracts\User {
+            public $user;
+            public function __construct(
+                private $id,
+                private $name,
+                private $email,
+                private $avatar,
+                $hd
+            ) {
+                $this->user = ['hd' => $hd];
+            }
+
+            public function getId() { return $this->id; }
+            public function getNickname() { return null; }
+            public function getName() { return $this->name; }
+            public function getEmail() { return $this->email; }
+            public function getAvatar() { return $this->avatar; }
+            public function getRaw() { return $this->user; }
+        };
+
+        if (! $googleSso->isHostedDomainAllowed($socialiteUser)) {
+            $googleSso->logFailure('hosted_domain_denied', [
+                'hosted_domain' => $hd,
+                'email' => $email,
+            ]);
+            return response()->json([
+                'message' => 'Domain email Google ini tidak diizinkan untuk login.',
+            ], 422);
+        }
+
+        $resolution = $googleSso->resolveUserFromGoogle($socialiteUser);
+
+        if (! $resolution['user']) {
+            $googleSso->logFailure('resolution_failed', [
+                'provider_id' => $sub,
+                'email' => $email,
+                'reason' => $resolution['reason'] ?? null,
+            ]);
+
+            return response()->json([
+                'message' => 'Akun Google ini tidak dapat digunakan untuk login.',
+            ], 422);
+        }
+
+        $user = $resolution['user'];
+        $social = $resolution['social_account'] ?? null;
+        if ($social) {
+            $googleSso->recordLogin($social);
+        }
+
+        $app = $request->input('app');
+        $abilities = $this->abilityResolver->for($user, $app);
+
+        $deviceName = $request->input('device_name') ?? $this->defaultDeviceName($app);
+        $token = $user->createToken($deviceName, $abilities);
+
+        return response()->json([
+            'token_type' => 'Bearer',
+            'token' => $token->plainTextToken,
+            'abilities' => $abilities,
+            'user' => $this->sessionPayload($user->refresh()->load(['roles', 'employee', 'cooperativeMember'])),
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */

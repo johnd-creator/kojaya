@@ -277,11 +277,13 @@ const kpiCards = computed<KpiCard[]>(() => [
     trendLabel: "butuh review",
   },
   {
-    label: "Tagihan Belum Beres",
+    label: "Tunggakan Iuran Semua Periode",
     value: () => formatCurrency(dashboard.value.summary.unpaid_dues_amount),
     meta: () =>
       `${formatNumber(dashboard.value.workQueue.unpaid_dues)} tagihan perlu follow-up`,
-    href: cooperativeDuesIndex({ query: { status: "UNPAID" } }).url,
+    href: cooperativeDuesIndex({
+      query: { period_scope: "all", status: "OPEN" },
+    }).url,
     icon: ReceiptText,
     tone: "rose",
     sparkline: () => sparklineFor(dashboard.value.workQueue.unpaid_dues),
@@ -345,8 +347,10 @@ const workItems = computed<WorkItem[]>(() => [
   },
   {
     label: "Tindak lanjut tagihan",
-    description: "Tagihan unpaid atau partial yang perlu ditagih.",
-    href: cooperativeDuesIndex({ query: { status: "UNPAID" } }).url,
+    description: "Tagihan unpaid atau partial lintas periode yang perlu ditagih.",
+    href: cooperativeDuesIndex({
+      query: { period_scope: "all", status: "OPEN" },
+    }).url,
     icon: ClipboardList,
     tone: () =>
       dashboard.value.workQueue.unpaid_dues > 0 ? "rose" : "emerald",

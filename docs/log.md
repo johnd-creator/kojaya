@@ -4,11 +4,24 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Active Development
-**Last Updated:** June 23, 2026
+**Last Updated:** June 24, 2026
 
 ---
 
 ## 🎯 2026-06: M3 P0 Hardening
+
+### **June 24, 2026 - Demo Member Dues History and Dashboard Tunggakan**
+
+**🏦 Demo Simpanan & Dashboard:**
+- ✅ Demo members now use 2025 join dates, active lifecycle status, and approved validation status so demo users do not need Admin Koperasi/Pengurus verification.
+- ✅ Demo seeders now generate complete monthly Simpanan Wajib invoices from each member's join month through the current month, plus one paid Simpanan Pokok invoice.
+- ✅ Recent demo dues include realistic unpaid/partial examples while older eligible history is paid, keeping dashboard and follow-up workflows visible without historical gaps.
+- ✅ Dashboard “Tunggakan Iuran Semua Periode” links to all-period open dues, and the dues page supports `period_scope=all` for cross-period follow-up.
+
+**Verification:**
+- ✅ `DashboardTest` and `DemoMemberSeederTest`: 4 passed (68 assertions).
+- ✅ Cooperative dues targeted regression: 10 passed (160 assertions).
+- ✅ `npm run build` passed.
 
 ### **June 23, 2026 - Wizard Saldo Awal Anggota**
 

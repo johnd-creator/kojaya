@@ -106,6 +106,15 @@ class DashboardTest extends TestCase
             'due_date' => now()->subMonth()->endOfMonth()->toDateString(),
             'status' => 'PAID',
         ]);
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $activeMember->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => now()->subMonths(2)->format('Y-m'),
+            'amount' => 40000,
+            'paid_amount' => 0,
+            'due_date' => now()->subMonths(2)->endOfMonth()->toDateString(),
+            'status' => 'UNPAID',
+        ]);
 
         CooperativePayment::query()->create([
             'cooperative_member_id' => $activeMember->id,
@@ -195,8 +204,8 @@ class DashboardTest extends TestCase
                     ->where('dashboard.summary.pending_payments', 1)
                     ->where('dashboard.summary.low_stock_products', 1)
                     ->where('dashboard.workQueue.pending_members', 1)
-                    ->where('dashboard.workQueue.unpaid_dues', 1)
-                    ->where('dashboard.summary.unpaid_dues_amount', 75000)
+                    ->where('dashboard.workQueue.unpaid_dues', 2)
+                    ->where('dashboard.summary.unpaid_dues_amount', 115000)
                     ->where('dashboard.collections.total_due', 100000)
                     ->where('dashboard.collections.outstanding', 75000)
                     ->where('dashboard.collections.collection_rate', 25)

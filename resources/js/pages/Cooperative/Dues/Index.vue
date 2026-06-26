@@ -68,6 +68,7 @@ const props = defineProps<{
   invoices: any;
   filters: {
     period?: string;
+    period_scope?: string;
     status?: string;
     member_id?: number | null;
     member_search?: string;
@@ -101,6 +102,9 @@ const props = defineProps<{
 
 const period = ref(
   props.filters.period ?? new Date().toISOString().slice(0, 7),
+);
+const periodScope = ref<string>(
+  props.filters.period_scope === "all" ? "all" : "period",
 );
 const memberSearch = ref(props.filters.member_search ?? "");
 const memberId = ref<number | null>(props.filters.member_id ?? null);
@@ -143,6 +147,7 @@ const applyFilters = (): void =>
     index().url,
     {
       period: period.value,
+      period_scope: periodScope.value === "all" ? "all" : undefined,
       status: status.value === emptyValue ? "" : status.value,
       member_id: memberId.value || undefined,
       member_search: memberSearch.value || undefined,
@@ -270,6 +275,11 @@ const paymentMethodOptions: Array<{ value: string; label: string }> = [
   { value: "QRIS", label: "QRIS" },
 ];
 
+const periodScopeOptions = [
+  { value: "period", label: "Periode dipilih" },
+  { value: "all", label: "Semua periode" },
+];
+
 const categoryOptions = computed(() => [
   { value: "", label: "Semua kategori" },
   ...props.categories.map((c) => ({ value: c, label: c })),
@@ -373,7 +383,10 @@ const kpiCards = computed(() => [
     tone: "sky" as Tone,
     href: index().url,
     sparklinePoints: sparklineFor(summary.value.totalInvoices),
-    meta: `Periode ${period.value || "—"}`,
+    meta:
+      periodScope.value === "all"
+        ? "Semua periode"
+        : `Periode ${period.value || "—"}`,
   },
   {
     label: "Total Nominal",
@@ -382,14 +395,23 @@ const kpiCards = computed(() => [
     tone: "violet" as Tone,
     href: index().url,
     sparklinePoints: sparklineFor(summary.value.totalNominal),
-    meta: "Seluruh tagihan di periode ini",
+    meta:
+      periodScope.value === "all"
+        ? "Seluruh tagihan di semua periode"
+        : "Seluruh tagihan di periode ini",
   },
   {
     label: "Sudah Dibayar",
     value: formatCurrency(summary.value.totalPaid),
     icon: CheckCircle2 as Component,
     tone: "emerald" as Tone,
-    href: index({ query: { status: "PAID" } }).url,
+    href: index({
+      query: {
+        period: period.value,
+        period_scope: periodScope.value === "all" ? "all" : undefined,
+        status: "PAID",
+      },
+    }).url,
     sparklinePoints: sparklineFor(summary.value.totalPaid),
     meta: `${summary.value.paidCount} tagihan lunas · ${summary.value.collectionRate.toFixed(1)}%`,
   },
@@ -398,7 +420,13 @@ const kpiCards = computed(() => [
     value: formatCurrency(summary.value.totalOutstanding),
     icon: Wallet as Component,
     tone: "rose" as Tone,
-    href: index({ query: { status: "UNPAID" } }).url,
+    href: index({
+      query: {
+        period: period.value,
+        period_scope: periodScope.value === "all" ? "all" : undefined,
+        status: "OPEN",
+      },
+    }).url,
     sparklinePoints: sparklineFor(summary.value.totalOutstanding),
     meta: "Tagihan belum & sebagian dibayar",
   },
@@ -576,7 +604,7 @@ const kpiCards = computed(() => [
                 Filter Tagihan
               </h2>
               <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                Saring berdasarkan periode, status, anggota, atau jenis iuran.
+                Saring berdasarkan cakupan periode, status, anggota, atau jenis iuran.
               </p>
             </div>
           </div>
@@ -601,6 +629,20 @@ const kpiCards = computed(() => [
               class="sm:w-40"
               aria-label="Periode"
             />
+            <Select v-model="periodScope">
+              <SelectTrigger class="sm:w-40">
+                <SelectValue placeholder="Cakupan periode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="opt in periodScopeOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
             <Select v-model="status">
               <SelectTrigger class="sm:w-40">
                 <SelectValue placeholder="Semua status" />

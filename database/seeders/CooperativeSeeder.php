@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
+use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Services\Cooperative\AnnualShuDistributionService;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\PosTransactionService;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -78,7 +80,7 @@ class CooperativeSeeder extends Seeder
 
         $pengurus = User::query()->where('email', 'admin@erp.com')->first();
         $adminKop = User::query()->updateOrCreate(
-            ['email' => 'admin.kop@koperasijayabersama.id'],
+            ['email' => 'admin.kop@koj.id'],
             [
                 'name' => 'Admin Koperasi',
                 'password' => 'password',
@@ -99,7 +101,7 @@ class CooperativeSeeder extends Seeder
         $kasir->forceFill(['email_verified_at' => now()])->save();
         $kasir->syncRoles(['Kasir Koperasi']);
 
-        $members = $this->seedMembers($headOffice, $pokok, $wajib, $sukarela, $pengurus);
+        $members = $this->seedMembers($headOffice, $pokok, $wajib, $sukarela, $pengurus, $adminKop);
         $products = $this->seedPosInventory();
         $this->seedPosTransactions($members, $products, $kasir);
 
@@ -124,56 +126,60 @@ class CooperativeSeeder extends Seeder
         CooperativeContributionType $wajib,
         CooperativeContributionType $sukarela,
         ?User $pengurus,
+        User $adminKop,
     ): array {
         $names = [
-            ['Andi Prasetyo', '2022-01-15', 12],
-            ['Siti Rahmawati', '2022-04-10', 12],
-            ['Budi Santoso', '2023-02-20', 11],
-            ['Maya Lestari', '2023-08-05', 10],
-            ['Dian Purnama', '2024-01-12', 9],
-            ['Rizky Maulana', '2024-06-18', 8],
-            ['Nina Kartika', '2025-01-09', 7],
-            ['Fahmi Hidayat', '2025-07-22', 5],
-            ['Laras Wulandari', '2026-01-11', 4],
-            ['Teguh Saputra', '2026-03-04', 2],
+            ['Andi Prasetyo', '2025-01-15'],
+            ['Siti Rahmawati', '2025-02-10'],
+            ['Budi Santoso', '2025-03-20'],
+            ['Maya Lestari', '2025-04-05'],
+            ['Dian Purnama', '2025-05-12'],
+            ['Rizky Maulana', '2025-06-18'],
+            ['Nina Kartika', '2025-07-09'],
+            ['Fahmi Hidayat', '2025-08-22'],
+            ['Laras Wulandari', '2025-09-11'],
+            ['Teguh Saputra', '2025-10-04'],
         ];
 
         $members = [];
 
-        foreach ($names as $index => [$name, $joinedAt, $paidMonths]) {
+        foreach ($names as $index => [$name, $joinedAt]) {
             $number = $index + 1;
+            $email = 'anggota'.$number.'@koperasijayabersama.id';
             $member = CooperativeMember::withTrashed()->updateOrCreate(
-                ['member_no' => 'KOP-'.Carbon::parse($joinedAt)->format('Y').'-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT)],
+                ['email' => $email],
                 [
                     'organization_id' => $headOffice->id,
                     'name' => $name,
-                    'email' => 'anggota'.$number.'@koperasijayabersama.id',
+                    'member_no' => 'KOP-'.Carbon::parse($joinedAt)->format('Y').'-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT),
+                    'email' => $email,
                     'phone' => '08123456'.str_pad((string) $number, 4, '0', STR_PAD_LEFT),
                     'identity_number' => '317400000000'.str_pad((string) $number, 4, '0', STR_PAD_LEFT),
                     'address' => 'Alamat anggota demo '.$number,
                     'tanggal_aktif' => $joinedAt,
                     'joined_at' => $joinedAt,
                     'status' => 'ACTIVE',
+                    'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+                    'validated_at' => now(),
+                    'validated_by' => $pengurus?->id,
+                    'validation_notes' => 'Demo anggota sudah disetujui pengurus.',
+                    'admin_validated_at' => now(),
+                    'admin_validated_by' => $adminKop->id,
+                    'admin_validation_notes' => 'Demo anggota sudah diverifikasi admin koperasi.',
+                    'profile_completed_at' => Carbon::parse($joinedAt)->endOfDay(),
+                    'onboarding_submitted_at' => Carbon::parse($joinedAt)->endOfDay(),
                     'credit_limit' => 500000,
                     'credit_term_days' => 30,
                 ],
             );
             $member->restore();
 
-            $this->seedInvoicePayment($member, $pokok, Carbon::parse($joinedAt)->format('Y-m'), (float) $pokok->default_amount, true, 'POKOK-'.$number, $pengurus);
-
-            foreach (range(1, 12) as $month) {
-                $period = '2025-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT);
-                $this->seedInvoicePayment($member, $wajib, $period, (float) $wajib->default_amount, $month <= $paidMonths, 'WAJIB-'.$number.'-'.$period, $pengurus);
-            }
-
-            foreach (range(1, 5) as $month) {
-                $period = '2026-'.str_pad((string) $month, 2, '0', STR_PAD_LEFT);
-                $this->seedInvoicePayment($member, $wajib, $period, (float) $wajib->default_amount, $month <= min($paidMonths, 5), 'WAJIB-'.$number.'-'.$period, $pengurus);
-            }
+            $this->resetDemoSavingsForMember($member, [$pokok->id, $wajib->id, $sukarela->id]);
+            $this->seedInvoicePayment($member, $pokok, Carbon::parse($joinedAt)->format('Y-m'), (float) $pokok->default_amount, (float) $pokok->default_amount, 'POKOK-'.$number, $pengurus);
+            $this->seedMonthlyMandatoryDues($member, $wajib, $number, $pengurus);
 
             if ($number <= 4) {
-                $this->seedInvoicePayment($member, $sukarela, '2026-05', 25000 * $number, true, 'SUKARELA-'.$number, $pengurus);
+                $this->seedInvoicePayment($member, $sukarela, '2026-05', 25000 * $number, 25000 * $number, 'SUKARELA-'.$number, $pengurus);
             }
 
             $members[] = $member;
@@ -182,12 +188,94 @@ class CooperativeSeeder extends Seeder
         return $members;
     }
 
+    /**
+     * @param  array<int, int>  $contributionTypeIds
+     */
+    private function resetDemoSavingsForMember(CooperativeMember $member, array $contributionTypeIds): void
+    {
+        $invoiceIds = CooperativeDuesInvoice::withTrashed()
+            ->where('cooperative_member_id', $member->id)
+            ->whereIn('cooperative_contribution_type_id', $contributionTypeIds)
+            ->pluck('id');
+
+        $paymentIds = CooperativePayment::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where(function ($query) use ($invoiceIds): void {
+                $query->where('reference_no', 'like', 'DEMO-%')
+                    ->orWhereIn('cooperative_dues_invoice_id', $invoiceIds);
+            })
+            ->pluck('id');
+
+        if ($paymentIds->isNotEmpty()) {
+            CooperativeLedgerEntry::query()
+                ->where('cooperative_member_id', $member->id)
+                ->whereIn('cooperative_payment_id', $paymentIds)
+                ->delete();
+
+            CooperativePayment::query()
+                ->whereIn('id', $paymentIds)
+                ->delete();
+        }
+
+        CooperativeDuesInvoice::withTrashed()
+            ->where('cooperative_member_id', $member->id)
+            ->whereIn('cooperative_contribution_type_id', $contributionTypeIds)
+            ->forceDelete();
+    }
+
+    private function seedMonthlyMandatoryDues(
+        CooperativeMember $member,
+        CooperativeContributionType $wajib,
+        int $memberNumber,
+        ?User $pengurus,
+    ): void {
+        $start = Carbon::parse($member->tanggal_aktif ?: $member->joined_at ?: now())->startOfMonth();
+        $end = Carbon::now()->startOfMonth();
+
+        for ($periodDate = $start->copy(); $periodDate->lte($end); $periodDate->addMonth()) {
+            $period = $periodDate->format('Y-m');
+            $paidAmount = $this->demoMandatoryPaidAmount(
+                $memberNumber,
+                $periodDate,
+                $end,
+                (float) $wajib->default_amount,
+            );
+
+            $this->seedInvoicePayment(
+                $member,
+                $wajib,
+                $period,
+                (float) $wajib->default_amount,
+                $paidAmount,
+                'WAJIB-'.$memberNumber.'-'.$period,
+                $pengurus,
+            );
+        }
+    }
+
+    private function demoMandatoryPaidAmount(
+        int $memberNumber,
+        CarbonInterface $periodDate,
+        CarbonInterface $currentPeriod,
+        float $amount,
+    ): float {
+        if ($periodDate->equalTo($currentPeriod) && $memberNumber % 4 === 0) {
+            return 0.0;
+        }
+
+        if ($periodDate->equalTo($currentPeriod->copy()->subMonth()) && $memberNumber % 5 === 0) {
+            return $amount / 2;
+        }
+
+        return $amount;
+    }
+
     private function seedInvoicePayment(
         CooperativeMember $member,
         CooperativeContributionType $type,
         string $period,
         float $amount,
-        bool $paid,
+        float $paidAmount,
         string $reference,
         ?User $pengurus,
     ): void {
@@ -210,7 +298,7 @@ class CooperativeSeeder extends Seeder
             ],
         );
 
-        if (! $paid) {
+        if ($paidAmount <= 0) {
             return;
         }
 
@@ -221,7 +309,7 @@ class CooperativeSeeder extends Seeder
                 'reference_no' => 'DEMO-'.$reference,
             ],
             [
-                'amount' => $amount,
+                'amount' => $paidAmount,
                 'payment_method' => 'CASH',
                 'paid_at' => Carbon::parse($period.'-05')->toDateString(),
                 'status' => 'APPROVED',

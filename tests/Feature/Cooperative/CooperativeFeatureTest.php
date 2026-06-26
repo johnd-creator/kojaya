@@ -558,6 +558,66 @@ class CooperativeFeatureTest extends TestCase
             );
     }
 
+    public function test_dues_page_can_show_open_invoices_across_all_periods(): void
+    {
+        Carbon::setTestNow('2026-05-15 09:00:00');
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+        $member = $this->member(['status' => 'ACTIVE']);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB',
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $oldUnpaid = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-03',
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        $currentPartial = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-05',
+            'amount' => 100000,
+            'paid_amount' => 50000,
+            'status' => 'PARTIAL',
+        ]);
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-04',
+            'amount' => 100000,
+            'paid_amount' => 100000,
+            'status' => 'PAID',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.dues.index', [
+                'period' => '2026-05',
+                'period_scope' => 'all',
+                'status' => 'OPEN',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Dues/Index')
+                ->where('filters.period', '2026-05')
+                ->where('filters.period_scope', 'all')
+                ->where('filters.status', 'OPEN')
+                ->where('stats.total_invoices', 2)
+                ->where('stats.total_outstanding', 150000)
+                ->has('invoices.data', 2)
+                ->where('invoices.data.0.id', $currentPartial->id)
+                ->where('invoices.data.1.id', $oldUnpaid->id)
+            );
+    }
+
     public function test_dues_page_hides_invoices_for_soft_deleted_members(): void
     {
         Carbon::setTestNow('2026-05-15 09:00:00');

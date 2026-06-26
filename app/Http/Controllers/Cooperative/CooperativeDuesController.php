@@ -22,6 +22,7 @@ class CooperativeDuesController extends Controller
     public function index(Request $request, DuesGenerationService $duesGenerationService): Response
     {
         $period = $this->periodFromRequest($request);
+        $periodScope = $request->input('period_scope') === 'all' ? 'all' : 'period';
 
         $duesGenerationService->generateForPeriod($period);
 
@@ -30,7 +31,9 @@ class CooperativeDuesController extends Controller
             ->with(['member', 'contributionType']);
         $status = $request->input('status', '');
 
-        $query->where('period', $period);
+        if ($periodScope !== 'all') {
+            $query->where('period', $period);
+        }
 
         if ($status === 'OPEN') {
             $query->whereIn('status', ['UNPAID', 'PARTIAL']);
@@ -88,6 +91,7 @@ class CooperativeDuesController extends Controller
                 ...$request->only(['period', 'member_id', 'member_search', 'contribution_type_id', 'category']),
                 'per_page' => $perPage,
                 'period' => $period,
+                'period_scope' => $periodScope,
                 'status' => $status,
             ],
             'monthlyDuesInfo' => $this->monthlyDuesInfo($period),

@@ -7,6 +7,8 @@ use App\Models\CooperativeMember;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
@@ -28,6 +30,7 @@ class GoogleSsoFlowTest extends TestCase
         Permission::firstOrCreate(['name' => 'validate_cooperative_member']);
 
         config()->set('services.google.sso_enabled', true);
+        config()->set('services.google.client_id', 'web-client.apps.googleusercontent.com');
         config()->set('services.google.allow_new_member_registration', true);
     }
 
@@ -208,6 +211,72 @@ class GoogleSsoFlowTest extends TestCase
             'provider' => 'google',
             'provider_id' => 'already-linked',
         ]);
+    }
+
+    public function test_mobile_google_login_returns_member_token_for_existing_member(): void
+    {
+        $user = User::factory()->create(['email' => 'member-mobile@example.com']);
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+            'email' => 'member-mobile@example.com',
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/tokeninfo*' => Http::response([
+                'sub' => 'mobile-google-123',
+                'aud' => 'web-client.apps.googleusercontent.com',
+                'email' => 'member-mobile@example.com',
+                'email_verified' => 'true',
+                'name' => 'Member Mobile',
+            ]),
+        ]);
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => 'valid-id-token',
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ])->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write'])
+            ->assertJsonPath('auth_result', 'login_linked')
+            ->assertJsonPath('member_status', 'ACTIVE')
+            ->assertJsonPath('validation_status', 'ACTIVE')
+            ->assertJsonPath('onboarding_next_step', 'dashboard');
+    }
+
+    public function test_mobile_google_login_rejects_wrong_audience(): void
+    {
+        Http::fake([
+            'https://oauth2.googleapis.com/tokeninfo*' => Http::response([
+                'sub' => 'mobile-google-456',
+                'aud' => 'android-client.apps.googleusercontent.com',
+                'email' => 'member-mobile@example.com',
+                'email_verified' => 'true',
+                'name' => 'Member Mobile',
+            ]),
+        ]);
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => 'wrong-audience-token',
+            'device_name' => 'Android Member',
+        ])->assertUnprocessable()
+            ->assertJsonPath('message', 'Token Google tidak ditujukan untuk aplikasi Kojaya.');
+    }
+
+    public function test_mobile_google_login_handles_google_verification_outage(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('tokeninfo timeout');
+        });
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => 'network-failure-token',
+            'device_name' => 'Android Member',
+        ])->assertStatus(503)
+            ->assertJsonPath('message', 'Layanan verifikasi Google sedang tidak dapat dihubungi. Coba lagi beberapa saat.');
     }
 
     protected function mockSocialite(string $googleId, string $email, bool $verified): void

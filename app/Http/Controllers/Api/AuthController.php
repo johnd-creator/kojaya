@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MobileLoginRequest;
+use App\Models\CooperativeMember;
 use App\Models\User;
+use App\Services\Auth\Sso\GoogleSsoService;
 use App\Services\Auth\TokenAbilityResolver;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -88,7 +93,7 @@ class AuthController extends Controller
 
     public function loginWithGoogle(
         Request $request,
-        \App\Services\Auth\Sso\GoogleSsoService $googleSso
+        GoogleSsoService $googleSso
     ): JsonResponse {
         if (! $googleSso->isEnabled()) {
             return response()->json([
@@ -106,18 +111,10 @@ class AuthController extends Controller
 
         $idToken = $request->input('id_token');
 
-        // Verify ID Token with Google API
-        $response = \Illuminate\Support\Facades\Http::get('https://oauth2.googleapis.com/tokeninfo', [
-            'id_token' => $idToken,
-        ]);
-
-        if ($response->failed()) {
-            return response()->json([
-                'message' => 'Token Google tidak valid atau kedaluwarsa.',
-            ], 422);
+        $payload = $this->verifyGoogleIdToken($idToken);
+        if ($payload instanceof JsonResponse) {
+            return $payload;
         }
-
-        $payload = $response->json();
 
         // email_verified can be boolean or string 'true' in response
         $emailVerified = data_get($payload, 'email_verified');
@@ -134,8 +131,10 @@ class AuthController extends Controller
         $hd = $payload['hd'] ?? null;
 
         // Wrap the payload into a Laravel Socialite User object structure for compatibility
-        $socialiteUser = new class($sub, $name, $email, $picture, $hd) implements \Laravel\Socialite\Contracts\User {
+        $socialiteUser = new class($sub, $name, $email, $picture, $hd) implements \Laravel\Socialite\Contracts\User
+        {
             public $user;
+
             public function __construct(
                 private $id,
                 private $name,
@@ -146,12 +145,35 @@ class AuthController extends Controller
                 $this->user = ['hd' => $hd];
             }
 
-            public function getId() { return $this->id; }
-            public function getNickname() { return null; }
-            public function getName() { return $this->name; }
-            public function getEmail() { return $this->email; }
-            public function getAvatar() { return $this->avatar; }
-            public function getRaw() { return $this->user; }
+            public function getId()
+            {
+                return $this->id;
+            }
+
+            public function getNickname()
+            {
+                return null;
+            }
+
+            public function getName()
+            {
+                return $this->name;
+            }
+
+            public function getEmail()
+            {
+                return $this->email;
+            }
+
+            public function getAvatar()
+            {
+                return $this->avatar;
+            }
+
+            public function getRaw()
+            {
+                return $this->user;
+            }
         };
 
         if (! $googleSso->isHostedDomainAllowed($socialiteUser)) {
@@ -159,6 +181,7 @@ class AuthController extends Controller
                 'hosted_domain' => $hd,
                 'email' => $email,
             ]);
+
             return response()->json([
                 'message' => 'Domain email Google ini tidak diizinkan untuk login.',
             ], 422);
@@ -189,13 +212,68 @@ class AuthController extends Controller
 
         $deviceName = $request->input('device_name') ?? $this->defaultDeviceName($app);
         $token = $user->createToken($deviceName, $abilities);
+        $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,
             'abilities' => $abilities,
-            'user' => $this->sessionPayload($user->refresh()->load(['roles', 'employee', 'cooperativeMember'])),
+            'auth_result' => $resolution['result'] ?? GoogleSsoService::RESULT_LOGIN_EXISTING,
+            'user' => $this->sessionPayload($user),
+            'member_status' => $user->cooperativeMember?->status,
+            'validation_status' => $user->cooperativeMember?->validation_status,
+            'onboarding_next_step' => $this->onboardingNextStep($user),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>|JsonResponse
+     */
+    private function verifyGoogleIdToken(string $idToken): array|JsonResponse
+    {
+        try {
+            $response = Http::timeout(5)
+                ->acceptJson()
+                ->get('https://oauth2.googleapis.com/tokeninfo', [
+                    'id_token' => $idToken,
+                ]);
+        } catch (ConnectionException $exception) {
+            Log::warning('sso.google.mobile_tokeninfo_unreachable', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Layanan verifikasi Google sedang tidak dapat dihubungi. Coba lagi beberapa saat.',
+            ], 503);
+        }
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Token Google tidak valid atau kedaluwarsa.',
+            ], 422);
+        }
+
+        $payload = $response->json();
+        if (! is_array($payload)) {
+            return response()->json([
+                'message' => 'Respons verifikasi Google tidak dikenali.',
+            ], 422);
+        }
+
+        $expectedAudience = config('services.google.client_id');
+        $audience = data_get($payload, 'aud');
+        if ($expectedAudience && $audience !== $expectedAudience) {
+            Log::warning('sso.google.mobile_audience_mismatch', [
+                'expected_audience' => $expectedAudience,
+                'actual_audience' => $audience,
+            ]);
+
+            return response()->json([
+                'message' => 'Token Google tidak ditujukan untuk aplikasi Kojaya.',
+            ], 422);
+        }
+
+        return $payload;
     }
 
     /**
@@ -211,5 +289,20 @@ class AuthController extends Controller
             'employee_id' => $user->employee?->id,
             'cooperative_member_id' => $user->cooperativeMember?->id,
         ];
+    }
+
+    private function onboardingNextStep(User $user): ?string
+    {
+        $member = $user->cooperativeMember;
+        if (! $member) {
+            return null;
+        }
+
+        return match ($member->validation_status) {
+            CooperativeMember::VALIDATION_ACTIVE => 'dashboard',
+            CooperativeMember::VALIDATION_PENDING_REVIEW => 'waiting_final_approval',
+            CooperativeMember::VALIDATION_REJECTED => 'rejected',
+            default => 'waiting_admin_acceptance',
+        };
     }
 }

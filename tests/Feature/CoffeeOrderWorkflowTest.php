@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CoffeeOrder;
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\User;
@@ -25,7 +26,9 @@ class CoffeeOrderWorkflowTest extends TestCase
 
     public function test_member_order_creates_trackable_coffee_order(): void
     {
-        $member = $this->actingMember(['member:write']);
+        $organization = Organization::factory()->create();
+        $admin = $this->posAdmin($organization);
+        $member = $this->actingMember(['member:read', 'member:write'], $organization);
         $product = $this->coffeeProduct();
 
         $this->postJson('/api/v1/member/coffee/orders', [
@@ -45,11 +48,20 @@ class CoffeeOrderWorkflowTest extends TestCase
         $this->assertSame($member->id, $order->cooperative_member_id);
         $this->assertSame($product->id, $order->pos_product_id);
         $this->assertSame('COFFEE-TRACK-001', $order->transaction->client_reference);
+
+        $this->assertTrue($member->user->notifications()->where('data->event_type', 'member.coffee_order.received')->exists());
+        $this->assertTrue($admin->notifications()->where('data->event_type', 'admin.coffee_order.received')->exists());
+
+        $this->getJson('/api/v1/member/notifications/recent?limit=5')
+            ->assertOk()
+            ->assertJsonPath('data.0.event_type', 'member.coffee_order.received')
+            ->assertJsonPath('data.0.action.url', '/member/transactions');
     }
 
     public function test_admin_status_update_is_visible_to_member_status_endpoint(): void
     {
-        $member = $this->actingMember(['member:write']);
+        $organization = Organization::factory()->create();
+        $member = $this->actingMember(['member:read', 'member:write'], $organization);
         $product = $this->coffeeProduct();
 
         $response = $this->postJson('/api/v1/member/coffee/orders', [
@@ -59,7 +71,7 @@ class CoffeeOrderWorkflowTest extends TestCase
         ])->assertCreated();
 
         $orderId = $response->json('data.id');
-        $admin = $this->posAdmin();
+        $admin = $this->posAdmin($organization);
 
         $this->actingAs($admin)
             ->put(route('cooperative.pos.coffee-orders.update-status', $orderId), [
@@ -73,6 +85,14 @@ class CoffeeOrderWorkflowTest extends TestCase
             ->assertJsonPath('data.status', CoffeeOrder::STATUS_BREWING)
             ->assertJsonPath('data.step', 1)
             ->assertJsonPath('data.status_label', 'Kopi Sedang Diseduh');
+
+        $this->assertTrue(
+            $member->user
+                ->notifications()
+                ->where('data->event_type', 'member.coffee_order.status_changed')
+                ->where('data->metadata->status', CoffeeOrder::STATUS_BREWING)
+                ->exists()
+        );
     }
 
     public function test_member_cannot_view_another_members_coffee_order(): void
@@ -115,10 +135,13 @@ class CoffeeOrderWorkflowTest extends TestCase
     /**
      * @param  list<string>  $abilities
      */
-    private function actingMember(array $abilities): CooperativeMember
+    private function actingMember(array $abilities, ?Organization $organization = null): CooperativeMember
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => $organization?->id,
+        ]);
         $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization?->id ?? Organization::factory(),
             'user_id' => $user->id,
         ]);
 
@@ -127,9 +150,12 @@ class CoffeeOrderWorkflowTest extends TestCase
         return $member;
     }
 
-    private function posAdmin(): User
+    private function posAdmin(?Organization $organization = null): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => $organization?->id,
+        ]);
+        $user->assignRole('Admin Koperasi');
         $user->givePermissionTo('access_cooperative_pos');
 
         return $user;

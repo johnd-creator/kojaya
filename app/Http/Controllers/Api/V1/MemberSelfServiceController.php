@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\CooperativeShuPeriodStatus;
+use App\Enums\InstallmentStatus;
+use App\Enums\LoanStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\CreateMemberBillPaymentIntentRequest;
 use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\Api\MemberPaymentProofRequest;
 use App\Http\Requests\Api\MemberSupportTicketRequest;
@@ -29,6 +32,7 @@ use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
 use App\Models\CooperativeSupportTicket;
 use App\Models\Loan;
+use App\Models\LoanInstallment;
 use App\Models\LoanType;
 use App\Models\PosTransaction;
 use App\Models\RewardRedemption;
@@ -39,8 +43,10 @@ use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use App\Services\Cooperative\SavingsSummaryService;
 use App\Services\Cooperative\SavingsWithdrawalService;
+use App\Services\Integrations\PaymentGatewayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -115,6 +121,14 @@ class MemberSelfServiceController extends Controller
             'email' => $request->validated('email'),
             'phone' => $request->validated('phone'),
             'address' => $request->validated('address'),
+            'jenis_kelamin' => $request->validated('gender'),
+            'tanggal_lahir' => $request->validated('birth_date'),
+            'tempat_lahir' => $request->validated('birth_place'),
+            'pekerjaan' => $request->validated('occupation'),
+            'npwp' => $request->validated('npwp'),
+            'nama_bank' => $request->validated('bank_name'),
+            'no_rekening' => $request->validated('bank_account_number'),
+            'nama_pemilik_rekening' => $request->validated('bank_account_holder'),
         ]);
 
         return response()->json([
@@ -218,23 +232,7 @@ class MemberSelfServiceController extends Controller
         abort_unless($invoice->cooperative_member_id === $member->id, 403);
         abort_unless(in_array($invoice->status, ['UNPAID', 'PARTIAL']), 422, 'Invoice sudah lunas.');
 
-        $payment = $invoice->payments()
-            ->where('status', 'PENDING')
-            ->where('cooperative_member_id', $member->id)
-            ->latest()
-            ->first();
-
-        if (! $payment) {
-            $amount = (float) $invoice->amount - (float) $invoice->paid_amount;
-            $payment = $invoice->payments()->create([
-                'cooperative_member_id' => $member->id,
-                'user_id' => $request->user()?->id,
-                'amount' => $amount,
-                'payment_method' => null,
-                'paid_at' => null,
-                'status' => 'PENDING',
-            ]);
-        }
+        $payment = $this->pendingPaymentForInvoice($request, $member, $invoice);
 
         $availableChannels = [
             ['code' => 'VA', 'label' => 'Transfer Bank / VA', 'admin_fee' => 4000, 'fee_type' => 'fixed'],
@@ -272,6 +270,10 @@ class MemberSelfServiceController extends Controller
         $member = $this->memberOrAbort($request);
 
         return MemberPaymentResource::collection($member->payments()
+            // Voided/rolled-back payments are admin-internal corrections; hide
+            // them from the member's own history so the member only sees real
+            // payments and the restored (unpaid) invoice in the bills list.
+            ->where('status', '!=', 'VOID')
             ->with(['invoice.contributionType', 'receipt'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->when($request->filled('category'), fn ($query) => $query->whereHas('invoice.contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category'))))
@@ -555,5 +557,368 @@ class MemberSelfServiceController extends Controller
         abort_unless($member, 403, 'Akun ini belum terhubung ke anggota koperasi.');
 
         return $member;
+    }
+
+    /**
+     * Detail of a single member payment. Lets the mobile app poll the latest
+     * status (PENDING/APPROVED/REJECTED) after a charge or manual upload.
+     */
+    public function showPayment(Request $request, CooperativePayment $payment): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403);
+
+        $payment->load(['invoice.contributionType', 'receipt']);
+
+        return response()->json(['data' => new MemberPaymentResource($payment)]);
+    }
+
+    /**
+     * Unified bills: merges dues invoices and active-loan installments that are
+     * still payable into a single member-scoped list.
+     */
+    public function bills(Request $request): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        $category = $request->input('category'); // dues|loan|pos_credit
+        $status = $request->input('status');
+        $perPage = min(max($request->integer('per_page', 15), 1), 50);
+
+        $bills = collect();
+
+        if ($category === null || $category === 'dues') {
+            $bills = $bills->merge(
+                $member->invoices()
+                    ->with('contributionType')
+                    ->whereIn('status', ['UNPAID', 'PARTIAL'])
+                    ->when($status, fn ($query, $value) => $query->where('status', $value))
+                    ->orderByDesc('due_date')
+                    ->get()
+                    ->map(fn (CooperativeDuesInvoice $invoice) => $this->duesInvoiceToBill($invoice))
+            );
+        }
+
+        if ($category === null || $category === 'loan') {
+            $loanIds = $member->loans()
+                ->whereIn('status', [LoanStatus::Active->value, LoanStatus::Defaulted->value])
+                ->pluck('id');
+
+            $bills = $bills->merge(
+                LoanInstallment::query()
+                    ->whereIn('loan_id', $loanIds)
+                    ->whereIn('status', [
+                        InstallmentStatus::Pending->value,
+                        InstallmentStatus::Partial->value,
+                        InstallmentStatus::Overdue->value,
+                    ])
+                    ->when($status, fn ($query, $value) => $query->where('status', $value))
+                    ->with('loan.loanType')
+                    ->orderByDesc('due_date')
+                    ->get()
+                    ->map(fn (LoanInstallment $installment) => $this->loanInstallmentToBill($installment))
+            );
+        }
+
+        if ($category === null || $category === 'pos_credit') {
+            $posCreditBill = $this->posCreditBill($member);
+
+            if ($posCreditBill !== null) {
+                $bills = $bills->push($posCreditBill);
+            }
+        }
+
+        $sorted = $bills->sortByDesc('due_date')->values();
+
+        $payable = $sorted->where('payable', true);
+        $todayTimestamp = strtotime('today');
+        $summary = [
+            'total_bills' => $sorted->count(),
+            'payable_count' => $payable->count(),
+            'total_remaining' => round((float) $payable->sum('remaining_amount'), 2),
+            'overdue_count' => $sorted->filter(
+                fn (array $bill) => $bill['payable'] === true
+                    && ! empty($bill['due_date'])
+                    && strtotime((string) $bill['due_date']) < $todayTimestamp
+            )->count(),
+            'dues_count' => $sorted->where('source', 'dues')->count(),
+            'loan_count' => $sorted->where('source', 'loan')->count(),
+            'pos_credit_count' => $sorted->where('source', 'pos_credit')->count(),
+        ];
+
+        $page = $request->integer('page', 1);
+        $paginator = new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+        );
+
+        return response()->json([
+            'data' => $paginator->items(),
+            'summary' => $summary,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $perPage,
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Single unified bill detail, addressed by the composite id emitted by the
+     * bills list (`dues:{id}` or `loan:{id}`).
+     */
+    public function showBill(Request $request, string $bill): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        $segments = explode(':', $bill, 2);
+        abort_unless(count($segments) === 2, 404, 'Format bill tidak dikenali.');
+
+        [$source, $id] = $segments;
+
+        $data = match ($source) {
+            'dues' => $this->resolveDuesBill($member, $id),
+            'loan' => $this->resolveLoanBill($member, $id),
+            'pos_credit' => $this->resolvePosCreditBill($member, $id),
+            default => null,
+        };
+
+        abort_unless($data !== null, 404, 'Bill tidak ditemukan.');
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function createBillPaymentIntent(
+        CreateMemberBillPaymentIntentRequest $request,
+        string $bill,
+        PaymentGatewayService $gateway,
+    ): JsonResponse {
+        $member = $this->memberOrAbort($request);
+        $segments = explode(':', $bill, 2);
+        abort_unless(count($segments) === 2, 404, 'Format bill tidak dikenali.');
+
+        [$source, $id] = $segments;
+
+        if ($source !== 'dues') {
+            abort(422, 'Payment gateway untuk tagihan ini belum aktif. Gunakan pembayaran manual atau tunggu fase settlement domain terkait.');
+        }
+
+        $invoice = $member->invoices()
+            ->whereIn('status', ['UNPAID', 'PARTIAL'])
+            ->findOrFail($id);
+
+        $channel = (string) $request->validated('channel');
+        $payment = $this->pendingPaymentForInvoice($request, $member, $invoice, $channel);
+        $charge = $gateway->createCharge($payment, $channel);
+
+        return response()->json([
+            'data' => [
+                'bill_id' => $bill,
+                'source' => $source,
+                'payment' => new MemberPaymentResource($payment->refresh()->load(['invoice.contributionType', 'receipt'])),
+                'charge' => $charge,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Unified activity timeline merging POS purchases and cooperative payments
+     * into a single, server-paginated stream. The existing `/transactions`
+     * endpoint remains POS-only for backward compatibility.
+     */
+    public function unifiedTransactions(Request $request): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        $perPage = min(max($request->integer('per_page', 15), 1), 50);
+        $source = $request->input('source'); // pos|payment
+
+        $items = collect();
+
+        if ($source === null || $source === 'pos') {
+            $items = $items->merge(
+                $member->posTransactions()
+                    ->orderByDesc('sold_at')
+                    ->limit(100)
+                    ->get()
+                    ->map(fn (PosTransaction $transaction) => [
+                        'id' => 'pos:'.$transaction->id,
+                        'source' => 'pos',
+                        'title' => 'Belanja POS',
+                        'subtitle' => $transaction->transaction_no,
+                        'amount' => (float) $transaction->total_amount,
+                        'date' => $transaction->sold_at?->toISOString(),
+                        'status' => $transaction->status,
+                        'is_pos' => true,
+                    ])
+            );
+        }
+
+        if ($source === null || $source === 'payment') {
+            $items = $items->merge(
+                $member->payments()
+                    ->with(['invoice.contributionType'])
+                    ->orderByDesc('paid_at')
+                    ->limit(100)
+                    ->get()
+                    ->map(fn (CooperativePayment $payment) => [
+                        'id' => 'payment:'.$payment->id,
+                        'source' => 'payment',
+                        'title' => $payment->invoice?->contributionType?->name ?? 'Pembayaran Iuran',
+                        'subtitle' => $payment->payment_method,
+                        'amount' => (float) $payment->amount,
+                        'date' => $payment->paid_at?->toDateString(),
+                        'status' => $payment->status,
+                        'is_pos' => false,
+                    ])
+            );
+        }
+
+        $sorted = $items->sortByDesc('date')->values();
+
+        $page = $request->integer('page', 1);
+        $paginator = new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+        );
+
+        return response()->json([
+            'data' => $paginator->items(),
+            'summary' => [
+                'total_count' => $sorted->count(),
+                'pos_count' => $sorted->where('source', 'pos')->count(),
+                'payment_count' => $sorted->where('source', 'payment')->count(),
+                'total_amount' => round((float) $sorted->sum('amount'), 2),
+            ],
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $perPage,
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ]);
+    }
+
+    protected function duesInvoiceToBill(CooperativeDuesInvoice $invoice): array
+    {
+        $remaining = max((float) $invoice->amount - (float) $invoice->paid_amount, 0);
+
+        return [
+            'id' => 'dues:'.$invoice->id,
+            'source' => 'dues',
+            'source_id' => (string) $invoice->id,
+            'title' => $invoice->contributionType?->name ?? 'Tagihan Iuran',
+            'amount' => (float) $invoice->amount,
+            'paid_amount' => (float) $invoice->paid_amount,
+            'remaining_amount' => round($remaining, 2),
+            'due_date' => $invoice->due_date?->toDateString(),
+            'status' => $invoice->status,
+            'payable' => ! in_array($invoice->status, ['PAID', 'VOID'], true),
+            'period' => $invoice->period,
+            'category' => $invoice->contributionType?->category ?? 'dues',
+        ];
+    }
+
+    protected function loanInstallmentToBill(LoanInstallment $installment): array
+    {
+        $remaining = max((float) $installment->amount_due - (float) $installment->amount_paid, 0);
+        $loanTypeName = $installment->loan?->loanType?->name ?? 'Pinjaman';
+        $installmentNo = $installment->installment_no ?? '?';
+
+        return [
+            'id' => 'loan:'.$installment->id,
+            'source' => 'loan',
+            'source_id' => (string) $installment->id,
+            'title' => "{$loanTypeName} · Angsuran #{$installmentNo}",
+            'amount' => (float) $installment->amount_due,
+            'paid_amount' => (float) $installment->amount_paid,
+            'remaining_amount' => round($remaining, 2),
+            'due_date' => $installment->due_date?->toDateString(),
+            'status' => $installment->status?->value,
+            'payable' => $installment->status !== InstallmentStatus::Paid,
+            'period' => null,
+            'category' => 'loan',
+        ];
+    }
+
+    protected function resolveDuesBill(CooperativeMember $member, string $id): ?array
+    {
+        $invoice = $member->invoices()->with('contributionType')->find($id);
+
+        return $invoice?->status !== null ? $this->duesInvoiceToBill($invoice) : null;
+    }
+
+    protected function resolveLoanBill(CooperativeMember $member, string $id): ?array
+    {
+        $installment = LoanInstallment::query()
+            ->with('loan.loanType')
+            ->where('id', $id)
+            ->whereHas('loan', fn ($query) => $query->where('cooperative_member_id', $member->id))
+            ->first();
+
+        return $installment?->id !== null ? $this->loanInstallmentToBill($installment) : null;
+    }
+
+    protected function resolvePosCreditBill(CooperativeMember $member, string $id): ?array
+    {
+        if ((string) $member->id !== $id) {
+            return null;
+        }
+
+        return $this->posCreditBill($member);
+    }
+
+    protected function posCreditBill(CooperativeMember $member): ?array
+    {
+        $remaining = round((float) $member->outstanding_balance, 2);
+
+        if ($remaining <= 0) {
+            return null;
+        }
+
+        return [
+            'id' => 'pos_credit:'.$member->id,
+            'source' => 'pos_credit',
+            'source_id' => (string) $member->id,
+            'title' => 'Kredit Belanja POS',
+            'amount' => $remaining,
+            'paid_amount' => 0,
+            'remaining_amount' => $remaining,
+            'due_date' => null,
+            'status' => 'OUTSTANDING',
+            'payable' => true,
+            'period' => null,
+            'category' => 'pos_credit',
+        ];
+    }
+
+    protected function pendingPaymentForInvoice(Request $request, CooperativeMember $member, CooperativeDuesInvoice $invoice, ?string $paymentMethod = null): CooperativePayment
+    {
+        $payment = $invoice->payments()
+            ->where('status', 'PENDING')
+            ->where('cooperative_member_id', $member->id)
+            ->latest()
+            ->first();
+
+        if ($payment) {
+            return $payment;
+        }
+
+        $amount = max((float) $invoice->amount - (float) $invoice->paid_amount, 0);
+
+        return $invoice->payments()->create([
+            'cooperative_member_id' => $member->id,
+            'user_id' => $request->user()?->id,
+            'amount' => $amount,
+            'payment_method' => $paymentMethod ?? 'TRANSFER',
+            'paid_at' => now()->toDateString(),
+            'status' => 'PENDING',
+        ]);
     }
 }

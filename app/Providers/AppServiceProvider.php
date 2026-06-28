@@ -151,11 +151,15 @@ class AppServiceProvider extends ServiceProvider
 
     protected function registerRateLimiters(): void
     {
-        RateLimiter::for('api', fn (Request $request): Limit => Limit::perMinute(60)->by(
+        // The mobile client legitimately bursts (a single dashboard mount
+        // triggers several read endpoints). Keep the limit per-user so it
+        // still protects against abuse, but give enough headroom for normal
+        // navigation and development restarts.
+        RateLimiter::for('api', fn (Request $request): Limit => Limit::perMinute(180)->by(
             $request->user()?->id ?: $request->ip()
         ));
 
-        RateLimiter::for('api-write', fn (Request $request): Limit => Limit::perMinute(30)->by(
+        RateLimiter::for('api-write', fn (Request $request): Limit => Limit::perMinute(60)->by(
             $request->user()?->id ?: $request->ip()
         ));
 

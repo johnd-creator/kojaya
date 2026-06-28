@@ -457,6 +457,49 @@ proof: <file> (jpg, png, or pdf, max 4MB)
 Receipt hanya tersedia untuk pembayaran berstatus `APPROVED`. `download_url` adalah signed URL sementara untuk file PDF receipt.
 
 ### **Payment Gateway Charge**
+Member app dapat membuat charge langsung dari bill iuran/simpanan melalui endpoint unified bills. Untuk saat ini `payment-intent` hanya mengaktifkan source `dues` karena settlement-nya masuk ke `CooperativePaymentService` dan ledger `SAVING_PAYMENT`. Source lain seperti `loan` dan `pos_credit` ditampilkan di `/api/v1/member/bills`, tetapi payment gateway-nya akan diaktifkan setelah settlement domain masing-masing tersedia agar tidak salah posting ledger.
+
+```http
+POST /api/v1/member/bills/{bill}/payment-intent
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "channel": "QRIS"
+}
+```
+
+Contoh `{bill}`: `dues:123`. Channel options: `QRIS`, `VA`, `E_WALLET`, `TRANSFER`.
+
+**Response (201):**
+```json
+{
+  "data": {
+    "bill_id": "dues:123",
+    "source": "dues",
+    "payment": {
+      "id": 99,
+      "amount": 80000,
+      "payment_method": "QRIS",
+      "gateway_provider": "internal",
+      "gateway_status": "PENDING",
+      "status": "PENDING"
+    },
+    "charge": {
+      "provider": "internal",
+      "reference": "PAY-ABC123",
+      "status": "PENDING",
+      "channel": "QRIS",
+      "amount": 80000,
+      "checkout_url": "http://localhost:8000/api/payments/PAY-ABC123/checkout",
+      "qr_string": null
+    }
+  }
+}
+```
+
+Source `loan` dan `pos_credit` saat ini mengembalikan `422` saat dibuat payment intent.
+
 ```http
 POST /api/payments/charge
 Authorization: Bearer {token}

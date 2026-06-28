@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMemberCoffeeOrderRequest;
 use App\Models\CoffeeOrder;
 use App\Models\PosProduct;
+use App\Services\Cooperative\CooperativeNotificationDispatcher;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -37,8 +38,11 @@ class MemberCoffeeOrderController extends Controller
         ]);
     }
 
-    public function store(StoreMemberCoffeeOrderRequest $request, PosTransactionService $service): JsonResponse
-    {
+    public function store(
+        StoreMemberCoffeeOrderRequest $request,
+        PosTransactionService $service,
+        CooperativeNotificationDispatcher $notificationDispatcher
+    ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
@@ -84,6 +88,7 @@ class MemberCoffeeOrderController extends Controller
         );
 
         $coffeeOrder->load(['transaction.payments', 'product']);
+        $notificationDispatcher->coffeeOrderReceived($coffeeOrder, $request->user());
 
         return response()->json([
             'data' => $this->formatOrder($coffeeOrder),

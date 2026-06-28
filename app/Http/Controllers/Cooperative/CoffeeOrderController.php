@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Cooperative;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\UpdateCoffeeOrderStatusRequest;
 use App\Models\CoffeeOrder;
-use App\Services\NotificationService;
+use App\Services\Cooperative\CooperativeNotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -56,7 +56,7 @@ class CoffeeOrderController extends Controller
     public function updateStatus(
         UpdateCoffeeOrderStatusRequest $request,
         CoffeeOrder $coffeeOrder,
-        NotificationService $notificationService
+        CooperativeNotificationDispatcher $notificationDispatcher
     ): RedirectResponse {
         $data = $request->validated();
         $status = (string) $data['status'];
@@ -89,34 +89,11 @@ class CoffeeOrderController extends Controller
         $coffeeOrder->update($updates);
         $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);
 
-        if ($previousStatus !== $coffeeOrder->status && $coffeeOrder->member?->user) {
-            $notificationService->sendDatabase(
-                $coffeeOrder->member->user,
-                $coffeeOrder->statusLabel(),
-                $this->notificationMessage($coffeeOrder),
-                [
-                    'url' => '/anggota/kopi',
-                    'coffee_order_id' => $coffeeOrder->id,
-                    'coffee_order_code' => $coffeeOrder->transaction?->transaction_no,
-                    'status' => $coffeeOrder->status,
-                ]
-            );
+        if ($previousStatus !== $coffeeOrder->status) {
+            $notificationDispatcher->coffeeOrderStatusChanged($coffeeOrder, $request->user());
         }
 
         return back()->with('success', "Status pesanan {$coffeeOrder->transaction?->transaction_no} diperbarui.");
-    }
-
-    private function notificationMessage(CoffeeOrder $coffeeOrder): string
-    {
-        $productName = $coffeeOrder->product?->name ?? 'kopi';
-
-        return match ($coffeeOrder->status) {
-            CoffeeOrder::STATUS_BREWING => "Pesanan {$productName} sedang diseduh.",
-            CoffeeOrder::STATUS_READY => "Pesanan {$productName} siap diambil.",
-            CoffeeOrder::STATUS_PICKED_UP => "Pesanan {$productName} sudah selesai.",
-            CoffeeOrder::STATUS_CANCELLED => "Pesanan {$productName} dibatalkan.",
-            default => "Pesanan {$productName} diterima.",
-        };
     }
 
     /**

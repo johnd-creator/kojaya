@@ -3,6 +3,7 @@
 namespace App\Services\Cooperative;
 
 use App\Enums\LoanStatus;
+use App\Models\CoffeeOrder;
 use App\Models\CooperativePayment;
 use App\Models\Loan;
 use App\Models\LoanPayment;
@@ -156,6 +157,31 @@ class CooperativeNotificationDispatcher
         ]);
     }
 
+    public function coffeeOrderReceived(CoffeeOrder $coffeeOrder, ?User $actor = null): void
+    {
+        $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);
+
+        $this->notifyMember($coffeeOrder->member?->user, [
+            ...$this->coffeeOrderPayload($coffeeOrder, 'member.coffee_order.received', 'coffee', 'info', 'Pesanan kopi diterima', 'Pesanan kopi Anda sudah diterima dan menunggu diproses.', $actor, '/member/transactions'),
+            'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
+        ]);
+
+        $this->notifyRoles(['Admin Koperasi'], $coffeeOrder->member?->organization_id, [
+            ...$this->coffeeOrderPayload($coffeeOrder, 'admin.coffee_order.received', 'coffee', 'info', 'Pesanan kopi baru', "Pesanan kopi {$coffeeOrder->member?->name} perlu diproses.", $actor, '/cooperative/pos/coffee-orders'),
+            'deduplication_key' => "admin.coffee_order.received:{$coffeeOrder->id}",
+        ]);
+    }
+
+    public function coffeeOrderStatusChanged(CoffeeOrder $coffeeOrder, ?User $actor = null): void
+    {
+        $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);
+
+        $this->notifyMember($coffeeOrder->member?->user, [
+            ...$this->coffeeOrderPayload($coffeeOrder, 'member.coffee_order.status_changed', 'coffee', 'info', $coffeeOrder->statusLabel(), $this->coffeeOrderStatusMessage($coffeeOrder), $actor, '/member/transactions'),
+            'deduplication_key' => "member.coffee_order.status_changed:{$coffeeOrder->id}:{$coffeeOrder->status}",
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -282,5 +308,55 @@ class CooperativeNotificationDispatcher
                 'status' => $payment->status,
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function coffeeOrderPayload(CoffeeOrder $coffeeOrder, string $eventType, string $category, string $severity, string $title, string $message, ?User $actor, string $actionUrl): array
+    {
+        return [
+            'event_type' => $eventType,
+            'category' => $category,
+            'severity' => $severity,
+            'title' => $title,
+            'message' => $message,
+            'subject' => [
+                'type' => 'coffee_order',
+                'id' => $coffeeOrder->id,
+                'label' => $coffeeOrder->transaction?->transaction_no ?? 'Pesanan kopi',
+            ],
+            'actor' => $actor ? [
+                'id' => $actor->id,
+                'name' => $actor->name,
+            ] : null,
+            'action' => [
+                'label' => 'Buka detail',
+                'url' => $actionUrl,
+            ],
+            'metadata' => [
+                'organization_id' => $coffeeOrder->member?->organization_id,
+                'member_id' => $coffeeOrder->cooperative_member_id,
+                'coffee_order_id' => $coffeeOrder->id,
+                'coffee_order_code' => $coffeeOrder->transaction?->transaction_no,
+                'product_id' => $coffeeOrder->pos_product_id,
+                'product_name' => $coffeeOrder->product?->name,
+                'quantity' => (int) $coffeeOrder->quantity,
+                'status' => $coffeeOrder->status,
+            ],
+        ];
+    }
+
+    private function coffeeOrderStatusMessage(CoffeeOrder $coffeeOrder): string
+    {
+        $productName = $coffeeOrder->product?->name ?? 'kopi';
+
+        return match ($coffeeOrder->status) {
+            CoffeeOrder::STATUS_BREWING => "Pesanan {$productName} sedang diseduh.",
+            CoffeeOrder::STATUS_READY => "Pesanan {$productName} siap diambil.",
+            CoffeeOrder::STATUS_PICKED_UP => "Pesanan {$productName} sudah selesai.",
+            CoffeeOrder::STATUS_CANCELLED => "Pesanan {$productName} dibatalkan.",
+            default => "Pesanan {$productName} diterima.",
+        };
     }
 }

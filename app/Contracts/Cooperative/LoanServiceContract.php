@@ -13,6 +13,8 @@ interface LoanServiceContract
      */
     public function apply(array $data, ?User $actor = null): Loan;
 
+    public function managerReview(Loan $loan, ?User $actor = null, ?string $note = null): Loan;
+
     public function approve(Loan $loan, ?User $actor = null, ?string $note = null): Loan;
 
     public function reject(Loan $loan, ?User $actor = null, string $reason = ''): Loan;

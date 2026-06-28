@@ -67,9 +67,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::get('/savings/ledger', [MemberSelfServiceController::class, 'savingsLedger'])->middleware('ability:member:read');
         Route::post('/savings/withdraw', [MemberSelfServiceController::class, 'requestSavingsWithdrawal'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/dues/invoices', [MemberSelfServiceController::class, 'invoices'])->middleware('ability:member:read');
+        Route::get('/dues/invoices/{invoice}', [MemberSelfServiceController::class, 'showInvoice'])->middleware('ability:member:read');
+        Route::post('/dues/invoices/{invoice}/payment-intent', [MemberSelfServiceController::class, 'createPaymentIntent'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/payments', [MemberSelfServiceController::class, 'payments'])->middleware('ability:member:read');
         Route::get('/payments/{payment}/receipt', [MemberSelfServiceController::class, 'paymentReceipt'])->middleware('ability:member:read');
         Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+        Route::get('/loans/options', [MemberSelfServiceController::class, 'loanOptions'])->middleware('ability:member:read');
         Route::get('/loans', [MemberSelfServiceController::class, 'loans'])->middleware('ability:member:read');
         Route::post('/loans', [MemberSelfServiceController::class, 'applyLoan'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/loans/{loan}', [MemberSelfServiceController::class, 'loan'])->middleware('ability:member:read');
@@ -80,7 +83,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::get('/coffee/menu', [MemberCoffeeOrderController::class, 'index'])->middleware('ability:member:read');
         Route::post('/coffee/orders', [MemberCoffeeOrderController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/coffee/orders/{coffeeOrder}', [MemberCoffeeOrderController::class, 'show'])->middleware('ability:member:read');
-        Route::get('/notifications', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
+            Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent'])->middleware('ability:member:read');
+            Route::get('/unread-count', [App\Http\Controllers\NotificationController::class, 'unreadCount'])->middleware('ability:member:read');
+            Route::get('/summary', [App\Http\Controllers\NotificationController::class, 'summary'])->middleware('ability:member:read');
+            Route::get('/preferences', [App\Http\Controllers\NotificationController::class, 'getPreferences'])->middleware('ability:member:read');
+            Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences'])->middleware(['ability:member:write', 'throttle:api-write']);
+            Route::patch('/{notification}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->middleware(['ability:member:write', 'throttle:api-write']);
+            Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->middleware(['ability:member:write', 'throttle:api-write']);
+        });
         Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
         Route::post('/support-tickets', [MemberSelfServiceController::class, 'storeSupportTicket'])->middleware(['ability:member:write', 'throttle:api-write']);
     });
@@ -101,6 +113,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::get('/loans', [LoanApiController::class, 'index'])->middleware('ability:cooperative:read');
     Route::post('/loans/apply', [LoanApiController::class, 'apply'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);
     Route::get('/loans/{loan}', [LoanApiController::class, 'show'])->middleware('ability:cooperative:read');
+    Route::post('/loans/{loan}/review', [LoanApiController::class, 'review'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+    Route::post('/loans/{loan}/approve', [LoanApiController::class, 'approve'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+    Route::post('/loans/{loan}/reject', [LoanApiController::class, 'reject'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::post('/loans/calculator', [LoanApiController::class, 'calculator'])->middleware(['ability:cooperative:read', 'throttle:api-write']);
     Route::get('/points/balance', [PointApiController::class, 'balance'])->middleware('ability:member:read');
     Route::get('/points/history', [PointApiController::class, 'history'])->middleware('ability:member:read');
@@ -119,6 +134,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::get('/reports/sales', [CooperativeReportController::class, 'sales'])->middleware('ability:reports:read');
     Route::get('/reports/npl-aging', [CooperativeReportController::class, 'nplAging'])->middleware('ability:reports:read');
     Route::get('/procurement/vendors/{vendor}/performance', [ProcurementApiController::class, 'vendorPerformance'])->middleware('ability:reports:read');
+
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index'])->middleware('ability:cooperative:read');
+        Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent'])->middleware('ability:cooperative:read');
+        Route::get('/summary', [App\Http\Controllers\NotificationController::class, 'summary'])->middleware('ability:cooperative:read');
+        Route::get('/preferences', [App\Http\Controllers\NotificationController::class, 'getPreferences'])->middleware('ability:cooperative:read');
+        Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+        Route::patch('/{notification}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+        Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+    });
 });
 
 // Employee Self Service Mobile API

@@ -197,6 +197,7 @@ const submit = (): void => {
 function formatLoanStatus(status: string): string {
     switch (status?.toUpperCase()) {
         case 'APPLIED': return 'Diajukan';
+        case 'MANAGER_APPROVED': return 'Direview Manajer';
         case 'APPROVED': return 'Disetujui';
         case 'REJECTED': return 'Ditolak';
         case 'ACTIVE': return 'Aktif';

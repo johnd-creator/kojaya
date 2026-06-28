@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
-import { Bell, Check, X, Loader2 } from "lucide-vue-next";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { Link, usePage } from "@inertiajs/vue3";
+import { Bell, Check, Loader2 } from "lucide-vue-next";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
-  fetchNotifications,
-  markAsRead,
   markAllAsRead,
-  fetchUnreadCount,
+  fetchNotificationSummary,
+  fetchRecentNotifications,
 } from "@/api/notifications.ts";
 import NotificationItem from "@/components/Notification/NotificationItem.vue";
 import { Button } from "@/components/ui/button";
@@ -31,26 +30,32 @@ const unreadCount = ref(0);
 const loading = ref(false);
 const markingAllAsRead = ref(false);
 const pollingInterval = ref<number | null>(null);
+const page = usePage();
 
 const hasNotifications = computed(() => notifications.value.length > 0);
 const hasUnread = computed(() => unreadCount.value > 0);
+const allNotificationsUrl = computed(() => {
+  const roles = (page.props.auth as { user?: { roles?: string[] } } | undefined)
+    ?.user?.roles ?? [];
+
+  return roles.includes("Anggota") ? "/member/notifications" : "/notifications";
+});
 
 const loadUnreadCount = async () => {
   try {
-    unreadCount.value = await fetchUnreadCount();
+    const summary = await fetchNotificationSummary();
+    unreadCount.value = summary.unread_count;
   } catch (error) {
     console.error("Failed to fetch unread count:", error);
   }
 };
 
-const fetchRecentNotifications = async () => {
+const loadRecentNotifications = async () => {
   loading.value = true;
   try {
-    const response = await fetchNotifications({
-      per_page: props.maxItems,
-    });
+    const response = await fetchRecentNotifications(props.maxItems);
     notifications.value = response.data;
-    await loadUnreadCount();
+    unreadCount.value = response.meta.unread_count;
   } catch (error) {
     console.error("Failed to fetch notifications:", error);
   } finally {
@@ -59,17 +64,12 @@ const fetchRecentNotifications = async () => {
 };
 
 const handleMarkAsRead = async (id: string) => {
-  try {
-    await markAsRead(id);
-    const notification = notifications.value.find((n) => n.id === id);
-    if (notification) {
-      notification.is_read = true;
-      notification.read_at = new Date().toISOString();
-    }
-    await loadUnreadCount();
-  } catch (error) {
-    console.error("Failed to mark notification as read:", error);
+  const notification = notifications.value.find((n) => n.id === id);
+  if (notification && !notification.is_read) {
+    notification.is_read = true;
+    notification.read_at = new Date().toISOString();
   }
+  await loadUnreadCount();
 };
 
 const handleMarkAllAsRead = async () => {
@@ -102,7 +102,7 @@ const stopPolling = () => {
 };
 
 onMounted(() => {
-  fetchRecentNotifications();
+  loadRecentNotifications();
   startPolling();
 });
 
@@ -188,7 +188,7 @@ onUnmounted(() => {
         class="border-t border-neutral-200 p-2 dark:border-neutral-800"
       >
         <Link
-          :href="'/member/notifications'"
+          :href="allNotificationsUrl"
           class="block rounded-md px-3 py-2 text-center text-sm font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
         >
           Lihat semua notifikasi

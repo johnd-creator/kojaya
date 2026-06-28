@@ -90,7 +90,9 @@ class PhaseCSegregationOfDutiesTest extends TestCase
             'outstanding_amount' => 10500000,
             'applied_at' => now(),
             'first_due_date' => now()->addMonth(),
-            'status' => 'APPLIED',
+            'status' => 'MANAGER_APPROVED',
+            'manager_reviewed_at' => now(),
+            'manager_reviewed_by' => $this->approver->id,
         ]);
 
         $this->expectException(ValidationException::class);
@@ -121,7 +123,9 @@ class PhaseCSegregationOfDutiesTest extends TestCase
             'outstanding_amount' => 10500000,
             'applied_at' => now(),
             'first_due_date' => now()->addMonth(),
-            'status' => 'APPLIED',
+            'status' => 'MANAGER_APPROVED',
+            'manager_reviewed_at' => now(),
+            'manager_reviewed_by' => $this->creator->id,
         ]);
 
         $result = app(LoanService::class)->approve($loan, $this->approver);

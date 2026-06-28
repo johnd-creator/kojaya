@@ -1,6 +1,26 @@
 export interface Notification {
   id: string;
   type: string;
+  notification_type?: string;
+  event_type: string;
+  category: string;
+  severity: "info" | "success" | "warning" | "critical" | string;
+  title: string;
+  message: string;
+  subject?: {
+    type: string | null;
+    id: string | number | null;
+    label: string | null;
+  };
+  actor?: {
+    id: string | number;
+    name: string;
+  } | null;
+  action?: {
+    label: string;
+    url: string | null;
+  };
+  metadata?: Record<string, any>;
   data: NotificationData;
   read_at: string | null;
   created_at: string;
@@ -18,7 +38,16 @@ export interface NotificationPreference {
   email_enabled: boolean;
   database_enabled: boolean;
   push_enabled: boolean;
+  whatsapp_enabled?: boolean;
+  whatsapp_phone?: string | null;
   channels: string[];
+  categories?: Record<string, string[]>;
+}
+
+export interface NotificationSummary {
+  unread_count: number;
+  by_category: Record<string, number>;
+  by_severity: Record<string, number>;
 }
 
 export interface PaginatedNotifications {

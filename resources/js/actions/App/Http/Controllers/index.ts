@@ -1,5 +1,6 @@
 import Api from './Api'
 import OpenApiController from './OpenApiController'
+import NotificationController from './NotificationController'
 import Cooperative from './Cooperative'
 import EmployeeCertificateController from './EmployeeCertificateController'
 import MedicalCheckupController from './MedicalCheckupController'
@@ -8,7 +9,6 @@ import AuditLogController from './AuditLogController'
 import Auth from './Auth'
 import DashboardController from './DashboardController'
 import ReportController from './ReportController'
-import NotificationController from './NotificationController'
 import DepartmentController from './DepartmentController'
 import JobGradeController from './JobGradeController'
 import PositionController from './PositionController'
@@ -64,6 +64,7 @@ import Settings from './Settings'
 const Controllers = {
     Api: Object.assign(Api, Api),
     OpenApiController: Object.assign(OpenApiController, OpenApiController),
+    NotificationController: Object.assign(NotificationController, NotificationController),
     Cooperative: Object.assign(Cooperative, Cooperative),
     EmployeeCertificateController: Object.assign(EmployeeCertificateController, EmployeeCertificateController),
     MedicalCheckupController: Object.assign(MedicalCheckupController, MedicalCheckupController),
@@ -72,7 +73,6 @@ const Controllers = {
     Auth: Object.assign(Auth, Auth),
     DashboardController: Object.assign(DashboardController, DashboardController),
     ReportController: Object.assign(ReportController, ReportController),
-    NotificationController: Object.assign(NotificationController, NotificationController),
     DepartmentController: Object.assign(DepartmentController, DepartmentController),
     JobGradeController: Object.assign(JobGradeController, JobGradeController),
     PositionController: Object.assign(PositionController, PositionController),

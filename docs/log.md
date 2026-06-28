@@ -8,6 +8,29 @@
 
 ---
 
+## 🎯 2026-06-28 - Loan Approval Workflow Role Hierarchy
+
+**🏦 Pinjaman Koperasi:**
+- ✅ Added `Manajer Koperasi` role below `Pengurus Koperasi` and above `Admin Koperasi`.
+- ✅ Changed loan approval flow to `APPLIED` → manager review (`MANAGER_APPROVED`) → Pengurus final approval (`APPROVED`) → disbursement (`ACTIVE`).
+- ✅ Added admin API approval endpoints for manager review, final approval, and rejection.
+- ✅ Documented cooperative role hierarchy in `AGENTS.md`.
+
+## 🎯 2026-06-28 - Cooperative Notification Plan P0/P1 Start
+
+**🔔 Notifikasi Koperasi:**
+- ✅ Standardized notification API payload through `NotificationResource` with event type, category, severity, subject, actor, action, metadata, and legacy `data` fallback.
+- ✅ Added session, member token, and admin token notification endpoints for recent feed, summary, filters, preferences, mark read, and mark all read.
+- ✅ Reworked the header notification icon to use recent + summary endpoints, 30-second polling, role-aware “lihat semua” links, and action click mark-read navigation.
+- ✅ Added `CooperativeNotificationDispatcher` for priority loan and savings/payment events with recipient routing for Anggota, Admin Koperasi, Manajer Koperasi, and Pengurus Koperasi.
+- ✅ Added tests for API ownership/filtering/token contracts plus loan review and payment notification workflows.
+
+**Verification:**
+- ✅ `NotificationSystemTest` and `CooperativeNotificationWorkflowTest`: 13 passed (53 assertions).
+- ✅ `npm run build` passed.
+
+---
+
 ## 🎯 2026-06: M3 P0 Hardening
 
 ### **June 24, 2026 - Demo Member Dues History and Dashboard Tunggakan**

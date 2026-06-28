@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:47
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:49
 * @route '/api/v1/member/dashboard'
 */
 dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 export const onboardingStatus = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ onboardingStatus.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 onboardingStatus.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ onboardingStatus.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 onboardingStatus.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ onboardingStatus.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 onboardingStatus.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ onboardingStatus.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 const onboardingStatusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const onboardingStatusForm = (options?: RouteQueryOptions): RouteFormDefinition<
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 onboardingStatusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ onboardingStatusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'g
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:76
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:78
 * @route '/api/v1/member/onboarding/status'
 */
 onboardingStatusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ onboardingStatus.form = onboardingStatusForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:81
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:83
 * @route '/api/v1/member/onboarding/steps'
 */
 export const markOnboardingStep = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -178,7 +178,7 @@ markOnboardingStep.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:81
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:83
 * @route '/api/v1/member/onboarding/steps'
 */
 markOnboardingStep.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ markOnboardingStep.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:81
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:83
 * @route '/api/v1/member/onboarding/steps'
 */
 markOnboardingStep.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ markOnboardingStep.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:81
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:83
 * @route '/api/v1/member/onboarding/steps'
 */
 const markOnboardingStepForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -207,7 +207,7 @@ const markOnboardingStepForm = (options?: RouteQueryOptions): RouteFormDefinitio
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:81
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:83
 * @route '/api/v1/member/onboarding/steps'
 */
 markOnboardingStepForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -219,7 +219,7 @@ markOnboardingStep.form = markOnboardingStepForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 export const statusJourney = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ statusJourney.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 statusJourney.url = (options?: RouteQueryOptions) => {
@@ -243,7 +243,7 @@ statusJourney.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 statusJourney.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -253,7 +253,7 @@ statusJourney.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 statusJourney.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -263,7 +263,7 @@ statusJourney.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 const statusJourneyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -273,7 +273,7 @@ const statusJourneyForm = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 statusJourneyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -283,7 +283,7 @@ statusJourneyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:216
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:285
 * @route '/api/v1/member/status-journey'
 */
 statusJourneyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -300,7 +300,7 @@ statusJourney.form = statusJourneyForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 export const profile = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -315,7 +315,7 @@ profile.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 profile.url = (options?: RouteQueryOptions) => {
@@ -324,7 +324,7 @@ profile.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 profile.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -334,7 +334,7 @@ profile.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -344,7 +344,7 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -354,7 +354,7 @@ const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -364,7 +364,7 @@ profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:91
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:93
 * @route '/api/v1/member/profile'
 */
 profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -381,7 +381,7 @@ profile.form = profileForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:101
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:103
 * @route '/api/v1/member/profile'
 */
 export const updateProfile = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -396,7 +396,7 @@ updateProfile.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:101
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:103
 * @route '/api/v1/member/profile'
 */
 updateProfile.url = (options?: RouteQueryOptions) => {
@@ -405,7 +405,7 @@ updateProfile.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:101
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:103
 * @route '/api/v1/member/profile'
 */
 updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -415,7 +415,7 @@ updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:101
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:103
 * @route '/api/v1/member/profile'
 */
 const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -430,7 +430,7 @@ const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'po
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:101
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:103
 * @route '/api/v1/member/profile'
 */
 updateProfileForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -447,7 +447,7 @@ updateProfile.form = updateProfileForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 export const savingsSummary = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -462,7 +462,7 @@ savingsSummary.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 savingsSummary.url = (options?: RouteQueryOptions) => {
@@ -471,7 +471,7 @@ savingsSummary.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 savingsSummary.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -481,7 +481,7 @@ savingsSummary.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 savingsSummary.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -491,7 +491,7 @@ savingsSummary.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 const savingsSummaryForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -501,7 +501,7 @@ const savingsSummaryForm = (options?: RouteQueryOptions): RouteFormDefinition<'g
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 savingsSummaryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -511,7 +511,7 @@ savingsSummaryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:126
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:128
 * @route '/api/v1/member/savings/summary'
 */
 savingsSummaryForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -528,7 +528,7 @@ savingsSummary.form = savingsSummaryForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 export const savingsLedger = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -543,7 +543,7 @@ savingsLedger.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 savingsLedger.url = (options?: RouteQueryOptions) => {
@@ -552,7 +552,7 @@ savingsLedger.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 savingsLedger.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -562,7 +562,7 @@ savingsLedger.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 savingsLedger.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -572,7 +572,7 @@ savingsLedger.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 const savingsLedgerForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -582,7 +582,7 @@ const savingsLedgerForm = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 savingsLedgerForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -592,7 +592,7 @@ savingsLedgerForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:146
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:148
 * @route '/api/v1/member/savings/ledger'
 */
 savingsLedgerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -609,7 +609,7 @@ savingsLedger.form = savingsLedgerForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:175
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:177
 * @route '/api/v1/member/savings/withdraw'
 */
 export const requestSavingsWithdrawal = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -624,7 +624,7 @@ requestSavingsWithdrawal.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:175
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:177
 * @route '/api/v1/member/savings/withdraw'
 */
 requestSavingsWithdrawal.url = (options?: RouteQueryOptions) => {
@@ -633,7 +633,7 @@ requestSavingsWithdrawal.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:175
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:177
 * @route '/api/v1/member/savings/withdraw'
 */
 requestSavingsWithdrawal.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -643,7 +643,7 @@ requestSavingsWithdrawal.post = (options?: RouteQueryOptions): RouteDefinition<'
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:175
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:177
 * @route '/api/v1/member/savings/withdraw'
 */
 const requestSavingsWithdrawalForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -653,7 +653,7 @@ const requestSavingsWithdrawalForm = (options?: RouteQueryOptions): RouteFormDef
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:175
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:177
 * @route '/api/v1/member/savings/withdraw'
 */
 requestSavingsWithdrawalForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -665,7 +665,7 @@ requestSavingsWithdrawal.form = requestSavingsWithdrawalForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 export const invoices = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -680,7 +680,7 @@ invoices.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 invoices.url = (options?: RouteQueryOptions) => {
@@ -689,7 +689,7 @@ invoices.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 invoices.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -699,7 +699,7 @@ invoices.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 invoices.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -709,7 +709,7 @@ invoices.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 const invoicesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -719,7 +719,7 @@ const invoicesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 invoicesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -729,7 +729,7 @@ invoicesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:187
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:189
 * @route '/api/v1/member/dues/invoices'
 */
 invoicesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -745,8 +745,193 @@ invoicesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 invoices.form = invoicesForm
 
 /**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+export const showInvoice = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: showInvoice.url(args, options),
+    method: 'get',
+})
+
+showInvoice.definition = {
+    methods: ["get","head"],
+    url: '/api/v1/member/dues/invoices/{invoice}',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+showInvoice.url = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { invoice: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { invoice: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            invoice: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        invoice: typeof args.invoice === 'object'
+        ? args.invoice.id
+        : args.invoice,
+    }
+
+    return showInvoice.definition.url
+            .replace('{invoice}', parsedArgs.invoice.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+showInvoice.get = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: showInvoice.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+showInvoice.head = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: showInvoice.url(args, options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+const showInvoiceForm = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: showInvoice.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+showInvoiceForm.get = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: showInvoice.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
+* @route '/api/v1/member/dues/invoices/{invoice}'
+*/
+showInvoiceForm.head = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: showInvoice.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+showInvoice.form = showInvoiceForm
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
+* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
+*/
+export const createPaymentIntent = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: createPaymentIntent.url(args, options),
+    method: 'post',
+})
+
+createPaymentIntent.definition = {
+    methods: ["post"],
+    url: '/api/v1/member/dues/invoices/{invoice}/payment-intent',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
+* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
+*/
+createPaymentIntent.url = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { invoice: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'id' in args) {
+        args = { invoice: args.id }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            invoice: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        invoice: typeof args.invoice === 'object'
+        ? args.invoice.id
+        : args.invoice,
+    }
+
+    return createPaymentIntent.definition.url
+            .replace('{invoice}', parsedArgs.invoice.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
+* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
+*/
+createPaymentIntent.post = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: createPaymentIntent.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
+* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
+*/
+const createPaymentIntentForm = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: createPaymentIntent.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:214
+* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
+*/
+createPaymentIntentForm.post = (args: { invoice: number | { id: number } } | [invoice: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: createPaymentIntent.url(args, options),
+    method: 'post',
+})
+
+createPaymentIntent.form = createPaymentIntentForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 export const payments = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -761,7 +946,7 @@ payments.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 payments.url = (options?: RouteQueryOptions) => {
@@ -770,7 +955,7 @@ payments.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 payments.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -780,7 +965,7 @@ payments.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 payments.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -790,7 +975,7 @@ payments.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 const paymentsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -800,7 +985,7 @@ const paymentsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 paymentsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -810,7 +995,7 @@ paymentsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:201
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:270
 * @route '/api/v1/member/payments'
 */
 paymentsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -827,7 +1012,7 @@ payments.form = paymentsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 export const paymentReceipt = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -842,7 +1027,7 @@ paymentReceipt.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 paymentReceipt.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -875,7 +1060,7 @@ paymentReceipt.url = (args: { payment: number | { id: number } } | [payment: num
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 paymentReceipt.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -885,7 +1070,7 @@ paymentReceipt.get = (args: { payment: number | { id: number } } | [payment: num
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 paymentReceipt.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -895,7 +1080,7 @@ paymentReceipt.head = (args: { payment: number | { id: number } } | [payment: nu
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 const paymentReceiptForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -905,7 +1090,7 @@ const paymentReceiptForm = (args: { payment: number | { id: number } } | [paymen
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 paymentReceiptForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -915,7 +1100,7 @@ paymentReceiptForm.get = (args: { payment: number | { id: number } } | [payment:
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:221
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:290
 * @route '/api/v1/member/payments/{payment}/receipt'
 */
 paymentReceiptForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -932,7 +1117,7 @@ paymentReceipt.form = paymentReceiptForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:243
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
 * @route '/api/v1/member/payments/proof'
 */
 export const uploadPaymentProof = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -947,7 +1132,7 @@ uploadPaymentProof.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:243
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
 * @route '/api/v1/member/payments/proof'
 */
 uploadPaymentProof.url = (options?: RouteQueryOptions) => {
@@ -956,7 +1141,7 @@ uploadPaymentProof.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:243
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
 * @route '/api/v1/member/payments/proof'
 */
 uploadPaymentProof.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -966,7 +1151,7 @@ uploadPaymentProof.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:243
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
 * @route '/api/v1/member/payments/proof'
 */
 const uploadPaymentProofForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -976,7 +1161,7 @@ const uploadPaymentProofForm = (options?: RouteQueryOptions): RouteFormDefinitio
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:243
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
 * @route '/api/v1/member/payments/proof'
 */
 uploadPaymentProofForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -987,8 +1172,89 @@ uploadPaymentProofForm.post = (options?: RouteQueryOptions): RouteFormDefinition
 uploadPaymentProof.form = uploadPaymentProofForm
 
 /**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+export const loanOptions = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: loanOptions.url(options),
+    method: 'get',
+})
+
+loanOptions.definition = {
+    methods: ["get","head"],
+    url: '/api/v1/member/loans/options',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+loanOptions.url = (options?: RouteQueryOptions) => {
+    return loanOptions.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+loanOptions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: loanOptions.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+loanOptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: loanOptions.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+const loanOptionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: loanOptions.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+loanOptionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: loanOptions.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:352
+* @route '/api/v1/member/loans/options'
+*/
+loanOptionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: loanOptions.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+loanOptions.form = loanOptionsForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 export const loans = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1003,7 +1269,7 @@ loans.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 loans.url = (options?: RouteQueryOptions) => {
@@ -1012,7 +1278,7 @@ loans.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 loans.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1022,7 +1288,7 @@ loans.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 loans.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1032,7 +1298,7 @@ loans.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 const loansForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1042,7 +1308,7 @@ const loansForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 loansForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1052,7 +1318,7 @@ loansForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:340
 * @route '/api/v1/member/loans'
 */
 loansForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1069,7 +1335,7 @@ loans.form = loansForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:283
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:364
 * @route '/api/v1/member/loans'
 */
 export const applyLoan = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1084,7 +1350,7 @@ applyLoan.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:283
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:364
 * @route '/api/v1/member/loans'
 */
 applyLoan.url = (options?: RouteQueryOptions) => {
@@ -1093,7 +1359,7 @@ applyLoan.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:283
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:364
 * @route '/api/v1/member/loans'
 */
 applyLoan.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1103,7 +1369,7 @@ applyLoan.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:283
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:364
 * @route '/api/v1/member/loans'
 */
 const applyLoanForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1113,7 +1379,7 @@ const applyLoanForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:283
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:364
 * @route '/api/v1/member/loans'
 */
 applyLoanForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1125,7 +1391,7 @@ applyLoan.form = applyLoanForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 export const loan = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1140,7 +1406,7 @@ loan.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 loan.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -1173,7 +1439,7 @@ loan.url = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 loan.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1183,7 +1449,7 @@ loan.get = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 loan.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1193,7 +1459,7 @@ loan.head = (args: { loan: number | { id: number } } | [loan: number | { id: num
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 const loanForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1203,7 +1469,7 @@ const loanForm = (args: { loan: number | { id: number } } | [loan: number | { id
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 loanForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1213,7 +1479,7 @@ loanForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:298
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:379
 * @route '/api/v1/member/loans/{loan}'
 */
 loanForm.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1230,7 +1496,7 @@ loan.form = loanForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:309
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:390
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
 export const requestLoanRestructure = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1245,7 +1511,7 @@ requestLoanRestructure.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:309
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:390
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
 requestLoanRestructure.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -1278,7 +1544,7 @@ requestLoanRestructure.url = (args: { loan: number | { id: number } } | [loan: n
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:309
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:390
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
 requestLoanRestructure.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1288,7 +1554,7 @@ requestLoanRestructure.post = (args: { loan: number | { id: number } } | [loan: 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:309
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:390
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
 const requestLoanRestructureForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1298,7 +1564,7 @@ const requestLoanRestructureForm = (args: { loan: number | { id: number } } | [l
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:309
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:390
 * @route '/api/v1/member/loans/{loan}/restructure'
 */
 requestLoanRestructureForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1310,7 +1576,7 @@ requestLoanRestructure.form = requestLoanRestructureForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 export const shu = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1325,7 +1591,7 @@ shu.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 shu.url = (options?: RouteQueryOptions) => {
@@ -1334,7 +1600,7 @@ shu.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 shu.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1344,7 +1610,7 @@ shu.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 shu.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1354,7 +1620,7 @@ shu.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 const shuForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1364,7 +1630,7 @@ const shuForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 shuForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1374,7 +1640,7 @@ shuForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:323
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:404
 * @route '/api/v1/member/shu'
 */
 shuForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1391,7 +1657,7 @@ shu.form = shuForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 export const rewardRedemptions = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1406,7 +1672,7 @@ rewardRedemptions.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 rewardRedemptions.url = (options?: RouteQueryOptions) => {
@@ -1415,7 +1681,7 @@ rewardRedemptions.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 rewardRedemptions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1425,7 +1691,7 @@ rewardRedemptions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 rewardRedemptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1435,7 +1701,7 @@ rewardRedemptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 const rewardRedemptionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1445,7 +1711,7 @@ const rewardRedemptionsForm = (options?: RouteQueryOptions): RouteFormDefinition
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 rewardRedemptionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1455,7 +1721,7 @@ rewardRedemptionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:337
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:418
 * @route '/api/v1/member/reward-redemptions'
 */
 rewardRedemptionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1472,7 +1738,7 @@ rewardRedemptions.form = rewardRedemptionsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 export const transactions = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1487,7 +1753,7 @@ transactions.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 transactions.url = (options?: RouteQueryOptions) => {
@@ -1496,7 +1762,7 @@ transactions.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 transactions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1506,7 +1772,7 @@ transactions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 transactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1516,7 +1782,7 @@ transactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 const transactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1526,7 +1792,7 @@ const transactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 transactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1536,7 +1802,7 @@ transactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:366
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:447
 * @route '/api/v1/member/transactions'
 */
 transactionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1553,7 +1819,7 @@ transactions.form = transactionsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 export const notifications = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1568,7 +1834,7 @@ notifications.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 notifications.url = (options?: RouteQueryOptions) => {
@@ -1577,7 +1843,7 @@ notifications.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 notifications.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1587,7 +1853,7 @@ notifications.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1597,7 +1863,7 @@ notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1607,7 +1873,7 @@ const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1617,7 +1883,7 @@ notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:431
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/notifications'
 */
 notificationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1634,7 +1900,7 @@ notifications.form = notificationsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 export const supportTickets = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1649,7 +1915,7 @@ supportTickets.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 supportTickets.url = (options?: RouteQueryOptions) => {
@@ -1658,7 +1924,7 @@ supportTickets.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 supportTickets.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1668,7 +1934,7 @@ supportTickets.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 supportTickets.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1678,7 +1944,7 @@ supportTickets.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 const supportTicketsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1688,7 +1954,7 @@ const supportTicketsForm = (options?: RouteQueryOptions): RouteFormDefinition<'g
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 supportTicketsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1698,7 +1964,7 @@ supportTicketsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:440
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:521
 * @route '/api/v1/member/support-tickets'
 */
 supportTicketsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1715,7 +1981,7 @@ supportTickets.form = supportTicketsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:450
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:531
 * @route '/api/v1/member/support-tickets'
 */
 export const storeSupportTicket = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1730,7 +1996,7 @@ storeSupportTicket.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:450
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:531
 * @route '/api/v1/member/support-tickets'
 */
 storeSupportTicket.url = (options?: RouteQueryOptions) => {
@@ -1739,7 +2005,7 @@ storeSupportTicket.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:450
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:531
 * @route '/api/v1/member/support-tickets'
 */
 storeSupportTicket.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1749,7 +2015,7 @@ storeSupportTicket.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:450
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:531
 * @route '/api/v1/member/support-tickets'
 */
 const storeSupportTicketForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1759,7 +2025,7 @@ const storeSupportTicketForm = (options?: RouteQueryOptions): RouteFormDefinitio
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:450
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:531
 * @route '/api/v1/member/support-tickets'
 */
 storeSupportTicketForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1769,6 +2035,6 @@ storeSupportTicketForm.post = (options?: RouteQueryOptions): RouteFormDefinition
 
 storeSupportTicket.form = storeSupportTicketForm
 
-const MemberSelfServiceController = { dashboard, onboardingStatus, markOnboardingStep, statusJourney, profile, updateProfile, savingsSummary, savingsLedger, requestSavingsWithdrawal, invoices, payments, paymentReceipt, uploadPaymentProof, loans, applyLoan, loan, requestLoanRestructure, shu, rewardRedemptions, transactions, notifications, supportTickets, storeSupportTicket }
+const MemberSelfServiceController = { dashboard, onboardingStatus, markOnboardingStep, statusJourney, profile, updateProfile, savingsSummary, savingsLedger, requestSavingsWithdrawal, invoices, showInvoice, createPaymentIntent, payments, paymentReceipt, uploadPaymentProof, loanOptions, loans, applyLoan, loan, requestLoanRestructure, shu, rewardRedemptions, transactions, notifications, supportTickets, storeSupportTicket }
 
 export default MemberSelfServiceController

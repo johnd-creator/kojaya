@@ -5,6 +5,7 @@ namespace App\Enums;
 enum LoanStatus: string
 {
     case Applied = 'APPLIED';
+    case ManagerApproved = 'MANAGER_APPROVED';
     case Approved = 'APPROVED';
     case Rejected = 'REJECTED';
     case Active = 'ACTIVE';

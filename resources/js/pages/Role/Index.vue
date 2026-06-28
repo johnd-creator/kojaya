@@ -29,6 +29,11 @@ const getRoleDescription = (name: string) => {
     "Finance Unit": "Mengelola pengeluaran dan kas kecil unit",
     "Project Manager": "Mengelola project dan budget",
     "Site Manager": "Memimpin proyek di lapangan",
+    "Pengurus Koperasi": "Pengambil keputusan tertinggi untuk operasional koperasi",
+    "Manajer Koperasi": "Reviewer operasional koperasi di bawah Pengurus Koperasi",
+    "Admin Koperasi": "Operasional harian anggota, iuran, pinjaman, POS, poin, reward, dan SHU",
+    "Kasir Koperasi": "Operasional kasir dan pembayaran koperasi",
+    Anggota: "Anggota koperasi dengan akses self-service",
     Karyawan: "Tenaga kerja lapangan (Self Only)",
   };
   return descriptions[name] || "Custom system role";

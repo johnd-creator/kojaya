@@ -270,7 +270,7 @@ class OpenApiGenerator
                     'id' => ['type' => 'integer'],
                     'loan_no' => ['type' => 'string'],
                     'principal' => ['type' => 'number'],
-                    'status' => ['type' => 'string', 'enum' => ['PENDING', 'APPROVED', 'ACTIVE', 'PAID', 'REJECTED']],
+                    'status' => ['type' => 'string', 'enum' => ['APPLIED', 'MANAGER_APPROVED', 'APPROVED', 'ACTIVE', 'PAID_OFF', 'REJECTED', 'DEFAULTED', 'WRITTEN_OFF']],
                     'loanType' => ['$ref' => '#/components/schemas/LoanType'],
                 ],
             ],

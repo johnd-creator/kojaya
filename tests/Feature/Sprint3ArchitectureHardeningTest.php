@@ -46,6 +46,8 @@ class Sprint3ArchitectureHardeningTest extends TestCase
         $loan = Loan::factory()->create();
         $manager = User::factory()->create();
         $manager->givePermissionTo(['view_cooperative_loan', 'manage_cooperative_loan']);
+        $loanReviewer = User::factory()->create();
+        $loanReviewer->givePermissionTo(['view_cooperative_loan', 'review_cooperative_loan']);
         $approver = User::factory()->create();
         $approver->givePermissionTo(['view_cooperative_loan', 'approve_cooperative_loan']);
 
@@ -53,10 +55,14 @@ class Sprint3ArchitectureHardeningTest extends TestCase
         $this->assertTrue(Gate::forUser($manager)->allows('manage', Loan::class));
         $this->assertTrue(Gate::forUser($manager)->allows('recordPayment', $loan));
         $this->assertFalse(Gate::forUser($manager)->allows('approve', $loan));
+        $this->assertFalse(Gate::forUser($manager)->allows('managerReview', $loan));
 
+        $this->assertTrue(Gate::forUser($loanReviewer)->allows('managerReview', $loan));
+        $this->assertTrue(Gate::forUser($loanReviewer)->allows('reject', $loan));
+        $this->assertFalse(Gate::forUser($loanReviewer)->allows('approve', $loan));
         $this->assertTrue(Gate::forUser($approver)->allows('approve', $loan));
         $this->assertTrue(Gate::forUser($approver)->allows('reject', $loan));
-        $this->assertTrue(Gate::forUser($approver)->allows('disburse', $loan));
+        $this->assertFalse(Gate::forUser($approver)->allows('disburse', $loan));
     }
 
     /**

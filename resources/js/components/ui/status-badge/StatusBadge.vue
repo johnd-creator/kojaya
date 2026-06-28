@@ -81,6 +81,7 @@ const variant = computed(() => {
       "APPROVAL_L1",
       "APPROVAL_L2",
       "APPROVAL_L3",
+      "MANAGER_APPROVED",
       "RECEIVED_PARTIAL",
     ].includes(status)
   ) {
@@ -102,7 +103,7 @@ const icon = computed(() => {
   if (["REJECTED", "FAILED", "ERROR", "DENIED"].includes(status))
     return XCircle;
   if (["CANCELLED", "INACTIVE", "BAN", "ABSENT"].includes(status)) return Ban;
-  if (["PENDING", "WAITING", "PROCESSING"].includes(status)) return Clock;
+  if (["PENDING", "WAITING", "PROCESSING", "MANAGER_APPROVED"].includes(status)) return Clock;
   if (["SUBMITTED", "IN_PROGRESS", "REVIEWING"].includes(status))
     return AlertCircle;
   if (["DRAFT"].includes(status)) return FileText;

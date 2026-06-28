@@ -15,6 +15,7 @@ class NotificationPreference extends Model
         'whatsapp_enabled',
         'whatsapp_phone',
         'channels',
+        'categories',
     ];
 
     protected function casts(): array
@@ -25,6 +26,7 @@ class NotificationPreference extends Model
             'push_enabled' => 'boolean',
             'whatsapp_enabled' => 'boolean',
             'channels' => 'array',
+            'categories' => 'array',
         ];
     }
 

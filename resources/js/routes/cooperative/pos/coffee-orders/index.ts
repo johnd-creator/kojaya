@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::index
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:15
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:16
 * @route '/cooperative/pos/coffee-orders'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::updateStatus
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:55
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
 export const updateStatus = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -97,7 +97,7 @@ updateStatus.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::updateStatus
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:55
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
 updateStatus.url = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -130,7 +130,7 @@ updateStatus.url = (args: { coffeeOrder: number | { id: number } } | [coffeeOrde
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::updateStatus
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:55
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
 updateStatus.put = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -140,7 +140,7 @@ updateStatus.put = (args: { coffeeOrder: number | { id: number } } | [coffeeOrde
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::updateStatus
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:55
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
 const updateStatusForm = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -155,7 +155,7 @@ const updateStatusForm = (args: { coffeeOrder: number | { id: number } } | [coff
 
 /**
 * @see \App\Http\Controllers\Cooperative\CoffeeOrderController::updateStatus
-* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:55
+* @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
 updateStatusForm.put = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

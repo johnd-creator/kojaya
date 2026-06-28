@@ -1,40 +1,35 @@
 import axios from "axios";
-
-export interface Notification {
-  id: number;
-  type: string;
-  notifiable_id: number;
-  notifiable_type: string;
-  data: Record<string, any>;
-  read_at: string | null;
-  created_at: string;
-  formatted_date: string;
-  relative_time: string;
-}
-
-export interface NotificationPreference {
-  id: number;
-  user_id: number;
-  email_enabled: boolean;
-  push_enabled: boolean;
-  in_app_enabled: boolean;
-  notification_types: string[];
-}
-
-export interface PaginatedNotifications {
-  data: Notification[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-}
+import type {
+  Notification,
+  NotificationPreference,
+  NotificationSummary,
+  PaginatedNotifications,
+} from "@/types/notifications";
 
 export async function fetchNotifications(params?: {
   page?: number;
   per_page?: number;
   unread_only?: boolean;
+  status?: "read" | "unread";
+  category?: string;
+  severity?: string;
 }): Promise<PaginatedNotifications> {
   const response = await axios.get("/api/notifications", { params });
+  return response.data;
+}
+
+export async function fetchRecentNotifications(limit = 5): Promise<{
+  data: Notification[];
+  meta: { limit: number; unread_count: number };
+}> {
+  const response = await axios.get("/api/notifications/recent", {
+    params: { limit },
+  });
+  return response.data;
+}
+
+export async function fetchNotificationSummary(): Promise<NotificationSummary> {
+  const response = await axios.get("/api/notifications/summary");
   return response.data;
 }
 
@@ -43,8 +38,8 @@ export async function fetchUnreadCount(): Promise<number> {
   return response.data.count;
 }
 
-export async function markAsRead(notificationId: number): Promise<void> {
-  await axios.post(`/api/notifications/${notificationId}/read`);
+export async function markAsRead(notificationId: string): Promise<void> {
+  await axios.patch(`/api/notifications/${notificationId}/read`);
 }
 
 export async function markAllAsRead(): Promise<void> {

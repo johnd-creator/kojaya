@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Contracts\Cooperative\LoanServiceContract;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
+use App\Http\Requests\Cooperative\ApproveLoanRequest;
 use App\Http\Requests\Cooperative\PreviewLoanCalculationRequest;
+use App\Http\Requests\Cooperative\RejectLoanRequest;
+use App\Http\Resources\LoanResource;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanType;
@@ -50,7 +53,34 @@ class LoanApiController extends Controller
         $this->authorizedUser($request, 'view', $loan);
 
         return response()->json([
-            'data' => $loan->load(['member', 'loanType', 'installments', 'payments']),
+            'data' => new LoanResource($loan->load(['member', 'loanType', 'installments', 'payments', 'approvalLogs'])),
+        ]);
+    }
+
+    public function review(ApproveLoanRequest $request, Loan $loan, LoanServiceContract $loanService): JsonResponse
+    {
+        $this->authorizedUser($request, 'managerReview', $loan);
+
+        return response()->json([
+            'data' => new LoanResource($loanService->managerReview($loan, $request->user(), $request->validated('notes'))->load(['member', 'loanType', 'installments', 'approvalLogs'])),
+        ]);
+    }
+
+    public function approve(ApproveLoanRequest $request, Loan $loan, LoanServiceContract $loanService): JsonResponse
+    {
+        $this->authorizedUser($request, 'approve', $loan);
+
+        return response()->json([
+            'data' => new LoanResource($loanService->approve($loan, $request->user(), $request->validated('notes'))->load(['member', 'loanType', 'installments', 'approvalLogs'])),
+        ]);
+    }
+
+    public function reject(RejectLoanRequest $request, Loan $loan, LoanServiceContract $loanService): JsonResponse
+    {
+        $this->authorizedUser($request, 'reject', $loan);
+
+        return response()->json([
+            'data' => new LoanResource($loanService->reject($loan, $request->user(), $request->validated('rejection_reason'))->load(['member', 'loanType', 'installments', 'approvalLogs'])),
         ]);
     }
 

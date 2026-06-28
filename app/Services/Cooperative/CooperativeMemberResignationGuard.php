@@ -36,6 +36,7 @@ class CooperativeMemberResignationGuard
         return $member->loans()
             ->whereIn('status', [
                 LoanStatus::Applied->value,
+                LoanStatus::ManagerApproved->value,
                 LoanStatus::Approved->value,
                 LoanStatus::Active->value,
                 LoanStatus::Defaulted->value,

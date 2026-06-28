@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3";
+import { computed } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
+import { useCan } from "@/composables/useCan";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
-import { approve, disburse, index, pay, reject } from "@/routes/cooperative/loans";
+import { approve, disburse, index, pay, reject, review } from "@/routes/cooperative/loans";
 
 const props = defineProps<{ loan: any; approvalLogs: any[] }>();
 
+const { can } = useCan();
+
+const canReviewLoan = computed(() => props.loan.status === "APPLIED" && can("review_cooperative_loan"));
+const canFinalApproveLoan = computed(() => props.loan.status === "MANAGER_APPROVED" && can("approve_cooperative_loan"));
+const canRejectLoan = computed(() => ["APPLIED", "MANAGER_APPROVED"].includes(props.loan.status) && can(["review_cooperative_loan", "approve_cooperative_loan"]));
+
+const reviewForm = useForm({ notes: "" });
 const approveForm = useForm({ notes: "" });
 const rejectForm = useForm({ rejection_reason: "" });
 const disburseForm = useForm({ reference_no: props.loan.reference_no ?? "" });
@@ -21,6 +30,7 @@ const paymentForm = useForm({
   notes: "",
 });
 
+const submitReview = () => reviewForm.post(review(props.loan.id).url);
 const submitApprove = () => approveForm.post(approve(props.loan.id).url);
 const submitReject = () => rejectForm.post(reject(props.loan.id).url);
 const submitDisburse = () => disburseForm.post(disburse(props.loan.id).url);
@@ -131,17 +141,21 @@ const submitPayment = () => paymentForm.post(pay(props.loan.id).url);
 
         <div class="space-y-6">
           <div
-            v-if="loan.status === 'APPLIED'"
+            v-if="canReviewLoan || canFinalApproveLoan || canRejectLoan"
             class="rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-6 dark:bg-zinc-900"
           >
             <h2 class="text-lg font-semibold">Approval</h2>
-            <form class="mt-4 space-y-3" @submit.prevent="submitApprove">
-              <Input v-model="approveForm.notes" placeholder="Catatan approval" />
-              <Button v-can="'approve_cooperative_loan'" type="submit" :disabled="approveForm.processing" class="w-full">Setujui</Button>
+            <form v-if="canReviewLoan" class="mt-4 space-y-3" @submit.prevent="submitReview">
+              <Input v-model="reviewForm.notes" placeholder="Catatan review manajer" />
+              <Button type="submit" :disabled="reviewForm.processing" class="w-full">Review Manajer</Button>
             </form>
-            <form class="mt-4 space-y-3" @submit.prevent="submitReject">
+            <form v-if="canFinalApproveLoan" class="mt-4 space-y-3" @submit.prevent="submitApprove">
+              <Input v-model="approveForm.notes" placeholder="Catatan final approval" />
+              <Button type="submit" :disabled="approveForm.processing" class="w-full">Final Approve Pengurus</Button>
+            </form>
+            <form v-if="canRejectLoan" class="mt-4 space-y-3" @submit.prevent="submitReject">
               <textarea v-model="rejectForm.rejection_reason" required class="min-h-24 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-zinc-950" placeholder="Alasan penolakan" />
-              <Button v-can="'approve_cooperative_loan'" type="submit" variant="destructive" :disabled="rejectForm.processing" class="w-full">Tolak</Button>
+              <Button type="submit" variant="destructive" :disabled="rejectForm.processing" class="w-full">Tolak</Button>
             </form>
           </div>
 

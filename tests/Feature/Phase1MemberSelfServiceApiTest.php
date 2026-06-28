@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ApprovalLog;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
@@ -212,13 +213,23 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             ->assertJsonPath('data.member_id', $member->id)
             ->json('data.id');
 
+        ApprovalLog::query()->create([
+            'subject_type' => Loan::class,
+            'subject_id' => (string) $loanId,
+            'from_status' => null,
+            'to_status' => 'APPLIED',
+            'approved_by' => $user->id,
+            'note' => 'Pengajuan dari aplikasi member.',
+        ]);
+
         $this->getJson('/api/v1/member/loans')
             ->assertOk()
             ->assertJsonPath('data.0.id', $loanId);
 
         $this->getJson('/api/v1/member/loans/'.$loanId)
             ->assertOk()
-            ->assertJsonPath('data.id', $loanId);
+            ->assertJsonPath('data.id', $loanId)
+            ->assertJsonPath('data.approval_logs.0.to_status', 'APPLIED');
 
         $this->getJson('/api/v1/member/loans/'.$otherLoan->id)
             ->assertForbidden();

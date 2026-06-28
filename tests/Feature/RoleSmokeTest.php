@@ -124,6 +124,23 @@ class RoleSmokeTest extends TestCase
                 ],
                 [],
             ],
+            'Manajer Koperasi' => [
+                'Manajer Koperasi',
+                [
+                    '/dashboard',
+                    '/cooperative/operator/dashboard',
+                    '/cooperative/members',
+                    '/cooperative/loans',
+                    '/cooperative/payments',
+                    '/cooperative/dues',
+                    '/cooperative/shu',
+                    '/cooperative/pos',
+                    '/cooperative/reports',
+                ],
+                [
+                    '/cooperative/operator/closing',
+                ],
+            ],
             'Employee' => [
                 'Employee',
                 [
@@ -273,6 +290,8 @@ class RoleSmokeTest extends TestCase
         $this->assertTrue($permissions->contains('view_cooperative_ledger'));
         $this->assertTrue($permissions->contains('view_cooperative_loan'));
         $this->assertTrue($permissions->contains('manage_cooperative_loan'));
+        $this->assertFalse($permissions->contains('review_cooperative_loan'));
+        $this->assertFalse($permissions->contains('approve_cooperative_loan'));
         $this->assertTrue($permissions->contains('manage_cooperative_points'));
         $this->assertTrue($permissions->contains('manage_cooperative_rewards'));
         $this->assertTrue($permissions->contains('manage_cooperative_redemption'));
@@ -297,7 +316,7 @@ class RoleSmokeTest extends TestCase
 
         $permissionNames = $adminKoperasi->permissions->pluck('name');
 
-        $this->assertCount(19, $permissionNames);
+        $this->assertCount(20, $permissionNames);
 
         foreach ([
             'view_cooperative_member',
@@ -319,6 +338,7 @@ class RoleSmokeTest extends TestCase
             'view_pos_reports',
             'view_cooperative_ledger',
             'approve_pos_void',
+            'manage_cooperative_opening_balance',
         ] as $permission) {
             $this->assertTrue(
                 $permissionNames->contains($permission),
@@ -328,6 +348,7 @@ class RoleSmokeTest extends TestCase
 
         foreach ([
             'approve_cooperative_loan',
+            'review_cooperative_loan',
             'view_cooperative_report',
             'manage_pos_shu',
             'view_cooperative_all',
@@ -340,12 +361,39 @@ class RoleSmokeTest extends TestCase
         }
     }
 
+    public function test_role_permission_seeder_creates_manajer_koperasi_between_pengurus_and_admin(): void
+    {
+        $manager = Role::query()->where('name', 'Manajer Koperasi')->first();
+
+        $this->assertNotNull($manager);
+
+        $permissionNames = $manager->permissions->pluck('name');
+
+        foreach ([
+            'view_cooperative_loan',
+            'manage_cooperative_loan',
+            'review_cooperative_loan',
+            'view_cooperative_report',
+            'manage_cooperative_ledger',
+            'access_cooperative_pos',
+        ] as $permission) {
+            $this->assertTrue(
+                $permissionNames->contains($permission),
+                "Manajer Koperasi missing required permission [{$permission}]."
+            );
+        }
+
+        $this->assertFalse($permissionNames->contains('approve_cooperative_loan'));
+        $this->assertFalse($permissionNames->contains('approve_cooperative_member'));
+        $this->assertFalse($permissionNames->contains('manage_cooperative_settings'));
+    }
+
     public function test_cooperative_seeder_can_assign_admin_koperasi_after_role_permission_seeder_runs(): void
     {
         $this->seed(CooperativeSeeder::class);
 
         $adminKoperasi = User::query()
-            ->where('email', 'admin.kop@koperasijayabersama.id')
+            ->where('email', 'admin.kop@koj.id')
             ->firstOrFail();
 
         $this->assertTrue($adminKoperasi->hasRole('Admin Koperasi'));

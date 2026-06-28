@@ -13,6 +13,7 @@ use App\Http\Requests\Api\StoreSavingsWithdrawalRequest;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
 use App\Http\Resources\LoanResource;
+use App\Http\Resources\LoanTypeResource;
 use App\Http\Resources\MemberInvoiceResource;
 use App\Http\Resources\MemberLoanRestructureResource;
 use App\Http\Resources\MemberPaymentResource;
@@ -28,6 +29,7 @@ use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
 use App\Models\CooperativeSupportTicket;
 use App\Models\Loan;
+use App\Models\LoanType;
 use App\Models\PosTransaction;
 use App\Models\RewardRedemption;
 use App\Services\Cooperative\CooperativeReceiptService;
@@ -198,6 +200,73 @@ class MemberSelfServiceController extends Controller
             ->response();
     }
 
+    public function showInvoice(Request $request, CooperativeDuesInvoice $invoice): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($invoice->cooperative_member_id === $member->id, 403);
+
+        return response()->json([
+            'data' => new MemberInvoiceResource($invoice->load(['contributionType', 'member'])),
+        ]);
+    }
+
+    public function createPaymentIntent(Request $request, CooperativeDuesInvoice $invoice): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($invoice->cooperative_member_id === $member->id, 403);
+        abort_unless(in_array($invoice->status, ['UNPAID', 'PARTIAL']), 422, 'Invoice sudah lunas.');
+
+        $payment = $invoice->payments()
+            ->where('status', 'PENDING')
+            ->where('cooperative_member_id', $member->id)
+            ->latest()
+            ->first();
+
+        if (! $payment) {
+            $amount = (float) $invoice->amount - (float) $invoice->paid_amount;
+            $payment = $invoice->payments()->create([
+                'cooperative_member_id' => $member->id,
+                'user_id' => $request->user()?->id,
+                'amount' => $amount,
+                'payment_method' => null,
+                'paid_at' => null,
+                'status' => 'PENDING',
+            ]);
+        }
+
+        $availableChannels = [
+            ['code' => 'VA', 'label' => 'Transfer Bank / VA', 'admin_fee' => 4000, 'fee_type' => 'fixed'],
+            ['code' => 'QRIS', 'label' => 'QRIS', 'admin_fee' => 0.7, 'fee_type' => 'percent'],
+            ['code' => 'E_WALLET', 'label' => 'E-Wallet (GoPay, DANA, ShopeePay)', 'admin_fee' => 2000, 'fee_type' => 'fixed'],
+        ];
+
+        $channelOptions = array_map(function ($channel) use ($payment) {
+            $fee = $channel['fee_type'] === 'percent'
+                ? ((float) $payment->amount * $channel['admin_fee'] / 100)
+                : $channel['admin_fee'];
+
+            return [
+                'code' => $channel['code'],
+                'label' => $channel['label'],
+                'admin_fee' => round($fee, 2),
+                'fee_type' => $channel['fee_type'],
+            ];
+        }, $availableChannels);
+
+        return response()->json([
+            'data' => [
+                'payment_id' => $payment->id,
+                'invoice_id' => $invoice->id,
+                'amount' => (float) $payment->amount,
+                'status' => $payment->status,
+                'available_channels' => $channelOptions,
+                'expires_at' => now()->addHours(24)->toIso8601String(),
+            ],
+        ]);
+    }
+
     public function payments(Request $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
@@ -278,6 +347,18 @@ class MemberSelfServiceController extends Controller
             ->latest()
             ->paginate($request->integer('per_page', 15)))
             ->response();
+    }
+
+    public function loanOptions(Request $request): JsonResponse
+    {
+        $this->memberOrAbort($request);
+
+        return LoanTypeResource::collection(
+            LoanType::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+        )->response();
     }
 
     public function applyLoan(ApplyLoanRequest $request, LoanServiceContract $loanService): JsonResponse

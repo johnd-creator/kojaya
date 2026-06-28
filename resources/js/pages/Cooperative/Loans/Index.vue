@@ -5,6 +5,7 @@ import {
   CreditCard,
   HandCoins,
   Plus,
+  ShieldCheck,
   Sparkles,
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
@@ -27,7 +28,7 @@ const props = defineProps<{
   members: Array<{ id: number; member_no: string; name: string }>;
   loanTypes: Array<{ id: number; name: string }>;
   filters: { status?: string; cooperative_member_id?: string | number };
-  stats: { applied: number; active: number; paid_off: number };
+  stats: { applied: number; manager_approved: number; active: number; paid_off: number };
 }>();
 
 const filters = ref({
@@ -44,6 +45,7 @@ const { resetFilters } = useTableFilters(filters, {
 const statusOptions = [
   { label: "Semua status", value: "" },
   { label: "APPLIED", value: "APPLIED" },
+  { label: "MANAGER_APPROVED", value: "MANAGER_APPROVED" },
   { label: "APPROVED", value: "APPROVED" },
   { label: "ACTIVE", value: "ACTIVE" },
   { label: "PAID_OFF", value: "PAID_OFF" },
@@ -134,11 +136,16 @@ const breadcrumbs = [
         </div>
       </section>
 
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="grid gap-4 md:grid-cols-4">
         <StatsCard
-          label="Menunggu Approval"
+          label="Menunggu Manajer"
           :value="stats.applied"
           :icon="HandCoins"
+        />
+        <StatsCard
+          label="Menunggu Pengurus"
+          :value="stats.manager_approved"
+          :icon="ShieldCheck"
         />
         <StatsCard
           label="Pinjaman Aktif"

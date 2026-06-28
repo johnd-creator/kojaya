@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             TaxRuleSeeder::class,
             RolePermissionSeeder::class,
             CooperativeSeeder::class,
+            LoanTypeSeeder::class,
             AnggotaSeeder::class,
         ]);
 

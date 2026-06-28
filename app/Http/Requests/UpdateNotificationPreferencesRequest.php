@@ -23,6 +23,9 @@ class UpdateNotificationPreferencesRequest extends FormRequest
             'whatsapp_enabled' => ['sometimes', 'boolean'],
             'whatsapp_phone' => ['nullable', 'string', 'max:40'],
             'channels' => ['sometimes', 'array'],
+            'categories' => ['sometimes', 'array'],
+            'categories.*' => ['array'],
+            'categories.*.*' => ['string', 'in:database,push,whatsapp,mail'],
         ];
     }
 }

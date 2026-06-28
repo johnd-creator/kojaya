@@ -90,7 +90,7 @@ class MemberStatusJourneyService
             'amount' => $loan ? (float) $loan->principal_amount : 0,
             'steps' => [
                 $this->step('Pengajuan dikirim', $loan !== null, $loan?->applied_at?->toDateString()),
-                $this->step('Direview koperasi', $loan !== null && ! in_array($loan->status, [LoanStatus::Applied], true)),
+                $this->step('Direview manajer koperasi', $loan !== null && ! in_array($loan->status, [LoanStatus::Applied], true), $loan?->manager_reviewed_at?->toIso8601String()),
                 $this->step('Disetujui', $loan !== null && in_array($loan->status, [LoanStatus::Approved, LoanStatus::Active, LoanStatus::PaidOff], true), $loan?->approved_at?->toIso8601String()),
                 $this->step('Dana dicairkan', $loan !== null && in_array($loan->status, [LoanStatus::Active, LoanStatus::PaidOff], true), $loan?->disbursed_at?->toIso8601String()),
                 $this->step('Lunas', $loan?->status === LoanStatus::PaidOff),

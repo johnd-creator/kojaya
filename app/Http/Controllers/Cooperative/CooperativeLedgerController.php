@@ -50,7 +50,8 @@ class CooperativeLedgerController extends Controller
                 ->distinct()
                 ->orderBy('entry_type')
                 ->pluck('entry_type'),
-            'canManageLedger' => $request->user()?->hasRole('System Admin') ?? false,
+            'canManageLedger' => (bool) $request->user()?->can('manage_cooperative_ledger')
+                && (bool) $request->user()?->can('view_cooperative_all'),
         ]);
     }
 

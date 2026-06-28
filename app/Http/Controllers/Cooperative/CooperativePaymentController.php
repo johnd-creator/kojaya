@@ -44,7 +44,7 @@ class CooperativePaymentController extends Controller
                 $request->only(['status']),
                 ['sort_field' => $sortField, 'sort_direction' => $sortDirection],
             ),
-            'canApprovePayments' => $request->user()?->hasRole('Admin Koperasi') ?? false,
+            'canApprovePayments' => $this->canApprovePaymentsFromUi($request),
         ]);
     }
 
@@ -69,7 +69,7 @@ class CooperativePaymentController extends Controller
 
     public function bulkApprove(BulkApprovePaymentsRequest $request, CooperativePaymentService $service): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole('Admin Koperasi'), 403);
+        abort_unless($this->canApprovePaymentsFromUi($request), 403);
 
         $ids = $request->validated('ids');
 
@@ -103,7 +103,7 @@ class CooperativePaymentController extends Controller
 
     public function approve(CooperativePayment $payment, CooperativePaymentService $service, Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole('Admin Koperasi'), 403);
+        abort_unless($this->canApprovePaymentsFromUi($request), 403);
 
         $this->authorize('approve', $payment);
 
@@ -118,5 +118,14 @@ class CooperativePaymentController extends Controller
             ->where('is_active', true)
             ->whereIn('code', ['POKOK', 'SUKARELA'])
             ->orderBy('name');
+    }
+
+    private function canApprovePaymentsFromUi(Request $request): bool
+    {
+        $user = $request->user();
+
+        return (bool) $user?->can('manage_cooperative_payment')
+            && (bool) $user?->can('verify_cooperative_member')
+            && ! (bool) $user?->can('view_cooperative_all');
     }
 }

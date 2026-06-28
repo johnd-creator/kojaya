@@ -522,6 +522,8 @@ Authorization: Bearer {token}
 
 Loan applications reuse the cooperative loan calculator/service and return the generated installment schedule. Members can only access loans linked to their own member profile.
 
+Loan status flow: `APPLIED` (waiting for `Manajer Koperasi` review) → `MANAGER_APPROVED` (waiting for final `Pengurus Koperasi` approval) → `APPROVED` (ready for disbursement) → `ACTIVE` (disbursed). `REJECTED`, `PAID_OFF`, `DEFAULTED`, and `WRITTEN_OFF` remain terminal/operational states depending on the loan lifecycle.
+
 **Apply Loan Request:**
 ```json
 {
@@ -1700,12 +1702,12 @@ Content-Type: application/json
 
 ### **List Loans**
 ```http
-GET /api/v1/loans?status=PENDING
+GET /api/v1/loans?status=APPLIED
 Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
-- `status` (optional): `PENDING`, `APPROVED`, `REJECTED`, `DISBURSED`, `COMPLETED`
+- `status` (optional): `APPLIED`, `MANAGER_APPROVED`, `APPROVED`, `ACTIVE`, `PAID_OFF`, `REJECTED`, `DEFAULTED`, `WRITTEN_OFF`
 - `page` (optional): Page number
 
 **Response (200):**
@@ -1755,12 +1757,51 @@ Content-Type: application/json
   "data": {
     "id": "uuid",
     "loan_number": "PINJ-2026-001",
-    "status": "PENDING",
+    "status": "APPLIED",
     "estimated_monthly_installment": 888000,
     "created_at": "2026-05-02T10:00:00Z"
   }
 }
 ```
+
+### **Review Loan as Manager**
+```http
+POST /api/v1/loans/{loan}/review
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "notes": "Kelayakan usaha dan histori simpanan sudah dicek."
+}
+```
+
+Requires `review_cooperative_loan` permission. Moves loan from `APPLIED` to `MANAGER_APPROVED`.
+
+### **Final Approve Loan as Pengurus**
+```http
+POST /api/v1/loans/{loan}/approve
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "notes": "Disetujui untuk pencairan."
+}
+```
+
+Requires `approve_cooperative_loan` permission. Moves loan from `MANAGER_APPROVED` to `APPROVED`.
+
+### **Reject Loan**
+```http
+POST /api/v1/loans/{loan}/reject
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "rejection_reason": "Riwayat angsuran belum memenuhi syarat."
+}
+```
+
+Requires `review_cooperative_loan` or `approve_cooperative_loan` permission. Rejects loans from `APPLIED` or `MANAGER_APPROVED`.
 
 ### **Get Loan Detail**
 ```http
@@ -2260,95 +2301,142 @@ Authorization: Bearer {token}
 
 ## 🔔 Notifications API
 
+Notifikasi in-app memakai Laravel database notifications sebagai source of truth. Push dan WhatsApp dikirim melalui transactional outbox sebagai channel tambahan. Rencana lengkap event per role ada di `docs/plan_notifikasi.md`.
+
+### **Session/Web Notifications**
+
 **Base Path:** `/api/notifications`
 
-### **List Notifications**
+Dipakai oleh ikon notifikasi kanan atas dan halaman `/notifications` untuk role internal maupun anggota yang login via session.
+
 ```http
-GET /api/notifications?per_page=15
-Authorization: Bearer {token}
+GET /api/notifications?category=loan&status=unread&severity=warning&per_page=15
+GET /api/notifications/recent?limit=5
+GET /api/notifications/summary
+GET /api/notifications/{notification}
+PATCH /api/notifications/{notification}/read
+POST /api/notifications/mark-all-read
+GET /api/notifications/preferences
+PUT /api/notifications/preferences
 ```
 
-**Response (200):**
+**Notification item contract:**
 ```json
 {
-  "data": [
-    {
-      "id": "uuid",
-      "type": "App\\Notifications\\PaymentReceived",
-      "data": {
-        "message": "Pembayaran Anda telah diterima",
-        "url": "/member/payments"
-      },
-      "read_at": null,
-      "created_at": "2026-05-06T10:00:00Z"
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "per_page": 15,
-    "total": 30
+  "id": "uuid",
+  "type": "database",
+  "event_type": "pengurus.loan.final_approval_required",
+  "category": "loan",
+  "severity": "warning",
+  "title": "Final approval pinjaman diperlukan",
+  "message": "Pengajuan pinjaman Andi Prasetyo menunggu approval Pengurus Koperasi.",
+  "subject": {
+    "type": "loan",
+    "id": 123,
+    "label": "Pinjaman Andi Prasetyo"
+  },
+  "actor": {
+    "id": 45,
+    "name": "Manajer Koperasi"
+  },
+  "action": {
+    "label": "Buka detail",
+    "url": "/cooperative/loans/123"
+  },
+  "read_at": null,
+  "created_at": "2026-06-28T10:00:00+07:00",
+  "metadata": {
+    "organization_id": "uuid",
+    "member_id": 10,
+    "amount": 1200000
   }
 }
 ```
 
-### **Get Notification Detail**
-```http
-GET /api/notifications/{id}
-Authorization: Bearer {token}
-```
-
-### **Mark as Read**
-```http
-PATCH /api/notifications/{id}/read
-Authorization: Bearer {token}
-```
-
-**Response (200):**
+**Summary response:**
 ```json
 {
-  "success": true,
-  "message": "Notification marked as read."
+  "unread_count": 5,
+  "by_category": {
+    "loan": 2,
+    "payment": 1,
+    "pos": 2
+  },
+  "by_severity": {
+    "info": 2,
+    "warning": 3,
+    "critical": 0
+  }
 }
 ```
 
-### **Mark All as Read**
-```http
-POST /api/notifications/mark-all-read
-Authorization: Bearer {token}
-```
-
-### **Unread Count**
-```http
-GET /api/notifications/unread-count
-Authorization: Bearer {token}
-```
-
-**Response (200):**
+**Preferences update payload:**
 ```json
 {
-  "count": 5
-}
-```
-
-### **Notification Preferences**
-```http
-GET /api/notifications/preferences
-PUT /api/notifications/preferences
-Authorization: Bearer {token}
-```
-
-**Update payload:**
-```json
-{
-  "email_enabled": true,
+  "database_enabled": true,
   "push_enabled": true,
-  "whatsapp_enabled": true,
-  "whatsapp_phone": "081234567890",
-  "channels": ["mail", "database", "push", "whatsapp"]
+  "whatsapp_enabled": false,
+  "whatsapp_phone": "6281234567890",
+  "categories": {
+    "loan": ["database", "push"],
+    "payment": ["database"],
+    "dues": ["database", "whatsapp"],
+    "pos": ["database"],
+    "shu": ["database", "push"]
+  }
 }
 ```
 
-`whatsapp_enabled` adalah kontrol opt-in/opt-out untuk reminder WhatsApp. Nomor `whatsapp_phone` dinormalisasi saat pengiriman; jika kosong, sistem dapat memakai nomor anggota koperasi yang tersimpan pada profil member.
+### **Member Mobile Notifications**
+
+**Base Path:** `/api/v1/member/notifications`
+
+```http
+GET /api/v1/member/notifications
+GET /api/v1/member/notifications/recent?limit=5
+GET /api/v1/member/notifications/unread-count
+GET /api/v1/member/notifications/summary
+PATCH /api/v1/member/notifications/{notification}/read
+POST /api/v1/member/notifications/mark-all-read
+GET /api/v1/member/notifications/preferences
+PUT /api/v1/member/notifications/preferences
+```
+
+All member endpoints require `auth:sanctum` and member token abilities. Member notifications are scoped to the authenticated member user only.
+
+### **Admin/Cooperative Token Notifications**
+
+**Base Path:** `/api/v1/notifications`
+
+```http
+GET /api/v1/notifications
+GET /api/v1/notifications/recent?limit=5
+GET /api/v1/notifications/summary
+PATCH /api/v1/notifications/{notification}/read
+POST /api/v1/notifications/mark-all-read
+GET /api/v1/notifications/preferences
+PUT /api/v1/notifications/preferences
+```
+
+Authorization:
+- `cooperative:read` for list, recent, and summary.
+- `cooperative:write` for mark-read and preferences.
+- Results are scoped by authenticated user, organization, role, and permission.
+
+### **Core Cooperative Event Types**
+
+Initial cooperative event categories:
+- `member`: onboarding, validation, revision, final approval.
+- `dues`: invoice created, due reminder, overdue.
+- `payment`: proof uploaded, approval required, approved, rejected.
+- `loan`: applied, manager review required, manager reviewed, final approval required, approved, rejected, disbursed, installment due, installment paid, NPL alert.
+- `pos`: transaction completed, return processed, void requested, void approved/rejected, shift closed, cash difference.
+- `inventory`: low stock, negative stock, stock count review, variance detected.
+- `coffee`: order received, brewing, ready, picked up, cancelled.
+- `reward`: redemption required, status changed.
+- `points`: earned, adjusted, expired.
+- `shu`: review required, close required, allocated, revision requested.
+- `support`: ticket created, replied, closed.
 
 ### **WhatsApp Operational Notifications**
 

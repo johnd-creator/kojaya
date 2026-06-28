@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Notifications API (session-based for Inertia)
     Route::prefix('api/notifications')->group(function () {
         Route::get('/', [App\Http\Controllers\NotificationController::class, 'index']);
+        Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent']);
+        Route::get('/summary', [App\Http\Controllers\NotificationController::class, 'summary']);
         Route::get('/unread-count', [App\Http\Controllers\NotificationController::class, 'unreadCount']);
         Route::get('/preferences', [App\Http\Controllers\NotificationController::class, 'getPreferences']);
         Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences']);
@@ -257,6 +259,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('loans/create', [\App\Http\Controllers\Cooperative\LoanController::class, 'create'])->name('loans.create');
             Route::post('loans', [\App\Http\Controllers\Cooperative\LoanController::class, 'store'])->name('loans.store');
             Route::get('loans/{loan}', [\App\Http\Controllers\Cooperative\LoanController::class, 'show'])->name('loans.show');
+            Route::post('loans/{loan}/review', [\App\Http\Controllers\Cooperative\LoanController::class, 'review'])->name('loans.review');
             Route::post('loans/{loan}/approve', [\App\Http\Controllers\Cooperative\LoanController::class, 'approve'])->name('loans.approve');
             Route::post('loans/{loan}/reject', [\App\Http\Controllers\Cooperative\LoanController::class, 'reject'])->name('loans.reject');
             Route::post('loans/{loan}/disburse', [\App\Http\Controllers\Cooperative\LoanController::class, 'disburse'])->name('loans.disburse');

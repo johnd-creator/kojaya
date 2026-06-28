@@ -20,14 +20,16 @@ class CooperativeLoanFeatureTest extends TestCase
 {
     use DatabaseMigrations;
 
-    public function test_admin_can_create_approve_and_disburse_loan(): void
+    public function test_loan_requires_manager_review_then_pengurus_final_approval_before_disbursement(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
         $admin = User::factory()->create();
-        $admin->assignRole('System Admin');
-        $approver = User::factory()->create();
-        $approver->assignRole('System Admin');
+        $admin->assignRole('Admin Koperasi');
+        $manager = User::factory()->create();
+        $manager->assignRole('Manajer Koperasi');
+        $pengurus = User::factory()->create();
+        $pengurus->assignRole('Pengurus Koperasi');
         $member = $this->member();
         $loanType = $this->loanType();
 
@@ -36,7 +38,7 @@ class CooperativeLoanFeatureTest extends TestCase
             'loan_type_id' => $loanType->id,
             'principal_amount' => 1200000,
             'term_months' => 6,
-            'first_due_date' => '2026-06-15',
+            'first_due_date' => now()->addMonth()->toDateString(),
             'purpose' => 'Modal usaha',
             'notes' => 'Pengajuan awal',
         ])->assertRedirect();
@@ -53,19 +55,41 @@ class CooperativeLoanFeatureTest extends TestCase
             'to_status' => 'APPLIED',
         ]);
 
-        $this->actingAs($approver)->post(route('cooperative.loans.approve', $loan), [
-            'notes' => 'Disetujui pengurus',
+        $this->actingAs($admin)->post(route('cooperative.loans.review', $loan), [
+            'notes' => 'Admin tidak boleh review',
+        ])->assertForbidden();
+
+        $this->actingAs($manager)->post(route('cooperative.loans.approve', $loan), [
+            'notes' => 'Manajer tidak boleh final approve',
+        ])->assertForbidden();
+
+        $this->actingAs($manager)->post(route('cooperative.loans.review', $loan), [
+            'notes' => 'Layak untuk final approval',
         ])->assertRedirect();
 
-        $this->assertSame('APPROVED', $loan->refresh()->status->value);
+        $this->assertSame('MANAGER_APPROVED', $loan->refresh()->status->value);
+        $this->assertSame($manager->id, $loan->manager_reviewed_by);
         $this->assertDatabaseHas('approval_logs', [
             'subject_type' => Loan::class,
             'subject_id' => (string) $loan->id,
             'from_status' => 'APPLIED',
+            'to_status' => 'MANAGER_APPROVED',
+        ]);
+
+        $this->actingAs($pengurus)->post(route('cooperative.loans.approve', $loan), [
+            'notes' => 'Disetujui pengurus',
+        ])->assertRedirect();
+
+        $this->assertSame('APPROVED', $loan->refresh()->status->value);
+        $this->assertSame($pengurus->id, $loan->approved_by);
+        $this->assertDatabaseHas('approval_logs', [
+            'subject_type' => Loan::class,
+            'subject_id' => (string) $loan->id,
+            'from_status' => 'MANAGER_APPROVED',
             'to_status' => 'APPROVED',
         ]);
 
-        $this->actingAs($approver)->post(route('cooperative.loans.disburse', $loan), [
+        $this->actingAs($admin)->post(route('cooperative.loans.disburse', $loan), [
             'reference_no' => 'DISB-001',
         ])->assertRedirect();
 
@@ -137,7 +161,7 @@ class CooperativeLoanFeatureTest extends TestCase
             'loan_type_id' => $loanType->id,
             'principal_amount' => 900000,
             'term_months' => 3,
-            'first_due_date' => '2026-06-15',
+            'first_due_date' => now()->addMonth()->toDateString(),
             'purpose' => 'Kebutuhan keluarga',
         ])->assertCreated()
             ->assertJsonPath('data.cooperative_member_id', $member->id)
@@ -150,6 +174,60 @@ class CooperativeLoanFeatureTest extends TestCase
 
         $this->getJson("/api/v1/loans/{$otherLoan->id}")
             ->assertForbidden();
+    }
+
+    public function test_admin_api_can_review_final_approve_and_reject_loans_by_permission(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $manager = User::factory()->create();
+        $manager->assignRole('Manajer Koperasi');
+        $pengurus = User::factory()->create();
+        $pengurus->assignRole('Pengurus Koperasi');
+        $member = $this->member();
+        $loanType = $this->loanType();
+
+        $loan = app(\App\Contracts\Cooperative\LoanServiceContract::class)->apply([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $member->organization_id,
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 900000,
+            'term_months' => 3,
+            'first_due_date' => now()->addMonth()->toDateString(),
+            'purpose' => 'Modal usaha',
+        ]);
+
+        Sanctum::actingAs($manager, ['cooperative:read', 'cooperative:write']);
+
+        $this->postJson("/api/v1/loans/{$loan->id}/review", [
+            'notes' => 'Review API manajer',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'MANAGER_APPROVED')
+            ->assertJsonPath('data.approval_stage', 'PENGURUS_FINAL_APPROVAL');
+
+        Sanctum::actingAs($pengurus, ['cooperative:read', 'cooperative:write']);
+
+        $this->postJson("/api/v1/loans/{$loan->id}/approve", [
+            'notes' => 'Final approval API',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'APPROVED')
+            ->assertJsonPath('data.approval_stage', 'READY_FOR_DISBURSEMENT');
+
+        $secondMember = $this->member();
+        $rejectedLoan = app(\App\Contracts\Cooperative\LoanServiceContract::class)->apply([
+            'cooperative_member_id' => $secondMember->id,
+            'organization_id' => $secondMember->organization_id,
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 1000000,
+            'term_months' => 3,
+            'first_due_date' => now()->addMonths(2)->toDateString(),
+            'purpose' => 'Tambahan modal',
+        ]);
+
+        $this->postJson("/api/v1/loans/{$rejectedLoan->id}/reject", [
+            'rejection_reason' => 'Belum memenuhi syarat',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'REJECTED');
     }
 
     public function test_loan_calculator_endpoints_work_for_web_and_api(): void
@@ -174,7 +252,7 @@ class CooperativeLoanFeatureTest extends TestCase
             'loan_type_id' => $loanType->id,
             'principal_amount' => 1000000,
             'term_months' => 4,
-            'first_due_date' => '2026-06-10',
+            'first_due_date' => now()->addMonth()->toDateString(),
         ])->assertOk()
             ->assertJsonPath('data.installment_amount', 270000)
             ->assertJsonPath('data.total_interest_amount', 80000)

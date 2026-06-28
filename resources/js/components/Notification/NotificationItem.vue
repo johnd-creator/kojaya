@@ -78,6 +78,36 @@ const iconMap = {
 };
 
 const iconData = computed(() => {
+  const severityMap = {
+    critical: {
+      icon: AlertCircle,
+      colorClass: "text-red-600",
+      bgClass: "bg-red-50 dark:bg-red-950",
+    },
+    warning: {
+      icon: AlertTriangle,
+      colorClass: "text-yellow-600",
+      bgClass: "bg-yellow-50 dark:bg-yellow-950",
+    },
+    success: {
+      icon: Check,
+      colorClass: "text-green-600",
+      bgClass: "bg-green-50 dark:bg-green-950",
+    },
+    info: {
+      icon: Info,
+      colorClass: "text-blue-600",
+      bgClass: "bg-blue-50 dark:bg-blue-950",
+    },
+  };
+
+  if (props.notification.severity) {
+    return (
+      severityMap[props.notification.severity as keyof typeof severityMap] ||
+      severityMap.info
+    );
+  }
+
   return (
     iconMap[props.notification.type as keyof typeof iconMap] || {
       icon: Bell,
@@ -90,11 +120,11 @@ const iconData = computed(() => {
 const IconComponent = computed(() => iconData.value.icon);
 
 const title = computed(() => {
-  return props.notification.data.title || "Notification";
+  return props.notification.title || props.notification.data.title || "Notifikasi";
 });
 
 const message = computed(() => {
-  return props.notification.data.message || "";
+  return props.notification.message || props.notification.data.message || "";
 });
 
 const timeAgo = computed(() => {
@@ -135,8 +165,9 @@ const handleClick = async () => {
     }
   }
 
-  if (props.notification.data.url) {
-    router.visit(props.notification.data.url);
+  const actionUrl = props.notification.action?.url || props.notification.data.url;
+  if (actionUrl) {
+    router.visit(actionUrl);
   }
 };
 </script>

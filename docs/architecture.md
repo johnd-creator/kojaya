@@ -235,6 +235,8 @@ kojaya/
 - **Roles:**
   - System Admin
   - Pengurus Koperasi
+  - Manajer Koperasi
+  - Admin Koperasi
   - Kasir Koperasi
   - HR Manager
   - Finance Staff
@@ -242,6 +244,10 @@ kojaya/
   - Technician
   - Employee
   - Cooperative Member
+
+### Cooperative Role Hierarchy
+
+Within cooperative operations, `Pengurus Koperasi` is the highest cooperative authority, `Manajer Koperasi` sits below Pengurus for operational review, and `Admin Koperasi` handles day-to-day administration. Loan approval follows this hierarchy: manager review first, final Pengurus approval second; Admin Koperasi is not a loan approver.
 
 ### **Authorization Patterns**
 

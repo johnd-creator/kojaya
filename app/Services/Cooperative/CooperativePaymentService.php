@@ -16,6 +16,7 @@ class CooperativePaymentService
     public function __construct(
         private readonly CooperativePeriodLockService $periodLockService,
         private readonly CooperativeReceiptService $receiptService,
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
     ) {}
 
     /**
@@ -45,13 +46,17 @@ class CooperativePaymentService
 
         $this->periodLockService->assertUnlocked($invoice?->period ?? substr((string) $data['paid_at'], 0, 7));
 
-        return CooperativePayment::query()->create([
+        $payment = CooperativePayment::query()->create([
             ...$data,
             'cooperative_dues_invoice_id' => $invoice?->id,
             'cooperative_contribution_type_id' => $contributionType?->id,
             'user_id' => $user?->id,
             'status' => $data['status'] ?? 'PENDING',
         ]);
+
+        DB::afterCommit(fn () => $this->notificationDispatcher->paymentRecorded($payment, $user));
+
+        return $payment;
     }
 
     public function approve(CooperativePayment $payment, ?User $approver = null): CooperativePayment
@@ -133,6 +138,7 @@ class CooperativePaymentService
             $payment->logApproval($originalStatus, 'APPROVED', $approver, 'Pembayaran disetujui');
 
             $this->receiptService->issue($payment, $approver);
+            DB::afterCommit(fn () => $this->notificationDispatcher->paymentApproved($payment, $approver));
 
             return $payment->refresh()->load('receipt');
         });

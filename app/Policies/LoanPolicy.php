@@ -37,14 +37,22 @@ class LoanPolicy extends BasePolicy
         return $this->can($user, PermissionEnum::COOPERATIVE_LOAN_APPROVE->value);
     }
 
+    public function managerReview(User $user, Loan $loan): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_LOAN_REVIEW->value);
+    }
+
     public function reject(User $user, Loan $loan): bool
     {
-        return $this->approve($user, $loan);
+        return $this->canAny($user, [
+            PermissionEnum::COOPERATIVE_LOAN_REVIEW->value,
+            PermissionEnum::COOPERATIVE_LOAN_APPROVE->value,
+        ]);
     }
 
     public function disburse(User $user, Loan $loan): bool
     {
-        return $this->approve($user, $loan);
+        return $this->can($user, PermissionEnum::COOPERATIVE_LOAN_MANAGE->value);
     }
 
     public function recordPayment(User $user, Loan $loan): bool

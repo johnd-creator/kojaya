@@ -22,6 +22,7 @@ class LoanService implements LoanServiceContract
         private readonly LoanCalculatorService $calculator,
         private readonly LoanEligibilityService $eligibility,
         private readonly CooperativePeriodLockService $periodLockService,
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
     ) {}
 
     /**
@@ -71,12 +72,13 @@ class LoanService implements LoanServiceContract
             }
 
             $this->logApproval($loan, null, LoanStatus::Applied->value, $actor, 'Pengajuan pinjaman dibuat.');
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanApplied($loan, $actor));
 
             return $loan->load(['member', 'loanType', 'installments']);
         });
     }
 
-    public function approve(Loan $loan, ?User $actor = null, ?string $note = null): Loan
+    public function managerReview(Loan $loan, ?User $actor = null, ?string $note = null): Loan
     {
         return DB::transaction(function () use ($loan, $actor, $note): Loan {
             $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
@@ -85,9 +87,35 @@ class LoanService implements LoanServiceContract
                 return $loan;
             }
 
-            if ($actor && $loan->user_id && (int) $actor->id === (int) $loan->user_id) {
+            $this->assertActorIsNotLoanCreator($loan, $actor, 'manager_reviewed_by');
+
+            $loan->forceFill([
+                'status' => LoanStatus::ManagerApproved,
+                'manager_reviewed_at' => now(),
+                'manager_reviewed_by' => $actor?->id,
+            ])->save();
+
+            $this->logApproval($loan, LoanStatus::Applied->value, LoanStatus::ManagerApproved->value, $actor, $note);
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanManagerReviewed($loan, $actor));
+
+            return $loan->refresh();
+        });
+    }
+
+    public function approve(Loan $loan, ?User $actor = null, ?string $note = null): Loan
+    {
+        return DB::transaction(function () use ($loan, $actor, $note): Loan {
+            $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
+
+            if ($loan->status !== LoanStatus::ManagerApproved) {
+                return $loan;
+            }
+
+            $this->assertActorIsNotLoanCreator($loan, $actor, 'approved_by');
+
+            if ($actor && $loan->manager_reviewed_by && (int) $actor->id === (int) $loan->manager_reviewed_by) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'approved_by' => 'Pembuat pengajuan pinjaman tidak dapat menyetujui pinjamannya sendiri.',
+                    'approved_by' => 'Reviewer manajer tidak dapat menjadi final approver pinjaman yang sama.',
                 ]);
             }
 
@@ -97,7 +125,8 @@ class LoanService implements LoanServiceContract
                 'approved_by' => $actor?->id,
             ])->save();
 
-            $this->logApproval($loan, LoanStatus::Applied->value, LoanStatus::Approved->value, $actor, $note);
+            $this->logApproval($loan, LoanStatus::ManagerApproved->value, LoanStatus::Approved->value, $actor, $note);
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanApproved($loan, $actor));
 
             return $loan->refresh();
         });
@@ -108,8 +137,16 @@ class LoanService implements LoanServiceContract
         return DB::transaction(function () use ($loan, $actor, $reason): Loan {
             $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
 
-            if ($loan->status !== LoanStatus::Applied) {
+            if (! in_array($loan->status, [LoanStatus::Applied, LoanStatus::ManagerApproved], true)) {
                 return $loan;
+            }
+
+            $fromStatus = $loan->status->value;
+
+            if ($actor && $loan->user_id && (int) $actor->id === (int) $loan->user_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'rejected_by' => 'Pembuat pengajuan pinjaman tidak dapat menolak pinjamannya sendiri.',
+                ]);
             }
 
             $loan->forceFill([
@@ -119,7 +156,8 @@ class LoanService implements LoanServiceContract
                 'rejection_reason' => $reason,
             ])->save();
 
-            $this->logApproval($loan, LoanStatus::Applied->value, LoanStatus::Rejected->value, $actor, $reason);
+            $this->logApproval($loan, $fromStatus, LoanStatus::Rejected->value, $actor, $reason);
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanRejected($loan, $actor));
 
             return $loan->refresh();
         });
@@ -163,6 +201,7 @@ class LoanService implements LoanServiceContract
                 );
 
                 $this->logApproval($loan, LoanStatus::Approved->value, LoanStatus::Active->value, $actor, 'Pinjaman dicairkan.');
+                DB::afterCommit(fn () => $this->notificationDispatcher->loanDisbursed($loan, $actor));
             }
 
             return $loan->refresh();
@@ -269,6 +308,8 @@ class LoanService implements LoanServiceContract
                 'posted_at' => $data['paid_at'],
             ]);
 
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanPaymentRecorded($payment, $actor));
+
             return $payment;
         });
     }
@@ -333,5 +374,14 @@ class LoanService implements LoanServiceContract
             'approved_by' => $actor?->id,
             'note' => $note,
         ]);
+    }
+
+    private function assertActorIsNotLoanCreator(Loan $loan, ?User $actor, string $errorKey): void
+    {
+        if ($actor && $loan->user_id && (int) $actor->id === (int) $loan->user_id) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                $errorKey => 'Pembuat pengajuan pinjaman tidak dapat menyetujui pinjamannya sendiri.',
+            ]);
+        }
     }
 }

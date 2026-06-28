@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Loan extends Model
 {
@@ -29,6 +28,8 @@ class Loan extends Model
         'outstanding_amount',
         'applied_at',
         'first_due_date',
+        'manager_reviewed_at',
+        'manager_reviewed_by',
         'approved_at',
         'approved_by',
         'disbursed_at',
@@ -55,6 +56,7 @@ class Loan extends Model
             'outstanding_amount' => 'decimal:2',
             'applied_at' => 'date',
             'first_due_date' => 'date',
+            'manager_reviewed_at' => 'datetime',
             'approved_at' => 'datetime',
             'disbursed_at' => 'datetime',
             'rejected_at' => 'datetime',
@@ -87,13 +89,29 @@ class Loan extends Model
         return $this->hasMany(LoanPayment::class);
     }
 
+    public function managerReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_reviewed_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     public function restructures(): HasMany
     {
         return $this->hasMany(LoanRestructure::class);
     }
 
-    public function approvalLogs(): MorphMany
+    public function getApprovalSubjectIdAttribute(): string
     {
-        return $this->morphMany(ApprovalLog::class, 'subject');
+        return (string) $this->getKey();
+    }
+
+    public function approvalLogs(): HasMany
+    {
+        return $this->hasMany(ApprovalLog::class, 'subject_id', 'approval_subject_id')
+            ->where('subject_type', self::class);
     }
 }

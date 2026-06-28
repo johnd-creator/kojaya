@@ -47,6 +47,7 @@ class LoanController extends Controller
             'filters' => $request->only(['status', 'cooperative_member_id']),
             'stats' => [
                 'applied' => Loan::query()->where('status', LoanStatus::Applied)->count(),
+                'manager_approved' => Loan::query()->where('status', LoanStatus::ManagerApproved)->count(),
                 'active' => Loan::query()->where('status', LoanStatus::Active)->count(),
                 'paid_off' => Loan::query()->where('status', LoanStatus::PaidOff)->count(),
             ],
@@ -87,6 +88,8 @@ class LoanController extends Controller
             'loanType',
             'installments',
             'payments',
+            'managerReviewer',
+            'approver',
         ]);
 
         $approvalLogs = \App\Models\ApprovalLog::query()
@@ -99,6 +102,15 @@ class LoanController extends Controller
             'loan' => $loan,
             'approvalLogs' => $approvalLogs,
         ]);
+    }
+
+    public function review(ApproveLoanRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse
+    {
+        $this->authorize('managerReview', $loan);
+
+        $loanService->managerReview($loan, $request->user(), $request->validated('notes'));
+
+        return back()->with('success', 'Review manajer berhasil dicatat.');
     }
 
     public function approve(ApproveLoanRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse

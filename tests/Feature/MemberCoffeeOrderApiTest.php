@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CooperativeMember;
+use App\Models\MemberPaymentIntent;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -22,6 +23,7 @@ class MemberCoffeeOrderApiTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+        config(['services.midtrans.server_key' => '']);
     }
 
     public function test_member_can_view_coffee_menu(): void
@@ -77,28 +79,41 @@ class MemberCoffeeOrderApiTest extends TestCase
             'stock' => 10,
         ]);
 
-        $this->postJson('/api/v1/member/coffee/orders', [
-            'pos_product_id' => $product->id,
-            'quantity' => 2,
+        $response = $this->postJson('/api/v1/member/coffee/orders', [
+            'items' => [
+                [
+                    'pos_product_id' => $product->id,
+                    'quantity' => 2,
+                    'sugar_level' => 'Less Sugar',
+                    'ice_level' => 'Warm',
+                    'cup_size' => 'Large',
+                ],
+            ],
             'client_reference' => 'MOBILE-COFFEE-001',
-            'sugar_level' => 'Less Sugar',
-            'ice_level' => 'Warm',
-            'cup_size' => 'Large',
         ])->assertCreated()
-            ->assertJsonPath('data.status', 'RECEIVED')
+            ->assertJsonPath('data.status', 'PENDING_PAYMENT')
             ->assertJsonPath('data.transaction.total_amount', 36000)
-            ->assertJsonPath('data.customization.sugar_level', 'Less Sugar')
-            ->assertJsonPath('data.customization.cup_size', 'Large');
+            ->assertJsonPath('data.items.0.sugar_level', 'Less Sugar')
+            ->assertJsonPath('data.items.0.cup_size', 'Large')
+            ->assertJsonPath('data.charge.provider', 'internal');
 
-        $transaction = PosTransaction::query()
-            ->where('client_reference', 'MOBILE-COFFEE-001')
-            ->with(['items', 'payments'])
-            ->firstOrFail();
+        $this->assertDatabaseCount('pos_transactions', 0);
+        $this->assertSame(10, (int) $product->refresh()->stock);
+
+        $intent = MemberPaymentIntent::query()->firstOrFail();
+        $this->postJson('/api/payments/webhook', [
+            'reference' => $response->json('data.charge.reference'),
+            'status' => 'PAID',
+        ])->assertOk()
+            ->assertJsonPath('data.gateway_status', 'PAID');
+
+        $transaction = PosTransaction::query()->where('client_reference', 'MOBILE-COFFEE-001')->with(['items', 'payments'])->firstOrFail();
 
         $this->assertSame($member->id, $transaction->cooperative_member_id);
         $this->assertSame('QRIS', $transaction->payments->first()->payment_method);
         $this->assertSame(2, (int) $transaction->items->first()->quantity);
         $this->assertSame(8, (int) $product->refresh()->stock);
+        $this->assertNotNull($intent->refresh()->settled_at);
     }
 
     /**

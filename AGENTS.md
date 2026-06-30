@@ -21,6 +21,12 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Cooperative hierarchy: `Pengurus Koperasi` is the highest cooperative role, followed by `Manajer Koperasi`, then `Admin Koperasi`, then operational roles such as `Kasir Koperasi`.
 - For the loan workflow, `Manajer Koperasi` performs the first review, and `Pengurus Koperasi` performs final approval. `Admin Koperasi` may manage operational loan data but must not be treated as a loan approver.
 
+## Midtrans Sandbox
+
+- Local sandbox config uses `MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_MERCHANT_ID=`, `MIDTRANS_CLIENT_KEY=`, and `MIDTRANS_VA_BANK=` see .env, unless another sandbox VA bank is intentionally being tested.
+- `MIDTRANS_SERVER_KEY` is a secret and must stay in local `.env` or the deployment secret manager only. Do not commit or repeat the full server key in docs, tests, source, logs, or prompts; the sandbox key currently configured locally ends with `TdE4`.
+- Midtrans config is read through `config/services.php` under `services.midtrans`.
+
 - php - 8.5.6
 - inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/fortify (FORTIFY) - v1

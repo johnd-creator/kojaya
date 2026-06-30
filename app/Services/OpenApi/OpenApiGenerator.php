@@ -211,6 +211,13 @@ class OpenApiGenerator
                     'channel' => ['type' => 'string', 'enum' => ['QRIS', 'VA', 'E_WALLET', 'TRANSFER'], 'example' => 'QRIS'],
                 ],
             ],
+            'CreateMemberBillPaymentIntentRequest' => [
+                'type' => 'object',
+                'required' => ['channel'],
+                'properties' => [
+                    'channel' => ['type' => 'string', 'enum' => ['QRIS', 'VA', 'E_WALLET', 'TRANSFER'], 'example' => 'QRIS'],
+                ],
+            ],
             'PaymentChargeResponse' => [
                 'type' => 'object',
                 'properties' => [
@@ -221,6 +228,12 @@ class OpenApiGenerator
                     'amount' => ['type' => 'number', 'example' => 100000],
                     'checkout_url' => ['type' => 'string', 'nullable' => true],
                     'qr_string' => ['type' => 'string', 'nullable' => true],
+                    'expires_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'instructions' => [
+                        'type' => 'object',
+                        'additionalProperties' => true,
+                        'example' => ['bank' => 'BCA', 'va_number' => '1234567890'],
+                    ],
                 ],
             ],
             'PaymentGatewayWebhookRequest' => [
@@ -443,6 +456,7 @@ class OpenApiGenerator
         return match (true) {
             str_ends_with($uri, 'api/payments/charge') => ['$ref' => '#/components/schemas/CreatePaymentChargeRequest'],
             str_ends_with($uri, 'api/payments/webhook') => ['$ref' => '#/components/schemas/PaymentGatewayWebhookRequest'],
+            str_contains($uri, 'api/v1/member/bills/') && str_ends_with($uri, '/payment-intent') => ['$ref' => '#/components/schemas/CreateMemberBillPaymentIntentRequest'],
             str_ends_with($uri, 'api/devices/push-token') => ['$ref' => '#/components/schemas/RegisterDeviceTokenRequest'],
             str_ends_with($uri, 'api/v1/member/onboarding/steps') => ['$ref' => '#/components/schemas/MemberOnboardingStepRequest'],
             default => null,

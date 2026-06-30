@@ -34,6 +34,7 @@ use App\Models\CooperativeSupportTicket;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanType;
+use App\Models\MemberPaymentIntent;
 use App\Models\PosTransaction;
 use App\Models\RewardRedemption;
 use App\Services\Cooperative\CooperativeReceiptService;
@@ -703,23 +704,41 @@ class MemberSelfServiceController extends Controller
 
         [$source, $id] = $segments;
 
-        if ($source !== 'dues') {
-            abort(422, 'Payment gateway untuk tagihan ini belum aktif. Gunakan pembayaran manual atau tunggu fase settlement domain terkait.');
+        $channel = (string) $request->validated('channel');
+
+        if ($source === 'dues') {
+            $invoice = $member->invoices()
+                ->whereIn('status', ['UNPAID', 'PARTIAL'])
+                ->findOrFail($id);
+
+            $payment = $this->pendingPaymentForInvoice($request, $member, $invoice, $channel);
+            $charge = $gateway->createCharge($payment, $channel);
+
+            return response()->json([
+                'data' => [
+                    'bill_id' => $bill,
+                    'source' => $source,
+                    'payment' => new MemberPaymentResource($payment->refresh()->load(['invoice.contributionType', 'receipt'])),
+                    'charge' => $charge,
+                ],
+            ], 201);
         }
 
-        $invoice = $member->invoices()
-            ->whereIn('status', ['UNPAID', 'PARTIAL'])
-            ->findOrFail($id);
+        $intent = match ($source) {
+            'loan' => $this->pendingLoanPaymentIntent($request, $member, $id, $channel),
+            'pos_credit' => $this->pendingPosCreditPaymentIntent($request, $member, $id, $channel),
+            default => null,
+        };
 
-        $channel = (string) $request->validated('channel');
-        $payment = $this->pendingPaymentForInvoice($request, $member, $invoice, $channel);
-        $charge = $gateway->createCharge($payment, $channel);
+        abort_unless($intent !== null, 404, 'Bill tidak ditemukan.');
+
+        $charge = $gateway->createIntentCharge($intent);
 
         return response()->json([
             'data' => [
                 'bill_id' => $bill,
                 'source' => $source,
-                'payment' => new MemberPaymentResource($payment->refresh()->load(['invoice.contributionType', 'receipt'])),
+                'payment_intent' => $this->formatPaymentIntent($intent->refresh()),
                 'charge' => $charge,
             ],
         ], 201);
@@ -920,5 +939,95 @@ class MemberSelfServiceController extends Controller
             'paid_at' => now()->toDateString(),
             'status' => 'PENDING',
         ]);
+    }
+
+    protected function pendingLoanPaymentIntent(Request $request, CooperativeMember $member, string $id, string $channel): MemberPaymentIntent
+    {
+        $installment = LoanInstallment::query()
+            ->with('loan.loanType')
+            ->where('id', $id)
+            ->whereHas('loan', fn ($query) => $query->where('cooperative_member_id', $member->id))
+            ->firstOrFail();
+
+        $remaining = round((float) $installment->amount_due - (float) $installment->amount_paid, 2);
+        abort_if($remaining <= 0, 422, 'Cicilan pinjaman ini sudah lunas.');
+
+        $intent = MemberPaymentIntent::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
+            ->where('payable_id', $installment->id)
+            ->where('gateway_status', 'PENDING')
+            ->latest()
+            ->first();
+
+        if ($intent) {
+            return $intent;
+        }
+
+        return MemberPaymentIntent::query()->create([
+            'user_id' => $request->user()?->id,
+            'cooperative_member_id' => $member->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'payable_id' => $installment->id,
+            'amount' => $remaining,
+            'channel' => $channel,
+            'gateway_status' => 'PENDING',
+            'metadata' => [
+                'description' => "Angsuran {$installment->loan?->loanType?->name} #{$installment->installment_no}",
+                'loan_id' => $installment->loan_id,
+                'installment_no' => $installment->installment_no,
+            ],
+            'expires_at' => now()->addDay(),
+        ]);
+    }
+
+    protected function pendingPosCreditPaymentIntent(Request $request, CooperativeMember $member, string $id, string $channel): MemberPaymentIntent
+    {
+        abort_unless((string) $member->id === $id, 404, 'Bill tidak ditemukan.');
+
+        $remaining = round((float) $member->outstanding_balance, 2);
+        abort_if($remaining <= 0, 422, 'Kredit belanja POS sudah lunas.');
+
+        $intent = MemberPaymentIntent::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('payable_type', MemberPaymentIntent::PAYABLE_POS_CREDIT)
+            ->where('payable_id', $member->id)
+            ->where('gateway_status', 'PENDING')
+            ->latest()
+            ->first();
+
+        if ($intent) {
+            return $intent;
+        }
+
+        return MemberPaymentIntent::query()->create([
+            'user_id' => $request->user()?->id,
+            'cooperative_member_id' => $member->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $member->id,
+            'amount' => $remaining,
+            'channel' => $channel,
+            'gateway_status' => 'PENDING',
+            'metadata' => [
+                'description' => 'Pelunasan Kredit Belanja POS',
+            ],
+            'expires_at' => now()->addDay(),
+        ]);
+    }
+
+    protected function formatPaymentIntent(MemberPaymentIntent $intent): array
+    {
+        return [
+            'id' => $intent->id,
+            'payable_type' => $intent->payable_type,
+            'payable_id' => $intent->payable_id,
+            'amount' => (float) $intent->amount,
+            'channel' => $intent->channel,
+            'gateway_provider' => $intent->gateway_provider,
+            'gateway_reference' => $intent->gateway_reference,
+            'gateway_status' => $intent->gateway_status,
+            'settled_at' => $intent->settled_at?->toISOString(),
+            'expires_at' => $intent->expires_at?->toISOString(),
+        ];
     }
 }

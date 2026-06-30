@@ -25,7 +25,9 @@ use App\Services\Cooperative\MemberProfileCompletenessService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use App\Services\Cooperative\SavingsSummaryService;
+use App\Services\Integrations\PaymentGatewayService;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -596,6 +598,160 @@ class MemberPortalController extends Controller
         ]);
 
         return back()->with('success', 'Bukti pembayaran berhasil dikirim. Pengurus akan memverifikasi dalam 1-3 hari kerja.');
+    }
+
+    /**
+     * Create a direct Midtrans charge for a dues invoice using the chosen
+     * channel. Returns the native payment artefact (QR string for QRIS, VA
+     * number for bank transfer, checkout URL for e-wallet) so the member
+     * portal renders the payment inline instead of opening the Snap modal.
+     */
+    public function createPaymentIntent(Request $request, PaymentGatewayService $gateway): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        $data = $request->validate([
+            'cooperative_dues_invoice_id' => ['required', 'integer'],
+            'channel' => ['nullable', 'in:QRIS,VA,E_WALLET'],
+        ]);
+
+        $channel = strtoupper($data['channel'] ?? 'QRIS');
+
+        $invoice = CooperativeDuesInvoice::query()
+            ->where('cooperative_member_id', $member->id)
+            ->whereIn('status', ['UNPAID', 'PARTIAL'])
+            ->findOrFail($data['cooperative_dues_invoice_id']);
+
+        $payment = $invoice->payments()
+            ->where('status', 'PENDING')
+            ->where('cooperative_member_id', $member->id)
+            ->latest()
+            ->first();
+
+        if (! $payment) {
+            $amount = max((float) $invoice->amount - (float) $invoice->paid_amount, 0);
+
+            $payment = $invoice->payments()->create([
+                'cooperative_member_id' => $member->id,
+                'cooperative_contribution_type_id' => $invoice->cooperative_contribution_type_id,
+                'user_id' => $request->user()?->id,
+                'amount' => $amount,
+                'payment_method' => $channel,
+                'paid_at' => now()->toDateString(),
+                'status' => 'PENDING',
+            ]);
+        }
+
+        try {
+            $charge = $gateway->createCharge($payment, $channel);
+        } catch (\RuntimeException $e) {
+            $isInactiveChannel = str_contains($e->getMessage(), 'Payment channel is not activated');
+
+            if ($isInactiveChannel && $channel !== 'VA') {
+                report($e);
+
+                try {
+                    $charge = $gateway->createCharge($payment, 'VA');
+
+                    return $this->paymentIntentResponse($payment, $invoice, $charge, [
+                        'requested_channel' => $channel,
+                        'fallback_reason' => 'MIDTRANS_CHANNEL_INACTIVE',
+                    ]);
+                } catch (\RuntimeException $fallbackException) {
+                    report($fallbackException);
+
+                    return $this->paymentGatewayErrorResponse($fallbackException, 'VA');
+                }
+            }
+
+            report($e);
+
+            return $this->paymentGatewayErrorResponse($e, $channel);
+        }
+
+        return $this->paymentIntentResponse($payment, $invoice, $charge);
+    }
+
+    /**
+     * @param  array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}  $charge
+     * @param  array<string, mixed>  $extra
+     */
+    private function paymentIntentResponse(CooperativePayment $payment, CooperativeDuesInvoice $invoice, array $charge, array $extra = []): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'payment_id' => $payment->id,
+                'invoice_id' => $invoice->id,
+                'amount' => (float) $payment->amount,
+                'provider' => $charge['provider'],
+                'channel' => $charge['channel'],
+                'qr_string' => $charge['qr_string'] ?? null,
+                'checkout_url' => $charge['checkout_url'] ?? null,
+                'instructions' => $charge['instructions'] ?? [],
+                'gateway_reference' => $charge['reference'],
+                'expires_at' => $charge['expires_at'] ?? null,
+                'status' => $charge['status'],
+                ...$extra,
+            ],
+        ], 201);
+    }
+
+    private function paymentGatewayErrorResponse(\RuntimeException $e, string $channel): JsonResponse
+    {
+        $isInactiveChannel = str_contains($e->getMessage(), 'Payment channel is not activated');
+
+        return response()->json([
+            'message' => $isInactiveChannel
+                ? "Kanal {$channel} belum aktif di akun sandbox Midtrans ini. Coba Virtual Account atau ubah MIDTRANS_VA_BANK ke bank sandbox yang tersedia."
+                : $e->getMessage(),
+            'error_code' => $isInactiveChannel ? 'MIDTRANS_CHANNEL_INACTIVE' : 'PAYMENT_GATEWAY_ERROR',
+            'gateway_message' => $e->getMessage(),
+        ], $isInactiveChannel ? 503 : 422);
+    }
+
+    /**
+     * Poll the status of a payment so the portal can detect settlement after
+     * the member completes the Midtrans checkout. Exposes terminal failure
+     * states so the frontend can stop polling once the charge is settled,
+     * expired, or denied (instead of looping indefinitely on webhook miss).
+     */
+    public function paymentStatus(Request $request, CooperativePayment $payment): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+        abort_unless($payment->cooperative_member_id === $member->id, 403);
+
+        $gatewayExpiresAt = $this->parseGatewayExpiry($payment);
+
+        $isPaid = $payment->gateway_status === 'PAID' || $payment->status === 'APPROVED';
+        $isFailed = in_array($payment->gateway_status, ['FAILED', 'EXPIRED', 'CANCELLED'], true);
+
+        return response()->json([
+            'data' => [
+                'payment_id' => $payment->id,
+                'status' => $payment->status,
+                'gateway_status' => $payment->gateway_status,
+                'reconciled_at' => $payment->reconciled_at?->toIso8601String(),
+                'gateway_expires_at' => $gatewayExpiresAt?->toIso8601String(),
+                'is_paid' => $isPaid,
+                'is_failed' => $isFailed,
+                'is_terminal' => $isPaid || $isFailed,
+            ],
+        ]);
+    }
+
+    private function parseGatewayExpiry(CooperativePayment $payment): ?\Illuminate\Support\Carbon
+    {
+        $raw = $payment->gateway_payload['expires_at'] ?? null;
+
+        if (! is_string($raw) || $raw === '') {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($raw);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function memberOrAbort(Request $request): CooperativeMember

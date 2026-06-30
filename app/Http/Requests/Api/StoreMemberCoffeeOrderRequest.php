@@ -22,10 +22,17 @@ class StoreMemberCoffeeOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pos_product_id' => ['required', 'exists:pos_products,id'],
+            'pos_product_id' => ['required_without:items', 'exists:pos_products,id'],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'items' => ['nullable', 'array', 'min:1', 'max:12'],
+            'items.*.pos_product_id' => ['required_with:items', 'exists:pos_products,id'],
+            'items.*.quantity' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'items.*.sugar_level' => ['nullable', 'in:Normal,Less Sugar,No Sugar'],
+            'items.*.ice_level' => ['nullable', 'in:Normal,Less Ice,Warm'],
+            'items.*.cup_size' => ['nullable', 'in:Reguler,Large'],
             'client_reference' => ['nullable', 'string', 'max:80'],
-            'payment_method' => ['nullable', 'in:QRIS,CASH,TRANSFER,MEMBER_CREDIT'],
+            'channel' => ['nullable', 'in:QRIS,VA,E_WALLET,TRANSFER'],
+            'payment_method' => ['nullable', 'in:QRIS,VA,E_WALLET,TRANSFER'],
             'sugar_level' => ['nullable', 'in:Normal,Less Sugar,No Sugar'],
             'ice_level' => ['nullable', 'in:Normal,Less Ice,Warm'],
             'cup_size' => ['nullable', 'in:Reguler,Large'],
@@ -35,9 +42,13 @@ class StoreMemberCoffeeOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'pos_product_id.required' => 'Menu kopi wajib dipilih.',
+            'pos_product_id.required_without' => 'Menu kopi wajib dipilih.',
             'pos_product_id.exists' => 'Menu kopi tidak tersedia.',
+            'items.min' => 'Keranjang kopi minimal berisi satu item.',
+            'items.*.pos_product_id.required_with' => 'Menu kopi wajib dipilih.',
+            'items.*.pos_product_id.exists' => 'Menu kopi tidak tersedia.',
             'quantity.max' => 'Maksimal 12 cup per pesanan.',
+            'items.*.quantity.max' => 'Maksimal 12 cup per item.',
         ];
     }
 }

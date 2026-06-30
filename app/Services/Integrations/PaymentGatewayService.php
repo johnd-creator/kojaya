@@ -4,6 +4,7 @@ namespace App\Services\Integrations;
 
 use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Models\CooperativePayment;
+use App\Models\MemberPaymentIntent;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -61,10 +62,16 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
      */
     public function createCharge(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
+        $existingCharge = $this->existingPendingCharge($payment, $channel);
+
+        if ($existingCharge !== null) {
+            return $existingCharge;
+        }
+
         if (! $this->provider->isConfigured()) {
             return $this->createChargeInternal($payment, $channel);
         }
@@ -73,6 +80,33 @@ class PaymentGatewayService
 
         $payment->forceFill([
             'payment_method' => $channel,
+            'gateway_provider' => $charge['provider'],
+            'gateway_reference' => $charge['reference'],
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => $charge,
+        ])->save();
+
+        return $charge;
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     */
+    public function createIntentCharge(MemberPaymentIntent $intent): array
+    {
+        $existingCharge = $this->existingPendingIntentCharge($intent);
+
+        if ($existingCharge !== null) {
+            return $existingCharge;
+        }
+
+        if (! $this->provider->isConfigured()) {
+            return $this->createIntentChargeInternal($intent);
+        }
+
+        $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+
+        $intent->forceFill([
             'gateway_provider' => $charge['provider'],
             'gateway_reference' => $charge['reference'],
             'gateway_status' => 'PENDING',
@@ -153,11 +187,111 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null}
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string|array<int, string>>  $headers
+     */
+    public function applyWebhookToMemberIntent(array $payload, array $headers = []): ?MemberPaymentIntent
+    {
+        if ($this->provider->isConfigured()) {
+            return $this->applyProviderWebhookToMemberIntent($payload, $headers);
+        }
+
+        return $this->applyInternalWebhookToMemberIntent($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function applyInternalWebhookToMemberIntent(array $payload): ?MemberPaymentIntent
+    {
+        $reference = (string) ($payload['reference'] ?? $payload['gateway_reference'] ?? '');
+
+        if ($reference === '') {
+            return null;
+        }
+
+        $intent = MemberPaymentIntent::query()
+            ->where('gateway_reference', $reference)
+            ->first();
+
+        if (! $intent) {
+            return null;
+        }
+
+        $newStatus = strtoupper((string) ($payload['status'] ?? ''));
+
+        if (! MidtransPaymentProvider::isTransitionAllowed($intent->gateway_status, $newStatus)) {
+            Log::warning('Payment gateway webhook rejected for member intent: invalid status transition', [
+                'payment_intent_id' => $intent->id,
+                'gateway_reference' => $reference,
+                'current_status' => $intent->gateway_status,
+                'new_status' => $newStatus,
+            ]);
+
+            return $intent;
+        }
+
+        $intent->forceFill([
+            'gateway_status' => $newStatus,
+            'gateway_payload' => $payload,
+        ])->save();
+
+        return $intent;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string|array<int, string>>  $headers
+     */
+    private function applyProviderWebhookToMemberIntent(array $payload, array $headers): ?MemberPaymentIntent
+    {
+        if (! $this->provider->verifyWebhook($payload, $headers)) {
+            return null;
+        }
+
+        $event = $this->provider->parseWebhook($payload);
+        $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
+            ? $event->gatewayReference
+            : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
+
+        if ($reference === '') {
+            return null;
+        }
+
+        $intent = MemberPaymentIntent::query()
+            ->where('gateway_reference', $reference)
+            ->first();
+
+        if (! $intent) {
+            return null;
+        }
+
+        if (! MidtransPaymentProvider::isTransitionAllowed($intent->gateway_status, $event->status)) {
+            Log::warning('Payment gateway webhook rejected for member intent: invalid status transition', [
+                'payment_intent_id' => $intent->id,
+                'gateway_reference' => $reference,
+                'current_status' => $intent->gateway_status,
+                'new_status' => $event->status,
+            ]);
+
+            return $intent;
+        }
+
+        $intent->forceFill([
+            'gateway_status' => $event->status,
+            'gateway_payload' => $event->rawPayload,
+        ])->save();
+
+        return $intent;
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
      */
     public function createChargeInternal(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
         $reference = 'PAY-'.Str::upper(Str::random(12));
+        $expiresAt = now()->addDay()->toIso8601String();
 
         $payment->forceFill([
             'payment_method' => $channel,
@@ -165,9 +299,15 @@ class PaymentGatewayService
             'gateway_reference' => $reference,
             'gateway_status' => 'PENDING',
             'gateway_payload' => [
+                'provider' => 'internal',
+                'reference' => $reference,
+                'status' => 'PENDING',
                 'channel' => $channel,
                 'amount' => (float) $payment->amount,
-                'expires_at' => now()->addDay()->toIso8601String(),
+                'checkout_url' => url("/api/payments/{$reference}/checkout"),
+                'qr_string' => null,
+                'expires_at' => $expiresAt,
+                'instructions' => [],
             ],
         ])->save();
 
@@ -179,6 +319,110 @@ class PaymentGatewayService
             'amount' => (float) $payment->amount,
             'checkout_url' => url("/api/payments/{$reference}/checkout"),
             'qr_string' => null,
+            'expires_at' => $expiresAt,
+            'instructions' => [],
+        ];
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     */
+    public function createIntentChargeInternal(MemberPaymentIntent $intent): array
+    {
+        $reference = 'MPI-'.Str::upper(Str::random(12));
+        $expiresAt = now()->addDay();
+
+        $intent->forceFill([
+            'gateway_provider' => 'internal',
+            'gateway_reference' => $reference,
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'provider' => 'internal',
+                'reference' => $reference,
+                'status' => 'PENDING',
+                'channel' => $intent->channel,
+                'amount' => (float) $intent->amount,
+                'checkout_url' => url("/api/payments/{$reference}/checkout"),
+                'qr_string' => null,
+                'expires_at' => $expiresAt->toIso8601String(),
+                'instructions' => [],
+            ],
+            'expires_at' => $expiresAt,
+        ])->save();
+
+        return [
+            'provider' => 'internal',
+            'reference' => $reference,
+            'status' => 'PENDING',
+            'channel' => $intent->channel,
+            'amount' => (float) $intent->amount,
+            'checkout_url' => url("/api/payments/{$reference}/checkout"),
+            'qr_string' => null,
+            'expires_at' => $expiresAt->toIso8601String(),
+            'instructions' => [],
+        ];
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    private function existingPendingCharge(CooperativePayment $payment, string $channel): ?array
+    {
+        return $this->existingPendingChargeFromPayload(
+            gatewayStatus: $payment->gateway_status,
+            payload: $payment->gateway_payload,
+            amount: (float) $payment->amount,
+            channel: $channel,
+        );
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    private function existingPendingIntentCharge(MemberPaymentIntent $intent): ?array
+    {
+        return $this->existingPendingChargeFromPayload(
+            gatewayStatus: $intent->gateway_status,
+            payload: $intent->gateway_payload,
+            amount: (float) $intent->amount,
+            channel: $intent->channel,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $payload
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    private function existingPendingChargeFromPayload(?string $gatewayStatus, ?array $payload, float $amount, string $channel): ?array
+    {
+        if ($gatewayStatus !== 'PENDING' || ! is_array($payload)) {
+            return null;
+        }
+
+        if (($payload['channel'] ?? null) !== $channel || empty($payload['reference'])) {
+            return null;
+        }
+
+        // Don't reuse a "hollow" charge whose provider call failed and left no
+        // actionable payment artefact (e.g. an earlier "channel not activated"
+        // response). Force a fresh charge instead.
+        $hasArtefact = ! empty($payload['qr_string'])
+            || ! empty($payload['checkout_url'])
+            || ! empty($payload['instructions']['va_number'] ?? null);
+        if (! $hasArtefact) {
+            return null;
+        }
+
+        return [
+            'provider' => (string) ($payload['provider'] ?? 'internal'),
+            'reference' => (string) $payload['reference'],
+            'status' => (string) ($payload['status'] ?? 'PENDING'),
+            'channel' => (string) $payload['channel'],
+            'amount' => (float) ($payload['amount'] ?? $amount),
+            'checkout_url' => isset($payload['checkout_url']) ? (string) $payload['checkout_url'] : null,
+            'qr_string' => isset($payload['qr_string']) ? (string) $payload['qr_string'] : null,
+            'expires_at' => isset($payload['expires_at']) ? (string) $payload['expires_at'] : null,
+            'instructions' => is_array($payload['instructions'] ?? null) ? $payload['instructions'] : [],
         ];
     }
 }

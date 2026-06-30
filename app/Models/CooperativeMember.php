@@ -176,6 +176,11 @@ class CooperativeMember extends Model
         return $this->hasMany(CooperativePayment::class);
     }
 
+    public function paymentIntents(): HasMany
+    {
+        return $this->hasMany(MemberPaymentIntent::class);
+    }
+
     public function receipts(): HasMany
     {
         return $this->hasMany(CooperativeReceipt::class);

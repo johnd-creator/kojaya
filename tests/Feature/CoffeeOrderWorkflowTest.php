@@ -22,6 +22,7 @@ class CoffeeOrderWorkflowTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+        config(['services.midtrans.server_key' => '']);
     }
 
     public function test_member_order_creates_trackable_coffee_order(): void
@@ -40,9 +41,16 @@ class CoffeeOrderWorkflowTest extends TestCase
             'cup_size' => 'Reguler',
         ])
             ->assertCreated()
-            ->assertJsonPath('data.status', CoffeeOrder::STATUS_RECEIVED)
+            ->assertJsonPath('data.status', 'PENDING_PAYMENT')
             ->assertJsonPath('data.step', 0)
-            ->assertJsonPath('data.customization.sugar_level', 'No Sugar');
+            ->assertJsonPath('data.items.0.sugar_level', 'No Sugar');
+
+        $this->assertDatabaseCount('coffee_orders', 0);
+
+        $this->postJson('/api/payments/webhook', [
+            'reference' => \App\Models\MemberPaymentIntent::query()->firstOrFail()->gateway_reference,
+            'status' => 'PAID',
+        ])->assertOk();
 
         $order = CoffeeOrder::query()->with('transaction')->firstOrFail();
         $this->assertSame($member->id, $order->cooperative_member_id);
@@ -70,7 +78,12 @@ class CoffeeOrderWorkflowTest extends TestCase
             'client_reference' => 'COFFEE-TRACK-002',
         ])->assertCreated();
 
-        $orderId = $response->json('data.id');
+        $this->postJson('/api/payments/webhook', [
+            'reference' => $response->json('data.charge.reference'),
+            'status' => 'PAID',
+        ])->assertOk();
+
+        $orderId = CoffeeOrder::query()->firstOrFail()->id;
         $admin = $this->posAdmin($organization);
 
         $this->actingAs($admin)
@@ -106,11 +119,18 @@ class CoffeeOrderWorkflowTest extends TestCase
             'client_reference' => 'COFFEE-TRACK-003',
         ])->assertCreated();
 
+        $this->postJson('/api/payments/webhook', [
+            'reference' => $response->json('data.charge.reference'),
+            'status' => 'PAID',
+        ])->assertOk();
+
+        $orderId = CoffeeOrder::query()->firstOrFail()->id;
+
         $otherUser = User::factory()->create();
         CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
         Sanctum::actingAs($otherUser, ['member:read']);
 
-        $this->getJson('/api/v1/member/coffee/orders/'.$response->json('data.id'))
+        $this->getJson('/api/v1/member/coffee/orders/'.$orderId)
             ->assertForbidden();
 
         $this->assertSame($member->id, CoffeeOrder::query()->firstOrFail()->cooperative_member_id);

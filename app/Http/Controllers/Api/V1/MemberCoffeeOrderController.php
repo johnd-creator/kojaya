@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMemberCoffeeOrderRequest;
 use App\Models\CoffeeOrder;
+use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
-use App\Services\Cooperative\CooperativeNotificationDispatcher;
-use App\Services\Cooperative\PosTransactionService;
+use App\Services\Integrations\PaymentGatewayService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,58 +40,37 @@ class MemberCoffeeOrderController extends Controller
 
     public function store(
         StoreMemberCoffeeOrderRequest $request,
-        PosTransactionService $service,
-        CooperativeNotificationDispatcher $notificationDispatcher
+        PaymentGatewayService $gateway
     ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
-        $product = $this->coffeeProductQuery()
-            ->whereKey($request->validated('pos_product_id'))
-            ->firstOrFail();
-
-        $quantity = (int) ($request->validated('quantity') ?? 1);
-        $cupSize = (string) ($request->validated('cup_size') ?? 'Reguler');
-        $subtotal = (float) $product->sale_price * $quantity;
+        $items = $this->validatedItems($request);
+        $subtotal = array_sum(array_map(fn (array $item): float => (float) $item['line_total'], $items));
+        $channel = (string) ($request->validated('channel') ?? $request->validated('payment_method') ?? 'QRIS');
         $clientReference = $request->validated('client_reference')
             ?: 'COFFEE-'.$member->id.'-'.now()->format('YmdHisv');
 
-        $transaction = $service->create([
-            'client_reference' => $clientReference,
+        $intent = MemberPaymentIntent::query()->create([
+            'user_id' => $request->user()?->id,
             'cooperative_member_id' => $member->id,
-            'payment_method' => (string) ($request->validated('payment_method') ?? 'QRIS'),
+            'payable_type' => MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
+            'payable_id' => null,
             'amount' => $subtotal,
-            'cash_received' => $subtotal,
-            'discount_amount' => 0,
-            'items' => [
-                [
-                    'pos_product_id' => $product->id,
-                    'quantity' => $quantity,
-                ],
+            'channel' => $channel,
+            'gateway_status' => 'PENDING',
+            'metadata' => [
+                'description' => 'Pesanan Kopi Kojaya',
+                'client_reference' => $clientReference,
+                'items' => $items,
             ],
-        ], $request->user());
+            'expires_at' => now()->addMinutes(30),
+        ]);
 
-        $coffeeOrder = CoffeeOrder::query()->firstOrCreate(
-            ['pos_transaction_id' => $transaction->id],
-            [
-                'cooperative_member_id' => $member->id,
-                'pos_product_id' => $product->id,
-                'quantity' => $quantity,
-                'status' => CoffeeOrder::STATUS_RECEIVED,
-                'customization' => [
-                    'sugar_level' => (string) ($request->validated('sugar_level') ?? 'Normal'),
-                    'ice_level' => (string) ($request->validated('ice_level') ?? 'Normal'),
-                    'cup_size' => $cupSize,
-                ],
-                'received_at' => now(),
-            ],
-        );
-
-        $coffeeOrder->load(['transaction.payments', 'product']);
-        $notificationDispatcher->coffeeOrderReceived($coffeeOrder, $request->user());
+        $charge = $gateway->createIntentCharge($intent);
 
         return response()->json([
-            'data' => $this->formatOrder($coffeeOrder),
+            'data' => $this->formatPendingOrder($intent->refresh(), $items, $charge),
         ], 201);
     }
 
@@ -100,7 +79,7 @@ class MemberCoffeeOrderController extends Controller
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null && (int) $coffeeOrder->cooperative_member_id === (int) $member->id, 403);
 
-        $coffeeOrder->load(['transaction.payments', 'product']);
+        $coffeeOrder->load(['transaction.payments', 'transaction.items.product', 'product']);
 
         return response()->json([
             'data' => $this->formatOrder($coffeeOrder),
@@ -142,6 +121,90 @@ class MemberCoffeeOrderController extends Controller
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function validatedItems(StoreMemberCoffeeOrderRequest $request): array
+    {
+        $validated = $request->validated();
+        $rawItems = $validated['items'] ?? [[
+            'pos_product_id' => $validated['pos_product_id'],
+            'quantity' => $validated['quantity'] ?? 1,
+            'sugar_level' => $validated['sugar_level'] ?? 'Normal',
+            'ice_level' => $validated['ice_level'] ?? 'Normal',
+            'cup_size' => $validated['cup_size'] ?? 'Reguler',
+        ]];
+
+        $items = [];
+
+        foreach ($rawItems as $item) {
+            $product = $this->coffeeProductQuery()
+                ->whereKey($item['pos_product_id'])
+                ->firstOrFail();
+
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $lineTotal = round((float) $product->sale_price * $quantity, 2);
+
+            $items[] = [
+                'pos_product_id' => $product->id,
+                'quantity' => $quantity,
+                'unit_price' => (float) $product->sale_price,
+                'line_total' => $lineTotal,
+                'sugar_level' => (string) ($item['sugar_level'] ?? 'Normal'),
+                'ice_level' => (string) ($item['ice_level'] ?? 'Normal'),
+                'cup_size' => (string) ($item['cup_size'] ?? 'Reguler'),
+                'product' => $this->formatProduct($product),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<string, mixed>  $charge
+     * @return array<string, mixed>
+     */
+    private function formatPendingOrder(MemberPaymentIntent $intent, array $items, array $charge): array
+    {
+        return [
+            'id' => 'intent:'.$intent->id,
+            'payment_intent_id' => $intent->id,
+            'order_code' => $intent->gateway_reference,
+            'status' => 'PENDING_PAYMENT',
+            'status_label' => 'Menunggu Pembayaran',
+            'step' => 0,
+            'pickup_location' => 'Kantin Kojaya',
+            'estimated_ready_minutes' => 10,
+            'received_at' => null,
+            'brewing_at' => null,
+            'ready_at' => null,
+            'picked_up_at' => null,
+            'cancelled_at' => null,
+            'transaction' => [
+                'id' => null,
+                'transaction_no' => null,
+                'total_amount' => (float) $intent->amount,
+                'payment_method' => $intent->channel,
+            ],
+            'payment_intent' => [
+                'id' => $intent->id,
+                'amount' => (float) $intent->amount,
+                'channel' => $intent->channel,
+                'gateway_provider' => $intent->gateway_provider,
+                'gateway_reference' => $intent->gateway_reference,
+                'gateway_status' => $intent->gateway_status,
+                'expires_at' => $intent->expires_at?->toISOString(),
+            ],
+            'charge' => $charge,
+            'items' => $items,
+            'item' => $items[0]['product'] ?? null,
+            'customization' => [
+                'items' => $items,
+            ],
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function formatOrder(CoffeeOrder $coffeeOrder): array
@@ -168,6 +231,15 @@ class MemberCoffeeOrderController extends Controller
                 'total_amount' => (float) ($transaction?->total_amount ?? 0),
                 'payment_method' => $transaction?->payments->first()?->payment_method,
             ],
+            'payment_intent' => null,
+            'charge' => null,
+            'items' => $transaction?->items?->map(fn ($item): array => [
+                'pos_product_id' => $item->pos_product_id,
+                'quantity' => (int) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+                'line_total' => (float) $item->line_total,
+                'product' => $item->product ? $this->formatProduct($item->product) : null,
+            ])->values()->all() ?? [],
             'item' => $product ? $this->formatProduct($product) : null,
             'customization' => $coffeeOrder->customization,
         ];

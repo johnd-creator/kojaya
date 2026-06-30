@@ -8,6 +8,7 @@
 
 ### Sudah Live
 
+- Midtrans sandbox sudah dikonfigurasi di `.env` lokal pada 2026-06-28 dengan `MIDTRANS_IS_PRODUCTION=false`, merchant id `M156573283`, client key sandbox, dan `MIDTRANS_VA_BANK=permata`. Server key sengaja tidak ditulis di dokumen repo; simpan hanya di `.env`/secret manager.
 - `POST /api/v1/member/dues/invoices/{invoice}/payment-intent` membuat `CooperativePayment` pending untuk invoice iuran/simpanan anggota.
 - `POST /api/v1/member/bills/{bill}/payment-intent` membuat intent + charge untuk bill `dues:{id}`.
 - `POST /api/payments/charge` men-charge `CooperativePayment` melalui `PaymentGatewayService`.
@@ -17,14 +18,15 @@
 - POS kasir mendukung `CASH`, `TRANSFER`, `QRIS`, dan `MEMBER_CREDIT` melalui `PosTransactionService`.
 - POS member credit sudah punya pencatatan pelunasan manual melalui `MemberCreditService`.
 - Upload bukti transfer manual anggota tetap tersedia lewat `POST /api/v1/member/payments/proof`.
+- `member_payment_intents` sudah tersedia untuk payment gateway lintas domain non-iuran: `loan_installment`, `pos_credit`, dan `coffee_order`.
+- `POST /api/v1/member/bills/{bill}/payment-intent` sudah mendukung `loan:*` dan `pos_credit:*`; webhook `PAID` menyelesaikan ke `LoanService::recordPayment()` atau `MemberCreditService::recordPayment()`.
+- `POST /api/v1/member/coffee/orders` sudah membuat payment intent + charge terlebih dahulu dan mendukung payload `items[]` untuk beberapa item kopi dalam satu order. POS transaction, stock deduction, dan `coffee_orders` baru dibuat setelah webhook `PAID`.
 
 ### Belum Boleh Dianggap Selesai
 
 - Gateway settlement baru aman untuk `CooperativePayment` iuran/simpanan. Jangan gunakan `CooperativePayment` untuk loan/POS credit tanpa mapper settlement domain.
-- `loan:{installment_id}` di unified bills belum bisa dibuat payment intent gateway. Harus masuk ke `LoanService::recordPayment()` agar installment, outstanding, dan ledger pinjaman benar.
-- `pos_credit:{member_id}` di unified bills belum bisa dibuat payment intent gateway. Harus masuk ke `MemberCreditService::recordPayment()` agar `outstanding_balance` turun dan ledger POS benar.
-- Pembayaran POS checkout anggota/kopi saat ini mencatat metode `QRIS` sebagai metode pembayaran POS, bukan gateway charge yang menunggu settlement.
-- Belum ada tabel payment intent generik lintas domain. Saat ini intent gateway disimpan langsung pada `cooperative_payments.gateway_*`.
+- Settlement `loan`, `pos_credit`, dan `coffee_order` sudah ada jalur awalnya, tetapi masih perlu sandbox E2E Midtrans untuk expired/failed/retry/duplicate webhook per domain.
+- Belum ada polling endpoint khusus `member_payment_intents`; mobile saat ini memakai response charge awal dan domain endpoint setelah settlement.
 
 ## Prinsip Arsitektur
 
@@ -36,6 +38,19 @@
 6. **Fallback internal hanya untuk dev/local.** Produksi wajib Midtrans configured dan diuji sandbox/live small transaction.
 
 ## Kontrak API Saat Ini
+
+### Member Portal Web (Native Inline Checkout)
+
+Anggota membayar iuran/simpanan dari `/member` (web, sesi Inertia) dengan dialog **native** — pilih metode (QRIS/VA/E-Wallet), lalu QR/VA ditampilkan langsung di dialog (bukan modal web Midtrans). Pakai direct charge per channel; settlement tetap lewat webhook yang sama (`order_id` → `gateway_reference`).
+
+```http
+POST member/payments/intent                          # body: { cooperative_dues_invoice_id, channel: QRIS|VA|E_WALLET } → CooperativePayment + direct charge (qr_string / va_number / checkout_url)
+GET  member/payments/{payment}/status                # polling status gateway untuk deteksi PAID
+```
+
+Provider: `PaymentGatewayService::createCharge()` (Midtrans `/v2/qris/charge` atau `/v2/charge`). QRIS `qr_string` di-render jadi QR di frontend lewat library `qrcode` npm. Fallback internal tetap tersedia bila Midtrans belum dikonfigurasi (dev/test).
+
+Untuk sandbox yang belum mengaktifkan QRIS/e-wallet, endpoint web `member/payments/intent` otomatis retry ke channel `VA` memakai `MIDTRANS_VA_BANK`. Response tetap `201` dan menyertakan `requested_channel` + `fallback_reason` agar dialog member menampilkan Virtual Account aktual, bukan error 503.
 
 ### Unified Bills
 
@@ -130,10 +145,13 @@ PaymentGatewayWebhook -> PaymentGatewayService -> MemberPaymentSettlementService
 Status: sebagian selesai.
 
 - [x] Dokumentasikan bahwa `CooperativePayment` hanya untuk iuran/simpanan.
+- [x] Tambahkan env/config Midtrans sandbox lokal (`MIDTRANS_MERCHANT_ID`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION=false`) tanpa menulis server key ke dokumen repo.
 - [x] Tambahkan `POST /api/v1/member/bills/{bill}/payment-intent` untuk source `dues`.
 - [x] Tampilkan `pos_credit` di unified bills agar anggota melihat hutang POS.
 - [x] Tolak `loan` dan `pos_credit` payment intent dengan `422` sampai settlement mapper ada.
 - [x] Regenerasi `docs/openapi.json` setelah rute baru stabil.
+- [x] Mapping channel `TRANSFER` ke payload Midtrans `bank_transfer` agar kontrak channel gateway tidak mengirim charge kosong.
+- [x] Tambahkan fallback sandbox web checkout: QRIS/e-wallet inactive otomatis retry ke `VA` dengan `MIDTRANS_VA_BANK`.
 - [ ] Tambahkan contoh Flutter untuk `bills -> payment-intent -> poll payment`.
 
 ### Phase 1 — Keanggotaan, Iuran, dan Simpanan
@@ -150,9 +168,9 @@ Tujuan: pembayaran anggota untuk simpanan pokok/wajib/sukarela berjalan end-to-e
 
 Tujuan: anggota bisa membayar `loan:{installment_id}` tanpa salah posting ledger.
 
-- [ ] Buat `member_payment_intents` atau mapper intent setara untuk `loan_installment`.
-- [ ] Tambahkan `MemberPaymentSettlementService::settleLoanInstallment()`.
-- [ ] Settlement harus memanggil `LoanService::recordPayment()` dengan `payment_method = gateway channel`.
+- [x] Buat `member_payment_intents` atau mapper intent setara untuk `loan_installment`.
+- [x] Tambahkan `MemberPaymentSettlementService::settleLoanInstallment()`.
+- [x] Settlement harus memanggil `LoanService::recordPayment()` dengan `payment_method = gateway channel`.
 - [ ] Pastikan allocation principal/interest/fee/penalty mengikuti logika `LoanService`.
 - [ ] Tambahkan notifikasi `member.loan.payment_recorded` dan admin operational event.
 - [ ] Test partial payment, overpayment rejection, duplicate webhook, dan pembayaran installment milik anggota lain.
@@ -161,9 +179,9 @@ Tujuan: anggota bisa membayar `loan:{installment_id}` tanpa salah posting ledger
 
 Tujuan: anggota bisa melunasi hutang belanja POS dari aplikasi.
 
-- [ ] Gunakan source `pos_credit:{member_id}` dari unified bills.
-- [ ] Settlement harus memanggil `MemberCreditService::recordPayment()`.
-- [ ] Pastikan `cooperative_members.outstanding_balance` turun dan ledger `POS_MEMBER_CREDIT_PAYMENT` tercatat.
+- [x] Gunakan source `pos_credit:{member_id}` dari unified bills.
+- [x] Settlement harus memanggil `MemberCreditService::recordPayment()`.
+- [x] Pastikan `cooperative_members.outstanding_balance` turun dan ledger `POS_MEMBER_CREDIT_PAYMENT` tercatat.
 - [ ] Tambahkan history `pos_member_credit_payments` ke transaksi unified member.
 - [ ] Test pembayaran sebagian, pembayaran penuh, overpayment rejection, duplicate webhook, dan void POS yang mengubah outstanding.
 
@@ -171,9 +189,9 @@ Tujuan: anggota bisa melunasi hutang belanja POS dari aplikasi.
 
 Tujuan: transaksi POS member-facing tidak lagi mencatat QRIS sebagai paid sebelum settlement.
 
-- [ ] Tambahkan mode `PENDING_PAYMENT` untuk POS order yang dibuat dari member app.
-- [ ] Untuk kopi, `POST /api/v1/member/coffee/orders` sebaiknya membuat order + payment intent bila channel gateway dipilih.
-- [ ] Setelah gateway `PAID`, finalize POS transaction, deduct stock, posting journal, dan ubah coffee order `RECEIVED`.
+- [x] Tambahkan mode `PENDING_PAYMENT` untuk POS order yang dibuat dari member app.
+- [x] Untuk kopi, `POST /api/v1/member/coffee/orders` sebaiknya membuat order + payment intent bila channel gateway dipilih.
+- [x] Setelah gateway `PAID`, finalize POS transaction, deduct stock, posting journal, dan ubah coffee order `RECEIVED`.
 - [ ] Jika gateway `EXPIRED/FAILED`, batalkan order pending tanpa mengurangi stok.
 - [ ] Pertahankan POS kasir offline yang langsung `COMPLETED` untuk cash/QRIS manual.
 - [ ] Test race condition: webhook datang dua kali, user polling saat pending, order expired.
@@ -190,11 +208,11 @@ Tujuan: satu pola untuk pembayaran non-iuran, misalnya biaya dokumen, denda, eve
 
 ### Phase 6 — Production Hardening
 
-- [ ] Midtrans sandbox E2E untuk QRIS, VA, E-WALLET, expired, failed, duplicate webhook.
+- [ ] Midtrans sandbox E2E untuk QRIS, VA, E-WALLET, TRANSFER/VA, expired, failed, duplicate webhook.
 - [ ] Gunakan queue job untuk webhook jika latency provider meningkat.
 - [ ] Dashboard monitoring gateway: pending aging, failed charge, webhook ignored, invalid signature.
 - [ ] Runbook refund/cancel/manual reconciliation.
-- [ ] Kunci `.env` production: `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION=true`, webhook URL, redirect URL.
+- [ ] Kunci `.env` production: `MIDTRANS_MERCHANT_ID`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION=true`, webhook URL, redirect URL.
 - [ ] Smoke test transaksi kecil real sebelum go-live.
 
 ## Testing Matrix Minimum

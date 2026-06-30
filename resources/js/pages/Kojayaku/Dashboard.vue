@@ -20,7 +20,7 @@ import {
 } from "lucide-vue-next";
 import type {LucideIcon} from "lucide-vue-next";
 import { computed, ref } from "vue";
-import PaymentProofDialog from "@/components/Kojayaku/PaymentProofDialog.vue";
+import MidtransPaymentDialog from "@/components/Kojayaku/MidtransPaymentDialog.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
@@ -801,7 +801,7 @@ const transactionRows = computed(() =>
         </section>
       </div>
 
-      <PaymentProofDialog
+      <MidtransPaymentDialog
         :open="selectedInvoice !== null"
         :invoice="selectedInvoice"
         @update:open="closePaymentDialog"

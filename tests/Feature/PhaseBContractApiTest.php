@@ -287,6 +287,60 @@ class PhaseBContractApiTest extends TestCase
         $this->assertContains('member:write', $spec['paths']['/api/payments/charge']['post']['x-required-abilities']);
     }
 
+    public function test_midtrans_transfer_charge_uses_bank_transfer_payload(): void
+    {
+        config([
+            'services.midtrans.server_key' => 'midtrans-server-key',
+            'services.midtrans.is_production' => false,
+            'services.midtrans.va_bank' => 'bca',
+        ]);
+
+        $memberUser = User::factory()->create();
+        $member = CooperativeMember::factory()->active()->create(['user_id' => $memberUser->id]);
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'amount' => 100000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+
+        Http::fake(function ($request) {
+            $payload = $request->data();
+
+            $this->assertSame('https://api.sandbox.midtrans.com/v2/charge', $request->url());
+            $this->assertSame('bank_transfer', $payload['payment_type'] ?? null);
+            $this->assertSame(['bank' => 'bca'], $payload['bank_transfer'] ?? null);
+
+            return Http::response([
+                'status_code' => '201',
+                'transaction_status' => 'pending',
+                'va_numbers' => [
+                    [
+                        'bank' => 'bca',
+                        'va_number' => '12345678901',
+                    ],
+                ],
+                'expiry_time' => '2026-06-29 10:00:00',
+                'redirect_url' => 'https://sandbox.midtrans.test/pay',
+            ], 201);
+        });
+
+        Sanctum::actingAs($memberUser, ['member:write']);
+
+        $this->postJson('/api/payments/charge', [
+            'cooperative_payment_id' => $payment->id,
+            'channel' => 'TRANSFER',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.provider', 'midtrans')
+            ->assertJsonPath('data.channel', 'TRANSFER')
+            ->assertJsonPath('data.instructions.bank', 'BCA')
+            ->assertJsonPath('data.instructions.va_number', '12345678901')
+            ->assertJsonPath('data.expires_at', '2026-06-29 10:00:00')
+            ->assertJsonPath('data.checkout_url', 'https://sandbox.midtrans.test/pay');
+    }
+
     public function test_midtrans_webhook_requires_valid_signature_and_is_idempotent(): void
     {
         config(['services.midtrans.server_key' => 'midtrans-server-key']);
@@ -337,7 +391,12 @@ class PhaseBContractApiTest extends TestCase
             ->assertJsonPath('data.status', 'APPROVED')
             ->assertJsonPath('data.reconciliation_reference', 'MIDTRANS-SETTLEMENT-1');
 
-        $this->assertSame(1, $memberUser->notifications()->count());
+        $this->assertTrue(
+            $memberUser->notifications()
+                ->where('type', 'App\\Notifications\\CooperativeDatabaseNotification')
+                ->where('data->event_type', 'member.payment.approved')
+                ->exists()
+        );
     }
 
     public function test_fcm_push_uses_legacy_endpoint_payload_and_revokes_invalid_tokens(): void

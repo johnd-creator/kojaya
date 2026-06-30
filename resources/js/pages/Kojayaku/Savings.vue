@@ -15,8 +15,10 @@ import {
   WalletCards
 } from "lucide-vue-next";
 import type {LucideIcon} from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import MidtransPaymentDialog from "@/components/Kojayaku/MidtransPaymentDialog.vue";
 import PageContainer from "@/components/PageContainer.vue";
+import { Button } from "@/components/ui/button";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
 
@@ -160,6 +162,23 @@ const latestLedger = computed(() => props.entries.data.slice(0, 5));
 const latestInvoices = computed(() => props.invoices.data.slice(0, 4));
 const latestPayments = computed(() => props.payments.data.slice(0, 4));
 const wajibInvoices = computed(() => props.wajibInvoices ?? []);
+
+type InvoiceForDialog = {
+  id: number;
+  amount: number;
+  paid_amount: number;
+  due_date: string | null;
+};
+
+const selectedInvoice = ref<InvoiceForDialog | null>(null);
+
+function openPaymentDialog(invoice: InvoiceForDialog): void {
+  selectedInvoice.value = invoice;
+}
+
+function closePaymentDialog(): void {
+  selectedInvoice.value = null;
+}
 
 const statusClass = (status: string): string => {
   if (["PAID", "APPROVED", "ACTIVE", "COMPLETED"].includes(status)) {
@@ -320,6 +339,7 @@ const statusClass = (status: string): string => {
                     <th class="px-4 py-3 text-right">Tagihan</th>
                     <th class="px-4 py-3 text-right">Dibayar</th>
                     <th class="px-4 py-3 text-right">Sisa</th>
+                    <th class="px-4 py-3 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -351,9 +371,28 @@ const statusClass = (status: string): string => {
                     <td class="px-4 py-3 text-right font-extrabold" :class="invoice.remaining_amount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-800 dark:text-emerald-400'">
                       {{ formatCurrency(invoice.remaining_amount) }}
                     </td>
+                    <td class="px-4 py-3 text-center">
+                      <Button
+                        v-if="invoice.remaining_amount > 0"
+                        type="button"
+                        size="sm"
+                        class="bg-emerald-600 hover:bg-emerald-700"
+                        @click="
+                          openPaymentDialog({
+                            id: invoice.id,
+                            amount: invoice.amount,
+                            paid_amount: invoice.paid_amount,
+                            due_date: invoice.due_date,
+                          })
+                        "
+                      >
+                        Bayar
+                      </Button>
+                      <span v-else class="text-xs text-emerald-600 dark:text-emerald-400">Lunas</span>
+                    </td>
                   </tr>
                   <tr v-if="wajibInvoices.length === 0">
-                    <td colspan="5" class="px-4 py-10 text-center text-zinc-400">
+                    <td colspan="6" class="px-4 py-10 text-center text-zinc-400">
                       Belum ada tagihan Simpanan Wajib bulanan.
                     </td>
                   </tr>
@@ -658,6 +697,12 @@ const statusClass = (status: string): string => {
           </div>
         </section>
       </div>
+
+      <MidtransPaymentDialog
+        :open="selectedInvoice !== null"
+        :invoice="selectedInvoice"
+        @update:open="closePaymentDialog"
+      />
     </PageContainer>
   </AppLayout>
 </template>

@@ -9,6 +9,7 @@ use App\Http\Requests\Api\RegisterDeviceTokenRequest;
 use App\Models\CooperativePayment;
 use App\Models\MobileDeviceToken;
 use App\Services\Cooperative\CooperativePaymentService;
+use App\Services\Integrations\MemberPaymentSettlementService;
 use App\Services\Integrations\PaymentGatewayService;
 use App\Services\Integrations\PushNotificationService;
 use Illuminate\Http\JsonResponse;
@@ -54,10 +55,12 @@ class ProductionIntegrationController extends Controller
     public function paymentWebhook(
         PaymentGatewayWebhookRequest $request,
         PaymentGatewayService $gateway,
+        MemberPaymentSettlementService $memberPaymentSettlementService,
         CooperativePaymentService $paymentService,
         PushNotificationService $pushNotificationService
     ): JsonResponse {
         $payment = $gateway->applyWebhook($request->validated(), $request->headers->all());
+        $intent = null;
 
         if ($payment && $payment->gateway_status === 'PAID' && ! $payment->reconciled_at) {
             $payment = $paymentService->reconcile(
@@ -77,12 +80,20 @@ class ProductionIntegrationController extends Controller
         }
 
         if (! $payment) {
+            $intent = $gateway->applyWebhookToMemberIntent($request->validated(), $request->headers->all());
+
+            if ($intent && $intent->gateway_status === 'PAID' && ! $intent->settled_at) {
+                $intent = $memberPaymentSettlementService->settle($intent);
+            }
+        }
+
+        if (! $payment && ! $intent) {
             return response()->json([
                 'message' => 'Webhook ignored.',
             ], Response::HTTP_ACCEPTED);
         }
 
-        return response()->json(['data' => $payment]);
+        return response()->json(['data' => $payment ?: $intent]);
     }
 
     public function monitoring(): JsonResponse

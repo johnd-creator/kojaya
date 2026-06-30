@@ -3,6 +3,7 @@
 namespace App\Services\Integrations;
 
 use App\Models\CooperativePayment;
+use App\Models\MemberPaymentIntent;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -31,7 +32,7 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
      */
     public function createCharge(CooperativePayment $payment, string $channel): array
     {
@@ -52,39 +53,18 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             'item_details' => $items,
         ];
 
-        $endpoint = match ($channel) {
-            'QRIS' => '/v2/qris/charge',
-            'VA' => '/v2/charge',
-            'E_WALLET' => '/v2/charge',
-            default => '/v2/charge',
-        };
+        $endpoint = $this->endpointForChannel($channel);
+        $payload = $this->applyChannelPayload($payload, $channel);
 
-        if ($channel === 'VA') {
-            $payload['payment_type'] = 'bank_transfer';
-            $payload['bank_transfer'] = ['bank' => 'bca'];
-        } elseif ($channel === 'E_WALLET') {
-            $payload['payment_type'] = 'gopay';
-        }
-
-        $response = Http::withBasicAuth(
-            $this->serverKey(),
-            ''
-        )
-            ->withHeader('Idempotency-Key', 'charge-'.$payment->id.'-'.$payment->gateway_status)
-            ->post($this->baseUrl.$endpoint, $payload);
+        $response = $this->sendChargeRequest(
+            idempotencyKey: 'charge-'.$payment->id.'-'.$payment->gateway_status,
+            endpoint: $endpoint,
+            payload: $payload,
+        );
 
         $body = $response->json() ?: [];
 
-        if (! $response->successful()) {
-            Log::error('Midtrans charge failed', [
-                'payment_id' => $payment->id,
-                'order_id' => $orderId,
-                'status_code' => $response->status(),
-                'body' => $body,
-            ]);
-
-            throw new \RuntimeException('Midtrans charge failed: '.($body['status_message'] ?? $response->status()));
-        }
+        $this->ensureChargeSuccessful($response, $body, $orderId, $payment->id, 'charge');
 
         $qrString = null;
         $checkoutUrl = null;
@@ -93,7 +73,10 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             $qrString = $body['qr_string'] ?? null;
         } elseif ($channel === 'E_WALLET') {
             $actions = $body['actions'] ?? [];
-            $checkoutUrl = collect($actions)->firstWhere('name', 'deeplink-redirect')['url'] ?? null;
+            $checkoutUrl = collect($actions)
+                ->firstWhere('name', 'deeplink-redirect')['url'] ?? null;
+            $checkoutUrl ??= collect($actions)
+                ->firstWhere('name', 'activate-deeplink')['url'] ?? null;
         }
 
         if (! $checkoutUrl && ! $qrString) {
@@ -108,6 +91,81 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             'amount' => (float) $payment->amount,
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
+            'expires_at' => $body['expiry_time'] ?? null,
+            'instructions' => $this->buildInstructions($body, $channel),
+        ];
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     */
+    public function createIntentCharge(MemberPaymentIntent $intent): array
+    {
+        $orderId = $this->generateIntentOrderId($intent);
+        $amount = (int) round((float) $intent->amount);
+        $channel = $intent->channel;
+        $metadata = $intent->metadata ?? [];
+
+        $payload = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => $amount,
+            ],
+            'customer_details' => [
+                'first_name' => $intent->member?->name ?? 'Member',
+                'last_name' => '',
+                'email' => $intent->member?->user?->email ?? 'member@kojaya.test',
+                'phone' => $intent->member?->phone ?? '08123456789',
+            ],
+            'item_details' => [
+                [
+                    'id' => (string) ($intent->payable_id ?? $intent->id),
+                    'price' => $amount,
+                    'quantity' => 1,
+                    'name' => Str::limit((string) ($metadata['description'] ?? 'Pembayaran Anggota Kojaya'), 45, ''),
+                ],
+            ],
+        ];
+
+        $payload = $this->applyChannelPayload($payload, $channel);
+
+        $response = $this->sendChargeRequest(
+            idempotencyKey: 'member-intent-'.$intent->id.'-'.$intent->gateway_status,
+            endpoint: $this->endpointForChannel($channel),
+            payload: $payload,
+        );
+
+        $body = $response->json() ?: [];
+
+        $this->ensureChargeSuccessful($response, $body, $orderId, $intent->id, 'member payment intent charge');
+
+        $qrString = null;
+        $checkoutUrl = null;
+
+        if ($channel === 'QRIS') {
+            $qrString = $body['qr_string'] ?? null;
+        } elseif ($channel === 'E_WALLET') {
+            $actions = $body['actions'] ?? [];
+            $checkoutUrl = collect($actions)
+                ->firstWhere('name', 'deeplink-redirect')['url'] ?? null;
+            $checkoutUrl ??= collect($actions)
+                ->firstWhere('name', 'activate-deeplink')['url'] ?? null;
+        }
+
+        if (! $checkoutUrl && ! $qrString) {
+            $checkoutUrl = $body['redirect_url'] ?? null;
+        }
+
+        return [
+            'provider' => 'midtrans',
+            'reference' => $orderId,
+            'status' => 'PENDING',
+            'channel' => $channel,
+            'amount' => (float) $intent->amount,
+            'checkout_url' => $checkoutUrl,
+            'qr_string' => $qrString,
+            'expires_at' => $body['expiry_time'] ?? null,
+            'instructions' => $this->buildInstructions($body, $channel),
         ];
     }
 
@@ -171,8 +229,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
         $paymentType = (string) ($payload['payment_type'] ?? '');
         $channel = match (true) {
-            $paymentType === 'gopay' && $mappedStatus === 'PAID' => 'E_WALLET',
-            $paymentType === 'bank_transfer' && $mappedStatus === 'PAID' => 'VA',
+            $paymentType === 'gopay' => 'E_WALLET',
+            $paymentType === 'bank_transfer' => 'VA',
             str_contains($paymentType, 'qris') => 'QRIS',
             default => strtoupper($paymentType),
         };
@@ -245,9 +303,125 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         return sprintf('KOJ-%d-%s', $payment->id, Str::upper(Str::random(8)));
     }
 
+    private function generateIntentOrderId(MemberPaymentIntent $intent): string
+    {
+        return sprintf('KOJ-MPI-%d-%s', $intent->id, Str::upper(Str::random(8)));
+    }
+
+    private function endpointForChannel(string $channel): string
+    {
+        // All Core API direct charges (QRIS, bank_transfer, gopay, etc.) use the
+        // same /v2/charge endpoint; the payment method is declared in the body.
+        return '/v2/charge';
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function applyChannelPayload(array $payload, string $channel): array
+    {
+        if (in_array($channel, ['VA', 'TRANSFER'], true)) {
+            $payload['payment_type'] = 'bank_transfer';
+            $payload['bank_transfer'] = ['bank' => $this->bankTransferCode()];
+        } elseif ($channel === 'E_WALLET') {
+            $payload['payment_type'] = 'gopay';
+        } elseif ($channel === 'QRIS') {
+            $payload['payment_type'] = 'qris';
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Midtrans sometimes returns HTTP 200 with an application-level error in
+     * the body (e.g. status_code "402" "Payment channel is not activated.").
+     * Surface those as failures instead of silently returning an empty charge.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    private function ensureChargeSuccessful(\Illuminate\Http\Client\Response $response, array $body, string $orderId, int $entityId, string $context): void
+    {
+        $httpStatus = $response->status();
+        $appStatusCode = (int) ($body['status_code'] ?? $httpStatus);
+
+        if (! $response->successful() || $appStatusCode >= 400) {
+            Log::error('Midtrans '.$context.' failed', [
+                'entity_id' => $entityId,
+                'order_id' => $orderId,
+                'http_status' => $httpStatus,
+                'midtrans_status_code' => $appStatusCode,
+                'body' => $body,
+            ]);
+
+            throw new \RuntimeException('Midtrans '.$context.' failed: '.($body['status_message'] ?? 'HTTP '.$httpStatus));
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function sendChargeRequest(string $idempotencyKey, string $endpoint, array $payload): \Illuminate\Http\Client\Response
+    {
+        $request = fn () => Http::withBasicAuth($this->serverKey(), '')
+            ->withHeader('Idempotency-Key', $idempotencyKey)
+            ->post($this->baseUrl.$endpoint, $payload);
+
+        $response = $request();
+
+        if ($response->status() === 404 && ($response->json() ?: []) === []) {
+            usleep(500_000);
+
+            return $request();
+        }
+
+        return $response;
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private function buildInstructions(array $body, string $channel): array
+    {
+        if (! in_array($channel, ['VA', 'TRANSFER'], true)) {
+            return [];
+        }
+
+        $instructions = [];
+        $vaNumbers = $body['va_numbers'] ?? [];
+
+        if (is_array($vaNumbers) && $vaNumbers !== []) {
+            $firstVa = $vaNumbers[0] ?? [];
+
+            if (is_array($firstVa)) {
+                $instructions['bank'] = strtoupper((string) ($firstVa['bank'] ?? ''));
+                $instructions['va_number'] = (string) ($firstVa['va_number'] ?? '');
+            }
+        }
+
+        foreach (['permata_va_number', 'bill_key', 'biller_code'] as $key) {
+            if (! empty($body[$key])) {
+                $instructions[$key] = (string) $body[$key];
+            }
+        }
+
+        if (empty($instructions['va_number']) && ! empty($instructions['permata_va_number'])) {
+            $instructions['bank'] = $instructions['bank'] ?? 'PERMATA';
+            $instructions['va_number'] = $instructions['permata_va_number'];
+        }
+
+        return array_filter($instructions, fn (mixed $value): bool => $value !== '');
+    }
+
     private function serverKey(): string
     {
         return (string) config('services.midtrans.server_key', '');
+    }
+
+    private function bankTransferCode(): string
+    {
+        return strtolower((string) config('services.midtrans.va_bank', 'permata'));
     }
 
     public function isConfigured(): bool
@@ -256,7 +430,7 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
      */
     private function createChargeInternal(CooperativePayment $payment, string $channel): array
     {

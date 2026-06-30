@@ -9,7 +9,9 @@ use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
+use App\Models\LoanPayment;
 use App\Models\LoanType;
+use App\Models\MemberPaymentIntent;
 use App\Models\PosPayment;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -23,6 +25,13 @@ use Tests\TestCase;
 class MemberUnifiedEndpointsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.midtrans.server_key' => '']);
+    }
 
     public function test_profile_exposes_extended_personal_and_bank_fields(): void
     {
@@ -363,7 +372,7 @@ class MemberUnifiedEndpointsTest extends TestCase
 
         Sanctum::actingAs($user, ['member:write']);
 
-        $this->postJson('/api/v1/member/bills/dues:'.$invoice->id.'/payment-intent', [
+        $response = $this->postJson('/api/v1/member/bills/dues:'.$invoice->id.'/payment-intent', [
             'channel' => 'QRIS',
         ])
             ->assertCreated()
@@ -384,9 +393,18 @@ class MemberUnifiedEndpointsTest extends TestCase
             'gateway_status' => 'PENDING',
             'status' => 'PENDING',
         ]);
+
+        $retry = $this->postJson('/api/v1/member/bills/dues:'.$invoice->id.'/payment-intent', [
+            'channel' => 'QRIS',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.charge.reference', $response->json('data.charge.reference'));
+
+        $this->assertSame($response->json('data.payment.id'), $retry->json('data.payment.id'));
+        $this->assertSame(1, CooperativePayment::query()->where('cooperative_dues_invoice_id', $invoice->id)->count());
     }
 
-    public function test_payment_intent_rejects_non_dues_bill_until_domain_settlement_exists(): void
+    public function test_member_can_create_and_settle_payment_intent_for_loan_bill(): void
     {
         [$user, $member] = $this->memberUser();
         $loanType = LoanType::factory()->create(['name' => 'Pinjaman Produktif']);
@@ -410,9 +428,30 @@ class MemberUnifiedEndpointsTest extends TestCase
 
         Sanctum::actingAs($user, ['member:write']);
 
-        $this->postJson('/api/v1/member/bills/loan:'.$installment->id.'/payment-intent', [
+        $response = $this->postJson('/api/v1/member/bills/loan:'.$installment->id.'/payment-intent', [
             'channel' => 'QRIS',
-        ])->assertStatus(422);
+        ])->assertCreated()
+            ->assertJsonPath('data.source', 'loan')
+            ->assertJsonPath('data.payment_intent.payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
+            ->assertJsonPath('data.payment_intent.amount', 460000)
+            ->assertJsonPath('data.charge.provider', 'internal');
+
+        $this->postJson('/api/payments/webhook', [
+            'reference' => $response->json('data.charge.reference'),
+            'status' => 'PAID',
+        ])->assertOk()
+            ->assertJsonPath('data.gateway_status', 'PAID');
+
+        $this->assertDatabaseHas('loan_payments', [
+            'loan_id' => $loan->id,
+            'cooperative_member_id' => $member->id,
+            'amount' => 460000,
+            'payment_method' => 'QRIS',
+            'reference_no' => $response->json('data.charge.reference'),
+        ]);
+
+        $this->assertSame(1, LoanPayment::query()->count());
+        $this->assertNotNull(MemberPaymentIntent::query()->firstOrFail()->settled_at);
     }
 
     public function test_unified_transactions_merge_pos_and_payments_timeline(): void

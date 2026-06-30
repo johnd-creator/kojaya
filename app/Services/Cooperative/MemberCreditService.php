@@ -15,7 +15,7 @@ class MemberCreditService
     public function recordPayment(
         CooperativeMember $member,
         float $amount,
-        User $receiver,
+        ?User $receiver,
         ?string $referenceNo = null,
         ?string $notes = null,
         ?string $paidAt = null,
@@ -33,7 +33,7 @@ class MemberCreditService
         return DB::transaction(function () use ($member, $amount, $receiver, $referenceNo, $notes, $paidAt) {
             $payment = PosMemberCreditPayment::query()->create([
                 'cooperative_member_id' => $member->id,
-                'received_by' => $receiver->id,
+                'received_by' => $receiver?->id,
                 'reference_no' => $referenceNo,
                 'amount' => $amount,
                 'paid_at' => $paidAt ?: now()->toDateString(),

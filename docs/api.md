@@ -267,17 +267,28 @@ Authorization: Bearer {token}
 **Order Request:**
 ```json
 {
-  "pos_product_id": 1,
-  "quantity": 2,
+  "items": [
+    {
+      "pos_product_id": 1,
+      "quantity": 2,
+      "sugar_level": "Less Sugar",
+      "ice_level": "Warm",
+      "cup_size": "Large"
+    },
+    {
+      "pos_product_id": 2,
+      "quantity": 1,
+      "sugar_level": "Normal",
+      "ice_level": "Normal",
+      "cup_size": "Reguler"
+    }
+  ],
   "client_reference": "mobile-uuid",
-  "payment_method": "QRIS",
-  "sugar_level": "Less Sugar",
-  "ice_level": "Warm",
-  "cup_size": "Large"
+  "channel": "QRIS"
 }
 ```
 
-`coffee/orders` membuat transaksi POS dan record `coffee_orders` untuk anggota aktif yang sedang login, mengurangi stok, mencatat pembayaran default `QRIS`, dan mengembalikan status awal `RECEIVED` untuk tracker mobile.
+`coffee/orders` membuat `member_payment_intents` dan charge gateway terlebih dahulu. Response awal berstatus `PENDING_PAYMENT` dan berisi `payment_intent` + `charge`. Stok belum berkurang dan transaksi POS belum dibuat pada tahap ini. Setelah webhook gateway `PAID`, backend membuat transaksi POS, mengurangi stok, mencatat pembayaran, membuat `coffee_orders`, dan status tracker masuk `RECEIVED`.
 
 `coffee/orders/{coffeeOrder}` mengembalikan status tracker terbaru milik anggota yang sedang login. Status yang valid: `RECEIVED`, `BREWING`, `READY`, `PICKED_UP`, `CANCELLED`. Admin Koperasi mengelola antrian melalui web route `/cooperative/pos/coffee-orders`.
 
@@ -457,7 +468,7 @@ proof: <file> (jpg, png, or pdf, max 4MB)
 Receipt hanya tersedia untuk pembayaran berstatus `APPROVED`. `download_url` adalah signed URL sementara untuk file PDF receipt.
 
 ### **Payment Gateway Charge**
-Member app dapat membuat charge langsung dari bill iuran/simpanan melalui endpoint unified bills. Untuk saat ini `payment-intent` hanya mengaktifkan source `dues` karena settlement-nya masuk ke `CooperativePaymentService` dan ledger `SAVING_PAYMENT`. Source lain seperti `loan` dan `pos_credit` ditampilkan di `/api/v1/member/bills`, tetapi payment gateway-nya akan diaktifkan setelah settlement domain masing-masing tersedia agar tidak salah posting ledger.
+Member app dapat membuat charge langsung dari unified bill. Source `dues` tetap menghasilkan `CooperativePayment` karena settlement-nya masuk ke `CooperativePaymentService` dan ledger `SAVING_PAYMENT`. Source `loan` dan `pos_credit` menghasilkan `member_payment_intents`; saat webhook gateway `PAID`, settlement diarahkan ke `LoanService::recordPayment()` atau `MemberCreditService::recordPayment()`.
 
 ```http
 POST /api/v1/member/bills/{bill}/payment-intent
@@ -469,7 +480,7 @@ Content-Type: application/json
 }
 ```
 
-Contoh `{bill}`: `dues:123`. Channel options: `QRIS`, `VA`, `E_WALLET`, `TRANSFER`.
+Contoh `{bill}`: `dues:123`, `loan:456`, `pos_credit:789`. Channel options: `QRIS`, `VA`, `E_WALLET`, `TRANSFER`.
 
 **Response (201):**
 ```json
@@ -492,13 +503,47 @@ Contoh `{bill}`: `dues:123`. Channel options: `QRIS`, `VA`, `E_WALLET`, `TRANSFE
       "channel": "QRIS",
       "amount": 80000,
       "checkout_url": "http://localhost:8000/api/payments/PAY-ABC123/checkout",
-      "qr_string": null
+      "qr_string": null,
+      "expires_at": "2026-06-29T10:00:00Z",
+      "instructions": {}
     }
   }
 }
 ```
 
-Source `loan` dan `pos_credit` saat ini mengembalikan `422` saat dibuat payment intent.
+Untuk `loan` dan `pos_credit`, response memakai field `payment_intent`:
+
+```json
+{
+  "data": {
+    "bill_id": "loan:456",
+    "source": "loan",
+    "payment_intent": {
+      "id": 12,
+      "payable_type": "loan_installment",
+      "payable_id": 456,
+      "amount": 460000,
+      "channel": "QRIS",
+      "gateway_provider": "midtrans",
+      "gateway_reference": "KOJ-MPI-12-ABC12345",
+      "gateway_status": "PENDING",
+      "settled_at": null,
+      "expires_at": "2026-06-29T10:00:00Z"
+    },
+    "charge": {
+      "provider": "midtrans",
+      "reference": "KOJ-MPI-12-ABC12345",
+      "status": "PENDING",
+      "channel": "QRIS",
+      "amount": 460000,
+      "checkout_url": "https://app.sandbox.midtrans.com/...",
+      "qr_string": null,
+      "expires_at": "2026-06-29T10:00:00Z",
+      "instructions": {}
+    }
+  }
+}
+```
 
 ```http
 POST /api/payments/charge

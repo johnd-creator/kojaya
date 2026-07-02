@@ -27,6 +27,7 @@ class CooperativeDuesController extends Controller
         $duesGenerationService->generateForPeriod($period);
 
         $query = CooperativeDuesInvoice::query()
+            ->forSavingsDues()
             ->forActiveMembers()
             ->with(['member', 'contributionType']);
         $status = $request->input('status', '');
@@ -80,8 +81,13 @@ class CooperativeDuesController extends Controller
                 'total_outstanding' => (float) ($aggregate->total_outstanding ?? 0),
                 'paid_count' => (int) ($aggregate->paid_count ?? 0),
             ],
-            'contributionTypes' => CooperativeContributionType::query()->orderBy('name')->get(),
+            'contributionTypes' => CooperativeContributionType::query()
+                ->savingsDues()
+                ->orderByRaw("CASE WHEN category = 'POKOK' OR code = 'POKOK' THEN 0 WHEN category = 'WAJIB' OR code = 'WAJIB' THEN 1 ELSE 2 END")
+                ->orderBy('name')
+                ->get(),
             'categories' => CooperativeContributionType::query()
+                ->savingsDues()
                 ->where('is_active', true)
                 ->select('category')
                 ->distinct()

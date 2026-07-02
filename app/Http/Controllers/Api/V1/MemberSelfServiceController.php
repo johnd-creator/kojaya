@@ -205,8 +205,9 @@ class MemberSelfServiceController extends Controller
                 'by_category' => $summary['by_category'],
                 'uncategorized' => $summary['uncategorized'],
                 'total_paid' => (float) $member->payments()->where('status', 'APPROVED')->sum('amount'),
-                'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
+                'pending_invoices' => $member->invoices()->forSavingsDues()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                 'pending_invoice_amount' => (float) $member->invoices()
+                    ->forSavingsDues()
                     ->whereIn('status', ['UNPAID', 'PARTIAL'])
                     ->selectRaw('COALESCE(SUM(amount - paid_amount), 0) as remaining')
                     ->value('remaining'),
@@ -260,6 +261,7 @@ class MemberSelfServiceController extends Controller
         $member = $this->memberOrAbort($request);
 
         return MemberInvoiceResource::collection($member->invoices()
+            ->forSavingsDues()
             ->with('contributionType')
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->when($request->filled('period'), fn ($query) => $query->where('period', $request->input('period')))
@@ -274,6 +276,7 @@ class MemberSelfServiceController extends Controller
         $member = $this->memberOrAbort($request);
 
         abort_unless($invoice->cooperative_member_id === $member->id, 403);
+        abort_unless($invoice->loadMissing('contributionType')->isSavingsDues(), 404);
 
         return response()->json([
             'data' => new MemberInvoiceResource($invoice->load(['contributionType', 'member'])),
@@ -285,6 +288,7 @@ class MemberSelfServiceController extends Controller
         $member = $this->memberOrAbort($request);
 
         abort_unless($invoice->cooperative_member_id === $member->id, 403);
+        abort_unless($invoice->loadMissing('contributionType')->isSavingsDues(), 404);
         abort_unless(in_array($invoice->status, ['UNPAID', 'PARTIAL']), 422, 'Invoice sudah lunas.');
 
         $payment = $this->pendingPaymentForInvoice($request, $member, $invoice);
@@ -708,6 +712,7 @@ class MemberSelfServiceController extends Controller
         if ($category === null || $category === 'dues') {
             $bills = $bills->merge(
                 $member->invoices()
+                    ->forSavingsDues()
                     ->with('contributionType')
                     ->whereIn('status', ['UNPAID', 'PARTIAL'])
                     ->when($status, fn ($query, $value) => $query->where('status', $value))
@@ -738,7 +743,7 @@ class MemberSelfServiceController extends Controller
             );
         }
 
-        if ($category === null || $category === 'pos_credit') {
+        if ($category === 'pos_credit') {
             $posCreditBill = $this->posCreditBill($member);
 
             if ($posCreditBill !== null) {
@@ -786,7 +791,7 @@ class MemberSelfServiceController extends Controller
 
     /**
      * Single unified bill detail, addressed by the composite id emitted by the
-     * bills list (`dues:{id}` or `loan:{id}`).
+     * bills list (`dues:{id}`, `loan:{id}`, or `pos_credit:{member_id}`).
      */
     public function showBill(Request $request, string $bill): JsonResponse
     {
@@ -824,6 +829,7 @@ class MemberSelfServiceController extends Controller
 
         if ($source === 'dues') {
             $invoice = $member->invoices()
+                ->forSavingsDues()
                 ->whereIn('status', ['UNPAID', 'PARTIAL'])
                 ->findOrFail($id);
 
@@ -984,7 +990,10 @@ class MemberSelfServiceController extends Controller
 
     protected function resolveDuesBill(CooperativeMember $member, string $id): ?array
     {
-        $invoice = $member->invoices()->with('contributionType')->find($id);
+        $invoice = $member->invoices()
+            ->forSavingsDues()
+            ->with('contributionType')
+            ->find($id);
 
         return $invoice?->status !== null ? $this->duesInvoiceToBill($invoice) : null;
     }
@@ -1030,6 +1039,7 @@ class MemberSelfServiceController extends Controller
             'payable' => true,
             'period' => null,
             'category' => 'pos_credit',
+            'action_url' => '/member/transactions',
         ];
     }
 

@@ -60,6 +60,23 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'due_date' => now()->addWeek()->toDateString(),
             'status' => 'UNPAID',
         ]);
+        $posType = CooperativeContributionType::query()->create([
+            'code' => 'POS-CREDIT',
+            'name' => 'Tagihan Belanja POS',
+            'category' => 'POS',
+            'default_amount' => 125000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $posInvoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $posType->id,
+            'period' => now()->format('Y-m'),
+            'amount' => 125000,
+            'paid_amount' => 0,
+            'due_date' => now()->addWeek()->toDateString(),
+            'status' => 'UNPAID',
+        ]);
         CooperativeLedgerEntry::factory()->create([
             'cooperative_member_id' => $member->id,
             'entry_type' => 'SAVINGS_DEPOSIT',
@@ -104,7 +121,9 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
         $this->getJson('/api/v1/member/dues/invoices')
             ->assertOk()
-            ->assertJsonPath('data.0.id', $invoice->id);
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $invoice->id)
+            ->assertJsonMissing(['id' => $posInvoice->id]);
 
         $this->getJson('/api/v1/member/payments')
             ->assertOk()

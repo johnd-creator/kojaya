@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 export const status = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 status.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ status.url = (args: { payment: number | { id: number } } | [payment: number | { 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 status.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -59,7 +59,7 @@ status.get = (args: { payment: number | { id: number } } | [payment: number | { 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 status.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -69,7 +69,7 @@ status.head = (args: { payment: number | { id: number } } | [payment: number | {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 const statusForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ const statusForm = (args: { payment: number | { id: number } } | [payment: numbe
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 statusForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -89,7 +89,7 @@ statusForm.get = (args: { payment: number | { id: number } } | [payment: number 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:369
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
 * @route '/api/v1/member/payments/{payment}/status'
 */
 statusForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -106,7 +106,7 @@ status.form = statusForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 export const qrisImage = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -121,7 +121,7 @@ qrisImage.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 qrisImage.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -154,7 +154,7 @@ qrisImage.url = (args: { payment: number | { id: number } } | [payment: number |
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 qrisImage.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -164,7 +164,7 @@ qrisImage.get = (args: { payment: number | { id: number } } | [payment: number |
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 qrisImage.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -174,7 +174,7 @@ qrisImage.head = (args: { payment: number | { id: number } } | [payment: number 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 const qrisImageForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -184,7 +184,7 @@ const qrisImageForm = (args: { payment: number | { id: number } } | [payment: nu
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 qrisImageForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -194,7 +194,7 @@ qrisImageForm.get = (args: { payment: number | { id: number } } | [payment: numb
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:394
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
 qrisImageForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

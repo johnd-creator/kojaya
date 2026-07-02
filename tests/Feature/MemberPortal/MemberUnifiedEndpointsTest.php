@@ -349,6 +349,22 @@ class MemberUnifiedEndpointsTest extends TestCase
             ->assertJsonPath('data.0.title', 'Kredit Belanja POS');
     }
 
+    public function test_unified_bills_default_excludes_pos_credit_outstanding_balance(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $member->forceFill([
+            'credit_limit' => 500000,
+            'outstanding_balance' => 125000,
+        ])->save();
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/bills')
+            ->assertOk()
+            ->assertJsonPath('summary.pos_credit_count', 0)
+            ->assertJsonMissing(['source' => 'pos_credit']);
+    }
+
     public function test_member_can_create_payment_intent_for_dues_bill(): void
     {
         [$user, $member] = $this->memberUser();

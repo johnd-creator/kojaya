@@ -14,7 +14,7 @@
 - `POST /api/payments/charge` men-charge `CooperativePayment` melalui `PaymentGatewayService`.
 - `POST /api/payments/webhook` menerima webhook gateway, update `gateway_status`, lalu menjalankan `CooperativePaymentService::reconcile()` saat status `PAID`.
 - Gateway punya fallback internal jika Midtrans belum dikonfigurasi, sehingga flow lokal tetap bisa diuji.
-- Member bills sudah menggabungkan `dues`, `loan`, dan `pos_credit`.
+- Member bills default menggabungkan `dues` dan `loan`; `pos_credit` tersedia hanya bila client meminta `category=pos_credit` agar tagihan iuran tidak tercampur dengan domain POS.
 - POS kasir mendukung `CASH`, `TRANSFER`, `QRIS`, dan `MEMBER_CREDIT` melalui `PosTransactionService`.
 - POS member credit sudah punya pencatatan pelunasan manual melalui `MemberCreditService`.
 - Upload bukti transfer manual anggota tetap tersedia lewat `POST /api/v1/member/payments/proof`.
@@ -60,13 +60,15 @@ GET /api/v1/member/bills/{bill}
 POST /api/v1/member/bills/{bill}/payment-intent
 ```
 
+Tanpa parameter `category`, daftar bills hanya mengembalikan `dues` dan `loan`. Gunakan `category=pos_credit` untuk konteks hutang belanja POS dan arahkan UI ke transaksi/POS credit, bukan halaman tagihan iuran.
+
 `{bill}` adalah composite id:
 
 - `dues:{cooperative_dues_invoice_id}`
 - `loan:{loan_installment_id}`
 - `pos_credit:{cooperative_member_id}`
 
-`payment-intent` saat ini hanya mendukung `dues:*`. Untuk `loan:*` dan `pos_credit:*`, API mengembalikan `422` sampai settlement domain selesai.
+`payment-intent` mendukung `dues:*`, `loan:*`, dan `pos_credit:*`. POS credit tetap dipanggil eksplisit dengan `category=pos_credit`/`pos_credit:{member_id}` agar tidak muncul sebagai tagihan iuran default.
 
 Payload:
 
@@ -147,8 +149,8 @@ Status: sebagian selesai.
 - [x] Dokumentasikan bahwa `CooperativePayment` hanya untuk iuran/simpanan.
 - [x] Tambahkan env/config Midtrans sandbox lokal (`MIDTRANS_MERCHANT_ID`, `MIDTRANS_CLIENT_KEY`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION=false`) tanpa menulis server key ke dokumen repo.
 - [x] Tambahkan `POST /api/v1/member/bills/{bill}/payment-intent` untuk source `dues`.
-- [x] Tampilkan `pos_credit` di unified bills agar anggota melihat hutang POS.
-- [x] Tolak `loan` dan `pos_credit` payment intent dengan `422` sampai settlement mapper ada.
+- [x] Tampilkan `pos_credit` hanya saat `category=pos_credit` agar anggota melihat hutang POS tanpa mencampurnya ke tagihan iuran default.
+- [x] Dukung `loan` dan `pos_credit` payment intent setelah settlement mapper tersedia.
 - [x] Regenerasi `docs/openapi.json` setelah rute baru stabil.
 - [x] Mapping channel `TRANSFER` ke payload Midtrans `bank_transfer` agar kontrak channel gateway tidak mengirim charge kosong.
 - [x] Tambahkan fallback sandbox web checkout: QRIS/e-wallet inactive otomatis retry ke `VA` dengan `MIDTRANS_VA_BANK`.

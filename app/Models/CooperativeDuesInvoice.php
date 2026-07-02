@@ -51,4 +51,14 @@ class CooperativeDuesInvoice extends Model
     {
         return $query->whereHas('member', fn (Builder $memberQuery) => $memberQuery->active());
     }
+
+    public function scopeForSavingsDues(Builder $query): Builder
+    {
+        return $query->whereHas('contributionType', fn (Builder $typeQuery) => $typeQuery->savingsDues());
+    }
+
+    public function isSavingsDues(): bool
+    {
+        return (bool) $this->contributionType?->isSavingsDues();
+    }
 }

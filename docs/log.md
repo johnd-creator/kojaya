@@ -990,6 +990,7 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 | Jun 15, 2026 | Member Loans UI/UX Redesign | Engineering | Revamped member loans portal page with interactive slider-based calculator, dynamic quick selection buttons, catalog cards, active loan repayment progress tracking, and installment schedule dialog |
 | Jul 1, 2026 | Cooperative Notification Activation | Engineering | Activated database-channel notifications for cooperative roles (Anggota, Admin Koperasi, Manajer Koperasi, Pengurus Koperasi) across membership approval, POS sale/void, savings withdrawal, points/reward, and loan writeOff/restructure workflows via `CooperativeNotificationDispatcher`; created missing `DatabaseNotification`/`CooperativeDatabaseNotification` classes; shared unread count via Inertia; accelerated bell polling to 10s |
 | Jul 1, 2026 | Test Suite Cascade Fix & ERP Quarantine | Engineering | Fixed SQLite migration cascade (cooperative_payments `gateway_provider` unique index vs drop-column in down()) that was responsible for ~390 of 404 suite failures; quarantined 42 legacy ERP-era test files into `tests/Feature/LegacyErp/` (excluded from default suite); fixed real failures in CooperativeSeeder test-now leak, POS offline-sync lazy-loading, member roles list, and date-drift in savings/iuran tests. Suite went from 404 failed/509 passed to 4 failed/913+ passed. 4 remaining tests parked via `markTestSkipped`: Midtrans charge test (pending Midtrans activation), 2 OpenAPI contract tests (payment-gateway work-stream), and 1 rate-limit test (ERP-era infra). Revisit triggers: Midtrans activation, payment work-stream resume, ERP infra review |
+| Jul 2, 2026 | Cooperative Dues/POS Billing Separation | Engineering | Restricted cooperative dues generation, web listing, and member dues APIs to Simpanan Pokok/Simpanan Wajib only; kept POS credit bills available only through explicit `category=pos_credit`/POS transaction context so purchase receivables no longer appear on the dues page by default |
 
 ---
 
@@ -1010,4 +1011,4 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 
 ---
 
-*This log is maintained throughout the project lifecycle. Last updated: June 11, 2026*
+*This log is maintained throughout the project lifecycle. Last updated: July 2, 2026*

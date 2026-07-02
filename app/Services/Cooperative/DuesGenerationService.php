@@ -21,6 +21,7 @@ class DuesGenerationService
         $this->pruneUnpaidIneligibleInvoices($period, $periodDate);
 
         $types = CooperativeContributionType::query()
+            ->savingsDues()
             ->where('is_active', true)
             ->whereIn('frequency', ['MONTHLY', 'ONCE'])
             ->get();

@@ -41,6 +41,7 @@ type Charge = {
   channel: Channel;
   provider: string;
   qr_string: string | null;
+  qr_image_url: string | null;
   checkout_url: string | null;
   instructions:
     | {
@@ -123,6 +124,12 @@ const expiryLabel = computed(() => {
 const vaNumber = computed(() => charge.value?.instructions?.va_number ?? null);
 const bankName = computed(() => charge.value?.instructions?.bank ?? null);
 const activeChannel = computed(() => charge.value?.channel ?? channel.value);
+const canLoadServerQrImage = computed(
+  () =>
+    charge.value?.channel === "QRIS" &&
+    charge.value.provider !== "internal" &&
+    Boolean(charge.value.qr_image_url),
+);
 const usedFallbackChannel = computed(
   () =>
     charge.value?.fallback_reason === "MIDTRANS_CHANNEL_INACTIVE" &&
@@ -429,6 +436,16 @@ const summary = computed(() => [
               class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 shadow-sm"
             >
               <canvas ref="qrCanvas"></canvas>
+            </div>
+            <div
+              v-else-if="canLoadServerQrImage"
+              class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white p-3 shadow-sm"
+            >
+              <img
+                :src="charge.qr_image_url ?? ''"
+                alt="QRIS pembayaran"
+                class="h-[220px] w-[220px] object-contain"
+              />
             </div>
             <div
               v-else

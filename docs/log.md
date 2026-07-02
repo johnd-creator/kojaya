@@ -8,6 +8,22 @@
 
 ---
 
+## 🎯 2026-07-02 - Midtrans Sandbox Member QRIS Plan and Web Rendering
+
+**💳 Pembayaran Anggota Sandbox:**
+- ✅ Added `plan_api_core_midtrans.md` as the implementation/runbook plan for member-only Midtrans Core API Sandbox payments, with QRIS as the primary success gate and VA/e-wallet as follow-up channels.
+- ✅ Updated the Kojayaku web payment dialog to render server-proxied QRIS images via `qr_image_url` when Midtrans returns QR generation actions instead of `qr_string`.
+- ✅ Added regression coverage for `/member/payments/intent` to ensure Midtrans QRIS responses expose safe client data and keep raw QR action URLs server-side.
+
+**Verification:**
+- ✅ `php artisan test --compact tests/Feature/MemberPortal/MemberPaymentIntentWebTest.php`
+- ✅ `php artisan test --compact tests/Feature/PhaseBContractApiTest.php`
+- ✅ `php artisan test --compact tests/Feature/SimulateMidtransWebhookCommandTest.php`
+- ✅ `./vendor/bin/pint --dirty --format agent`
+- ✅ `npm run build`
+
+---
+
 ## 🎯 2026-06-28 - Loan Approval Workflow Role Hierarchy
 
 **🏦 Pinjaman Koperasi:**

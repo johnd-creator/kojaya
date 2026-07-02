@@ -37,7 +37,7 @@ class MemberPaymentIntentWebTest extends TestCase
         ]);
     }
 
-    public function test_member_can_create_snap_payment_intent_for_dues_invoice(): void
+    public function test_member_can_create_core_api_payment_intent_for_dues_invoice(): void
     {
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB-QRIS',
@@ -165,6 +165,65 @@ class MemberPaymentIntentWebTest extends TestCase
             'gateway_provider' => 'midtrans',
             'gateway_status' => 'PENDING',
         ]);
+    }
+
+    public function test_midtrans_qris_payment_intent_returns_server_qr_image_url_without_raw_action_url(): void
+    {
+        config([
+            'services.midtrans.server_key' => 'midtrans-server-key',
+            'services.midtrans.is_production' => false,
+            'services.midtrans.qris_acquirer' => 'gopay',
+        ]);
+
+        Http::fake(function ($request) {
+            $payload = $request->data();
+
+            $this->assertSame('https://api.sandbox.midtrans.com/v2/charge', $request->url());
+            $this->assertSame('qris', $payload['payment_type'] ?? null);
+            $this->assertSame('gopay', $payload['qris']['acquirer'] ?? null);
+            $this->assertSame(75000, $payload['transaction_details']['gross_amount'] ?? null);
+
+            return Http::response([
+                'status_code' => '201',
+                'transaction_status' => 'pending',
+                'order_id' => $payload['transaction_details']['order_id'],
+                'gross_amount' => '75000.00',
+                'actions' => [
+                    [
+                        'name' => 'generate-qr-code-v2',
+                        'method' => 'GET',
+                        'url' => 'https://api.sandbox.midtrans.com/v2/qris/qr-code',
+                    ],
+                ],
+                'expiry_time' => '2026-07-02 10:00:00',
+            ], 201);
+        });
+
+        $invoice = $this->unpaidInvoice();
+
+        $response = $this->actingAs($this->memberUser)
+            ->postJson(route('member.payments.intent'), [
+                'cooperative_dues_invoice_id' => $invoice->id,
+                'channel' => 'QRIS',
+            ]);
+
+        $paymentId = $response->json('data.payment_id');
+
+        $response->assertCreated()
+            ->assertJsonPath('data.provider', 'midtrans')
+            ->assertJsonPath('data.channel', 'QRIS')
+            ->assertJsonPath('data.amount', 75000)
+            ->assertJsonPath('data.qr_image_url', '/api/v1/member/payments/'.$paymentId.'/qris-image')
+            ->assertJsonPath('data.instructions.title', 'Scan QRIS untuk membayar')
+            ->assertJsonMissingPath('data.qr_string')
+            ->assertJsonMissingPath('data.instructions.qr_action_url');
+
+        $payment = CooperativePayment::query()->findOrFail($paymentId);
+
+        $this->assertSame('midtrans', $payment->gateway_provider);
+        $this->assertSame('PENDING', $payment->gateway_status);
+        $this->assertSame('https://api.sandbox.midtrans.com/v2/qris/qr-code', $payment->gateway_payload['actions'][0]['url'] ?? null);
+        $this->assertSame('/api/v1/member/payments/'.$paymentId.'/qris-image', $payment->gateway_payload['presentation']['qr_image_url'] ?? null);
     }
 
     public function test_payment_status_reflects_gateway_status(): void

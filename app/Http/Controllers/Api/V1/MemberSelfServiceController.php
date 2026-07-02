@@ -85,7 +85,7 @@ class MemberSelfServiceController extends Controller
                 'member' => new MemberSelfServiceResource($member->load(['organization', 'user'])),
                 'summary' => [
                     'savings_balance' => $savingSummary['total_balance'],
-                    'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
+                    'pending_invoices' => $member->invoices()->forSavingsDues()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                     'active_loans' => $member->loans()->where('status', 'ACTIVE')->count(),
                     'loan_outstanding' => (float) $member->loans()->where('status', 'ACTIVE')->sum('outstanding_amount'),
                     'points_balance' => $pointSummary['total_points'],

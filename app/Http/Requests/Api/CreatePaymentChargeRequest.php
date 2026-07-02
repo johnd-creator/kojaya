@@ -11,7 +11,7 @@ class CreatePaymentChargeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->can('manage_cooperative_payment') || $this->user()?->tokenCan('member:write');
+        return (bool) $this->user()?->tokenCan('member:write');
     }
 
     /**
@@ -23,7 +23,7 @@ class CreatePaymentChargeRequest extends FormRequest
     {
         return [
             'cooperative_payment_id' => ['required', 'integer', 'exists:cooperative_payments,id'],
-            'channel' => ['required', 'string', 'in:QRIS,VA,E_WALLET,TRANSFER'],
+            'channel' => ['required', 'string', 'in:QRIS'],
         ];
     }
 }

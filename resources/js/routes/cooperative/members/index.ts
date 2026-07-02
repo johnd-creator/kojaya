@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import resignations from './resignations'
 import openingBalance from './opening-balance'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
@@ -1276,6 +1277,7 @@ reject.form = rejectForm
 
 const members = {
     export: Object.assign(exportMethod, exportMethod),
+    resignations: Object.assign(resignations, resignations),
     index: Object.assign(index, index),
     create: Object.assign(create, create),
     store: Object.assign(store, store),

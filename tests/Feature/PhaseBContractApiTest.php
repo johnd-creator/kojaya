@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\CooperativeContributionType;
+use App\Models\CooperativeDuesInvoice;
+use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Employee;
@@ -285,22 +288,27 @@ class PhaseBContractApiTest extends TestCase
 
         $this->assertSame([], $spec['paths']['/api/payments/webhook']['post']['security']);
         $this->assertContains('member:write', $spec['paths']['/api/payments/charge']['post']['x-required-abilities']);
+        $this->assertContains('member:read', $spec['paths']['/api/v1/member/payments/{payment}/status']['get']['x-required-abilities']);
+        $this->assertSame(
+            'binary',
+            $spec['paths']['/api/v1/member/payments/{payment}/qris-image']['get']['responses']['200']['content']['image/png']['schema']['format'],
+        );
     }
 
-    public function test_midtrans_transfer_charge_uses_bank_transfer_payload(): void
+    public function test_midtrans_qris_charge_returns_safe_member_scoped_qr_contract(): void
     {
         config([
             'services.midtrans.server_key' => 'midtrans-server-key',
             'services.midtrans.is_production' => false,
-            'services.midtrans.va_bank' => 'bca',
+            'services.midtrans.qris_acquirer' => 'shopeepay',
         ]);
 
-        $memberUser = User::factory()->create();
-        $member = CooperativeMember::factory()->active()->create(['user_id' => $memberUser->id]);
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
         $payment = CooperativePayment::query()->create([
             'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
             'amount' => 100000,
-            'payment_method' => 'TRANSFER',
+            'payment_method' => 'QRIS',
             'paid_at' => now(),
             'status' => 'PENDING',
         ]);
@@ -309,20 +317,22 @@ class PhaseBContractApiTest extends TestCase
             $payload = $request->data();
 
             $this->assertSame('https://api.sandbox.midtrans.com/v2/charge', $request->url());
-            $this->assertSame('bank_transfer', $payload['payment_type'] ?? null);
-            $this->assertSame(['bank' => 'bca'], $payload['bank_transfer'] ?? null);
+            $this->assertSame('qris', $payload['payment_type'] ?? null);
+            $this->assertSame('shopeepay', $payload['qris']['acquirer'] ?? null);
 
             return Http::response([
                 'status_code' => '201',
                 'transaction_status' => 'pending',
-                'va_numbers' => [
+                'order_id' => $payload['transaction_details']['order_id'],
+                'gross_amount' => '100000.00',
+                'actions' => [
                     [
-                        'bank' => 'bca',
-                        'va_number' => '12345678901',
+                        'name' => 'generate-qr-code-v2',
+                        'method' => 'GET',
+                        'url' => 'https://api.sandbox.midtrans.com/v2/qris/qr-code',
                     ],
                 ],
                 'expiry_time' => '2026-06-29 10:00:00',
-                'redirect_url' => 'https://sandbox.midtrans.test/pay',
             ], 201);
         });
 
@@ -330,30 +340,223 @@ class PhaseBContractApiTest extends TestCase
 
         $this->postJson('/api/payments/charge', [
             'cooperative_payment_id' => $payment->id,
-            'channel' => 'TRANSFER',
+            'channel' => 'QRIS',
         ])
             ->assertCreated()
             ->assertJsonPath('data.provider', 'midtrans')
-            ->assertJsonPath('data.channel', 'TRANSFER')
-            ->assertJsonPath('data.instructions.bank', 'BCA')
-            ->assertJsonPath('data.instructions.va_number', '12345678901')
-            ->assertJsonPath('data.expires_at', '2026-06-29 10:00:00')
-            ->assertJsonPath('data.checkout_url', 'https://sandbox.midtrans.test/pay');
+            ->assertJsonPath('data.status', 'PENDING')
+            ->assertJsonPath('data.channel', 'QRIS')
+            ->assertJsonPath('data.amount', 100000)
+            ->assertJsonPath('data.qr_image_url', '/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertJsonPath('data.poll_after_seconds', 5)
+            ->assertJsonMissingPath('data.gateway_payload')
+            ->assertJsonMissingPath('data.qr_string')
+            ->assertJsonMissingPath('data.instructions.qr_action_url');
+
+        $payment->refresh();
+
+        $this->assertSame('midtrans', $payment->gateway_provider);
+        $this->assertSame('PENDING', $payment->gateway_status);
+        $this->assertSame('https://api.sandbox.midtrans.com/v2/qris/qr-code', $payment->gateway_payload['actions'][0]['url'] ?? null);
+    }
+
+    public function test_member_qris_image_endpoint_is_authenticated_member_scoped_and_returns_bytes(): void
+    {
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
+        $otherUser = User::factory()->create();
+        CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 100000,
+            'payment_method' => 'QRIS',
+            'gateway_provider' => 'midtrans',
+            'gateway_reference' => 'KOJ-QRIS-IMAGE',
+            'gateway_status' => 'PENDING',
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+        $payment->forceFill([
+            'gateway_payload' => [
+                'presentation' => [
+                    'provider' => 'midtrans',
+                    'reference' => 'KOJ-QRIS-IMAGE',
+                    'status' => 'PENDING',
+                    'channel' => 'QRIS',
+                    'amount' => 100000,
+                    'qr_string' => '00020101021226620016ID.CO.SHOPEE.WWW01189360091800218840800210ID1020304050303UMI51440014ID.CO.QRIS.WWW0215ID2020020304050303UMI52045411530336054061000005802ID5906KOJAYA6013JAKARTA PUSAT6304ABCD',
+                    'qr_image_url' => '/api/v1/member/payments/'.$payment->id.'/qris-image',
+                    'poll_after_seconds' => 5,
+                ],
+            ],
+        ])->save();
+
+        $this->getJson('/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertUnauthorized();
+
+        Sanctum::actingAs($otherUser, ['member:read']);
+        $this->get('/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertForbidden();
+
+        Sanctum::actingAs($memberUser, ['member:read']);
+        $response = $this->get('/api/v1/member/payments/'.$payment->id.'/qris-image');
+
+        $response->assertOk();
+        $this->assertStringStartsWith('image/png', $response->headers->get('Content-Type') ?? '');
+        $this->assertStringStartsWith("\x89PNG", $response->getContent());
+    }
+
+    public function test_member_qris_image_rejects_non_allowlisted_midtrans_action_url(): void
+    {
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 100000,
+            'payment_method' => 'QRIS',
+            'gateway_provider' => 'midtrans',
+            'gateway_reference' => 'KOJ-QRIS-SSRF',
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'actions' => [
+                    [
+                        'name' => 'generate-qr-code-v2',
+                        'method' => 'GET',
+                        'url' => 'https://example.invalid/qris.png',
+                    ],
+                ],
+            ],
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+
+        Sanctum::actingAs($memberUser, ['member:read']);
+
+        $this->get('/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertNotFound();
+    }
+
+    public function test_member_qris_image_rejects_redirects_oversized_and_non_image_midtrans_responses(): void
+    {
+        config(['services.midtrans.is_production' => false]);
+
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 100000,
+            'payment_method' => 'QRIS',
+            'gateway_provider' => 'midtrans',
+            'gateway_reference' => 'KOJ-QRIS-BAD-IMAGE',
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'actions' => [
+                    [
+                        'name' => 'generate-qr-code-v2',
+                        'method' => 'GET',
+                        'url' => 'https://api.sandbox.midtrans.com/v2/qris/qr-code',
+                    ],
+                ],
+            ],
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+
+        Sanctum::actingAs($memberUser, ['member:read']);
+
+        Http::fake([
+            'api.sandbox.midtrans.com/*' => Http::response('', 302, [
+                'Location' => 'https://api.sandbox.midtrans.com/redirected.png',
+            ]),
+        ]);
+        $this->get('/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertStatus(502);
+
+        Http::fake([
+            'api.sandbox.midtrans.com/*' => Http::response('<html></html>', 200, [
+                'Content-Type' => 'text/html',
+            ]),
+        ]);
+        $this->get('/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertStatus(502);
+
+        Http::fake([
+            'api.sandbox.midtrans.com/*' => Http::response(str_repeat('x', 262145), 200, [
+                'Content-Type' => 'image/png',
+            ]),
+        ]);
+        $this->get('/api/v1/member/payments/'.$payment->id.'/qris-image')
+            ->assertStatus(502);
+    }
+
+    public function test_payment_gateway_charge_rejects_non_qris_channel(): void
+    {
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 100000,
+            'payment_method' => 'QRIS',
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+
+        Sanctum::actingAs($memberUser, ['member:write']);
+
+        $this->postJson('/api/payments/charge', [
+            'cooperative_payment_id' => $payment->id,
+            'channel' => 'TRANSFER',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('channel');
+    }
+
+    public function test_payment_gateway_charge_requires_dues_invoice_payment(): void
+    {
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'amount' => 100000,
+            'payment_method' => 'QRIS',
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+
+        Sanctum::actingAs($memberUser, ['member:write']);
+
+        $this->postJson('/api/payments/charge', [
+            'cooperative_payment_id' => $payment->id,
+            'channel' => 'QRIS',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cooperative_payment_id');
     }
 
     public function test_midtrans_webhook_requires_valid_signature_and_is_idempotent(): void
     {
         config(['services.midtrans.server_key' => 'midtrans-server-key']);
 
-        $memberUser = User::factory()->create();
-        $member = CooperativeMember::factory()->active()->create(['user_id' => $memberUser->id]);
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
         $payment = CooperativePayment::query()->create([
             'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
             'amount' => 100000,
             'payment_method' => 'QRIS',
             'gateway_provider' => 'midtrans',
             'gateway_reference' => 'KOJ-1-PAIDTEST',
             'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'actions' => [
+                    [
+                        'name' => 'generate-qr-code-v2',
+                        'url' => 'https://api.sandbox.midtrans.com/v2/qris/qr-code',
+                    ],
+                ],
+                'presentation' => [
+                    'qr_image_url' => '/api/v1/member/payments/1/qris-image',
+                ],
+            ],
             'paid_at' => now(),
             'status' => 'PENDING',
         ]);
@@ -372,7 +575,7 @@ class PhaseBContractApiTest extends TestCase
         $this->postJson('/api/payments/webhook', [
             ...$payload,
             'signature_key' => 'invalid-signature',
-        ])->assertAccepted();
+        ])->assertBadRequest();
 
         $this->assertDatabaseHas('cooperative_payments', [
             'id' => $payment->id,
@@ -391,12 +594,93 @@ class PhaseBContractApiTest extends TestCase
             ->assertJsonPath('data.status', 'APPROVED')
             ->assertJsonPath('data.reconciliation_reference', 'MIDTRANS-SETTLEMENT-1');
 
+        $payment->refresh();
+        $invoice->refresh();
+        $reconciledAt = $payment->reconciled_at?->toIso8601String();
+
+        $this->assertSame(100000.0, (float) $invoice->paid_amount);
+        $this->assertSame(1, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count());
+        $this->assertSame('https://api.sandbox.midtrans.com/v2/qris/qr-code', $payment->gateway_payload['actions'][0]['url'] ?? null);
+        $this->assertSame('settlement', $payment->gateway_payload['latest_webhook']['transaction_status'] ?? null);
+        $this->assertSame('/api/v1/member/payments/1/qris-image', $payment->gateway_payload['presentation']['qr_image_url'] ?? null);
+
         $this->assertTrue(
             $memberUser->notifications()
                 ->where('type', 'App\\Notifications\\CooperativeDatabaseNotification')
                 ->where('data->event_type', 'member.payment.approved')
                 ->exists()
         );
+
+        $this->assertSame($reconciledAt, $payment->refresh()->reconciled_at?->toIso8601String());
+        $this->assertSame(100000.0, (float) $invoice->refresh()->paid_amount);
+        $this->assertSame(1, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count());
+    }
+
+    public function test_midtrans_webhook_accepts_signed_notification_without_payment_type(): void
+    {
+        config(['services.midtrans.server_key' => 'midtrans-server-key']);
+
+        [$memberUser, $member, $invoice] = $this->disposableMemberInvoice();
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 100000,
+            'payment_method' => 'QRIS',
+            'gateway_provider' => 'midtrans',
+            'gateway_reference' => 'KOJ-1-NOPAYTYPE',
+            'gateway_status' => 'PENDING',
+            'paid_at' => now(),
+            'status' => 'PENDING',
+        ]);
+
+        $payload = [
+            'order_id' => $payment->gateway_reference,
+            'status_code' => '200',
+            'gross_amount' => '100000.00',
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+        ];
+        $payload['signature_key'] = hash('sha512', $payload['order_id'].$payload['status_code'].$payload['gross_amount'].'midtrans-server-key');
+
+        $this->postJson('/api/payments/webhook', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.gateway_status', 'PAID')
+            ->assertJsonPath('data.status', 'APPROVED');
+
+        $this->assertDatabaseHas('cooperative_payments', [
+            'id' => $payment->id,
+            'gateway_status' => 'PAID',
+            'status' => 'APPROVED',
+        ]);
+        $this->assertTrue($memberUser->exists);
+    }
+
+    /**
+     * @return array{0: User, 1: CooperativeMember, 2: CooperativeDuesInvoice}
+     */
+    private function disposableMemberInvoice(): array
+    {
+        $memberUser = User::factory()->create();
+        $member = CooperativeMember::factory()->active()->create(['user_id' => $memberUser->id]);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB-'.strtoupper(fake()->bothify('???###')),
+            'name' => 'Simpanan Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => now()->format('Y-m'),
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'due_date' => now()->addWeek()->toDateString(),
+            'status' => 'UNPAID',
+        ]);
+
+        return [$memberUser, $member, $invoice];
     }
 
     public function test_fcm_push_uses_legacy_endpoint_payload_and_revokes_invalid_tokens(): void

@@ -71,9 +71,11 @@ import {
   index as cooperativeLoansIndex,
 } from "@/routes/cooperative/loans";
 import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
+import { index as cooperativeMembersResignationsIndex } from "@/routes/cooperative/members/resignations";
 import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
+import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativePosCoffeeOrdersIndex } from "@/routes/cooperative/pos/coffee-orders";
 import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
 import { index as cooperativePosShuIndex } from "@/routes/cooperative/pos/shu";
@@ -176,6 +178,11 @@ const allNavItems: NavItem[] = [
         href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
         permissions: "manage_cooperative_member",
       },
+      {
+        title: "Pengunduran Diri",
+        href: cooperativeMembersResignationsIndex().url,
+        permissions: ["view_cooperative_member", "view_cooperative_all"],
+      },
     ],
   },
   {
@@ -196,6 +203,11 @@ const allNavItems: NavItem[] = [
       {
         title: "Ledger Simpanan",
         href: cooperativeLedgerIndex().url,
+        permissions: "view_cooperative_ledger",
+      },
+      {
+        title: "Penarikan Simpanan",
+        href: cooperativeSavingsWithdrawalsIndex().url,
         permissions: "view_cooperative_ledger",
       },
       {

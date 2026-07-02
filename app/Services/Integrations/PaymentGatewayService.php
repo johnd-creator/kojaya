@@ -3,6 +3,7 @@
 namespace App\Services\Integrations;
 
 use App\Contracts\Integrations\PaymentGatewayProvider;
+use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
 use Illuminate\Support\Facades\Log;
@@ -62,7 +63,7 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     public function createCharge(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
@@ -83,14 +84,14 @@ class PaymentGatewayService
             'gateway_provider' => $charge['provider'],
             'gateway_reference' => $charge['reference'],
             'gateway_status' => 'PENDING',
-            'gateway_payload' => $charge,
+            'gateway_payload' => $this->storedGatewayPayload($charge),
         ])->save();
 
-        return $charge;
+        return $this->publicChargePayload($charge);
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     public function createIntentCharge(MemberPaymentIntent $intent): array
     {
@@ -140,7 +141,7 @@ class PaymentGatewayService
                 'gateway_reference' => $payload['order_id'] ?? $payload['reference'] ?? 'unknown',
             ]);
 
-            return null;
+            throw new PaymentGatewayWebhookVerificationException('Invalid payment gateway webhook signature.');
         }
 
         $event = $this->provider->parseWebhook($payload);
@@ -152,7 +153,7 @@ class PaymentGatewayService
         if ($reference === '') {
             Log::warning('Payment gateway webhook missing reference');
 
-            return null;
+            throw new PaymentGatewayWebhookVerificationException('Invalid payment gateway webhook signature.');
         }
 
         $payment = CooperativePayment::query()
@@ -180,7 +181,7 @@ class PaymentGatewayService
 
         $payment->forceFill([
             'gateway_status' => $event->status,
-            'gateway_payload' => $event->rawPayload,
+            'gateway_payload' => $this->mergeGatewayWebhookPayload($payment->gateway_payload, $event->rawPayload),
         ])->save();
 
         return $payment;
@@ -286,7 +287,7 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     public function createChargeInternal(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
@@ -306,8 +307,10 @@ class PaymentGatewayService
                 'amount' => (float) $payment->amount,
                 'checkout_url' => url("/api/payments/{$reference}/checkout"),
                 'qr_string' => null,
+                'qr_image_url' => $channel === 'QRIS' ? route('api.v1.member.payments.qris-image', $payment, false) : null,
                 'expires_at' => $expiresAt,
                 'instructions' => [],
+                'poll_after_seconds' => 5,
             ],
         ])->save();
 
@@ -318,9 +321,10 @@ class PaymentGatewayService
             'channel' => $channel,
             'amount' => (float) $payment->amount,
             'checkout_url' => url("/api/payments/{$reference}/checkout"),
-            'qr_string' => null,
+            'qr_image_url' => $channel === 'QRIS' ? route('api.v1.member.payments.qris-image', $payment, false) : null,
             'expires_at' => $expiresAt,
             'instructions' => [],
+            'poll_after_seconds' => 5,
         ];
     }
 
@@ -364,7 +368,7 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
     private function existingPendingCharge(CooperativePayment $payment, string $channel): ?array
     {
@@ -377,7 +381,7 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
     private function existingPendingIntentCharge(MemberPaymentIntent $intent): ?array
     {
@@ -391,12 +395,16 @@ class PaymentGatewayService
 
     /**
      * @param  array<string, mixed>|null  $payload
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
     private function existingPendingChargeFromPayload(?string $gatewayStatus, ?array $payload, float $amount, string $channel): ?array
     {
         if ($gatewayStatus !== 'PENDING' || ! is_array($payload)) {
             return null;
+        }
+
+        if (is_array($payload['presentation'] ?? null)) {
+            $payload = $payload['presentation'];
         }
 
         if (($payload['channel'] ?? null) !== $channel || empty($payload['reference'])) {
@@ -407,11 +415,15 @@ class PaymentGatewayService
         // actionable payment artefact (e.g. an earlier "channel not activated"
         // response). Force a fresh charge instead.
         $hasArtefact = ! empty($payload['qr_string'])
+            || ! empty($payload['qr_image_url'])
             || ! empty($payload['checkout_url'])
             || ! empty($payload['instructions']['va_number'] ?? null);
         if (! $hasArtefact) {
             return null;
         }
+
+        $instructions = is_array($payload['instructions'] ?? null) ? $payload['instructions'] : [];
+        unset($instructions['qr_action_url']);
 
         return [
             'provider' => (string) ($payload['provider'] ?? 'internal'),
@@ -420,9 +432,63 @@ class PaymentGatewayService
             'channel' => (string) $payload['channel'],
             'amount' => (float) ($payload['amount'] ?? $amount),
             'checkout_url' => isset($payload['checkout_url']) ? (string) $payload['checkout_url'] : null,
-            'qr_string' => isset($payload['qr_string']) ? (string) $payload['qr_string'] : null,
+            'qr_image_url' => isset($payload['qr_image_url']) ? (string) $payload['qr_image_url'] : null,
             'expires_at' => isset($payload['expires_at']) ? (string) $payload['expires_at'] : null,
-            'instructions' => is_array($payload['instructions'] ?? null) ? $payload['instructions'] : [],
+            'instructions' => $instructions,
+            'poll_after_seconds' => (int) ($payload['poll_after_seconds'] ?? 5),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $charge
+     * @return array<string, mixed>
+     */
+    private function storedGatewayPayload(array $charge): array
+    {
+        $payload = $charge['gateway_payload'] ?? $charge;
+
+        if (is_array($payload)) {
+            $payload['presentation'] = $this->publicChargePayload($charge);
+
+            return $payload;
+        }
+
+        return $this->publicChargePayload($charge);
+    }
+
+    /**
+     * @param  array<string, mixed>  $charge
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     */
+    private function publicChargePayload(array $charge): array
+    {
+        $instructions = is_array($charge['instructions'] ?? null) ? $charge['instructions'] : [];
+        unset($instructions['qr_action_url']);
+
+        return [
+            'provider' => (string) ($charge['provider'] ?? 'internal'),
+            'reference' => (string) ($charge['reference'] ?? ''),
+            'status' => (string) ($charge['status'] ?? 'PENDING'),
+            'channel' => (string) ($charge['channel'] ?? 'QRIS'),
+            'amount' => (float) ($charge['amount'] ?? 0),
+            'checkout_url' => isset($charge['checkout_url']) ? (string) $charge['checkout_url'] : null,
+            'qr_image_url' => isset($charge['qr_image_url']) ? (string) $charge['qr_image_url'] : null,
+            'expires_at' => isset($charge['expires_at']) ? (string) $charge['expires_at'] : null,
+            'instructions' => $instructions,
+            'poll_after_seconds' => (int) ($charge['poll_after_seconds'] ?? 5),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $existingPayload
+     * @param  array<string, mixed>  $webhookPayload
+     * @return array<string, mixed>
+     */
+    private function mergeGatewayWebhookPayload(?array $existingPayload, array $webhookPayload): array
+    {
+        $payload = is_array($existingPayload) ? $existingPayload : [];
+        $payload['latest_webhook'] = $webhookPayload;
+
+        return $payload;
     }
 }

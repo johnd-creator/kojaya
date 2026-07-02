@@ -19,6 +19,10 @@ class SavingsWithdrawalService
         'VOLUNTARY_SAVING',
     ];
 
+    public function __construct(
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -33,7 +37,7 @@ class SavingsWithdrawalService
             ]);
         }
 
-        return SavingsWithdrawal::query()->create([
+        $withdrawal = SavingsWithdrawal::query()->create([
             'cooperative_member_id' => $member->id,
             'user_id' => $actor?->id,
             'amount' => $amount,
@@ -43,6 +47,10 @@ class SavingsWithdrawalService
             'destination_account_name' => $data['destination_account_name'] ?? null,
             'reason' => $data['reason'] ?? null,
         ]);
+
+        $this->notificationDispatcher->withdrawalRequested($withdrawal->refresh(), $actor);
+
+        return $withdrawal;
     }
 
     public function approve(SavingsWithdrawal $withdrawal, ?User $actor = null): SavingsWithdrawal
@@ -90,6 +98,30 @@ class SavingsWithdrawalService
                 'description' => 'Penarikan simpanan sukarela',
                 'posted_at' => now()->toDateString(),
             ]);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->withdrawalApproved($locked->refresh(), $actor));
+
+            return $locked->refresh();
+        });
+    }
+
+    public function reject(SavingsWithdrawal $withdrawal, ?User $actor = null, ?string $reason = null): SavingsWithdrawal
+    {
+        return DB::transaction(function () use ($actor, $reason, $withdrawal): SavingsWithdrawal {
+            $locked = SavingsWithdrawal::query()->lockForUpdate()->findOrFail($withdrawal->id);
+
+            if ($locked->status !== WithdrawalStatus::Pending) {
+                return $locked;
+            }
+
+            $locked->forceFill([
+                'status' => WithdrawalStatus::Rejected,
+                'approved_by' => $actor?->id,
+                'approved_at' => now(),
+                'rejection_reason' => $reason,
+            ])->save();
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->withdrawalRejected($locked->refresh(), $actor, $reason));
 
             return $locked->refresh();
         });

@@ -1,4 +1,5 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
+import v1 from './v1'
 /**
 * @see \App\Http\Controllers\DashboardController::organizations
 * @see app/Http/Controllers/DashboardController.php:82
@@ -81,6 +82,7 @@ organizationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get
 organizations.form = organizationsForm
 
 const api = {
+    v1: Object.assign(v1, v1),
     organizations: Object.assign(organizations, organizations),
 }
 

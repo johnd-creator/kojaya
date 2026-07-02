@@ -673,7 +673,7 @@ class MemberPortalController extends Controller
     }
 
     /**
-     * @param  array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}  $charge
+     * @param  array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}  $charge
      * @param  array<string, mixed>  $extra
      */
     private function paymentIntentResponse(CooperativePayment $payment, CooperativeDuesInvoice $invoice, array $charge, array $extra = []): JsonResponse
@@ -685,11 +685,12 @@ class MemberPortalController extends Controller
                 'amount' => (float) $payment->amount,
                 'provider' => $charge['provider'],
                 'channel' => $charge['channel'],
-                'qr_string' => $charge['qr_string'] ?? null,
                 'checkout_url' => $charge['checkout_url'] ?? null,
+                'qr_image_url' => $charge['qr_image_url'] ?? null,
                 'instructions' => $charge['instructions'] ?? [],
                 'gateway_reference' => $charge['reference'],
                 'expires_at' => $charge['expires_at'] ?? null,
+                'poll_after_seconds' => $charge['poll_after_seconds'] ?? 5,
                 'status' => $charge['status'],
                 ...$extra,
             ],

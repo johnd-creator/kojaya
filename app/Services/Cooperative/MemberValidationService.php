@@ -22,6 +22,7 @@ class MemberValidationService
 
     public function __construct(
         private readonly AuditLogService $audit,
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
     ) {}
 
     public function verifyByAdmin(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
@@ -37,6 +38,8 @@ class MemberValidationService
             $member->user?->removeRole('Anggota');
 
             $this->logValidation($member, $validator, self::ACTION_VERIFIED, $notes);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->memberAdminVerified($member, $validator));
 
             return $member->refresh();
         });
@@ -60,6 +63,8 @@ class MemberValidationService
 
             $this->logValidation($member, $validator, self::ACTION_APPROVED, $notes);
 
+            DB::afterCommit(fn () => $this->notificationDispatcher->memberFinalApproved($member, $validator));
+
             return $member->refresh();
         });
     }
@@ -77,6 +82,8 @@ class MemberValidationService
             $member->user?->removeRole('Anggota');
 
             $this->logValidation($member, $validator, self::ACTION_REVISION, $notes);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->memberRevisionRequested($member, $validator, $notes));
 
             return $member->refresh();
         });
@@ -96,6 +103,8 @@ class MemberValidationService
             $member->user?->removeRole('Anggota');
 
             $this->logValidation($member, $validator, self::ACTION_REJECTED, $notes);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->memberRejected($member, $validator, $notes));
 
             return $member->refresh();
         });

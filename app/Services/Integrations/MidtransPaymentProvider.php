@@ -32,7 +32,7 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds: int, gateway_payload: array<string, mixed>}
      */
     public function createCharge(CooperativePayment $payment, string $channel): array
     {
@@ -68,9 +68,11 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
         $qrString = null;
         $checkoutUrl = null;
+        $qrActionUrl = null;
 
         if ($channel === 'QRIS') {
             $qrString = $body['qr_string'] ?? null;
+            $qrActionUrl = $this->qrActionUrl($body);
         } elseif ($channel === 'E_WALLET') {
             $actions = $body['actions'] ?? [];
             $checkoutUrl = collect($actions)
@@ -91,8 +93,11 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             'amount' => (float) $payment->amount,
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
+            'qr_image_url' => route('api.v1.member.payments.qris-image', $payment, false),
             'expires_at' => $body['expiry_time'] ?? null,
-            'instructions' => $this->buildInstructions($body, $channel),
+            'instructions' => $this->buildInstructions($body, $channel, $qrActionUrl),
+            'poll_after_seconds' => 5,
+            'gateway_payload' => $body,
         ];
     }
 
@@ -217,7 +222,11 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             $mappedStatus = 'PENDING';
         } elseif (in_array($transactionStatus, ['CAPTURE', 'SETTLEMENT'], true)) {
             $mappedStatus = 'PAID';
-        } elseif (in_array($transactionStatus, ['CANCEL', 'DENY', 'EXPIRE'], true)) {
+        } elseif ($transactionStatus === 'EXPIRE') {
+            $mappedStatus = 'EXPIRED';
+        } elseif ($transactionStatus === 'CANCEL') {
+            $mappedStatus = 'CANCELLED';
+        } elseif (in_array($transactionStatus, ['DENY', 'FAILURE'], true)) {
             $mappedStatus = 'FAILED';
         } elseif ($transactionStatus === 'PENDING') {
             $mappedStatus = 'PENDING';
@@ -328,6 +337,9 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             $payload['payment_type'] = 'gopay';
         } elseif ($channel === 'QRIS') {
             $payload['payment_type'] = 'qris';
+            $payload['qris'] = [
+                'acquirer' => config('services.midtrans.qris_acquirer', 'gopay'),
+            ];
         }
 
         return $payload;
@@ -382,8 +394,16 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
      * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
-    private function buildInstructions(array $body, string $channel): array
+    private function buildInstructions(array $body, string $channel, ?string $qrActionUrl = null): array
     {
+        if ($channel === 'QRIS') {
+            return array_filter([
+                'title' => 'Scan QRIS untuk membayar',
+                'description' => 'Status pembayaran diperbarui setelah Midtrans mengonfirmasi transaksi.',
+                'qr_action_url' => $qrActionUrl,
+            ], fn (mixed $value): bool => $value !== null && $value !== '');
+        }
+
         if (! in_array($channel, ['VA', 'TRANSFER'], true)) {
             return [];
         }
@@ -459,5 +479,27 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         $allowed = self::ALLOWED_TRANSITIONS[$currentStatus] ?? [];
 
         return in_array($newStatus, $allowed, true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     */
+    private function qrActionUrl(array $body): ?string
+    {
+        $actions = $body['actions'] ?? [];
+
+        if (! is_array($actions)) {
+            return null;
+        }
+
+        foreach (['generate-qr-code-v2', 'generate-qr-code'] as $name) {
+            $action = collect($actions)->firstWhere('name', $name);
+
+            if (is_array($action) && ! empty($action['url'])) {
+                return (string) $action['url'];
+            }
+        }
+
+        return null;
     }
 }

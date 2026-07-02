@@ -39,6 +39,7 @@ return [
         'client_key' => env('MIDTRANS_CLIENT_KEY'),
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
         'va_bank' => env('MIDTRANS_VA_BANK', 'permata'),
+        'qris_acquirer' => env('MIDTRANS_QRIS_ACQUIRER', 'gopay'),
     ],
 
     'whatsapp' => [

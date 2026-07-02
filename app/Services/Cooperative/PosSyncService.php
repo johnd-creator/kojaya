@@ -163,6 +163,7 @@ class PosSyncService
         $deviceId = $request->input('device_id') ?? $request->header('X-Device-Id');
 
         $requests = PosSyncRequest::query()
+            ->with('user')
             ->whereIn('idempotency_key', $idempotencyKeys)
             ->where('user_id', $userId)
             ->where('device_id', $deviceId)
@@ -196,7 +197,7 @@ class PosSyncService
             return $existing->toArray();
         }
 
-        return $this->transactionService->create($payload, $syncRequest->user)->toArray();
+        return $this->transactionService->create($payload, $syncRequest->loadMissing('user')->user)->toArray();
     }
 
     /**

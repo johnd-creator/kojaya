@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class MemberOnboardingSubmitService
 {
+    public function __construct(
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -55,6 +59,8 @@ class MemberOnboardingSubmitService
             }
 
             $this->writeAuditLog($member, $actor);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->memberSubmittedForValidation($member->refresh(), $actor));
 
             return $member->refresh();
         });

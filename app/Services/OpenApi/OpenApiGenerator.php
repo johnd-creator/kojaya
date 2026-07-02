@@ -157,6 +157,17 @@ class OpenApiGenerator
             $item['security'] = [];
         }
 
+        if (str_ends_with($uri, '/qris-image')) {
+            $item['responses']['200']['content'] = [
+                'image/png' => [
+                    'schema' => [
+                        'type' => 'string',
+                        'format' => 'binary',
+                    ],
+                ],
+            ];
+        }
+
         if (str_ends_with($uri, 'login')) {
             $item['security'] = [];
         }
@@ -200,7 +211,11 @@ class OpenApiGenerator
                     'status' => ['type' => 'string', 'enum' => ['PENDING', 'APPROVED', 'REJECTED']],
                     'payment_method' => ['type' => 'string', 'enum' => ['CASH', 'TRANSFER', 'QRIS', 'VA', 'E_WALLET']],
                     'paid_at' => ['type' => 'string', 'format' => 'date'],
-                    'gateway_status' => ['type' => 'string', 'enum' => ['PENDING', 'PAID', 'EXPIRED', 'FAILED']],
+                    'gateway_reference' => ['type' => 'string', 'nullable' => true],
+                    'gateway_status' => ['type' => 'string', 'enum' => ['PENDING', 'PAID', 'EXPIRED', 'CANCELLED', 'FAILED']],
+                    'gateway_expires_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'qr_image_url' => ['type' => 'string', 'nullable' => true],
+                    'poll_after_seconds' => ['type' => 'integer', 'example' => 5],
                 ],
             ],
             'CreatePaymentChargeRequest' => [
@@ -208,7 +223,7 @@ class OpenApiGenerator
                 'required' => ['cooperative_payment_id', 'channel'],
                 'properties' => [
                     'cooperative_payment_id' => ['type' => 'integer', 'example' => 123],
-                    'channel' => ['type' => 'string', 'enum' => ['QRIS', 'VA', 'E_WALLET', 'TRANSFER'], 'example' => 'QRIS'],
+                    'channel' => ['type' => 'string', 'enum' => ['QRIS'], 'example' => 'QRIS'],
                 ],
             ],
             'CreateMemberBillPaymentIntentRequest' => [
@@ -227,13 +242,14 @@ class OpenApiGenerator
                     'channel' => ['type' => 'string', 'enum' => ['QRIS', 'VA', 'E_WALLET', 'TRANSFER']],
                     'amount' => ['type' => 'number', 'example' => 100000],
                     'checkout_url' => ['type' => 'string', 'nullable' => true],
-                    'qr_string' => ['type' => 'string', 'nullable' => true],
+                    'qr_image_url' => ['type' => 'string', 'nullable' => true, 'example' => '/api/v1/member/payments/99/qris-image'],
                     'expires_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                     'instructions' => [
                         'type' => 'object',
                         'additionalProperties' => true,
                         'example' => ['bank' => 'BCA', 'va_number' => '1234567890'],
                     ],
+                    'poll_after_seconds' => ['type' => 'integer', 'example' => 5],
                 ],
             ],
             'PaymentGatewayWebhookRequest' => [

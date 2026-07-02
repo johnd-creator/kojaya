@@ -231,6 +231,11 @@ class CooperativeMember extends Model
         return $this->hasMany(CooperativeSupportTicket::class);
     }
 
+    public function resignationRequests(): HasMany
+    {
+        return $this->hasMany(MemberResignationRequest::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'ACTIVE');

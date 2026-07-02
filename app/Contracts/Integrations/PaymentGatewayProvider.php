@@ -9,7 +9,7 @@ use App\Services\Integrations\WebhookEvent;
 interface PaymentGatewayProvider
 {
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int, gateway_payload?: array<string, mixed>}
      */
     public function createCharge(CooperativePayment $payment, string $channel): array;
 

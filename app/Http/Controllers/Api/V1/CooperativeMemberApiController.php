@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
+use App\Http\Resources\MemberResignationRequestResource;
 use App\Models\CooperativeMember;
+use App\Models\MemberResignationRequest;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\MemberNumberGenerator;
+use App\Services\Cooperative\MemberResignationRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -149,6 +153,56 @@ class CooperativeMemberApiController extends Controller
         $memberService->resign($member);
 
         return response()->json(['data' => $member->refresh()]);
+    }
+
+    public function resignationRequests(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', MemberResignationRequest::class);
+
+        $query = MemberResignationRequest::query()
+            ->with(['member.organization', 'reviewer'])
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+            ->when($request->filled('search'), function ($q) use ($request): void {
+                $search = $request->string('search')->toString();
+                $q->whereHas('member', function ($memberQuery) use ($search): void {
+                    $memberQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('member_no', 'like', "%{$search}%")
+                        ->orWhere('no_anggota', 'like', "%{$search}%");
+                });
+            });
+
+        $query->orderByRaw("CASE status WHEN 'PENDING' THEN 0 ELSE 1 END")
+            ->orderByDesc('created_at');
+
+        return MemberResignationRequestResource::collection(
+            $query->paginate($request->integer('per_page', 15))
+        )->response();
+    }
+
+    public function processResignationRequest(
+        ProcessMemberResignationRequest $request,
+        MemberResignationRequest $resignationRequest,
+        MemberResignationRequestService $service,
+    ): JsonResponse {
+        $this->authorize('approve', $resignationRequest);
+
+        $decision = $request->validated('decision');
+
+        if ($decision === 'APPROVE') {
+            $service->approve($resignationRequest, $request->user(), $request->validated('review_notes'));
+
+            return response()->json([
+                'data' => new MemberResignationRequestResource($resignationRequest->refresh()->load(['member.organization', 'reviewer'])),
+                'message' => 'Pengunduran diri disetujui dan status anggota diperbarui menjadi RESIGNED.',
+            ]);
+        }
+
+        $service->reject($resignationRequest, $request->user(), $request->validated('review_notes'));
+
+        return response()->json([
+            'data' => new MemberResignationRequestResource($resignationRequest->refresh()->load(['member.organization', 'reviewer'])),
+            'message' => 'Pengajuan pengunduran diri ditolak.',
+        ]);
     }
 
     private function canViewAllMembers(Request $request): bool

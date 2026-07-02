@@ -26,11 +26,16 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const notifications = ref<Notification[]>([]);
-const unreadCount = ref(0);
-const loading = ref(false);
-const markingAllAsRead = ref(false);
 const pollingInterval = ref<number | null>(null);
 const page = usePage();
+const sharedUnreadCount = computed(
+  () =>
+    (page.props.notifications as { unreadCount?: number } | undefined)
+      ?.unreadCount ?? 0,
+);
+const unreadCount = ref(sharedUnreadCount.value);
+const loading = ref(false);
+const markingAllAsRead = ref(false);
 
 const hasNotifications = computed(() => notifications.value.length > 0);
 const hasUnread = computed(() => unreadCount.value > 0);
@@ -91,7 +96,7 @@ const handleMarkAllAsRead = async () => {
 const startPolling = () => {
   pollingInterval.value = window.setInterval(() => {
     loadUnreadCount();
-  }, 30000);
+  }, 10000);
 };
 
 const stopPolling = () => {

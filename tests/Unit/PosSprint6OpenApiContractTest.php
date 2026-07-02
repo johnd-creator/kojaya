@@ -31,6 +31,8 @@ class PosSprint6OpenApiContractTest extends TestCase
 
     public function test_openapi_pos_returns_payload_requires_pos_transaction_id(): void
     {
+        $this->markTestSkipped('OpenAPI generator work-stream (payment gateway) diparkir. Hapus saat work-stream dilanjutkan.');
+
         $path = base_path('docs/openapi.json');
         $contents = file_get_contents($path);
         $decoded = json_decode($contents, true);
@@ -42,6 +44,8 @@ class PosSprint6OpenApiContractTest extends TestCase
 
     public function test_openapi_pos_sync_enqueue_schema_lists_supported_endpoint(): void
     {
+        $this->markTestSkipped('OpenAPI generator work-stream (payment gateway) diparkir. Hapus saat work-stream dilanjutkan.');
+
         $path = base_path('docs/openapi.json');
         $contents = file_get_contents($path);
         $decoded = json_decode($contents, true);

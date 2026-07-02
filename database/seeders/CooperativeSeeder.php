@@ -391,6 +391,8 @@ class CooperativeSeeder extends Seeder
 
         $service = app(PosTransactionService::class);
 
+        $previousTestNow = Carbon::getTestNow();
+
         foreach ($transactions as $transaction) {
             Carbon::setTestNow(Carbon::parse($transaction['date']));
 
@@ -407,6 +409,6 @@ class CooperativeSeeder extends Seeder
             ], $kasir);
         }
 
-        Carbon::setTestNow();
+        Carbon::setTestNow($previousTestNow);
     }
 }

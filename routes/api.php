@@ -63,6 +63,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::get('/status-journey', [MemberSelfServiceController::class, 'statusJourney'])->middleware('ability:member:read');
         Route::get('/profile', [MemberSelfServiceController::class, 'profile'])->middleware('ability:member:read');
         Route::put('/profile', [MemberSelfServiceController::class, 'updateProfile'])->middleware(['ability:member:write', 'throttle:api-write']);
+        Route::get('/resignation', [MemberSelfServiceController::class, 'resignationStatus'])->middleware('ability:member:read');
+        Route::post('/resignation', [MemberSelfServiceController::class, 'submitResignation'])->middleware(['ability:member:write', 'throttle:api-write']);
+        Route::delete('/resignation', [MemberSelfServiceController::class, 'cancelResignation'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/savings/summary', [MemberSelfServiceController::class, 'savingsSummary'])->middleware('ability:member:read');
         Route::get('/savings/ledger', [MemberSelfServiceController::class, 'savingsLedger'])->middleware('ability:member:read');
         Route::post('/savings/withdraw', [MemberSelfServiceController::class, 'requestSavingsWithdrawal'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
@@ -71,6 +74,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::post('/dues/invoices/{invoice}/payment-intent', [MemberSelfServiceController::class, 'createPaymentIntent'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/payments', [MemberSelfServiceController::class, 'payments'])->middleware('ability:member:read');
         Route::get('/payments/{payment}', [MemberSelfServiceController::class, 'showPayment'])->middleware('ability:member:read');
+        Route::get('/payments/{payment}/status', [MemberSelfServiceController::class, 'paymentStatus'])->name('api.v1.member.payments.status')->middleware('ability:member:read');
+        Route::get('/payments/{payment}/qris-image', [MemberSelfServiceController::class, 'qrisImage'])->name('api.v1.member.payments.qris-image')->middleware('ability:member:read');
         Route::get('/payments/{payment}/receipt', [MemberSelfServiceController::class, 'paymentReceipt'])->middleware('ability:member:read');
         Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/bills', [MemberSelfServiceController::class, 'bills'])->middleware('ability:member:read');
@@ -104,10 +109,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
 
     Route::get('/members', [CooperativeMemberApiController::class, 'index'])->middleware('ability:cooperative:read');
     Route::post('/members', [CooperativeMemberApiController::class, 'store'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+    Route::get('/members/resignation-requests', [CooperativeMemberApiController::class, 'resignationRequests'])->middleware('ability:cooperative:read');
     Route::get('/members/{member}', [CooperativeMemberApiController::class, 'show'])->middleware('ability:cooperative:read');
     Route::put('/members/{member}', [CooperativeMemberApiController::class, 'update'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::post('/members/{member}/activate', [CooperativeMemberApiController::class, 'activate'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::post('/members/{member}/resign', [CooperativeMemberApiController::class, 'resign'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+    Route::post('/members/resignation-requests/{resignationRequest}/process', [CooperativeMemberApiController::class, 'processResignationRequest'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::get('/dues/invoices', [CooperativeDuesApiController::class, 'invoices'])->middleware('ability:cooperative:read');
     Route::post('/dues/generate', [CooperativeDuesApiController::class, 'generate'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
     Route::post('/dues/payments', [CooperativePaymentApiController::class, 'store'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);

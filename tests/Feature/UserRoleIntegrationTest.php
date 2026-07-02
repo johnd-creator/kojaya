@@ -35,6 +35,7 @@ class UserRoleIntegrationTest extends TestCase
             'Technician',
             'Employee',
             'Pengurus Koperasi',
+            'Manajer Koperasi',
             'Admin Koperasi',
             'Kasir Koperasi',
             'Anggota',

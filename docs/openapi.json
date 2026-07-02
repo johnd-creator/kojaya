@@ -97,14 +97,32 @@
                         "type": "string",
                         "format": "date"
                     },
+                    "gateway_reference": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "gateway_status": {
                         "type": "string",
                         "enum": [
                             "PENDING",
                             "PAID",
                             "EXPIRED",
+                            "CANCELLED",
                             "FAILED"
                         ]
+                    },
+                    "gateway_expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "qr_image_url": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "poll_after_seconds": {
+                        "type": "integer",
+                        "example": 5
                     }
                 }
             },
@@ -122,10 +140,7 @@
                     "channel": {
                         "type": "string",
                         "enum": [
-                            "QRIS",
-                            "VA",
-                            "E_WALLET",
-                            "TRANSFER"
+                            "QRIS"
                         ],
                         "example": "QRIS"
                     }
@@ -183,9 +198,10 @@
                         "type": "string",
                         "nullable": true
                     },
-                    "qr_string": {
+                    "qr_image_url": {
                         "type": "string",
-                        "nullable": true
+                        "nullable": true,
+                        "example": "/api/v1/member/payments/99/qris-image"
                     },
                     "expires_at": {
                         "type": "string",
@@ -199,6 +215,10 @@
                             "bank": "BCA",
                             "va_number": "1234567890"
                         }
+                    },
+                    "poll_after_seconds": {
+                        "type": "integer",
+                        "example": 5
                     }
                 }
             },
@@ -1629,6 +1649,131 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/payments/{payment}/status": {
+            "get": {
+                "summary": "api.v1.member.payments.status",
+                "operationId": "get_api_v1_member_payments__payment__status",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/payments/{payment}/qris-image": {
+            "get": {
+                "summary": "api.v1.member.payments.qris-image",
+                "operationId": "get_api_v1_member_payments__payment__qris-image",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }

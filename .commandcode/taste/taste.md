@@ -18,6 +18,13 @@
 # i18n
 - User-facing UI strings (empty states, button labels, aria-labels) should use Bahasa Indonesia, matching the project's primary language. Confidence: 0.70
 
+# agents
+- Treat AGENTS.md as the canonical project knowledge base; read it before starting tasks and update it with new architecture decisions, role hierarchies, credentials/config references, and workflow conventions so other AI agents stay in sync. Confidence: 0.80
+
+# data-table
+- DataTable component should not have internal `max-h` vertical scroll limiting; let the page layout control scrolling to avoid double scrollbars. Confidence: 0.65
+- For paginated tables, use 15 items per page (`paginate(15)`) instead of the default 10. Confidence: 0.70
+
 # a11y
 - Inline error messages in form components need `role="alert"` for screen reader announcement; file input errors should also reset `target.value = ""` so the same file can be re-selected after correction. Confidence: 0.65
 - For modal/dialog a11y hardening, prefer the existing dialog primitive (`resources/js/components/ui/dialog`) over custom overlay divs — it provides consistent focus trap, Escape handling, and focus restore. If custom overlay is unavoidable, add explicit focus management: focus close button on open, trap Tab within modal, restore focus to trigger on close. Confidence: 0.60

@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class LoanRestructureService
 {
-    public function __construct(private readonly LoanCalculatorService $calculator) {}
+    public function __construct(
+        private readonly LoanCalculatorService $calculator,
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -54,6 +57,8 @@ class LoanRestructureService
 
             $this->log($restructure, null, 'PENDING', $actor, 'Pengajuan restrukturisasi pinjaman dibuat.');
 
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanRestructureRequested($restructure, $actor));
+
             return $restructure->load('loan');
         });
     }
@@ -75,6 +80,8 @@ class LoanRestructureService
             ])->save();
 
             $this->log($restructure, 'PENDING', 'REJECTED', $actor, $note);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanRestructureRejected($restructure, $actor));
 
             return $restructure->refresh();
         });
@@ -154,6 +161,8 @@ class LoanRestructureService
 
             $this->log($restructure, 'PENDING', 'APPROVED', $actor, $note);
             $this->logLoan($loan, 'RESTRUCTURE_PENDING', LoanStatus::Active->value, $actor, 'Restrukturisasi pinjaman diterapkan.');
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanRestructureApproved($restructure, $actor));
 
             return $restructure->refresh()->load('loan.installments');
         });

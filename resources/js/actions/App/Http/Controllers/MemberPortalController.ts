@@ -387,7 +387,7 @@ createPaymentIntent.form = createPaymentIntentForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 export const paymentStatus = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -402,7 +402,7 @@ paymentStatus.definition = {
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 paymentStatus.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -435,7 +435,7 @@ paymentStatus.url = (args: { payment: number | { id: number } } | [payment: numb
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 paymentStatus.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -445,7 +445,7 @@ paymentStatus.get = (args: { payment: number | { id: number } } | [payment: numb
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 paymentStatus.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -455,7 +455,7 @@ paymentStatus.head = (args: { payment: number | { id: number } } | [payment: num
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 const paymentStatusForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -465,7 +465,7 @@ const paymentStatusForm = (args: { payment: number | { id: number } } | [payment
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 paymentStatusForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -475,7 +475,7 @@ paymentStatusForm.get = (args: { payment: number | { id: number } } | [payment: 
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:718
+* @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
 paymentStatusForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

@@ -1,10 +1,12 @@
 import CooperativeReportController from './CooperativeReportController'
 import CooperativeMemberController from './CooperativeMemberController'
+import MemberResignationController from './MemberResignationController'
 import CooperativeMemberValidationController from './CooperativeMemberValidationController'
 import CooperativeOpeningBalanceWizardController from './CooperativeOpeningBalanceWizardController'
 import CooperativeDuesController from './CooperativeDuesController'
 import CooperativePaymentController from './CooperativePaymentController'
 import CooperativeLedgerController from './CooperativeLedgerController'
+import SavingsWithdrawalController from './SavingsWithdrawalController'
 import LoanTypeController from './LoanTypeController'
 import LoanController from './LoanController'
 import PointController from './PointController'
@@ -32,11 +34,13 @@ import OperatorProcedureController from './OperatorProcedureController'
 const Cooperative = {
     CooperativeReportController: Object.assign(CooperativeReportController, CooperativeReportController),
     CooperativeMemberController: Object.assign(CooperativeMemberController, CooperativeMemberController),
+    MemberResignationController: Object.assign(MemberResignationController, MemberResignationController),
     CooperativeMemberValidationController: Object.assign(CooperativeMemberValidationController, CooperativeMemberValidationController),
     CooperativeOpeningBalanceWizardController: Object.assign(CooperativeOpeningBalanceWizardController, CooperativeOpeningBalanceWizardController),
     CooperativeDuesController: Object.assign(CooperativeDuesController, CooperativeDuesController),
     CooperativePaymentController: Object.assign(CooperativePaymentController, CooperativePaymentController),
     CooperativeLedgerController: Object.assign(CooperativeLedgerController, CooperativeLedgerController),
+    SavingsWithdrawalController: Object.assign(SavingsWithdrawalController, SavingsWithdrawalController),
     LoanTypeController: Object.assign(LoanTypeController, LoanTypeController),
     LoanController: Object.assign(LoanController, LoanController),
     PointController: Object.assign(PointController, PointController),

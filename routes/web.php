@@ -196,6 +196,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('cooperative')->name('cooperative.')->group(function () {
         Route::middleware('can:view_cooperative_member')->group(function () {
             Route::get('members/export', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'export'])->name('members.export');
+            Route::get('members/resignations', [\App\Http\Controllers\Cooperative\MemberResignationController::class, 'index'])->name('members.resignations.index');
+            Route::post('members/resignations/{resignationRequest}/process', [\App\Http\Controllers\Cooperative\MemberResignationController::class, 'process'])->name('members.resignations.process');
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
             Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
             Route::post('members/{member}/deactivate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'deactivate'])->name('members.deactivate');
@@ -243,6 +245,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('ledger', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'index'])
             ->middleware('can:view_cooperative_ledger')
             ->name('ledger.index');
+        Route::middleware('can:view_cooperative_ledger')->group(function () {
+            Route::get('savings/withdrawals', [\App\Http\Controllers\Cooperative\SavingsWithdrawalController::class, 'index'])->name('savings.withdrawals.index');
+        });
+        Route::middleware('can:manage_cooperative_ledger')->group(function () {
+            Route::post('savings/withdrawals/{withdrawal}/process', [\App\Http\Controllers\Cooperative\SavingsWithdrawalController::class, 'process'])->name('savings.withdrawals.process');
+        });
         Route::middleware('can:manage_cooperative_ledger')->group(function () {
             Route::post('ledger/{entry}/cancel-payment', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'cancelPayment'])->name('ledger.cancel-payment');
             Route::post('ledger/{entry}/revise-payment', [\App\Http\Controllers\Cooperative\CooperativeLedgerController::class, 'revisePayment'])->name('ledger.revise-payment');

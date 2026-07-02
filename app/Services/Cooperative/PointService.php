@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class PointService
 {
+    public function __construct(
+        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+    ) {}
+
     public function syncPosPoints(CooperativeMember $member): void
     {
         $points = $member->posMemberPoints()
@@ -56,7 +60,7 @@ class PointService
                 continue;
             }
 
-            $this->recordTransaction(
+            $earned = $this->recordTransaction(
                 member: $member,
                 transactionType: 'EARNED',
                 points: $expectedPoints,
@@ -70,6 +74,8 @@ class PointService
                     'point_rate' => '1 poin per Rp1.000 laba kotor POS',
                 ],
             );
+
+            $this->notificationDispatcher->pointsEarned($member, $earned);
         }
 
         if ($shouldRebuildBalances) {
@@ -200,6 +206,8 @@ class PointService
 
             $redemption->forceFill(['point_transaction_id' => $transaction->id])->save();
 
+            DB::afterCommit(fn () => $this->notificationDispatcher->pointsRedeemed($member, $transaction));
+
             return $redemption->refresh();
         });
     }
@@ -235,7 +243,10 @@ class PointService
                     : $lockedRedemption->processed_at,
             ])->save();
 
-            return $lockedRedemption->refresh();
+            $notifiableRedemption = $lockedRedemption->refresh();
+            DB::afterCommit(fn () => $this->notificationDispatcher->rewardStatusChanged($notifiableRedemption));
+
+            return $notifiableRedemption;
         });
     }
 
@@ -260,7 +271,7 @@ class PointService
                 continue;
             }
 
-            $this->recordTransaction(
+            $expiredTransaction = $this->recordTransaction(
                 member: $member,
                 transactionType: 'EXPIRED',
                 points: abs((int) $candidate->points) * -1,
@@ -273,6 +284,8 @@ class PointService
                     'expired_transaction_id' => $candidate->id,
                 ],
             );
+
+            $this->notificationDispatcher->pointsExpired($member, $expiredTransaction);
 
             $expired++;
         }

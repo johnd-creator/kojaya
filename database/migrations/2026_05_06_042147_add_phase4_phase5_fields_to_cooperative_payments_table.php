@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -32,6 +33,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Drop the partial unique index added by 2026_06_30_000001 first.
+        // SQLite refuses to drop a column that an index still references,
+        // and that newer migration's down() may run in the same rollback batch.
+        DB::statement('DROP INDEX IF EXISTS cooperative_payments_gateway_provider_reference_unique');
+
         Schema::table('cooperative_payments', function (Blueprint $table) {
             $table->dropIndex(['gateway_provider', 'gateway_reference']);
             $table->dropIndex(['reconciled_at', 'status']);

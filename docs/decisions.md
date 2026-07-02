@@ -857,6 +857,45 @@ POS tetap memakai `cooperative_ledger_entries` sebagai **sumber posting ledger P
 
 ---
 
+## 🎯 ADR-023: Cooperative Notification Activation via Dispatcher (Database Channel)
+
+**Status:** ✅ Accepted
+**Date:** July 1, 2026
+**Deciders:** Engineering
+
+### Context
+
+The cooperative roles (Anggota, Admin Koperasi, Manajer Koperasi, Pengurus Koperasi) are the core users of KojayaPro/Kojayaku, yet several core workflows emitted no notifications despite a mature dispatcher and bell UI already existing:
+- Membership validation/approval (`MemberValidationService`, `MemberOnboardingSubmitService`)
+- POS sale & void (`PosTransactionService`) — only coffee orders notified
+- Savings withdrawal (`SavingsWithdrawalService`)
+- Points earn/redeem/expire & reward redemption status (`PointService`)
+- Loan writeOff & restructure (`LoanService::writeOff`, `LoanRestructureService`)
+
+Two `type` strings (`App\Notifications\DatabaseNotification`, `App\Notifications\CooperativeDatabaseNotification`) were written to the `notifications` table without matching class files, and the bell's unread count was not shared via Inertia (requiring an extra XHR on first paint).
+
+### Decision
+
+- Extend the existing `CooperativeNotificationDispatcher` (not Laravel Events — consistent with ADR-016) with domain methods for every uncovered workflow transition, each wrapped in `DB::afterCommit()` and protected by `deduplication_key` for idempotency.
+- Inject the dispatcher into the previously-unwired services (`MemberValidationService`, `MemberOnboardingSubmitService`, `PosTransactionService`, `SavingsWithdrawalService`, `PointService`, `LoanRestructureService`).
+- Use the **database channel only** (bell) for this activation; email/WhatsApp/FCM outbox enqueue is intentionally NOT added for these events (channel expansion deferred).
+- Materialize the two ghost notification classes (`DatabaseNotification`, `CooperativeDatabaseNotification`) so the polymorphic `type` column hydrates cleanly.
+- Share `notifications.unreadCount` via `HandleInertiaRequests` (lazy closure) and seed the bell's initial badge from it; accelerate bell polling from 30s to 10s. Real-time push (WebSocket/SSE) remains deferred per ADR-013.
+
+### Consequences
+
+**Positive:**
+- Anggota, Admin, Manajer, and Pengurus now receive timely bell notifications for every cooperative transaction transition (approval tasks for staff, status updates for members).
+- Bell badge renders instantly on first paint (no empty flash) while still refreshing via 10s polling.
+- Deduplication keeps notification volume safe even for high-frequency point earnings from POS.
+- No new dependencies introduced.
+
+**Trade-off:**
+- 10s polling increases request frequency 3x; acceptable until a real-time layer (ADR-013) is adopted.
+- DB-channel only means members without an active web session only see notifications on next login; external channels remain a future activation.
+
+---
+
 ## 📚 References
 
 - [Laravel Documentation](https://laravel.com/docs)

@@ -19,6 +19,7 @@ class PosTransactionService
         private PosInventoryService $inventory,
         private PosClosingGuard $closingGuard,
         private PosJournalPostingService $journal,
+        private CooperativeNotificationDispatcher $notificationDispatcher,
     ) {}
 
     /**
@@ -190,7 +191,10 @@ class PosTransactionService
                 $this->journal->postCogs($transaction);
                 $this->journal->postMemberCredit($transaction);
 
-                return $transaction->load(['items.product', 'payments', 'member']);
+                $completedTransaction = $transaction->load(['items.product', 'payments', 'member']);
+                DB::afterCommit(fn () => $this->notificationDispatcher->posSaleCompleted($completedTransaction, $cashier));
+
+                return $completedTransaction;
             });
         } catch (QueryException $exception) {
             if (! empty($data['client_reference'])) {
@@ -240,6 +244,8 @@ class PosTransactionService
             ]);
 
             $transaction->update(['status' => 'VOID_PENDING']);
+
+            DB::afterCommit(fn () => $this->notificationDispatcher->posVoidRequested($transaction, $requester, $requester->organization_id));
 
             return $request;
         });
@@ -310,6 +316,8 @@ class PosTransactionService
                 'approved_at' => now(),
             ]);
 
+            DB::afterCommit(fn () => $this->notificationDispatcher->posVoidApproved($transaction->refresh(), $request, $supervisor));
+
             return $transaction->refresh();
         });
     }
@@ -329,7 +337,12 @@ class PosTransactionService
             'rejection_reason' => $reason,
         ]);
 
-        $request->transaction()->update(['status' => 'COMPLETED']);
+        $transaction = $request->transaction()->first();
+        $transaction?->update(['status' => 'COMPLETED']);
+
+        if ($transaction) {
+            $this->notificationDispatcher->posVoidRejected($transaction, $request, $supervisor);
+        }
 
         return $request;
     }

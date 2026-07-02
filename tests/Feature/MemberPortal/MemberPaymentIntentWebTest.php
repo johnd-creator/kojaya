@@ -69,7 +69,8 @@ class MemberPaymentIntentWebTest extends TestCase
             ->assertJsonPath('data.amount', 80000)
             ->assertJsonPath('data.provider', 'internal')
             ->assertJsonPath('data.channel', 'QRIS')
-            ->assertJsonPath('data.qr_string', null)
+            ->assertJsonMissingPath('data.qr_string')
+            ->assertJsonPath('data.qr_image_url', '/api/v1/member/payments/'.$response->json('data.payment_id').'/qris-image')
             ->assertJsonPath('data.gateway_reference', $response->json('data.gateway_reference'));
 
         $this->assertDatabaseHas('cooperative_payments', [

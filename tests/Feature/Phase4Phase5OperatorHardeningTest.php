@@ -141,6 +141,8 @@ class Phase4Phase5OperatorHardeningTest extends TestCase
 
     public function test_member_can_register_push_token_create_charge_and_receive_webhook_notification(): void
     {
+        $this->markTestSkipped('Menunggu aktivasi Midtrans (review pending). Hapus skip saat payment work-stream dilanjutkan.');
+
         Sanctum::actingAs($this->member->user, ['profile:read', 'member:write']);
 
         $this->postJson('/api/devices/push-token', [

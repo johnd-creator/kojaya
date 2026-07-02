@@ -52,6 +52,11 @@ class HandleInertiaRequests extends Middleware
                 ? \App\Models\Organization::orderBy('name')->get()
                 : ($request->user() && $request->user()->organization_id ? \App\Models\Organization::where('id', $request->user()->organization_id)->get() : []),
             'googleSsoEnabled' => (bool) config('services.google.sso_enabled', false),
+            'notifications' => [
+                'unreadCount' => fn () => $request->user()
+                    ? $request->user()->unreadNotifications()->count()
+                    : 0,
+            ],
         ];
     }
 }

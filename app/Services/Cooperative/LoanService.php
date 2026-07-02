@@ -332,6 +332,8 @@ class LoanService implements LoanServiceContract
 
             $this->logApproval($loan, $fromStatus, LoanStatus::WrittenOff->value, $actor, $note);
 
+            DB::afterCommit(fn () => $this->notificationDispatcher->loanWrittenOff($loan, $actor));
+
             return $loan->refresh();
         });
     }

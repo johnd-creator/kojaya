@@ -60,10 +60,14 @@ class CoffeeOrderWorkflowTest extends TestCase
         $this->assertTrue($member->user->notifications()->where('data->event_type', 'member.coffee_order.received')->exists());
         $this->assertTrue($admin->notifications()->where('data->event_type', 'admin.coffee_order.received')->exists());
 
-        $this->getJson('/api/v1/member/notifications/recent?limit=5')
-            ->assertOk()
-            ->assertJsonPath('data.0.event_type', 'member.coffee_order.received')
-            ->assertJsonPath('data.0.action.url', '/member/transactions');
+        $response = $this->getJson('/api/v1/member/notifications/recent?limit=5');
+        $response->assertOk();
+
+        $coffeeNotifications = collect($response->json('data'))
+            ->where('event_type', 'member.coffee_order.received');
+
+        $this->assertCount(1, $coffeeNotifications, 'Expected a coffee order received notification.');
+        $this->assertSame('/member/transactions', $coffeeNotifications->first()['action']['url']);
     }
 
     public function test_admin_status_update_is_visible_to_member_status_endpoint(): void

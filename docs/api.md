@@ -468,7 +468,7 @@ proof: <file> (jpg, png, or pdf, max 4MB)
 Receipt hanya tersedia untuk pembayaran berstatus `APPROVED`. `download_url` adalah signed URL sementara untuk file PDF receipt.
 
 ### **Payment Gateway Charge**
-Member app dapat membuat charge langsung dari unified bill. Source `dues` tetap menghasilkan `CooperativePayment` karena settlement-nya masuk ke `CooperativePaymentService` dan ledger `SAVING_PAYMENT`. Source `loan` dan `pos_credit` menghasilkan `member_payment_intents`; saat webhook gateway `PAID`, settlement diarahkan ke `LoanService::recordPayment()` atau `MemberCreditService::recordPayment()`.
+Member app membuat QRIS Sandbox untuk invoice iuran/simpanan milik anggota melalui `CooperativePayment` yang sudah dibuat dari invoice. Settlement tetap masuk ke `CooperativePaymentService` dan ledger `SAVING_PAYMENT`.
 
 ```http
 POST /api/v1/member/bills/{bill}/payment-intent
@@ -480,7 +480,7 @@ Content-Type: application/json
 }
 ```
 
-Contoh `{bill}`: `dues:123`, `loan:456`, `pos_credit:789`. Channel options: `QRIS`, `VA`, `E_WALLET`, `TRANSFER`.
+Untuk native Midtrans Core API QRIS Sandbox, gunakan bill dues/savings dan channel `QRIS`.
 
 **Response (201):**
 ```json
@@ -503,43 +503,10 @@ Contoh `{bill}`: `dues:123`, `loan:456`, `pos_credit:789`. Channel options: `QRI
       "channel": "QRIS",
       "amount": 80000,
       "checkout_url": "http://localhost:8000/api/payments/PAY-ABC123/checkout",
-      "qr_string": null,
+      "qr_image_url": "/api/v1/member/payments/99/qris-image",
       "expires_at": "2026-06-29T10:00:00Z",
-      "instructions": {}
-    }
-  }
-}
-```
-
-Untuk `loan` dan `pos_credit`, response memakai field `payment_intent`:
-
-```json
-{
-  "data": {
-    "bill_id": "loan:456",
-    "source": "loan",
-    "payment_intent": {
-      "id": 12,
-      "payable_type": "loan_installment",
-      "payable_id": 456,
-      "amount": 460000,
-      "channel": "QRIS",
-      "gateway_provider": "midtrans",
-      "gateway_reference": "KOJ-MPI-12-ABC12345",
-      "gateway_status": "PENDING",
-      "settled_at": null,
-      "expires_at": "2026-06-29T10:00:00Z"
-    },
-    "charge": {
-      "provider": "midtrans",
-      "reference": "KOJ-MPI-12-ABC12345",
-      "status": "PENDING",
-      "channel": "QRIS",
-      "amount": 460000,
-      "checkout_url": "https://app.sandbox.midtrans.com/...",
-      "qr_string": null,
-      "expires_at": "2026-06-29T10:00:00Z",
-      "instructions": {}
+      "instructions": {},
+      "poll_after_seconds": 5
     }
   }
 }
@@ -556,20 +523,63 @@ Content-Type: application/json
 }
 ```
 
-**Channel options:** `QRIS`, `VA`, `E_WALLET`, `TRANSFER`
+**Phase B supported channel:** `QRIS`
 
 **Response (201):**
 ```json
 {
   "data": {
     "provider": "midtrans",
-    "reference": "MID-2026-05001",
+    "reference": "KOJ-99-ABCD1234",
     "status": "PENDING",
+    "channel": "QRIS",
     "amount": 500000,
-    "checkout_url": "https://app.midtrans.com/..."
+    "checkout_url": null,
+    "qr_image_url": "/api/v1/member/payments/99/qris-image",
+    "expires_at": "2026-06-29 10:00:00",
+    "instructions": {
+      "title": "Scan QRIS untuk membayar",
+      "description": "Status pembayaran diperbarui setelah Midtrans mengonfirmasi transaksi."
+    },
+    "poll_after_seconds": 5
   }
 }
 ```
+
+Response charge bersifat provider-neutral untuk Flutter: tidak memuat Server Key, Client Key, raw credential, atau action URL Midtrans. Flutter mengambil gambar QR sebagai bytes melalui authenticated API client:
+
+```http
+GET /api/v1/member/payments/{payment}/qris-image
+Authorization: Bearer {token}
+Accept: image/png
+```
+
+Endpoint gambar QR hanya tersedia untuk pembayaran QRIS milik anggota yang sedang login. Backend membuat PNG dari `qr_string` server-side bila tersedia di payload charge, atau mengambil action `generate-qr-code-v2` / `generate-qr-code` dari payload Midtrans secara server-side.
+
+Polling status payment:
+
+```http
+GET /api/v1/member/payments/{payment}/status
+Authorization: Bearer {token}
+```
+
+```json
+{
+  "data": {
+    "payment_id": 99,
+    "status": "PENDING",
+    "gateway_status": "PENDING",
+    "reconciled_at": null,
+    "gateway_expires_at": "2026-06-29T10:00:00+00:00",
+    "is_paid": false,
+    "is_failed": false,
+    "is_terminal": false,
+    "poll_after_seconds": 5
+  }
+}
+```
+
+Gateway status yang dibedakan: `PENDING`, `PAID`, `EXPIRED`, `CANCELLED`, dan `FAILED`.
 
 ### **Push Device Registration**
 ```http

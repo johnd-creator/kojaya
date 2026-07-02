@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CreatePaymentChargeRequest;
 use App\Http\Requests\Api\PaymentGatewayWebhookRequest;
@@ -13,6 +14,7 @@ use App\Services\Integrations\MemberPaymentSettlementService;
 use App\Services\Integrations\PaymentGatewayService;
 use App\Services\Integrations\PushNotificationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class ProductionIntegrationController extends Controller
@@ -41,10 +43,18 @@ class ProductionIntegrationController extends Controller
     public function createPaymentCharge(CreatePaymentChargeRequest $request, PaymentGatewayService $gateway): JsonResponse
     {
         $validated = $request->validated();
-        $payment = CooperativePayment::query()->findOrFail($validated['cooperative_payment_id']);
+        $payment = CooperativePayment::query()
+            ->with('invoice')
+            ->findOrFail($validated['cooperative_payment_id']);
 
         if ($request->user()->tokenCan('member:write')) {
             abort_unless($payment->member?->user_id === $request->user()->id, 403);
+        }
+
+        if (! $payment->invoice) {
+            throw ValidationException::withMessages([
+                'cooperative_payment_id' => ['Only member dues/savings invoice payments can be charged through this endpoint.'],
+            ]);
         }
 
         return response()->json([
@@ -59,7 +69,13 @@ class ProductionIntegrationController extends Controller
         CooperativePaymentService $paymentService,
         PushNotificationService $pushNotificationService
     ): JsonResponse {
-        $payment = $gateway->applyWebhook($request->validated(), $request->headers->all());
+        try {
+            $payment = $gateway->applyWebhook($request->validated(), $request->headers->all());
+        } catch (PaymentGatewayWebhookVerificationException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
         $intent = null;
 
         if ($payment && $payment->gateway_status === 'PAID' && ! $payment->reconciled_at) {
@@ -80,7 +96,13 @@ class ProductionIntegrationController extends Controller
         }
 
         if (! $payment) {
-            $intent = $gateway->applyWebhookToMemberIntent($request->validated(), $request->headers->all());
+            try {
+                $intent = $gateway->applyWebhookToMemberIntent($request->validated(), $request->headers->all());
+            } catch (PaymentGatewayWebhookVerificationException $exception) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             if ($intent && $intent->gateway_status === 'PAID' && ! $intent->settled_at) {
                 $intent = $memberPaymentSettlementService->settle($intent);

@@ -12,6 +12,7 @@ use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\Api\MemberPaymentProofRequest;
 use App\Http\Requests\Api\MemberSupportTicketRequest;
 use App\Http\Requests\Api\StoreLoanRestructureRequest;
+use App\Http\Requests\Api\StoreMemberResignationRequest;
 use App\Http\Requests\Api\StoreSavingsWithdrawalRequest;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
@@ -20,6 +21,7 @@ use App\Http\Resources\LoanTypeResource;
 use App\Http\Resources\MemberInvoiceResource;
 use App\Http\Resources\MemberLoanRestructureResource;
 use App\Http\Resources\MemberPaymentResource;
+use App\Http\Resources\MemberResignationRequestResource;
 use App\Http\Resources\MemberSavingsWithdrawalResource;
 use App\Http\Resources\MemberSelfServiceResource;
 use App\Http\Resources\MemberSupportTicketResource;
@@ -35,24 +37,38 @@ use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanType;
 use App\Models\MemberPaymentIntent;
+use App\Models\MemberResignationRequest;
 use App\Models\PosTransaction;
 use App\Models\RewardRedemption;
 use App\Services\Cooperative\CooperativeReceiptService;
 use App\Services\Cooperative\LoanRestructureService;
 use App\Services\Cooperative\MemberOnboardingService;
+use App\Services\Cooperative\MemberResignationRequestService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use App\Services\Cooperative\SavingsSummaryService;
 use App\Services\Cooperative\SavingsWithdrawalService;
 use App\Services\Integrations\PaymentGatewayService;
+use BaconQrCode\Renderer\GDLibRenderer;
+use BaconQrCode\Writer;
+use Illuminate\Http\Client\Response as ClientResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class MemberSelfServiceController extends Controller
 {
+    private const QRIS_IMAGE_MAX_BYTES = 262144;
+
+    private const QRIS_IMAGE_CONTENT_TYPES = [
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+    ];
+
     public function dashboard(
         Request $request,
         PointService $pointService,
@@ -137,6 +153,44 @@ class MemberSelfServiceController extends Controller
                 'user' => new MemberUserResource($user?->refresh()->loadMissing('roles')),
                 'member' => new MemberSelfServiceResource($member->refresh()->load(['organization'])),
             ],
+        ]);
+    }
+
+    public function resignationStatus(Request $request, MemberResignationRequestService $service): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+        $latest = $service->latestFor($member);
+
+        return response()->json([
+            'data' => $latest ? new MemberResignationRequestResource($latest) : null,
+        ]);
+    }
+
+    public function submitResignation(
+        StoreMemberResignationRequest $request,
+        MemberResignationRequestService $service,
+    ): JsonResponse {
+        $member = $this->memberOrAbort($request);
+        $resignation = $service->submit($member, $request->validated(), $request->user());
+
+        return (new MemberResignationRequestResource($resignation))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function cancelResignation(
+        Request $request,
+        MemberResignationRequestService $service,
+    ): JsonResponse {
+        $member = $this->memberOrAbort($request);
+
+        $latest = $service->latestFor($member);
+        abort_unless($latest !== null && $latest->status === MemberResignationRequest::STATUS_PENDING, 404, 'Tidak ada pengajuan pengunduran diri yang dapat dibatalkan.');
+
+        $service->cancel($latest);
+
+        return response()->json([
+            'data' => new MemberResignationRequestResource($latest->refresh()),
         ]);
     }
 
@@ -310,6 +364,68 @@ class MemberSelfServiceController extends Controller
                 ),
             ],
         ]);
+    }
+
+    public function paymentStatus(Request $request, CooperativePayment $payment): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403);
+
+        $gatewayExpiresAt = $this->parseGatewayExpiry($payment);
+        $isPaid = $payment->gateway_status === 'PAID' || $payment->status === 'APPROVED';
+        $isFailed = in_array($payment->gateway_status, ['FAILED', 'EXPIRED', 'CANCELLED'], true);
+
+        return response()->json([
+            'data' => [
+                'payment_id' => $payment->id,
+                'status' => $payment->status,
+                'gateway_status' => $payment->gateway_status,
+                'reconciled_at' => $payment->reconciled_at?->toIso8601String(),
+                'gateway_expires_at' => $gatewayExpiresAt?->toIso8601String(),
+                'is_paid' => $isPaid,
+                'is_failed' => $isFailed,
+                'is_terminal' => $isPaid || $isFailed,
+                'poll_after_seconds' => (int) ($this->gatewayPresentation($payment)['poll_after_seconds'] ?? 5),
+            ],
+        ]);
+    }
+
+    public function qrisImage(Request $request, CooperativePayment $payment): \Symfony\Component\HttpFoundation\Response
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403);
+        abort_unless($payment->payment_method === 'QRIS', 404, 'QRIS pembayaran tidak tersedia.');
+
+        $presentation = $this->gatewayPresentation($payment);
+        $payload = is_array($payment->gateway_payload) ? $payment->gateway_payload : [];
+        $qrString = $presentation['qr_string'] ?? $payload['qr_string'] ?? null;
+
+        if (is_string($qrString) && $qrString !== '') {
+            $writer = new Writer(new GDLibRenderer(360, 2, 'png'));
+
+            return response($writer->writeString($qrString), 200)
+                ->header('Content-Type', 'image/png')
+                ->header('Cache-Control', 'private, max-age=60');
+        }
+
+        $actionUrl = $this->qrisActionUrl($payment);
+
+        abort_unless(is_string($actionUrl) && str_starts_with($actionUrl, 'https://'), 404, 'QRIS pembayaran tidak tersedia.');
+
+        $this->assertAllowedQrisActionUrl($actionUrl);
+
+        $response = Http::timeout(5)
+            ->withOptions(['allow_redirects' => false])
+            ->get($actionUrl);
+
+        abort_unless($response->successful(), 502, 'Gagal mengambil QRIS dari Midtrans.');
+        $this->assertValidQrisImageResponse($response);
+
+        return response($response->body(), 200)
+            ->header('Content-Type', $response->header('Content-Type') ?: 'image/png')
+            ->header('Cache-Control', 'private, max-age=60');
     }
 
     public function uploadPaymentProof(MemberPaymentProofRequest $request): JsonResponse
@@ -1029,5 +1145,90 @@ class MemberSelfServiceController extends Controller
             'settled_at' => $intent->settled_at?->toISOString(),
             'expires_at' => $intent->expires_at?->toISOString(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function gatewayPresentation(CooperativePayment $payment): array
+    {
+        $payload = $payment->gateway_payload;
+
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        return is_array($payload['presentation'] ?? null) ? $payload['presentation'] : $payload;
+    }
+
+    private function qrisActionUrl(CooperativePayment $payment): ?string
+    {
+        $payload = is_array($payment->gateway_payload) ? $payment->gateway_payload : [];
+        $actions = $payload['actions'] ?? [];
+
+        if (! is_array($actions)) {
+            return null;
+        }
+
+        foreach (['generate-qr-code-v2', 'generate-qr-code'] as $name) {
+            foreach ($actions as $action) {
+                if (is_array($action) && ($action['name'] ?? null) === $name && is_string($action['url'] ?? null)) {
+                    return $action['url'];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function assertAllowedQrisActionUrl(string $actionUrl): void
+    {
+        $parts = parse_url($actionUrl);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $port = $parts['port'] ?? null;
+
+        abort_unless($scheme === 'https', 404, 'QRIS pembayaran tidak tersedia.');
+        abort_unless(in_array($host, $this->allowedMidtransHosts(), true), 404, 'QRIS pembayaran tidak tersedia.');
+        abort_unless($port === null || (int) $port === 443, 404, 'QRIS pembayaran tidak tersedia.');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allowedMidtransHosts(): array
+    {
+        return [
+            config('services.midtrans.is_production', false)
+                ? 'api.midtrans.com'
+                : 'api.sandbox.midtrans.com',
+        ];
+    }
+
+    private function assertValidQrisImageResponse(ClientResponse $response): void
+    {
+        abort_if($response->redirect(), 502, 'Gagal mengambil QRIS dari Midtrans.');
+
+        $contentType = strtolower(trim(explode(';', (string) $response->header('Content-Type'))[0]));
+        abort_unless(in_array($contentType, self::QRIS_IMAGE_CONTENT_TYPES, true), 502, 'Gagal mengambil QRIS dari Midtrans.');
+
+        $contentLength = $response->header('Content-Length');
+        abort_if(is_numeric($contentLength) && (int) $contentLength > self::QRIS_IMAGE_MAX_BYTES, 502, 'Gagal mengambil QRIS dari Midtrans.');
+        abort_if(strlen($response->body()) > self::QRIS_IMAGE_MAX_BYTES, 502, 'Gagal mengambil QRIS dari Midtrans.');
+    }
+
+    private function parseGatewayExpiry(CooperativePayment $payment): ?\Illuminate\Support\Carbon
+    {
+        $raw = $this->gatewayPresentation($payment)['expires_at'] ?? null;
+
+        if (! is_string($raw) || $raw === '') {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($raw);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

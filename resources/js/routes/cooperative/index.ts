@@ -3,6 +3,7 @@ import openingBalances from './opening-balances'
 import dues from './dues'
 import payments from './payments'
 import ledger from './ledger'
+import savings from './savings'
 import loanTypes from './loan-types'
 import loans from './loans'
 import points from './points'
@@ -21,6 +22,7 @@ const cooperative = {
     dues: Object.assign(dues, dues),
     payments: Object.assign(payments, payments),
     ledger: Object.assign(ledger, ledger),
+    savings: Object.assign(savings, savings),
     loanTypes: Object.assign(loanTypes, loanTypes),
     loans: Object.assign(loans, loans),
     points: Object.assign(points, points),

@@ -149,6 +149,10 @@ class CooperativePaymentService
         return DB::transaction(function () use ($payment, $user, $reference, $approve): CooperativePayment {
             $payment = CooperativePayment::query()->lockForUpdate()->findOrFail($payment->id);
 
+            if ($payment->reconciled_at) {
+                return $payment->refresh();
+            }
+
             if ($approve && $payment->status !== 'APPROVED') {
                 $payment = $this->approve($payment, $user);
             }

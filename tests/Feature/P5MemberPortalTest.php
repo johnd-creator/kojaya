@@ -14,6 +14,7 @@ use App\Models\Reward;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class P5MemberPortalTest extends TestCase
@@ -41,6 +42,13 @@ class P5MemberPortalTest extends TestCase
             'user_id' => $this->memberUser->id,
             'organization_id' => $this->organization->id,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     public function test_dashboard_returns_ok_with_member_data(): void
@@ -175,6 +183,8 @@ class P5MemberPortalTest extends TestCase
 
     public function test_savings_shows_monthly_wajib_paid_and_unpaid_statuses(): void
     {
+        Carbon::setTestNow('2026-06-30 12:00:00');
+
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',

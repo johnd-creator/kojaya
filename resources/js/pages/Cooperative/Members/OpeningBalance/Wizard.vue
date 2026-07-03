@@ -306,9 +306,7 @@ async function calculatePreview() {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        "X-CSRF-TOKEN":
-          (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)
-            ?.content ?? "",
+        "X-CSRF-TOKEN": (usePage().props.csrf_token as string) ?? "",
       },
       body: JSON.stringify(payload),
     });

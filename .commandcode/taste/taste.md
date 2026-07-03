@@ -29,3 +29,6 @@
 - Inline error messages in form components need `role="alert"` for screen reader announcement; file input errors should also reset `target.value = ""` so the same file can be re-selected after correction. Confidence: 0.65
 - For modal/dialog a11y hardening, prefer the existing dialog primitive (`resources/js/components/ui/dialog`) over custom overlay divs — it provides consistent focus trap, Escape handling, and focus restore. If custom overlay is unavoidable, add explicit focus management: focus close button on open, trap Tab within modal, restore focus to trigger on close. Confidence: 0.60
 
+# midtrans
+- Midtrans Sandbox payment channels (QRIS, VA, E-Wallet) must be manually activated in the Midtrans Dashboard under Settings → Payment Channels; sandbox mode does not auto-activate all channels. Test channel availability before debugging integration code. Confidence: 0.65
+

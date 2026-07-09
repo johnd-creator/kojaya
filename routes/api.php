@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\CooperativeMemberApiController;
 use App\Http\Controllers\Api\V1\CooperativePaymentApiController;
 use App\Http\Controllers\Api\V1\LoanApiController;
 use App\Http\Controllers\Api\V1\MemberCoffeeOrderController;
+use App\Http\Controllers\Api\V1\MemberStoreController;
 use App\Http\Controllers\Api\V1\MemberSelfServiceController;
 use App\Http\Controllers\Api\V1\PointApiController;
 use App\Http\Controllers\Api\V1\PosApiController;
@@ -93,6 +94,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::get('/coffee/menu', [MemberCoffeeOrderController::class, 'index'])->middleware('ability:member:read');
         Route::post('/coffee/orders', [MemberCoffeeOrderController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         Route::get('/coffee/orders/{coffeeOrder}', [MemberCoffeeOrderController::class, 'show'])->middleware('ability:member:read');
+        Route::get('/store/catalog', [MemberStoreController::class, 'catalog'])->middleware('ability:member:read');
+        Route::post('/store/orders', [MemberStoreController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+        Route::get('/payment-intents/{intent}', [MemberStoreController::class, 'showIntent'])->middleware('ability:member:read');
         Route::prefix('notifications')->group(function () {
             Route::get('/', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
             Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent'])->middleware('ability:member:read');

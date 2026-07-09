@@ -39,6 +39,7 @@ class MemberPaymentSettlementService
                 MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT => $this->settleLoanInstallment($intent),
                 MemberPaymentIntent::PAYABLE_POS_CREDIT => $this->settlePosCredit($intent),
                 MemberPaymentIntent::PAYABLE_COFFEE_ORDER => $this->settleCoffeeOrder($intent),
+                MemberPaymentIntent::PAYABLE_STORE_ORDER => $this->settleStoreOrder($intent),
                 default => throw ValidationException::withMessages([
                     'payable_type' => 'Jenis pembayaran anggota belum didukung settlement gateway.',
                 ]),
@@ -164,5 +165,50 @@ class MemberPaymentSettlementService
         $this->notificationDispatcher->coffeeOrderReceived($coffeeOrder, $intent->user);
 
         return 'coffee_order:'.$coffeeOrder->id;
+    }
+
+    private function settleStoreOrder(MemberPaymentIntent $intent): string
+    {
+        $metadata = $intent->metadata ?? [];
+        $items = $metadata['items'] ?? [];
+
+        if (! is_array($items) || $items === []) {
+            throw ValidationException::withMessages([
+                'items' => 'Item toko untuk settlement tidak ditemukan.',
+            ]);
+        }
+
+        $transactionItems = [];
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $product = PosProduct::query()->findOrFail($item['pos_product_id'] ?? null);
+            $transactionItems[] = [
+                'pos_product_id' => $product->id,
+                'quantity' => (int) ($item['quantity'] ?? 1),
+            ];
+        }
+
+        if ($transactionItems === []) {
+            throw ValidationException::withMessages([
+                'items' => 'Item toko untuk settlement tidak valid.',
+            ]);
+        }
+
+        $transaction = $this->posTransactionService->create([
+            'client_reference' => (string) ($metadata['client_reference'] ?? 'STORE-INTENT-'.$intent->id),
+            'cooperative_member_id' => $intent->cooperative_member_id,
+            'payment_method' => $intent->channel,
+            'amount' => (float) $intent->amount,
+            'cash_received' => (float) $intent->amount,
+            'discount_amount' => 0,
+            'items' => $transactionItems,
+        ], $intent->user);
+
+        $this->notificationDispatcher->posSaleCompleted($transaction->load(['items.product', 'payments', 'member']), $intent->user);
+
+        return 'store_transaction:'.$transaction->id;
     }
 }

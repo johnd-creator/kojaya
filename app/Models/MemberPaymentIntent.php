@@ -19,6 +19,8 @@ class MemberPaymentIntent extends Model
 
     public const PAYABLE_COFFEE_ORDER = 'coffee_order';
 
+    public const PAYABLE_STORE_ORDER = 'store_order';
+
     protected $fillable = [
         'user_id',
         'cooperative_member_id',

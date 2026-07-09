@@ -51,6 +51,22 @@ class MemberCoffeeOrderController extends Controller
         $clientReference = $request->validated('client_reference')
             ?: 'COFFEE-'.$member->id.'-'.now()->format('YmdHisv');
 
+        $existing = MemberPaymentIntent::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('payable_type', MemberPaymentIntent::PAYABLE_COFFEE_ORDER)
+            ->whereNull('settled_at')
+            ->where('metadata->client_reference', $clientReference)
+            ->latest('id')
+            ->first();
+
+        if ($existing) {
+            $charge = $gateway->createIntentCharge($existing->refresh());
+
+            return response()->json([
+                'data' => $this->formatPendingOrder($existing->refresh(), $existing->metadata['items'] ?? [], $charge),
+            ], 201);
+        }
+
         $intent = MemberPaymentIntent::query()->create([
             'user_id' => $request->user()?->id,
             'cooperative_member_id' => $member->id,

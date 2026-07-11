@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::updateProgress
 * @see app/Http/Controllers/ProjectMilestoneController.php:49
@@ -53,6 +53,38 @@ updateProgress.patch = (args: { project: string | { id: string }, milestone: str
     url: updateProgress.url(args, options),
     method: 'patch',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectMilestoneController::updateProgress
+* @see app/Http/Controllers/ProjectMilestoneController.php:49
+* @route '/projects/{project}/milestones/{milestone}/progress'
+*/
+const updateProgressForm = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProgress.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectMilestoneController::updateProgress
+* @see app/Http/Controllers/ProjectMilestoneController.php:49
+* @route '/projects/{project}/milestones/{milestone}/progress'
+*/
+updateProgressForm.patch = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProgress.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+updateProgress.form = updateProgressForm
 
 const milestones = {
     updateProgress: Object.assign(updateProgress, updateProgress),

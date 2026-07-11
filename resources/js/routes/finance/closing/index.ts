@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 import steps from './steps'
 /**
 * @see \App\Http\Controllers\Finance\FinanceClosingController::index
@@ -43,6 +43,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::index
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:18
+* @route '/finance/closing'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::index
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:18
+* @route '/finance/closing'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::index
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:18
+* @route '/finance/closing'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Finance\FinanceClosingController::show
@@ -107,6 +144,43 @@ show.head = (args: { period: string | number } | [period: string | number ] | st
 })
 
 /**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::show
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:23
+* @route '/finance/closing/{period}'
+*/
+const showForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::show
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:23
+* @route '/finance/closing/{period}'
+*/
+showForm.get = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::show
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:23
+* @route '/finance/closing/{period}'
+*/
+showForm.head = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\Finance\FinanceClosingController::lock
 * @see app/Http/Controllers/Finance/FinanceClosingController.php:53
 * @route '/finance/closing/{period}/lock'
@@ -159,6 +233,28 @@ lock.post = (args: { period: string | number } | [period: string | number ] | st
 })
 
 /**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::lock
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:53
+* @route '/finance/closing/{period}/lock'
+*/
+const lockForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: lock.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::lock
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:53
+* @route '/finance/closing/{period}/lock'
+*/
+lockForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: lock.url(args, options),
+    method: 'post',
+})
+
+lock.form = lockForm
+
+/**
 * @see \App\Http\Controllers\Finance\FinanceClosingController::unlock
 * @see app/Http/Controllers/Finance/FinanceClosingController.php:60
 * @route '/finance/closing/{period}/unlock'
@@ -209,6 +305,28 @@ unlock.post = (args: { period: string | number } | [period: string | number ] | 
     url: unlock.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::unlock
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:60
+* @route '/finance/closing/{period}/unlock'
+*/
+const unlockForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: unlock.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Finance\FinanceClosingController::unlock
+* @see app/Http/Controllers/Finance/FinanceClosingController.php:60
+* @route '/finance/closing/{period}/unlock'
+*/
+unlockForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: unlock.url(args, options),
+    method: 'post',
+})
+
+unlock.form = unlockForm
 
 const closing = {
     index: Object.assign(index, index),

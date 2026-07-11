@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::show
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
@@ -68,6 +68,43 @@ show.head = (args: { transaction: number | { id: number } } | [transaction: numb
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::show
+* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
+* @route '/cooperative/pos/transactions/{transaction}/receipt'
+*/
+const showForm = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::show
+* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
+* @route '/cooperative/pos/transactions/{transaction}/receipt'
+*/
+showForm.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::show
+* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
+* @route '/cooperative/pos/transactions/{transaction}/receipt'
+*/
+showForm.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::pdf
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
 * @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
@@ -134,6 +171,43 @@ pdf.head = (args: { transaction: number | { id: number } } | [transaction: numbe
     url: pdf.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::pdf
+* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
+* @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
+*/
+const pdfForm = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: pdf.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::pdf
+* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
+* @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
+*/
+pdfForm.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: pdf.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::pdf
+* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
+* @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
+*/
+pdfForm.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: pdf.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+pdf.form = pdfForm
 
 const PosTransactionReceiptController = { show, pdf }
 

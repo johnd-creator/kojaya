@@ -8,28 +8,59 @@ use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
  * True concurrency test: two separate PHP processes race approveFinal vs reject
  * against the same member using PostgreSQL row-level locking.
  *
- * Requires PostgreSQL and runs only when DB_CONNECTION=pgsql.
- * In CI this runs in the postgres-concurrency job.
+ * Requires PostgreSQL and runs only when DB_CONNECTION=pgsql is set in the
+ * environment (e.g. the postgres-concurrency CI job).
+ * In the default SQLite test environment this test is skipped.
  */
 class MemberLifecycleConcurrencyTest extends TestCase
 {
     private string $workingDirectory = '';
 
+    /** @var array<string, string> */
+    private array $dbConfig = [];
+
     public function refreshDatabase(): void {}
 
     protected function setUp(): void
     {
+        // Capture the original DB_CONNECTION BEFORE parent::setUp() forces SQLite.
+        $originalConnection = getenv('DB_CONNECTION') ?: 'sqlite';
+
+        if ($originalConnection !== 'pgsql') {
+            parent::setUp();
+            $this->markTestSkipped('MemberLifecycleConcurrencyTest requires PostgreSQL (DB_CONNECTION=pgsql).');
+
+            return;
+        }
+
+        // Capture full pgsql config from environment before parent overrides.
+        $this->dbConfig = [
+            'driver' => 'pgsql',
+            'host' => getenv('DB_HOST') ?: '127.0.0.1',
+            'port' => getenv('DB_PORT') ?: '5432',
+            'database' => getenv('DB_DATABASE') ?: 'kojaya_test',
+            'username' => getenv('DB_USERNAME') ?: 'kojaya',
+            'password' => getenv('DB_PASSWORD') ?: 'kojaya',
+            'charset' => 'utf8',
+            'prefix' => '',
+            'search_path' => 'public',
+        ];
+
         parent::setUp();
 
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('MemberLifecycleConcurrencyTest requires PostgreSQL (DB_CONNECTION=pgsql).');
-        }
+        // Override the database config to use PostgreSQL after parent forced SQLite.
+        config()->set('database.default', 'pgsql');
+        config()->set('database.connections.pgsql', $this->dbConfig);
+
+        DB::purge('pgsql');
+        DB::reconnect('pgsql');
 
         $this->workingDirectory = sys_get_temp_dir().'/kojaya-lifecycle-concurrency-'.bin2hex(random_bytes(8));
         mkdir($this->workingDirectory, 0777, true);
@@ -123,7 +154,15 @@ class MemberLifecycleConcurrencyTest extends TestCase
 
     private function workerScript(): string
     {
-        return <<<'PHP'
+        // Embed the PostgreSQL connection parameters directly into the worker
+        // script so it can connect independently of the test process.
+        $dbHost = $this->dbConfig['host'];
+        $dbPort = $this->dbConfig['port'];
+        $dbDatabase = $this->dbConfig['database'];
+        $dbUsername = $this->dbConfig['username'];
+        $dbPassword = $this->dbConfig['password'];
+
+        return <<<PHP
 <?php
 
 declare(strict_types=1);
@@ -133,9 +172,9 @@ use App\Models\User;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use Illuminate\Contracts\Console\Kernel;
 
-[$script, $repoPath, $startFile, $resultDir, $action, $actorId, $memberId] = $argv;
+[\$script, \$repoPath, \$startFile, \$resultDir, \$action, \$actorId, \$memberId] = \$argv;
 
-while (! file_exists($startFile)) {
+while (! file_exists(\$startFile)) {
     usleep(10000);
 }
 
@@ -143,44 +182,53 @@ putenv('APP_ENV=testing');
 putenv('CACHE_STORE=array');
 putenv('SESSION_DRIVER=array');
 putenv('QUEUE_CONNECTION=sync');
+putenv('DB_CONNECTION=pgsql');
+putenv("DB_HOST={$dbHost}");
+putenv("DB_PORT={$dbPort}");
+putenv("DB_DATABASE={$dbDatabase}");
+putenv("DB_USERNAME={$dbUsername}");
+putenv("DB_PASSWORD={$dbPassword}");
 
-$_ENV['APP_ENV'] = 'testing';
-$_ENV['CACHE_STORE'] = 'array';
-$_ENV['SESSION_DRIVER'] = 'array';
-$_ENV['QUEUE_CONNECTION'] = 'sync';
+\$_ENV['APP_ENV'] = 'testing';
+\$_ENV['CACHE_STORE'] = 'array';
+\$_ENV['SESSION_DRIVER'] = 'array';
+\$_ENV['QUEUE_CONNECTION'] = 'sync';
+\$_ENV['DB_CONNECTION'] = 'pgsql';
 
-require $repoPath.'/vendor/autoload.php';
+require \$repoPath.'/vendor/autoload.php';
 
-$app = require $repoPath.'/bootstrap/app.php';
-$app->make(Kernel::class)->bootstrap();
+\$app = require \$repoPath.'/bootstrap/app.php';
+\$app->make(Kernel::class)->bootstrap();
 
-$actor = User::query()->findOrFail((int) $actorId);
-$member = CooperativeMember::query()->findOrFail((int) $memberId);
-$service = app(MemberStatusTransitionService::class);
+config()->set('database.default', 'pgsql');
 
-$resultFile = $resultDir.'/'.$action.'.json';
+\$actor = User::query()->findOrFail((int) \$actorId);
+\$member = CooperativeMember::query()->findOrFail((int) \$memberId);
+\$service = app(MemberStatusTransitionService::class);
+
+\$resultFile = \$resultDir.'/'.\$action.'.json';
 
 try {
-    if ($action === 'approve') {
-        $service->approveFinal($member, $actor, 'concurrent approve');
+    if (\$action === 'approve') {
+        \$service->approveFinal(\$member, \$actor, 'concurrent approve');
     } else {
-        $service->reject($member, $actor, 'concurrent reject');
+        \$service->reject(\$member, \$actor, 'concurrent reject');
     }
 
-    file_put_contents($resultFile, json_encode([
+    file_put_contents(\$resultFile, json_encode([
         'ok' => true,
-        'action' => $action,
-        'validation_status' => $member->refresh()->validation_status,
-        'status' => $member->status,
+        'action' => \$action,
+        'validation_status' => \$member->refresh()->validation_status,
+        'status' => \$member->status,
     ], JSON_THROW_ON_ERROR));
 
     exit(0);
-} catch (Throwable $throwable) {
-    file_put_contents($resultFile, json_encode([
+} catch (Throwable \$throwable) {
+    file_put_contents(\$resultFile, json_encode([
         'ok' => false,
-        'action' => $action,
-        'class' => $throwable::class,
-        'message' => $throwable->getMessage(),
+        'action' => \$action,
+        'class' => \$throwable::class,
+        'message' => \$throwable->getMessage(),
     ], JSON_THROW_ON_ERROR));
 
     exit(1);
@@ -225,18 +273,16 @@ PHP;
      */
     private function finishWorker(array $worker, string $resultDir, string $action): array
     {
-        $stderr = '';
-
-        if (is_resource($worker['pipes'][2])) {
-            $stderr = stream_get_contents($worker['pipes'][2]);
+        if (is_resource($worker['pipes'][2] ?? null)) {
+            stream_get_contents($worker['pipes'][2]);
             fclose($worker['pipes'][2]);
         }
 
-        if (is_resource($worker['pipes'][1])) {
+        if (is_resource($worker['pipes'][1] ?? null)) {
             fclose($worker['pipes'][1]);
         }
 
-        if (is_resource($worker['process'])) {
+        if (is_resource($worker['process'] ?? null)) {
             proc_close($worker['process']);
         }
 

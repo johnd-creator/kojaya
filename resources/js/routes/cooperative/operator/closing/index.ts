@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 import steps from './steps'
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::show
@@ -63,6 +63,43 @@ show.head = (args: { period: string | number } | [period: string | number ] | st
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::show
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
+* @route '/cooperative/operator/closing/{period}'
+*/
+const showForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::show
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
+* @route '/cooperative/operator/closing/{period}'
+*/
+showForm.get = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::show
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
+* @route '/cooperative/operator/closing/{period}'
+*/
+showForm.head = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:88
 * @route '/cooperative/operator/closing/{period}/lock'
@@ -115,6 +152,28 @@ lock.post = (args: { period: string | number } | [period: string | number ] | st
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:88
+* @route '/cooperative/operator/closing/{period}/lock'
+*/
+const lockForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: lock.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:88
+* @route '/cooperative/operator/closing/{period}/lock'
+*/
+lockForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: lock.url(args, options),
+    method: 'post',
+})
+
+lock.form = lockForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:95
 * @route '/cooperative/operator/closing/{period}/unlock'
@@ -165,6 +224,28 @@ unlock.post = (args: { period: string | number } | [period: string | number ] | 
     url: unlock.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:95
+* @route '/cooperative/operator/closing/{period}/unlock'
+*/
+const unlockForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: unlock.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:95
+* @route '/cooperative/operator/closing/{period}/unlock'
+*/
+unlockForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: unlock.url(args, options),
+    method: 'post',
+})
+
+unlock.form = unlockForm
 
 const closing = {
     show: Object.assign(show, show),

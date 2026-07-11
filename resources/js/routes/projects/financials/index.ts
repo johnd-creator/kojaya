@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectFinanceController::index
 * @see app/Http/Controllers/ProjectFinanceController.php:20
@@ -66,6 +66,43 @@ index.head = (args: { project: string | { id: string } } | [project: string | { 
     url: index.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::index
+* @see app/Http/Controllers/ProjectFinanceController.php:20
+* @route '/projects/{project}/financials'
+*/
+const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::index
+* @see app/Http/Controllers/ProjectFinanceController.php:20
+* @route '/projects/{project}/financials'
+*/
+indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::index
+* @see app/Http/Controllers/ProjectFinanceController.php:20
+* @route '/projects/{project}/financials'
+*/
+indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 const financials = {
     index: Object.assign(index, index),

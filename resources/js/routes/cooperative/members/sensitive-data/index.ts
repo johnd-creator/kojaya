@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:256
@@ -56,6 +56,38 @@ update.patch = (args: { member: number | { id: number } } | [member: number | { 
     url: update.url(args, options),
     method: 'patch',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:256
+* @route '/cooperative/members/{member}/sensitive-data'
+*/
+const updateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:256
+* @route '/cooperative/members/{member}/sensitive-data'
+*/
+updateForm.patch = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
 
 const sensitiveData = {
     update: Object.assign(update, update),

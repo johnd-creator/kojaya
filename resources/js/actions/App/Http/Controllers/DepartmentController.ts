@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\DepartmentController::index
 * @see app/Http/Controllers/DepartmentController.php:14
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\DepartmentController::index
+* @see app/Http/Controllers/DepartmentController.php:14
+* @route '/departments'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::index
+* @see app/Http/Controllers/DepartmentController.php:14
+* @route '/departments'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::index
+* @see app/Http/Controllers/DepartmentController.php:14
+* @route '/departments'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\DepartmentController::create
@@ -88,6 +125,43 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\DepartmentController::create
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/create'
+*/
+const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::create
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/create'
+*/
+createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::create
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/create'
+*/
+createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+create.form = createForm
+
+/**
 * @see \App\Http\Controllers\DepartmentController::store
 * @see app/Http/Controllers/DepartmentController.php:39
 * @route '/departments'
@@ -120,6 +194,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\DepartmentController::store
+* @see app/Http/Controllers/DepartmentController.php:39
+* @route '/departments'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::store
+* @see app/Http/Controllers/DepartmentController.php:39
+* @route '/departments'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\DepartmentController::show
@@ -184,6 +280,43 @@ show.head = (args: { department: string | number } | [department: string | numbe
 })
 
 /**
+* @see \App\Http\Controllers\DepartmentController::show
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/{department}'
+*/
+const showForm = (args: { department: string | number } | [department: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::show
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/{department}'
+*/
+showForm.get = (args: { department: string | number } | [department: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::show
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/{department}'
+*/
+showForm.head = (args: { department: string | number } | [department: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\DepartmentController::edit
 * @see app/Http/Controllers/DepartmentController.php:0
 * @route '/departments/{department}/edit'
@@ -244,6 +377,43 @@ edit.head = (args: { department: string | number } | [department: string | numbe
     url: edit.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\DepartmentController::edit
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/{department}/edit'
+*/
+const editForm = (args: { department: string | number } | [department: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::edit
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/{department}/edit'
+*/
+editForm.get = (args: { department: string | number } | [department: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::edit
+* @see app/Http/Controllers/DepartmentController.php:0
+* @route '/departments/{department}/edit'
+*/
+editForm.head = (args: { department: string | number } | [department: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\DepartmentController::update
@@ -314,6 +484,53 @@ update.patch = (args: { department: number | { id: number } } | [department: num
 })
 
 /**
+* @see \App\Http\Controllers\DepartmentController::update
+* @see app/Http/Controllers/DepartmentController.php:48
+* @route '/departments/{department}'
+*/
+const updateForm = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::update
+* @see app/Http/Controllers/DepartmentController.php:48
+* @route '/departments/{department}'
+*/
+updateForm.put = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::update
+* @see app/Http/Controllers/DepartmentController.php:48
+* @route '/departments/{department}'
+*/
+updateForm.patch = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
+
+/**
 * @see \App\Http\Controllers\DepartmentController::destroy
 * @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
@@ -370,6 +587,38 @@ destroy.delete = (args: { department: number | { id: number } } | [department: n
     url: destroy.url(args, options),
     method: 'delete',
 })
+
+/**
+* @see \App\Http\Controllers\DepartmentController::destroy
+* @see app/Http/Controllers/DepartmentController.php:57
+* @route '/departments/{department}'
+*/
+const destroyForm = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\DepartmentController::destroy
+* @see app/Http/Controllers/DepartmentController.php:57
+* @route '/departments/{department}'
+*/
+destroyForm.delete = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+destroy.form = destroyForm
 
 const DepartmentController = { index, create, store, show, edit, update, destroy }
 

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeem
 * @see app/Http/Controllers/MemberPortalController.php:478
@@ -56,6 +56,28 @@ redeem.post = (args: { reward: string | { id: string } } | [reward: string | { i
     url: redeem.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::redeem
+* @see app/Http/Controllers/MemberPortalController.php:478
+* @route '/member/rewards/{reward}/redeem'
+*/
+const redeemForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: redeem.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::redeem
+* @see app/Http/Controllers/MemberPortalController.php:478
+* @route '/member/rewards/{reward}/redeem'
+*/
+redeemForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: redeem.url(args, options),
+    method: 'post',
+})
+
+redeem.form = redeemForm
 
 const rewards = {
     redeem: Object.assign(redeem, redeem),

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EfakturUiController::index
 * @see app/Http/Controllers/EfakturUiController.php:14
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::index
+* @see app/Http/Controllers/EfakturUiController.php:14
+* @route '/finance/efaktur'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::index
+* @see app/Http/Controllers/EfakturUiController.php:14
+* @route '/finance/efaktur'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::index
+* @see app/Http/Controllers/EfakturUiController.php:14
+* @route '/finance/efaktur'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\EfakturUiController::submitPage
@@ -88,6 +125,43 @@ submitPage.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\EfakturUiController::submitPage
+* @see app/Http/Controllers/EfakturUiController.php:35
+* @route '/finance/efaktur/submit'
+*/
+const submitPageForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: submitPage.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::submitPage
+* @see app/Http/Controllers/EfakturUiController.php:35
+* @route '/finance/efaktur/submit'
+*/
+submitPageForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: submitPage.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::submitPage
+* @see app/Http/Controllers/EfakturUiController.php:35
+* @route '/finance/efaktur/submit'
+*/
+submitPageForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: submitPage.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+submitPage.form = submitPageForm
+
+/**
 * @see \App\Http\Controllers\EfakturUiController::status
 * @see app/Http/Controllers/EfakturUiController.php:48
 * @route '/finance/efaktur/status'
@@ -130,6 +204,43 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: status.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::status
+* @see app/Http/Controllers/EfakturUiController.php:48
+* @route '/finance/efaktur/status'
+*/
+const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::status
+* @see app/Http/Controllers/EfakturUiController.php:48
+* @route '/finance/efaktur/status'
+*/
+statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EfakturUiController::status
+* @see app/Http/Controllers/EfakturUiController.php:48
+* @route '/finance/efaktur/status'
+*/
+statusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+status.form = statusForm
 
 const EfakturUiController = { index, submitPage, status }
 

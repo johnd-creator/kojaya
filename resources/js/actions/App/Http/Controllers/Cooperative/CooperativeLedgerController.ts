@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::index
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:21
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::index
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:21
+* @route '/cooperative/ledger'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::index
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:21
+* @route '/cooperative/ledger'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::index
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:21
+* @route '/cooperative/ledger'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::cancelPayment
@@ -102,6 +139,28 @@ cancelPayment.post = (args: { entry: number | { id: number } } | [entry: number 
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::cancelPayment
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:60
+* @route '/cooperative/ledger/{entry}/cancel-payment'
+*/
+const cancelPaymentForm = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: cancelPayment.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::cancelPayment
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:60
+* @route '/cooperative/ledger/{entry}/cancel-payment'
+*/
+cancelPaymentForm.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: cancelPayment.url(args, options),
+    method: 'post',
+})
+
+cancelPayment.form = cancelPaymentForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::revisePayment
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:67
 * @route '/cooperative/ledger/{entry}/revise-payment'
@@ -158,6 +217,28 @@ revisePayment.post = (args: { entry: number | { id: number } } | [entry: number 
     url: revisePayment.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::revisePayment
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:67
+* @route '/cooperative/ledger/{entry}/revise-payment'
+*/
+const revisePaymentForm = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: revisePayment.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeLedgerController::revisePayment
+* @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:67
+* @route '/cooperative/ledger/{entry}/revise-payment'
+*/
+revisePaymentForm.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: revisePayment.url(args, options),
+    method: 'post',
+})
+
+revisePayment.form = revisePaymentForm
 
 const CooperativeLedgerController = { index, cancelPayment, revisePayment }
 

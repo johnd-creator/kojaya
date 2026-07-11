@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\EssController::dashboard
 * @see app/Http/Controllers/Api/EssController.php:36
@@ -42,6 +42,43 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: dashboard.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::dashboard
+* @see app/Http/Controllers/Api/EssController.php:36
+* @route '/api/ess/dashboard'
+*/
+const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: dashboard.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::dashboard
+* @see app/Http/Controllers/Api/EssController.php:36
+* @route '/api/ess/dashboard'
+*/
+dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: dashboard.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::dashboard
+* @see app/Http/Controllers/Api/EssController.php:36
+* @route '/api/ess/dashboard'
+*/
+dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: dashboard.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::profile
@@ -88,6 +125,43 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::profile
+* @see app/Http/Controllers/Api/EssController.php:84
+* @route '/api/ess/profile'
+*/
+const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: profile.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::profile
+* @see app/Http/Controllers/Api/EssController.php:84
+* @route '/api/ess/profile'
+*/
+profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: profile.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::profile
+* @see app/Http/Controllers/Api/EssController.php:84
+* @route '/api/ess/profile'
+*/
+profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: profile.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+profile.form = profileForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::updateProfile
 * @see app/Http/Controllers/Api/EssController.php:94
 * @route '/api/ess/profile'
@@ -120,6 +194,38 @@ updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateProfile.url(options),
     method: 'put',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::updateProfile
+* @see app/Http/Controllers/Api/EssController.php:94
+* @route '/api/ess/profile'
+*/
+const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProfile.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::updateProfile
+* @see app/Http/Controllers/Api/EssController.php:94
+* @route '/api/ess/profile'
+*/
+updateProfileForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProfile.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+updateProfile.form = updateProfileForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::todayAttendance
@@ -166,6 +272,43 @@ todayAttendance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =>
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::todayAttendance
+* @see app/Http/Controllers/Api/EssController.php:119
+* @route '/api/ess/attendance/today'
+*/
+const todayAttendanceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: todayAttendance.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::todayAttendance
+* @see app/Http/Controllers/Api/EssController.php:119
+* @route '/api/ess/attendance/today'
+*/
+todayAttendanceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: todayAttendance.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::todayAttendance
+* @see app/Http/Controllers/Api/EssController.php:119
+* @route '/api/ess/attendance/today'
+*/
+todayAttendanceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: todayAttendance.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+todayAttendance.form = todayAttendanceForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::attendanceHistory
 * @see app/Http/Controllers/Api/EssController.php:131
 * @route '/api/ess/attendance/history'
@@ -210,6 +353,43 @@ attendanceHistory.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::attendanceHistory
+* @see app/Http/Controllers/Api/EssController.php:131
+* @route '/api/ess/attendance/history'
+*/
+const attendanceHistoryForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: attendanceHistory.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::attendanceHistory
+* @see app/Http/Controllers/Api/EssController.php:131
+* @route '/api/ess/attendance/history'
+*/
+attendanceHistoryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: attendanceHistory.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::attendanceHistory
+* @see app/Http/Controllers/Api/EssController.php:131
+* @route '/api/ess/attendance/history'
+*/
+attendanceHistoryForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: attendanceHistory.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+attendanceHistory.form = attendanceHistoryForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::checkIn
 * @see app/Http/Controllers/Api/EssController.php:141
 * @route '/api/ess/attendance/check-in'
@@ -242,6 +422,28 @@ checkIn.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: checkIn.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::checkIn
+* @see app/Http/Controllers/Api/EssController.php:141
+* @route '/api/ess/attendance/check-in'
+*/
+const checkInForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkIn.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::checkIn
+* @see app/Http/Controllers/Api/EssController.php:141
+* @route '/api/ess/attendance/check-in'
+*/
+checkInForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkIn.url(options),
+    method: 'post',
+})
+
+checkIn.form = checkInForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::checkOut
@@ -278,6 +480,28 @@ checkOut.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::checkOut
+* @see app/Http/Controllers/Api/EssController.php:183
+* @route '/api/ess/attendance/check-out'
+*/
+const checkOutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkOut.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::checkOut
+* @see app/Http/Controllers/Api/EssController.php:183
+* @route '/api/ess/attendance/check-out'
+*/
+checkOutForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkOut.url(options),
+    method: 'post',
+})
+
+checkOut.form = checkOutForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::requestAttendanceCorrection
 * @see app/Http/Controllers/Api/EssController.php:260
 * @route '/api/ess/attendance/correction'
@@ -310,6 +534,28 @@ requestAttendanceCorrection.post = (options?: RouteQueryOptions): RouteDefinitio
     url: requestAttendanceCorrection.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::requestAttendanceCorrection
+* @see app/Http/Controllers/Api/EssController.php:260
+* @route '/api/ess/attendance/correction'
+*/
+const requestAttendanceCorrectionForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: requestAttendanceCorrection.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::requestAttendanceCorrection
+* @see app/Http/Controllers/Api/EssController.php:260
+* @route '/api/ess/attendance/correction'
+*/
+requestAttendanceCorrectionForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: requestAttendanceCorrection.url(options),
+    method: 'post',
+})
+
+requestAttendanceCorrection.form = requestAttendanceCorrectionForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::approveAttendanceCorrection
@@ -370,6 +616,28 @@ approveAttendanceCorrection.post = (args: { attendanceCorrection: number | { id:
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::approveAttendanceCorrection
+* @see app/Http/Controllers/Api/EssController.php:270
+* @route '/api/ess/attendance/corrections/{attendanceCorrection}/approve'
+*/
+const approveAttendanceCorrectionForm = (args: { attendanceCorrection: number | { id: number } } | [attendanceCorrection: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: approveAttendanceCorrection.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::approveAttendanceCorrection
+* @see app/Http/Controllers/Api/EssController.php:270
+* @route '/api/ess/attendance/corrections/{attendanceCorrection}/approve'
+*/
+approveAttendanceCorrectionForm.post = (args: { attendanceCorrection: number | { id: number } } | [attendanceCorrection: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: approveAttendanceCorrection.url(args, options),
+    method: 'post',
+})
+
+approveAttendanceCorrection.form = approveAttendanceCorrectionForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::geofence
 * @see app/Http/Controllers/Api/EssController.php:494
 * @route '/api/ess/geofence'
@@ -412,6 +680,43 @@ geofence.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: geofence.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::geofence
+* @see app/Http/Controllers/Api/EssController.php:494
+* @route '/api/ess/geofence'
+*/
+const geofenceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::geofence
+* @see app/Http/Controllers/Api/EssController.php:494
+* @route '/api/ess/geofence'
+*/
+geofenceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::geofence
+* @see app/Http/Controllers/Api/EssController.php:494
+* @route '/api/ess/geofence'
+*/
+geofenceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+geofence.form = geofenceForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::shiftRoster
@@ -458,6 +763,43 @@ shiftRoster.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::shiftRoster
+* @see app/Http/Controllers/Api/EssController.php:223
+* @route '/api/ess/shift-roster'
+*/
+const shiftRosterForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: shiftRoster.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::shiftRoster
+* @see app/Http/Controllers/Api/EssController.php:223
+* @route '/api/ess/shift-roster'
+*/
+shiftRosterForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: shiftRoster.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::shiftRoster
+* @see app/Http/Controllers/Api/EssController.php:223
+* @route '/api/ess/shift-roster'
+*/
+shiftRosterForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: shiftRoster.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+shiftRoster.form = shiftRosterForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::thrEntitlement
 * @see app/Http/Controllers/Api/EssController.php:240
 * @route '/api/ess/thr/entitlement'
@@ -500,6 +842,43 @@ thrEntitlement.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
     url: thrEntitlement.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::thrEntitlement
+* @see app/Http/Controllers/Api/EssController.php:240
+* @route '/api/ess/thr/entitlement'
+*/
+const thrEntitlementForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: thrEntitlement.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::thrEntitlement
+* @see app/Http/Controllers/Api/EssController.php:240
+* @route '/api/ess/thr/entitlement'
+*/
+thrEntitlementForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: thrEntitlement.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::thrEntitlement
+* @see app/Http/Controllers/Api/EssController.php:240
+* @route '/api/ess/thr/entitlement'
+*/
+thrEntitlementForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: thrEntitlement.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+thrEntitlement.form = thrEntitlementForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::leaves
@@ -546,6 +925,43 @@ leaves.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::leaves
+* @see app/Http/Controllers/Api/EssController.php:284
+* @route '/api/ess/leaves'
+*/
+const leavesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: leaves.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::leaves
+* @see app/Http/Controllers/Api/EssController.php:284
+* @route '/api/ess/leaves'
+*/
+leavesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: leaves.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::leaves
+* @see app/Http/Controllers/Api/EssController.php:284
+* @route '/api/ess/leaves'
+*/
+leavesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: leaves.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+leaves.form = leavesForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::storeLeave
 * @see app/Http/Controllers/Api/EssController.php:298
 * @route '/api/ess/leaves'
@@ -578,6 +994,28 @@ storeLeave.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeLeave.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::storeLeave
+* @see app/Http/Controllers/Api/EssController.php:298
+* @route '/api/ess/leaves'
+*/
+const storeLeaveForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: storeLeave.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::storeLeave
+* @see app/Http/Controllers/Api/EssController.php:298
+* @route '/api/ess/leaves'
+*/
+storeLeaveForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: storeLeave.url(options),
+    method: 'post',
+})
+
+storeLeave.form = storeLeaveForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::cancelLeave
@@ -638,6 +1076,28 @@ cancelLeave.post = (args: { leave: number | { id: number } } | [leave: number | 
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::cancelLeave
+* @see app/Http/Controllers/Api/EssController.php:329
+* @route '/api/ess/leaves/{leave}/cancel'
+*/
+const cancelLeaveForm = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: cancelLeave.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::cancelLeave
+* @see app/Http/Controllers/Api/EssController.php:329
+* @route '/api/ess/leaves/{leave}/cancel'
+*/
+cancelLeaveForm.post = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: cancelLeave.url(args, options),
+    method: 'post',
+})
+
+cancelLeave.form = cancelLeaveForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::overtime
 * @see app/Http/Controllers/Api/EssController.php:348
 * @route '/api/ess/overtime'
@@ -682,6 +1142,43 @@ overtime.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::overtime
+* @see app/Http/Controllers/Api/EssController.php:348
+* @route '/api/ess/overtime'
+*/
+const overtimeForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: overtime.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::overtime
+* @see app/Http/Controllers/Api/EssController.php:348
+* @route '/api/ess/overtime'
+*/
+overtimeForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: overtime.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::overtime
+* @see app/Http/Controllers/Api/EssController.php:348
+* @route '/api/ess/overtime'
+*/
+overtimeForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: overtime.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+overtime.form = overtimeForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::storeOvertime
 * @see app/Http/Controllers/Api/EssController.php:359
 * @route '/api/ess/overtime'
@@ -714,6 +1211,28 @@ storeOvertime.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
     url: storeOvertime.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::storeOvertime
+* @see app/Http/Controllers/Api/EssController.php:359
+* @route '/api/ess/overtime'
+*/
+const storeOvertimeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: storeOvertime.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::storeOvertime
+* @see app/Http/Controllers/Api/EssController.php:359
+* @route '/api/ess/overtime'
+*/
+storeOvertimeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: storeOvertime.url(options),
+    method: 'post',
+})
+
+storeOvertime.form = storeOvertimeForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::reimbursements
@@ -760,6 +1279,43 @@ reimbursements.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::reimbursements
+* @see app/Http/Controllers/Api/EssController.php:401
+* @route '/api/ess/reimbursements'
+*/
+const reimbursementsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: reimbursements.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::reimbursements
+* @see app/Http/Controllers/Api/EssController.php:401
+* @route '/api/ess/reimbursements'
+*/
+reimbursementsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: reimbursements.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::reimbursements
+* @see app/Http/Controllers/Api/EssController.php:401
+* @route '/api/ess/reimbursements'
+*/
+reimbursementsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: reimbursements.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+reimbursements.form = reimbursementsForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::storeReimbursement
 * @see app/Http/Controllers/Api/EssController.php:410
 * @route '/api/ess/reimbursements'
@@ -792,6 +1348,28 @@ storeReimbursement.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
     url: storeReimbursement.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::storeReimbursement
+* @see app/Http/Controllers/Api/EssController.php:410
+* @route '/api/ess/reimbursements'
+*/
+const storeReimbursementForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: storeReimbursement.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::storeReimbursement
+* @see app/Http/Controllers/Api/EssController.php:410
+* @route '/api/ess/reimbursements'
+*/
+storeReimbursementForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: storeReimbursement.url(options),
+    method: 'post',
+})
+
+storeReimbursement.form = storeReimbursementForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::payslips
@@ -836,6 +1414,43 @@ payslips.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: payslips.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::payslips
+* @see app/Http/Controllers/Api/EssController.php:447
+* @route '/api/ess/payslips'
+*/
+const payslipsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: payslips.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::payslips
+* @see app/Http/Controllers/Api/EssController.php:447
+* @route '/api/ess/payslips'
+*/
+payslipsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: payslips.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::payslips
+* @see app/Http/Controllers/Api/EssController.php:447
+* @route '/api/ess/payslips'
+*/
+payslipsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: payslips.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+payslips.form = payslipsForm
 
 /**
 * @see \App\Http\Controllers\Api\EssController::downloadPayslip
@@ -906,6 +1521,43 @@ downloadPayslip.head = (args: { payroll: number | { id: number } } | [payroll: n
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::downloadPayslip
+* @see app/Http/Controllers/Api/EssController.php:459
+* @route '/api/ess/payslips/{payroll}/download'
+*/
+const downloadPayslipForm = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: downloadPayslip.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::downloadPayslip
+* @see app/Http/Controllers/Api/EssController.php:459
+* @route '/api/ess/payslips/{payroll}/download'
+*/
+downloadPayslipForm.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: downloadPayslip.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::downloadPayslip
+* @see app/Http/Controllers/Api/EssController.php:459
+* @route '/api/ess/payslips/{payroll}/download'
+*/
+downloadPayslipForm.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: downloadPayslip.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+downloadPayslip.form = downloadPayslipForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::compliance
 * @see app/Http/Controllers/Api/EssController.php:474
 * @route '/api/ess/compliance'
@@ -950,6 +1602,43 @@ compliance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\EssController::compliance
+* @see app/Http/Controllers/Api/EssController.php:474
+* @route '/api/ess/compliance'
+*/
+const complianceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: compliance.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::compliance
+* @see app/Http/Controllers/Api/EssController.php:474
+* @route '/api/ess/compliance'
+*/
+complianceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: compliance.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::compliance
+* @see app/Http/Controllers/Api/EssController.php:474
+* @route '/api/ess/compliance'
+*/
+complianceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: compliance.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+compliance.form = complianceForm
+
+/**
 * @see \App\Http\Controllers\Api\EssController::notifications
 * @see app/Http/Controllers/Api/EssController.php:486
 * @route '/api/ess/notifications'
@@ -992,6 +1681,43 @@ notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
     url: notifications.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\EssController::notifications
+* @see app/Http/Controllers/Api/EssController.php:486
+* @route '/api/ess/notifications'
+*/
+const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: notifications.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::notifications
+* @see app/Http/Controllers/Api/EssController.php:486
+* @route '/api/ess/notifications'
+*/
+notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: notifications.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\EssController::notifications
+* @see app/Http/Controllers/Api/EssController.php:486
+* @route '/api/ess/notifications'
+*/
+notificationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: notifications.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+notifications.form = notificationsForm
 
 const EssController = { dashboard, profile, updateProfile, todayAttendance, attendanceHistory, checkIn, checkOut, requestAttendanceCorrection, approveAttendanceCorrection, geofence, shiftRoster, thrEntitlement, leaves, storeLeave, cancelLeave, overtime, storeOvertime, reimbursements, storeReimbursement, payslips, downloadPayslip, compliance, notifications }
 

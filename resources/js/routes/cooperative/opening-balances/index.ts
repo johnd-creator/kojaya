@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:141
@@ -58,6 +58,28 @@ post.post = (args: { batch: number | { id: number } } | [batch: number | { id: n
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:141
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+const postForm = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: post.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::post
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:141
+* @route '/cooperative/opening-balances/{batch}/post'
+*/
+postForm.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: post.url(args, options),
+    method: 'post',
+})
+
+post.form = postForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:156
 * @route '/cooperative/opening-balances/{batch}/void'
@@ -114,6 +136,28 @@ voidMethod.post = (args: { batch: number | { id: number } } | [batch: number | {
     url: voidMethod.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:156
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+const voidMethodForm = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: voidMethod.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeOpeningBalanceWizardController::voidMethod
+* @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:156
+* @route '/cooperative/opening-balances/{batch}/void'
+*/
+voidMethodForm.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: voidMethod.url(args, options),
+    method: 'post',
+})
+
+voidMethod.form = voidMethodForm
 
 const openingBalances = {
     post: Object.assign(post, post),

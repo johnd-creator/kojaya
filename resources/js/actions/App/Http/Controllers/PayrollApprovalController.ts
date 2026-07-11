@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\PayrollApprovalController::index
 * @see app/Http/Controllers/PayrollApprovalController.php:16
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\PayrollApprovalController::index
+* @see app/Http/Controllers/PayrollApprovalController.php:16
+* @route '/payroll-approvals'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PayrollApprovalController::index
+* @see app/Http/Controllers/PayrollApprovalController.php:16
+* @route '/payroll-approvals'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PayrollApprovalController::index
+* @see app/Http/Controllers/PayrollApprovalController.php:16
+* @route '/payroll-approvals'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\PayrollApprovalController::approve
@@ -102,6 +139,28 @@ approve.post = (args: { approval: string | { id: string } } | [approval: string 
 })
 
 /**
+* @see \App\Http\Controllers\PayrollApprovalController::approve
+* @see app/Http/Controllers/PayrollApprovalController.php:46
+* @route '/payroll-approvals/{approval}/approve'
+*/
+const approveForm = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: approve.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PayrollApprovalController::approve
+* @see app/Http/Controllers/PayrollApprovalController.php:46
+* @route '/payroll-approvals/{approval}/approve'
+*/
+approveForm.post = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: approve.url(args, options),
+    method: 'post',
+})
+
+approve.form = approveForm
+
+/**
 * @see \App\Http\Controllers\PayrollApprovalController::reject
 * @see app/Http/Controllers/PayrollApprovalController.php:59
 * @route '/payroll-approvals/{approval}/reject'
@@ -158,6 +217,28 @@ reject.post = (args: { approval: string | { id: string } } | [approval: string |
     url: reject.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\PayrollApprovalController::reject
+* @see app/Http/Controllers/PayrollApprovalController.php:59
+* @route '/payroll-approvals/{approval}/reject'
+*/
+const rejectForm = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reject.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PayrollApprovalController::reject
+* @see app/Http/Controllers/PayrollApprovalController.php:59
+* @route '/payroll-approvals/{approval}/reject'
+*/
+rejectForm.post = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reject.url(args, options),
+    method: 'post',
+})
+
+reject.form = rejectForm
 
 const PayrollApprovalController = { index, approve, reject }
 

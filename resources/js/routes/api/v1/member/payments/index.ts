@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
@@ -68,6 +68,43 @@ status.head = (args: { payment: number | { id: number } } | [payment: number | {
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
+* @route '/api/v1/member/payments/{payment}/status'
+*/
+const statusForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
+* @route '/api/v1/member/payments/{payment}/status'
+*/
+statusForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
+* @route '/api/v1/member/payments/{payment}/status'
+*/
+statusForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: status.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+status.form = statusForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
@@ -134,6 +171,43 @@ qrisImage.head = (args: { payment: number | { id: number } } | [payment: number 
     url: qrisImage.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
+* @route '/api/v1/member/payments/{payment}/qris-image'
+*/
+const qrisImageForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: qrisImage.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
+* @route '/api/v1/member/payments/{payment}/qris-image'
+*/
+qrisImageForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: qrisImage.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
+* @route '/api/v1/member/payments/{payment}/qris-image'
+*/
+qrisImageForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: qrisImage.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+qrisImage.form = qrisImageForm
 
 const payments = {
     status: Object.assign(status, status),

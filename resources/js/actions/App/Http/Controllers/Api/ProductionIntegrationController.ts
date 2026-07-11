@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\ProductionIntegrationController::paymentWebhook
 * @see app/Http/Controllers/Api/ProductionIntegrationController.php:65
@@ -32,6 +32,28 @@ paymentWebhook.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
     url: paymentWebhook.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::paymentWebhook
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:65
+* @route '/api/payments/webhook'
+*/
+const paymentWebhookForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: paymentWebhook.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::paymentWebhook
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:65
+* @route '/api/payments/webhook'
+*/
+paymentWebhookForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: paymentWebhook.url(options),
+    method: 'post',
+})
+
+paymentWebhook.form = paymentWebhookForm
 
 /**
 * @see \App\Http\Controllers\Api\ProductionIntegrationController::registerDevice
@@ -68,6 +90,28 @@ registerDevice.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 })
 
 /**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::registerDevice
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:22
+* @route '/api/devices/push-token'
+*/
+const registerDeviceForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: registerDevice.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::registerDevice
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:22
+* @route '/api/devices/push-token'
+*/
+registerDeviceForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: registerDevice.url(options),
+    method: 'post',
+})
+
+registerDevice.form = registerDeviceForm
+
+/**
 * @see \App\Http\Controllers\Api\ProductionIntegrationController::createPaymentCharge
 * @see app/Http/Controllers/Api/ProductionIntegrationController.php:43
 * @route '/api/payments/charge'
@@ -100,6 +144,28 @@ createPaymentCharge.post = (options?: RouteQueryOptions): RouteDefinition<'post'
     url: createPaymentCharge.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::createPaymentCharge
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:43
+* @route '/api/payments/charge'
+*/
+const createPaymentChargeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: createPaymentCharge.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::createPaymentCharge
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:43
+* @route '/api/payments/charge'
+*/
+createPaymentChargeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: createPaymentCharge.url(options),
+    method: 'post',
+})
+
+createPaymentCharge.form = createPaymentChargeForm
 
 /**
 * @see \App\Http\Controllers\Api\ProductionIntegrationController::monitoring
@@ -144,6 +210,43 @@ monitoring.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: monitoring.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::monitoring
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:121
+* @route '/api/monitoring/health'
+*/
+const monitoringForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: monitoring.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::monitoring
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:121
+* @route '/api/monitoring/health'
+*/
+monitoringForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: monitoring.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\ProductionIntegrationController::monitoring
+* @see app/Http/Controllers/Api/ProductionIntegrationController.php:121
+* @route '/api/monitoring/health'
+*/
+monitoringForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: monitoring.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+monitoring.form = monitoringForm
 
 const ProductionIntegrationController = { paymentWebhook, registerDevice, createPaymentCharge, monitoring }
 

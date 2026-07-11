@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 import lines from './lines'
 /**
 * @see \App\Http\Controllers\BudgetController::index
@@ -45,6 +45,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\BudgetController::index
+* @see app/Http/Controllers/BudgetController.php:19
+* @route '/budgets'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::index
+* @see app/Http/Controllers/BudgetController.php:19
+* @route '/budgets'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::index
+* @see app/Http/Controllers/BudgetController.php:19
+* @route '/budgets'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\BudgetController::store
 * @see app/Http/Controllers/BudgetController.php:57
 * @route '/budgets'
@@ -77,6 +114,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\BudgetController::store
+* @see app/Http/Controllers/BudgetController.php:57
+* @route '/budgets'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::store
+* @see app/Http/Controllers/BudgetController.php:57
+* @route '/budgets'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\BudgetController::show
@@ -147,6 +206,43 @@ show.head = (args: { budget: string | { id: string } } | [budget: string | { id:
 })
 
 /**
+* @see \App\Http\Controllers\BudgetController::show
+* @see app/Http/Controllers/BudgetController.php:89
+* @route '/budgets/{budget}'
+*/
+const showForm = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::show
+* @see app/Http/Controllers/BudgetController.php:89
+* @route '/budgets/{budget}'
+*/
+showForm.get = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::show
+* @see app/Http/Controllers/BudgetController.php:89
+* @route '/budgets/{budget}'
+*/
+showForm.head = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\BudgetController::update
 * @see app/Http/Controllers/BudgetController.php:111
 * @route '/budgets/{budget}'
@@ -215,6 +311,53 @@ update.patch = (args: { budget: string | { id: string } } | [budget: string | { 
 })
 
 /**
+* @see \App\Http\Controllers\BudgetController::update
+* @see app/Http/Controllers/BudgetController.php:111
+* @route '/budgets/{budget}'
+*/
+const updateForm = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::update
+* @see app/Http/Controllers/BudgetController.php:111
+* @route '/budgets/{budget}'
+*/
+updateForm.put = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::update
+* @see app/Http/Controllers/BudgetController.php:111
+* @route '/budgets/{budget}'
+*/
+updateForm.patch = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
+
+/**
 * @see \App\Http\Controllers\BudgetController::destroy
 * @see app/Http/Controllers/BudgetController.php:150
 * @route '/budgets/{budget}'
@@ -273,6 +416,38 @@ destroy.delete = (args: { budget: string | { id: string } } | [budget: string | 
 })
 
 /**
+* @see \App\Http\Controllers\BudgetController::destroy
+* @see app/Http/Controllers/BudgetController.php:150
+* @route '/budgets/{budget}'
+*/
+const destroyForm = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::destroy
+* @see app/Http/Controllers/BudgetController.php:150
+* @route '/budgets/{budget}'
+*/
+destroyForm.delete = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+destroy.form = destroyForm
+
+/**
 * @see \App\Http\Controllers\BudgetController::importMethod
 * @see app/Http/Controllers/BudgetController.php:163
 * @route '/budgets/{budget}/import'
@@ -329,6 +504,28 @@ importMethod.post = (args: { budget: string | { id: string } } | [budget: string
     url: importMethod.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\BudgetController::importMethod
+* @see app/Http/Controllers/BudgetController.php:163
+* @route '/budgets/{budget}/import'
+*/
+const importMethodForm = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: importMethod.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetController::importMethod
+* @see app/Http/Controllers/BudgetController.php:163
+* @route '/budgets/{budget}/import'
+*/
+importMethodForm.post = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: importMethod.url(args, options),
+    method: 'post',
+})
+
+importMethod.form = importMethodForm
 
 const budgets = {
     index: Object.assign(index, index),

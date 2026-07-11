@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
 * @see app/Http/Controllers/AttendanceController.php:79
@@ -44,6 +44,43 @@ selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\AttendanceController::selfService
+* @see app/Http/Controllers/AttendanceController.php:79
+* @route '/attendance/self-service'
+*/
+const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: selfService.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::selfService
+* @see app/Http/Controllers/AttendanceController.php:79
+* @route '/attendance/self-service'
+*/
+selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: selfService.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::selfService
+* @see app/Http/Controllers/AttendanceController.php:79
+* @route '/attendance/self-service'
+*/
+selfServiceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: selfService.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+selfService.form = selfServiceForm
+
+/**
 * @see \App\Http\Controllers\AttendanceController::checkIn
 * @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
@@ -76,6 +113,28 @@ checkIn.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: checkIn.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkIn
+* @see app/Http/Controllers/AttendanceController.php:105
+* @route '/attendance/check-in'
+*/
+const checkInForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkIn.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkIn
+* @see app/Http/Controllers/AttendanceController.php:105
+* @route '/attendance/check-in'
+*/
+checkInForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkIn.url(options),
+    method: 'post',
+})
+
+checkIn.form = checkInForm
 
 /**
 * @see \App\Http\Controllers\AttendanceController::checkInApi
@@ -112,6 +171,28 @@ checkInApi.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\AttendanceController::checkInApi
+* @see app/Http/Controllers/AttendanceController.php:235
+* @route '/ess/attendance/check-in'
+*/
+const checkInApiForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkInApi.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkInApi
+* @see app/Http/Controllers/AttendanceController.php:235
+* @route '/ess/attendance/check-in'
+*/
+checkInApiForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkInApi.url(options),
+    method: 'post',
+})
+
+checkInApi.form = checkInApiForm
+
+/**
 * @see \App\Http\Controllers\AttendanceController::checkOutApi
 * @see app/Http/Controllers/AttendanceController.php:287
 * @route '/ess/attendance/check-out'
@@ -144,6 +225,28 @@ checkOutApi.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: checkOutApi.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkOutApi
+* @see app/Http/Controllers/AttendanceController.php:287
+* @route '/ess/attendance/check-out'
+*/
+const checkOutApiForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkOutApi.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkOutApi
+* @see app/Http/Controllers/AttendanceController.php:287
+* @route '/ess/attendance/check-out'
+*/
+checkOutApiForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkOutApi.url(options),
+    method: 'post',
+})
+
+checkOutApi.form = checkOutApiForm
 
 /**
 * @see \App\Http\Controllers\AttendanceController::geofence
@@ -190,6 +293,43 @@ geofence.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\AttendanceController::geofence
+* @see app/Http/Controllers/AttendanceController.php:335
+* @route '/ess/geofence'
+*/
+const geofenceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::geofence
+* @see app/Http/Controllers/AttendanceController.php:335
+* @route '/ess/geofence'
+*/
+geofenceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::geofence
+* @see app/Http/Controllers/AttendanceController.php:335
+* @route '/ess/geofence'
+*/
+geofenceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+geofence.form = geofenceForm
+
+/**
 * @see \App\Http\Controllers\AttendanceController::checkOut
 * @see app/Http/Controllers/AttendanceController.php:189
 * @route '/attendance/check-out'
@@ -222,6 +362,28 @@ checkOut.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: checkOut.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkOut
+* @see app/Http/Controllers/AttendanceController.php:189
+* @route '/attendance/check-out'
+*/
+const checkOutForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkOut.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::checkOut
+* @see app/Http/Controllers/AttendanceController.php:189
+* @route '/attendance/check-out'
+*/
+checkOutForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: checkOut.url(options),
+    method: 'post',
+})
+
+checkOut.form = checkOutForm
 
 /**
 * @see \App\Http\Controllers\AttendanceController::index
@@ -268,6 +430,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\AttendanceController::index
+* @see app/Http/Controllers/AttendanceController.php:17
+* @route '/attendances'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::index
+* @see app/Http/Controllers/AttendanceController.php:17
+* @route '/attendances'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::index
+* @see app/Http/Controllers/AttendanceController.php:17
+* @route '/attendances'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\AttendanceController::store
 * @see app/Http/Controllers/AttendanceController.php:67
 * @route '/attendances'
@@ -300,6 +499,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\AttendanceController::store
+* @see app/Http/Controllers/AttendanceController.php:67
+* @route '/attendances'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::store
+* @see app/Http/Controllers/AttendanceController.php:67
+* @route '/attendances'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 const AttendanceController = { selfService, checkIn, checkInApi, checkOutApi, geofence, checkOut, index, store }
 

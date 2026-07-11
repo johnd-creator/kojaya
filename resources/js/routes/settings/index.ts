@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 import savings from './savings'
 /**
 * @see \Inertia\Controller::__invoke
@@ -43,6 +43,43 @@ components.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: components.url(options),
     method: 'head',
 })
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/settings/components'
+*/
+const componentsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: components.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/settings/components'
+*/
+componentsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: components.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/settings/components'
+*/
+componentsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: components.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+components.form = componentsForm
 
 const settings = {
     components: Object.assign(components, components),

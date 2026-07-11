@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectTaskController::updateProgress
 * @see app/Http/Controllers/ProjectTaskController.php:94
@@ -53,6 +53,28 @@ updateProgress.post = (args: { project: string | { id: string }, task: string | 
     url: updateProgress.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectTaskController::updateProgress
+* @see app/Http/Controllers/ProjectTaskController.php:94
+* @route '/projects/{project}/tasks/{task}/progress'
+*/
+const updateProgressForm = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProgress.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectTaskController::updateProgress
+* @see app/Http/Controllers/ProjectTaskController.php:94
+* @route '/projects/{project}/tasks/{task}/progress'
+*/
+updateProgressForm.post = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProgress.url(args, options),
+    method: 'post',
+})
+
+updateProgress.form = updateProgressForm
 
 const tasks = {
     updateProgress: Object.assign(updateProgress, updateProgress),

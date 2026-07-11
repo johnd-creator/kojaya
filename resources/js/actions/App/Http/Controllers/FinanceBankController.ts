@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\FinanceBankController::index
 * @see app/Http/Controllers/FinanceBankController.php:15
@@ -44,6 +44,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\FinanceBankController::index
+* @see app/Http/Controllers/FinanceBankController.php:15
+* @route '/finance/bank-batches'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::index
+* @see app/Http/Controllers/FinanceBankController.php:15
+* @route '/finance/bank-batches'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::index
+* @see app/Http/Controllers/FinanceBankController.php:15
+* @route '/finance/bank-batches'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\FinanceBankController::store
 * @see app/Http/Controllers/FinanceBankController.php:26
 * @route '/finance/bank-batches'
@@ -76,6 +113,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::store
+* @see app/Http/Controllers/FinanceBankController.php:26
+* @route '/finance/bank-batches'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::store
+* @see app/Http/Controllers/FinanceBankController.php:26
+* @route '/finance/bank-batches'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\FinanceBankController::exportMethod
@@ -146,6 +205,43 @@ exportMethod.head = (args: { batch: string | { id: string } } | [batch: string |
 })
 
 /**
+* @see \App\Http\Controllers\FinanceBankController::exportMethod
+* @see app/Http/Controllers/FinanceBankController.php:58
+* @route '/finance/bank-batches/{batch}/export'
+*/
+const exportMethodForm = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: exportMethod.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::exportMethod
+* @see app/Http/Controllers/FinanceBankController.php:58
+* @route '/finance/bank-batches/{batch}/export'
+*/
+exportMethodForm.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: exportMethod.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::exportMethod
+* @see app/Http/Controllers/FinanceBankController.php:58
+* @route '/finance/bank-batches/{batch}/export'
+*/
+exportMethodForm.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: exportMethod.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+exportMethod.form = exportMethodForm
+
+/**
 * @see \App\Http\Controllers\FinanceBankController::reconcile
 * @see app/Http/Controllers/FinanceBankController.php:72
 * @route '/finance/bank-batches/reconcile'
@@ -178,6 +274,28 @@ reconcile.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcile.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::reconcile
+* @see app/Http/Controllers/FinanceBankController.php:72
+* @route '/finance/bank-batches/reconcile'
+*/
+const reconcileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reconcile.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\FinanceBankController::reconcile
+* @see app/Http/Controllers/FinanceBankController.php:72
+* @route '/finance/bank-batches/reconcile'
+*/
+reconcileForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reconcile.url(options),
+    method: 'post',
+})
+
+reconcile.form = reconcileForm
 
 const FinanceBankController = { index, store, exportMethod, reconcile, export: exportMethod }
 

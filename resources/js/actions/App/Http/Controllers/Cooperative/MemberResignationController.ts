@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\MemberResignationController::index
 * @see app/Http/Controllers/Cooperative/MemberResignationController.php:20
@@ -44,45 +44,8 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\MemberResignationController::index
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:20
-* @route '/cooperative/members/resignations'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\MemberResignationController::index
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:20
-* @route '/cooperative/members/resignations'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\MemberResignationController::index
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:20
-* @route '/cooperative/members/resignations'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\MemberResignationController::process
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:69
+* @see app/Http/Controllers/Cooperative/MemberResignationController.php:93
 * @route '/cooperative/members/resignations/{resignationRequest}/process'
 */
 export const process = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +60,7 @@ process.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\MemberResignationController::process
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:69
+* @see app/Http/Controllers/Cooperative/MemberResignationController.php:93
 * @route '/cooperative/members/resignations/{resignationRequest}/process'
 */
 process.url = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -130,35 +93,13 @@ process.url = (args: { resignationRequest: string | number | { id: string | numb
 
 /**
 * @see \App\Http\Controllers\Cooperative\MemberResignationController::process
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:69
+* @see app/Http/Controllers/Cooperative/MemberResignationController.php:93
 * @route '/cooperative/members/resignations/{resignationRequest}/process'
 */
 process.post = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\MemberResignationController::process
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:69
-* @route '/cooperative/members/resignations/{resignationRequest}/process'
-*/
-const processForm = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: process.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\MemberResignationController::process
-* @see app/Http/Controllers/Cooperative/MemberResignationController.php:69
-* @route '/cooperative/members/resignations/{resignationRequest}/process'
-*/
-processForm.post = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: process.url(args, options),
-    method: 'post',
-})
-
-process.form = processForm
 
 const MemberResignationController = { index, process }
 

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\TokenController::rotate
 * @see app/Http/Controllers/Api/TokenController.php:13
@@ -32,28 +32,6 @@ rotate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: rotate.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\TokenController::rotate
-* @see app/Http/Controllers/Api/TokenController.php:13
-* @route '/api/token/rotate'
-*/
-const rotateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: rotate.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TokenController::rotate
-* @see app/Http/Controllers/Api/TokenController.php:13
-* @route '/api/token/rotate'
-*/
-rotateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: rotate.url(options),
-    method: 'post',
-})
-
-rotate.form = rotateForm
 
 const TokenController = { rotate }
 

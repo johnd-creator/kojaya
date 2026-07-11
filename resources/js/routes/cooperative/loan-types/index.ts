@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\LoanTypeController::index
 * @see app/Http/Controllers/Cooperative/LoanTypeController.php:14
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::index
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:14
-* @route '/cooperative/loan-types'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::index
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:14
-* @route '/cooperative/loan-types'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::index
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:14
-* @route '/cooperative/loan-types'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\LoanTypeController::store
 * @see app/Http/Controllers/Cooperative/LoanTypeController.php:23
 * @route '/cooperative/loan-types'
@@ -113,28 +76,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::store
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:23
-* @route '/cooperative/loan-types'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::store
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:23
-* @route '/cooperative/loan-types'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanTypeController::update
@@ -189,38 +130,6 @@ update.put = (args: { loan_type: string | number } | [loan_type: string | number
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::update
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:35
-* @route '/cooperative/loan-types/{loan_type}'
-*/
-const updateForm = (args: { loan_type: string | number } | [loan_type: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::update
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:35
-* @route '/cooperative/loan-types/{loan_type}'
-*/
-updateForm.put = (args: { loan_type: string | number } | [loan_type: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\LoanTypeController::destroy
 * @see app/Http/Controllers/Cooperative/LoanTypeController.php:47
 * @route '/cooperative/loan-types/{loan_type}'
@@ -271,38 +180,6 @@ destroy.delete = (args: { loan_type: string | number } | [loan_type: string | nu
     url: destroy.url(args, options),
     method: 'delete',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::destroy
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:47
-* @route '/cooperative/loan-types/{loan_type}'
-*/
-const destroyForm = (args: { loan_type: string | number } | [loan_type: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\LoanTypeController::destroy
-* @see app/Http/Controllers/Cooperative/LoanTypeController.php:47
-* @route '/cooperative/loan-types/{loan_type}'
-*/
-destroyForm.delete = (args: { loan_type: string | number } | [loan_type: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
 
 const loanTypes = {
     index: Object.assign(index, index),

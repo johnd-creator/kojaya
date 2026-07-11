@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Cooperative;
 use App\Contracts\OrganizationScopedQueryService;
 use App\Exports\AnggotaExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
+use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
 use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\User;
@@ -218,41 +220,25 @@ class CooperativeMemberController extends Controller
     public function update(
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
         AuditLogService $audit,
     ): RedirectResponse {
         $this->authorize('update', $member);
-        $before = $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']);
-        $previousUserId = $member->user_id;
+        $before = $member->only(['name', 'email', 'phone', 'status', 'validation_status']);
 
-        $member = DB::transaction(function () use ($request, $member, $userProvisioningService, $previousUserId): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $member): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->update([
-                ...$this->memberPayload($request, member: $member),
+                ...$this->profilePayload($request),
             ]);
-
-            if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
-                User::query()->find($previousUserId)?->removeRole('Anggota');
-            }
-
-            $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
 
             return $member->refresh();
         });
 
         $audit->log('member.profile.updated', 'cooperative.member', $member, [
             'old' => $before,
-            'new' => $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']),
+            'new' => $member->only(['name', 'email', 'phone', 'status', 'validation_status']),
             'reason' => 'Cooperative member profile updated.',
         ]);
-
-        if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
-            $audit->log('member.account.unlinked', 'cooperative.member', $member, [
-                'old' => ['user_id' => $previousUserId],
-                'new' => ['user_id' => $member->user_id],
-                'reason' => 'Cooperative member account link changed.',
-            ]);
-        }
 
         $openingSavingBalance = $request->validated('opening_saving_balance');
 
@@ -267,6 +253,56 @@ class CooperativeMemberController extends Controller
 
         return redirect()->route('cooperative.members.index')
             ->with('success', 'Cooperative member updated successfully.');
+    }
+
+    public function updateSensitiveData(
+        UpdateCooperativeMemberSensitiveDataRequest $request,
+        CooperativeMember $member,
+        AuditLogService $audit,
+    ): RedirectResponse {
+        $this->authorize('updateSensitiveData', $member);
+
+        $fields = array_keys($request->validated());
+        DB::transaction(function () use ($request, $member): void {
+            CooperativeMember::query()->lockForUpdate()->findOrFail($member->id)->update($request->validated());
+        });
+
+        $audit->log('member.pii.updated', 'cooperative.member', $member->refresh(), [
+            'new' => ['fields' => $fields],
+            'reason' => 'Cooperative member sensitive data updated through dedicated action.',
+        ]);
+
+        return back()->with('success', 'Data sensitif anggota berhasil diperbarui.');
+    }
+
+    public function linkAccount(
+        LinkCooperativeMemberAccountRequest $request,
+        CooperativeMember $member,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        AuditLogService $audit,
+    ): RedirectResponse {
+        $this->authorize('update', $member);
+        $previousUserId = $member->user_id;
+
+        $member = DB::transaction(function () use ($request, $member, $userProvisioningService): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->forceFill(['user_id' => $request->validated('user_id')])->save();
+            $userProvisioningService->provision($member->refresh());
+
+            return $member->refresh();
+        });
+
+        if ($previousUserId !== null && (int) $previousUserId !== (int) $member->user_id) {
+            User::query()->find($previousUserId)?->removeRole('Anggota');
+        }
+
+        $audit->log('member.account.linked', 'cooperative.member', $member, [
+            'old' => ['user_id' => $previousUserId],
+            'new' => ['user_id' => $member->user_id],
+            'reason' => $request->validated('reason'),
+        ]);
+
+        return back()->with('success', 'Akun anggota berhasil ditautkan.');
     }
 
     /**
@@ -312,7 +348,9 @@ class CooperativeMemberController extends Controller
         $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService, $transitions): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->forceFill($updateData)->save();
-            $userProvisioningService->provision($member->refresh());
+            if ($member->user_id === null) {
+                $userProvisioningService->provision($member->refresh());
+            }
 
             return $transitions->activate($member->refresh(), request()->user());
         });
@@ -338,7 +376,7 @@ class CooperativeMemberController extends Controller
     {
         $this->authorize('resign', $member);
 
-        $memberService->resign($member);
+        $memberService->resign($member, request()->user());
 
         return back()->with('success', 'Cooperative member resigned successfully.');
     }
@@ -361,6 +399,11 @@ class CooperativeMemberController extends Controller
         AuditLogService $audit,
     ): BinaryFileResponse {
         $this->authorize('export', CooperativeMember::class);
+        $organizationId = $scopeService->scopeOrganizationIdFor($request->user());
+        if (! $scopeService->canViewAllOrganizations($request->user()) && $organizationId === null) {
+            abort(403, 'A cooperative organization is required for this export.');
+        }
+
         $audit->log('member.pii.exported', 'cooperative.member', null, [
             'new' => ['filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori'])],
             'reason' => 'Cooperative member export requested.',
@@ -369,7 +412,7 @@ class CooperativeMemberController extends Controller
         return Excel::download(
             new AnggotaExport(
                 $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
-                $scopeService->scopeOrganizationIdFor($request->user()),
+                $organizationId,
             ),
             'daftar-anggota.xlsx'
         );
@@ -391,7 +434,7 @@ class CooperativeMemberController extends Controller
         ?CooperativeMember $member = null,
     ): array {
         $data = $request->safe()->except(['member_login_password', 'opening_saving_balance']);
-        if (! $request->user()?->can(\App\Enums\PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value)) {
+        if (! $request->user()?->can(\App\Enums\PermissionEnum::COOPERATIVE_MEMBER_PII_WRITE->value)) {
             unset(
                 $data['identity_number'],
                 $data['npwp'],
@@ -415,6 +458,24 @@ class CooperativeMemberController extends Controller
             'joined_at' => $data['tanggal_aktif'],
             'no_rekening' => $data['autodebet'] === 'MANUAL' ? null : ($data['no_rekening'] ?? null),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function profilePayload(UpdateCooperativeMemberRequest $request): array
+    {
+        return $request->safe()->only([
+            'employee_id',
+            'no_anggota',
+            'nama_anggota',
+            'name',
+            'email',
+            'no_telp',
+            'phone',
+            'jenis_anggota',
+            'jenis_kelamin',
+            'kategori',
+            'autodebet',
+        ]);
     }
 
     private function options(): array

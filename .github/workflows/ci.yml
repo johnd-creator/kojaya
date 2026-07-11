@@ -55,9 +55,14 @@ jobs:
         run: npm run build
 
       - name: Run Wayfinder (route generation)
+        id: wayfinder-generate
+        continue-on-error: true
         run: php artisan wayfinder:generate
 
       - name: Check Wayfinder drift
+        id: wayfinder-drift
+        if: always()
+        continue-on-error: true
         run: |
           if ! git diff --exit-code resources/js/actions resources/js/routes; then
             echo "::error::Wayfinder routes are out of date. Run 'php artisan wayfinder:generate' locally."
@@ -65,20 +70,27 @@ jobs:
           fi
 
       - name: Run PHPUnit (fast suite)
+        if: always()
         run: php artisan test --compact --parallel --profile --coverage --min=70
 
       - name: Check OpenAPI snapshot drift
-        run: bin/openapi.sh check || (echo "::error::OpenAPI snapshot changed. Run 'bin/openapi.sh update' locally." && exit 1)
+        if: always()
+        run: bin/openapi.sh check
 
       - name: Create SQLite database
+        if: always()
         run: touch database/database.sqlite
 
-      - name: Run migrations
-        run: php artisan migrate --force
+      - name: Run migrations and seed
+        if: always()
+        run: php artisan migrate:fresh --seed --force
         env:
           DB_CONNECTION: sqlite
 
-      - name: Seed test data
-        run: php artisan db:seed --force
+      - name: Enforce generated route and quality gates
+        if: always()
+        run: |
+          test "${{ steps.wayfinder-generate.outcome }}" = success
+          test "${{ steps.wayfinder-drift.outcome }}" = success
         env:
           DB_CONNECTION: sqlite

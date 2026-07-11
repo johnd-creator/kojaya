@@ -49,6 +49,7 @@ enum PermissionEnum: string
     case COOPERATIVE_MEMBER_VIEW = 'view_cooperative_member';
     case COOPERATIVE_MEMBER_MANAGE = 'manage_cooperative_member';
     case COOPERATIVE_MEMBER_PII_VIEW = 'view_cooperative_member_pii';
+    case COOPERATIVE_MEMBER_PII_WRITE = 'update_cooperative_member_pii';
     case COOPERATIVE_DUES_MANAGE = 'manage_cooperative_dues';
     case COOPERATIVE_PAYMENT_MANAGE = 'manage_cooperative_payment';
     case COOPERATIVE_LOAN_VIEW = 'view_cooperative_loan';

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:73
@@ -42,43 +42,6 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: dashboard.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:73
-* @route '/api/v1/member/dashboard'
-*/
-const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:73
-* @route '/api/v1/member/dashboard'
-*/
-dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::dashboard
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:73
-* @route '/api/v1/member/dashboard'
-*/
-dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
@@ -125,43 +88,6 @@ onboardingStatus.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:102
-* @route '/api/v1/member/onboarding/status'
-*/
-const onboardingStatusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: onboardingStatus.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:102
-* @route '/api/v1/member/onboarding/status'
-*/
-onboardingStatusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: onboardingStatus.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::onboardingStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:102
-* @route '/api/v1/member/onboarding/status'
-*/
-onboardingStatusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: onboardingStatus.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-onboardingStatus.form = onboardingStatusForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:107
 * @route '/api/v1/member/onboarding/steps'
@@ -194,28 +120,6 @@ markOnboardingStep.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
     url: markOnboardingStep.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:107
-* @route '/api/v1/member/onboarding/steps'
-*/
-const markOnboardingStepForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: markOnboardingStep.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::markOnboardingStep
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:107
-* @route '/api/v1/member/onboarding/steps'
-*/
-markOnboardingStepForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: markOnboardingStep.url(options),
-    method: 'post',
-})
-
-markOnboardingStep.form = markOnboardingStepForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
@@ -262,43 +166,6 @@ statusJourney.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:331
-* @route '/api/v1/member/status-journey'
-*/
-const statusJourneyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: statusJourney.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:331
-* @route '/api/v1/member/status-journey'
-*/
-statusJourneyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: statusJourney.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::statusJourney
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:331
-* @route '/api/v1/member/status-journey'
-*/
-statusJourneyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: statusJourney.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-statusJourney.form = statusJourneyForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:117
 * @route '/api/v1/member/profile'
@@ -343,43 +210,6 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:117
-* @route '/api/v1/member/profile'
-*/
-const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: profile.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:117
-* @route '/api/v1/member/profile'
-*/
-profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: profile.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::profile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:117
-* @route '/api/v1/member/profile'
-*/
-profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: profile.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-profile.form = profileForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:127
 * @route '/api/v1/member/profile'
@@ -412,38 +242,6 @@ updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateProfile.url(options),
     method: 'put',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:127
-* @route '/api/v1/member/profile'
-*/
-const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateProfile.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::updateProfile
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:127
-* @route '/api/v1/member/profile'
-*/
-updateProfileForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateProfile.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-updateProfile.form = updateProfileForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::resignationStatus
@@ -490,43 +288,6 @@ resignationStatus.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::resignationStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:144
-* @route '/api/v1/member/resignation'
-*/
-const resignationStatusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: resignationStatus.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::resignationStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:144
-* @route '/api/v1/member/resignation'
-*/
-resignationStatusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: resignationStatus.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::resignationStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:144
-* @route '/api/v1/member/resignation'
-*/
-resignationStatusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: resignationStatus.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-resignationStatus.form = resignationStatusForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:620
 * @route '/api/v1/member/notifications'
@@ -571,43 +332,6 @@ notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:620
-* @route '/api/v1/member/notifications'
-*/
-const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: notifications.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:620
-* @route '/api/v1/member/notifications'
-*/
-notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: notifications.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::notifications
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:620
-* @route '/api/v1/member/notifications'
-*/
-notificationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: notifications.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-notifications.form = notificationsForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::submitResignation
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:154
 * @route '/api/v1/member/resignation'
@@ -642,28 +366,6 @@ submitResignation.post = (options?: RouteQueryOptions): RouteDefinition<'post'> 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::submitResignation
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:154
-* @route '/api/v1/member/resignation'
-*/
-const submitResignationForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submitResignation.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::submitResignation
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:154
-* @route '/api/v1/member/resignation'
-*/
-submitResignationForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submitResignation.url(options),
-    method: 'post',
-})
-
-submitResignation.form = submitResignationForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::cancelResignation
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:166
 * @route '/api/v1/member/resignation'
@@ -696,38 +398,6 @@ cancelResignation.delete = (options?: RouteQueryOptions): RouteDefinition<'delet
     url: cancelResignation.url(options),
     method: 'delete',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::cancelResignation
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:166
-* @route '/api/v1/member/resignation'
-*/
-const cancelResignationForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: cancelResignation.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::cancelResignation
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:166
-* @route '/api/v1/member/resignation'
-*/
-cancelResignationForm.delete = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: cancelResignation.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-cancelResignation.form = cancelResignationForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
@@ -774,43 +444,6 @@ savingsSummary.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:182
-* @route '/api/v1/member/savings/summary'
-*/
-const savingsSummaryForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savingsSummary.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:182
-* @route '/api/v1/member/savings/summary'
-*/
-savingsSummaryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savingsSummary.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsSummary
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:182
-* @route '/api/v1/member/savings/summary'
-*/
-savingsSummaryForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savingsSummary.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-savingsSummary.form = savingsSummaryForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
 * @route '/api/v1/member/savings/ledger'
@@ -855,43 +488,6 @@ savingsLedger.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
-* @route '/api/v1/member/savings/ledger'
-*/
-const savingsLedgerForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savingsLedger.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
-* @route '/api/v1/member/savings/ledger'
-*/
-savingsLedgerForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savingsLedger.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::savingsLedger
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:203
-* @route '/api/v1/member/savings/ledger'
-*/
-savingsLedgerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savingsLedger.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-savingsLedger.form = savingsLedgerForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:232
 * @route '/api/v1/member/savings/withdraw'
@@ -924,28 +520,6 @@ requestSavingsWithdrawal.post = (options?: RouteQueryOptions): RouteDefinition<'
     url: requestSavingsWithdrawal.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:232
-* @route '/api/v1/member/savings/withdraw'
-*/
-const requestSavingsWithdrawalForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestSavingsWithdrawal.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestSavingsWithdrawal
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:232
-* @route '/api/v1/member/savings/withdraw'
-*/
-requestSavingsWithdrawalForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestSavingsWithdrawal.url(options),
-    method: 'post',
-})
-
-requestSavingsWithdrawal.form = requestSavingsWithdrawalForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
@@ -990,43 +564,6 @@ invoices.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: invoices.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:244
-* @route '/api/v1/member/dues/invoices'
-*/
-const invoicesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: invoices.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:244
-* @route '/api/v1/member/dues/invoices'
-*/
-invoicesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: invoices.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::invoices
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:244
-* @route '/api/v1/member/dues/invoices'
-*/
-invoicesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: invoices.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-invoices.form = invoicesForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
@@ -1097,43 +634,6 @@ showInvoice.head = (args: { invoice: string | number | { id: string | number } }
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:259
-* @route '/api/v1/member/dues/invoices/{invoice}'
-*/
-const showInvoiceForm = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showInvoice.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:259
-* @route '/api/v1/member/dues/invoices/{invoice}'
-*/
-showInvoiceForm.get = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showInvoice.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showInvoice
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:259
-* @route '/api/v1/member/dues/invoices/{invoice}'
-*/
-showInvoiceForm.head = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showInvoice.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-showInvoice.form = showInvoiceForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
 * @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
@@ -1192,28 +692,6 @@ createPaymentIntent.post = (args: { invoice: string | number | { id: string | nu
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
-* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
-*/
-const createPaymentIntentForm = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createPaymentIntent.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createPaymentIntent
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:271
-* @route '/api/v1/member/dues/invoices/{invoice}/payment-intent'
-*/
-createPaymentIntentForm.post = (args: { invoice: string | number | { id: string | number } } | [invoice: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createPaymentIntent.url(args, options),
-    method: 'post',
-})
-
-createPaymentIntent.form = createPaymentIntentForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
 * @route '/api/v1/member/payments'
@@ -1256,43 +734,6 @@ payments.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: payments.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
-* @route '/api/v1/member/payments'
-*/
-const paymentsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payments.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
-* @route '/api/v1/member/payments'
-*/
-paymentsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payments.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::payments
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:312
-* @route '/api/v1/member/payments'
-*/
-paymentsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payments.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-payments.form = paymentsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showPayment
@@ -1363,43 +804,6 @@ showPayment.head = (args: { payment: string | number | { id: string | number } }
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showPayment
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:672
-* @route '/api/v1/member/payments/{payment}'
-*/
-const showPaymentForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showPayment.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showPayment
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:672
-* @route '/api/v1/member/payments/{payment}'
-*/
-showPaymentForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showPayment.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showPayment
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:672
-* @route '/api/v1/member/payments/{payment}'
-*/
-showPaymentForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showPayment.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-showPayment.form = showPaymentForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentStatus
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
@@ -1466,43 +870,6 @@ paymentStatus.head = (args: { payment: string | number | { id: string | number }
     url: paymentStatus.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
-* @route '/api/v1/member/payments/{payment}/status'
-*/
-const paymentStatusForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentStatus.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
-* @route '/api/v1/member/payments/{payment}/status'
-*/
-paymentStatusForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentStatus.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentStatus
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
-* @route '/api/v1/member/payments/{payment}/status'
-*/
-paymentStatusForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-paymentStatus.form = paymentStatusForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
@@ -1573,43 +940,6 @@ qrisImage.head = (args: { payment: string | number | { id: string | number } } |
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
-* @route '/api/v1/member/payments/{payment}/qris-image'
-*/
-const qrisImageForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: qrisImage.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
-* @route '/api/v1/member/payments/{payment}/qris-image'
-*/
-qrisImageForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: qrisImage.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
-* @route '/api/v1/member/payments/{payment}/qris-image'
-*/
-qrisImageForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: qrisImage.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-qrisImage.form = qrisImageForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:336
 * @route '/api/v1/member/payments/{payment}/receipt'
@@ -1678,43 +1008,6 @@ paymentReceipt.head = (args: { payment: string | number | { id: string | number 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:336
-* @route '/api/v1/member/payments/{payment}/receipt'
-*/
-const paymentReceiptForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentReceipt.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:336
-* @route '/api/v1/member/payments/{payment}/receipt'
-*/
-paymentReceiptForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentReceipt.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::paymentReceipt
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:336
-* @route '/api/v1/member/payments/{payment}/receipt'
-*/
-paymentReceiptForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentReceipt.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-paymentReceipt.form = paymentReceiptForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:420
 * @route '/api/v1/member/payments/proof'
@@ -1747,28 +1040,6 @@ uploadPaymentProof.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
     url: uploadPaymentProof.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:420
-* @route '/api/v1/member/payments/proof'
-*/
-const uploadPaymentProofForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: uploadPaymentProof.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::uploadPaymentProof
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:420
-* @route '/api/v1/member/payments/proof'
-*/
-uploadPaymentProofForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: uploadPaymentProof.url(options),
-    method: 'post',
-})
-
-uploadPaymentProof.form = uploadPaymentProofForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::bills
@@ -1813,43 +1084,6 @@ bills.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: bills.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::bills
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:687
-* @route '/api/v1/member/bills'
-*/
-const billsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: bills.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::bills
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:687
-* @route '/api/v1/member/bills'
-*/
-billsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: bills.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::bills
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:687
-* @route '/api/v1/member/bills'
-*/
-billsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: bills.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-bills.form = billsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showBill
@@ -1914,43 +1148,6 @@ showBill.head = (args: { bill: string | number } | [bill: string | number ] | st
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showBill
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:781
-* @route '/api/v1/member/bills/{bill}'
-*/
-const showBillForm = (args: { bill: string | number } | [bill: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showBill.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showBill
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:781
-* @route '/api/v1/member/bills/{bill}'
-*/
-showBillForm.get = (args: { bill: string | number } | [bill: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showBill.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::showBill
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:781
-* @route '/api/v1/member/bills/{bill}'
-*/
-showBillForm.head = (args: { bill: string | number } | [bill: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: showBill.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-showBill.form = showBillForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createBillPaymentIntent
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:802
 * @route '/api/v1/member/bills/{bill}/payment-intent'
@@ -2003,28 +1200,6 @@ createBillPaymentIntent.post = (args: { bill: string | number } | [bill: string 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createBillPaymentIntent
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:802
-* @route '/api/v1/member/bills/{bill}/payment-intent'
-*/
-const createBillPaymentIntentForm = (args: { bill: string | number } | [bill: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createBillPaymentIntent.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::createBillPaymentIntent
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:802
-* @route '/api/v1/member/bills/{bill}/payment-intent'
-*/
-createBillPaymentIntentForm.post = (args: { bill: string | number } | [bill: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createBillPaymentIntent.url(args, options),
-    method: 'post',
-})
-
-createBillPaymentIntent.form = createBillPaymentIntentForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:460
 * @route '/api/v1/member/loans/options'
@@ -2067,43 +1242,6 @@ loanOptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: loanOptions.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:460
-* @route '/api/v1/member/loans/options'
-*/
-const loanOptionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loanOptions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:460
-* @route '/api/v1/member/loans/options'
-*/
-loanOptionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loanOptions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loanOptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:460
-* @route '/api/v1/member/loans/options'
-*/
-loanOptionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loanOptions.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-loanOptions.form = loanOptionsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
@@ -2150,43 +1288,6 @@ loans.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:448
-* @route '/api/v1/member/loans'
-*/
-const loansForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loans.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:448
-* @route '/api/v1/member/loans'
-*/
-loansForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loans.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loans
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:448
-* @route '/api/v1/member/loans'
-*/
-loansForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loans.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-loans.form = loansForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:472
 * @route '/api/v1/member/loans'
@@ -2219,28 +1320,6 @@ applyLoan.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: applyLoan.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:472
-* @route '/api/v1/member/loans'
-*/
-const applyLoanForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: applyLoan.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::applyLoan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:472
-* @route '/api/v1/member/loans'
-*/
-applyLoanForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: applyLoan.url(options),
-    method: 'post',
-})
-
-applyLoan.form = applyLoanForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
@@ -2311,43 +1390,6 @@ loan.head = (args: { loan: string | number | { id: string | number } } | [loan: 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:487
-* @route '/api/v1/member/loans/{loan}'
-*/
-const loanForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loan.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:487
-* @route '/api/v1/member/loans/{loan}'
-*/
-loanForm.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loan.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::loan
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:487
-* @route '/api/v1/member/loans/{loan}'
-*/
-loanForm.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loan.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-loan.form = loanForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:498
 * @route '/api/v1/member/loans/{loan}/restructure'
@@ -2406,28 +1448,6 @@ requestLoanRestructure.post = (args: { loan: string | number | { id: string | nu
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:498
-* @route '/api/v1/member/loans/{loan}/restructure'
-*/
-const requestLoanRestructureForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestLoanRestructure.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::requestLoanRestructure
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:498
-* @route '/api/v1/member/loans/{loan}/restructure'
-*/
-requestLoanRestructureForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestLoanRestructure.url(args, options),
-    method: 'post',
-})
-
-requestLoanRestructure.form = requestLoanRestructureForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
 * @route '/api/v1/member/shu'
@@ -2470,43 +1490,6 @@ shu.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: shu.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
-* @route '/api/v1/member/shu'
-*/
-const shuForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: shu.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
-* @route '/api/v1/member/shu'
-*/
-shuForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: shu.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::shu
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:512
-* @route '/api/v1/member/shu'
-*/
-shuForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: shu.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-shu.form = shuForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
@@ -2553,43 +1536,6 @@ rewardRedemptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:526
-* @route '/api/v1/member/reward-redemptions'
-*/
-const rewardRedemptionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: rewardRedemptions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:526
-* @route '/api/v1/member/reward-redemptions'
-*/
-rewardRedemptionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: rewardRedemptions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::rewardRedemptions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:526
-* @route '/api/v1/member/reward-redemptions'
-*/
-rewardRedemptionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: rewardRedemptions.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-rewardRedemptions.form = rewardRedemptionsForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:555
 * @route '/api/v1/member/transactions'
@@ -2632,43 +1578,6 @@ transactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: transactions.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:555
-* @route '/api/v1/member/transactions'
-*/
-const transactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:555
-* @route '/api/v1/member/transactions'
-*/
-transactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::transactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:555
-* @route '/api/v1/member/transactions'
-*/
-transactionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-transactions.form = transactionsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::unifiedTransactions
@@ -2715,43 +1624,6 @@ unifiedTransactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::unifiedTransactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:859
-* @route '/api/v1/member/transactions/unified'
-*/
-const unifiedTransactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: unifiedTransactions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::unifiedTransactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:859
-* @route '/api/v1/member/transactions/unified'
-*/
-unifiedTransactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: unifiedTransactions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::unifiedTransactions
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:859
-* @route '/api/v1/member/transactions/unified'
-*/
-unifiedTransactionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: unifiedTransactions.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-unifiedTransactions.form = unifiedTransactionsForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:629
 * @route '/api/v1/member/support-tickets'
@@ -2796,43 +1668,6 @@ supportTickets.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:629
-* @route '/api/v1/member/support-tickets'
-*/
-const supportTicketsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: supportTickets.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:629
-* @route '/api/v1/member/support-tickets'
-*/
-supportTicketsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: supportTickets.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::supportTickets
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:629
-* @route '/api/v1/member/support-tickets'
-*/
-supportTicketsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: supportTickets.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-supportTickets.form = supportTicketsForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
 * @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:639
 * @route '/api/v1/member/support-tickets'
@@ -2865,28 +1700,6 @@ storeSupportTicket.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
     url: storeSupportTicket.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:639
-* @route '/api/v1/member/support-tickets'
-*/
-const storeSupportTicketForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storeSupportTicket.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::storeSupportTicket
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:639
-* @route '/api/v1/member/support-tickets'
-*/
-storeSupportTicketForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storeSupportTicket.url(options),
-    method: 'post',
-})
-
-storeSupportTicket.form = storeSupportTicketForm
 
 const MemberSelfServiceController = { dashboard, onboardingStatus, markOnboardingStep, statusJourney, profile, updateProfile, resignationStatus, notifications, submitResignation, cancelResignation, savingsSummary, savingsLedger, requestSavingsWithdrawal, invoices, showInvoice, createPaymentIntent, payments, showPayment, paymentStatus, qrisImage, paymentReceipt, uploadPaymentProof, bills, showBill, createBillPaymentIntent, loanOptions, loans, applyLoan, loan, requestLoanRestructure, shu, rewardRedemptions, transactions, unifiedTransactions, supportTickets, storeSupportTicket }
 

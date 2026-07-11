@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\OpenApiController::__invoke
 * @see app/Http/Controllers/OpenApiController.php:10
@@ -42,42 +42,5 @@ OpenApiController.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
     url: OpenApiController.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\OpenApiController::__invoke
-* @see app/Http/Controllers/OpenApiController.php:10
-* @route '/api/openapi.json'
-*/
-const OpenApiControllerForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: OpenApiController.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\OpenApiController::__invoke
-* @see app/Http/Controllers/OpenApiController.php:10
-* @route '/api/openapi.json'
-*/
-OpenApiControllerForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: OpenApiController.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\OpenApiController::__invoke
-* @see app/Http/Controllers/OpenApiController.php:10
-* @route '/api/openapi.json'
-*/
-OpenApiControllerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: OpenApiController.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-OpenApiController.form = OpenApiControllerForm
 
 export default OpenApiController

@@ -37,6 +37,12 @@ class CooperativeMemberPolicy extends BasePolicy
         return $this->update($user, $cooperativeMember);
     }
 
+    public function updateSensitiveData(User $user, CooperativeMember $cooperativeMember): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_PII_WRITE->value)
+            && $this->visibleTo($user, $cooperativeMember);
+    }
+
     public function resign(User $user, CooperativeMember $cooperativeMember): bool
     {
         return $this->update($user, $cooperativeMember);

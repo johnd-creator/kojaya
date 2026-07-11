@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MedicalCheckupController::index
 * @see app/Http/Controllers/MedicalCheckupController.php:20
@@ -62,43 +62,6 @@ index.head = (args: { employeeId: string | number } | [employeeId: string | numb
 })
 
 /**
-* @see \App\Http\Controllers\MedicalCheckupController::index
-* @see app/Http/Controllers/MedicalCheckupController.php:20
-* @route '/api/employees/{employeeId}/mcu'
-*/
-const indexForm = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::index
-* @see app/Http/Controllers/MedicalCheckupController.php:20
-* @route '/api/employees/{employeeId}/mcu'
-*/
-indexForm.get = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::index
-* @see app/Http/Controllers/MedicalCheckupController.php:20
-* @route '/api/employees/{employeeId}/mcu'
-*/
-indexForm.head = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\MedicalCheckupController::store
 * @see app/Http/Controllers/MedicalCheckupController.php:30
 * @route '/api/employees/{employeeId}/mcu'
@@ -149,28 +112,6 @@ store.post = (args: { employeeId: string | number } | [employeeId: string | numb
     url: store.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::store
-* @see app/Http/Controllers/MedicalCheckupController.php:30
-* @route '/api/employees/{employeeId}/mcu'
-*/
-const storeForm = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::store
-* @see app/Http/Controllers/MedicalCheckupController.php:30
-* @route '/api/employees/{employeeId}/mcu'
-*/
-storeForm.post = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\MedicalCheckupController::show
@@ -234,43 +175,6 @@ show.head = (args: { employeeId: string | number, id: string | number } | [emplo
 })
 
 /**
-* @see \App\Http\Controllers\MedicalCheckupController::show
-* @see app/Http/Controllers/MedicalCheckupController.php:39
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-const showForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::show
-* @see app/Http/Controllers/MedicalCheckupController.php:39
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-showForm.get = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::show
-* @see app/Http/Controllers/MedicalCheckupController.php:39
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-showForm.head = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\MedicalCheckupController::update
 * @see app/Http/Controllers/MedicalCheckupController.php:47
 * @route '/api/employees/{employeeId}/mcu/{id}'
@@ -320,38 +224,6 @@ update.put = (args: { employeeId: string | number, id: string | number } | [empl
     url: update.url(args, options),
     method: 'put',
 })
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::update
-* @see app/Http/Controllers/MedicalCheckupController.php:47
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-const updateForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::update
-* @see app/Http/Controllers/MedicalCheckupController.php:47
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-updateForm.put = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\MedicalCheckupController::destroy
@@ -405,38 +277,6 @@ destroy.delete = (args: { employeeId: string | number, id: string | number } | [
 })
 
 /**
-* @see \App\Http\Controllers\MedicalCheckupController::destroy
-* @see app/Http/Controllers/MedicalCheckupController.php:57
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-const destroyForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::destroy
-* @see app/Http/Controllers/MedicalCheckupController.php:57
-* @route '/api/employees/{employeeId}/mcu/{id}'
-*/
-destroyForm.delete = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
-
-/**
 * @see \App\Http\Controllers\MedicalCheckupController::uploadDocument
 * @see app/Http/Controllers/MedicalCheckupController.php:75
 * @route '/api/employees/{employeeId}/mcu/{id}/upload'
@@ -486,28 +326,6 @@ uploadDocument.post = (args: { employeeId: string | number, id: string | number 
     url: uploadDocument.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::uploadDocument
-* @see app/Http/Controllers/MedicalCheckupController.php:75
-* @route '/api/employees/{employeeId}/mcu/{id}/upload'
-*/
-const uploadDocumentForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: uploadDocument.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MedicalCheckupController::uploadDocument
-* @see app/Http/Controllers/MedicalCheckupController.php:75
-* @route '/api/employees/{employeeId}/mcu/{id}/upload'
-*/
-uploadDocumentForm.post = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: uploadDocument.url(args, options),
-    method: 'post',
-})
-
-uploadDocument.form = uploadDocumentForm
 
 const MedicalCheckupController = { index, store, show, update, destroy, uploadDocument }
 

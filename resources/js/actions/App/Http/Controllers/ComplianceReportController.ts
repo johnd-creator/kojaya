@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ComplianceReportController::certificateCompliance
 * @see app/Http/Controllers/ComplianceReportController.php:16
@@ -42,43 +42,6 @@ certificateCompliance.head = (options?: RouteQueryOptions): RouteDefinition<'hea
     url: certificateCompliance.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::certificateCompliance
-* @see app/Http/Controllers/ComplianceReportController.php:16
-* @route '/api/reports/certificate-compliance'
-*/
-const certificateComplianceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificateCompliance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::certificateCompliance
-* @see app/Http/Controllers/ComplianceReportController.php:16
-* @route '/api/reports/certificate-compliance'
-*/
-certificateComplianceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificateCompliance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::certificateCompliance
-* @see app/Http/Controllers/ComplianceReportController.php:16
-* @route '/api/reports/certificate-compliance'
-*/
-certificateComplianceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificateCompliance.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-certificateCompliance.form = certificateComplianceForm
 
 /**
 * @see \App\Http\Controllers\ComplianceReportController::mcuCompliance
@@ -125,43 +88,6 @@ mcuCompliance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 })
 
 /**
-* @see \App\Http\Controllers\ComplianceReportController::mcuCompliance
-* @see app/Http/Controllers/ComplianceReportController.php:52
-* @route '/api/reports/mcu-compliance'
-*/
-const mcuComplianceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcuCompliance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::mcuCompliance
-* @see app/Http/Controllers/ComplianceReportController.php:52
-* @route '/api/reports/mcu-compliance'
-*/
-mcuComplianceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcuCompliance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::mcuCompliance
-* @see app/Http/Controllers/ComplianceReportController.php:52
-* @route '/api/reports/mcu-compliance'
-*/
-mcuComplianceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcuCompliance.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-mcuCompliance.form = mcuComplianceForm
-
-/**
 * @see \App\Http\Controllers\ComplianceReportController::nonCompliantEmployees
 * @see app/Http/Controllers/ComplianceReportController.php:90
 * @route '/api/reports/non-compliant-employees'
@@ -204,43 +130,6 @@ nonCompliantEmployees.head = (options?: RouteQueryOptions): RouteDefinition<'hea
     url: nonCompliantEmployees.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::nonCompliantEmployees
-* @see app/Http/Controllers/ComplianceReportController.php:90
-* @route '/api/reports/non-compliant-employees'
-*/
-const nonCompliantEmployeesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: nonCompliantEmployees.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::nonCompliantEmployees
-* @see app/Http/Controllers/ComplianceReportController.php:90
-* @route '/api/reports/non-compliant-employees'
-*/
-nonCompliantEmployeesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: nonCompliantEmployees.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ComplianceReportController::nonCompliantEmployees
-* @see app/Http/Controllers/ComplianceReportController.php:90
-* @route '/api/reports/non-compliant-employees'
-*/
-nonCompliantEmployeesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: nonCompliantEmployees.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-nonCompliantEmployees.form = nonCompliantEmployeesForm
 
 const ComplianceReportController = { certificateCompliance, mcuCompliance, nonCompliantEmployees }
 

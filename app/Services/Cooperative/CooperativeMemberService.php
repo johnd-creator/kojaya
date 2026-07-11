@@ -3,6 +3,7 @@
 namespace App\Services\Cooperative;
 
 use App\Models\CooperativeMember;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CooperativeMemberService
@@ -12,14 +13,14 @@ class CooperativeMemberService
         private readonly MemberStatusTransitionService $transitions,
     ) {}
 
-    public function resign(CooperativeMember $member): CooperativeMember
+    public function resign(CooperativeMember $member, ?User $actor = null): CooperativeMember
     {
-        return DB::transaction(function () use ($member): CooperativeMember {
+        return DB::transaction(function () use ($member, $actor): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
 
             $this->resignationGuard->assertCanResign($member);
 
-            return $this->transitions->resign($member);
+            return $this->transitions->resign($member, $actor);
         });
     }
 }

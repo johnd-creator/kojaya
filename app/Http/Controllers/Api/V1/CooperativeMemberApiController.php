@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Concerns\ResolvesApiPageSize;
 use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
+use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
 use App\Http\Resources\CooperativeMemberResource;
 use App\Http\Resources\MemberResignationRequestResource;
 use App\Models\CooperativeMember;
@@ -100,46 +102,97 @@ class CooperativeMemberApiController extends Controller
     public function update(
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
         AuditLogService $audit,
     ): JsonResponse {
         $this->authorize('update', $member);
-        $before = $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']);
-        $previousUserId = $member->user_id;
+        $before = $member->only(['name', 'email', 'phone', 'status', 'validation_status']);
 
-        $member = DB::transaction(function () use ($request, $member, $userProvisioningService, $previousUserId): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $member): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->update([
-                ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
+                ...$request->safe()->only([
+                    'employee_id',
+                    'no_anggota',
+                    'nama_anggota',
+                    'name',
+                    'email',
+                    'no_telp',
+                    'phone',
+                    'jenis_anggota',
+                    'jenis_kelamin',
+                    'kategori',
+                    'autodebet',
+                ]),
             ]);
-
-            if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
-                User::query()->find($previousUserId)?->removeRole('Anggota');
-            }
-
-            $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
 
             return $member->refresh();
         });
 
         $audit->log('member.profile.updated', 'cooperative.member', $member, [
             'old' => $before,
-            'new' => $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']),
+            'new' => $member->only(['name', 'email', 'phone', 'status', 'validation_status']),
             'reason' => 'Cooperative member profile updated through API.',
         ]);
-
-        if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
-            $audit->log('member.account.unlinked', 'cooperative.member', $member, [
-                'old' => ['user_id' => $previousUserId],
-                'new' => ['user_id' => $member->user_id],
-                'reason' => 'Cooperative member account link changed through API.',
-            ]);
-        }
 
         return response()->json([
             'data' => new CooperativeMemberResource($member->refresh()->load('organization')),
             'meta' => $this->openingBalanceWizardMeta($member, $request->validated('opening_saving_balance')),
         ]);
+    }
+
+    public function updateSensitiveData(
+        UpdateCooperativeMemberSensitiveDataRequest $request,
+        CooperativeMember $member,
+        AuditLogService $audit,
+    ): JsonResponse {
+        $this->authorize('updateSensitiveData', $member);
+
+        $fields = array_keys($request->validated());
+        $member = DB::transaction(function () use ($request, $member): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->update($request->validated());
+
+            return $member->refresh();
+        });
+
+        $audit->log('member.pii.updated', 'cooperative.member', $member, [
+            'new' => ['fields' => $fields],
+            'reason' => 'Cooperative member sensitive data updated through dedicated API action.',
+        ]);
+
+        return response()->json([
+            'data' => new CooperativeMemberResource($member->load('organization')),
+        ]);
+    }
+
+    public function linkAccount(
+        LinkCooperativeMemberAccountRequest $request,
+        CooperativeMember $member,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        AuditLogService $audit,
+    ): JsonResponse {
+        $this->authorize('update', $member);
+        $previousUserId = $member->user_id;
+
+        $member = DB::transaction(function () use ($request, $member, $userProvisioningService): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->forceFill(['user_id' => $request->validated('user_id')])->save();
+            $userProvisioningService->provision($member->refresh());
+
+            return $member->refresh();
+        });
+
+        if ($previousUserId !== null && (int) $previousUserId !== (int) $member->user_id) {
+            User::query()->find($previousUserId)?->removeRole('Anggota');
+        }
+
+        $audit->log('member.account.linked', 'cooperative.member', $member, [
+            'old' => ['user_id' => $previousUserId],
+            'new' => ['user_id' => $member->user_id],
+            'reason' => $request->validated('reason'),
+        ]);
+
+        return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
     }
 
     public function activate(
@@ -165,7 +218,9 @@ class CooperativeMemberApiController extends Controller
         $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService, $transitions, $request): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->forceFill($updateData)->save();
-            $userProvisioningService->provision($member->refresh());
+            if ($member->user_id === null) {
+                $userProvisioningService->provision($member->refresh());
+            }
 
             return $transitions->activate($member->refresh(), $request->user());
         });
@@ -177,7 +232,7 @@ class CooperativeMemberApiController extends Controller
     {
         $this->authorize('resign', $member);
 
-        $memberService->resign($member);
+        $memberService->resign($member, $request->user());
 
         return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);
     }

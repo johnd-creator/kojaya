@@ -27,12 +27,9 @@ class MemberValidationService
 
     public function verifyByAdmin(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
     {
-        $member = $this->transitions->transition(
+        $member = $this->transitions->verifyByAdmin(
             $member,
-            CooperativeMember::VALIDATION_PENDING,
-            CooperativeMember::VALIDATION_PENDING_REVIEW,
             $validator,
-            self::ACTION_VERIFIED,
             $notes,
             [
                 'admin_validated_at' => Carbon::now(),
@@ -49,20 +46,15 @@ class MemberValidationService
     {
         $this->assertApproverIsNotVerifier($member, $validator);
 
-        $member = $this->transitions->transition(
+        $member = $this->transitions->approveFinal(
             $member,
-            CooperativeMember::VALIDATION_ACTIVE,
-            CooperativeMember::VALIDATION_ACTIVE,
             $validator,
-            self::ACTION_APPROVED,
             $notes,
             [
                 'validated_at' => Carbon::now(),
                 'validated_by' => $validator->id,
                 'validation_notes' => $notes,
             ],
-            assignMemberRole: true,
-            revokeMemberTokens: false,
         );
         DB::afterCommit(fn () => $this->notificationDispatcher->memberFinalApproved($member, $validator));
 
@@ -71,12 +63,9 @@ class MemberValidationService
 
     public function requestRevision(CooperativeMember $member, User $validator, string $notes): CooperativeMember
     {
-        $member = $this->transitions->transition(
+        $member = $this->transitions->requestRevision(
             $member,
-            CooperativeMember::VALIDATION_INACTIVE,
-            CooperativeMember::VALIDATION_REVISION,
             $validator,
-            self::ACTION_REVISION,
             $notes,
             [
                 'validated_at' => Carbon::now(),
@@ -91,12 +80,9 @@ class MemberValidationService
 
     public function reject(CooperativeMember $member, User $validator, string $notes): CooperativeMember
     {
-        $member = $this->transitions->transition(
+        $member = $this->transitions->reject(
             $member,
-            CooperativeMember::VALIDATION_INACTIVE,
-            CooperativeMember::VALIDATION_REJECTED,
             $validator,
-            self::ACTION_REJECTED,
             $notes,
             [
                 'validated_at' => Carbon::now(),

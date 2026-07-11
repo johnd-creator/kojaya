@@ -104,7 +104,24 @@ const memberStatusTone = computed(() => {
   }
 });
 
-const submit = (): void => form.put(update(props.member.id).url);
+const submit = (): void => {
+  form
+    .transform((data) => ({
+      employee_id: data.employee_id,
+      no_anggota: data.no_anggota,
+      nama_anggota: data.nama_anggota,
+      name: data.name,
+      email: data.email,
+      no_telp: data.no_telp,
+      phone: data.phone,
+      jenis_anggota: data.jenis_anggota,
+      jenis_kelamin: data.jenis_kelamin,
+      kategori: data.kategori,
+      autodebet: data.autodebet,
+      opening_saving_balance: data.opening_saving_balance,
+    }))
+    .put(update(props.member.id).url);
+};
 </script>
 
 <template>

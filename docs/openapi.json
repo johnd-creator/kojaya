@@ -3535,9 +3535,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -3587,9 +3584,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -3651,9 +3645,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -3705,9 +3696,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "member",
@@ -3765,9 +3753,144 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
+                "parameters": [
+                    {
+                        "name": "member",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/members/{member}/sensitive-data": {
+            "patch": {
+                "summary": "PATCH Members/{Member}/Sensitive-Data",
+                "operationId": "patch_api_v1_members__member__sensitive-data",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "member",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/members/{member}/account": {
+            "patch": {
+                "summary": "PATCH Members/{Member}/Account",
+                "operationId": "patch_api_v1_members__member__account",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
                 "parameters": [
                     {
                         "name": "member",
@@ -3837,9 +3960,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "member",
@@ -3909,9 +4029,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "member",
@@ -3981,9 +4098,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "resignationRequest",
@@ -4053,9 +4167,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -4107,9 +4218,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4153,9 +4261,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4217,9 +4322,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4281,9 +4383,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "payment",
@@ -4352,10 +4451,7 @@
                     "429": {
                         "description": "Too many requests"
                     }
-                },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ]
+                }
             }
         },
         "/api/v1/savings/ledger": {
@@ -4389,9 +4485,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -4443,9 +4536,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -4497,9 +4587,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4561,9 +4648,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4623,9 +4707,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4695,9 +4776,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4767,9 +4845,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4839,9 +4914,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -5615,9 +5687,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5669,9 +5738,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5723,9 +5789,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5777,9 +5840,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5829,9 +5889,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -5893,9 +5950,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "notification",
@@ -5965,9 +6019,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {

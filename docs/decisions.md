@@ -919,6 +919,27 @@ Kunci blind index memakai `PII_BLIND_INDEX_KEY` dari secret manager; `APP_KEY` h
 
 ---
 
+## 🎯 ADR-025: Member Mutation Command Separation dan Legacy Status Preflight
+
+**Status:** ✅ Accepted
+**Date:** July 11, 2026
+**Deciders:** Engineering
+
+### Decision
+
+Generic member profile update hanya boleh mengubah profile fields non-sensitive. PII write, account linking, dan lifecycle transition memakai action/endpoint terpisah dengan permission atau transition guard masing-masing. Export organisasi non-global tanpa `organization_id` ditolak, bukan diperlakukan sebagai global scope.
+
+Legacy lifecycle rows diaudit melalui `members:audit-status-consistency` dan diperbaiki secara idempoten hanya melalui `members:backfill-status-consistency --apply` setelah backup dan review report.
+
+### Consequences
+
+- Status tidak dapat berubah melalui mass-assignment profile atau API generic update.
+- PII yang tidak dikirim tetap preserved; explicit clear hanya tersedia pada dedicated PII action.
+- CI tetap gagal pada generated drift, tetapi seluruh evidence checks tetap dieksekusi untuk diagnosis.
+- Data legacy yang belum konsisten terlihat sebelum strict active gate ditegakkan.
+
+---
+
 ## 📚 References
 
 - [Laravel Documentation](https://laravel.com/docs)
@@ -929,4 +950,4 @@ Kunci blind index memakai `PII_BLIND_INDEX_KEY` dari secret manager; `APP_KEY` h
 
 ---
 
-*Last Updated: June 13, 2026*
+*Last Updated: July 11, 2026*

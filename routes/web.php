@@ -205,6 +205,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('can:view_cooperative_member')->group(function () {
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
+            Route::patch('members/{member}/sensitive-data', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'updateSensitiveData'])->name('members.sensitive-data.update');
+            Route::patch('members/{member}/account', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.update');
             Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
             Route::post('members/{member}/deactivate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'deactivate'])->name('members.deactivate');
             Route::post('members/{member}/resign', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'resign'])->name('members.resign');

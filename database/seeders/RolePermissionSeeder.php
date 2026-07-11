@@ -203,6 +203,7 @@ class RolePermissionSeeder extends Seeder
             'view_cooperative_member',
             'manage_cooperative_member',
             'view_cooperative_member_pii',
+            'update_cooperative_member_pii',
             'validate_cooperative_member',
             'approve_cooperative_member',
             'manage_cooperative_dues',

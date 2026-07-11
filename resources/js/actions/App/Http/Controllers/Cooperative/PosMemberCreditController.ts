@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosMemberCreditController::create
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
@@ -68,43 +68,6 @@ create.head = (args: { member: string | number | { id: string | number } } | [me
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosMemberCreditController::create
-* @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
-* @route '/cooperative/pos/members/{member}/credit/pay'
-*/
-const createForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosMemberCreditController::create
-* @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
-* @route '/cooperative/pos/members/{member}/credit/pay'
-*/
-createForm.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosMemberCreditController::create
-* @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
-* @route '/cooperative/pos/members/{member}/credit/pay'
-*/
-createForm.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-create.form = createForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosMemberCreditController::store
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:29
 * @route '/cooperative/pos/members/{member}/credit/pay'
@@ -161,28 +124,6 @@ store.post = (args: { member: string | number | { id: string | number } } | [mem
     url: store.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosMemberCreditController::store
-* @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:29
-* @route '/cooperative/pos/members/{member}/credit/pay'
-*/
-const storeForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosMemberCreditController::store
-* @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:29
-* @route '/cooperative/pos/members/{member}/credit/pay'
-*/
-storeForm.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 const PosMemberCreditController = { create, store }
 

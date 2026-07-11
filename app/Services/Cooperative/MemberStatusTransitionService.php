@@ -122,6 +122,29 @@ class MemberStatusTransitionService
     }
 
     /**
+     * Revoke all member access without changing lifecycle status.
+     * Used when a member is soft-deleted or unlinked from their user account.
+     */
+    public function deleteAccess(CooperativeMember $member, User $actor, ?string $reason = null): CooperativeMember
+    {
+        return DB::transaction(function () use ($member, $actor, $reason): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+
+            $member->user?->removeRole('Anggota');
+
+            $this->audit->log('member.access.deleted', 'cooperative.lifecycle', $member, [
+                'old' => ['status' => $member->status, 'validation_status' => $member->validation_status],
+                'new' => ['action' => 'delete_access'],
+                'reason' => $reason ?? 'Member access revoked.',
+            ]);
+
+            $this->accessRevocation->revokeAfterCommit($member, 'delete_access', $actor);
+
+            return $member->refresh();
+        });
+    }
+
+    /**
      * @param  array<int, array{0: string, 1: string}>  $allowedSources
      * @param  array<string, mixed>  $attributes
      */

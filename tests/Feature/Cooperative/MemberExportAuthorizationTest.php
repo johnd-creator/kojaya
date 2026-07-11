@@ -153,4 +153,61 @@ class MemberExportAuthorizationTest extends TestCase
 
         return $user;
     }
+
+    public function test_non_global_user_without_organization_gets_403_on_export(): void
+    {
+        $user = User::factory()->create(['organization_id' => null]);
+        $user->assignRole('Admin Koperasi');
+
+        $this->actingAs($user)
+            ->get(route('cooperative.members.export'))
+            ->assertForbidden();
+    }
+
+    public function test_audit_log_stores_explicit_export_scope(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.export'))
+            ->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'member.pii.exported',
+            'new_values->scope' => 'organization',
+        ]);
+    }
+
+    public function test_pengurus_global_export_includes_multiple_organizations(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+        $pengurus = User::factory()->create(['organization_id' => $orgA->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+
+        CooperativeMember::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => 'SENTINEL-GLOBAL-A',
+            'nama_anggota' => 'SENTINEL-GLOBAL-A',
+        ]);
+        CooperativeMember::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'SENTINEL-GLOBAL-B',
+            'nama_anggota' => 'SENTINEL-GLOBAL-B',
+        ]);
+
+        $export = new AnggotaExport([], OrganizationVisibility::global());
+        $names = $export->query()->pluck('name')->all();
+
+        $this->assertContains('SENTINEL-GLOBAL-A', $names);
+        $this->assertContains('SENTINEL-GLOBAL-B', $names);
+    }
+
+    public function test_unsupported_scope_throws_exception(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        OrganizationVisibility::organization('');
+    }
 }

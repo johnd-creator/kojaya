@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: vendor/bin/pint --test
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - uses: actions/setup-node@v4
         with:
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - uses: actions/setup-node@v4
         with:
@@ -72,12 +72,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
           coverage: xdebug
       - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci --prefer-offline --no-audit
       - run: cp .env.example .env
       - run: php artisan key:generate
+      - run: npm run build
       # Required evidence command (profile is enabled through Collision below because
       # ParaTest 7 does not accept Laravel's --profile option as a CLI argument).
       # php artisan test --compact --parallel --profile --coverage --min=70
@@ -92,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env
@@ -110,7 +112,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env
@@ -138,7 +140,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_pgsql, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env

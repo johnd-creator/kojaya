@@ -1,10 +1,10 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-export const status = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const status = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: status.url(args, options),
     method: 'get',
 })
@@ -16,10 +16,10 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-status.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+status.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -49,50 +49,50 @@ status.url = (args: { payment: number | { id: number } } | [payment: number | { 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-status.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+status.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: status.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-status.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+status.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: status.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-const statusForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const statusForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: status.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-statusForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+statusForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: status.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::status
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:373
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:358
 * @route '/api/v1/member/payments/{payment}/status'
 */
-statusForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+statusForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: status.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -106,10 +106,10 @@ status.form = statusForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-export const qrisImage = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const qrisImage = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: qrisImage.url(args, options),
     method: 'get',
 })
@@ -121,10 +121,10 @@ qrisImage.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-qrisImage.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+qrisImage.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -154,50 +154,50 @@ qrisImage.url = (args: { payment: number | { id: number } } | [payment: number |
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-qrisImage.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+qrisImage.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: qrisImage.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-qrisImage.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+qrisImage.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: qrisImage.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-const qrisImageForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const qrisImageForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: qrisImage.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-qrisImageForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+qrisImageForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: qrisImage.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberSelfServiceController::qrisImage
-* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:398
+* @see app/Http/Controllers/Api/V1/MemberSelfServiceController.php:383
 * @route '/api/v1/member/payments/{payment}/qris-image'
 */
-qrisImageForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+qrisImageForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: qrisImage.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',

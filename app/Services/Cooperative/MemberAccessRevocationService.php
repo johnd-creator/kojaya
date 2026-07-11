@@ -2,7 +2,6 @@
 
 namespace App\Services\Cooperative;
 
-use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
@@ -15,7 +14,7 @@ class MemberAccessRevocationService
     ) {}
 
     /**
-     * Revoke all Sanctum tokens for the member's user account.
+     * Revoke only member-application Sanctum tokens for the member's user account.
      *
      * Should be called within DB::afterCommit() when invoked from inside a
      * transaction, so tokens are only removed after the state transition persists.
@@ -30,13 +29,16 @@ class MemberAccessRevocationService
             return 0;
         }
 
-        $count = $user->tokens()->count();
+        $tokens = $user->tokens()->get()->filter(
+            fn ($token): bool => $token->can('member:read') || $token->can('member:write'),
+        );
 
-        if ($count === 0) {
+        if ($tokens->isEmpty()) {
             return 0;
         }
 
-        $user->tokens()->delete();
+        $count = $tokens->count();
+        $user->tokens()->whereKey($tokens->modelKeys())->delete();
 
         $this->logRevocation($member, $actor, $reason, $count);
 
@@ -56,21 +58,15 @@ class MemberAccessRevocationService
     private function logRevocation(CooperativeMember $member, ?User $actor, string $reason, int $count): void
     {
         try {
-            AuditLog::create([
-                'user_id' => $actor?->id,
-                'action' => 'member_access_revoked',
-                'module' => 'cooperative.lifecycle',
-                'subject_type' => CooperativeMember::class,
-                'subject_id' => $member->id,
-                'new_values' => [
+            $this->audit->log('member.access.revoked', 'cooperative.lifecycle', $member, [
+                'new' => [
                     'reason' => $reason,
                     'tokens_revoked' => $count,
                     'member_status' => $member->status,
                     'validation_status' => $member->validation_status,
                     'affected_user_id' => $member->user_id,
                 ],
-                'ip_address' => request()?->ip(),
-                'user_agent' => request()?->userAgent(),
+                'reason' => $reason,
             ]);
         } catch (\Throwable) {
             $this->audit->log('member_access_revocation.audit_failed', 'cooperative.lifecycle', $member, [

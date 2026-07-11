@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 export const calculator = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ calculator.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 calculator.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ calculator.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 calculator.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ calculator.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 calculator.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ calculator.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 const calculatorForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const calculatorForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 calculatorForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ calculatorForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::calculator
-* @see app/Http/Controllers/Cooperative/LoanController.php:152
+* @see app/Http/Controllers/Cooperative/LoanController.php:174
 * @route '/cooperative/loans/calculator'
 */
 calculatorForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ calculator.form = calculatorForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::index
-* @see app/Http/Controllers/Cooperative/LoanController.php:25
+* @see app/Http/Controllers/Cooperative/LoanController.php:26
 * @route '/cooperative/loans'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -163,7 +163,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +178,7 @@ create.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 create.url = (options?: RouteQueryOptions) => {
@@ -187,7 +187,7 @@ create.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +197,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -207,7 +207,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -217,7 +217,7 @@ const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -227,7 +227,7 @@ createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::create
-* @see app/Http/Controllers/Cooperative/LoanController.php:57
+* @see app/Http/Controllers/Cooperative/LoanController.php:74
 * @route '/cooperative/loans/create'
 */
 createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -244,7 +244,7 @@ create.form = createForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::store
-* @see app/Http/Controllers/Cooperative/LoanController.php:67
+* @see app/Http/Controllers/Cooperative/LoanController.php:87
 * @route '/cooperative/loans'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -259,7 +259,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::store
-* @see app/Http/Controllers/Cooperative/LoanController.php:67
+* @see app/Http/Controllers/Cooperative/LoanController.php:87
 * @route '/cooperative/loans'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -268,7 +268,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::store
-* @see app/Http/Controllers/Cooperative/LoanController.php:67
+* @see app/Http/Controllers/Cooperative/LoanController.php:87
 * @route '/cooperative/loans'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -278,7 +278,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::store
-* @see app/Http/Controllers/Cooperative/LoanController.php:67
+* @see app/Http/Controllers/Cooperative/LoanController.php:87
 * @route '/cooperative/loans'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -288,7 +288,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::store
-* @see app/Http/Controllers/Cooperative/LoanController.php:67
+* @see app/Http/Controllers/Cooperative/LoanController.php:87
 * @route '/cooperative/loans'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -300,10 +300,10 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-export const show = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -315,10 +315,10 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-show.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -348,50 +348,50 @@ show.url = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-show.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-show.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-const showForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const showForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-showForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::show
-* @see app/Http/Controllers/Cooperative/LoanController.php:81
+* @see app/Http/Controllers/Cooperative/LoanController.php:103
 * @route '/cooperative/loans/{loan}'
 */
-showForm.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+showForm.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -405,10 +405,10 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::review
-* @see app/Http/Controllers/Cooperative/LoanController.php:107
+* @see app/Http/Controllers/Cooperative/LoanController.php:129
 * @route '/cooperative/loans/{loan}/review'
 */
-export const review = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const review = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: review.url(args, options),
     method: 'post',
 })
@@ -420,10 +420,10 @@ review.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::review
-* @see app/Http/Controllers/Cooperative/LoanController.php:107
+* @see app/Http/Controllers/Cooperative/LoanController.php:129
 * @route '/cooperative/loans/{loan}/review'
 */
-review.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+review.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -453,30 +453,30 @@ review.url = (args: { loan: number | { id: number } } | [loan: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::review
-* @see app/Http/Controllers/Cooperative/LoanController.php:107
+* @see app/Http/Controllers/Cooperative/LoanController.php:129
 * @route '/cooperative/loans/{loan}/review'
 */
-review.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+review.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: review.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::review
-* @see app/Http/Controllers/Cooperative/LoanController.php:107
+* @see app/Http/Controllers/Cooperative/LoanController.php:129
 * @route '/cooperative/loans/{loan}/review'
 */
-const reviewForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const reviewForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: review.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::review
-* @see app/Http/Controllers/Cooperative/LoanController.php:107
+* @see app/Http/Controllers/Cooperative/LoanController.php:129
 * @route '/cooperative/loans/{loan}/review'
 */
-reviewForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+reviewForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: review.url(args, options),
     method: 'post',
 })
@@ -485,10 +485,10 @@ review.form = reviewForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::approve
-* @see app/Http/Controllers/Cooperative/LoanController.php:116
+* @see app/Http/Controllers/Cooperative/LoanController.php:138
 * @route '/cooperative/loans/{loan}/approve'
 */
-export const approve = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -500,10 +500,10 @@ approve.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::approve
-* @see app/Http/Controllers/Cooperative/LoanController.php:116
+* @see app/Http/Controllers/Cooperative/LoanController.php:138
 * @route '/cooperative/loans/{loan}/approve'
 */
-approve.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+approve.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -533,30 +533,30 @@ approve.url = (args: { loan: number | { id: number } } | [loan: number | { id: n
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::approve
-* @see app/Http/Controllers/Cooperative/LoanController.php:116
+* @see app/Http/Controllers/Cooperative/LoanController.php:138
 * @route '/cooperative/loans/{loan}/approve'
 */
-approve.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::approve
-* @see app/Http/Controllers/Cooperative/LoanController.php:116
+* @see app/Http/Controllers/Cooperative/LoanController.php:138
 * @route '/cooperative/loans/{loan}/approve'
 */
-const approveForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const approveForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: approve.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::approve
-* @see app/Http/Controllers/Cooperative/LoanController.php:116
+* @see app/Http/Controllers/Cooperative/LoanController.php:138
 * @route '/cooperative/loans/{loan}/approve'
 */
-approveForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+approveForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: approve.url(args, options),
     method: 'post',
 })
@@ -565,10 +565,10 @@ approve.form = approveForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::reject
-* @see app/Http/Controllers/Cooperative/LoanController.php:125
+* @see app/Http/Controllers/Cooperative/LoanController.php:147
 * @route '/cooperative/loans/{loan}/reject'
 */
-export const reject = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -580,10 +580,10 @@ reject.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::reject
-* @see app/Http/Controllers/Cooperative/LoanController.php:125
+* @see app/Http/Controllers/Cooperative/LoanController.php:147
 * @route '/cooperative/loans/{loan}/reject'
 */
-reject.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+reject.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -613,30 +613,30 @@ reject.url = (args: { loan: number | { id: number } } | [loan: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::reject
-* @see app/Http/Controllers/Cooperative/LoanController.php:125
+* @see app/Http/Controllers/Cooperative/LoanController.php:147
 * @route '/cooperative/loans/{loan}/reject'
 */
-reject.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::reject
-* @see app/Http/Controllers/Cooperative/LoanController.php:125
+* @see app/Http/Controllers/Cooperative/LoanController.php:147
 * @route '/cooperative/loans/{loan}/reject'
 */
-const rejectForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const rejectForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: reject.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::reject
-* @see app/Http/Controllers/Cooperative/LoanController.php:125
+* @see app/Http/Controllers/Cooperative/LoanController.php:147
 * @route '/cooperative/loans/{loan}/reject'
 */
-rejectForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+rejectForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: reject.url(args, options),
     method: 'post',
 })
@@ -645,10 +645,10 @@ reject.form = rejectForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::disburse
-* @see app/Http/Controllers/Cooperative/LoanController.php:134
+* @see app/Http/Controllers/Cooperative/LoanController.php:156
 * @route '/cooperative/loans/{loan}/disburse'
 */
-export const disburse = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const disburse = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: disburse.url(args, options),
     method: 'post',
 })
@@ -660,10 +660,10 @@ disburse.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::disburse
-* @see app/Http/Controllers/Cooperative/LoanController.php:134
+* @see app/Http/Controllers/Cooperative/LoanController.php:156
 * @route '/cooperative/loans/{loan}/disburse'
 */
-disburse.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+disburse.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -693,30 +693,30 @@ disburse.url = (args: { loan: number | { id: number } } | [loan: number | { id: 
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::disburse
-* @see app/Http/Controllers/Cooperative/LoanController.php:134
+* @see app/Http/Controllers/Cooperative/LoanController.php:156
 * @route '/cooperative/loans/{loan}/disburse'
 */
-disburse.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+disburse.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: disburse.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::disburse
-* @see app/Http/Controllers/Cooperative/LoanController.php:134
+* @see app/Http/Controllers/Cooperative/LoanController.php:156
 * @route '/cooperative/loans/{loan}/disburse'
 */
-const disburseForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const disburseForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: disburse.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::disburse
-* @see app/Http/Controllers/Cooperative/LoanController.php:134
+* @see app/Http/Controllers/Cooperative/LoanController.php:156
 * @route '/cooperative/loans/{loan}/disburse'
 */
-disburseForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+disburseForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: disburse.url(args, options),
     method: 'post',
 })
@@ -725,10 +725,10 @@ disburse.form = disburseForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::pay
-* @see app/Http/Controllers/Cooperative/LoanController.php:143
+* @see app/Http/Controllers/Cooperative/LoanController.php:165
 * @route '/cooperative/loans/{loan}/payments'
 */
-export const pay = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const pay = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: pay.url(args, options),
     method: 'post',
 })
@@ -740,10 +740,10 @@ pay.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::pay
-* @see app/Http/Controllers/Cooperative/LoanController.php:143
+* @see app/Http/Controllers/Cooperative/LoanController.php:165
 * @route '/cooperative/loans/{loan}/payments'
 */
-pay.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+pay.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -773,30 +773,30 @@ pay.url = (args: { loan: number | { id: number } } | [loan: number | { id: numbe
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::pay
-* @see app/Http/Controllers/Cooperative/LoanController.php:143
+* @see app/Http/Controllers/Cooperative/LoanController.php:165
 * @route '/cooperative/loans/{loan}/payments'
 */
-pay.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+pay.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: pay.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::pay
-* @see app/Http/Controllers/Cooperative/LoanController.php:143
+* @see app/Http/Controllers/Cooperative/LoanController.php:165
 * @route '/cooperative/loans/{loan}/payments'
 */
-const payForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const payForm = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: pay.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\LoanController::pay
-* @see app/Http/Controllers/Cooperative/LoanController.php:143
+* @see app/Http/Controllers/Cooperative/LoanController.php:165
 * @route '/cooperative/loans/{loan}/payments'
 */
-payForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+payForm.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: pay.url(args, options),
     method: 'post',
 })

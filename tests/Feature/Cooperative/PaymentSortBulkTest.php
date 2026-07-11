@@ -100,6 +100,7 @@ class PaymentSortBulkTest extends TestCase
         $user->givePermissionTo('manage_cooperative_payment');
 
         $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
         $payment = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
 
         $this->actingAs($user)
@@ -113,6 +114,7 @@ class PaymentSortBulkTest extends TestCase
         $user->assignRole('Admin Koperasi');
 
         $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
         $payment = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
 
         $this->actingAs($user)
@@ -154,6 +156,7 @@ class PaymentSortBulkTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
         $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
 
         $p1 = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
         $p2 = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 200, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
@@ -172,6 +175,7 @@ class PaymentSortBulkTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
         $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
 
         $pending = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
         $approved = CooperativePayment::query()->create(['status' => 'APPROVED', 'amount' => 200, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
@@ -190,6 +194,7 @@ class PaymentSortBulkTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
         $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
 
         $p1 = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 300, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
         $p2 = CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);

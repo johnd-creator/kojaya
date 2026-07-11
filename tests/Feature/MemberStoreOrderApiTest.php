@@ -82,6 +82,7 @@ class MemberStoreOrderApiTest extends TestCase
         ]);
 
         $intentId = $response->json('data.payment_intent_id');
+        $this->assertSame(MemberPaymentIntent::RESERVATION_RESERVED, MemberPaymentIntent::query()->findOrFail($intentId)->reservation_status);
 
         $this->getJson("/api/v1/member/payment-intents/{$intentId}")
             ->assertOk()
@@ -112,6 +113,7 @@ class MemberStoreOrderApiTest extends TestCase
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->assertNotNull($intent->refresh()->settled_at);
+        $this->assertSame(MemberPaymentIntent::RESERVATION_CONSUMED, $intent->reservation_status);
         $this->assertSame('MOBILE-STORE-001', $intent->client_reference);
 
         $this->getJson("/api/v1/member/payment-intents/{$intentId}")
@@ -143,6 +145,35 @@ class MemberStoreOrderApiTest extends TestCase
 
         $this->assertSame($first->json('data.payment_intent_id'), $second->json('data.payment_intent_id'));
         $this->assertDatabaseCount('member_payment_intents', 1);
+    }
+
+    public function test_store_order_does_not_reuse_client_reference_for_a_different_amount(): void
+    {
+        $this->actingMember(['member:write']);
+        $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk-amount']);
+        $product = PosProduct::factory()->create([
+            'pos_category_id' => $category->id,
+            'sale_price' => 5000,
+            'stock' => 10,
+        ]);
+
+        $payload = [
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
+            'client_reference' => 'MOBILE-STORE-AMOUNT-MISMATCH',
+        ];
+
+        $this->postJson('/api/v1/member/store/orders', $payload)->assertCreated();
+
+        $this->postJson('/api/v1/member/store/orders', [
+            ...$payload,
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
+        ])->assertConflict();
+
+        $this->assertDatabaseCount('member_payment_intents', 1);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'reserved' => 1,
+        ]);
     }
 
     public function test_store_order_rejects_insufficient_stock(): void
@@ -186,6 +217,34 @@ class MemberStoreOrderApiTest extends TestCase
         $this->assertDatabaseHas('pos_inventory_stocks', [
             'pos_product_id' => $product->id,
             'quantity' => 4,
+            'reserved' => 0,
+        ]);
+    }
+
+    public function test_expiry_command_releases_and_marks_stale_reservation(): void
+    {
+        $this->actingMember(['member:write']);
+        $product = PosProduct::factory()->create([
+            'sale_price' => 5000,
+            'stock' => 4,
+        ]);
+
+        $response = $this->postJson('/api/v1/member/store/orders', [
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 3]],
+            'client_reference' => 'MOBILE-STORE-WORKER-EXPIRED',
+        ])->assertCreated();
+
+        $intent = MemberPaymentIntent::query()->findOrFail($response->json('data.payment_intent_id'));
+        $intent->forceFill(['expires_at' => now()->subMinute()])->save();
+
+        $this->artisan('orders:expire-reservations', ['--limit' => 10])
+            ->expectsOutput('Expired 1 order reservation(s).')
+            ->assertExitCode(0);
+
+        $this->assertSame(MemberPaymentIntent::RESERVATION_EXPIRED, $intent->refresh()->reservation_status);
+        $this->assertSame('EXPIRED', $intent->gateway_status);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
             'reserved' => 0,
         ]);
     }

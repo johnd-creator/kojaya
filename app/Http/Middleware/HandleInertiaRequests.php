@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,24 +42,70 @@ class HandleInertiaRequests extends Middleware
             'csrf_token' => csrf_token(),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $this->authenticatedUserData($request->user()),
                 'roles' => fn () => $request->user()?->getRoleNames() ?? [],
                 'permissions' => fn () => $request->user()?->getAllPermissions()->pluck('name')->values() ?? [],
             ],
             'appearance' => $request->cookie('appearance') ?? 'system',
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'active_organization' => fn () => session('active_organization_id')
-                ? \App\Models\Organization::find(session('active_organization_id'))
+                ? $this->organizationData(Organization::find(session('active_organization_id')))
                 : null,
             'user_organizations' => fn () => $request->user() && $request->user()->hasRole('System Admin')
-                ? \App\Models\Organization::orderBy('name')->get()
-                : ($request->user() && $request->user()->organization_id ? \App\Models\Organization::where('id', $request->user()->organization_id)->get() : []),
+                ? Organization::query()->orderBy('name')->get()->map(fn (Organization $organization): array => $this->organizationData($organization))->values()->all()
+                : ($request->user() && $request->user()->organization_id
+                    ? Organization::query()->whereKey($request->user()->organization_id)->get()->map(fn (Organization $organization): array => $this->organizationData($organization))->values()->all()
+                    : []),
             'googleSsoEnabled' => (bool) config('services.google.sso_enabled', false),
             'notifications' => [
                 'unreadCount' => fn () => $request->user()
                     ? $request->user()->unreadNotifications()->count()
                     : 0,
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function authenticatedUserData(?User $user): ?array
+    {
+        if (! $user) {
+            return null;
+        }
+
+        $user->loadMissing('organization');
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'avatar' => $user->getAttribute('avatar'),
+            'email_verified_at' => $user->email_verified_at?->toISOString(),
+            'created_at' => $user->created_at?->toISOString(),
+            'updated_at' => $user->updated_at?->toISOString(),
+            'organization_id' => $user->organization_id,
+            'organization' => $this->organizationData($user->organization),
+            'roles' => $user->getRoleNames()->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function organizationData(?Organization $organization): ?array
+    {
+        if (! $organization) {
+            return null;
+        }
+
+        return [
+            'id' => $organization->id,
+            'code' => $organization->code,
+            'name' => $organization->name,
+            'level' => $organization->level,
+            'type' => $organization->type,
+            'is_active' => $organization->is_active,
         ];
     }
 }

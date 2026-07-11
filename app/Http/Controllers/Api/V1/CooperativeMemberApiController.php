@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Concerns\ResolvesApiPageSize;
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
@@ -11,12 +12,14 @@ use App\Http\Resources\CooperativeMemberResource;
 use App\Http\Resources\MemberResignationRequestResource;
 use App\Models\CooperativeMember;
 use App\Models\MemberResignationRequest;
+use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberResignationRequestService;
+use App\Services\Cooperative\MemberStatusTransitionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,13 +28,16 @@ class CooperativeMemberApiController extends Controller
 {
     use ResolvesApiPageSize;
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $this->authorize('viewAny', CooperativeMember::class);
 
         $members = CooperativeMember::query()
-            ->with('organization')
-            ->when(! $this->canViewAllMembers($request), fn ($query) => $query->where('user_id', $request->user()?->id))
+            ->with('organization');
+
+        $scopeService->scopeVisibleTo($members, $request->user());
+
+        $members = $members
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
                 $query->where(function ($query) use ($search): void {
@@ -60,7 +66,7 @@ class CooperativeMemberApiController extends Controller
         $member = DB::transaction(function () use ($request, $headOfficeResolver, $memberNo, $userProvisioningService): CooperativeMember {
             $member = CooperativeMember::query()->create([
                 ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
-                'organization_id' => $headOfficeResolver->resolve()->id,
+                'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
                 'no_anggota' => $memberNo,
                 'member_no' => $memberNo,
                 'joined_at' => $request->input('joined_at') ?: now()->toDateString(),
@@ -94,22 +100,41 @@ class CooperativeMemberApiController extends Controller
     public function update(
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
-        CooperativeHeadOfficeResolver $headOfficeResolver,
         CooperativeMemberUserProvisioningService $userProvisioningService,
+        AuditLogService $audit,
     ): JsonResponse {
         $this->authorize('update', $member);
+        $before = $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']);
+        $previousUserId = $member->user_id;
 
-        $member = DB::transaction(function () use ($request, $member, $headOfficeResolver, $userProvisioningService): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $member, $userProvisioningService, $previousUserId): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->update([
                 ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
-                'organization_id' => $headOfficeResolver->resolve()->id,
             ]);
+
+            if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
+                User::query()->find($previousUserId)?->removeRole('Anggota');
+            }
 
             $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
 
             return $member->refresh();
         });
+
+        $audit->log('member.profile.updated', 'cooperative.member', $member, [
+            'old' => $before,
+            'new' => $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']),
+            'reason' => 'Cooperative member profile updated through API.',
+        ]);
+
+        if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
+            $audit->log('member.account.unlinked', 'cooperative.member', $member, [
+                'old' => ['user_id' => $previousUserId],
+                'new' => ['user_id' => $member->user_id],
+                'reason' => 'Cooperative member account link changed through API.',
+            ]);
+        }
 
         return response()->json([
             'data' => new CooperativeMemberResource($member->refresh()->load('organization')),
@@ -122,11 +147,11 @@ class CooperativeMemberApiController extends Controller
         CooperativeMember $member,
         CooperativeMemberUserProvisioningService $userProvisioningService,
         MemberNumberGenerator $memberNumberGenerator,
+        MemberStatusTransitionService $transitions,
     ): JsonResponse {
         $this->authorize('activate', $member);
 
         $updateData = [
-            'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'resigned_at' => null,
         ];
@@ -137,12 +162,12 @@ class CooperativeMemberApiController extends Controller
             $updateData['member_no'] = $noAnggota;
         }
 
-        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService): CooperativeMember {
+        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService, $transitions, $request): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
-            $member->update($updateData);
+            $member->forceFill($updateData)->save();
             $userProvisioningService->provision($member->refresh());
 
-            return $member->refresh();
+            return $transitions->activate($member->refresh(), $request->user());
         });
 
         return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);
@@ -157,12 +182,15 @@ class CooperativeMemberApiController extends Controller
         return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);
     }
 
-    public function resignationRequests(Request $request): JsonResponse
+    public function resignationRequests(Request $request, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $this->authorize('viewAny', MemberResignationRequest::class);
 
         $query = MemberResignationRequest::query()
-            ->with(['member.organization', 'reviewer'])
+            ->with(['member.organization', 'reviewer']);
+        $scopeService->scopeVisibleTo($query, $request->user());
+
+        $query
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request): void {
                 $search = $request->string('search')->toString();
@@ -205,17 +233,6 @@ class CooperativeMemberApiController extends Controller
             'data' => new MemberResignationRequestResource($resignationRequest->refresh()->load(['member.organization', 'reviewer'])),
             'message' => 'Pengajuan pengunduran diri ditolak.',
         ]);
-    }
-
-    private function canViewAllMembers(Request $request): bool
-    {
-        $user = $request->user();
-
-        return $user?->can('view_cooperative_all')
-            || $user?->can('manage_cooperative_member')
-            || $user?->can('manage_cooperative_payment')
-            || $user?->can('access_cooperative_pos')
-            || $user?->can('view_cooperative_report');
     }
 
     /** @return array<string, array<string, mixed>> */

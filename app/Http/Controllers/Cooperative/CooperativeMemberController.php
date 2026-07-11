@@ -12,11 +12,13 @@ use App\Models\Employee;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
+use App\Services\Cooperative\CooperativeMemberPageDataService;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\MemberAccessRevocationService;
 use App\Services\Cooperative\MemberNumberGenerator;
+use App\Services\Cooperative\MemberStatusTransitionService;
 use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,12 +30,15 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CooperativeMemberController extends Controller
 {
-    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
-    {
+    public function index(
+        Request $request,
+        OrganizationScopedQueryService $scopeService,
+        CooperativeMemberPageDataService $memberPageData,
+    ): Response {
         $this->authorize('viewAny', CooperativeMember::class);
 
         $scopedQuery = CooperativeMember::query()
-            ->with(['organization', 'employee', 'user'])
+            ->with('organization')
             ->withSum('ledgerEntries as saving_balance', 'credit')
             ->withSum('ledgerEntries as credit_balance', 'debit');
 
@@ -49,9 +54,12 @@ class CooperativeMemberController extends Controller
                     ->orWhere('nama_anggota', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('identity_number', 'like', "%{$search}%")
-                    ->orWhere('npwp', 'like', "%{$search}%")
                     ->orWhere('no_telp', 'like', "%{$search}%");
+
+                $identityIndex = CooperativeMember::blindIndexFor('identity_number', $search);
+                $npwpIndex = CooperativeMember::blindIndexFor('npwp', $search);
+                $query->when($identityIndex, fn ($query) => $query->orWhere('identity_number_bidx', $identityIndex))
+                    ->when($npwpIndex, fn ($query) => $query->orWhere('npwp_bidx', $npwpIndex));
             });
         }
 
@@ -77,7 +85,9 @@ class CooperativeMemberController extends Controller
         $scopeService->scopeVisibleTo($statsQuery, $request->user());
 
         return Inertia::render('Cooperative/Members/Index', [
-            'members' => $query->orderBy('no_anggota')->paginate(15)->withQueryString(),
+            'members' => $query->orderBy('no_anggota')->paginate(15)->through(
+                fn (CooperativeMember $member): array => $memberPageData->list($member),
+            )->withQueryString(),
             'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori', 'validation_status']),
             'options' => $this->options(),
             'stats' => Inertia::defer(function () use ($statsQuery): array {
@@ -96,13 +106,18 @@ class CooperativeMemberController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         $this->authorize('create', CooperativeMember::class);
 
+        $employees = Employee::query()->select('id', 'first_name', 'last_name', 'employee_code');
+        $users = User::query()->select('id', 'name', 'email');
+        $scopeService->scopeVisibleTo($employees, $request->user());
+        $scopeService->scopeVisibleTo($users, $request->user());
+
         return Inertia::render('Cooperative/Members/Create', [
-            'employees' => Employee::query()->select('id', 'first_name', 'last_name', 'employee_code')->orderBy('first_name')->get(),
-            'users' => User::query()->select('id', 'name', 'email')->orderBy('name')->get(),
+            'employees' => $employees->orderBy('first_name')->get(),
+            'users' => $users->orderBy('name')->get(),
             'options' => $this->options(),
         ]);
     }
@@ -120,7 +135,7 @@ class CooperativeMemberController extends Controller
         $member = DB::transaction(function () use ($data, $headOfficeResolver, $userProvisioningService, $request): CooperativeMember {
             $member = CooperativeMember::query()->create([
                 ...$data,
-                'organization_id' => $headOfficeResolver->resolve()->id,
+                'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
             ]);
 
             $userProvisioningService->provision($member, $request->validated('member_login_password'));
@@ -146,37 +161,55 @@ class CooperativeMemberController extends Controller
             ->with('success', 'Cooperative member created successfully.');
     }
 
-    public function show(CooperativeMember $member, SavingsSummaryService $savingsSummary, AuditLogService $audit): Response
-    {
+    public function show(
+        Request $request,
+        CooperativeMember $member,
+        SavingsSummaryService $savingsSummary,
+        AuditLogService $audit,
+        CooperativeMemberPageDataService $memberPageData,
+    ): Response {
         $this->authorize('view', $member);
 
-        $member->load(['organization', 'employee', 'user.roles', 'documents', 'invoices.contributionType', 'payments', 'ledgerEntries'])
+        $member->load(['organization', 'ledgerEntries'])
             ->loadSum('ledgerEntries as saving_balance', 'credit');
 
-        $audit->log('member.pii.viewed', 'cooperative.member', $member);
+        if ($request->user()?->can(\App\Enums\PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value)) {
+            $audit->log('member.pii.viewed', 'cooperative.member', $member);
+        }
 
         return Inertia::render('Cooperative/Members/Show', [
-            'member' => $member,
+            'member' => $memberPageData->detail($member, $request->user()),
             'openingSavingBalance' => $member->ledgerEntries->firstWhere('entry_type', 'OPENING_BALANCE')?->credit,
             'savingsSummary' => $savingsSummary->summary($member),
             'recentSavingsEntries' => $savingsSummary->ledgerQuery($member)
                 ->latest('posted_at')
                 ->latest('id')
                 ->limit(10)
-                ->get(),
+                ->get()
+                ->map(fn ($entry): array => $memberPageData->ledgerEntry($entry))
+                ->all(),
         ]);
     }
 
-    public function edit(CooperativeMember $member): Response
-    {
+    public function edit(
+        Request $request,
+        CooperativeMember $member,
+        OrganizationScopedQueryService $scopeService,
+        CooperativeMemberPageDataService $memberPageData,
+    ): Response {
         $this->authorize('update', $member);
 
         $member->load('ledgerEntries');
 
+        $employees = Employee::query()->select('id', 'first_name', 'last_name', 'employee_code');
+        $users = User::query()->select('id', 'name', 'email');
+        $scopeService->scopeVisibleTo($employees, $request->user());
+        $scopeService->scopeVisibleTo($users, $request->user());
+
         return Inertia::render('Cooperative/Members/Edit', [
-            'member' => $member,
-            'employees' => Employee::query()->select('id', 'first_name', 'last_name', 'employee_code')->orderBy('first_name')->get(),
-            'users' => User::query()->select('id', 'name', 'email')->orderBy('name')->get(),
+            'member' => $memberPageData->edit($member, $request->user()),
+            'employees' => $employees->orderBy('first_name')->get(),
+            'users' => $users->orderBy('name')->get(),
             'openingSavingBalance' => $member->ledgerEntries->firstWhere('entry_type', 'OPENING_BALANCE')?->credit,
             'options' => $this->options(),
         ]);
@@ -185,22 +218,41 @@ class CooperativeMemberController extends Controller
     public function update(
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
-        CooperativeHeadOfficeResolver $headOfficeResolver,
         CooperativeMemberUserProvisioningService $userProvisioningService,
+        AuditLogService $audit,
     ): RedirectResponse {
         $this->authorize('update', $member);
+        $before = $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']);
+        $previousUserId = $member->user_id;
 
-        $member = DB::transaction(function () use ($request, $member, $headOfficeResolver, $userProvisioningService): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $member, $userProvisioningService, $previousUserId): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->update([
                 ...$this->memberPayload($request, member: $member),
-                'organization_id' => $headOfficeResolver->resolve()->id,
             ]);
+
+            if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
+                User::query()->find($previousUserId)?->removeRole('Anggota');
+            }
 
             $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
 
             return $member->refresh();
         });
+
+        $audit->log('member.profile.updated', 'cooperative.member', $member, [
+            'old' => $before,
+            'new' => $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening', 'user_id', 'status', 'validation_status']),
+            'reason' => 'Cooperative member profile updated.',
+        ]);
+
+        if ($previousUserId && (int) $member->user_id !== (int) $previousUserId) {
+            $audit->log('member.account.unlinked', 'cooperative.member', $member, [
+                'old' => ['user_id' => $previousUserId],
+                'new' => ['user_id' => $member->user_id],
+                'reason' => 'Cooperative member account link changed.',
+            ]);
+        }
 
         $openingSavingBalance = $request->validated('opening_saving_balance');
 
@@ -241,11 +293,11 @@ class CooperativeMemberController extends Controller
         CooperativeMember $member,
         CooperativeMemberUserProvisioningService $userProvisioningService,
         DuesGenerationService $duesGenerationService,
+        MemberStatusTransitionService $transitions,
     ): RedirectResponse {
         $this->authorize('activate', $member);
 
         $updateData = [
-            'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'tanggal_aktif' => $member->tanggal_aktif ?: now()->toDateString(),
             'resigned_at' => null,
@@ -257,19 +309,19 @@ class CooperativeMemberController extends Controller
             $updateData['member_no'] = $noAnggota;
         }
 
-        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService): CooperativeMember {
+        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService, $transitions): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
-            $member->update($updateData);
+            $member->forceFill($updateData)->save();
             $userProvisioningService->provision($member->refresh());
 
-            return $member->refresh();
+            return $transitions->activate($member->refresh(), request()->user());
         });
         $duesGenerationService->ensureOneTimeInvoice($member->refresh());
 
         return back()->with('success', 'Cooperative member activated successfully.');
     }
 
-    public function deactivate(CooperativeMember $member, MemberAccessRevocationService $revocationService): RedirectResponse
+    public function deactivate(CooperativeMember $member, MemberStatusTransitionService $transitions): RedirectResponse
     {
         $this->authorize('update', $member);
 
@@ -277,12 +329,7 @@ class CooperativeMemberController extends Controller
             return back()->with('error', 'Hanya anggota aktif yang dapat dinonaktifkan.');
         }
 
-        $member->forceFill([
-            'status' => 'INACTIVE',
-            'resigned_at' => null,
-        ])->save();
-
-        $revocationService->revokeFor($member->refresh(), 'deactivated', request()->user());
+        $transitions->deactivate($member, request()->user());
 
         return back()->with('success', 'Anggota berhasil dinonaktifkan.');
     }
@@ -308,9 +355,16 @@ class CooperativeMemberController extends Controller
             ->with('success', 'Anggota berhasil dihapus.');
     }
 
-    public function export(Request $request, OrganizationScopedQueryService $scopeService): BinaryFileResponse
-    {
+    public function export(
+        Request $request,
+        OrganizationScopedQueryService $scopeService,
+        AuditLogService $audit,
+    ): BinaryFileResponse {
         $this->authorize('export', CooperativeMember::class);
+        $audit->log('member.pii.exported', 'cooperative.member', null, [
+            'new' => ['filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori'])],
+            'reason' => 'Cooperative member export requested.',
+        ]);
 
         return Excel::download(
             new AnggotaExport(
@@ -337,6 +391,17 @@ class CooperativeMemberController extends Controller
         ?CooperativeMember $member = null,
     ): array {
         $data = $request->safe()->except(['member_login_password', 'opening_saving_balance']);
+        if (! $request->user()?->can(\App\Enums\PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value)) {
+            unset(
+                $data['identity_number'],
+                $data['npwp'],
+                $data['no_rekening'],
+                $data['nama_bank'],
+                $data['nama_pemilik_rekening'],
+                $data['address'],
+                $data['notes'],
+            );
+        }
         $input = $data['no_anggota'] ?? null;
         $noAnggota = filled($input) ? $input : ($member?->no_anggota ?? app(MemberNumberGenerator::class)->generate());
 

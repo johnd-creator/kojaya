@@ -29,8 +29,10 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
                     ->orWhere('member_no', 'like', "%{$search}%")
                     ->orWhere('nama_anggota', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%")
-                    ->orWhere('npwp', 'like', "%{$search}%")
                     ->orWhere('no_telp', 'like', "%{$search}%");
+
+                $npwpIndex = CooperativeMember::blindIndexFor('npwp', $search);
+                $query->when($npwpIndex, fn (Builder $query) => $query->orWhere('npwp_bidx', $npwpIndex));
             });
         }
 

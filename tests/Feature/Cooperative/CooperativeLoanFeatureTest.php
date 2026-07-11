@@ -24,13 +24,13 @@ class CooperativeLoanFeatureTest extends TestCase
     {
         $this->seed(RolePermissionSeeder::class);
 
-        $admin = User::factory()->create();
-        $admin->assignRole('Admin Koperasi');
-        $manager = User::factory()->create();
-        $manager->assignRole('Manajer Koperasi');
-        $pengurus = User::factory()->create();
-        $pengurus->assignRole('Pengurus Koperasi');
         $member = $this->member();
+        $admin = User::factory()->create(['organization_id' => $member->organization_id]);
+        $admin->assignRole('Admin Koperasi');
+        $manager = User::factory()->create(['organization_id' => $member->organization_id]);
+        $manager->assignRole('Manajer Koperasi');
+        $pengurus = User::factory()->create(['organization_id' => $member->organization_id]);
+        $pengurus->assignRole('Pengurus Koperasi');
         $loanType = $this->loanType();
 
         $this->actingAs($admin)->post(route('cooperative.loans.store'), [
@@ -184,11 +184,11 @@ class CooperativeLoanFeatureTest extends TestCase
     {
         $this->seed(RolePermissionSeeder::class);
 
-        $manager = User::factory()->create();
-        $manager->assignRole('Manajer Koperasi');
-        $pengurus = User::factory()->create();
-        $pengurus->assignRole('Pengurus Koperasi');
         $member = $this->member();
+        $manager = User::factory()->create(['organization_id' => $member->organization_id]);
+        $manager->assignRole('Manajer Koperasi');
+        $pengurus = User::factory()->create(['organization_id' => $member->organization_id]);
+        $pengurus->assignRole('Pengurus Koperasi');
         $loanType = $this->loanType();
 
         $loan = app(\App\Contracts\Cooperative\LoanServiceContract::class)->apply([

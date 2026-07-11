@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cooperative;
 
 use App\Contracts\Cooperative\LoanServiceContract;
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\LoanStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ApproveLoanRequest;
@@ -15,6 +16,7 @@ use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanType;
 use App\Services\Cooperative\LoanCalculatorService;
+use App\Services\Cooperative\LoanPageDataService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,14 +24,18 @@ use Inertia\Response;
 
 class LoanController extends Controller
 {
-    public function index(Request $request): Response
-    {
+    public function index(
+        Request $request,
+        OrganizationScopedQueryService $scopeService,
+        LoanPageDataService $pageData,
+    ): Response {
         $this->authorize('viewAny', Loan::class);
 
         $user = $request->user();
         $isAdmin = $user?->can('view_cooperative_all') || $user?->can('manage_cooperative_loan');
 
         $query = Loan::query()->with(['member', 'loanType']);
+        $scopeService->scopeVisibleTo($query, $user);
 
         if (! $isAdmin) {
             $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $user?->id));
@@ -47,39 +53,50 @@ class LoanController extends Controller
         // Non-admin users (who only see their own loans) should not receive
         // the full member list or global statistics.
         $props = [
-            'loans' => $query->latest()->paginate(15)->withQueryString(),
+            'loans' => $query->latest()->paginate(15)->withQueryString()->through(
+                fn (Loan $loan): array => $pageData->list($loan),
+            ),
             'loanTypes' => LoanType::query()->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['status', 'cooperative_member_id']),
         ];
 
         if ($isAdmin) {
-            $props['members'] = CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']);
+            $memberQuery = CooperativeMember::query()->active();
+            $scopeService->scopeVisibleTo($memberQuery, $user);
+            $props['members'] = $memberQuery->orderBy('name')->get(['id', 'member_no', 'name']);
+            $statsQuery = Loan::query();
+            $scopeService->scopeVisibleTo($statsQuery, $user);
             $props['stats'] = [
-                'applied' => Loan::query()->where('status', LoanStatus::Applied)->count(),
-                'manager_approved' => Loan::query()->where('status', LoanStatus::ManagerApproved)->count(),
-                'active' => Loan::query()->where('status', LoanStatus::Active)->count(),
-                'paid_off' => Loan::query()->where('status', LoanStatus::PaidOff)->count(),
+                'applied' => (clone $statsQuery)->where('status', LoanStatus::Applied)->count(),
+                'manager_approved' => (clone $statsQuery)->where('status', LoanStatus::ManagerApproved)->count(),
+                'active' => (clone $statsQuery)->where('status', LoanStatus::Active)->count(),
+                'paid_off' => (clone $statsQuery)->where('status', LoanStatus::PaidOff)->count(),
             ];
         }
 
         return Inertia::render('Cooperative/Loans/Index', $props);
     }
 
-    public function create(Request $request): Response
+    public function create(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         $this->authorize('manage', Loan::class);
 
+        $memberQuery = CooperativeMember::query()->active();
+        $scopeService->scopeVisibleTo($memberQuery, $request->user());
+
         return Inertia::render('Cooperative/Loans/Create', [
-            'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
+            'members' => $memberQuery->orderBy('name')->get(['id', 'member_no', 'name']),
             'loanTypes' => LoanType::query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
-    public function store(StoreLoanRequest $request, LoanServiceContract $loanService): RedirectResponse
+    public function store(StoreLoanRequest $request, LoanServiceContract $loanService, OrganizationScopedQueryService $scopeService): RedirectResponse
     {
         $this->authorize('manage', Loan::class);
 
-        $member = CooperativeMember::query()->findOrFail($request->validated('cooperative_member_id'));
+        $memberQuery = CooperativeMember::query()->whereKey($request->validated('cooperative_member_id'));
+        $scopeService->scopeVisibleTo($memberQuery, $request->user());
+        $member = $memberQuery->firstOrFail();
 
         $loan = $loanService->apply([
             ...$request->validated(),
@@ -89,12 +106,11 @@ class LoanController extends Controller
         return redirect()->route('cooperative.loans.show', $loan)->with('success', 'Pinjaman berhasil diajukan.');
     }
 
-    public function show(Request $request, Loan $loan): Response
+    public function show(Request $request, Loan $loan, LoanPageDataService $pageData): Response
     {
         $this->authorize('view', $loan);
 
         $loan->load([
-            'member.user',
             'member.organization',
             'loanType',
             'installments',
@@ -110,8 +126,14 @@ class LoanController extends Controller
             ->get();
 
         return Inertia::render('Cooperative/Loans/Show', [
-            'loan' => $loan,
-            'approvalLogs' => $approvalLogs,
+            'loan' => $pageData->detail($loan),
+            'approvalLogs' => $approvalLogs->map(fn ($log): array => [
+                'id' => $log->id,
+                'from_status' => $log->from_status,
+                'to_status' => $log->to_status,
+                'note' => $log->note,
+                'created_at' => $log->created_at?->toISOString(),
+            ])->all(),
         ]);
     }
 

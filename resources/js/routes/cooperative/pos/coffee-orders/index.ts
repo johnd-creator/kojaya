@@ -85,7 +85,7 @@ index.form = indexForm
 * @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
-export const updateStatus = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateStatus = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
@@ -100,7 +100,7 @@ updateStatus.definition = {
 * @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
-updateStatus.url = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+updateStatus.url = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { coffeeOrder: args }
     }
@@ -133,7 +133,7 @@ updateStatus.url = (args: { coffeeOrder: number | { id: number } } | [coffeeOrde
 * @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
-updateStatus.put = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateStatus.put = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
@@ -143,7 +143,7 @@ updateStatus.put = (args: { coffeeOrder: number | { id: number } } | [coffeeOrde
 * @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
-const updateStatusForm = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const updateStatusForm = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: updateStatus.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',
@@ -158,7 +158,7 @@ const updateStatusForm = (args: { coffeeOrder: number | { id: number } } | [coff
 * @see app/Http/Controllers/Cooperative/CoffeeOrderController.php:56
 * @route '/cooperative/pos/coffee-orders/{coffeeOrder}/status'
 */
-updateStatusForm.put = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+updateStatusForm.put = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: updateStatus.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'PUT',

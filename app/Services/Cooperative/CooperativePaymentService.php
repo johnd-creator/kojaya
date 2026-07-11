@@ -7,6 +7,7 @@ use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativePayment;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +18,7 @@ class CooperativePaymentService
         private readonly CooperativePeriodLockService $periodLockService,
         private readonly CooperativeReceiptService $receiptService,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+        private readonly AuditLogService $audit,
     ) {}
 
     /**
@@ -122,6 +124,7 @@ class CooperativePaymentService
                 ],
                 [
                     'cooperative_member_id' => $payment->cooperative_member_id,
+                    'organization_id' => $payment->member?->organization_id,
                     'source_type' => CooperativePayment::class,
                     'source_id' => $payment->id,
                     'cooperative_contribution_type_id' => $contributionType?->id,
@@ -136,6 +139,13 @@ class CooperativePaymentService
             );
 
             $payment->logApproval($originalStatus, 'APPROVED', $approver, 'Pembayaran disetujui');
+            $this->audit->log('payment.approved', 'cooperative.payment', $payment, [
+                'new' => [
+                    'status' => 'APPROVED',
+                    'amount' => (float) $payment->amount,
+                ],
+                'reason' => 'Cooperative payment approved.',
+            ]);
 
             $this->receiptService->issue($payment, $approver);
             DB::afterCommit(fn () => $this->notificationDispatcher->paymentApproved($payment, $approver));
@@ -166,6 +176,13 @@ class CooperativePaymentService
             ])->save();
 
             $payment->logApproval('APPROVED', 'RECONCILED', $user, "Referensi: {$reference}");
+            $this->audit->log('payment.reconciled', 'cooperative.payment', $payment, [
+                'new' => [
+                    'reconciled_at' => $payment->reconciled_at?->toISOString(),
+                    'reconciliation_reference' => $reference,
+                ],
+                'reason' => 'Cooperative payment reconciled.',
+            ]);
 
             return $payment->refresh();
         });

@@ -13,20 +13,28 @@ class EnsureIsMember
     {
         $user = $request->user();
 
-        if (! $user || ! $user->cooperativeMember) {
+        if (! $user) {
             return redirect()->route('dashboard');
         }
 
-        $member = $user->cooperativeMember;
-        $validationStatus = $member->validation_status ?: $member->status;
+        $member = $user->cooperativeMember()->first();
+        if ($member === null) {
+            return redirect()->route('dashboard');
+        }
 
-        if ($validationStatus !== CooperativeMember::VALIDATION_ACTIVE && ! $this->isAllowedPendingRoute($request)) {
+        if (! $this->isFullyActive($member) && ! $this->isAllowedPendingRoute($request)) {
             return redirect()
                 ->route('member.onboarding')
                 ->with('warning', 'Akun Anda sedang menunggu penerimaan Admin Koperasi.');
         }
 
         return $next($request);
+    }
+
+    private function isFullyActive(CooperativeMember $member): bool
+    {
+        return $member->status === CooperativeMember::VALIDATION_ACTIVE
+            && $member->validation_status === CooperativeMember::VALIDATION_ACTIVE;
     }
 
     private function isAllowedPendingRoute(Request $request): bool

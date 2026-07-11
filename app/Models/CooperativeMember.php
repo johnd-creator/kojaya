@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 class CooperativeMember extends Model
 {
@@ -79,6 +82,94 @@ class CooperativeMember extends Model
         'status_badge',
         'no_anggota_display',
     ];
+
+    protected $hidden = [
+        'identity_number_enc',
+        'identity_number_bidx',
+        'npwp_enc',
+        'npwp_bidx',
+        'no_rekening_enc',
+        'no_rekening_bidx',
+    ];
+
+    public static function blindIndexFor(string $field, mixed $value): ?string
+    {
+        $normalized = match ($field) {
+            'identity_number' => preg_replace('/\D+/', '', (string) $value) ?? '',
+            'npwp' => preg_replace('/\D+/', '', (string) $value) ?? '',
+            'no_rekening' => strtoupper(trim((string) $value)),
+            default => trim((string) $value),
+        };
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $key = (string) config('security.blind_index_key');
+        if (Str::startsWith($key, 'base64:')) {
+            $key = base64_decode(substr($key, 7), true) ?: $key;
+        }
+
+        return hash_hmac(
+            'sha256',
+            (string) config('security.blind_index_version', 'v1').'|'.$field.'|'.$normalized,
+            $key,
+        );
+    }
+
+    public function getIdentityNumberAttribute(mixed $value): ?string
+    {
+        return $this->decryptSensitiveValue('identity_number_enc', $value);
+    }
+
+    public function setIdentityNumberAttribute(mixed $value): void
+    {
+        $this->setSensitiveValue('identity_number', 'identity_number_enc', 'identity_number_bidx', $value);
+    }
+
+    public function getNpwpAttribute(mixed $value): ?string
+    {
+        return $this->decryptSensitiveValue('npwp_enc', $value);
+    }
+
+    public function setNpwpAttribute(mixed $value): void
+    {
+        $this->setSensitiveValue('npwp', 'npwp_enc', 'npwp_bidx', $value);
+    }
+
+    public function getNoRekeningAttribute(mixed $value): ?string
+    {
+        return $this->decryptSensitiveValue('no_rekening_enc', $value);
+    }
+
+    public function setNoRekeningAttribute(mixed $value): void
+    {
+        $this->setSensitiveValue('no_rekening', 'no_rekening_enc', 'no_rekening_bidx', $value);
+    }
+
+    private function decryptSensitiveValue(string $encryptedField, mixed $legacyValue): ?string
+    {
+        $encrypted = $this->attributes[$encryptedField] ?? null;
+        if (is_string($encrypted) && $encrypted !== '') {
+            try {
+                return Crypt::decryptString($encrypted);
+            } catch (DecryptException) {
+                return $legacyValue !== null ? (string) $legacyValue : null;
+            }
+        }
+
+        return $legacyValue !== null ? (string) $legacyValue : null;
+    }
+
+    private function setSensitiveValue(string $plainField, string $encryptedField, string $blindIndexField, mixed $value): void
+    {
+        $normalized = $value === null ? null : trim((string) $value);
+        $this->attributes[$plainField] = null;
+        $this->attributes[$encryptedField] = $normalized === null || $normalized === ''
+            ? null
+            : Crypt::encryptString($normalized);
+        $this->attributes[$blindIndexField] = self::blindIndexFor($plainField, $normalized);
+    }
 
     protected function casts(): array
     {

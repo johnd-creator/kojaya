@@ -60,6 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'member.active' => \App\Http\Middleware\EnsureMemberFullyActive::class,
             'member.api' => \App\Http\Middleware\EnsureApiMember::class,
             'member.api.active' => \App\Http\Middleware\EnsureApiMemberIsActive::class,
+            'cooperative.ability' => \App\Http\Middleware\EnsureCooperativeAbility::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

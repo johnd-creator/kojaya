@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:18
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
 * @route '/cooperative/savings/withdrawals'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,10 +82,10 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:33
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-export const process = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const process = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
@@ -97,10 +97,10 @@ process.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:33
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-process.url = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+process.url = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { withdrawal: args }
     }
@@ -130,30 +130,30 @@ process.url = (args: { withdrawal: number | { id: number } } | [withdrawal: numb
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:33
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-process.post = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+process.post = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:33
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-const processForm = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const processForm = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: process.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
-* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:33
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-processForm.post = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+processForm.post = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: process.url(args, options),
     method: 'post',
 })

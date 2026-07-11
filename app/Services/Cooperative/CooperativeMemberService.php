@@ -9,7 +9,7 @@ class CooperativeMemberService
 {
     public function __construct(
         private readonly CooperativeMemberResignationGuard $resignationGuard,
-        private readonly MemberAccessRevocationService $accessRevocation,
+        private readonly MemberStatusTransitionService $transitions,
     ) {}
 
     public function resign(CooperativeMember $member): CooperativeMember
@@ -19,14 +19,7 @@ class CooperativeMemberService
 
             $this->resignationGuard->assertCanResign($member);
 
-            $member->forceFill([
-                'status' => 'RESIGNED',
-                'resigned_at' => now()->toDateString(),
-            ])->save();
-
-            $this->accessRevocation->revokeAfterCommit($member, 'resigned');
-
-            return $member->refresh();
+            return $this->transitions->resign($member);
         });
     }
 }

@@ -390,7 +390,7 @@ createPaymentIntent.form = createPaymentIntentForm
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-export const paymentStatus = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const paymentStatus = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: paymentStatus.url(args, options),
     method: 'get',
 })
@@ -405,7 +405,7 @@ paymentStatus.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatus.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+paymentStatus.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -438,7 +438,7 @@ paymentStatus.url = (args: { payment: number | { id: number } } | [payment: numb
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatus.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+paymentStatus.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: paymentStatus.url(args, options),
     method: 'get',
 })
@@ -448,7 +448,7 @@ paymentStatus.get = (args: { payment: number | { id: number } } | [payment: numb
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatus.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+paymentStatus.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: paymentStatus.url(args, options),
     method: 'head',
 })
@@ -458,7 +458,7 @@ paymentStatus.head = (args: { payment: number | { id: number } } | [payment: num
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-const paymentStatusForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+const paymentStatusForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: paymentStatus.url(args, options),
     method: 'get',
 })
@@ -468,7 +468,7 @@ const paymentStatusForm = (args: { payment: number | { id: number } } | [payment
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatusForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+paymentStatusForm.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: paymentStatus.url(args, options),
     method: 'get',
 })
@@ -478,7 +478,7 @@ paymentStatusForm.get = (args: { payment: number | { id: number } } | [payment: 
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatusForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+paymentStatusForm.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
     action: paymentStatus.url(args, {
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
@@ -1103,7 +1103,7 @@ rewards.form = rewardsForm
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-export const redeemReward = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const redeemReward = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeemReward.url(args, options),
     method: 'post',
 })
@@ -1118,7 +1118,7 @@ redeemReward.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemReward.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+redeemReward.url = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reward: args }
     }
@@ -1151,7 +1151,7 @@ redeemReward.url = (args: { reward: string | { id: string } } | [reward: string 
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemReward.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+redeemReward.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeemReward.url(args, options),
     method: 'post',
 })
@@ -1161,7 +1161,7 @@ redeemReward.post = (args: { reward: string | { id: string } } | [reward: string
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-const redeemRewardForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const redeemRewardForm = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: redeemReward.url(args, options),
     method: 'post',
 })
@@ -1171,7 +1171,7 @@ const redeemRewardForm = (args: { reward: string | { id: string } } | [reward: s
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemRewardForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+redeemRewardForm.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: redeemReward.url(args, options),
     method: 'post',
 })

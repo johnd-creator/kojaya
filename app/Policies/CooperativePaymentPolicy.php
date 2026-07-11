@@ -15,8 +15,12 @@ class CooperativePaymentPolicy extends BasePolicy
 
     public function view(User $user, CooperativePayment $cooperativePayment): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value)
-            || ($this->can($user, PermissionEnum::COOPERATIVE_MEMBER_VIEW->value) && $cooperativePayment->member?->user_id === $user->id);
+        return ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
+            || ($this->can($user, PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value)
+                && $this->sameOrganization($user, $cooperativePayment)))
+            || ($this->can($user, PermissionEnum::COOPERATIVE_MEMBER_VIEW->value)
+                && $cooperativePayment->member?->user_id === $user->id
+                && $this->sameOrganization($user, $cooperativePayment));
     }
 
     public function create(User $user): bool
@@ -26,6 +30,7 @@ class CooperativePaymentPolicy extends BasePolicy
 
     public function approve(User $user, CooperativePayment $cooperativePayment): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value)
+            && ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value) || $this->sameOrganization($user, $cooperativePayment));
     }
 }

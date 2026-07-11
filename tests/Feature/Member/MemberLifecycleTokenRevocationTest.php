@@ -87,10 +87,24 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         app(MemberAccessRevocationService::class)->revokeFor($member, 'deactivated', $admin);
 
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'member_access_revoked',
+            'action' => 'member.access.revoked',
             'subject_type' => CooperativeMember::class,
             'subject_id' => $member->id,
         ]);
+    }
+
+    public function test_revocation_preserves_ess_and_technician_tokens(): void
+    {
+        [$user, $member] = $this->activeMemberWithToken();
+        $admin = $this->adminUser($member->organization_id);
+        $user->createToken('ess-mobile', ['ess:read', 'ess:write']);
+        $user->createToken('technician-mobile', ['work-orders:read', 'work-orders:write']);
+
+        app(MemberAccessRevocationService::class)->revokeFor($member, 'deactivated', $admin);
+
+        $this->assertSame(2, $user->tokens()->count());
+        $this->assertTrue($user->tokens()->where('name', 'ess-mobile')->exists());
+        $this->assertTrue($user->tokens()->where('name', 'technician-mobile')->exists());
     }
 
     public function test_revocation_with_no_tokens_returns_zero(): void

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\TechnicianWorkOrderAttachmentRequest;
 use App\Http\Requests\Api\TechnicianWorkOrderCompleteRequest;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\DB;
 
 class TechnicianWorkOrderController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -37,7 +40,7 @@ class TechnicianWorkOrderController extends Controller
             ->orderBy('scheduled_date')
             ->orderBy('created_at');
 
-        $workOrders = $query->paginate($request->integer('per_page', 15));
+        $workOrders = $query->paginate($this->apiPageSize($request));
 
         return response()->json([
             'success' => true,

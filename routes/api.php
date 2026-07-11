@@ -51,7 +51,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/devices/push-token', [ProductionIntegrationController::class, 'registerDevice'])
         ->middleware(['ability:profile:read', 'throttle:api-write']);
     Route::post('/payments/charge', [ProductionIntegrationController::class, 'createPaymentCharge'])
-        ->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+        ->middleware(['member.api.active', 'ability:member:write', 'throttle:api-write', 'idempotent']);
     Route::get('/monitoring/health', [ProductionIntegrationController::class, 'monitoring'])
         ->middleware('ability:reports:read');
 });
@@ -119,32 +119,34 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         });
     });
 
-    Route::get('/members', [CooperativeMemberApiController::class, 'index'])->middleware('ability:cooperative:read');
-    Route::post('/members', [CooperativeMemberApiController::class, 'store'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::get('/members/resignation-requests', [CooperativeMemberApiController::class, 'resignationRequests'])->middleware('ability:cooperative:read');
-    Route::get('/members/{member}', [CooperativeMemberApiController::class, 'show'])->middleware('ability:cooperative:read');
-    Route::put('/members/{member}', [CooperativeMemberApiController::class, 'update'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/members/{member}/activate', [CooperativeMemberApiController::class, 'activate'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/members/{member}/resign', [CooperativeMemberApiController::class, 'resign'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/members/resignation-requests/{resignationRequest}/process', [CooperativeMemberApiController::class, 'processResignationRequest'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::get('/dues/invoices', [CooperativeDuesApiController::class, 'invoices'])->middleware('ability:cooperative:read');
-    Route::post('/dues/generate', [CooperativeDuesApiController::class, 'generate'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/dues/payments', [CooperativePaymentApiController::class, 'store'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);
-    Route::post('/dues/payments/batch', [CooperativePaymentApiController::class, 'batch'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);
-    Route::post('/dues/payments/{payment}/approve', [CooperativePaymentApiController::class, 'approve'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::get('/savings/categories', [SavingsApiController::class, 'categories'])->middleware('ability:cooperative:read');
-    Route::get('/savings/ledger', [SavingsApiController::class, 'ledger'])->middleware('ability:cooperative:read');
-    Route::get('/loans', [LoanApiController::class, 'index'])->middleware('ability:cooperative:read');
-    Route::post('/loans/apply', [LoanApiController::class, 'apply'])->middleware(['ability:cooperative:write', 'throttle:api-write', 'idempotent']);
-    Route::get('/loans/{loan}', [LoanApiController::class, 'show'])->middleware('ability:cooperative:read');
-    Route::post('/loans/{loan}/review', [LoanApiController::class, 'review'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/loans/{loan}/approve', [LoanApiController::class, 'approve'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/loans/{loan}/reject', [LoanApiController::class, 'reject'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-    Route::post('/loans/calculator', [LoanApiController::class, 'calculator'])->middleware(['ability:cooperative:read', 'throttle:api-write']);
-    Route::get('/points/balance', [PointApiController::class, 'balance'])->middleware('ability:member:read');
-    Route::get('/points/history', [PointApiController::class, 'history'])->middleware('ability:member:read');
-    Route::get('/rewards', [RewardApiController::class, 'index'])->middleware('ability:member:read');
-    Route::post('/rewards/{reward}/redeem', [RewardApiController::class, 'redeem'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+    Route::get('/members', [CooperativeMemberApiController::class, 'index'])->middleware('cooperative.ability:cooperative.member.read,cooperative:read');
+    Route::post('/members', [CooperativeMemberApiController::class, 'store'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+    Route::get('/members/resignation-requests', [CooperativeMemberApiController::class, 'resignationRequests'])->middleware('cooperative.ability:cooperative.resignation.review,cooperative.member.read,cooperative:read');
+    Route::get('/members/{member}', [CooperativeMemberApiController::class, 'show'])->middleware('cooperative.ability:cooperative.member.read,cooperative:read');
+    Route::put('/members/{member}', [CooperativeMemberApiController::class, 'update'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+    Route::post('/members/{member}/activate', [CooperativeMemberApiController::class, 'activate'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+    Route::post('/members/{member}/resign', [CooperativeMemberApiController::class, 'resign'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+    Route::post('/members/resignation-requests/{resignationRequest}/process', [CooperativeMemberApiController::class, 'processResignationRequest'])->middleware(['cooperative.ability:cooperative.resignation.review,cooperative.member.write,cooperative:write', 'throttle:api-write']);
+    Route::get('/dues/invoices', [CooperativeDuesApiController::class, 'invoices'])->middleware('cooperative.ability:cooperative.dues.read,cooperative:read');
+    Route::post('/dues/generate', [CooperativeDuesApiController::class, 'generate'])->middleware(['cooperative.ability:cooperative.dues.write,cooperative:write', 'throttle:api-write']);
+    Route::post('/dues/payments', [CooperativePaymentApiController::class, 'store'])->middleware(['cooperative.ability:cooperative.payment.record,cooperative:write', 'throttle:api-write', 'idempotent']);
+    Route::post('/dues/payments/batch', [CooperativePaymentApiController::class, 'batch'])->middleware(['cooperative.ability:cooperative.payment.record,cooperative:write', 'throttle:api-write', 'idempotent']);
+    Route::post('/dues/payments/{payment}/approve', [CooperativePaymentApiController::class, 'approve'])->middleware(['cooperative.ability:cooperative.payment.record,cooperative:write', 'throttle:api-write']);
+    Route::get('/savings/categories', [SavingsApiController::class, 'categories'])->middleware('cooperative.ability:cooperative.ledger.read,cooperative:read');
+    Route::get('/savings/ledger', [SavingsApiController::class, 'ledger'])->middleware('cooperative.ability:cooperative.ledger.read,cooperative:read');
+    Route::get('/loans', [LoanApiController::class, 'index'])->middleware('cooperative.ability:cooperative.loan.read,cooperative:read');
+    Route::post('/loans/apply', [LoanApiController::class, 'apply'])->middleware(['cooperative.ability:cooperative.loan.write,cooperative:write', 'throttle:api-write', 'idempotent']);
+    Route::get('/loans/{loan}', [LoanApiController::class, 'show'])->middleware('cooperative.ability:cooperative.loan.read,cooperative:read');
+    Route::post('/loans/{loan}/review', [LoanApiController::class, 'review'])->middleware(['cooperative.ability:cooperative.loan.review,cooperative:write', 'throttle:api-write']);
+    Route::post('/loans/{loan}/approve', [LoanApiController::class, 'approve'])->middleware(['cooperative.ability:cooperative.loan.approve,cooperative:write', 'throttle:api-write']);
+    Route::post('/loans/{loan}/reject', [LoanApiController::class, 'reject'])->middleware(['cooperative.ability:cooperative.loan.review,cooperative.loan.approve,cooperative:write', 'throttle:api-write']);
+    Route::post('/loans/calculator', [LoanApiController::class, 'calculator'])->middleware(['cooperative.ability:cooperative.loan.read,cooperative:read', 'throttle:api-write']);
+    Route::middleware('member.api.active')->group(function () {
+        Route::get('/points/balance', [PointApiController::class, 'balance'])->middleware('ability:member:read');
+        Route::get('/points/history', [PointApiController::class, 'history'])->middleware('ability:member:read');
+        Route::get('/rewards', [RewardApiController::class, 'index'])->middleware('ability:member:read');
+        Route::post('/rewards/{reward}/redeem', [RewardApiController::class, 'redeem'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+    });
     Route::get('/pos/products', [PosApiController::class, 'products'])->middleware('ability:pos:read');
     Route::post('/pos/transactions', [PosApiController::class, 'store'])->middleware(['ability:pos:write', 'throttle:api-write', 'idempotent']);
     Route::post('/pos/returns', [PosApiController::class, 'processReturn'])->middleware(['ability:pos:write', 'throttle:api-write', 'idempotent']);
@@ -160,13 +162,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::get('/procurement/vendors/{vendor}/performance', [ProcurementApiController::class, 'vendorPerformance'])->middleware('ability:reports:read');
 
     Route::prefix('notifications')->group(function () {
-        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index'])->middleware('ability:cooperative:read');
-        Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent'])->middleware('ability:cooperative:read');
-        Route::get('/summary', [App\Http\Controllers\NotificationController::class, 'summary'])->middleware('ability:cooperative:read');
-        Route::get('/preferences', [App\Http\Controllers\NotificationController::class, 'getPreferences'])->middleware('ability:cooperative:read');
-        Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-        Route::patch('/{notification}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
-        Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->middleware(['ability:cooperative:write', 'throttle:api-write']);
+        Route::get('/', [App\Http\Controllers\NotificationController::class, 'index'])->middleware('cooperative.ability:cooperative.member.read,cooperative:read');
+        Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent'])->middleware('cooperative.ability:cooperative.member.read,cooperative:read');
+        Route::get('/summary', [App\Http\Controllers\NotificationController::class, 'summary'])->middleware('cooperative.ability:cooperative.member.read,cooperative:read');
+        Route::get('/preferences', [App\Http\Controllers\NotificationController::class, 'getPreferences'])->middleware('cooperative.ability:cooperative.member.read,cooperative:read');
+        Route::put('/preferences', [App\Http\Controllers\NotificationController::class, 'updatePreferences'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+        Route::patch('/{notification}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+        Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
     });
 });
 

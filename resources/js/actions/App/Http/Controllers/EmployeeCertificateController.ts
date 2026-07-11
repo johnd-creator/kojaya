@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 export const index = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 index.url = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ index.url = (args: { employeeId: string | number } | [employeeId: string | numbe
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 index.get = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -53,7 +53,7 @@ index.get = (args: { employeeId: string | number } | [employeeId: string | numbe
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 index.head = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -63,7 +63,7 @@ index.head = (args: { employeeId: string | number } | [employeeId: string | numb
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 const indexForm = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -73,7 +73,7 @@ const indexForm = (args: { employeeId: string | number } | [employeeId: string |
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 indexForm.get = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -83,7 +83,7 @@ indexForm.get = (args: { employeeId: string | number } | [employeeId: string | n
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::index
-* @see app/Http/Controllers/EmployeeCertificateController.php:17
+* @see app/Http/Controllers/EmployeeCertificateController.php:20
 * @route '/api/employees/{employeeId}/certificates'
 */
 indexForm.head = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -100,7 +100,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::store
-* @see app/Http/Controllers/EmployeeCertificateController.php:27
+* @see app/Http/Controllers/EmployeeCertificateController.php:30
 * @route '/api/employees/{employeeId}/certificates'
 */
 export const store = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -115,7 +115,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::store
-* @see app/Http/Controllers/EmployeeCertificateController.php:27
+* @see app/Http/Controllers/EmployeeCertificateController.php:30
 * @route '/api/employees/{employeeId}/certificates'
 */
 store.url = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -142,7 +142,7 @@ store.url = (args: { employeeId: string | number } | [employeeId: string | numbe
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::store
-* @see app/Http/Controllers/EmployeeCertificateController.php:27
+* @see app/Http/Controllers/EmployeeCertificateController.php:30
 * @route '/api/employees/{employeeId}/certificates'
 */
 store.post = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -152,7 +152,7 @@ store.post = (args: { employeeId: string | number } | [employeeId: string | numb
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::store
-* @see app/Http/Controllers/EmployeeCertificateController.php:27
+* @see app/Http/Controllers/EmployeeCertificateController.php:30
 * @route '/api/employees/{employeeId}/certificates'
 */
 const storeForm = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -162,7 +162,7 @@ const storeForm = (args: { employeeId: string | number } | [employeeId: string |
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::store
-* @see app/Http/Controllers/EmployeeCertificateController.php:27
+* @see app/Http/Controllers/EmployeeCertificateController.php:30
 * @route '/api/employees/{employeeId}/certificates'
 */
 storeForm.post = (args: { employeeId: string | number } | [employeeId: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -174,7 +174,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 export const show = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -189,7 +189,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 show.url = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions) => {
@@ -215,7 +215,7 @@ show.url = (args: { employeeId: string | number, id: string | number } | [employ
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 show.get = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -225,7 +225,7 @@ show.get = (args: { employeeId: string | number, id: string | number } | [employ
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 show.head = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -235,7 +235,7 @@ show.head = (args: { employeeId: string | number, id: string | number } | [emplo
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 const showForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -245,7 +245,7 @@ const showForm = (args: { employeeId: string | number, id: string | number } | [
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 showForm.get = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -255,7 +255,7 @@ showForm.get = (args: { employeeId: string | number, id: string | number } | [em
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::show
-* @see app/Http/Controllers/EmployeeCertificateController.php:36
+* @see app/Http/Controllers/EmployeeCertificateController.php:39
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 showForm.head = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -272,7 +272,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::update
-* @see app/Http/Controllers/EmployeeCertificateController.php:44
+* @see app/Http/Controllers/EmployeeCertificateController.php:47
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 export const update = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -287,7 +287,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::update
-* @see app/Http/Controllers/EmployeeCertificateController.php:44
+* @see app/Http/Controllers/EmployeeCertificateController.php:47
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 update.url = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions) => {
@@ -313,7 +313,7 @@ update.url = (args: { employeeId: string | number, id: string | number } | [empl
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::update
-* @see app/Http/Controllers/EmployeeCertificateController.php:44
+* @see app/Http/Controllers/EmployeeCertificateController.php:47
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 update.put = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -323,7 +323,7 @@ update.put = (args: { employeeId: string | number, id: string | number } | [empl
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::update
-* @see app/Http/Controllers/EmployeeCertificateController.php:44
+* @see app/Http/Controllers/EmployeeCertificateController.php:47
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 const updateForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -338,7 +338,7 @@ const updateForm = (args: { employeeId: string | number, id: string | number } |
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::update
-* @see app/Http/Controllers/EmployeeCertificateController.php:44
+* @see app/Http/Controllers/EmployeeCertificateController.php:47
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 updateForm.put = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -355,7 +355,7 @@ update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::destroy
-* @see app/Http/Controllers/EmployeeCertificateController.php:54
+* @see app/Http/Controllers/EmployeeCertificateController.php:57
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 export const destroy = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -370,7 +370,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::destroy
-* @see app/Http/Controllers/EmployeeCertificateController.php:54
+* @see app/Http/Controllers/EmployeeCertificateController.php:57
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 destroy.url = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions) => {
@@ -396,7 +396,7 @@ destroy.url = (args: { employeeId: string | number, id: string | number } | [emp
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::destroy
-* @see app/Http/Controllers/EmployeeCertificateController.php:54
+* @see app/Http/Controllers/EmployeeCertificateController.php:57
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 destroy.delete = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -406,7 +406,7 @@ destroy.delete = (args: { employeeId: string | number, id: string | number } | [
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::destroy
-* @see app/Http/Controllers/EmployeeCertificateController.php:54
+* @see app/Http/Controllers/EmployeeCertificateController.php:57
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 const destroyForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -421,7 +421,7 @@ const destroyForm = (args: { employeeId: string | number, id: string | number } 
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::destroy
-* @see app/Http/Controllers/EmployeeCertificateController.php:54
+* @see app/Http/Controllers/EmployeeCertificateController.php:57
 * @route '/api/employees/{employeeId}/certificates/{id}'
 */
 destroyForm.delete = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -438,7 +438,7 @@ destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::uploadDocument
-* @see app/Http/Controllers/EmployeeCertificateController.php:72
+* @see app/Http/Controllers/EmployeeCertificateController.php:75
 * @route '/api/employees/{employeeId}/certificates/{id}/upload'
 */
 export const uploadDocument = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -453,7 +453,7 @@ uploadDocument.definition = {
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::uploadDocument
-* @see app/Http/Controllers/EmployeeCertificateController.php:72
+* @see app/Http/Controllers/EmployeeCertificateController.php:75
 * @route '/api/employees/{employeeId}/certificates/{id}/upload'
 */
 uploadDocument.url = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions) => {
@@ -479,7 +479,7 @@ uploadDocument.url = (args: { employeeId: string | number, id: string | number }
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::uploadDocument
-* @see app/Http/Controllers/EmployeeCertificateController.php:72
+* @see app/Http/Controllers/EmployeeCertificateController.php:75
 * @route '/api/employees/{employeeId}/certificates/{id}/upload'
 */
 uploadDocument.post = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -489,7 +489,7 @@ uploadDocument.post = (args: { employeeId: string | number, id: string | number 
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::uploadDocument
-* @see app/Http/Controllers/EmployeeCertificateController.php:72
+* @see app/Http/Controllers/EmployeeCertificateController.php:75
 * @route '/api/employees/{employeeId}/certificates/{id}/upload'
 */
 const uploadDocumentForm = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -499,7 +499,7 @@ const uploadDocumentForm = (args: { employeeId: string | number, id: string | nu
 
 /**
 * @see \App\Http\Controllers\EmployeeCertificateController::uploadDocument
-* @see app/Http/Controllers/EmployeeCertificateController.php:72
+* @see app/Http/Controllers/EmployeeCertificateController.php:75
 * @route '/api/employees/{employeeId}/certificates/{id}/upload'
 */
 uploadDocumentForm.post = (args: { employeeId: string | number, id: string | number } | [employeeId: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

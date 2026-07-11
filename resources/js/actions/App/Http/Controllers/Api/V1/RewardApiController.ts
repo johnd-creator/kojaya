@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::index
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:15
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:18
 * @route '/api/v1/rewards'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,10 +82,10 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::redeem
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:32
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-export const redeem = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const redeem = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeem.url(args, options),
     method: 'post',
 })
@@ -97,10 +97,10 @@ redeem.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::redeem
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:32
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-redeem.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+redeem.url = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reward: args }
     }
@@ -130,30 +130,30 @@ redeem.url = (args: { reward: string | { id: string } } | [reward: string | { id
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::redeem
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:32
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-redeem.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+redeem.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeem.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::redeem
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:32
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-const redeemForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+const redeemForm = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: redeem.url(args, options),
     method: 'post',
 })
 
 /**
 * @see \App\Http\Controllers\Api\V1\RewardApiController::redeem
-* @see app/Http/Controllers/Api/V1/RewardApiController.php:32
+* @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-redeemForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+redeemForm.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
     action: redeem.url(args, options),
     method: 'post',
 })

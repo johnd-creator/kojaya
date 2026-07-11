@@ -4,11 +4,14 @@ namespace App\Services\Cooperative;
 
 use App\Models\CooperativeMember;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MemberProfileService
 {
+    public function __construct(private readonly AuditLogService $audit) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -17,6 +20,7 @@ class MemberProfileService
         return DB::transaction(function () use ($user, $member, $attributes): CooperativeMember {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $before = $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening']);
 
             if ($member->sso_provider !== null && $user->email !== $attributes['email']) {
                 throw ValidationException::withMessages([
@@ -44,7 +48,14 @@ class MemberProfileService
                 'nama_pemilik_rekening' => $attributes['bank_account_holder'] ?? null,
             ]);
 
-            return $member->refresh();
+            $member = $member->refresh();
+            $this->audit->log('member.profile.updated', 'cooperative.member', $member, [
+                'old' => $before,
+                'new' => $member->only(['name', 'email', 'phone', 'identity_number', 'npwp', 'no_rekening']),
+                'reason' => 'Member updated own profile.',
+            ]);
+
+            return $member;
         });
     }
 }

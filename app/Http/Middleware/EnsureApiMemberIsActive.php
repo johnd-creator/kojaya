@@ -12,17 +12,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureApiMemberIsActive
 {
-    private const ACTIVE_STATUSES = [
-        CooperativeMember::VALIDATION_ACTIVE,
-    ];
-
     public function __construct(
         private readonly AuditLogService $audit,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        $member = $request->user()?->cooperativeMember;
+        $member = $request->user()?->cooperativeMember()->first();
 
         if (! $member) {
             return ApiResponse::error(
@@ -31,9 +27,10 @@ class EnsureApiMemberIsActive
             );
         }
 
-        $status = $member->validation_status ?: $member->status;
+        $status = $member->validation_status;
 
-        if (in_array($status, self::ACTIVE_STATUSES, true) && $member->status === CooperativeMember::VALIDATION_ACTIVE) {
+        if ($member->status === CooperativeMember::VALIDATION_ACTIVE
+            && $member->validation_status === CooperativeMember::VALIDATION_ACTIVE) {
             return $next($request);
         }
 

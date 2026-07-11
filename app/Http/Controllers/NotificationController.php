@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Requests\UpdateNotificationPreferencesRequest;
 use App\Http\Resources\NotificationResource;
 use App\Models\NotificationPreference;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function __construct(
         protected NotificationService $notificationService
     ) {}
@@ -22,7 +25,7 @@ class NotificationController extends Controller
     {
         $notifications = $this->filteredNotifications($request)
             ->orderBy('created_at', 'desc')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($this->apiPageSize($request));
 
         return NotificationResource::collection($notifications);
     }

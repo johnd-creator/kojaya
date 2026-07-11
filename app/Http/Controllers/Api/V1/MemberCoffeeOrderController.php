@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreMemberCoffeeOrderRequest;
 use App\Models\CoffeeOrder;
 use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Integrations\PaymentGatewayService;
 use Illuminate\Database\Eloquent\Builder;
@@ -45,6 +46,7 @@ class MemberCoffeeOrderController extends Controller
         StoreMemberCoffeeOrderRequest $request,
         PaymentGatewayService $gateway,
         MemberOrderReservationService $reservationService,
+        AuditLogService $audit,
     ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
@@ -64,6 +66,14 @@ class MemberCoffeeOrderController extends Controller
             ->first();
 
         if ($existing) {
+            if ($existing->expires_at?->isPast() === true || strtoupper((string) $existing->gateway_status) !== 'PENDING') {
+                abort(409, 'Client reference sudah kedaluwarsa atau telah mencapai status terminal. Gunakan client_reference baru.');
+            }
+
+            if (abs((float) $existing->amount - $subtotal) > 0.005 || (string) $existing->channel !== $channel) {
+                abort(409, 'Client reference sudah dipakai untuk nominal atau channel pembayaran berbeda. Gunakan client_reference baru.');
+            }
+
             $charge = $gateway->createIntentCharge($existing->refresh());
 
             return response()->json([
@@ -84,6 +94,7 @@ class MemberCoffeeOrderController extends Controller
                     'amount' => $subtotal,
                     'channel' => $channel,
                     'gateway_status' => 'PENDING',
+                    'reservation_status' => MemberPaymentIntent::RESERVATION_RESERVED,
                     'metadata' => [
                         'description' => 'Pesanan Kopi Kojaya',
                         'client_reference' => $clientReference,
@@ -92,7 +103,11 @@ class MemberCoffeeOrderController extends Controller
                     'expires_at' => now()->addMinutes(30),
                 ]);
             });
-        } catch (QueryException) {
+        } catch (QueryException $exception) {
+            if (! $this->isClientReferenceConflict($exception)) {
+                throw $exception;
+            }
+
             $intent = MemberPaymentIntent::query()
                 ->where('cooperative_member_id', $member->id)
                 ->where('payable_type', MemberPaymentIntent::PAYABLE_COFFEE_ORDER)
@@ -100,6 +115,9 @@ class MemberCoffeeOrderController extends Controller
                 ->firstOrFail();
         }
 
+        $audit->log('reservation.created', 'member_payment_intent', $intent, [
+            'reason' => 'Coffee order stock reservation created.',
+        ]);
         $charge = $gateway->createIntentCharge($intent);
 
         return response()->json([
@@ -138,6 +156,15 @@ class MemberCoffeeOrderController extends Controller
                     ->orWhere('name', 'like', '%Matcha%')
                     ->orWhere('name', 'like', '%Chocolate%');
             });
+    }
+
+    private function isClientReferenceConflict(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
+            && str_contains($message, 'member_payment_intents')
+            && str_contains($message, 'client_reference');
     }
 
     private function formatProduct(PosProduct $product): array

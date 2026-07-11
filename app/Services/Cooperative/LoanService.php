@@ -13,6 +13,7 @@ use App\Models\LoanInstallment;
 use App\Models\LoanPayment;
 use App\Models\LoanType;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,7 @@ class LoanService implements LoanServiceContract
         private readonly LoanEligibilityService $eligibility,
         private readonly CooperativePeriodLockService $periodLockService,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+        private readonly AuditLogService $audit,
     ) {}
 
     /**
@@ -126,6 +128,10 @@ class LoanService implements LoanServiceContract
             ])->save();
 
             $this->logApproval($loan, LoanStatus::ManagerApproved->value, LoanStatus::Approved->value, $actor, $note);
+            $this->audit->log('loan.approved', 'cooperative.loan', $loan, [
+                'new' => ['status' => LoanStatus::Approved->value],
+                'reason' => $note ?? 'Loan final approval recorded.',
+            ]);
             DB::afterCommit(fn () => $this->notificationDispatcher->loanApproved($loan, $actor));
 
             return $loan->refresh();
@@ -190,6 +196,7 @@ class LoanService implements LoanServiceContract
                     ],
                     [
                         'cooperative_member_id' => $loan->cooperative_member_id,
+                        'organization_id' => $loan->organization_id,
                         'cooperative_payment_id' => null,
                         'ledger_scope' => 'LOAN',
                         'debit' => $loan->principal_amount,
@@ -201,6 +208,13 @@ class LoanService implements LoanServiceContract
                 );
 
                 $this->logApproval($loan, LoanStatus::Approved->value, LoanStatus::Active->value, $actor, 'Pinjaman dicairkan.');
+                $this->audit->log('loan.disbursed', 'cooperative.loan', $loan, [
+                    'new' => [
+                        'status' => LoanStatus::Active->value,
+                        'reference_no' => $loan->reference_no,
+                    ],
+                    'reason' => 'Loan disbursement recorded.',
+                ]);
                 DB::afterCommit(fn () => $this->notificationDispatcher->loanDisbursed($loan, $actor));
             }
 
@@ -296,6 +310,7 @@ class LoanService implements LoanServiceContract
 
             CooperativeLedgerEntry::query()->create([
                 'cooperative_member_id' => $loan->cooperative_member_id,
+                'organization_id' => $loan->organization_id,
                 'cooperative_payment_id' => null,
                 'source_type' => LoanPayment::class,
                 'source_id' => $payment->id,

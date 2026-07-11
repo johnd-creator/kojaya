@@ -896,6 +896,29 @@ Two `type` strings (`App\Notifications\DatabaseNotification`, `App\Notifications
 
 ---
 
+## 🎯 ADR-024: Member PII Encryption dan Blind Index Bertahap
+
+**Status:** ✅ Accepted
+**Date:** July 11, 2026
+**Deciders:** Engineering
+
+### Decision
+
+Member identity number, NPWP, dan nomor rekening ditulis ke kolom encrypted (`*_enc`) dan HMAC blind index (`*_bidx`) untuk data baru. Model tetap melakukan dual-read terhadap kolom plaintext legacy selama backfill, sementara exact-match search memakai blind index dan kolom encrypted disembunyikan dari serialisasi.
+
+Backfill dijalankan eksplisit melalui `members:backfill-sensitive-data --chunk=250`; plaintext legacy tidak dihapus otomatis oleh migration. Penghapusan plaintext memerlukan verifikasi checksum, backup, dan persetujuan deployment terpisah.
+
+Kunci blind index memakai `PII_BLIND_INDEX_KEY` dari secret manager; `APP_KEY` hanya fallback lokal/testing. Hash memasukkan `PII_BLIND_INDEX_VERSION` (default `v1`) agar rotasi key/index dapat dilakukan melalui backfill terkontrol.
+
+### Consequences
+
+- Data baru tidak menyimpan nilai PII plaintext.
+- Pencarian exact dapat dilakukan tanpa LIKE terhadap ciphertext.
+- Deployment aman terhadap data legacy karena read fallback dan backfill checkpointable.
+- Key rotation dan penghapusan kolom legacy tetap menjadi langkah operasional berikutnya.
+
+---
+
 ## 📚 References
 
 - [Laravel Documentation](https://laravel.com/docs)

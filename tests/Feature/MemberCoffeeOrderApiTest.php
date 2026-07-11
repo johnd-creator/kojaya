@@ -127,6 +127,35 @@ class MemberCoffeeOrderApiTest extends TestCase
         $this->assertSame('MOBILE-COFFEE-001', $intent->client_reference);
     }
 
+    public function test_coffee_order_does_not_reuse_client_reference_for_a_different_amount(): void
+    {
+        $this->actingMember(['member:write']);
+        $category = PosCategory::factory()->create(['name' => 'Espresso', 'slug' => 'espresso-amount']);
+        $product = PosProduct::factory()->create([
+            'pos_category_id' => $category->id,
+            'sale_price' => 18000,
+            'stock' => 10,
+        ]);
+
+        $payload = [
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
+            'client_reference' => 'MOBILE-COFFEE-AMOUNT-MISMATCH',
+        ];
+
+        $this->postJson('/api/v1/member/coffee/orders', $payload)->assertCreated();
+
+        $this->postJson('/api/v1/member/coffee/orders', [
+            ...$payload,
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
+        ])->assertConflict();
+
+        $this->assertDatabaseCount('member_payment_intents', 1);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'reserved' => 1,
+        ]);
+    }
+
     /**
      * @param  list<string>  $abilities
      */

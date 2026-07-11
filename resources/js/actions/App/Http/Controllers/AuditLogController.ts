@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AuditLogController::index
-* @see app/Http/Controllers/AuditLogController.php:13
+* @see app/Http/Controllers/AuditLogController.php:16
 * @route '/api/audit-logs'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 export const show = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 show.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -124,7 +124,7 @@ show.url = (args: { id: string | number } | [id: string | number ] | string | nu
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 show.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -134,7 +134,7 @@ show.get = (args: { id: string | number } | [id: string | number ] | string | nu
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 show.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -144,7 +144,7 @@ show.head = (args: { id: string | number } | [id: string | number ] | string | n
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 const showForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -154,7 +154,7 @@ const showForm = (args: { id: string | number } | [id: string | number ] | strin
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 showForm.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -164,7 +164,7 @@ showForm.get = (args: { id: string | number } | [id: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\AuditLogController::show
-* @see app/Http/Controllers/AuditLogController.php:49
+* @see app/Http/Controllers/AuditLogController.php:52
 * @route '/api/audit-logs/{id}'
 */
 showForm.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -181,7 +181,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 export const history = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -196,7 +196,7 @@ history.definition = {
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 history.url = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions) => {
@@ -222,7 +222,7 @@ history.url = (args: { type: string | number, id: string | number } | [type: str
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 history.get = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -232,7 +232,7 @@ history.get = (args: { type: string | number, id: string | number } | [type: str
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 history.head = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -242,7 +242,7 @@ history.head = (args: { type: string | number, id: string | number } | [type: st
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 const historyForm = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -252,7 +252,7 @@ const historyForm = (args: { type: string | number, id: string | number } | [typ
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 historyForm.get = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -262,7 +262,7 @@ historyForm.get = (args: { type: string | number, id: string | number } | [type:
 
 /**
 * @see \App\Http\Controllers\AuditLogController::history
-* @see app/Http/Controllers/AuditLogController.php:58
+* @see app/Http/Controllers/AuditLogController.php:61
 * @route '/api/audit-logs/history/{type}/{id}'
 */
 historyForm.head = (args: { type: string | number, id: string | number } | [type: string | number, id: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -279,7 +279,7 @@ history.form = historyForm
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 export const exportMethod = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -294,7 +294,7 @@ exportMethod.definition = {
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 exportMethod.url = (options?: RouteQueryOptions) => {
@@ -303,7 +303,7 @@ exportMethod.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 exportMethod.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -313,7 +313,7 @@ exportMethod.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 exportMethod.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -323,7 +323,7 @@ exportMethod.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 const exportMethodForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -333,7 +333,7 @@ const exportMethodForm = (options?: RouteQueryOptions): RouteFormDefinition<'get
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 exportMethodForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -343,7 +343,7 @@ exportMethodForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\AuditLogController::exportMethod
-* @see app/Http/Controllers/AuditLogController.php:71
+* @see app/Http/Controllers/AuditLogController.php:74
 * @route '/api/audit-logs/export'
 */
 exportMethodForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

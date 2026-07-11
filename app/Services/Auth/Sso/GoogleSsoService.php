@@ -2,7 +2,6 @@
 
 namespace App\Services\Auth\Sso;
 
-use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\SocialAccount;
 use App\Models\User;
@@ -321,14 +320,7 @@ class GoogleSsoService
     private function logSecurity(string $action, array $context = []): void
     {
         try {
-            AuditLog::create([
-                'action' => $action,
-                'module' => 'auth.sso',
-                'old_values' => null,
-                'new_values' => $context,
-                'ip_address' => request()?->ip(),
-                'user_agent' => request()?->userAgent(),
-            ]);
+            $this->audit->log($action, 'auth.sso', null, ['new' => $context]);
         } catch (Throwable $exception) {
             Log::warning('Failed to record SSO audit log', [
                 'action' => $action,

@@ -170,16 +170,19 @@ class CooperativeFeatureTest extends TestCase
     public function test_member_creation_links_existing_user_without_changing_password(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        $admin = User::factory()->create();
+        $organization = app(\App\Services\Cooperative\CooperativeHeadOfficeResolver::class)->resolve();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
         $admin->assignRole('System Admin');
         $existingUser = User::factory()->create([
             'email' => 'existing-member@test.local',
             'password' => Hash::make('old-password'),
+            'organization_id' => $organization->id,
         ]);
 
         $this->actingAs($admin)->post(route('cooperative.members.store'), [
             'name' => 'Existing Member',
             'email' => 'existing-member@test.local',
+            'user_id' => $existingUser->id,
             'joined_at' => '2026-05-01',
             'status' => 'ACTIVE',
             'member_login_password' => 'new-password',
@@ -232,6 +235,7 @@ class CooperativeFeatureTest extends TestCase
             'name' => 'Opening Balance',
             'email' => 'opening@test.local',
         ]);
+        $admin->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->actingAs($admin)->put(route('cooperative.members.update', $member), [
             'name' => 'Opening Balance',
@@ -940,6 +944,7 @@ class CooperativeFeatureTest extends TestCase
         $adminKoperasi = User::factory()->create();
         $adminKoperasi->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $adminKoperasi->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1050,6 +1055,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('System Admin');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1169,6 +1175,7 @@ class CooperativeFeatureTest extends TestCase
         $approver = User::factory()->create();
         $approver->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $approver->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1214,6 +1221,7 @@ class CooperativeFeatureTest extends TestCase
         $adminKoperasi = User::factory()->create();
         $adminKoperasi->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $adminKoperasi->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',

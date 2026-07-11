@@ -4,10 +4,12 @@ namespace Tests\Feature\Cooperative;
 
 use App\Contracts\OrganizationScopedQueryService;
 use App\Models\CooperativeMember;
+use App\Models\Loan;
 use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class OrganizationIsolationTest extends TestCase
@@ -125,6 +127,23 @@ class OrganizationIsolationTest extends TestCase
             ->has('members.data', 1)
             ->where('members.data.0.name', 'Visible Member')
         );
+    }
+
+    public function test_admin_org_a_cannot_read_org_b_loan_by_direct_id(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $orgA->id]);
+        $admin->assignRole('Admin Koperasi');
+        $memberB = CooperativeMember::factory()->active()->create(['organization_id' => $orgB->id]);
+        $loanB = Loan::factory()->create([
+            'cooperative_member_id' => $memberB->id,
+            'organization_id' => $orgB->id,
+        ]);
+
+        Sanctum::actingAs($admin, ['cooperative.loan.read']);
+
+        $this->getJson('/api/v1/loans/'.$loanB->id)->assertForbidden();
     }
 
     public function test_admin_org_a_stats_query_is_scoped(): void

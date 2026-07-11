@@ -18,6 +18,7 @@ use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -86,8 +87,10 @@ class MemberUnifiedEndpointsTest extends TestCase
             'jenis_kelamin' => 'L',
             'tempat_lahir' => 'Surabaya',
             'nama_bank' => 'Mandiri',
-            'no_rekening' => '9876543210',
+            'no_rekening' => null,
         ]);
+        $this->assertNotNull(DB::table('cooperative_members')->where('id', $member->id)->value('no_rekening_enc'));
+        $this->assertSame('9876543210', $member->refresh()->no_rekening);
     }
 
     public function test_profile_update_rejects_invalid_gender_and_future_birth_date(): void

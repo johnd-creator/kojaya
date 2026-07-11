@@ -76,7 +76,7 @@ class AuditLogService
         $redacted = [];
         foreach ($value as $key => $item) {
             $keyName = strtolower((string) $key);
-            $redacted[$key] = preg_match('/password|secret|token|authorization|qr(_string|_payload)?/', $keyName) === 1
+            $redacted[$key] = preg_match('/password|secret|token|authorization|qr(_string|_payload)?|identity(_number)?|nik|npwp|bank(_account|_account_number|_account_holder)?|account(_number|_holder)?|card(_number)?/', $keyName) === 1
                 ? '[REDACTED]'
                 : $this->redact($item);
         }

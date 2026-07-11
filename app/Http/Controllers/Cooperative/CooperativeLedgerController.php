@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\CancelLedgerPaymentRequest;
 use App\Http\Requests\Cooperative\ReviseLedgerPaymentRequest;
@@ -17,7 +18,7 @@ use Inertia\Response;
 
 class CooperativeLedgerController extends Controller
 {
-    public function index(Request $request, SavingsSummaryService $savingsSummary): Response
+    public function index(Request $request, SavingsSummaryService $savingsSummary, OrganizationScopedQueryService $scopeService): Response
     {
         $filters = [
             ...$request->only([
@@ -33,12 +34,13 @@ class CooperativeLedgerController extends Controller
         ];
 
         $query = $savingsSummary->ledgerQuery(filters: $filters);
+        $scopeService->scopeVisibleTo($query, $request->user());
         $contributionTypes = $this->savingsContributionTypes()->get();
 
         return Inertia::render('Cooperative/Ledger/Index', [
             'entries' => $query->orderByDesc('posted_at')->orderByDesc('id')->paginate(20)->withQueryString(),
             'filters' => $filters,
-            'summary' => $savingsSummary->summary(filters: $filters),
+            'summary' => $this->scopedSummary($savingsSummary, $filters, $request, $scopeService),
             'contributionTypes' => $contributionTypes,
             'categories' => $this->savingsContributionTypes()
                 ->select('category')
@@ -74,5 +76,22 @@ class CooperativeLedgerController extends Controller
         return CooperativeContributionType::query()
             ->where('is_active', true)
             ->whereIn('code', ['POKOK', 'WAJIB', 'SUKARELA']);
+    }
+
+    /**
+     * Keep the summary query aligned with the paginated ledger scope.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function scopedSummary(
+        SavingsSummaryService $savingsSummary,
+        array $filters,
+        Request $request,
+        OrganizationScopedQueryService $scopeService,
+    ): array {
+        $summaryQuery = $savingsSummary->ledgerQuery(filters: $filters);
+        $scopeService->scopeVisibleTo($summaryQuery, $request->user());
+
+        return $savingsSummary->summaryFromQuery($summaryQuery);
     }
 }

@@ -7,6 +7,7 @@ use App\Enums\LoanStatus;
 use App\Enums\PermissionEnum;
 use App\Enums\VendorStatus;
 use App\Http\Resources\CooperativeMemberResource;
+use App\Http\Resources\MemberSelfServiceResource;
 use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
@@ -23,6 +24,7 @@ use App\Services\Cooperative\MemberProfileService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
@@ -125,6 +127,30 @@ class ProductionReadinessP0P2Test extends TestCase
         $this->assertSame($member->no_rekening, $unmasked['no_rekening']);
     }
 
+    public function test_loan_resource_does_not_leak_member_pii_to_cooperative_staff(): void
+    {
+        $organization = Organization::factory()->create();
+        $staff = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'identity_number' => '3201234567890001',
+            'npwp' => '12.345.678.9-012.000',
+            'no_rekening' => '1234567890',
+        ]);
+        $loan = Loan::factory()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $organization->id,
+        ]);
+        $request = Request::create('/api/v1/loans/'.$loan->id);
+        $request->setUserResolver(fn (): User => $staff);
+
+        $data = (new MemberSelfServiceResource($loan->member))->resolve($request);
+
+        $this->assertSame('******7890', $data['bank_account_number']);
+        $this->assertNull($data['address']);
+        $this->assertNull($data['bank_name']);
+    }
+
     public function test_audit_contract_records_context_and_redacts_sensitive_values(): void
     {
         $organization = Organization::factory()->create();
@@ -149,8 +175,26 @@ class ProductionReadinessP0P2Test extends TestCase
         $this->assertSame($organization->id, $audit->organization_id);
         $this->assertSame('Verifikasi data anggota.', $audit->reason);
         $this->assertSame('[REDACTED]', $audit->new_values['token']);
-        $this->assertSame('3201234567890001', $audit->new_values['identity_number']);
+        $this->assertSame('[REDACTED]', $audit->new_values['identity_number']);
         $this->assertNotNull($audit->occurred_at);
+    }
+
+    public function test_new_member_sensitive_fields_are_encrypted_and_indexed(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'identity_number' => '3201234567890001',
+            'npwp' => '12.345.678.9-012.000',
+            'no_rekening' => '1234567890',
+        ]);
+
+        $raw = DB::table('cooperative_members')->where('id', $member->id)->first();
+
+        $this->assertNull($raw->identity_number);
+        $this->assertNotSame('3201234567890001', $raw->identity_number_enc);
+        $this->assertSame(CooperativeMember::blindIndexFor('identity_number', '3201234567890001'), $raw->identity_number_bidx);
+        $this->assertSame('3201234567890001', $member->identity_number);
+        $this->assertSame('12.345.678.9-012.000', $member->npwp);
+        $this->assertSame('1234567890', $member->no_rekening);
     }
 
     public function test_loan_restructure_approval_applies_new_schedule(): void

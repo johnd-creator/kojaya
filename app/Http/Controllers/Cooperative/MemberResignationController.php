@@ -44,6 +44,30 @@ class MemberResignationController extends Controller
             ->orderByRaw("CASE status WHEN 'PENDING' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at')
             ->paginate(15)
+            ->through(fn (MemberResignationRequest $request): array => [
+                'id' => $request->id,
+                'status' => $request->status,
+                'reason' => $request->reason,
+                'effective_date' => $request->effective_date?->toDateString(),
+                'review_notes' => $request->review_notes,
+                'requested_at' => $request->requested_at?->toISOString(),
+                'reviewed_at' => $request->reviewed_at?->toISOString(),
+                'created_at' => $request->created_at?->toISOString(),
+                'member' => $request->member ? [
+                    'id' => $request->member->id,
+                    'name' => $request->member->nama_anggota_clean,
+                    'member_code' => $request->member->no_anggota_display,
+                    'status' => $request->member->status,
+                    'organization' => $request->member->organization ? [
+                        'id' => $request->member->organization->id,
+                        'name' => $request->member->organization->name,
+                    ] : null,
+                ] : null,
+                'reviewer' => $request->reviewer ? [
+                    'id' => $request->reviewer->id,
+                    'name' => $request->reviewer->name,
+                ] : null,
+            ])
             ->withQueryString();
 
         $statusCounts = (clone $baseQuery)

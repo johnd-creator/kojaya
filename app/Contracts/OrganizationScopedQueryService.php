@@ -29,6 +29,22 @@ class OrganizationScopedQueryService
             return $query;
         }
 
+        if (method_exists($query->getModel(), 'member') && ! in_array('organization_id', $query->getModel()->getFillable(), true)) {
+            return $query->whereHas('member', function (Builder $memberQuery) use ($user): void {
+                if ($user->organization_id === null) {
+                    $memberQuery->whereNull('organization_id');
+
+                    return;
+                }
+
+                $memberQuery->where('organization_id', $user->organization_id);
+            });
+        }
+
+        if ($user->organization_id === null) {
+            return $query->whereNull('organization_id');
+        }
+
         return $query->where('organization_id', $user->organization_id);
     }
 

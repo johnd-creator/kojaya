@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreMemberStoreOrderRequest;
 use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Integrations\PaymentGatewayService;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,12 +59,20 @@ class MemberStoreController extends Controller
         StoreMemberStoreOrderRequest $request,
         PaymentGatewayService $gateway,
         MemberOrderReservationService $reservationService,
+        AuditLogService $audit,
     ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
         $clientReference = (string) ($request->validated('client_reference')
             ?: 'STORE-'.$member->id.'-'.now()->format('YmdHisv'));
+        $items = $this->validatedItems($request);
+        $subtotal = array_sum(array_map(fn (array $item): float => (float) $item['line_total'], $items));
+        abort_if($subtotal <= 0, 422, 'Total belanja harus lebih dari nol.');
+
+        $channel = (string) ($request->validated('channel') ?? $request->validated('payment_method') ?? 'QRIS');
+        $fulfillmentMethod = (string) ($request->validated('fulfillment_method') ?? 'PICKUP');
+        $pickupLocation = $request->validated('pickup_location');
 
         $existing = MemberPaymentIntent::query()
             ->where('cooperative_member_id', $member->id)
@@ -74,6 +83,14 @@ class MemberStoreController extends Controller
             ->first();
 
         if ($existing) {
+            if ($existing->expires_at?->isPast() === true || strtoupper((string) $existing->gateway_status) !== 'PENDING') {
+                abort(409, 'Client reference sudah kedaluwarsa atau telah mencapai status terminal. Gunakan client_reference baru.');
+            }
+
+            if (abs((float) $existing->amount - $subtotal) > 0.005 || (string) $existing->channel !== $channel) {
+                abort(409, 'Client reference sudah dipakai untuk nominal atau channel pembayaran berbeda. Gunakan client_reference baru.');
+            }
+
             $meta = $existing->metadata ?? [];
             $charge = $gateway->createIntentCharge($existing->refresh());
 
@@ -88,14 +105,6 @@ class MemberStoreController extends Controller
             ], 201);
         }
 
-        $items = $this->validatedItems($request);
-        $subtotal = array_sum(array_map(fn (array $item): float => (float) $item['line_total'], $items));
-        abort_if($subtotal <= 0, 422, 'Total belanja harus lebih dari nol.');
-
-        $channel = (string) ($request->validated('channel') ?? $request->validated('payment_method') ?? 'QRIS');
-        $fulfillmentMethod = (string) ($request->validated('fulfillment_method') ?? 'PICKUP');
-        $pickupLocation = $request->validated('pickup_location');
-
         try {
             $intent = DB::transaction(function () use ($request, $member, $subtotal, $channel, $clientReference, $fulfillmentMethod, $pickupLocation, $items, $reservationService): MemberPaymentIntent {
                 $reservedItems = $reservationService->reserve($items);
@@ -109,6 +118,7 @@ class MemberStoreController extends Controller
                     'amount' => $subtotal,
                     'channel' => $channel,
                     'gateway_status' => 'PENDING',
+                    'reservation_status' => MemberPaymentIntent::RESERVATION_RESERVED,
                     'metadata' => [
                         'description' => 'Belanja Toko Koperasi',
                         'client_reference' => $clientReference,
@@ -120,7 +130,11 @@ class MemberStoreController extends Controller
                     'expires_at' => now()->addMinutes(30),
                 ]);
             });
-        } catch (QueryException) {
+        } catch (QueryException $exception) {
+            if (! $this->isClientReferenceConflict($exception)) {
+                throw $exception;
+            }
+
             $intent = MemberPaymentIntent::query()
                 ->where('cooperative_member_id', $member->id)
                 ->where('payable_type', MemberPaymentIntent::PAYABLE_STORE_ORDER)
@@ -128,6 +142,9 @@ class MemberStoreController extends Controller
                 ->firstOrFail();
         }
 
+        $audit->log('reservation.created', 'member_payment_intent', $intent, [
+            'reason' => 'Store order stock reservation created.',
+        ]);
         $charge = $gateway->createIntentCharge($intent);
 
         return response()->json([
@@ -158,6 +175,15 @@ class MemberStoreController extends Controller
             'unit' => $product->unit,
             'image_url' => $product->image_url,
         ];
+    }
+
+    private function isClientReferenceConflict(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
+            && str_contains($message, 'member_payment_intents')
+            && str_contains($message, 'client_reference');
     }
 
     /**

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 export const invoices = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ invoices.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 invoices.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ invoices.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 invoices.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ invoices.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 invoices.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ invoices.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 const invoicesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const invoicesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 invoicesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ invoicesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::invoices
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:14
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:17
 * @route '/api/v1/dues/invoices'
 */
 invoicesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ invoices.form = invoicesForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:45
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:48
 * @route '/api/v1/dues/generate'
 */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:45
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:48
 * @route '/api/v1/dues/generate'
 */
 generate.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:45
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:48
 * @route '/api/v1/dues/generate'
 */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:45
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:48
 * @route '/api/v1/dues/generate'
 */
 const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeDuesApiController::generate
-* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:45
+* @see app/Http/Controllers/Api/V1/CooperativeDuesApiController.php:48
 * @route '/api/v1/dues/generate'
 */
 generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

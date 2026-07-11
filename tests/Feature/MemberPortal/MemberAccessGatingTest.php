@@ -62,6 +62,47 @@ class MemberAccessGatingTest extends TestCase
             ->assertOk();
     }
 
+    public function test_existing_member_session_loses_all_financial_web_access_after_deactivation(): void
+    {
+        [$user, $member] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
+
+        $this->actingAs($user)->get(route('member.savings'))->assertOk();
+
+        $member->forceFill([
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_INACTIVE,
+        ])->save();
+
+        foreach ([
+            'member.savings',
+            'member.loans',
+            'member.points',
+            'member.rewards',
+            'member.transactions',
+        ] as $route) {
+            $this->actingAs($user)
+                ->get(route($route))
+                ->assertRedirect(route('member.onboarding'));
+        }
+    }
+
+    public function test_existing_member_session_loses_all_financial_web_access_after_resignation(): void
+    {
+        [$user, $member] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
+
+        $member->forceFill([
+            'status' => CooperativeMember::VALIDATION_RESIGNED,
+            'validation_status' => CooperativeMember::VALIDATION_RESIGNED,
+            'resigned_at' => now()->toDateString(),
+        ])->save();
+
+        foreach (['member.savings', 'member.loans', 'member.points', 'member.rewards', 'member.transactions'] as $route) {
+            $this->actingAs($user)
+                ->get(route($route))
+                ->assertRedirect(route('member.onboarding'));
+        }
+    }
+
     public function test_pending_member_can_access_dashboard_and_onboarding(): void
     {
         [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING);

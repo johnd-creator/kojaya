@@ -4,6 +4,7 @@ namespace Tests\Feature\Member;
 
 use App\Models\CooperativeMember;
 use App\Models\Organization;
+use App\Models\Reward;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,6 +35,22 @@ class MemberActiveStatusGateTest extends TestCase
         $this->getJson('/api/v1/member/bills')->assertOk();
     }
 
+    public function test_api_financial_gate_requires_both_member_status_columns_to_be_active(): void
+    {
+        $user = User::factory()->create();
+        CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_ACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/savings/summary')->assertForbidden();
+        $this->getJson('/api/v1/points/balance')->assertForbidden();
+        $this->postJson('/api/payments/charge', [])->assertForbidden();
+    }
+
     public function test_pending_member_is_blocked_from_financial_endpoints(): void
     {
         [$user] = $this->nonActiveMember('pending');
@@ -43,6 +60,12 @@ class MemberActiveStatusGateTest extends TestCase
         $this->getJson('/api/v1/member/savings/summary')->assertForbidden();
         $this->getJson('/api/v1/member/dues/invoices')->assertForbidden();
         $this->postJson('/api/v1/member/savings/withdraw', [])->assertForbidden();
+        $this->getJson('/api/v1/points/balance')->assertForbidden();
+        $this->getJson('/api/v1/points/history')->assertForbidden();
+        $this->getJson('/api/v1/rewards')->assertForbidden();
+        $reward = Reward::factory()->create();
+        $this->postJson('/api/v1/rewards/'.$reward->id.'/redeem', [])->assertForbidden();
+        $this->postJson('/api/payments/charge', [])->assertForbidden();
     }
 
     public function test_revision_member_is_blocked_from_financial_endpoints(): void

@@ -26,6 +26,9 @@ Schedule::command('sanctum:prune-expired --hours=24')->dailyAt('01:00');
 Schedule::command('notifications:outbox:process --limit=100')->everyThirtySeconds();
 Schedule::command('notifications:whatsapp-dues-reminders --days=3')->dailyAt('09:00');
 
+// Release stock held by abandoned member store/coffee payment intents.
+Schedule::command('orders:expire-reservations --limit=500')->everyTenMinutes();
+
 // Production operations hygiene
 Schedule::command('operations:prune-retention')->dailyAt('01:30');
 Schedule::command('backup:database --prune')->dailyAt('02:30');

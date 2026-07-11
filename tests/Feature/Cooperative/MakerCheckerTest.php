@@ -27,7 +27,7 @@ class MakerCheckerTest extends TestCase
         $admin = User::factory()->create(['organization_id' => $organization->id]);
         $admin->assignRole('Admin Koperasi');
 
-        $member = CooperativeMember::factory()->pendingReview()->create([
+        $member = CooperativeMember::factory()->pending()->create([
             'organization_id' => $organization->id,
         ]);
 
@@ -58,7 +58,7 @@ class MakerCheckerTest extends TestCase
         $pengurus = User::factory()->create(['organization_id' => $organization->id]);
         $pengurus->assignRole('Pengurus Koperasi');
 
-        $member = CooperativeMember::factory()->pendingReview()->create([
+        $member = CooperativeMember::factory()->pending()->create([
             'organization_id' => $organization->id,
         ]);
 

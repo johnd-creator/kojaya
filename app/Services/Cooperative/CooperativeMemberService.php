@@ -13,7 +13,7 @@ class CooperativeMemberService
         private readonly MemberStatusTransitionService $transitions,
     ) {}
 
-    public function resign(CooperativeMember $member, ?User $actor = null): CooperativeMember
+    public function resign(CooperativeMember $member, User $actor): CooperativeMember
     {
         return DB::transaction(function () use ($member, $actor): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);

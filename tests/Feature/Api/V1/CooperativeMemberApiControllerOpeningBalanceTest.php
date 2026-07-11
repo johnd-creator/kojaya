@@ -43,11 +43,14 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
         $response = $this->postJson('/api/v1/members', [
             'name' => 'Anggota API Legacy',
+            'nama_anggota' => 'Anggota API Legacy',
             'email' => 'api-legacy@test.local',
             'phone' => '081234',
-            'joined_at' => '2020-01-01',
-            'status' => 'ACTIVE',
-            'organization_id' => $organization->id,
+            'tanggal_aktif' => '2020-01-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
             'opening_saving_balance' => 175000,
         ]);
 
@@ -65,17 +68,21 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
     public function test_api_store_with_opening_saving_balance_returns_wizard_metadata_when_user_has_permission(): void
     {
-        $this->actingAdmin('all');
+        $admin = $this->actingAdmin('all');
 
         $organization = Organization::factory()->create();
+        $admin->forceFill(['organization_id' => $organization->id])->save();
 
         $response = $this->postJson('/api/v1/members', [
             'name' => 'Anggota API Wizard',
+            'nama_anggota' => 'Anggota API Wizard',
             'email' => 'api-wizard@test.local',
             'phone' => '081234',
-            'joined_at' => '2020-01-01',
-            'status' => 'ACTIVE',
-            'organization_id' => $organization->id,
+            'tanggal_aktif' => '2020-01-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
             'opening_saving_balance' => 250000,
         ]);
 
@@ -92,9 +99,10 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
     public function test_api_update_with_existing_wizard_batch_keeps_requiring_the_wizard(): void
     {
-        $this->actingAdmin('all');
+        $admin = $this->actingAdmin('all');
 
         $organization = Organization::factory()->create();
+        $admin->forceFill(['organization_id' => $organization->id])->save();
         $member = CooperativeMember::factory()->create([
             'organization_id' => $organization->id,
             'tanggal_aktif' => '2020-01-01',
@@ -113,8 +121,14 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
         $response = $this->putJson("/api/v1/members/{$member->id}", [
             'name' => $member->name,
-            'tanggal_aktif' => '2020-01-01',
-            'status' => 'ACTIVE',
+            'nama_anggota' => $member->nama_anggota,
+            'email' => $member->email,
+            'phone' => $member->phone,
+            'no_anggota' => $member->no_anggota,
+            'jenis_anggota' => $member->jenis_anggota,
+            'jenis_kelamin' => $member->jenis_kelamin,
+            'kategori' => $member->kategori,
+            'autodebet' => $member->autodebet,
             'opening_saving_balance' => 500000,
         ]);
 
@@ -133,9 +147,10 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
     public function test_api_update_without_opening_saving_balance_does_not_change_ledger(): void
     {
-        $this->actingAdmin('no-wizard');
+        $admin = $this->actingAdmin('no-wizard');
 
         $organization = Organization::factory()->create();
+        $admin->forceFill(['organization_id' => $organization->id])->save();
         $member = CooperativeMember::factory()->create([
             'organization_id' => $organization->id,
             'tanggal_aktif' => '2020-01-01',
@@ -156,8 +171,14 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
         $response = $this->putJson("/api/v1/members/{$member->id}", [
             'name' => $member->name,
-            'tanggal_aktif' => '2020-01-01',
-            'status' => 'ACTIVE',
+            'nama_anggota' => $member->nama_anggota,
+            'email' => $member->email,
+            'phone' => $member->phone,
+            'no_anggota' => $member->no_anggota,
+            'jenis_anggota' => $member->jenis_anggota,
+            'jenis_kelamin' => $member->jenis_kelamin,
+            'kategori' => $member->kategori,
+            'autodebet' => $member->autodebet,
         ]);
 
         $response->assertOk();

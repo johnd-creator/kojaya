@@ -424,3 +424,4 @@ switchOrganization.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
     url: switchOrganization.url(options),
     method: 'post',
 })
+

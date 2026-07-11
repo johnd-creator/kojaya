@@ -45,10 +45,13 @@ class Sprint3ArchitectureHardeningTest extends TestCase
     {
         $loan = Loan::factory()->create();
         $manager = User::factory()->create();
+        $manager->forceFill(['organization_id' => $loan->organization_id])->save();
         $manager->givePermissionTo(['view_cooperative_loan', 'manage_cooperative_loan']);
         $loanReviewer = User::factory()->create();
+        $loanReviewer->forceFill(['organization_id' => $loan->organization_id])->save();
         $loanReviewer->givePermissionTo(['view_cooperative_loan', 'review_cooperative_loan']);
         $approver = User::factory()->create();
+        $approver->forceFill(['organization_id' => $loan->organization_id])->save();
         $approver->givePermissionTo(['view_cooperative_loan', 'approve_cooperative_loan']);
 
         $this->assertTrue(Gate::forUser($manager)->allows('viewAny', Loan::class));

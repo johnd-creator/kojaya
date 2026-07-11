@@ -127,20 +127,19 @@ class CooperativeMemberController extends Controller
     public function store(
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
         DuesGenerationService $duesGenerationService,
     ): RedirectResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $data = $this->memberPayload($request);
 
-        $member = DB::transaction(function () use ($data, $headOfficeResolver, $userProvisioningService, $request): CooperativeMember {
+        $member = DB::transaction(function () use ($data, $headOfficeResolver, $request): CooperativeMember {
             $member = CooperativeMember::query()->create([
                 ...$data,
                 'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
+                'status' => CooperativeMember::VALIDATION_PENDING,
+                'validation_status' => CooperativeMember::VALIDATION_PENDING,
             ]);
-
-            $userProvisioningService->provision($member, $request->validated('member_login_password'));
 
             return $member->refresh();
         });
@@ -327,7 +326,6 @@ class CooperativeMemberController extends Controller
 
     public function activate(
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
         DuesGenerationService $duesGenerationService,
         MemberStatusTransitionService $transitions,
     ): RedirectResponse {
@@ -345,12 +343,9 @@ class CooperativeMemberController extends Controller
             $updateData['member_no'] = $noAnggota;
         }
 
-        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService, $transitions): CooperativeMember {
+        $member = DB::transaction(function () use ($member, $updateData, $transitions): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->forceFill($updateData)->save();
-            if ($member->user_id === null) {
-                $userProvisioningService->provision($member->refresh());
-            }
 
             return $transitions->activate($member->refresh(), request()->user());
         });
@@ -399,20 +394,21 @@ class CooperativeMemberController extends Controller
         AuditLogService $audit,
     ): BinaryFileResponse {
         $this->authorize('export', CooperativeMember::class);
-        $organizationId = $scopeService->scopeOrganizationIdFor($request->user());
-        if (! $scopeService->canViewAllOrganizations($request->user()) && $organizationId === null) {
-            abort(403, 'A cooperative organization is required for this export.');
-        }
+        $visibility = $scopeService->visibilityFor($request->user());
 
         $audit->log('member.pii.exported', 'cooperative.member', null, [
-            'new' => ['filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori'])],
+            'new' => [
+                'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
+                'scope' => $visibility->global ? 'global' : 'organization',
+                'organization_id' => $visibility->organizationId,
+            ],
             'reason' => 'Cooperative member export requested.',
         ]);
 
         return Excel::download(
             new AnggotaExport(
                 $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
-                $organizationId,
+                $visibility,
             ),
             'daftar-anggota.xlsx'
         );
@@ -456,7 +452,7 @@ class CooperativeMemberController extends Controller
             'no_telp' => $data['no_telp'] ?? $data['phone'] ?? null,
             'phone' => $data['no_telp'] ?? $data['phone'] ?? null,
             'joined_at' => $data['tanggal_aktif'],
-            'no_rekening' => $data['autodebet'] === 'MANUAL' ? null : ($data['no_rekening'] ?? null),
+            'no_rekening' => null,
         ];
     }
 

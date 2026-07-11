@@ -3,26 +3,18 @@
 namespace App\Console\Commands;
 
 use App\Models\CooperativeMember;
+use App\Services\Cooperative\MemberStatusConsistencyReport;
 use Illuminate\Console\Command;
 
 class BackfillMemberStatusConsistencyCommand extends Command
 {
-    protected $signature = 'members:backfill-status-consistency {--apply : Apply only the deterministic, documented repairs} {--chunk=250 : Number of rows per batch}';
+    protected $signature = 'members:backfill-status-consistency {--apply : Apply only deterministic repairs} {--acknowledge : Confirm that the dry-run report was reviewed and a backup exists} {--chunk=250 : Number of rows per batch}';
 
     protected $description = 'Report or apply deterministic cooperative member lifecycle status repairs.';
 
-    public function handle(): int
+    public function handle(MemberStatusConsistencyReport $report): int
     {
-        $query = CooperativeMember::query()
-            ->where(function ($query): void {
-                $query->where(function ($query): void {
-                    $query->where('status', 'ACTIVE')->whereNull('validation_status');
-                })->orWhere(function ($query): void {
-                    $query->where('status', 'INACTIVE')->where('validation_status', CooperativeMember::VALIDATION_ACTIVE);
-                })->orWhere(function ($query): void {
-                    $query->where('status', 'RESIGNED')->where('validation_status', CooperativeMember::VALIDATION_ACTIVE);
-                });
-            });
+        $query = $report->deterministicRepairs();
 
         $candidates = $query->count();
         $this->info(sprintf('%d deterministic lifecycle rows detected.', $candidates));
@@ -31,6 +23,12 @@ class BackfillMemberStatusConsistencyCommand extends Command
             $this->comment('Dry run only. Re-run with --apply after backup and report review.');
 
             return self::SUCCESS;
+        }
+
+        if (! $this->option('acknowledge')) {
+            $this->error('Refusing to mutate status without --acknowledge after report and backup review.');
+
+            return self::FAILURE;
         }
 
         $updated = 0;
@@ -54,6 +52,9 @@ class BackfillMemberStatusConsistencyCommand extends Command
 
         $this->info(sprintf('%d lifecycle rows repaired.', $updated));
 
-        return self::SUCCESS;
+        $manualReview = $report->manualReviewQuery()->count();
+        $this->info(sprintf('%d rows remain classified for manual review.', $manualReview));
+
+        return $manualReview === 0 ? self::SUCCESS : self::FAILURE;
     }
 }

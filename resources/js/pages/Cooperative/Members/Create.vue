@@ -31,8 +31,7 @@ const form = useForm({
   phone: "",
   identity_number: "",
   address: "",
-  joined_at: new Date().toISOString().slice(0, 10),
-  status: "ACTIVE",
+  status: "PENDING",
   jenis_anggota: "AB",
   jenis_kelamin: "L",
   kategori: "IP",
@@ -42,7 +41,24 @@ const form = useForm({
   notes: "",
 });
 
-const submit = () => form.post(store().url);
+const submit = (): void => {
+  form
+    .transform((data) => ({
+      employee_id: data.employee_id,
+      no_anggota: data.no_anggota,
+      tanggal_aktif: data.tanggal_aktif,
+      nama_anggota: data.nama_anggota,
+      email: data.email,
+      no_telp: data.no_telp,
+      phone: data.phone,
+      jenis_anggota: data.jenis_anggota,
+      jenis_kelamin: data.jenis_kelamin,
+      kategori: data.kategori,
+      autodebet: data.autodebet,
+      opening_saving_balance: data.opening_saving_balance,
+    }))
+    .post(store().url);
+};
 </script>
 
 <template>
@@ -76,10 +92,6 @@ const submit = () => form.post(store().url);
           ><Input v-model="form.tanggal_aktif" type="date" required
         /></label>
         <label class="space-y-1"
-          ><span class="text-sm">Tanggal Bergabung</span
-          ><Input v-model="form.joined_at" type="date"
-        /></label>
-        <label class="space-y-1"
           ><span class="text-sm">Email</span
           ><Input
             v-model="form.email"
@@ -91,8 +103,10 @@ const submit = () => form.post(store().url);
           <span class="text-sm">Status</span>
           <select
             v-model="form.status"
+            disabled
             class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
           >
+            <option value="PENDING">Menunggu validasi</option>
             <option
               v-for="option in props.options.statuses"
               :key="option.value"
@@ -108,7 +122,7 @@ const submit = () => form.post(store().url);
         /></label>
         <label class="space-y-1"
           ><span class="text-sm">NPWP</span
-          ><Input v-model="form.npwp" maxlength="30"
+          ><Input v-model="form.npwp" maxlength="30" readonly
         /></label>
         <label class="space-y-1"
           ><span class="text-sm">No Telp</span
@@ -180,6 +194,7 @@ const submit = () => form.post(store().url);
             v-model="form.no_rekening"
             maxlength="30"
             :disabled="form.autodebet === 'MANUAL'"
+            readonly
             placeholder="Kosong untuk manual"
           />
         </label>
@@ -196,6 +211,7 @@ const submit = () => form.post(store().url);
             v-model="form.member_login_password"
             type="password"
             autocomplete="new-password"
+            disabled
         /></label>
         <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
           <p class="font-medium">Saldo awal migrasi anggota lama?</p>

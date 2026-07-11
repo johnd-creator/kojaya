@@ -97,10 +97,7 @@ class MemberValidationService
 
     public function isPendingReview(CooperativeMember $member): bool
     {
-        return in_array($member->validation_status, [
-            CooperativeMember::VALIDATION_PENDING,
-            CooperativeMember::VALIDATION_PENDING_REVIEW,
-        ], true);
+        return $member->validation_status === CooperativeMember::VALIDATION_PENDING_REVIEW;
     }
 
     public function canBeVerifiedByAdmin(CooperativeMember $member): bool

@@ -4,6 +4,8 @@ namespace App\Contracts;
 
 use App\Enums\PermissionEnum;
 use App\Models\User;
+use App\Support\OrganizationVisibility;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -67,5 +69,18 @@ class OrganizationScopedQueryService
         }
 
         return $user->organization_id;
+    }
+
+    public function visibilityFor(User $user): OrganizationVisibility
+    {
+        if ($this->canViewAllOrganizations($user)) {
+            return OrganizationVisibility::global();
+        }
+
+        if ($user->organization_id === null) {
+            throw new AuthorizationException('A cooperative organization is required for this operation.');
+        }
+
+        return OrganizationVisibility::organization((string) $user->organization_id);
     }
 }

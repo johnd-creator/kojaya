@@ -2,11 +2,16 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Exports\AnggotaExport;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\User;
+use App\Support\OrganizationVisibility;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Excel as ExcelFormat;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class MemberExportAuthorizationTest extends TestCase
@@ -84,7 +89,7 @@ class MemberExportAuthorizationTest extends TestCase
             'name' => 'Member Org B',
         ]);
 
-        $scoped = new \App\Exports\AnggotaExport([], $orgA->id);
+        $scoped = new AnggotaExport([], OrganizationVisibility::organization((string) $orgA->id));
         $scopedNames = $scoped->query()->pluck('name')->all();
 
         $this->assertContains('Member Org A', $scopedNames);
@@ -101,7 +106,7 @@ class MemberExportAuthorizationTest extends TestCase
             'no_rekening' => '1234567890',
         ]);
 
-        $scoped = new \App\Exports\AnggotaExport([], $organization->id);
+        $scoped = new AnggotaExport([], OrganizationVisibility::organization((string) $organization->id));
         $row = $scoped->query()->first();
         $mapped = $scoped->map($row);
 
@@ -109,6 +114,36 @@ class MemberExportAuthorizationTest extends TestCase
         $this->assertNotEquals('12.345.678.9-012.000', $mapped[4]);
         $this->assertNotEquals('1234567890', $mapped[10]);
         $this->assertStringEndsWith('7890', $mapped[10]);
+    }
+
+    public function test_actual_export_content_is_scoped_to_the_requested_organization(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+
+        CooperativeMember::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => 'SENTINEL-ORG-A',
+            'nama_anggota' => 'SENTINEL-ORG-A',
+        ]);
+        CooperativeMember::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'SENTINEL-ORG-B',
+            'nama_anggota' => 'SENTINEL-ORG-B',
+        ]);
+
+        $path = tempnam(sys_get_temp_dir(), 'member-export-');
+        file_put_contents($path, Excel::raw(new AnggotaExport([], OrganizationVisibility::organization((string) $orgA->id)), ExcelFormat::XLSX));
+        $rows = IOFactory::load($path)->getActiveSheet()->toArray();
+        @unlink($path);
+
+        $content = implode(' ', array_map(
+            static fn (array $row): string => implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row)),
+            $rows,
+        ));
+
+        $this->assertStringContainsString('SENTINEL-ORG-A', $content);
+        $this->assertStringNotContainsString('SENTINEL-ORG-B', $content);
     }
 
     private function roleUser(string $roleName, Organization $organization): User

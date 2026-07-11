@@ -84,6 +84,41 @@ class MemberResignationControllerTest extends TestCase
         $this->assertSame('RESIGNED', $member->fresh()->status);
     }
 
+    public function test_resignation_approval_revokes_member_tokens_and_audits_reviewer(): void
+    {
+        $organization = Organization::factory()->create();
+        $reviewer = $this->roleUser('Pengurus Koperasi', $organization);
+        $memberUser = User::factory()->create(['organization_id' => $organization->id]);
+        $memberUser->assignRole('Anggota');
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $memberUser->id,
+        ]);
+        $memberUser->createToken('member-mobile', ['member:read', 'member:write']);
+
+        $request = MemberResignationRequest::query()->create([
+            'cooperative_member_id' => $member->id,
+            'user_id' => $memberUser->id,
+            'status' => 'PENDING',
+            'reason' => 'Mengundurkan diri',
+            'effective_date' => now(),
+            'requested_at' => now(),
+        ]);
+
+        $this->actingAs($reviewer)
+            ->post("/cooperative/members/resignations/{$request->id}/process", [
+                'decision' => 'APPROVE',
+                'review_notes' => 'Disetujui oleh reviewer.',
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertSame(0, $memberUser->fresh()->tokens()->count());
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'member.access.revoked',
+            'subject_id' => $member->id,
+        ]);
+    }
+
     public function test_manager_can_reject_resignation(): void
     {
         $organization = Organization::factory()->create();

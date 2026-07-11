@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\CooperativeMember;
+use App\Support\OrganizationVisibility;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -11,16 +12,16 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class AnggotaExport implements FromQuery, WithHeadings, WithMapping
 {
     public function __construct(
-        private readonly array $filters = [],
-        private readonly ?string $organizationId = null,
+        private readonly array $filters,
+        private readonly OrganizationVisibility $visibility,
     ) {}
 
     public function query(): Builder
     {
         $query = CooperativeMember::query();
 
-        if ($this->organizationId !== null) {
-            $query->where('organization_id', $this->organizationId);
+        if (! $this->visibility->global) {
+            $query->where('organization_id', $this->visibility->organizationId);
         }
 
         if (($search = $this->filters['search'] ?? null) !== null && $search !== '') {

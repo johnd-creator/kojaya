@@ -87,7 +87,7 @@ class CooperativeNotificationActivationTest extends TestCase
         [$organization, $memberUser] = $this->setupOrganizationWithMember();
         $admin = $this->roleUser('Admin Koperasi', $organization);
         $member = CooperativeMember::factory()
-            ->pending()
+            ->pendingReview()
             ->create([
                 'organization_id' => $organization->id,
                 'user_id' => $memberUser->id,

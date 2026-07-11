@@ -31,6 +31,7 @@ class MemberLifecycleTokenRevocationTest extends TestCase
 
         // Member must be in pending review to request revision
         $member->forceFill([
+            'status' => CooperativeMember::VALIDATION_PENDING,
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ])->save();
 
@@ -47,6 +48,7 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         $this->assertTokenWorks($user);
 
         $member->forceFill([
+            'status' => CooperativeMember::VALIDATION_PENDING,
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ])->save();
 
@@ -74,7 +76,7 @@ class MemberLifecycleTokenRevocationTest extends TestCase
 
         $this->assertTokenWorks($user);
 
-        app(CooperativeMemberService::class)->resign($member);
+        app(CooperativeMemberService::class)->resign($member, $admin);
 
         $this->assertTokenRevoked($user);
     }

@@ -92,6 +92,17 @@ class CooperativeMember extends Model
         'no_rekening_bidx',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (CooperativeMember $member): void {
+            if ($member->isDirty('no_anggota')) {
+                $member->setAttribute('member_no', $member->getAttribute('no_anggota'));
+            } elseif ($member->isDirty('member_no')) {
+                $member->setAttribute('no_anggota', $member->getAttribute('member_no'));
+            }
+        });
+    }
+
     public static function blindIndexFor(string $field, mixed $value): ?string
     {
         $normalized = match ($field) {

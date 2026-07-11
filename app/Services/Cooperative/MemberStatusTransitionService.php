@@ -16,14 +16,11 @@ class MemberStatusTransitionService
         private readonly AuditLogService $audit,
     ) {}
 
-    public function deactivate(CooperativeMember $member, ?User $actor = null, ?string $reason = null): CooperativeMember
+    public function deactivate(CooperativeMember $member, User $actor, ?string $reason = null): CooperativeMember
     {
         return $this->applyTransition(
             $member,
-            [
-                ['ACTIVE', CooperativeMember::VALIDATION_ACTIVE],
-                ['ACTIVE', CooperativeMember::VALIDATION_PENDING],
-            ],
+            [['ACTIVE', CooperativeMember::VALIDATION_ACTIVE]],
             CooperativeMember::VALIDATION_INACTIVE,
             CooperativeMember::VALIDATION_INACTIVE,
             $actor,
@@ -32,14 +29,11 @@ class MemberStatusTransitionService
         );
     }
 
-    public function resign(CooperativeMember $member, ?User $actor = null, ?string $reason = null): CooperativeMember
+    public function resign(CooperativeMember $member, User $actor, ?string $reason = null): CooperativeMember
     {
         return $this->applyTransition(
             $member,
-            [
-                ['ACTIVE', CooperativeMember::VALIDATION_ACTIVE],
-                ['ACTIVE', CooperativeMember::VALIDATION_PENDING],
-            ],
+            [['ACTIVE', CooperativeMember::VALIDATION_ACTIVE]],
             CooperativeMember::VALIDATION_RESIGNED,
             CooperativeMember::VALIDATION_RESIGNED,
             $actor,
@@ -54,11 +48,7 @@ class MemberStatusTransitionService
     {
         return $this->applyTransition(
             $member,
-            [
-                ['INACTIVE', CooperativeMember::VALIDATION_INACTIVE],
-                ['INACTIVE', CooperativeMember::VALIDATION_PENDING],
-                ['PENDING', CooperativeMember::VALIDATION_PENDING],
-            ],
+            [['INACTIVE', CooperativeMember::VALIDATION_INACTIVE]],
             CooperativeMember::VALIDATION_ACTIVE,
             CooperativeMember::VALIDATION_ACTIVE,
             $actor,
@@ -76,7 +66,6 @@ class MemberStatusTransitionService
             $member,
             [
                 ['PENDING', CooperativeMember::VALIDATION_PENDING],
-                ['ACTIVE', CooperativeMember::VALIDATION_PENDING],
                 ['INACTIVE', CooperativeMember::VALIDATION_REVISION],
             ],
             'PENDING',
@@ -108,11 +97,7 @@ class MemberStatusTransitionService
     {
         return $this->applyTransition(
             $member,
-            [
-                ['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW],
-                ['ACTIVE', CooperativeMember::VALIDATION_PENDING],
-                ['PENDING', CooperativeMember::VALIDATION_PENDING],
-            ],
+            [['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW]],
             CooperativeMember::VALIDATION_INACTIVE,
             CooperativeMember::VALIDATION_REVISION,
             $actor,
@@ -126,11 +111,7 @@ class MemberStatusTransitionService
     {
         return $this->applyTransition(
             $member,
-            [
-                ['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW],
-                ['ACTIVE', CooperativeMember::VALIDATION_PENDING],
-                ['PENDING', CooperativeMember::VALIDATION_PENDING],
-            ],
+            [['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW]],
             CooperativeMember::VALIDATION_INACTIVE,
             CooperativeMember::VALIDATION_REJECTED,
             $actor,
@@ -149,7 +130,7 @@ class MemberStatusTransitionService
         array $allowedSources,
         string $status,
         string $validationStatus,
-        ?User $actor,
+        User $actor,
         string $action,
         ?string $reason = null,
         array $attributes = [],
@@ -180,7 +161,7 @@ class MemberStatusTransitionService
                 'reason' => $reason ?? $action,
             ]);
 
-            if ($revokeMemberTokens && $actor !== null) {
+            if ($revokeMemberTokens) {
                 $this->accessRevocation->revokeAfterCommit($member, $action, $actor);
             }
 
@@ -194,7 +175,7 @@ class MemberStatusTransitionService
     private function assertAllowedSource(CooperativeMember $member, array $allowedSources): void
     {
         foreach ($allowedSources as [$status, $validationStatus]) {
-            if ($member->status === $status && ($member->validation_status === $validationStatus || $member->validation_status === null)) {
+            if ($member->status === $status && $member->validation_status === $validationStatus) {
                 return;
             }
         }

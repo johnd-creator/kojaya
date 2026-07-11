@@ -130,7 +130,8 @@ class CooperativeMemberValidationTest extends TestCase
         $validator->givePermissionTo('verify_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
 
         $this->actingAs($validator)
@@ -150,7 +151,7 @@ class CooperativeMemberValidationTest extends TestCase
 
         $member = CooperativeMember::factory()->create([
             'status' => CooperativeMember::VALIDATION_PENDING,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
 
         $this->actingAs($validator)

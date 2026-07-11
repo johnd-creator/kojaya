@@ -79,7 +79,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:240
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
 * @route '/api/v1/members/resignation-requests'
 */
 export const resignationRequests = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ resignationRequests.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:240
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
 * @route '/api/v1/members/resignation-requests'
 */
 resignationRequests.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ resignationRequests.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:240
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
 * @route '/api/v1/members/resignation-requests'
 */
 resignationRequests.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -113,7 +113,7 @@ resignationRequests.get = (options?: RouteQueryOptions): RouteDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:240
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
 * @route '/api/v1/members/resignation-requests'
 */
 resignationRequests.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -123,7 +123,7 @@ resignationRequests.head = (options?: RouteQueryOptions): RouteDefinition<'head'
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:89
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
 * @route '/api/v1/members/{member}'
 */
 export const show = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -138,7 +138,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:89
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
 * @route '/api/v1/members/{member}'
 */
 show.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -171,7 +171,7 @@ show.url = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:89
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
 * @route '/api/v1/members/{member}'
 */
 show.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -181,7 +181,7 @@ show.get = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:89
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
 * @route '/api/v1/members/{member}'
 */
 show.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -191,7 +191,7 @@ show.head = (args: { member: string | number | { id: string | number } } | [memb
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:102
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:114
 * @route '/api/v1/members/{member}'
 */
 export const update = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -206,7 +206,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:102
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:114
 * @route '/api/v1/members/{member}'
 */
 update.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -239,7 +239,7 @@ update.url = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:102
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:114
 * @route '/api/v1/members/{member}'
 */
 update.put = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -249,7 +249,7 @@ update.put = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::updateSensitiveData
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:143
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:155
 * @route '/api/v1/members/{member}/sensitive-data'
 */
 export const updateSensitiveData = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -264,7 +264,7 @@ updateSensitiveData.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::updateSensitiveData
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:143
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:155
 * @route '/api/v1/members/{member}/sensitive-data'
 */
 updateSensitiveData.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -297,7 +297,7 @@ updateSensitiveData.url = (args: { member: string | number | { id: string | numb
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::updateSensitiveData
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:143
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:155
 * @route '/api/v1/members/{member}/sensitive-data'
 */
 updateSensitiveData.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -307,7 +307,7 @@ updateSensitiveData.patch = (args: { member: string | number | { id: string | nu
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::linkAccount
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:168
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:180
 * @route '/api/v1/members/{member}/account'
 */
 export const linkAccount = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -322,7 +322,7 @@ linkAccount.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::linkAccount
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:168
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:180
 * @route '/api/v1/members/{member}/account'
 */
 linkAccount.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -355,7 +355,7 @@ linkAccount.url = (args: { member: string | number | { id: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::linkAccount
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:168
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:180
 * @route '/api/v1/members/{member}/account'
 */
 linkAccount.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -365,7 +365,7 @@ linkAccount.patch = (args: { member: string | number | { id: string | number } }
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:198
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:210
 * @route '/api/v1/members/{member}/activate'
 */
 export const activate = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -380,7 +380,7 @@ activate.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:198
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:210
 * @route '/api/v1/members/{member}/activate'
 */
 activate.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -413,7 +413,7 @@ activate.url = (args: { member: string | number | { id: string | number } } | [m
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:198
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:210
 * @route '/api/v1/members/{member}/activate'
 */
 activate.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -423,7 +423,7 @@ activate.post = (args: { member: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:231
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:239
 * @route '/api/v1/members/{member}/resign'
 */
 export const resign = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -438,7 +438,7 @@ resign.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:231
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:239
 * @route '/api/v1/members/{member}/resign'
 */
 resign.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -471,7 +471,7 @@ resign.url = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:231
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:239
 * @route '/api/v1/members/{member}/resign'
 */
 resign.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -481,7 +481,7 @@ resign.post = (args: { member: string | number | { id: string | number } } | [me
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::processResignationRequest
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:267
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:275
 * @route '/api/v1/members/resignation-requests/{resignationRequest}/process'
 */
 export const processResignationRequest = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -496,7 +496,7 @@ processResignationRequest.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::processResignationRequest
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:267
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:275
 * @route '/api/v1/members/resignation-requests/{resignationRequest}/process'
 */
 processResignationRequest.url = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -529,7 +529,7 @@ processResignationRequest.url = (args: { resignationRequest: string | number | {
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::processResignationRequest
-* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:267
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:275
 * @route '/api/v1/members/resignation-requests/{resignationRequest}/process'
 */
 processResignationRequest.post = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

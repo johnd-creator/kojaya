@@ -86,7 +86,7 @@ class MemberResignationRequestService
                 'review_notes' => $notes,
             ])->save();
 
-            return $this->memberService->resign($member);
+            return $this->memberService->resign($member, $reviewer);
         });
     }
 

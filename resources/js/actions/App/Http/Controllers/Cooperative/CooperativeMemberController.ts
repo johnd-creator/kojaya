@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:396
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:391
 * @route '/cooperative/members/export'
 */
 export const exportMethod = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ exportMethod.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:396
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:391
 * @route '/cooperative/members/export'
 */
 exportMethod.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ exportMethod.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:396
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:391
 * @route '/cooperative/members/export'
 */
 exportMethod.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ exportMethod.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:396
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:391
 * @route '/cooperative/members/export'
 */
 exportMethod.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -167,7 +167,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:166
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:165
 * @route '/cooperative/members/{member}'
 */
 export const show = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -182,7 +182,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:166
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:165
 * @route '/cooperative/members/{member}'
 */
 show.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -215,7 +215,7 @@ show.url = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:166
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:165
 * @route '/cooperative/members/{member}'
 */
 show.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -225,7 +225,7 @@ show.get = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:166
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:165
 * @route '/cooperative/members/{member}'
 */
 show.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -235,7 +235,7 @@ show.head = (args: { member: string | number | { id: string | number } } | [memb
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:196
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:195
 * @route '/cooperative/members/{member}/edit'
 */
 export const edit = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -250,7 +250,7 @@ edit.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:196
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:195
 * @route '/cooperative/members/{member}/edit'
 */
 edit.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -283,7 +283,7 @@ edit.url = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:196
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:195
 * @route '/cooperative/members/{member}/edit'
 */
 edit.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -293,7 +293,7 @@ edit.get = (args: { member: string | number | { id: string | number } } | [membe
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:196
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:195
 * @route '/cooperative/members/{member}/edit'
 */
 edit.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -303,7 +303,7 @@ edit.head = (args: { member: string | number | { id: string | number } } | [memb
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:220
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:219
 * @route '/cooperative/members/{member}'
 */
 export const update = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -318,7 +318,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:220
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:219
 * @route '/cooperative/members/{member}'
 */
 update.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -351,7 +351,7 @@ update.url = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:220
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:219
 * @route '/cooperative/members/{member}'
 */
 update.put = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -361,7 +361,7 @@ update.put = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:220
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:219
 * @route '/cooperative/members/{member}'
 */
 update.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -371,7 +371,7 @@ update.patch = (args: { member: string | number | { id: string | number } } | [m
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::destroy
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:384
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:379
 * @route '/cooperative/members/{member}'
 */
 export const destroy = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -386,7 +386,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::destroy
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:384
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:379
 * @route '/cooperative/members/{member}'
 */
 destroy.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -419,7 +419,7 @@ destroy.url = (args: { member: string | number | { id: string | number } } | [me
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::destroy
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:384
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:379
 * @route '/cooperative/members/{member}'
 */
 destroy.delete = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -429,7 +429,7 @@ destroy.delete = (args: { member: string | number | { id: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::updateSensitiveData
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:258
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:257
 * @route '/cooperative/members/{member}/sensitive-data'
 */
 export const updateSensitiveData = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -444,7 +444,7 @@ updateSensitiveData.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::updateSensitiveData
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:258
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:257
 * @route '/cooperative/members/{member}/sensitive-data'
 */
 updateSensitiveData.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -477,7 +477,7 @@ updateSensitiveData.url = (args: { member: string | number | { id: string | numb
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::updateSensitiveData
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:258
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:257
 * @route '/cooperative/members/{member}/sensitive-data'
 */
 updateSensitiveData.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -487,7 +487,7 @@ updateSensitiveData.patch = (args: { member: string | number | { id: string | nu
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::linkAccount
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:278
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:277
 * @route '/cooperative/members/{member}/account'
 */
 export const linkAccount = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -502,7 +502,7 @@ linkAccount.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::linkAccount
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:278
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:277
 * @route '/cooperative/members/{member}/account'
 */
 linkAccount.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -535,7 +535,7 @@ linkAccount.url = (args: { member: string | number | { id: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::linkAccount
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:278
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:277
 * @route '/cooperative/members/{member}/account'
 */
 linkAccount.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -545,7 +545,7 @@ linkAccount.patch = (args: { member: string | number | { id: string | number } }
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::activate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:328
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:327
 * @route '/cooperative/members/{member}/activate'
 */
 export const activate = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -560,7 +560,7 @@ activate.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::activate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:328
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:327
 * @route '/cooperative/members/{member}/activate'
 */
 activate.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -593,7 +593,7 @@ activate.url = (args: { member: string | number | { id: string | number } } | [m
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::activate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:328
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:327
 * @route '/cooperative/members/{member}/activate'
 */
 activate.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -603,7 +603,7 @@ activate.post = (args: { member: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::deactivate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:362
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:357
 * @route '/cooperative/members/{member}/deactivate'
 */
 export const deactivate = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -618,7 +618,7 @@ deactivate.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::deactivate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:362
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:357
 * @route '/cooperative/members/{member}/deactivate'
 */
 deactivate.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -651,7 +651,7 @@ deactivate.url = (args: { member: string | number | { id: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::deactivate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:362
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:357
 * @route '/cooperative/members/{member}/deactivate'
 */
 deactivate.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -661,7 +661,7 @@ deactivate.post = (args: { member: string | number | { id: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::resign
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:375
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:370
 * @route '/cooperative/members/{member}/resign'
 */
 export const resign = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -676,7 +676,7 @@ resign.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::resign
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:375
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:370
 * @route '/cooperative/members/{member}/resign'
 */
 resign.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -709,7 +709,7 @@ resign.url = (args: { member: string | number | { id: string | number } } | [mem
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::resign
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:375
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:370
 * @route '/cooperative/members/{member}/resign'
 */
 resign.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({

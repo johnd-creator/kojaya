@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Cooperative;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCooperativeMemberRequest extends FormRequest
 {
@@ -29,7 +30,12 @@ class UpdateCooperativeMemberRequest extends FormRequest
     {
         return [
             'employee_id' => ['nullable', 'exists:employees,id'],
-            'no_anggota' => ['nullable', 'string', 'max:20'],
+            'no_anggota' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('cooperative_members', 'no_anggota')->ignore($this->route('member')?->id),
+            ],
             'nama_anggota' => ['required', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -41,6 +47,7 @@ class UpdateCooperativeMemberRequest extends FormRequest
             'autodebet' => ['required', 'in:BNI,BRI,MANUAL'],
             'opening_saving_balance' => ['nullable', 'numeric', 'min:0'],
             'user_id' => ['prohibited'],
+            'member_no' => ['prohibited'],
             'organization_id' => ['prohibited'],
             'status' => ['prohibited'],
             'validation_status' => ['prohibited'],

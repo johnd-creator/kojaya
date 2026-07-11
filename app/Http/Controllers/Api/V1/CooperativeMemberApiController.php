@@ -59,23 +59,35 @@ class CooperativeMemberApiController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         MemberNumberGenerator $memberNumberGenerator,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
     ): JsonResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $memberNo = $memberNumberGenerator->generate();
 
-        $member = DB::transaction(function () use ($request, $headOfficeResolver, $memberNo, $userProvisioningService): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $headOfficeResolver, $memberNo): CooperativeMember {
             $member = CooperativeMember::query()->create([
-                ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
+                ...$request->safe()->only([
+                    'employee_id',
+                    'no_anggota',
+                    'tanggal_aktif',
+                    'nama_anggota',
+                    'member_no',
+                    'name',
+                    'email',
+                    'phone',
+                    'no_telp',
+                    'jenis_anggota',
+                    'jenis_kelamin',
+                    'kategori',
+                    'autodebet',
+                ]),
                 'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
                 'no_anggota' => $memberNo,
                 'member_no' => $memberNo,
-                'joined_at' => $request->input('joined_at') ?: now()->toDateString(),
-                'status' => $request->input('status', 'PENDING'),
+                'joined_at' => $request->validated('tanggal_aktif'),
+                'status' => CooperativeMember::VALIDATION_PENDING,
+                'validation_status' => CooperativeMember::VALIDATION_PENDING,
             ]);
-
-            $userProvisioningService->provision($member, $request->validated('member_login_password'));
 
             return $member->refresh();
         });
@@ -198,7 +210,6 @@ class CooperativeMemberApiController extends Controller
     public function activate(
         Request $request,
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
         MemberNumberGenerator $memberNumberGenerator,
         MemberStatusTransitionService $transitions,
     ): JsonResponse {
@@ -215,12 +226,9 @@ class CooperativeMemberApiController extends Controller
             $updateData['member_no'] = $noAnggota;
         }
 
-        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService, $transitions, $request): CooperativeMember {
+        $member = DB::transaction(function () use ($member, $updateData, $transitions, $request): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $member->forceFill($updateData)->save();
-            if ($member->user_id === null) {
-                $userProvisioningService->provision($member->refresh());
-            }
 
             return $transitions->activate($member->refresh(), $request->user());
         });

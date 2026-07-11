@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::index
 * @see app/Http/Controllers/EmployeeTransferController.php:16
@@ -42,43 +42,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:16
-* @route '/employee-transfers'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:16
-* @route '/employee-transfers'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::index
-* @see app/Http/Controllers/EmployeeTransferController.php:16
-* @route '/employee-transfers'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::create
@@ -125,43 +88,6 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:44
-* @route '/employee-transfers/create'
-*/
-const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:44
-* @route '/employee-transfers/create'
-*/
-createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::create
-* @see app/Http/Controllers/EmployeeTransferController.php:44
-* @route '/employee-transfers/create'
-*/
-createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-create.form = createForm
-
-/**
 * @see \App\Http\Controllers\EmployeeTransferController::store
 * @see app/Http/Controllers/EmployeeTransferController.php:57
 * @route '/employee-transfers'
@@ -194,28 +120,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:57
-* @route '/employee-transfers'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::store
-* @see app/Http/Controllers/EmployeeTransferController.php:57
-* @route '/employee-transfers'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\EmployeeTransferController::show
@@ -280,43 +184,6 @@ show.head = (args: { employee_transfer: string | number } | [employee_transfer: 
 })
 
 /**
-* @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:79
-* @route '/employee-transfers/{employee_transfer}'
-*/
-const showForm = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:79
-* @route '/employee-transfers/{employee_transfer}'
-*/
-showForm.get = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::show
-* @see app/Http/Controllers/EmployeeTransferController.php:79
-* @route '/employee-transfers/{employee_transfer}'
-*/
-showForm.head = (args: { employee_transfer: string | number } | [employee_transfer: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\EmployeeTransferController::approve
 * @see app/Http/Controllers/EmployeeTransferController.php:90
 * @route '/employee-transfers/{transfer}/approve'
@@ -375,28 +242,6 @@ approve.post = (args: { transfer: number | { id: number } } | [transfer: number 
 })
 
 /**
-* @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:90
-* @route '/employee-transfers/{transfer}/approve'
-*/
-const approveForm = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::approve
-* @see app/Http/Controllers/EmployeeTransferController.php:90
-* @route '/employee-transfers/{transfer}/approve'
-*/
-approveForm.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-approve.form = approveForm
-
-/**
 * @see \App\Http\Controllers\EmployeeTransferController::reject
 * @see app/Http/Controllers/EmployeeTransferController.php:109
 * @route '/employee-transfers/{transfer}/reject'
@@ -453,28 +298,6 @@ reject.post = (args: { transfer: number | { id: number } } | [transfer: number |
     url: reject.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:109
-* @route '/employee-transfers/{transfer}/reject'
-*/
-const rejectForm = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeTransferController::reject
-* @see app/Http/Controllers/EmployeeTransferController.php:109
-* @route '/employee-transfers/{transfer}/reject'
-*/
-rejectForm.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-reject.form = rejectForm
 
 const employeeTransfers = {
     index: Object.assign(index, index),

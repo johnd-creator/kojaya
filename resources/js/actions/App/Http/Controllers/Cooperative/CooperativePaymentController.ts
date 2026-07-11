@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::index
 * @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:23
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::index
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:23
-* @route '/cooperative/payments'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::index
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:23
-* @route '/cooperative/payments'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::index
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:23
-* @route '/cooperative/payments'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::store
 * @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:54
 * @route '/cooperative/payments'
@@ -113,28 +76,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::store
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:54
-* @route '/cooperative/payments'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::store
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:54
-* @route '/cooperative/payments'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
@@ -195,28 +136,6 @@ approve.post = (args: { payment: number | { id: number } } | [payment: number | 
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:109
-* @route '/cooperative/payments/{payment}/approve'
-*/
-const approveForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::approve
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:109
-* @route '/cooperative/payments/{payment}/approve'
-*/
-approveForm.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-approve.form = approveForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativePaymentController::bulkApprove
 * @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:73
 * @route '/cooperative/payments/bulk-approve'
@@ -249,28 +168,6 @@ bulkApprove.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: bulkApprove.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::bulkApprove
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:73
-* @route '/cooperative/payments/bulk-approve'
-*/
-const bulkApproveForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: bulkApprove.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativePaymentController::bulkApprove
-* @see app/Http/Controllers/Cooperative/CooperativePaymentController.php:73
-* @route '/cooperative/payments/bulk-approve'
-*/
-bulkApproveForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: bulkApprove.url(options),
-    method: 'post',
-})
-
-bulkApprove.form = bulkApproveForm
 
 const CooperativePaymentController = { index, store, approve, bulkApprove }
 

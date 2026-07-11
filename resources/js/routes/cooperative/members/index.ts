@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 import resignations from './resignations'
 import sensitiveData from './sensitive-data'
 import accountLink from './account-link'
@@ -48,43 +48,6 @@ exportMethod.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:390
-* @route '/cooperative/members/export'
-*/
-const exportMethodForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportMethod.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:390
-* @route '/cooperative/members/export'
-*/
-exportMethodForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportMethod.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::exportMethod
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:390
-* @route '/cooperative/members/export'
-*/
-exportMethodForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportMethod.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-exportMethod.form = exportMethodForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::index
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:34
 * @route '/cooperative/members'
@@ -127,43 +90,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::index
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:34
-* @route '/cooperative/members'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::index
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:34
-* @route '/cooperative/members'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::index
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:34
-* @route '/cooperative/members'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::create
@@ -210,43 +136,6 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::create
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:110
-* @route '/cooperative/members/create'
-*/
-const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::create
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:110
-* @route '/cooperative/members/create'
-*/
-createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::create
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:110
-* @route '/cooperative/members/create'
-*/
-createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-create.form = createForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::store
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:126
 * @route '/cooperative/members'
@@ -279,28 +168,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::store
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:126
-* @route '/cooperative/members'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::store
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:126
-* @route '/cooperative/members'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
@@ -371,43 +238,6 @@ show.head = (args: { member: number | { id: number } } | [member: number | { id:
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:164
-* @route '/cooperative/members/{member}'
-*/
-const showForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:164
-* @route '/cooperative/members/{member}'
-*/
-showForm.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::show
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:164
-* @route '/cooperative/members/{member}'
-*/
-showForm.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:194
 * @route '/cooperative/members/{member}/edit'
@@ -474,43 +304,6 @@ edit.head = (args: { member: number | { id: number } } | [member: number | { id:
     url: edit.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:194
-* @route '/cooperative/members/{member}/edit'
-*/
-const editForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: edit.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:194
-* @route '/cooperative/members/{member}/edit'
-*/
-editForm.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: edit.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::edit
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:194
-* @route '/cooperative/members/{member}/edit'
-*/
-editForm.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: edit.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
@@ -581,53 +374,6 @@ update.patch = (args: { member: number | { id: number } } | [member: number | { 
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:218
-* @route '/cooperative/members/{member}'
-*/
-const updateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:218
-* @route '/cooperative/members/{member}'
-*/
-updateForm.put = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:218
-* @route '/cooperative/members/{member}'
-*/
-updateForm.patch = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::destroy
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:378
 * @route '/cooperative/members/{member}'
@@ -684,38 +430,6 @@ destroy.delete = (args: { member: number | { id: number } } | [member: number | 
     url: destroy.url(args, options),
     method: 'delete',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::destroy
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:378
-* @route '/cooperative/members/{member}'
-*/
-const destroyForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::destroy
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:378
-* @route '/cooperative/members/{member}'
-*/
-destroyForm.delete = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::activate
@@ -776,28 +490,6 @@ activate.post = (args: { member: number | { id: number } } | [member: number | {
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::activate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:326
-* @route '/cooperative/members/{member}/activate'
-*/
-const activateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: activate.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::activate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:326
-* @route '/cooperative/members/{member}/activate'
-*/
-activateForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: activate.url(args, options),
-    method: 'post',
-})
-
-activate.form = activateForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::deactivate
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:356
 * @route '/cooperative/members/{member}/deactivate'
@@ -854,28 +546,6 @@ deactivate.post = (args: { member: number | { id: number } } | [member: number |
     url: deactivate.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::deactivate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:356
-* @route '/cooperative/members/{member}/deactivate'
-*/
-const deactivateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: deactivate.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::deactivate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:356
-* @route '/cooperative/members/{member}/deactivate'
-*/
-deactivateForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: deactivate.url(args, options),
-    method: 'post',
-})
-
-deactivate.form = deactivateForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::resign
@@ -936,28 +606,6 @@ resign.post = (args: { member: number | { id: number } } | [member: number | { i
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::resign
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:369
-* @route '/cooperative/members/{member}/resign'
-*/
-const resignForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: resign.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::resign
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:369
-* @route '/cooperative/members/{member}/resign'
-*/
-resignForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: resign.url(args, options),
-    method: 'post',
-})
-
-resign.form = resignForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::validate
 * @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:20
 * @route '/cooperative/members/{member}/validate'
@@ -1014,28 +662,6 @@ validate.post = (args: { member: number | { id: number } } | [member: number | {
     url: validate.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::validate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:20
-* @route '/cooperative/members/{member}/validate'
-*/
-const validateForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: validate.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::validate
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:20
-* @route '/cooperative/members/{member}/validate'
-*/
-validateForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: validate.url(args, options),
-    method: 'post',
-})
-
-validate.form = validateForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approveFinal
@@ -1096,28 +722,6 @@ approveFinal.post = (args: { member: number | { id: number } } | [member: number
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approveFinal
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:35
-* @route '/cooperative/members/{member}/approve-final'
-*/
-const approveFinalForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approveFinal.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approveFinal
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:35
-* @route '/cooperative/members/{member}/approve-final'
-*/
-approveFinalForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approveFinal.url(args, options),
-    method: 'post',
-})
-
-approveFinal.form = approveFinalForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::requestRevision
 * @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:50
 * @route '/cooperative/members/{member}/request-revision'
@@ -1176,28 +780,6 @@ requestRevision.post = (args: { member: number | { id: number } } | [member: num
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::requestRevision
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:50
-* @route '/cooperative/members/{member}/request-revision'
-*/
-const requestRevisionForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestRevision.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::requestRevision
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:50
-* @route '/cooperative/members/{member}/request-revision'
-*/
-requestRevisionForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestRevision.url(args, options),
-    method: 'post',
-})
-
-requestRevision.form = requestRevisionForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::reject
 * @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:63
 * @route '/cooperative/members/{member}/reject'
@@ -1254,28 +836,6 @@ reject.post = (args: { member: number | { id: number } } | [member: number | { i
     url: reject.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::reject
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:63
-* @route '/cooperative/members/{member}/reject'
-*/
-const rejectForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::reject
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:63
-* @route '/cooperative/members/{member}/reject'
-*/
-rejectForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-reject.form = rejectForm
 
 const members = {
     export: Object.assign(exportMethod, exportMethod),

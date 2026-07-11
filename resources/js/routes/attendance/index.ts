@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\AttendanceController::selfService
 * @see app/Http/Controllers/AttendanceController.php:79
@@ -44,43 +44,6 @@ selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:79
-* @route '/attendance/self-service'
-*/
-const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: selfService.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:79
-* @route '/attendance/self-service'
-*/
-selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: selfService.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\AttendanceController::selfService
-* @see app/Http/Controllers/AttendanceController.php:79
-* @route '/attendance/self-service'
-*/
-selfServiceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: selfService.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-selfService.form = selfServiceForm
-
-/**
 * @see \App\Http\Controllers\AttendanceController::checkIn
 * @see app/Http/Controllers/AttendanceController.php:105
 * @route '/attendance/check-in'
@@ -113,28 +76,6 @@ checkIn.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: checkIn.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:105
-* @route '/attendance/check-in'
-*/
-const checkInForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: checkIn.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\AttendanceController::checkIn
-* @see app/Http/Controllers/AttendanceController.php:105
-* @route '/attendance/check-in'
-*/
-checkInForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: checkIn.url(options),
-    method: 'post',
-})
-
-checkIn.form = checkInForm
 
 const attendance = {
     selfService: Object.assign(selfService, selfService),

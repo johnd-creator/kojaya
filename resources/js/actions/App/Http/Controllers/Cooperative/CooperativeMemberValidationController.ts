@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approve
 * @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:20
@@ -56,28 +56,6 @@ approve.post = (args: { member: number | { id: number } } | [member: number | { 
     url: approve.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approve
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:20
-* @route '/cooperative/members/{member}/validate'
-*/
-const approveForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approve
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:20
-* @route '/cooperative/members/{member}/validate'
-*/
-approveForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-approve.form = approveForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approveFinal
@@ -138,28 +116,6 @@ approveFinal.post = (args: { member: number | { id: number } } | [member: number
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approveFinal
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:35
-* @route '/cooperative/members/{member}/approve-final'
-*/
-const approveFinalForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approveFinal.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::approveFinal
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:35
-* @route '/cooperative/members/{member}/approve-final'
-*/
-approveFinalForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approveFinal.url(args, options),
-    method: 'post',
-})
-
-approveFinal.form = approveFinalForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::requestRevision
 * @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:50
 * @route '/cooperative/members/{member}/request-revision'
@@ -218,28 +174,6 @@ requestRevision.post = (args: { member: number | { id: number } } | [member: num
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::requestRevision
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:50
-* @route '/cooperative/members/{member}/request-revision'
-*/
-const requestRevisionForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestRevision.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::requestRevision
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:50
-* @route '/cooperative/members/{member}/request-revision'
-*/
-requestRevisionForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestRevision.url(args, options),
-    method: 'post',
-})
-
-requestRevision.form = requestRevisionForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::reject
 * @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:63
 * @route '/cooperative/members/{member}/reject'
@@ -296,28 +230,6 @@ reject.post = (args: { member: number | { id: number } } | [member: number | { i
     url: reject.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::reject
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:63
-* @route '/cooperative/members/{member}/reject'
-*/
-const rejectForm = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberValidationController::reject
-* @see app/Http/Controllers/Cooperative/CooperativeMemberValidationController.php:63
-* @route '/cooperative/members/{member}/reject'
-*/
-rejectForm.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-reject.form = rejectForm
 
 const CooperativeMemberValidationController = { approve, approveFinal, requestRevision, reject }
 

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EfakturApiController::submit
 * @see app/Http/Controllers/EfakturApiController.php:11
@@ -56,28 +56,6 @@ submit.post = (args: { invoice: string | { id: string } } | [invoice: string | {
     url: submit.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\EfakturApiController::submit
-* @see app/Http/Controllers/EfakturApiController.php:11
-* @route '/invoices/{invoice}/efaktur/api/submit'
-*/
-const submitForm = (args: { invoice: string | { id: string } } | [invoice: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submit.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EfakturApiController::submit
-* @see app/Http/Controllers/EfakturApiController.php:11
-* @route '/invoices/{invoice}/efaktur/api/submit'
-*/
-submitForm.post = (args: { invoice: string | { id: string } } | [invoice: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submit.url(args, options),
-    method: 'post',
-})
-
-submit.form = submitForm
 
 /**
 * @see \App\Http\Controllers\EfakturApiController::status
@@ -146,43 +124,6 @@ status.head = (args: { submission: string | { id: string } } | [submission: stri
     url: status.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:31
-* @route '/invoices/efaktur/api/submissions/{submission}/status'
-*/
-const statusForm = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: status.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:31
-* @route '/invoices/efaktur/api/submissions/{submission}/status'
-*/
-statusForm.get = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: status.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EfakturApiController::status
-* @see app/Http/Controllers/EfakturApiController.php:31
-* @route '/invoices/efaktur/api/submissions/{submission}/status'
-*/
-statusForm.head = (args: { submission: string | { id: string } } | [submission: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: status.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-status.form = statusForm
 
 const EfakturApiController = { submit, status }
 

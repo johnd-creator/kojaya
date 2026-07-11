@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
 import pdf from './pdf'
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::csv
@@ -43,43 +43,6 @@ csv.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: csv.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:50
-* @route '/cooperative/pos/reports/export.csv'
-*/
-const csvForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: csv.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:50
-* @route '/cooperative/pos/reports/export.csv'
-*/
-csvForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: csv.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::csv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:50
-* @route '/cooperative/pos/reports/export.csv'
-*/
-csvForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: csv.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-csv.form = csvForm
 
 const exportMethod = {
     csv: Object.assign(csv, csv),

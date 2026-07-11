@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::dashboard
 * @see app/Http/Controllers/MemberPortalController.php:38
@@ -42,43 +42,6 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: dashboard.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:38
-* @route '/member'
-*/
-const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:38
-* @route '/member'
-*/
-dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::dashboard
-* @see app/Http/Controllers/MemberPortalController.php:38
-* @route '/member'
-*/
-dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::onboarding
@@ -125,43 +88,6 @@ onboarding.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:175
-* @route '/member/onboarding'
-*/
-const onboardingForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: onboarding.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:175
-* @route '/member/onboarding'
-*/
-onboardingForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: onboarding.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::onboarding
-* @see app/Http/Controllers/MemberPortalController.php:175
-* @route '/member/onboarding'
-*/
-onboardingForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: onboarding.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-onboarding.form = onboardingForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::submitOnboarding
 * @see app/Http/Controllers/MemberPortalController.php:209
 * @route '/member/onboarding'
@@ -194,28 +120,6 @@ submitOnboarding.post = (options?: RouteQueryOptions): RouteDefinition<'post'> =
     url: submitOnboarding.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:209
-* @route '/member/onboarding'
-*/
-const submitOnboardingForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submitOnboarding.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::submitOnboarding
-* @see app/Http/Controllers/MemberPortalController.php:209
-* @route '/member/onboarding'
-*/
-submitOnboardingForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submitOnboarding.url(options),
-    method: 'post',
-})
-
-submitOnboarding.form = submitOnboardingForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
@@ -252,28 +156,6 @@ markOnboardingStep.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:220
-* @route '/member/onboarding/steps'
-*/
-const markOnboardingStepForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: markOnboardingStep.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::markOnboardingStep
-* @see app/Http/Controllers/MemberPortalController.php:220
-* @route '/member/onboarding/steps'
-*/
-markOnboardingStepForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: markOnboardingStep.url(options),
-    method: 'post',
-})
-
-markOnboardingStep.form = markOnboardingStepForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
 * @see app/Http/Controllers/MemberPortalController.php:576
 * @route '/member/payments/proof'
@@ -308,28 +190,6 @@ uploadPaymentProof.post = (options?: RouteQueryOptions): RouteDefinition<'post'>
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
-* @see app/Http/Controllers/MemberPortalController.php:576
-* @route '/member/payments/proof'
-*/
-const uploadPaymentProofForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: uploadPaymentProof.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::uploadPaymentProof
-* @see app/Http/Controllers/MemberPortalController.php:576
-* @route '/member/payments/proof'
-*/
-uploadPaymentProofForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: uploadPaymentProof.url(options),
-    method: 'post',
-})
-
-uploadPaymentProof.form = uploadPaymentProofForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::createPaymentIntent
 * @see app/Http/Controllers/MemberPortalController.php:609
 * @route '/member/payments/intent'
@@ -362,28 +222,6 @@ createPaymentIntent.post = (options?: RouteQueryOptions): RouteDefinition<'post'
     url: createPaymentIntent.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::createPaymentIntent
-* @see app/Http/Controllers/MemberPortalController.php:609
-* @route '/member/payments/intent'
-*/
-const createPaymentIntentForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createPaymentIntent.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::createPaymentIntent
-* @see app/Http/Controllers/MemberPortalController.php:609
-* @route '/member/payments/intent'
-*/
-createPaymentIntentForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createPaymentIntent.url(options),
-    method: 'post',
-})
-
-createPaymentIntent.form = createPaymentIntentForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::paymentStatus
@@ -454,43 +292,6 @@ paymentStatus.head = (args: { payment: number | { id: number } } | [payment: num
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:719
-* @route '/member/payments/{payment}/status'
-*/
-const paymentStatusForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentStatus.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:719
-* @route '/member/payments/{payment}/status'
-*/
-paymentStatusForm.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentStatus.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::paymentStatus
-* @see app/Http/Controllers/MemberPortalController.php:719
-* @route '/member/payments/{payment}/status'
-*/
-paymentStatusForm.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: paymentStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-paymentStatus.form = paymentStatusForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::profile
 * @see app/Http/Controllers/MemberPortalController.php:536
 * @route '/member/profile'
@@ -535,43 +336,6 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:536
-* @route '/member/profile'
-*/
-const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: profile.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:536
-* @route '/member/profile'
-*/
-profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: profile.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::profile
-* @see app/Http/Controllers/MemberPortalController.php:536
-* @route '/member/profile'
-*/
-profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: profile.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-profile.form = profileForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::updateProfile
 * @see app/Http/Controllers/MemberPortalController.php:549
 * @route '/member/profile'
@@ -604,38 +368,6 @@ updateProfile.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateProfile.url(options),
     method: 'put',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:549
-* @route '/member/profile'
-*/
-const updateProfileForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateProfile.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::updateProfile
-* @see app/Http/Controllers/MemberPortalController.php:549
-* @route '/member/profile'
-*/
-updateProfileForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateProfile.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-updateProfile.form = updateProfileForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::notifications
@@ -682,43 +414,6 @@ notifications.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:569
-* @route '/member/notifications'
-*/
-const notificationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: notifications.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:569
-* @route '/member/notifications'
-*/
-notificationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: notifications.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::notifications
-* @see app/Http/Controllers/MemberPortalController.php:569
-* @route '/member/notifications'
-*/
-notificationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: notifications.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-notifications.form = notificationsForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::savings
 * @see app/Http/Controllers/MemberPortalController.php:229
 * @route '/member/savings'
@@ -761,43 +456,6 @@ savings.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: savings.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:229
-* @route '/member/savings'
-*/
-const savingsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savings.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:229
-* @route '/member/savings'
-*/
-savingsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savings.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::savings
-* @see app/Http/Controllers/MemberPortalController.php:229
-* @route '/member/savings'
-*/
-savingsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: savings.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-savings.form = savingsForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::loans
@@ -844,43 +502,6 @@ loans.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:416
-* @route '/member/loans'
-*/
-const loansForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loans.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:416
-* @route '/member/loans'
-*/
-loansForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loans.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::loans
-* @see app/Http/Controllers/MemberPortalController.php:416
-* @route '/member/loans'
-*/
-loansForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: loans.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-loans.form = loansForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::applyLoan
 * @see app/Http/Controllers/MemberPortalController.php:428
 * @route '/member/loans'
@@ -913,28 +534,6 @@ applyLoan.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: applyLoan.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:428
-* @route '/member/loans'
-*/
-const applyLoanForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: applyLoan.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::applyLoan
-* @see app/Http/Controllers/MemberPortalController.php:428
-* @route '/member/loans'
-*/
-applyLoanForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: applyLoan.url(options),
-    method: 'post',
-})
-
-applyLoan.form = applyLoanForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::points
@@ -981,43 +580,6 @@ points.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:446
-* @route '/member/points'
-*/
-const pointsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: points.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:446
-* @route '/member/points'
-*/
-pointsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: points.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::points
-* @see app/Http/Controllers/MemberPortalController.php:446
-* @route '/member/points'
-*/
-pointsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: points.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-points.form = pointsForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::rewards
 * @see app/Http/Controllers/MemberPortalController.php:457
 * @route '/member/rewards'
@@ -1060,43 +622,6 @@ rewards.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: rewards.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:457
-* @route '/member/rewards'
-*/
-const rewardsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: rewards.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:457
-* @route '/member/rewards'
-*/
-rewardsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: rewards.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::rewards
-* @see app/Http/Controllers/MemberPortalController.php:457
-* @route '/member/rewards'
-*/
-rewardsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: rewards.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-rewards.form = rewardsForm
 
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeemReward
@@ -1157,28 +682,6 @@ redeemReward.post = (args: { reward: string | { id: string } } | [reward: string
 })
 
 /**
-* @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:478
-* @route '/member/rewards/{reward}/redeem'
-*/
-const redeemRewardForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: redeemReward.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::redeemReward
-* @see app/Http/Controllers/MemberPortalController.php:478
-* @route '/member/rewards/{reward}/redeem'
-*/
-redeemRewardForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: redeemReward.url(args, options),
-    method: 'post',
-})
-
-redeemReward.form = redeemRewardForm
-
-/**
 * @see \App\Http\Controllers\MemberPortalController::transactions
 * @see app/Http/Controllers/MemberPortalController.php:495
 * @route '/member/transactions'
@@ -1221,43 +724,6 @@ transactions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: transactions.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:495
-* @route '/member/transactions'
-*/
-const transactionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:495
-* @route '/member/transactions'
-*/
-transactionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::transactions
-* @see app/Http/Controllers/MemberPortalController.php:495
-* @route '/member/transactions'
-*/
-transactionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-transactions.form = transactionsForm
 
 const MemberPortalController = { dashboard, onboarding, submitOnboarding, markOnboardingStep, uploadPaymentProof, createPaymentIntent, paymentStatus, profile, updateProfile, notifications, savings, loans, applyLoan, points, rewards, redeemReward, transactions }
 

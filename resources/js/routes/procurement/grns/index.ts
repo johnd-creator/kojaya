@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::index
 * @see app/Http/Controllers/Procurement/GrnController.php:18
@@ -42,43 +42,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::index
-* @see app/Http/Controllers/Procurement/GrnController.php:18
-* @route '/procurement/grns'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::index
-* @see app/Http/Controllers/Procurement/GrnController.php:18
-* @route '/procurement/grns'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::index
-* @see app/Http/Controllers/Procurement/GrnController.php:18
-* @route '/procurement/grns'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::fromPo
@@ -137,28 +100,6 @@ fromPo.post = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder
     url: fromPo.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::fromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:90
-* @route '/procurement/grns/from-po/{purchaseOrder}'
-*/
-const fromPoForm = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: fromPo.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::fromPo
-* @see app/Http/Controllers/Procurement/GrnController.php:90
-* @route '/procurement/grns/from-po/{purchaseOrder}'
-*/
-fromPoForm.post = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: fromPo.url(args, options),
-    method: 'post',
-})
-
-fromPo.form = fromPoForm
 
 /**
 * @see \App\Http\Controllers\Procurement\GrnController::show
@@ -229,43 +170,6 @@ show.head = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceive
 })
 
 /**
-* @see \App\Http\Controllers\Procurement\GrnController::show
-* @see app/Http/Controllers/Procurement/GrnController.php:42
-* @route '/procurement/grns/{goodsReceiveNote}'
-*/
-const showForm = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::show
-* @see app/Http/Controllers/Procurement/GrnController.php:42
-* @route '/procurement/grns/{goodsReceiveNote}'
-*/
-showForm.get = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::show
-* @see app/Http/Controllers/Procurement/GrnController.php:42
-* @route '/procurement/grns/{goodsReceiveNote}'
-*/
-showForm.head = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\Procurement\GrnController::receive
 * @see app/Http/Controllers/Procurement/GrnController.php:101
 * @route '/procurement/grns/{goodsReceiveNote}/receive'
@@ -322,28 +226,6 @@ receive.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsRece
     url: receive.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:101
-* @route '/procurement/grns/{goodsReceiveNote}/receive'
-*/
-const receiveForm = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: receive.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Procurement\GrnController::receive
-* @see app/Http/Controllers/Procurement/GrnController.php:101
-* @route '/procurement/grns/{goodsReceiveNote}/receive'
-*/
-receiveForm.post = (args: { goodsReceiveNote: string | { id: string } } | [goodsReceiveNote: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: receive.url(args, options),
-    method: 'post',
-})
-
-receive.form = receiveForm
 
 const grns = {
     index: Object.assign(index, index),

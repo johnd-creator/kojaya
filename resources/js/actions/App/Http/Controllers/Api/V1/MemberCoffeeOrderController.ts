@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
 * @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
-* @route '/api/v1/member/coffee/menu'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
-* @route '/api/v1/member/coffee/menu'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
-* @route '/api/v1/member/coffee/menu'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::store
 * @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:45
 * @route '/api/v1/member/coffee/orders'
@@ -113,28 +76,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::store
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:45
-* @route '/api/v1/member/coffee/orders'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::store
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:45
-* @route '/api/v1/member/coffee/orders'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
@@ -203,43 +144,6 @@ show.head = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: numb
     url: show.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
-* @route '/api/v1/member/coffee/orders/{coffeeOrder}'
-*/
-const showForm = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
-* @route '/api/v1/member/coffee/orders/{coffeeOrder}'
-*/
-showForm.get = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
-* @route '/api/v1/member/coffee/orders/{coffeeOrder}'
-*/
-showForm.head = (args: { coffeeOrder: number | { id: number } } | [coffeeOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
 
 const MemberCoffeeOrderController = { index, store, show }
 

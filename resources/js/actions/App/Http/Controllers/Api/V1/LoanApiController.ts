@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::index
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:25
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::index
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:25
-* @route '/api/v1/loans'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::index
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:25
-* @route '/api/v1/loans'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::index
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:25
-* @route '/api/v1/loans'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::apply
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:42
 * @route '/api/v1/loans/apply'
@@ -113,28 +76,6 @@ apply.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: apply.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::apply
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:42
-* @route '/api/v1/loans/apply'
-*/
-const applyForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: apply.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::apply
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:42
-* @route '/api/v1/loans/apply'
-*/
-applyForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: apply.url(options),
-    method: 'post',
-})
-
-apply.form = applyForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::show
@@ -205,43 +146,6 @@ show.head = (args: { loan: number | { id: number } } | [loan: number | { id: num
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::show
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:59
-* @route '/api/v1/loans/{loan}'
-*/
-const showForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::show
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:59
-* @route '/api/v1/loans/{loan}'
-*/
-showForm.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::show
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:59
-* @route '/api/v1/loans/{loan}'
-*/
-showForm.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::review
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:68
 * @route '/api/v1/loans/{loan}/review'
@@ -298,28 +202,6 @@ review.post = (args: { loan: number | { id: number } } | [loan: number | { id: n
     url: review.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::review
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:68
-* @route '/api/v1/loans/{loan}/review'
-*/
-const reviewForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: review.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::review
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:68
-* @route '/api/v1/loans/{loan}/review'
-*/
-reviewForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: review.url(args, options),
-    method: 'post',
-})
-
-review.form = reviewForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::approve
@@ -380,28 +262,6 @@ approve.post = (args: { loan: number | { id: number } } | [loan: number | { id: 
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::approve
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:77
-* @route '/api/v1/loans/{loan}/approve'
-*/
-const approveForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::approve
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:77
-* @route '/api/v1/loans/{loan}/approve'
-*/
-approveForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-approve.form = approveForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::reject
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:86
 * @route '/api/v1/loans/{loan}/reject'
@@ -460,28 +320,6 @@ reject.post = (args: { loan: number | { id: number } } | [loan: number | { id: n
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::reject
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:86
-* @route '/api/v1/loans/{loan}/reject'
-*/
-const rejectForm = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::reject
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:86
-* @route '/api/v1/loans/{loan}/reject'
-*/
-rejectForm.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-reject.form = rejectForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:95
 * @route '/api/v1/loans/calculator'
@@ -514,28 +352,6 @@ calculator.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: calculator.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:95
-* @route '/api/v1/loans/calculator'
-*/
-const calculatorForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: calculator.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\LoanApiController::calculator
-* @see app/Http/Controllers/Api/V1/LoanApiController.php:95
-* @route '/api/v1/loans/calculator'
-*/
-calculatorForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: calculator.url(options),
-    method: 'post',
-})
-
-calculator.form = calculatorForm
 
 const LoanApiController = { index, apply, show, review, approve, reject, calculator }
 

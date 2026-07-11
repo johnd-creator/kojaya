@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::index
 * @see app/Http/Controllers/ProjectMilestoneController.php:13
@@ -68,43 +68,6 @@ index.head = (args: { project: string | { id: string } } | [project: string | { 
 })
 
 /**
-* @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:13
-* @route '/projects/{project}/milestones'
-*/
-const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:13
-* @route '/projects/{project}/milestones'
-*/
-indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::index
-* @see app/Http/Controllers/ProjectMilestoneController.php:13
-* @route '/projects/{project}/milestones'
-*/
-indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\ProjectMilestoneController::store
 * @see app/Http/Controllers/ProjectMilestoneController.php:23
 * @route '/projects/{project}/milestones'
@@ -161,28 +124,6 @@ store.post = (args: { project: string | { id: string } } | [project: string | { 
     url: store.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:23
-* @route '/projects/{project}/milestones'
-*/
-const storeForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::store
-* @see app/Http/Controllers/ProjectMilestoneController.php:23
-* @route '/projects/{project}/milestones'
-*/
-storeForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ProjectMilestoneController::update
@@ -250,53 +191,6 @@ update.patch = (args: { project: string | { id: string }, milestone: string | { 
 })
 
 /**
-* @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:35
-* @route '/projects/{project}/milestones/{milestone}'
-*/
-const updateForm = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:35
-* @route '/projects/{project}/milestones/{milestone}'
-*/
-updateForm.put = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::update
-* @see app/Http/Controllers/ProjectMilestoneController.php:35
-* @route '/projects/{project}/milestones/{milestone}'
-*/
-updateForm.patch = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
-
-/**
 * @see \App\Http\Controllers\ProjectMilestoneController::destroy
 * @see app/Http/Controllers/ProjectMilestoneController.php:68
 * @route '/projects/{project}/milestones/{milestone}'
@@ -350,38 +244,6 @@ destroy.delete = (args: { project: string | { id: string }, milestone: string | 
     url: destroy.url(args, options),
     method: 'delete',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:68
-* @route '/projects/{project}/milestones/{milestone}'
-*/
-const destroyForm = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectMilestoneController::destroy
-* @see app/Http/Controllers/ProjectMilestoneController.php:68
-* @route '/projects/{project}/milestones/{milestone}'
-*/
-destroyForm.delete = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
 
 const milestones = {
     index: Object.assign(index, index),

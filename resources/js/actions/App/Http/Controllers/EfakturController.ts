@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EfakturController::createBatch
 * @see app/Http/Controllers/EfakturController.php:13
@@ -32,28 +32,6 @@ createBatch.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: createBatch.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\EfakturController::createBatch
-* @see app/Http/Controllers/EfakturController.php:13
-* @route '/invoices/efaktur/batch'
-*/
-const createBatchForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createBatch.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EfakturController::createBatch
-* @see app/Http/Controllers/EfakturController.php:13
-* @route '/invoices/efaktur/batch'
-*/
-createBatchForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: createBatch.url(options),
-    method: 'post',
-})
-
-createBatch.form = createBatchForm
 
 /**
 * @see \App\Http\Controllers\EfakturController::downloadCsv
@@ -122,43 +100,6 @@ downloadCsv.head = (args: { batch: string | { id: string } } | [batch: string | 
     url: downloadCsv.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\EfakturController::downloadCsv
-* @see app/Http/Controllers/EfakturController.php:38
-* @route '/invoices/efaktur/batches/{batch}/csv'
-*/
-const downloadCsvForm = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: downloadCsv.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EfakturController::downloadCsv
-* @see app/Http/Controllers/EfakturController.php:38
-* @route '/invoices/efaktur/batches/{batch}/csv'
-*/
-downloadCsvForm.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: downloadCsv.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EfakturController::downloadCsv
-* @see app/Http/Controllers/EfakturController.php:38
-* @route '/invoices/efaktur/batches/{batch}/csv'
-*/
-downloadCsvForm.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: downloadCsv.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-downloadCsv.form = downloadCsvForm
 
 const EfakturController = { createBatch, downloadCsv }
 

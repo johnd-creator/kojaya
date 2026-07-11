@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectGanttController::getData
 * @see app/Http/Controllers/ProjectGanttController.php:12
@@ -68,43 +68,6 @@ getData.head = (args: { project: string | { id: string } } | [project: string | 
 })
 
 /**
-* @see \App\Http\Controllers\ProjectGanttController::getData
-* @see app/Http/Controllers/ProjectGanttController.php:12
-* @route '/projects/{project}/gantt-data'
-*/
-const getDataForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: getData.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectGanttController::getData
-* @see app/Http/Controllers/ProjectGanttController.php:12
-* @route '/projects/{project}/gantt-data'
-*/
-getDataForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: getData.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectGanttController::getData
-* @see app/Http/Controllers/ProjectGanttController.php:12
-* @route '/projects/{project}/gantt-data'
-*/
-getDataForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: getData.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-getData.form = getDataForm
-
-/**
 * @see \App\Http\Controllers\ProjectGanttController::storeLink
 * @see app/Http/Controllers/ProjectGanttController.php:70
 * @route '/projects/{project}/gantt-link'
@@ -163,28 +126,6 @@ storeLink.post = (args: { project: string | { id: string } } | [project: string 
 })
 
 /**
-* @see \App\Http\Controllers\ProjectGanttController::storeLink
-* @see app/Http/Controllers/ProjectGanttController.php:70
-* @route '/projects/{project}/gantt-link'
-*/
-const storeLinkForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storeLink.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectGanttController::storeLink
-* @see app/Http/Controllers/ProjectGanttController.php:70
-* @route '/projects/{project}/gantt-link'
-*/
-storeLinkForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storeLink.url(args, options),
-    method: 'post',
-})
-
-storeLink.form = storeLinkForm
-
-/**
 * @see \App\Http\Controllers\ProjectGanttController::destroyLink
 * @see app/Http/Controllers/ProjectGanttController.php:93
 * @route '/projects/{project}/gantt-link/{link}'
@@ -236,38 +177,6 @@ destroyLink.delete = (args: { project: string | { id: string }, link: string | n
     url: destroyLink.url(args, options),
     method: 'delete',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectGanttController::destroyLink
-* @see app/Http/Controllers/ProjectGanttController.php:93
-* @route '/projects/{project}/gantt-link/{link}'
-*/
-const destroyLinkForm = (args: { project: string | { id: string }, link: string | number } | [project: string | { id: string }, link: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroyLink.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectGanttController::destroyLink
-* @see app/Http/Controllers/ProjectGanttController.php:93
-* @route '/projects/{project}/gantt-link/{link}'
-*/
-destroyLinkForm.delete = (args: { project: string | { id: string }, link: string | number } | [project: string | { id: string }, link: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroyLink.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroyLink.form = destroyLinkForm
 
 const ProjectGanttController = { getData, storeLink, destroyLink }
 

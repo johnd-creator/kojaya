@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosCategoryController::index
 * @see app/Http/Controllers/Cooperative/PosCategoryController.php:15
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::index
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:15
-* @route '/cooperative/pos-categories'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::index
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:15
-* @route '/cooperative/pos-categories'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::index
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:15
-* @route '/cooperative/pos-categories'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosCategoryController::store
 * @see app/Http/Controllers/Cooperative/PosCategoryController.php:25
 * @route '/cooperative/pos-categories'
@@ -113,28 +76,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::store
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:25
-* @route '/cooperative/pos-categories'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::store
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:25
-* @route '/cooperative/pos-categories'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosCategoryController::update
@@ -205,53 +146,6 @@ update.patch = (args: { category: number | { id: number } } | [category: number 
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::update
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:32
-* @route '/cooperative/pos-categories/{category}'
-*/
-const updateForm = (args: { category: number | { id: number } } | [category: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::update
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:32
-* @route '/cooperative/pos-categories/{category}'
-*/
-updateForm.put = (args: { category: number | { id: number } } | [category: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::update
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:32
-* @route '/cooperative/pos-categories/{category}'
-*/
-updateForm.patch = (args: { category: number | { id: number } } | [category: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosCategoryController::destroy
 * @see app/Http/Controllers/Cooperative/PosCategoryController.php:39
 * @route '/cooperative/pos-categories/{category}'
@@ -308,38 +202,6 @@ destroy.delete = (args: { category: number | { id: number } } | [category: numbe
     url: destroy.url(args, options),
     method: 'delete',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::destroy
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:39
-* @route '/cooperative/pos-categories/{category}'
-*/
-const destroyForm = (args: { category: number | { id: number } } | [category: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosCategoryController::destroy
-* @see app/Http/Controllers/Cooperative/PosCategoryController.php:39
-* @route '/cooperative/pos-categories/{category}'
-*/
-destroyForm.delete = (args: { category: number | { id: number } } | [category: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
 
 const posCategories = {
     index: Object.assign(index, index),

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:277
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:276
 * @route '/cooperative/members/{member}/account'
 */
 export const update = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:277
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:276
 * @route '/cooperative/members/{member}/account'
 */
 update.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ update.url = (args: { member: number | { id: number } } | [member: number | { id
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:277
+* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:276
 * @route '/cooperative/members/{member}/account'
 */
 update.patch = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({

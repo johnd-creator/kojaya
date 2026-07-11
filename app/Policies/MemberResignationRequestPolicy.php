@@ -10,23 +10,19 @@ class MemberResignationRequestPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->canAny($user, [
-            PermissionEnum::COOPERATIVE_MEMBER_VIEW->value,
-            PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value,
-            PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value,
-        ]);
+        return $this->can($user, PermissionEnum::COOPERATIVE_RESIGNATION_REVIEW->value);
     }
 
     public function view(User $user, MemberResignationRequest $resignationRequest): bool
     {
-        return $this->viewAny($user)
+        return $this->can($user, PermissionEnum::COOPERATIVE_RESIGNATION_REVIEW->value)
             || $resignationRequest->member?->user_id === $user->id;
     }
 
     public function approve(User $user, MemberResignationRequest $resignationRequest): bool
     {
         return $this->canAny($user, [
-            PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value,
+            PermissionEnum::COOPERATIVE_RESIGNATION_REVIEW->value,
             PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value,
         ]);
     }

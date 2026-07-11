@@ -137,11 +137,11 @@ class CooperativeFeatureTest extends TestCase
         );
     }
 
-    public function test_member_creation_legacy_opening_balance_used_when_user_lacks_permission(): void
+    public function test_member_creation_without_wizard_permission_does_not_write_legacy_opening_balance(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        // Role ad-hoc: boleh create anggota TAPI tidak boleh wizard saldo awal,
-        // sehingga jalur legacy sync() dipakai.
+        // Role ad-hoc boleh create anggota, tetapi saldo awal hanya boleh
+        // ditulis melalui wizard.
         $user = User::factory()->create();
         $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Creator']);
         $legacyRole->syncPermissions([
@@ -157,14 +157,13 @@ class CooperativeFeatureTest extends TestCase
             'joined_at' => '2020-01-01',
             'status' => 'ACTIVE',
             'opening_saving_balance' => 75000,
-        ])->assertRedirect(route('cooperative.members.index'));
+        ])->assertRedirect();
 
         $member = CooperativeMember::query()->where('email', 'anggota-no-wizard@test.local')->firstOrFail();
 
-        $this->assertDatabaseHas('cooperative_ledger_entries', [
+        $this->assertDatabaseMissing('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'OPENING_BALANCE',
-            'credit' => 75000,
         ]);
     }
 
@@ -217,12 +216,12 @@ class CooperativeFeatureTest extends TestCase
             );
     }
 
-    public function test_member_opening_balance_can_be_updated_without_duplicate_entries(): void
+    public function test_member_update_with_opening_balance_does_not_write_legacy_entries(): void
     {
         $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
-        // Buat role ad-hoc: boleh update anggota TAPI tidak boleh wizard saldo awal,
-        // supaya jalur legacy sync() masih dipakai di sini.
+        // Buat role ad-hoc boleh update anggota, tetapi tidak boleh menulis
+        // saldo awal lewat jalur legacy.
         $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Tester']);
         $legacyRole->syncPermissions([
             'view_cooperative_member',
@@ -244,7 +243,7 @@ class CooperativeFeatureTest extends TestCase
             'status' => 'ACTIVE',
             'notes' => 'Migrasi',
             'opening_saving_balance' => 150000,
-        ])->assertRedirect(route('cooperative.members.index'));
+        ])->assertRedirect();
 
         $this->actingAs($admin)->put(route('cooperative.members.update', $member), [
             'name' => 'Opening Balance',
@@ -256,13 +255,12 @@ class CooperativeFeatureTest extends TestCase
             'status' => 'ACTIVE',
             'notes' => 'Migrasi',
             'opening_saving_balance' => 200000,
-        ])->assertRedirect(route('cooperative.members.index'));
+        ])->assertRedirect();
 
-        $this->assertSame(1, $member->ledgerEntries()->where('entry_type', 'OPENING_BALANCE')->count());
-        $this->assertDatabaseHas('cooperative_ledger_entries', [
+        $this->assertSame(0, $member->ledgerEntries()->where('entry_type', 'OPENING_BALANCE')->count());
+        $this->assertDatabaseMissing('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'OPENING_BALANCE',
-            'credit' => 200000,
         ]);
     }
 

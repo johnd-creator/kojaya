@@ -79,7 +79,7 @@ class Sprint3ArchitectureHardeningTest extends TestCase
             'cooperative operator default app' => [
                 ['view_cooperative_member', 'manage_cooperative_payment', 'access_cooperative_pos', 'view_cooperative_report'],
                 null,
-                ['profile:read', 'cooperative:read', 'cooperative:write', 'reports:read', 'pos:read', 'pos:write'],
+                ['profile:read', 'cooperative.member.read', 'cooperative.payment.read', 'cooperative.payment.record', 'cooperative.report.read', 'cooperative.pos.read', 'cooperative.pos.write', 'cooperative:read', 'cooperative:write', 'reports:read', 'pos:read', 'pos:write'],
             ],
         ];
     }

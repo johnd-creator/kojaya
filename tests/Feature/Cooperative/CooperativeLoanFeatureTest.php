@@ -145,32 +145,36 @@ class CooperativeLoanFeatureTest extends TestCase
         $member = $this->member([
             'user_id' => $memberUser->id,
             'email' => $memberUser->email,
+            'status' => 'ACTIVE',
+            'validation_status' => 'ACTIVE',
         ]);
         $otherUser = User::factory()->create();
         $otherUser->assignRole('Anggota');
         $otherMember = $this->member([
             'user_id' => $otherUser->id,
             'email' => $otherUser->email,
+            'status' => 'ACTIVE',
+            'validation_status' => 'ACTIVE',
         ]);
         $loanType = $this->loanType();
         $otherLoan = $this->activeLoan($otherMember, $loanType);
 
-        Sanctum::actingAs($memberUser, ['cooperative:read', 'cooperative:write']);
+        Sanctum::actingAs($memberUser, ['member:read', 'member:write']);
 
-        $this->postJson('/api/v1/loans/apply', [
+        $this->postJson('/api/v1/member/loans', [
             'loan_type_id' => $loanType->id,
             'principal_amount' => 900000,
             'term_months' => 3,
             'first_due_date' => now()->addMonth()->toDateString(),
             'purpose' => 'Kebutuhan keluarga',
         ])->assertCreated()
-            ->assertJsonPath('data.cooperative_member_id', $member->id)
+            ->assertJsonPath('data.member_id', $member->id)
             ->assertJsonPath('data.status', 'APPLIED');
 
-        $this->getJson('/api/v1/loans')
+        $this->getJson('/api/v1/member/loans')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.cooperative_member_id', $member->id);
+            ->assertJsonPath('data.0.member_id', $member->id);
 
         $this->getJson("/api/v1/loans/{$otherLoan->id}")
             ->assertForbidden();

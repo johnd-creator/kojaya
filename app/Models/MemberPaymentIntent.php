@@ -26,6 +26,7 @@ class MemberPaymentIntent extends Model
         'cooperative_member_id',
         'payable_type',
         'payable_id',
+        'client_reference',
         'amount',
         'channel',
         'gateway_provider',

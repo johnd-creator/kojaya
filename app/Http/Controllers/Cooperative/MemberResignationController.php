@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Models\MemberResignationRequest;
@@ -16,12 +17,21 @@ class MemberResignationController extends Controller
 {
     public function __construct(private readonly MemberResignationRequestService $service) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         Gate::authorize('viewAny', MemberResignationRequest::class);
 
-        $query = MemberResignationRequest::query()
-            ->with(['member.organization', 'reviewer'])
+        $baseQuery = MemberResignationRequest::query()
+            ->with(['member.organization', 'reviewer']);
+
+        // Scope by organization through the member relation.
+        if (! $scopeService->canViewAllOrganizations($request->user())) {
+            $baseQuery->whereHas('member', function ($memberQuery) use ($request): void {
+                $memberQuery->where('organization_id', $request->user()->organization_id);
+            });
+        }
+
+        $query = (clone $baseQuery)
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request): void {
                 $search = $request->string('search')->toString();
@@ -36,7 +46,7 @@ class MemberResignationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $statusCounts = MemberResignationRequest::query()
+        $statusCounts = (clone $baseQuery)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');

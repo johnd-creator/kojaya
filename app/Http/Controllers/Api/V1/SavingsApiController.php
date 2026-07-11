@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Models\CooperativeContributionType;
 use App\Services\Cooperative\SavingsSummaryService;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class SavingsApiController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function categories(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('manage_cooperative_dues') || $request->user()?->can('view_cooperative_member'), 403);
@@ -52,7 +55,7 @@ class SavingsApiController extends Controller
         $entries = $savingsSummary->ledgerQuery(filters: $filters)
             ->orderByDesc('posted_at')
             ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 15));
+            ->paginate($this->apiPageSize($request));
 
         return response()->json([
             'data' => $entries->through(fn ($entry): array => [

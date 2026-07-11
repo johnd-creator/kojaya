@@ -293,10 +293,15 @@ class PosInventoryService
 
     public function sellStock(PosProduct $product, PosInventoryLocation $location, int $quantity, string $sourceType, int $sourceId, ?string $referenceNo = null, ?string $movementType = 'SALE'): PosStockMovement
     {
-        $stock = $this->getStockAt($product, $location->id);
-        if ($quantity > $stock) {
+        $stock = PosInventoryStock::query()
+            ->where('pos_product_id', $product->id)
+            ->where('pos_inventory_location_id', $location->id)
+            ->lockForUpdate()
+            ->first();
+        $available = (int) ($stock?->quantity ?? 0) - (int) ($stock?->reserved ?? 0);
+        if ($quantity > $available) {
             throw ValidationException::withMessages([
-                'stock' => "Stok {$product->name} di lokasi {$location->name} tidak cukup (tersisa {$stock}).",
+                'stock' => "Stok {$product->name} di lokasi {$location->name} tidak cukup (tersisa {$available}).",
             ]);
         }
 

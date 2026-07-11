@@ -12,11 +12,16 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
 {
     public function __construct(
         private readonly array $filters = [],
+        private readonly ?string $organizationId = null,
     ) {}
 
     public function query(): Builder
     {
         $query = CooperativeMember::query();
+
+        if ($this->organizationId !== null) {
+            $query->where('organization_id', $this->organizationId);
+        }
 
         if (($search = $this->filters['search'] ?? null) !== null && $search !== '') {
             $query->where(function (Builder $query) use ($search): void {
@@ -70,7 +75,7 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
             $member->tanggal_aktif?->toDateString() ?? $member->joined_at?->toDateString(),
             $member->nama_anggota_clean,
             $member->status_badge['label'],
-            $member->npwp,
+            $this->maskNpwp($member->npwp),
             $member->no_telp ?: $member->phone,
             $member->jenis_anggota_label,
             match ($member->jenis_kelamin) {
@@ -85,7 +90,37 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
                 default => null,
             },
             $member->autodebet,
-            $member->no_rekening,
+            $this->maskRekening($member->no_rekening),
         ];
+    }
+
+    private function maskNpwp(?string $npwp): ?string
+    {
+        if ($npwp === null || $npwp === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $npwp);
+
+        if (strlen($digits) <= 6) {
+            return '***';
+        }
+
+        return substr($digits, 0, 3).'.'.substr($digits, 3, 3).'.***.***';
+    }
+
+    private function maskRekening(?string $rekening): ?string
+    {
+        if ($rekening === null || $rekening === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $rekening);
+
+        if (strlen($digits) <= 4) {
+            return '****';
+        }
+
+        return str_repeat('*', strlen($digits) - 4).substr($digits, -4);
     }
 }

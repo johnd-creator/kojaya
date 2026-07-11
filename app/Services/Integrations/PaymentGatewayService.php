@@ -6,13 +6,16 @@ use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use App\Services\Cooperative\MemberOrderReservationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PaymentGatewayService
 {
-    public function __construct(private readonly PaymentGatewayProvider $provider)
-    {
+    public function __construct(
+        private readonly PaymentGatewayProvider $provider,
+        private readonly MemberOrderReservationService $reservationService,
+    ) {
         //
     }
 
@@ -237,6 +240,8 @@ class PaymentGatewayService
             'gateway_payload' => $payload,
         ])->save();
 
+        $this->releaseOrderReservationWhenTerminal($intent);
+
         return $intent;
     }
 
@@ -283,7 +288,22 @@ class PaymentGatewayService
             'gateway_payload' => $event->rawPayload,
         ])->save();
 
+        $this->releaseOrderReservationWhenTerminal($intent);
+
         return $intent;
+    }
+
+    private function releaseOrderReservationWhenTerminal(MemberPaymentIntent $intent): void
+    {
+        if (! in_array($intent->payable_type, [MemberPaymentIntent::PAYABLE_COFFEE_ORDER, MemberPaymentIntent::PAYABLE_STORE_ORDER], true)) {
+            return;
+        }
+
+        if (! in_array(strtoupper($intent->gateway_status), ['CANCELLED', 'EXPIRED', 'FAILED', 'DENY'], true)) {
+            return;
+        }
+
+        $this->reservationService->release($intent);
     }
 
     /**

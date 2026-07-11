@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Models\CooperativeMember;
 use App\Services\Cooperative\PointService;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class PointApiController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function balance(Request $request, PointService $pointService): JsonResponse
     {
         $member = $this->resolveMember($request);
@@ -41,7 +44,7 @@ class PointApiController extends Controller
             $query->whereDate('posted_at', '<=', $request->input('end_date'));
         }
 
-        $history = $query->paginate($request->integer('per_page', 15))->through(fn ($transaction): array => [
+        $history = $query->paginate($this->apiPageSize($request))->through(fn ($transaction): array => [
             'id' => $transaction->id,
             'transaction_date' => $transaction->posted_at?->toISOString(),
             'transaction_type' => $transaction->transaction_type,

@@ -43,4 +43,9 @@ class CooperativeMemberPolicy extends BasePolicy
     {
         return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
     }
+
+    public function export(User $user): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_EXPORT->value);
+    }
 }

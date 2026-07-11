@@ -124,16 +124,32 @@ class SystemAdminAccessTest extends TestCase
         }
     }
 
-    public function test_system_admin_has_wildcard_token_ability_for_mobile_api(): void
+    public function test_system_admin_does_not_get_wildcard_token_for_mobile_apps(): void
     {
-        $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/auth/login', [
+            'email' => 'admin@erp.com',
+            'password' => 'password',
+            'app' => 'member',
+            'device_name' => 'System Admin Test',
+        ])
+            ->assertOk()
+            ->assertJsonPath('token_type', 'Bearer');
+
+        $abilities = $response->json('abilities');
+        $this->assertNotContains('*', $abilities, 'System Admin must not receive wildcard ability for member app.');
+        $this->assertNotContains('member:read', $abilities, 'System Admin without cooperativeMember must not receive member abilities.');
+    }
+
+    public function test_system_admin_admin_app_does_not_get_wildcard(): void
+    {
+        $response = $this->postJson('/api/auth/login', [
             'email' => 'admin@erp.com',
             'password' => 'password',
             'app' => 'admin',
             'device_name' => 'System Admin Test',
         ])
-            ->assertOk()
-            ->assertJsonPath('token_type', 'Bearer')
-            ->assertJsonPath('abilities', ['*']);
+            ->assertOk();
+
+        $this->assertNotContains('*', $response->json('abilities'), 'System Admin must not receive wildcard ability even for admin app.');
     }
 }

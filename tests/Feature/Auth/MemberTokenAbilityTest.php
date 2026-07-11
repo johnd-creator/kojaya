@@ -1,0 +1,190 @@
+<?php
+
+namespace Tests\Feature\Auth;
+
+use App\Models\CooperativeMember;
+use App\Models\User;
+use App\Services\Auth\TokenAbilityResolver;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class MemberTokenAbilityTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+    }
+
+    public function test_system_admin_member_app_does_not_get_wildcard(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+
+        $abilities = app(TokenAbilityResolver::class)->for($admin, 'member');
+
+        $this->assertNotContains('*', $abilities);
+    }
+
+    public function test_system_admin_admin_app_does_not_get_wildcard(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+
+        $abilities = app(TokenAbilityResolver::class)->for($admin, 'admin');
+
+        $this->assertNotContains('*', $abilities);
+        $this->assertContains('profile:read', $abilities);
+    }
+
+    public function test_system_admin_null_app_does_not_get_wildcard(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+
+        $abilities = app(TokenAbilityResolver::class)->for($admin, null);
+
+        $this->assertNotContains('*', $abilities);
+    }
+
+    public function test_abilities_are_deduplicated(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('System Admin');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, null);
+
+        $this->assertSame(count($abilities), count(array_unique($abilities)));
+    }
+
+    public function test_anggota_member_app_gets_member_abilities(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create(['user_id' => $user->id]);
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, 'member');
+
+        $this->assertContains('profile:read', $abilities);
+        $this->assertContains('member:read', $abilities);
+        $this->assertContains('member:write', $abilities);
+    }
+
+    public function test_anggota_member_app_does_not_get_cooperative_abilities(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create(['user_id' => $user->id]);
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, 'member');
+
+        $this->assertNotContains('cooperative:read', $abilities);
+        $this->assertNotContains('cooperative:write', $abilities);
+    }
+
+    public function test_user_without_cooperative_member_does_not_get_member_abilities(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Anggota');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, 'member');
+
+        $this->assertNotContains('member:read', $abilities);
+        $this->assertNotContains('member:write', $abilities);
+    }
+
+    public function test_kasir_koperasi_admin_app_gets_cooperative_abilities(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, 'admin');
+
+        $this->assertContains('cooperative:read', $abilities);
+        $this->assertContains('cooperative:write', $abilities);
+        $this->assertContains('pos:read', $abilities);
+        $this->assertContains('pos:write', $abilities);
+    }
+
+    public function test_kasir_koperasi_member_app_does_not_get_cooperative_abilities(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, 'member');
+
+        $this->assertNotContains('cooperative:read', $abilities);
+        $this->assertNotContains('cooperative:write', $abilities);
+    }
+
+    public function test_pengurus_gets_granular_member_abilities(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Pengurus Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, null);
+
+        $this->assertContains('cooperative.member.read', $abilities);
+        $this->assertContains('cooperative.member.write', $abilities);
+        $this->assertContains('cooperative.member.verify', $abilities);
+        $this->assertContains('cooperative.member.approve', $abilities);
+        $this->assertContains('cooperative.member.export', $abilities);
+        $this->assertContains('cooperative.resignation.review', $abilities);
+    }
+
+    public function test_manajer_gets_loan_review_ability(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Manajer Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, null);
+
+        $this->assertContains('cooperative.loan.read', $abilities);
+        $this->assertContains('cooperative.loan.write', $abilities);
+        $this->assertContains('cooperative.loan.review', $abilities);
+        $this->assertNotContains('cooperative.loan.approve', $abilities);
+    }
+
+    public function test_kasir_gets_payment_abilities_not_loan_management(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Kasir Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, null);
+
+        $this->assertContains('cooperative.payment.read', $abilities);
+        $this->assertContains('cooperative.payment.record', $abilities);
+        $this->assertNotContains('cooperative.loan.write', $abilities);
+        $this->assertNotContains('cooperative.loan.review', $abilities);
+        $this->assertNotContains('cooperative.loan.approve', $abilities);
+        $this->assertNotContains('cooperative.member.write', $abilities);
+        $this->assertNotContains('cooperative.member.export', $abilities);
+    }
+
+    public function test_admin_koperasi_does_not_get_loan_review_or_approve(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, null);
+
+        $this->assertNotContains('cooperative.loan.review', $abilities);
+        $this->assertNotContains('cooperative.loan.approve', $abilities);
+    }
+
+    public function test_granular_and_legacy_coexist(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Admin Koperasi');
+
+        $abilities = app(TokenAbilityResolver::class)->for($user, null);
+
+        $this->assertContains('cooperative:read', $abilities);
+        $this->assertContains('cooperative:write', $abilities);
+        $this->assertContains('cooperative.member.read', $abilities);
+        $this->assertContains('cooperative.member.write', $abilities);
+    }
+}

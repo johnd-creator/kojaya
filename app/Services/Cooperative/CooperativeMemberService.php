@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\DB;
 
 class CooperativeMemberService
 {
-    public function __construct(private readonly CooperativeMemberResignationGuard $resignationGuard) {}
+    public function __construct(
+        private readonly CooperativeMemberResignationGuard $resignationGuard,
+        private readonly MemberAccessRevocationService $accessRevocation,
+    ) {}
 
     public function resign(CooperativeMember $member): CooperativeMember
     {
@@ -20,6 +23,8 @@ class CooperativeMemberService
                 'status' => 'RESIGNED',
                 'resigned_at' => now()->toDateString(),
             ])->save();
+
+            $this->accessRevocation->revokeAfterCommit($member, 'resigned');
 
             return $member->refresh();
         });

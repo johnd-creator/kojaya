@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Contracts\Cooperative\LoanServiceContract;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
@@ -18,6 +19,8 @@ use Illuminate\Http\Request;
 
 class LoanApiController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request): JsonResponse
     {
         $user = $this->authorizedUser($request, 'viewAny', Loan::class);
@@ -31,7 +34,7 @@ class LoanApiController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        return response()->json($query->latest()->paginate($request->integer('per_page', 15)));
+        return response()->json($query->latest()->paginate($this->apiPageSize($request)));
     }
 
     public function apply(ApplyLoanRequest $request, LoanServiceContract $loanService): JsonResponse

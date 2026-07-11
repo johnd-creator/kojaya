@@ -99,6 +99,11 @@ class MemberCoffeeOrderApiTest extends TestCase
 
         $this->assertDatabaseCount('pos_transactions', 0);
         $this->assertSame(10, (int) $product->refresh()->stock);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'quantity' => 10,
+            'reserved' => 2,
+        ]);
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->postJson('/api/payments/webhook', [
@@ -113,7 +118,13 @@ class MemberCoffeeOrderApiTest extends TestCase
         $this->assertSame('QRIS', $transaction->payments->first()->payment_method);
         $this->assertSame(2, (int) $transaction->items->first()->quantity);
         $this->assertSame(8, (int) $product->refresh()->stock);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'quantity' => 8,
+            'reserved' => 0,
+        ]);
         $this->assertNotNull($intent->refresh()->settled_at);
+        $this->assertSame('MOBILE-COFFEE-001', $intent->client_reference);
     }
 
     /**

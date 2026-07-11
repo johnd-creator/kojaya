@@ -194,10 +194,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Cooperative ERP
     Route::prefix('cooperative')->name('cooperative.')->group(function () {
-        Route::middleware('can:view_cooperative_member')->group(function () {
-            Route::get('members/export', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'export'])->name('members.export');
+        Route::get('members/export', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'export'])
+            ->middleware('can:export_cooperative_member')
+            ->name('members.export');
+
+        Route::middleware('can:review_cooperative_resignation')->group(function () {
             Route::get('members/resignations', [\App\Http\Controllers\Cooperative\MemberResignationController::class, 'index'])->name('members.resignations.index');
             Route::post('members/resignations/{resignationRequest}/process', [\App\Http\Controllers\Cooperative\MemberResignationController::class, 'process'])->name('members.resignations.process');
+        });
+
+        Route::middleware('can:view_cooperative_member')->group(function () {
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
             Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
             Route::post('members/{member}/deactivate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'deactivate'])->name('members.deactivate');

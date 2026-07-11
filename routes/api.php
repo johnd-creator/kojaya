@@ -10,8 +10,8 @@ use App\Http\Controllers\Api\V1\CooperativeMemberApiController;
 use App\Http\Controllers\Api\V1\CooperativePaymentApiController;
 use App\Http\Controllers\Api\V1\LoanApiController;
 use App\Http\Controllers\Api\V1\MemberCoffeeOrderController;
-use App\Http\Controllers\Api\V1\MemberStoreController;
 use App\Http\Controllers\Api\V1\MemberSelfServiceController;
+use App\Http\Controllers\Api\V1\MemberStoreController;
 use App\Http\Controllers\Api\V1\PointApiController;
 use App\Http\Controllers\Api\V1\PosApiController;
 use App\Http\Controllers\Api\V1\PosSyncApiController;
@@ -58,6 +58,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
     Route::prefix('member')->group(function () {
+        // Onboarding-safe routes: available to members in any validation status
+        // so pending, revision, and rejected members can complete onboarding.
         Route::get('/dashboard', [MemberSelfServiceController::class, 'dashboard'])->middleware('ability:member:read');
         Route::get('/onboarding/status', [MemberSelfServiceController::class, 'onboardingStatus'])->middleware('ability:member:read');
         Route::post('/onboarding/steps', [MemberSelfServiceController::class, 'markOnboardingStep'])->middleware(['ability:member:write', 'throttle:api-write']);
@@ -65,38 +67,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
         Route::get('/profile', [MemberSelfServiceController::class, 'profile'])->middleware('ability:member:read');
         Route::put('/profile', [MemberSelfServiceController::class, 'updateProfile'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::get('/resignation', [MemberSelfServiceController::class, 'resignationStatus'])->middleware('ability:member:read');
-        Route::post('/resignation', [MemberSelfServiceController::class, 'submitResignation'])->middleware(['ability:member:write', 'throttle:api-write']);
-        Route::delete('/resignation', [MemberSelfServiceController::class, 'cancelResignation'])->middleware(['ability:member:write', 'throttle:api-write']);
-        Route::get('/savings/summary', [MemberSelfServiceController::class, 'savingsSummary'])->middleware('ability:member:read');
-        Route::get('/savings/ledger', [MemberSelfServiceController::class, 'savingsLedger'])->middleware('ability:member:read');
-        Route::post('/savings/withdraw', [MemberSelfServiceController::class, 'requestSavingsWithdrawal'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/dues/invoices', [MemberSelfServiceController::class, 'invoices'])->middleware('ability:member:read');
-        Route::get('/dues/invoices/{invoice}', [MemberSelfServiceController::class, 'showInvoice'])->middleware('ability:member:read');
-        Route::post('/dues/invoices/{invoice}/payment-intent', [MemberSelfServiceController::class, 'createPaymentIntent'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/payments', [MemberSelfServiceController::class, 'payments'])->middleware('ability:member:read');
-        Route::get('/payments/{payment}', [MemberSelfServiceController::class, 'showPayment'])->middleware('ability:member:read');
-        Route::get('/payments/{payment}/status', [MemberSelfServiceController::class, 'paymentStatus'])->name('api.v1.member.payments.status')->middleware('ability:member:read');
-        Route::get('/payments/{payment}/qris-image', [MemberSelfServiceController::class, 'qrisImage'])->name('api.v1.member.payments.qris-image')->middleware('ability:member:read');
-        Route::get('/payments/{payment}/receipt', [MemberSelfServiceController::class, 'paymentReceipt'])->middleware('ability:member:read');
-        Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/bills', [MemberSelfServiceController::class, 'bills'])->middleware('ability:member:read');
-        Route::get('/bills/{bill}', [MemberSelfServiceController::class, 'showBill'])->middleware('ability:member:read');
-        Route::post('/bills/{bill}/payment-intent', [MemberSelfServiceController::class, 'createBillPaymentIntent'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/loans/options', [MemberSelfServiceController::class, 'loanOptions'])->middleware('ability:member:read');
-        Route::get('/loans', [MemberSelfServiceController::class, 'loans'])->middleware('ability:member:read');
-        Route::post('/loans', [MemberSelfServiceController::class, 'applyLoan'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/loans/{loan}', [MemberSelfServiceController::class, 'loan'])->middleware('ability:member:read');
-        Route::post('/loans/{loan}/restructure', [MemberSelfServiceController::class, 'requestLoanRestructure'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/shu', [MemberSelfServiceController::class, 'shu'])->middleware('ability:member:read');
-        Route::get('/reward-redemptions', [MemberSelfServiceController::class, 'rewardRedemptions'])->middleware('ability:member:read');
-        Route::get('/transactions', [MemberSelfServiceController::class, 'transactions'])->middleware('ability:member:read');
-        Route::get('/transactions/unified', [MemberSelfServiceController::class, 'unifiedTransactions'])->middleware('ability:member:read');
-        Route::get('/coffee/menu', [MemberCoffeeOrderController::class, 'index'])->middleware('ability:member:read');
-        Route::post('/coffee/orders', [MemberCoffeeOrderController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/coffee/orders/{coffeeOrder}', [MemberCoffeeOrderController::class, 'show'])->middleware('ability:member:read');
-        Route::get('/store/catalog', [MemberStoreController::class, 'catalog'])->middleware('ability:member:read');
-        Route::post('/store/orders', [MemberStoreController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
-        Route::get('/payment-intents/{intent}', [MemberStoreController::class, 'showIntent'])->middleware('ability:member:read');
+
         Route::prefix('notifications')->group(function () {
             Route::get('/', [MemberSelfServiceController::class, 'notifications'])->middleware('ability:member:read');
             Route::get('/recent', [App\Http\Controllers\NotificationController::class, 'recent'])->middleware('ability:member:read');
@@ -107,8 +78,45 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
             Route::patch('/{notification}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->middleware(['ability:member:write', 'throttle:api-write']);
             Route::post('/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->middleware(['ability:member:write', 'throttle:api-write']);
         });
-        Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
-        Route::post('/support-tickets', [MemberSelfServiceController::class, 'storeSupportTicket'])->middleware(['ability:member:write', 'throttle:api-write']);
+
+        // Active-only routes: financial and transactional endpoints require
+        // the member to be fully active (status ACTIVE and validation_status ACTIVE).
+        Route::middleware('member.api.active')->group(function () {
+            Route::post('/resignation', [MemberSelfServiceController::class, 'submitResignation'])->middleware(['ability:member:write', 'throttle:api-write']);
+            Route::delete('/resignation', [MemberSelfServiceController::class, 'cancelResignation'])->middleware(['ability:member:write', 'throttle:api-write']);
+            Route::get('/savings/summary', [MemberSelfServiceController::class, 'savingsSummary'])->middleware('ability:member:read');
+            Route::get('/savings/ledger', [MemberSelfServiceController::class, 'savingsLedger'])->middleware('ability:member:read');
+            Route::post('/savings/withdraw', [MemberSelfServiceController::class, 'requestSavingsWithdrawal'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/dues/invoices', [MemberSelfServiceController::class, 'invoices'])->middleware('ability:member:read');
+            Route::get('/dues/invoices/{invoice}', [MemberSelfServiceController::class, 'showInvoice'])->middleware('ability:member:read');
+            Route::post('/dues/invoices/{invoice}/payment-intent', [MemberSelfServiceController::class, 'createPaymentIntent'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/payments', [MemberSelfServiceController::class, 'payments'])->middleware('ability:member:read');
+            Route::get('/payments/{payment}', [MemberSelfServiceController::class, 'showPayment'])->middleware('ability:member:read');
+            Route::get('/payments/{payment}/status', [MemberSelfServiceController::class, 'paymentStatus'])->name('api.v1.member.payments.status')->middleware('ability:member:read');
+            Route::get('/payments/{payment}/qris-image', [MemberSelfServiceController::class, 'qrisImage'])->name('api.v1.member.payments.qris-image')->middleware('ability:member:read');
+            Route::get('/payments/{payment}/receipt', [MemberSelfServiceController::class, 'paymentReceipt'])->middleware('ability:member:read');
+            Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/bills', [MemberSelfServiceController::class, 'bills'])->middleware('ability:member:read');
+            Route::get('/bills/{bill}', [MemberSelfServiceController::class, 'showBill'])->middleware('ability:member:read');
+            Route::post('/bills/{bill}/payment-intent', [MemberSelfServiceController::class, 'createBillPaymentIntent'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/loans/options', [MemberSelfServiceController::class, 'loanOptions'])->middleware('ability:member:read');
+            Route::get('/loans', [MemberSelfServiceController::class, 'loans'])->middleware('ability:member:read');
+            Route::post('/loans', [MemberSelfServiceController::class, 'applyLoan'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/loans/{loan}', [MemberSelfServiceController::class, 'loan'])->middleware('ability:member:read');
+            Route::post('/loans/{loan}/restructure', [MemberSelfServiceController::class, 'requestLoanRestructure'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/shu', [MemberSelfServiceController::class, 'shu'])->middleware('ability:member:read');
+            Route::get('/reward-redemptions', [MemberSelfServiceController::class, 'rewardRedemptions'])->middleware('ability:member:read');
+            Route::get('/transactions', [MemberSelfServiceController::class, 'transactions'])->middleware('ability:member:read');
+            Route::get('/transactions/unified', [MemberSelfServiceController::class, 'unifiedTransactions'])->middleware('ability:member:read');
+            Route::get('/coffee/menu', [MemberCoffeeOrderController::class, 'index'])->middleware('ability:member:read');
+            Route::post('/coffee/orders', [MemberCoffeeOrderController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/coffee/orders/{coffeeOrder}', [MemberCoffeeOrderController::class, 'show'])->middleware('ability:member:read');
+            Route::get('/store/catalog', [MemberStoreController::class, 'catalog'])->middleware('ability:member:read');
+            Route::post('/store/orders', [MemberStoreController::class, 'store'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::get('/payment-intents/{intent}', [MemberStoreController::class, 'showIntent'])->middleware('ability:member:read');
+            Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
+            Route::post('/support-tickets', [MemberSelfServiceController::class, 'storeSupportTicket'])->middleware(['ability:member:write', 'throttle:api-write']);
+        });
     });
 
     Route::get('/members', [CooperativeMemberApiController::class, 'index'])->middleware('ability:cooperative:read');

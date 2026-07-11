@@ -35,7 +35,7 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
         return $user;
     }
 
-    public function test_api_store_with_opening_saving_balance_writes_legacy_entry_when_user_lacks_wizard_permission(): void
+    public function test_api_store_with_opening_saving_balance_requires_wizard_even_when_user_lacks_wizard_permission(): void
     {
         $this->actingAdmin('no-wizard');
 
@@ -53,15 +53,13 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.email', 'api-legacy@test.local')
-            ->assertJsonMissingPath('meta.opening_balance.mode');
+            ->assertJsonPath('meta.opening_balance.mode', 'wizard_required');
 
         $member = CooperativeMember::query()->where('email', 'api-legacy@test.local')->firstOrFail();
-        $this->assertDatabaseHas('cooperative_ledger_entries', [
+        $this->assertDatabaseMissing('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'OPENING_BALANCE',
             'source_type' => CooperativeMember::class,
-            'source_id' => $member->id,
-            'credit' => 175000,
         ]);
     }
 
@@ -92,7 +90,7 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
         ]);
     }
 
-    public function test_api_update_with_existing_wizard_batch_returns_wizard_locked_metadata(): void
+    public function test_api_update_with_existing_wizard_batch_keeps_requiring_the_wizard(): void
     {
         $this->actingAdmin('all');
 
@@ -121,7 +119,7 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('meta.opening_balance.mode', 'wizard_locked');
+            ->assertJsonPath('meta.opening_balance.mode', 'wizard_required');
 
         // Ledger wizard tidak boleh ter-overwrite oleh API.
         $this->assertSame(

@@ -43,6 +43,7 @@ use App\Models\RewardRedemption;
 use App\Services\Cooperative\CooperativeReceiptService;
 use App\Services\Cooperative\LoanRestructureService;
 use App\Services\Cooperative\MemberOnboardingService;
+use App\Services\Cooperative\MemberProfileService;
 use App\Services\Cooperative\MemberResignationRequestService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
@@ -123,34 +124,18 @@ class MemberSelfServiceController extends Controller
         ]);
     }
 
-    public function updateProfile(UpdateMemberPortalProfileRequest $request): JsonResponse
+    public function updateProfile(UpdateMemberPortalProfileRequest $request, MemberProfileService $profileService): JsonResponse
     {
         $member = $this->memberOrAbort($request);
         $user = $request->user();
 
-        $user?->update([
-            'name' => $request->validated('name'),
-            'email' => $request->validated('email'),
-        ]);
+        abort_unless($user !== null, 401);
 
-        $member->update([
-            'name' => $request->validated('name'),
-            'email' => $request->validated('email'),
-            'phone' => $request->validated('phone'),
-            'address' => $request->validated('address'),
-            'jenis_kelamin' => $request->validated('gender'),
-            'tanggal_lahir' => $request->validated('birth_date'),
-            'tempat_lahir' => $request->validated('birth_place'),
-            'pekerjaan' => $request->validated('occupation'),
-            'npwp' => $request->validated('npwp'),
-            'nama_bank' => $request->validated('bank_name'),
-            'no_rekening' => $request->validated('bank_account_number'),
-            'nama_pemilik_rekening' => $request->validated('bank_account_holder'),
-        ]);
+        $member = $profileService->update($user, $member, $request->validated());
 
         return response()->json([
             'data' => [
-                'user' => new MemberUserResource($user?->refresh()->loadMissing('roles')),
+                'user' => new MemberUserResource($user->refresh()->loadMissing('roles')),
                 'member' => new MemberSelfServiceResource($member->refresh()->load(['organization'])),
             ],
         ]);
@@ -223,7 +208,7 @@ class MemberSelfServiceController extends Controller
             $savingsSummary->ledgerQuery($member, $request->only(['category', 'contribution_type_id', 'start_date', 'end_date']))
                 ->orderByDesc('posted_at')
                 ->orderByDesc('id')
-                ->paginate($request->integer('per_page', 15))
+                ->paginate($this->perPage($request))
                 ->through(fn (CooperativeLedgerEntry $entry): array => [
                     'id' => $entry->id,
                     'entry_type' => $entry->entry_type,
@@ -267,7 +252,7 @@ class MemberSelfServiceController extends Controller
             ->when($request->filled('period'), fn ($query) => $query->where('period', $request->input('period')))
             ->when($request->filled('category'), fn ($query) => $query->whereHas('contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category'))))
             ->orderByDesc('period')
-            ->paginate($request->integer('per_page', 15)))
+            ->paginate($this->perPage($request)))
             ->response();
     }
 
@@ -339,7 +324,7 @@ class MemberSelfServiceController extends Controller
             ->when($request->filled('start_date'), fn ($query) => $query->whereDate('paid_at', '>=', $request->input('start_date')))
             ->when($request->filled('end_date'), fn ($query) => $query->whereDate('paid_at', '<=', $request->input('end_date')))
             ->orderByDesc('paid_at')
-            ->paginate($request->integer('per_page', 15)))
+            ->paginate($this->perPage($request)))
             ->response();
     }
 
@@ -468,7 +453,7 @@ class MemberSelfServiceController extends Controller
             ->with(['loanType', 'installments'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->latest()
-            ->paginate($request->integer('per_page', 15)))
+            ->paginate($this->perPage($request)))
             ->response();
     }
 
@@ -547,7 +532,7 @@ class MemberSelfServiceController extends Controller
                 ->with('reward')
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
                 ->orderByDesc('redeemed_at')
-                ->paginate($request->integer('per_page', 15))
+                ->paginate($this->perPage($request))
                 ->through(fn (RewardRedemption $redemption): array => [
                     'id' => $redemption->id,
                     'reward_id' => $redemption->reward_id,
@@ -585,7 +570,7 @@ class MemberSelfServiceController extends Controller
         $transactions = $baseQuery
             ->with(['items.product', 'payments', 'cashier:id,name'])
             ->orderByDesc('sold_at')
-            ->paginate($request->integer('per_page', 15))
+            ->paginate($this->perPage($request))
             ->through(fn (PosTransaction $transaction): array => [
                 'id' => $transaction->id,
                 'transaction_no' => $transaction->transaction_no,
@@ -637,7 +622,7 @@ class MemberSelfServiceController extends Controller
         return NotificationResource::collection($request->user()
             ->notifications()
             ->latest()
-            ->paginate($request->integer('per_page', 15)))
+            ->paginate($this->perPage($request)))
             ->response();
     }
 
@@ -647,7 +632,7 @@ class MemberSelfServiceController extends Controller
 
         return MemberSupportTicketResource::collection($member->supportTickets()
             ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 15)))
+            ->paginate($this->perPage($request)))
             ->response();
     }
 
@@ -1065,6 +1050,11 @@ class MemberSelfServiceController extends Controller
             'paid_at' => now()->toDateString(),
             'status' => 'PENDING',
         ]);
+    }
+
+    private function perPage(Request $request): int
+    {
+        return min(max($request->integer('per_page', 15), 1), 50);
     }
 
     protected function pendingLoanPaymentIntent(Request $request, CooperativeMember $member, string $id, string $channel): MemberPaymentIntent

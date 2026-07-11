@@ -75,6 +75,11 @@ class MemberStoreOrderApiTest extends TestCase
 
         $this->assertDatabaseCount('pos_transactions', 0);
         $this->assertSame(15, (int) $product->refresh()->stock);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'quantity' => 15,
+            'reserved' => 2,
+        ]);
 
         $intentId = $response->json('data.payment_intent_id');
 
@@ -99,9 +104,15 @@ class MemberStoreOrderApiTest extends TestCase
         $this->assertSame('QRIS', $transaction->payments->first()->payment_method);
         $this->assertSame(2, (int) $transaction->items->first()->quantity);
         $this->assertSame(13, (int) $product->refresh()->stock);
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'quantity' => 13,
+            'reserved' => 0,
+        ]);
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->assertNotNull($intent->refresh()->settled_at);
+        $this->assertSame('MOBILE-STORE-001', $intent->client_reference);
 
         $this->getJson("/api/v1/member/payment-intents/{$intentId}")
             ->assertOk()
@@ -152,6 +163,31 @@ class MemberStoreOrderApiTest extends TestCase
         ])->assertStatus(422);
 
         $this->assertDatabaseCount('member_payment_intents', 0);
+    }
+
+    public function test_expired_store_order_releases_reserved_stock(): void
+    {
+        $this->actingMember(['member:write']);
+        $product = PosProduct::factory()->create([
+            'sale_price' => 5000,
+            'stock' => 4,
+        ]);
+
+        $response = $this->postJson('/api/v1/member/store/orders', [
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 3]],
+            'client_reference' => 'MOBILE-STORE-EXPIRED',
+        ])->assertCreated();
+
+        $this->postJson('/api/payments/webhook', [
+            'reference' => $response->json('data.charge.reference'),
+            'status' => 'EXPIRED',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('pos_inventory_stocks', [
+            'pos_product_id' => $product->id,
+            'quantity' => 4,
+            'reserved' => 0,
+        ]);
     }
 
     /**

@@ -6,6 +6,8 @@ use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
 use App\Enums\PermissionEnum;
 use App\Enums\VendorStatus;
+use App\Http\Resources\CooperativeMemberResource;
+use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
@@ -14,9 +16,13 @@ use App\Models\Organization;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\LoanRestructureService;
 use App\Services\Cooperative\LoanService;
+use App\Services\Cooperative\MemberProfileService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
@@ -50,6 +56,101 @@ class ProductionReadinessP0P2Test extends TestCase
             ->assertJsonMissingPath('data.member.organization_id')
             ->assertJsonMissingPath('data.member.identity_number')
             ->assertJsonMissingPath('data.member.notes');
+    }
+
+    public function test_member_profile_sync_rolls_back_when_user_update_fails(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id, 'email' => 'member@example.test']);
+        $member = CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+            'name' => 'Nama Lama',
+            'email' => $user->email,
+        ]);
+        User::factory()->create(['email' => 'existing@example.test']);
+
+        try {
+            app(MemberProfileService::class)->update($user, $member, [
+                'name' => 'Nama Baru',
+                'email' => 'existing@example.test',
+            ]);
+            $this->fail('Expected duplicate user email to fail.');
+        } catch (QueryException) {
+            $this->assertSame('Nama Lama', $member->refresh()->name);
+            $this->assertSame('member@example.test', $member->email);
+        }
+    }
+
+    public function test_sso_member_email_change_requires_a_verified_account_flow(): void
+    {
+        $user = User::factory()->create(['email' => 'sso-member@example.test']);
+        $member = CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'sso_provider' => 'google',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        app(MemberProfileService::class)->update($user, $member, [
+            'name' => $member->name,
+            'email' => 'changed@example.test',
+        ]);
+    }
+
+    public function test_cooperative_member_resource_masks_sensitive_data_without_the_dedicated_permission(): void
+    {
+        $user = User::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'identity_number' => '3201234567890001',
+            'npwp' => '12.345.678.9-012.000',
+            'no_rekening' => '1234567890',
+        ]);
+        $request = Request::create('/api/v1/members/'.$member->id);
+        $request->setUserResolver(fn (): User => $user);
+
+        $masked = (new CooperativeMemberResource($member))->toArray($request);
+
+        $this->assertNotSame($member->identity_number, $masked['identity_number']);
+        $this->assertNotSame($member->npwp, $masked['npwp']);
+        $this->assertSame('******7890', $masked['no_rekening']);
+
+        Permission::firstOrCreate(['name' => PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value]);
+        $user->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value);
+
+        $unmasked = (new CooperativeMemberResource($member))->toArray($request);
+
+        $this->assertSame($member->identity_number, $unmasked['identity_number']);
+        $this->assertSame($member->npwp, $unmasked['npwp']);
+        $this->assertSame($member->no_rekening, $unmasked['no_rekening']);
+    }
+
+    public function test_audit_contract_records_context_and_redacts_sensitive_values(): void
+    {
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->create(['organization_id' => $organization->id]);
+        $correlationId = 'bf280c9e-8c6e-4d19-891e-5ab41a65f2af';
+
+        $this->actingAs($actor);
+        app('request')->headers->set('X-Correlation-ID', $correlationId);
+
+        app(AuditLogService::class)->log('member.pii.viewed', 'cooperative.member', $member, [
+            'new' => [
+                'token' => 'must-not-be-stored',
+                'identity_number' => '3201234567890001',
+            ],
+            'reason' => 'Verifikasi data anggota.',
+        ]);
+
+        $audit = AuditLog::query()->where('action', 'member.pii.viewed')->sole();
+
+        $this->assertSame($correlationId, $audit->correlation_id);
+        $this->assertSame($organization->id, $audit->organization_id);
+        $this->assertSame('Verifikasi data anggota.', $audit->reason);
+        $this->assertSame('[REDACTED]', $audit->new_values['token']);
+        $this->assertSame('3201234567890001', $audit->new_values['identity_number']);
+        $this->assertNotNull($audit->occurred_at);
     }
 
     public function test_loan_restructure_approval_applies_new_schedule(): void

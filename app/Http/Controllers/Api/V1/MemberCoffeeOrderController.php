@@ -7,10 +7,13 @@ use App\Http\Requests\Api\StoreMemberCoffeeOrderRequest;
 use App\Models\CoffeeOrder;
 use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
+use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Integrations\PaymentGatewayService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MemberCoffeeOrderController extends Controller
 {
@@ -40,7 +43,8 @@ class MemberCoffeeOrderController extends Controller
 
     public function store(
         StoreMemberCoffeeOrderRequest $request,
-        PaymentGatewayService $gateway
+        PaymentGatewayService $gateway,
+        MemberOrderReservationService $reservationService,
     ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
@@ -55,7 +59,7 @@ class MemberCoffeeOrderController extends Controller
             ->where('cooperative_member_id', $member->id)
             ->where('payable_type', MemberPaymentIntent::PAYABLE_COFFEE_ORDER)
             ->whereNull('settled_at')
-            ->where('metadata->client_reference', $clientReference)
+            ->where('client_reference', $clientReference)
             ->latest('id')
             ->first();
 
@@ -67,21 +71,34 @@ class MemberCoffeeOrderController extends Controller
             ], 201);
         }
 
-        $intent = MemberPaymentIntent::query()->create([
-            'user_id' => $request->user()?->id,
-            'cooperative_member_id' => $member->id,
-            'payable_type' => MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
-            'payable_id' => null,
-            'amount' => $subtotal,
-            'channel' => $channel,
-            'gateway_status' => 'PENDING',
-            'metadata' => [
-                'description' => 'Pesanan Kopi Kojaya',
-                'client_reference' => $clientReference,
-                'items' => $items,
-            ],
-            'expires_at' => now()->addMinutes(30),
-        ]);
+        try {
+            $intent = DB::transaction(function () use ($request, $member, $subtotal, $channel, $clientReference, $items, $reservationService): MemberPaymentIntent {
+                $reservedItems = $reservationService->reserve($items);
+
+                return MemberPaymentIntent::query()->create([
+                    'user_id' => $request->user()?->id,
+                    'cooperative_member_id' => $member->id,
+                    'payable_type' => MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
+                    'payable_id' => null,
+                    'client_reference' => $clientReference,
+                    'amount' => $subtotal,
+                    'channel' => $channel,
+                    'gateway_status' => 'PENDING',
+                    'metadata' => [
+                        'description' => 'Pesanan Kopi Kojaya',
+                        'client_reference' => $clientReference,
+                        'items' => $reservedItems,
+                    ],
+                    'expires_at' => now()->addMinutes(30),
+                ]);
+            });
+        } catch (QueryException) {
+            $intent = MemberPaymentIntent::query()
+                ->where('cooperative_member_id', $member->id)
+                ->where('payable_type', MemberPaymentIntent::PAYABLE_COFFEE_ORDER)
+                ->where('client_reference', $clientReference)
+                ->firstOrFail();
+        }
 
         $charge = $gateway->createIntentCharge($intent);
 

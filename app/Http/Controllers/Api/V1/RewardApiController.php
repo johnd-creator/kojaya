@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\RedeemRewardRequest;
 use App\Models\CooperativeMember;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 
 class RewardApiController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request): JsonResponse
     {
         $this->resolveMember($request);
@@ -26,7 +29,7 @@ class RewardApiController extends Controller
             $query->where('points_required', '>=', $request->integer('min_points'));
         }
 
-        return response()->json($query->orderBy('points_required')->paginate($request->integer('per_page', 15)));
+        return response()->json($query->orderBy('points_required')->paginate($this->apiPageSize($request)));
     }
 
     public function redeem(

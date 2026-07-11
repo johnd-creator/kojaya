@@ -29,18 +29,18 @@ class PhaseBContractApiTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string|null, 2: array<int, string>}>
+     * @return array<string, array{0: string, 1: string|null, 2: array<int, string>, 3: bool}>
      */
     public static function personaAbilityProvider(): array
     {
         return [
-            'Anggota - member app' => ['Anggota', 'member', ['profile:read', 'member:read', 'member:write']],
-            'Anggota - default app' => ['Anggota', null, ['profile:read', 'member:read', 'member:write']],
-            'Employee - ess app' => ['Employee', 'ess', ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read']],
-            'Teknisi - technician app' => ['Technician', 'technician', ['profile:read', 'work-orders:read', 'work-orders:write']],
-            'Pengurus Koperasi - default app' => ['Pengurus Koperasi', null, ['profile:read', 'cooperative:read', 'cooperative:write', 'pos:read', 'pos:write', 'reports:read']],
-            'Kasir Koperasi - default app' => ['Kasir Koperasi', null, ['profile:read', 'cooperative:read', 'cooperative:write', 'pos:read', 'pos:write', 'reports:read']],
-            'System Admin - all abilities' => ['System Admin', null, ['*']],
+            'Anggota - member app' => ['Anggota', 'member', ['profile:read', 'member:read', 'member:write'], true],
+            'Anggota - default app' => ['Anggota', null, ['profile:read', 'member:read', 'member:write'], true],
+            'Employee - ess app' => ['Employee', 'ess', ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read'], true],
+            'Teknisi - technician app' => ['Technician', 'technician', ['profile:read', 'work-orders:read', 'work-orders:write'], true],
+            'Pengurus Koperasi - default app' => ['Pengurus Koperasi', null, ['profile:read', 'cooperative:read', 'cooperative:write', 'cooperative.member.read', 'cooperative.member.write', 'cooperative.member.verify', 'cooperative.member.approve', 'cooperative.member.export', 'cooperative.resignation.review', 'cooperative.dues.read', 'cooperative.dues.write', 'cooperative.payment.read', 'cooperative.payment.record', 'cooperative.loan.read', 'cooperative.loan.write', 'cooperative.loan.approve', 'cooperative.ledger.read', 'cooperative.ledger.write', 'cooperative.report.read', 'cooperative.pos.read', 'cooperative.pos.write', 'cooperative.settings.write', 'pos:read', 'pos:write', 'reports:read'], true],
+            'Kasir Koperasi - default app' => ['Kasir Koperasi', null, ['profile:read', 'cooperative:read', 'cooperative:write', 'cooperative.member.read', 'cooperative.payment.read', 'cooperative.payment.record', 'cooperative.loan.read', 'cooperative.report.read', 'cooperative.pos.read', 'cooperative.pos.write', 'pos:read', 'pos:write', 'reports:read'], true],
+            'System Admin - member app (scoped, no wildcard)' => ['System Admin', 'member', ['profile:read'], true],
         ];
     }
 

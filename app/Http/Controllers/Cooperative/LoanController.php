@@ -26,10 +26,13 @@ class LoanController extends Controller
     {
         $this->authorize('viewAny', Loan::class);
 
+        $user = $request->user();
+        $isAdmin = $user?->can('view_cooperative_all') || $user?->can('manage_cooperative_loan');
+
         $query = Loan::query()->with(['member', 'loanType']);
 
-        if (! $request->user()?->can('view_cooperative_all') && ! $request->user()?->can('manage_cooperative_loan')) {
-            $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $request->user()?->id));
+        if (! $isAdmin) {
+            $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $user?->id));
         }
 
         if ($request->filled('status')) {
@@ -40,18 +43,26 @@ class LoanController extends Controller
             $query->where('cooperative_member_id', $request->input('cooperative_member_id'));
         }
 
-        return Inertia::render('Cooperative/Loans/Index', [
+        // Scope supporting data and stats to the same authorization as the main query.
+        // Non-admin users (who only see their own loans) should not receive
+        // the full member list or global statistics.
+        $props = [
             'loans' => $query->latest()->paginate(15)->withQueryString(),
-            'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
             'loanTypes' => LoanType::query()->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['status', 'cooperative_member_id']),
-            'stats' => [
+        ];
+
+        if ($isAdmin) {
+            $props['members'] = CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']);
+            $props['stats'] = [
                 'applied' => Loan::query()->where('status', LoanStatus::Applied)->count(),
                 'manager_approved' => Loan::query()->where('status', LoanStatus::ManagerApproved)->count(),
                 'active' => Loan::query()->where('status', LoanStatus::Active)->count(),
                 'paid_off' => Loan::query()->where('status', LoanStatus::PaidOff)->count(),
-            ],
-        ]);
+            ];
+        }
+
+        return Inertia::render('Cooperative/Loans/Index', $props);
     }
 
     public function create(Request $request): Response

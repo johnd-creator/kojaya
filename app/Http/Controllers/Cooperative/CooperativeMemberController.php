@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Exports\AnggotaExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
@@ -9,15 +10,17 @@ use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
-use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Services\Cooperative\MemberAccessRevocationService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -25,18 +28,18 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CooperativeMemberController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         $this->authorize('viewAny', CooperativeMember::class);
 
-        $query = CooperativeMember::query()
+        $scopedQuery = CooperativeMember::query()
             ->with(['organization', 'employee', 'user'])
             ->withSum('ledgerEntries as saving_balance', 'credit')
             ->withSum('ledgerEntries as credit_balance', 'debit');
 
-        if (! $this->canViewAllMembers($request)) {
-            $query->where('user_id', $request->user()?->id);
-        }
+        $scopeService->scopeVisibleTo($scopedQuery, $request->user());
+
+        $query = $scopedQuery;
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -70,19 +73,26 @@ class CooperativeMemberController extends Controller
             }
         }
 
+        $statsQuery = CooperativeMember::query();
+        $scopeService->scopeVisibleTo($statsQuery, $request->user());
+
         return Inertia::render('Cooperative/Members/Index', [
             'members' => $query->orderBy('no_anggota')->paginate(15)->withQueryString(),
             'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori', 'validation_status']),
             'options' => $this->options(),
-            'stats' => Inertia::defer(fn () => [
-                'active' => CooperativeMember::query()->where('status', 'ACTIVE')->count(),
-                'inactive' => CooperativeMember::query()->whereIn('status', ['INACTIVE', 'RESIGNED'])->count(),
-                'alb' => CooperativeMember::query()->where('jenis_anggota', 'ALB')->count(),
-                'pending_validation' => CooperativeMember::query()
-                    ->whereIn('validation_status', ['PENDING', 'PENDING_VALIDATION'])
-                    ->count(),
-                'rejected' => CooperativeMember::query()->where('validation_status', 'REJECTED')->count(),
-            ], 'member-stats'),
+            'stats' => Inertia::defer(function () use ($statsQuery): array {
+                $clone = fn () => clone $statsQuery;
+
+                return [
+                    'active' => (clone $clone())->where('status', 'ACTIVE')->count(),
+                    'inactive' => (clone $clone())->whereIn('status', ['INACTIVE', 'RESIGNED'])->count(),
+                    'alb' => (clone $clone())->where('jenis_anggota', 'ALB')->count(),
+                    'pending_validation' => (clone $clone())
+                        ->whereIn('validation_status', ['PENDING', 'PENDING_VALIDATION'])
+                        ->count(),
+                    'rejected' => (clone $clone())->where('validation_status', 'REJECTED')->count(),
+                ];
+            }, 'member-stats'),
         ]);
     }
 
@@ -101,19 +111,22 @@ class CooperativeMemberController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         CooperativeMemberUserProvisioningService $userProvisioningService,
-        CooperativeOpeningBalanceService $openingBalanceService,
         DuesGenerationService $duesGenerationService,
     ): RedirectResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $data = $this->memberPayload($request);
 
-        $member = CooperativeMember::query()->create([
-            ...$data,
-            'organization_id' => $headOfficeResolver->resolve()->id,
-        ]);
+        $member = DB::transaction(function () use ($data, $headOfficeResolver, $userProvisioningService, $request): CooperativeMember {
+            $member = CooperativeMember::query()->create([
+                ...$data,
+                'organization_id' => $headOfficeResolver->resolve()->id,
+            ]);
 
-        $userProvisioningService->provision($member, $request->validated('member_login_password'));
+            $userProvisioningService->provision($member, $request->validated('member_login_password'));
+
+            return $member->refresh();
+        });
         $openingSavingBalance = $request->validated('opening_saving_balance');
 
         if ($this->shouldUseOpeningBalanceWizard($openingSavingBalance)) {
@@ -127,19 +140,20 @@ class CooperativeMemberController extends Controller
                 );
         }
 
-        $openingBalanceService->sync($member, $openingSavingBalance);
         $duesGenerationService->ensureOneTimeInvoice($member);
 
         return redirect()->route('cooperative.members.index')
             ->with('success', 'Cooperative member created successfully.');
     }
 
-    public function show(CooperativeMember $member, SavingsSummaryService $savingsSummary): Response
+    public function show(CooperativeMember $member, SavingsSummaryService $savingsSummary, AuditLogService $audit): Response
     {
         $this->authorize('view', $member);
 
         $member->load(['organization', 'employee', 'user.roles', 'documents', 'invoices.contributionType', 'payments', 'ledgerEntries'])
             ->loadSum('ledgerEntries as saving_balance', 'credit');
+
+        $audit->log('member.pii.viewed', 'cooperative.member', $member);
 
         return Inertia::render('Cooperative/Members/Show', [
             'member' => $member,
@@ -173,16 +187,20 @@ class CooperativeMemberController extends Controller
         CooperativeMember $member,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         CooperativeMemberUserProvisioningService $userProvisioningService,
-        CooperativeOpeningBalanceService $openingBalanceService,
     ): RedirectResponse {
         $this->authorize('update', $member);
 
-        $member->update([
-            ...$this->memberPayload($request, member: $member),
-            'organization_id' => $headOfficeResolver->resolve()->id,
-        ]);
+        $member = DB::transaction(function () use ($request, $member, $headOfficeResolver, $userProvisioningService): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->update([
+                ...$this->memberPayload($request, member: $member),
+                'organization_id' => $headOfficeResolver->resolve()->id,
+            ]);
 
-        $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
+            $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
+
+            return $member->refresh();
+        });
 
         $openingSavingBalance = $request->validated('opening_saving_balance');
 
@@ -195,8 +213,6 @@ class CooperativeMemberController extends Controller
                 );
         }
 
-        $openingBalanceService->sync($member->refresh(), $openingSavingBalance);
-
         return redirect()->route('cooperative.members.index')
             ->with('success', 'Cooperative member updated successfully.');
     }
@@ -207,25 +223,14 @@ class CooperativeMemberController extends Controller
      *
      * Kapan wizard diprioritaskan:
      * - User mengisi nominal saldo awal > 0.
-     * - User memiliki permission mengelola wizard saldo awal.
-     * - Untuk update: anggota belum pernah memiliki batch saldo awal
-     *   yang sudah diposting (untuk menghindari overwrite histori).
+     * - Semua input dialihkan ke wizard; endpoint member tidak boleh lagi
+     *   menulis ledger opening balance secara langsung.
      */
     private function shouldUseOpeningBalanceWizard(mixed $openingSavingBalance, ?CooperativeMember $member = null): bool
     {
         $amount = is_numeric($openingSavingBalance) ? (float) $openingSavingBalance : 0.0;
 
         if ($amount <= 0) {
-            return false;
-        }
-
-        $user = request()->user();
-
-        if ($user === null || ! $user->can('manage_cooperative_opening_balance')) {
-            return false;
-        }
-
-        if ($member !== null && $member->activeOpeningBalanceBatch() !== null) {
             return false;
         }
 
@@ -252,15 +257,19 @@ class CooperativeMemberController extends Controller
             $updateData['member_no'] = $noAnggota;
         }
 
-        $member->update($updateData);
+        $member = DB::transaction(function () use ($member, $updateData, $userProvisioningService): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->update($updateData);
+            $userProvisioningService->provision($member->refresh());
 
-        $userProvisioningService->provision($member->refresh());
+            return $member->refresh();
+        });
         $duesGenerationService->ensureOneTimeInvoice($member->refresh());
 
         return back()->with('success', 'Cooperative member activated successfully.');
     }
 
-    public function deactivate(CooperativeMember $member): RedirectResponse
+    public function deactivate(CooperativeMember $member, MemberAccessRevocationService $revocationService): RedirectResponse
     {
         $this->authorize('update', $member);
 
@@ -272,6 +281,8 @@ class CooperativeMemberController extends Controller
             'status' => 'INACTIVE',
             'resigned_at' => null,
         ])->save();
+
+        $revocationService->revokeFor($member->refresh(), 'deactivated', request()->user());
 
         return back()->with('success', 'Anggota berhasil dinonaktifkan.');
     }
@@ -285,9 +296,11 @@ class CooperativeMemberController extends Controller
         return back()->with('success', 'Cooperative member resigned successfully.');
     }
 
-    public function destroy(CooperativeMember $member): RedirectResponse
+    public function destroy(CooperativeMember $member, MemberAccessRevocationService $revocationService): RedirectResponse
     {
         $this->authorize('delete', $member);
+
+        $revocationService->revokeFor($member, 'deleted', request()->user());
 
         $member->delete();
 
@@ -295,12 +308,15 @@ class CooperativeMemberController extends Controller
             ->with('success', 'Anggota berhasil dihapus.');
     }
 
-    public function export(Request $request): BinaryFileResponse
+    public function export(Request $request, OrganizationScopedQueryService $scopeService): BinaryFileResponse
     {
-        $this->authorize('viewAny', CooperativeMember::class);
+        $this->authorize('export', CooperativeMember::class);
 
         return Excel::download(
-            new AnggotaExport($request->only(['search', 'status', 'jenis_anggota', 'kategori'])),
+            new AnggotaExport(
+                $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
+                $scopeService->scopeOrganizationIdFor($request->user()),
+            ),
             'daftar-anggota.xlsx'
         );
     }

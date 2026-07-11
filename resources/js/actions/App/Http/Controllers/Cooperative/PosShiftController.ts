@@ -82,7 +82,7 @@ open.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:48
 * @route '/cooperative/pos/shifts/{shift}/close'
 */
-export const close = (args: { shift: string | number | { id: string | number } } | [shift: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const close = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: close.url(args, options),
     method: 'post',
 })
@@ -97,7 +97,7 @@ close.definition = {
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:48
 * @route '/cooperative/pos/shifts/{shift}/close'
 */
-close.url = (args: { shift: string | number | { id: string | number } } | [shift: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+close.url = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { shift: args }
     }
@@ -130,7 +130,7 @@ close.url = (args: { shift: string | number | { id: string | number } } | [shift
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:48
 * @route '/cooperative/pos/shifts/{shift}/close'
 */
-close.post = (args: { shift: string | number | { id: string | number } } | [shift: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+close.post = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: close.url(args, options),
     method: 'post',
 })

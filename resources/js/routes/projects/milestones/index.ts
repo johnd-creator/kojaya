@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/ProjectMilestoneController.php:49
 * @route '/projects/{project}/milestones/{milestone}/progress'
 */
-export const updateProgress = (args: { project: string | number | { id: string | number }, milestone: string | number | { id: string | number } } | [project: string | number | { id: string | number }, milestone: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+export const updateProgress = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: updateProgress.url(args, options),
     method: 'patch',
 })
@@ -19,7 +19,7 @@ updateProgress.definition = {
 * @see app/Http/Controllers/ProjectMilestoneController.php:49
 * @route '/projects/{project}/milestones/{milestone}/progress'
 */
-updateProgress.url = (args: { project: string | number | { id: string | number }, milestone: string | number | { id: string | number } } | [project: string | number | { id: string | number }, milestone: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+updateProgress.url = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -49,7 +49,7 @@ updateProgress.url = (args: { project: string | number | { id: string | number }
 * @see app/Http/Controllers/ProjectMilestoneController.php:49
 * @route '/projects/{project}/milestones/{milestone}/progress'
 */
-updateProgress.patch = (args: { project: string | number | { id: string | number }, milestone: string | number | { id: string | number } } | [project: string | number | { id: string | number }, milestone: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+updateProgress.patch = (args: { project: string | { id: string }, milestone: string | { id: string } } | [project: string | { id: string }, milestone: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: updateProgress.url(args, options),
     method: 'patch',
 })

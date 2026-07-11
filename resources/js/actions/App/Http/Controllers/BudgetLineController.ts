@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
-export const store = (args: { budget: string | number | { id: string | number } } | [budget: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -19,7 +19,7 @@ store.definition = {
 * @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
-store.url = (args: { budget: string | number | { id: string | number } } | [budget: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+store.url = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { budget: args }
     }
@@ -52,7 +52,7 @@ store.url = (args: { budget: string | number | { id: string | number } } | [budg
 * @see app/Http/Controllers/BudgetLineController.php:17
 * @route '/budgets/{budget}/lines'
 */
-store.post = (args: { budget: string | number | { id: string | number } } | [budget: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { budget: string | { id: string } } | [budget: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -62,7 +62,7 @@ store.post = (args: { budget: string | number | { id: string | number } } | [bud
 * @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
-export const update = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -77,7 +77,7 @@ update.definition = {
 * @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
-update.url = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+update.url = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             budget: args[0],
@@ -107,7 +107,7 @@ update.url = (args: { budget: string | number | { id: string | number }, line: s
 * @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
 */
-update.put = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -117,7 +117,7 @@ update.put = (args: { budget: string | number | { id: string | number }, line: s
 * @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
-export const destroy = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -132,7 +132,7 @@ destroy.definition = {
 * @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
-destroy.url = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+destroy.url = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             budget: args[0],
@@ -162,7 +162,7 @@ destroy.url = (args: { budget: string | number | { id: string | number }, line: 
 * @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
 */
-destroy.delete = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { budget: string | { id: string }, line: string | { id: string } } | [budget: string | { id: string }, line: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })

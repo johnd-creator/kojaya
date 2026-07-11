@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/ProjectGanttController.php:12
 * @route '/projects/{project}/gantt-data'
 */
-export const getData = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const getData = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: getData.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ getData.definition = {
 * @see app/Http/Controllers/ProjectGanttController.php:12
 * @route '/projects/{project}/gantt-data'
 */
-getData.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+getData.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -52,7 +52,7 @@ getData.url = (args: { project: string | number | { id: string | number } } | [p
 * @see app/Http/Controllers/ProjectGanttController.php:12
 * @route '/projects/{project}/gantt-data'
 */
-getData.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+getData.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: getData.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ getData.get = (args: { project: string | number | { id: string | number } } | [p
 * @see app/Http/Controllers/ProjectGanttController.php:12
 * @route '/projects/{project}/gantt-data'
 */
-getData.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+getData.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: getData.url(args, options),
     method: 'head',
 })
@@ -72,7 +72,7 @@ getData.head = (args: { project: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/ProjectGanttController.php:70
 * @route '/projects/{project}/gantt-link'
 */
-export const storeLink = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const storeLink = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeLink.url(args, options),
     method: 'post',
 })
@@ -87,7 +87,7 @@ storeLink.definition = {
 * @see app/Http/Controllers/ProjectGanttController.php:70
 * @route '/projects/{project}/gantt-link'
 */
-storeLink.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+storeLink.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -120,7 +120,7 @@ storeLink.url = (args: { project: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/ProjectGanttController.php:70
 * @route '/projects/{project}/gantt-link'
 */
-storeLink.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+storeLink.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: storeLink.url(args, options),
     method: 'post',
 })
@@ -130,7 +130,7 @@ storeLink.post = (args: { project: string | number | { id: string | number } } |
 * @see app/Http/Controllers/ProjectGanttController.php:93
 * @route '/projects/{project}/gantt-link/{link}'
 */
-export const destroyLink = (args: { project: string | number | { id: string | number }, link: string | number } | [project: string | number | { id: string | number }, link: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroyLink = (args: { project: string | { id: string }, link: string | number } | [project: string | { id: string }, link: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroyLink.url(args, options),
     method: 'delete',
 })
@@ -145,7 +145,7 @@ destroyLink.definition = {
 * @see app/Http/Controllers/ProjectGanttController.php:93
 * @route '/projects/{project}/gantt-link/{link}'
 */
-destroyLink.url = (args: { project: string | number | { id: string | number }, link: string | number } | [project: string | number | { id: string | number }, link: string | number ], options?: RouteQueryOptions) => {
+destroyLink.url = (args: { project: string | { id: string }, link: string | number } | [project: string | { id: string }, link: string | number ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -173,7 +173,7 @@ destroyLink.url = (args: { project: string | number | { id: string | number }, l
 * @see app/Http/Controllers/ProjectGanttController.php:93
 * @route '/projects/{project}/gantt-link/{link}'
 */
-destroyLink.delete = (args: { project: string | number | { id: string | number }, link: string | number } | [project: string | number | { id: string | number }, link: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroyLink.delete = (args: { project: string | { id: string }, link: string | number } | [project: string | { id: string }, link: string | number ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroyLink.url(args, options),
     method: 'delete',
 })

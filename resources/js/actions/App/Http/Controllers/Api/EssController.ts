@@ -316,7 +316,7 @@ requestAttendanceCorrection.post = (options?: RouteQueryOptions): RouteDefinitio
 * @see app/Http/Controllers/Api/EssController.php:270
 * @route '/api/ess/attendance/corrections/{attendanceCorrection}/approve'
 */
-export const approveAttendanceCorrection = (args: { attendanceCorrection: string | number | { id: string | number } } | [attendanceCorrection: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approveAttendanceCorrection = (args: { attendanceCorrection: number | { id: number } } | [attendanceCorrection: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approveAttendanceCorrection.url(args, options),
     method: 'post',
 })
@@ -331,7 +331,7 @@ approveAttendanceCorrection.definition = {
 * @see app/Http/Controllers/Api/EssController.php:270
 * @route '/api/ess/attendance/corrections/{attendanceCorrection}/approve'
 */
-approveAttendanceCorrection.url = (args: { attendanceCorrection: string | number | { id: string | number } } | [attendanceCorrection: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+approveAttendanceCorrection.url = (args: { attendanceCorrection: number | { id: number } } | [attendanceCorrection: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { attendanceCorrection: args }
     }
@@ -364,7 +364,7 @@ approveAttendanceCorrection.url = (args: { attendanceCorrection: string | number
 * @see app/Http/Controllers/Api/EssController.php:270
 * @route '/api/ess/attendance/corrections/{attendanceCorrection}/approve'
 */
-approveAttendanceCorrection.post = (args: { attendanceCorrection: string | number | { id: string | number } } | [attendanceCorrection: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approveAttendanceCorrection.post = (args: { attendanceCorrection: number | { id: number } } | [attendanceCorrection: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approveAttendanceCorrection.url(args, options),
     method: 'post',
 })
@@ -584,7 +584,7 @@ storeLeave.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/Api/EssController.php:329
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-export const cancelLeave = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const cancelLeave = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelLeave.url(args, options),
     method: 'post',
 })
@@ -599,7 +599,7 @@ cancelLeave.definition = {
 * @see app/Http/Controllers/Api/EssController.php:329
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-cancelLeave.url = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+cancelLeave.url = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { leave: args }
     }
@@ -632,7 +632,7 @@ cancelLeave.url = (args: { leave: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/Api/EssController.php:329
 * @route '/api/ess/leaves/{leave}/cancel'
 */
-cancelLeave.post = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+cancelLeave.post = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelLeave.url(args, options),
     method: 'post',
 })
@@ -842,7 +842,7 @@ payslips.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Api/EssController.php:459
 * @route '/api/ess/payslips/{payroll}/download'
 */
-export const downloadPayslip = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const downloadPayslip = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadPayslip.url(args, options),
     method: 'get',
 })
@@ -857,7 +857,7 @@ downloadPayslip.definition = {
 * @see app/Http/Controllers/Api/EssController.php:459
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslip.url = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+downloadPayslip.url = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payroll: args }
     }
@@ -890,7 +890,7 @@ downloadPayslip.url = (args: { payroll: string | number | { id: string | number 
 * @see app/Http/Controllers/Api/EssController.php:459
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslip.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+downloadPayslip.get = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: downloadPayslip.url(args, options),
     method: 'get',
 })
@@ -900,7 +900,7 @@ downloadPayslip.get = (args: { payroll: string | number | { id: string | number 
 * @see app/Http/Controllers/Api/EssController.php:459
 * @route '/api/ess/payslips/{payroll}/download'
 */
-downloadPayslip.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+downloadPayslip.head = (args: { payroll: number | { id: number } } | [payroll: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: downloadPayslip.url(args, options),
     method: 'head',
 })

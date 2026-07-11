@@ -82,7 +82,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
 * @route '/api/v1/member/payment-intents/{intent}'
 */
-export const showIntent = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const showIntent = (args: { intent: number | { id: number } } | [intent: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: showIntent.url(args, options),
     method: 'get',
 })
@@ -97,7 +97,7 @@ showIntent.definition = {
 * @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
 * @route '/api/v1/member/payment-intents/{intent}'
 */
-showIntent.url = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+showIntent.url = (args: { intent: number | { id: number } } | [intent: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { intent: args }
     }
@@ -130,7 +130,7 @@ showIntent.url = (args: { intent: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
 * @route '/api/v1/member/payment-intents/{intent}'
 */
-showIntent.get = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+showIntent.get = (args: { intent: number | { id: number } } | [intent: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: showIntent.url(args, options),
     method: 'get',
 })
@@ -140,7 +140,7 @@ showIntent.get = (args: { intent: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
 * @route '/api/v1/member/payment-intents/{intent}'
 */
-showIntent.head = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+showIntent.head = (args: { intent: number | { id: number } } | [intent: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: showIntent.url(args, options),
     method: 'head',
 })

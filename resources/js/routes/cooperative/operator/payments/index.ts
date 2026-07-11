@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-export const reconcile = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reconcile = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcile.url(args, options),
     method: 'post',
 })
@@ -19,7 +19,7 @@ reconcile.definition = {
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcile.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+reconcile.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -52,7 +52,7 @@ reconcile.url = (args: { payment: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcile.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reconcile.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcile.url(args, options),
     method: 'post',
 })

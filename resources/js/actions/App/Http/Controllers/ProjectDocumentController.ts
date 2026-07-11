@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/ProjectDocumentController.php:15
 * @route '/projects/{project}/documents'
 */
-export const index = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const index = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ index.definition = {
 * @see app/Http/Controllers/ProjectDocumentController.php:15
 * @route '/projects/{project}/documents'
 */
-index.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+index.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -52,7 +52,7 @@ index.url = (args: { project: string | number | { id: string | number } } | [pro
 * @see app/Http/Controllers/ProjectDocumentController.php:15
 * @route '/projects/{project}/documents'
 */
-index.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+index.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ index.get = (args: { project: string | number | { id: string | number } } | [pro
 * @see app/Http/Controllers/ProjectDocumentController.php:15
 * @route '/projects/{project}/documents'
 */
-index.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+index.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(args, options),
     method: 'head',
 })
@@ -72,7 +72,7 @@ index.head = (args: { project: string | number | { id: string | number } } | [pr
 * @see app/Http/Controllers/ProjectDocumentController.php:25
 * @route '/projects/{project}/documents'
 */
-export const store = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -87,7 +87,7 @@ store.definition = {
 * @see app/Http/Controllers/ProjectDocumentController.php:25
 * @route '/projects/{project}/documents'
 */
-store.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+store.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -120,7 +120,7 @@ store.url = (args: { project: string | number | { id: string | number } } | [pro
 * @see app/Http/Controllers/ProjectDocumentController.php:25
 * @route '/projects/{project}/documents'
 */
-store.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -130,7 +130,7 @@ store.post = (args: { project: string | number | { id: string | number } } | [pr
 * @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
-export const destroy = (args: { project: string | number, document: string | number | { id: string | number } } | [project: string | number, document: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -145,7 +145,7 @@ destroy.definition = {
 * @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
-destroy.url = (args: { project: string | number, document: string | number | { id: string | number } } | [project: string | number, document: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+destroy.url = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -173,7 +173,7 @@ destroy.url = (args: { project: string | number, document: string | number | { i
 * @see app/Http/Controllers/ProjectDocumentController.php:42
 * @route '/projects/{project}/documents/{document}'
 */
-destroy.delete = (args: { project: string | number, document: string | number | { id: string | number } } | [project: string | number, document: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { project: string | number, document: string | { id: string } } | [project: string | number, document: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })

@@ -66,7 +66,7 @@ payslip.head = (args: { id: string | number } | [id: string | number ] | string 
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-export const medicalCheckup = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const medicalCheckup = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: medicalCheckup.url(args, options),
     method: 'get',
 })
@@ -81,7 +81,7 @@ medicalCheckup.definition = {
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckup.url = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+medicalCheckup.url = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { mcu: args }
     }
@@ -114,7 +114,7 @@ medicalCheckup.url = (args: { mcu: string | number | { id: string | number } } |
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckup.get = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+medicalCheckup.get = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: medicalCheckup.url(args, options),
     method: 'get',
 })
@@ -124,7 +124,7 @@ medicalCheckup.get = (args: { mcu: string | number | { id: string | number } } |
 * @see app/Http/Controllers/DocumentDownloadController.php:46
 * @route '/download/mcu/{mcu}'
 */
-medicalCheckup.head = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+medicalCheckup.head = (args: { mcu: number | { id: number } } | [mcu: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: medicalCheckup.url(args, options),
     method: 'head',
 })
@@ -134,7 +134,7 @@ medicalCheckup.head = (args: { mcu: string | number | { id: string | number } } 
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-export const certificate = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const certificate = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: certificate.url(args, options),
     method: 'get',
 })
@@ -149,7 +149,7 @@ certificate.definition = {
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificate.url = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+certificate.url = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             employee: args[0],
@@ -179,7 +179,7 @@ certificate.url = (args: { employee: string | number | { id: string | number }, 
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificate.get = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+certificate.get = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: certificate.url(args, options),
     method: 'get',
 })
@@ -189,7 +189,7 @@ certificate.get = (args: { employee: string | number | { id: string | number }, 
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
 */
-certificate.head = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+certificate.head = (args: { employee: number | { id: number }, certificate: number | { id: number } } | [employee: number | { id: number }, certificate: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: certificate.url(args, options),
     method: 'head',
 })
@@ -260,7 +260,7 @@ kyc.head = (args: { memberId: string | number, documentId: string | number } | [
 * @see app/Http/Controllers/DocumentDownloadController.php:128
 * @route '/download/cooperative-receipts/{receipt}'
 */
-export const cooperativeReceipt = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const cooperativeReceipt = (args: { receipt: number | { id: number } } | [receipt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: cooperativeReceipt.url(args, options),
     method: 'get',
 })
@@ -275,7 +275,7 @@ cooperativeReceipt.definition = {
 * @see app/Http/Controllers/DocumentDownloadController.php:128
 * @route '/download/cooperative-receipts/{receipt}'
 */
-cooperativeReceipt.url = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+cooperativeReceipt.url = (args: { receipt: number | { id: number } } | [receipt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { receipt: args }
     }
@@ -308,7 +308,7 @@ cooperativeReceipt.url = (args: { receipt: string | number | { id: string | numb
 * @see app/Http/Controllers/DocumentDownloadController.php:128
 * @route '/download/cooperative-receipts/{receipt}'
 */
-cooperativeReceipt.get = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+cooperativeReceipt.get = (args: { receipt: number | { id: number } } | [receipt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: cooperativeReceipt.url(args, options),
     method: 'get',
 })
@@ -318,7 +318,7 @@ cooperativeReceipt.get = (args: { receipt: string | number | { id: string | numb
 * @see app/Http/Controllers/DocumentDownloadController.php:128
 * @route '/download/cooperative-receipts/{receipt}'
 */
-cooperativeReceipt.head = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+cooperativeReceipt.head = (args: { receipt: number | { id: number } } | [receipt: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: cooperativeReceipt.url(args, options),
     method: 'head',
 })

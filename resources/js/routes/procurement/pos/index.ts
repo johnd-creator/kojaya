@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
-export const fromPr = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const fromPr = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: fromPr.url(args, options),
     method: 'post',
 })
@@ -63,7 +63,7 @@ fromPr.definition = {
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
-fromPr.url = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+fromPr.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseRequest: args }
     }
@@ -96,7 +96,7 @@ fromPr.url = (args: { purchaseRequest: string | number | { id: string | number }
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
 * @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
 */
-fromPr.post = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+fromPr.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: fromPr.url(args, options),
     method: 'post',
 })
@@ -106,7 +106,7 @@ fromPr.post = (args: { purchaseRequest: string | number | { id: string | number 
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
 * @route '/procurement/purchase-orders/{purchaseOrder}'
 */
-export const show = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -121,7 +121,7 @@ show.definition = {
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
 * @route '/procurement/purchase-orders/{purchaseOrder}'
 */
-show.url = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseOrder: args }
     }
@@ -154,7 +154,7 @@ show.url = (args: { purchaseOrder: string | number | { id: string | number } } |
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
 * @route '/procurement/purchase-orders/{purchaseOrder}'
 */
-show.get = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -164,7 +164,7 @@ show.get = (args: { purchaseOrder: string | number | { id: string | number } } |
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
 * @route '/procurement/purchase-orders/{purchaseOrder}'
 */
-show.head = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { purchaseOrder: string | { id: string } } | [purchaseOrder: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })

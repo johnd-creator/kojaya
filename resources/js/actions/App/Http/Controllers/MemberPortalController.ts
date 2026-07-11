@@ -228,7 +228,7 @@ createPaymentIntent.post = (options?: RouteQueryOptions): RouteDefinition<'post'
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-export const paymentStatus = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const paymentStatus = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: paymentStatus.url(args, options),
     method: 'get',
 })
@@ -243,7 +243,7 @@ paymentStatus.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatus.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+paymentStatus.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -276,7 +276,7 @@ paymentStatus.url = (args: { payment: string | number | { id: string | number } 
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatus.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+paymentStatus.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: paymentStatus.url(args, options),
     method: 'get',
 })
@@ -286,7 +286,7 @@ paymentStatus.get = (args: { payment: string | number | { id: string | number } 
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-paymentStatus.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+paymentStatus.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: paymentStatus.url(args, options),
     method: 'head',
 })
@@ -628,7 +628,7 @@ rewards.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-export const redeemReward = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const redeemReward = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeemReward.url(args, options),
     method: 'post',
 })
@@ -643,7 +643,7 @@ redeemReward.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemReward.url = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+redeemReward.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reward: args }
     }
@@ -676,7 +676,7 @@ redeemReward.url = (args: { reward: string | number | { id: string | number } } 
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeemReward.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+redeemReward.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeemReward.url(args, options),
     method: 'post',
 })

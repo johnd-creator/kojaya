@@ -188,7 +188,7 @@ show.head = (args: { employee_transfer: string | number } | [employee_transfer: 
 * @see app/Http/Controllers/EmployeeTransferController.php:90
 * @route '/employee-transfers/{transfer}/approve'
 */
-export const approve = (args: { transfer: string | number | { id: string | number } } | [transfer: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -203,7 +203,7 @@ approve.definition = {
 * @see app/Http/Controllers/EmployeeTransferController.php:90
 * @route '/employee-transfers/{transfer}/approve'
 */
-approve.url = (args: { transfer: string | number | { id: string | number } } | [transfer: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+approve.url = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { transfer: args }
     }
@@ -236,7 +236,7 @@ approve.url = (args: { transfer: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/EmployeeTransferController.php:90
 * @route '/employee-transfers/{transfer}/approve'
 */
-approve.post = (args: { transfer: string | number | { id: string | number } } | [transfer: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -246,7 +246,7 @@ approve.post = (args: { transfer: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/EmployeeTransferController.php:109
 * @route '/employee-transfers/{transfer}/reject'
 */
-export const reject = (args: { transfer: string | number | { id: string | number } } | [transfer: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -261,7 +261,7 @@ reject.definition = {
 * @see app/Http/Controllers/EmployeeTransferController.php:109
 * @route '/employee-transfers/{transfer}/reject'
 */
-reject.url = (args: { transfer: string | number | { id: string | number } } | [transfer: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+reject.url = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { transfer: args }
     }
@@ -294,7 +294,7 @@ reject.url = (args: { transfer: string | number | { id: string | number } } | [t
 * @see app/Http/Controllers/EmployeeTransferController.php:109
 * @route '/employee-transfers/{transfer}/reject'
 */
-reject.post = (args: { transfer: string | number | { id: string | number } } | [transfer: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { transfer: number | { id: number } } | [transfer: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })

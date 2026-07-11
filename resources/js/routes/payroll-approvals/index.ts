@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/PayrollApprovalController.php:46
 * @route '/payroll-approvals/{approval}/approve'
 */
-export const approve = (args: { approval: string | number | { id: string | number } } | [approval: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -63,7 +63,7 @@ approve.definition = {
 * @see app/Http/Controllers/PayrollApprovalController.php:46
 * @route '/payroll-approvals/{approval}/approve'
 */
-approve.url = (args: { approval: string | number | { id: string | number } } | [approval: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+approve.url = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { approval: args }
     }
@@ -96,7 +96,7 @@ approve.url = (args: { approval: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/PayrollApprovalController.php:46
 * @route '/payroll-approvals/{approval}/approve'
 */
-approve.post = (args: { approval: string | number | { id: string | number } } | [approval: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -106,7 +106,7 @@ approve.post = (args: { approval: string | number | { id: string | number } } | 
 * @see app/Http/Controllers/PayrollApprovalController.php:59
 * @route '/payroll-approvals/{approval}/reject'
 */
-export const reject = (args: { approval: string | number | { id: string | number } } | [approval: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -121,7 +121,7 @@ reject.definition = {
 * @see app/Http/Controllers/PayrollApprovalController.php:59
 * @route '/payroll-approvals/{approval}/reject'
 */
-reject.url = (args: { approval: string | number | { id: string | number } } | [approval: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+reject.url = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { approval: args }
     }
@@ -154,7 +154,7 @@ reject.url = (args: { approval: string | number | { id: string | number } } | [a
 * @see app/Http/Controllers/PayrollApprovalController.php:59
 * @route '/payroll-approvals/{approval}/reject'
 */
-reject.post = (args: { approval: string | number | { id: string | number } } | [approval: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { approval: string | { id: string } } | [approval: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })

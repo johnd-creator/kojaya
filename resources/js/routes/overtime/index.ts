@@ -178,7 +178,7 @@ destroy.delete = (args: { overtime: string | number } | [overtime: string | numb
 * @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
-export const approve = (args: { overtimeRequest: string | number | { id: string | number } } | [overtimeRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -193,7 +193,7 @@ approve.definition = {
 * @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
-approve.url = (args: { overtimeRequest: string | number | { id: string | number } } | [overtimeRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+approve.url = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { overtimeRequest: args }
     }
@@ -226,7 +226,7 @@ approve.url = (args: { overtimeRequest: string | number | { id: string | number 
 * @see app/Http/Controllers/OvertimeController.php:119
 * @route '/overtime/{overtimeRequest}/approve'
 */
-approve.post = (args: { overtimeRequest: string | number | { id: string | number } } | [overtimeRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -236,7 +236,7 @@ approve.post = (args: { overtimeRequest: string | number | { id: string | number
 * @see app/Http/Controllers/OvertimeController.php:138
 * @route '/overtime/{overtimeRequest}/reject'
 */
-export const reject = (args: { overtimeRequest: string | number | { id: string | number } } | [overtimeRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -251,7 +251,7 @@ reject.definition = {
 * @see app/Http/Controllers/OvertimeController.php:138
 * @route '/overtime/{overtimeRequest}/reject'
 */
-reject.url = (args: { overtimeRequest: string | number | { id: string | number } } | [overtimeRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+reject.url = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { overtimeRequest: args }
     }
@@ -284,7 +284,7 @@ reject.url = (args: { overtimeRequest: string | number | { id: string | number }
 * @see app/Http/Controllers/OvertimeController.php:138
 * @route '/overtime/{overtimeRequest}/reject'
 */
-reject.post = (args: { overtimeRequest: string | number | { id: string | number } } | [overtimeRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { overtimeRequest: string | { id: string } } | [overtimeRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })

@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-export const show = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -63,7 +63,7 @@ show.definition = {
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-show.url = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { redemption: args }
     }
@@ -96,7 +96,7 @@ show.url = (args: { redemption: string | number | { id: string | number } } | [r
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-show.get = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -106,7 +106,7 @@ show.get = (args: { redemption: string | number | { id: string | number } } | [r
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-show.head = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -116,7 +116,7 @@ show.head = (args: { redemption: string | number | { id: string | number } } | [
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:45
 * @route '/cooperative/redemptions/{redemption}/status'
 */
-export const updateStatus = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateStatus = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
@@ -131,7 +131,7 @@ updateStatus.definition = {
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:45
 * @route '/cooperative/redemptions/{redemption}/status'
 */
-updateStatus.url = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+updateStatus.url = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { redemption: args }
     }
@@ -164,7 +164,7 @@ updateStatus.url = (args: { redemption: string | number | { id: string | number 
 * @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:45
 * @route '/cooperative/redemptions/{redemption}/status'
 */
-updateStatus.put = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateStatus.put = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })

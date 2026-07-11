@@ -28,7 +28,7 @@ class CooperativeNotificationActivationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Role::firstOrCreate(['name' => 'Anggota', 'guard_name' => 'web']);
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
     }
 
     public function test_member_admin_verified_notifies_pengurus_for_final_approval(): void

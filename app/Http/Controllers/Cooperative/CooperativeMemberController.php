@@ -18,7 +18,6 @@ use App\Services\Cooperative\CooperativeMemberPageDataService;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\DuesGenerationService;
-use App\Services\Cooperative\MemberAccessRevocationService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use App\Services\Cooperative\SavingsSummaryService;
@@ -376,11 +375,11 @@ class CooperativeMemberController extends Controller
         return back()->with('success', 'Cooperative member resigned successfully.');
     }
 
-    public function destroy(CooperativeMember $member, MemberAccessRevocationService $revocationService): RedirectResponse
+    public function destroy(CooperativeMember $member, MemberStatusTransitionService $transitions): RedirectResponse
     {
         $this->authorize('delete', $member);
 
-        $revocationService->revokeFor($member, 'deleted', request()->user());
+        $transitions->deleteAccess($member, request()->user(), 'Member deleted by admin.');
 
         $member->delete();
 

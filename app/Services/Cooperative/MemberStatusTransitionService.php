@@ -2,9 +2,11 @@
 
 namespace App\Services\Cooperative;
 
+use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -18,6 +20,8 @@ class MemberStatusTransitionService
 
     public function deactivate(CooperativeMember $member, User $actor, ?string $reason = null): CooperativeMember
     {
+        $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+
         return $this->applyTransition(
             $member,
             [['ACTIVE', CooperativeMember::VALIDATION_ACTIVE]],
@@ -31,6 +35,8 @@ class MemberStatusTransitionService
 
     public function resign(CooperativeMember $member, User $actor, ?string $reason = null): CooperativeMember
     {
+        $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+
         return $this->applyTransition(
             $member,
             [['ACTIVE', CooperativeMember::VALIDATION_ACTIVE]],
@@ -46,6 +52,8 @@ class MemberStatusTransitionService
     /** @param array<string, mixed> $attributes */
     public function activate(CooperativeMember $member, User $actor, array $attributes = []): CooperativeMember
     {
+        $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+
         return $this->applyTransition(
             $member,
             [['INACTIVE', CooperativeMember::VALIDATION_INACTIVE]],
@@ -62,6 +70,11 @@ class MemberStatusTransitionService
 
     public function verifyByAdmin(CooperativeMember $member, User $actor, ?string $reason = null, array $attributes = []): CooperativeMember
     {
+        $this->assertActorCanAny($actor, [
+            PermissionEnum::COOPERATIVE_MEMBER_VERIFY->value,
+            PermissionEnum::COOPERATIVE_MEMBER_VALIDATE->value,
+        ]);
+
         return $this->applyTransition(
             $member,
             [
@@ -79,6 +92,8 @@ class MemberStatusTransitionService
 
     public function approveFinal(CooperativeMember $member, User $actor, ?string $reason = null, array $attributes = []): CooperativeMember
     {
+        $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value);
+
         return $this->applyTransition(
             $member,
             [['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW]],
@@ -95,6 +110,11 @@ class MemberStatusTransitionService
 
     public function requestRevision(CooperativeMember $member, User $actor, ?string $reason = null, array $attributes = []): CooperativeMember
     {
+        $this->assertActorCanAny($actor, [
+            PermissionEnum::COOPERATIVE_MEMBER_VERIFY->value,
+            PermissionEnum::COOPERATIVE_MEMBER_VALIDATE->value,
+        ]);
+
         return $this->applyTransition(
             $member,
             [['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW]],
@@ -109,6 +129,12 @@ class MemberStatusTransitionService
 
     public function reject(CooperativeMember $member, User $actor, ?string $reason = null, array $attributes = []): CooperativeMember
     {
+        $this->assertActorCanAny($actor, [
+            PermissionEnum::COOPERATIVE_MEMBER_VERIFY->value,
+            PermissionEnum::COOPERATIVE_MEMBER_VALIDATE->value,
+            PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value,
+        ]);
+
         return $this->applyTransition(
             $member,
             [['PENDING', CooperativeMember::VALIDATION_PENDING_REVIEW]],
@@ -127,6 +153,8 @@ class MemberStatusTransitionService
      */
     public function deleteAccess(CooperativeMember $member, User $actor, ?string $reason = null): CooperativeMember
     {
+        $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+
         return DB::transaction(function () use ($member, $actor, $reason): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
 
@@ -190,6 +218,35 @@ class MemberStatusTransitionService
 
             return $member->refresh();
         });
+    }
+
+    /**
+     * Assert the actor has the required permission.
+     * Throws AuthorizationException BEFORE any mutation, role update, audit, or token revocation.
+     */
+    private function assertActorCan(User $actor, string $permission): void
+    {
+        if (! $actor->can($permission)) {
+            throw new AuthorizationException(
+                "Actor lacks required permission [{$permission}] for this lifecycle command."
+            );
+        }
+    }
+
+    /**
+     * Assert the actor has at least one of the required permissions.
+     */
+    private function assertActorCanAny(User $actor, array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            if ($actor->can($permission)) {
+                return;
+            }
+        }
+
+        throw new AuthorizationException(
+            'Actor lacks required permission for this lifecycle command.'
+        );
     }
 
     /**

@@ -34,8 +34,10 @@ class BackfillMemberStatusConsistencyCommand extends Command
         $updated = 0;
         $query->orderBy('id')->chunkById((int) $this->option('chunk'), function ($members) use (&$updated): void {
             foreach ($members as $member) {
+                // Only terminal mismatches: INACTIVE+ACTIVE or RESIGNED+ACTIVE.
+                // These are safe because the terminal status already governs
+                // access; the validation_status is corrected to match.
                 $validationStatus = match ($member->status) {
-                    'ACTIVE' => CooperativeMember::VALIDATION_ACTIVE,
                     'INACTIVE' => CooperativeMember::VALIDATION_INACTIVE,
                     'RESIGNED' => CooperativeMember::VALIDATION_RESIGNED,
                     default => null,

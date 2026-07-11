@@ -36,21 +36,44 @@ class MemberStatusConsistencyReport
         ];
     }
 
-    /** @return Builder<CooperativeMember> */
+    /**
+     * Rows that can be safely backfilled without human judgement.
+     *
+     * Only terminal-validation mismatches qualify: status is terminal
+     * (INACTIVE or RESIGNED) but validation_status is still ACTIVE.
+     * These are safe because the terminal status already took precedence
+     * in the active-member gate, and setting validation to match is
+     * a consistent no-op correction.
+     *
+     * ACTIVE/null rows do NOT qualify — a null validation_status on an
+     * ACTIVE member may be a legacy row that was never verified through
+     * the approval workflow. Backfilling these to ACTIVE without evidence
+     * would silently grant approved status to unverified members.
+     * They go to manual review instead.
+     *
+     * @return Builder<CooperativeMember>
+     */
     public function deterministicRepairs(): Builder
     {
         return CooperativeMember::query()->where(function (Builder $query): void {
             $query->where(function (Builder $query): void {
-                $query->where('status', 'ACTIVE')->whereNull('validation_status');
+                $query->where('status', 'INACTIVE')
+                    ->where('validation_status', CooperativeMember::VALIDATION_ACTIVE);
             })->orWhere(function (Builder $query): void {
-                $query->where('status', 'INACTIVE')->where('validation_status', CooperativeMember::VALIDATION_ACTIVE);
-            })->orWhere(function (Builder $query): void {
-                $query->where('status', 'RESIGNED')->where('validation_status', CooperativeMember::VALIDATION_ACTIVE);
+                $query->where('status', 'RESIGNED')
+                    ->where('validation_status', CooperativeMember::VALIDATION_ACTIVE);
             });
         });
     }
 
-    /** @return Builder<CooperativeMember> */
+    /**
+     * Rows requiring human judgement.
+     *
+     * Includes: unknown status values, null validation_status on any row,
+     * known-but-contradictory pairs, and ACTIVE/null legacy rows.
+     *
+     * @return Builder<CooperativeMember>
+     */
     public function manualReviewQuery(): Builder
     {
         $validPairs = self::VALID_PAIRS;
@@ -60,9 +83,7 @@ class MemberStatusConsistencyReport
         return CooperativeMember::query()->where(function (Builder $query) use ($validPairs, $knownStatuses, $knownValidationStatuses): void {
             $query->where(function (Builder $query) use ($knownStatuses): void {
                 $query->whereNotIn('status', $knownStatuses)
-                    ->orWhere(function (Builder $query): void {
-                        $query->whereNull('validation_status')->where('status', '!=', 'ACTIVE');
-                    });
+                    ->orWhereNull('validation_status');
             })->orWhere(function (Builder $query) use ($validPairs, $knownValidationStatuses): void {
                 $query->whereNotNull('validation_status')
                     ->whereNotIn('validation_status', $knownValidationStatuses)

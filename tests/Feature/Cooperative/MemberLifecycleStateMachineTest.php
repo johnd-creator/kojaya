@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -153,6 +154,114 @@ class MemberLifecycleStateMachineTest extends TestCase
         app(MemberStatusTransitionService::class)->reject($member, $systemAdmin, 'no');
     }
 
+    // --- Actor authorization: Anggota cannot perform admin lifecycle commands ---
+
+    public function test_anggota_cannot_deactivate(): void
+    {
+        [$memberUser, $member] = $this->activeMemberWithToken();
+        $anggotaActor = User::factory()->create(['organization_id' => $member->organization_id]);
+        $anggotaActor->assignRole('Anggota');
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(MemberStatusTransitionService::class)->deactivate($member, $anggotaActor);
+    }
+
+    public function test_anggota_cannot_activate(): void
+    {
+        $org = Organization::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'INACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_INACTIVE,
+        ]);
+        $anggotaActor = User::factory()->create(['organization_id' => $org->id]);
+        $anggotaActor->assignRole('Anggota');
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(MemberStatusTransitionService::class)->activate($member, $anggotaActor);
+    }
+
+    public function test_anggota_cannot_approve_final(): void
+    {
+        $org = Organization::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+        $anggotaActor = User::factory()->create(['organization_id' => $org->id]);
+        $anggotaActor->assignRole('Anggota');
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(MemberStatusTransitionService::class)->approveFinal($member, $anggotaActor, 'ok');
+    }
+
+    public function test_anggota_cannot_reject(): void
+    {
+        $org = Organization::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+        $anggotaActor = User::factory()->create(['organization_id' => $org->id]);
+        $anggotaActor->assignRole('Anggota');
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(MemberStatusTransitionService::class)->reject($member, $anggotaActor, 'no');
+    }
+
+    public function test_anggota_cannot_request_revision(): void
+    {
+        $org = Organization::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+        $anggotaActor = User::factory()->create(['organization_id' => $org->id]);
+        $anggotaActor->assignRole('Anggota');
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(MemberStatusTransitionService::class)->requestRevision($member, $anggotaActor, 'fix');
+    }
+
+    public function test_anggota_cannot_delete_access(): void
+    {
+        [$memberUser, $member] = $this->activeMemberWithToken();
+        $anggotaActor = User::factory()->create(['organization_id' => $member->organization_id]);
+        $anggotaActor->assignRole('Anggota');
+
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(MemberStatusTransitionService::class)->deleteAccess($member, $anggotaActor);
+    }
+
+    public function test_unauthorized_actor_produces_no_side_effects_on_reject(): void
+    {
+        $org = Organization::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+        $anggotaActor = User::factory()->create(['organization_id' => $org->id]);
+        $anggotaActor->assignRole('Anggota');
+
+        try {
+            app(MemberStatusTransitionService::class)->reject($member, $anggotaActor, 'no');
+        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+            // Expected
+        }
+
+        $member->refresh();
+        $this->assertSame('PENDING', $member->status, 'Status must not change on authz failure.');
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $member->validation_status);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'member.status.transitioned',
+            'subject_id' => $member->id,
+        ]);
+    }
+
     // --- Generic profile update does not change status ---
 
     public function test_generic_profile_update_does_not_change_lifecycle_status(): void
@@ -185,12 +294,74 @@ class MemberLifecycleStateMachineTest extends TestCase
 
     public function test_token_revocation_happens_only_after_commit(): void
     {
-        [$user, $member] = $this->activeMemberWithToken('Admin Koperasi');
+        [$memberUser, $member] = $this->activeMemberWithToken();
+        $admin = User::factory()->create(['organization_id' => $member->organization_id]);
+        $admin->assignRole('Admin Koperasi');
 
-        app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $admin = User::factory()->create()->assignRole('Admin Koperasi') ? $user : $user);
+        $this->assertSame(1, $memberUser->tokens()->count(), 'Member should have one token before transition.');
 
-        // After transition + commit, tokens should be revoked
-        $this->assertSame(0, $user->tokens()->count());
+        app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $admin);
+
+        $this->assertSame(0, $memberUser->tokens()->count(), 'Tokens must be revoked after committed transition.');
+    }
+
+    public function test_token_not_revoked_when_outer_transaction_rolls_back(): void
+    {
+        [$memberUser, $member] = $this->activeMemberWithToken();
+        $admin = User::factory()->create(['organization_id' => $member->organization_id]);
+        $admin->assignRole('Admin Koperasi');
+
+        $this->assertSame(1, $memberUser->tokens()->count());
+
+        try {
+            DB::transaction(function () use ($member, $admin): void {
+                app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $admin);
+
+                throw new \RuntimeException('Simulated failure after transition.');
+            });
+        } catch (\RuntimeException) {
+            // Expected
+        }
+
+        $this->assertSame(1, $memberUser->tokens()->count(), 'Tokens must survive when the outer transaction rolls back.');
+    }
+
+    public function test_token_revoked_after_commit_when_transition_completes(): void
+    {
+        [$memberUser, $member] = $this->activeMemberWithToken();
+        $admin = User::factory()->create(['organization_id' => $member->organization_id]);
+        $admin->assignRole('Admin Koperasi');
+
+        DB::transaction(function () use ($member, $admin): void {
+            app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $admin);
+        });
+
+        $this->assertSame(0, $memberUser->tokens()->count(), 'Tokens must be revoked after transaction commits.');
+    }
+
+    public function test_no_side_effects_when_actor_lacks_permission(): void
+    {
+        [$memberUser, $member] = $this->activeMemberWithToken();
+
+        // User with only Anggota role — no admin permissions
+        $anggotaActor = User::factory()->create(['organization_id' => $member->organization_id]);
+        $anggotaActor->assignRole('Anggota');
+
+        try {
+            app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $anggotaActor);
+            $this->fail('Should have thrown AuthorizationException.');
+        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+            // Expected
+        }
+
+        // No mutation, no role removal, no audit, no token revocation
+        $member->refresh();
+        $this->assertSame('ACTIVE', $member->status);
+        $this->assertSame(1, $memberUser->tokens()->count(), 'Tokens must not be revoked on failed authorization.');
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'member.status.transitioned',
+            'subject_id' => $member->id,
+        ]);
     }
 
     // --- Double-submit: second reject on already-rejected member fails cleanly ---
@@ -279,7 +450,7 @@ class MemberLifecycleStateMachineTest extends TestCase
     /**
      * @return array{0: User, 1: CooperativeMember}
      */
-    private function activeMemberWithToken(string $role): array
+    private function activeMemberWithToken(): array
     {
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);

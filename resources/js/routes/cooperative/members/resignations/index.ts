@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Cooperative/MemberResignationController.php:93
 * @route '/cooperative/members/resignations/{resignationRequest}/process'
 */
-export const process = (args: { resignationRequest: number | { id: number } } | [resignationRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const process = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
@@ -63,7 +63,7 @@ process.definition = {
 * @see app/Http/Controllers/Cooperative/MemberResignationController.php:93
 * @route '/cooperative/members/resignations/{resignationRequest}/process'
 */
-process.url = (args: { resignationRequest: number | { id: number } } | [resignationRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+process.url = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { resignationRequest: args }
     }
@@ -96,7 +96,7 @@ process.url = (args: { resignationRequest: number | { id: number } } | [resignat
 * @see app/Http/Controllers/Cooperative/MemberResignationController.php:93
 * @route '/cooperative/members/resignations/{resignationRequest}/process'
 */
-process.post = (args: { resignationRequest: number | { id: number } } | [resignationRequest: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+process.post = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })

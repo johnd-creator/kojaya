@@ -72,7 +72,7 @@ intent.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-export const status = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const status = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: status.url(args, options),
     method: 'get',
 })
@@ -87,7 +87,7 @@ status.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-status.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+status.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -120,7 +120,7 @@ status.url = (args: { payment: number | { id: number } } | [payment: number | { 
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-status.get = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+status.get = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: status.url(args, options),
     method: 'get',
 })
@@ -130,7 +130,7 @@ status.get = (args: { payment: number | { id: number } } | [payment: number | { 
 * @see app/Http/Controllers/MemberPortalController.php:719
 * @route '/member/payments/{payment}/status'
 */
-status.head = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+status.head = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: status.url(args, options),
     method: 'head',
 })

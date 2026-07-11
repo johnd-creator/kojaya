@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:60
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-export const cancelPayment = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const cancelPayment = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelPayment.url(args, options),
     method: 'post',
 })
@@ -63,7 +63,7 @@ cancelPayment.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:60
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-cancelPayment.url = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+cancelPayment.url = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { entry: args }
     }
@@ -96,7 +96,7 @@ cancelPayment.url = (args: { entry: number | { id: number } } | [entry: number |
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:60
 * @route '/cooperative/ledger/{entry}/cancel-payment'
 */
-cancelPayment.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+cancelPayment.post = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: cancelPayment.url(args, options),
     method: 'post',
 })
@@ -106,7 +106,7 @@ cancelPayment.post = (args: { entry: number | { id: number } } | [entry: number 
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:67
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-export const revisePayment = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const revisePayment = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revisePayment.url(args, options),
     method: 'post',
 })
@@ -121,7 +121,7 @@ revisePayment.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:67
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-revisePayment.url = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+revisePayment.url = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { entry: args }
     }
@@ -154,7 +154,7 @@ revisePayment.url = (args: { entry: number | { id: number } } | [entry: number |
 * @see app/Http/Controllers/Cooperative/CooperativeLedgerController.php:67
 * @route '/cooperative/ledger/{entry}/revise-payment'
 */
-revisePayment.post = (args: { entry: number | { id: number } } | [entry: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+revisePayment.post = (args: { entry: string | number | { id: string | number } } | [entry: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revisePayment.url(args, options),
     method: 'post',
 })

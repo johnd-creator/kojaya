@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-export const process = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const process = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })
@@ -63,7 +63,7 @@ process.definition = {
 * @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-process.url = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+process.url = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { withdrawal: args }
     }
@@ -96,7 +96,7 @@ process.url = (args: { withdrawal: number | { id: number } } | [withdrawal: numb
 * @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
 * @route '/cooperative/savings/withdrawals/{withdrawal}/process'
 */
-process.post = (args: { withdrawal: number | { id: number } } | [withdrawal: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+process.post = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: process.url(args, options),
     method: 'post',
 })

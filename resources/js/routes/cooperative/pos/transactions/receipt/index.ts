@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
 * @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
 */
-export const pdf = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const pdf = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: pdf.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ pdf.definition = {
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
 * @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
 */
-pdf.url = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+pdf.url = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { transaction: args }
     }
@@ -52,7 +52,7 @@ pdf.url = (args: { transaction: number | { id: number } } | [transaction: number
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
 * @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
 */
-pdf.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+pdf.get = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: pdf.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ pdf.get = (args: { transaction: number | { id: number } } | [transaction: number
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:21
 * @route '/cooperative/pos/transactions/{transaction}/receipt.pdf'
 */
-pdf.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+pdf.head = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: pdf.url(args, options),
     method: 'head',
 })

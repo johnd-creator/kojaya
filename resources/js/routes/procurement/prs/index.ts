@@ -126,7 +126,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:122
 * @route '/procurement/purchase-requests/{purchaseRequest}'
 */
-export const show = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -141,7 +141,7 @@ show.definition = {
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:122
 * @route '/procurement/purchase-requests/{purchaseRequest}'
 */
-show.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+show.url = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseRequest: args }
     }
@@ -174,7 +174,7 @@ show.url = (args: { purchaseRequest: string | { id: string } } | [purchaseReques
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:122
 * @route '/procurement/purchase-requests/{purchaseRequest}'
 */
-show.get = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -184,7 +184,7 @@ show.get = (args: { purchaseRequest: string | { id: string } } | [purchaseReques
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:122
 * @route '/procurement/purchase-requests/{purchaseRequest}'
 */
-show.head = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -194,7 +194,7 @@ show.head = (args: { purchaseRequest: string | { id: string } } | [purchaseReque
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:166
 * @route '/procurement/purchase-requests/{purchaseRequest}/submit'
 */
-export const submit = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const submit = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: submit.url(args, options),
     method: 'post',
 })
@@ -209,7 +209,7 @@ submit.definition = {
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:166
 * @route '/procurement/purchase-requests/{purchaseRequest}/submit'
 */
-submit.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+submit.url = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseRequest: args }
     }
@@ -242,7 +242,7 @@ submit.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequ
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:166
 * @route '/procurement/purchase-requests/{purchaseRequest}/submit'
 */
-submit.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+submit.post = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: submit.url(args, options),
     method: 'post',
 })
@@ -252,7 +252,7 @@ submit.post = (args: { purchaseRequest: string | { id: string } } | [purchaseReq
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:183
 * @route '/procurement/purchase-requests/{purchaseRequest}/approve'
 */
-export const approve = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -267,7 +267,7 @@ approve.definition = {
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:183
 * @route '/procurement/purchase-requests/{purchaseRequest}/approve'
 */
-approve.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+approve.url = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseRequest: args }
     }
@@ -300,7 +300,7 @@ approve.url = (args: { purchaseRequest: string | { id: string } } | [purchaseReq
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:183
 * @route '/procurement/purchase-requests/{purchaseRequest}/approve'
 */
-approve.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -310,7 +310,7 @@ approve.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRe
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:197
 * @route '/procurement/purchase-requests/{purchaseRequest}/reject'
 */
-export const reject = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -325,7 +325,7 @@ reject.definition = {
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:197
 * @route '/procurement/purchase-requests/{purchaseRequest}/reject'
 */
-reject.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+reject.url = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { purchaseRequest: args }
     }
@@ -358,7 +358,7 @@ reject.url = (args: { purchaseRequest: string | { id: string } } | [purchaseRequ
 * @see app/Http/Controllers/Procurement/PurchaseRequestController.php:197
 * @route '/procurement/purchase-requests/{purchaseRequest}/reject'
 */
-reject.post = (args: { purchaseRequest: string | { id: string } } | [purchaseRequest: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })

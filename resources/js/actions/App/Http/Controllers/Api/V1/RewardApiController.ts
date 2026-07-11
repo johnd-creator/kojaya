@@ -48,7 +48,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 * @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-export const redeem = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const redeem = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeem.url(args, options),
     method: 'post',
 })
@@ -63,7 +63,7 @@ redeem.definition = {
 * @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-redeem.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+redeem.url = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reward: args }
     }
@@ -96,7 +96,7 @@ redeem.url = (args: { reward: string | { id: string } } | [reward: string | { id
 * @see app/Http/Controllers/Api/V1/RewardApiController.php:35
 * @route '/api/v1/rewards/{reward}/redeem'
 */
-redeem.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+redeem.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeem.url(args, options),
     method: 'post',
 })

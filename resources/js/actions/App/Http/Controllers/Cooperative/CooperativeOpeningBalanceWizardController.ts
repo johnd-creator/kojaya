@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:25
 * @route '/cooperative/members/{member}/opening-balance'
 */
-export const show = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ show.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:25
 * @route '/cooperative/members/{member}/opening-balance'
 */
-show.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -52,7 +52,7 @@ show.url = (args: { member: number | { id: number } } | [member: number | { id: 
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:25
 * @route '/cooperative/members/{member}/opening-balance'
 */
-show.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ show.get = (args: { member: number | { id: number } } | [member: number | { id: 
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:25
 * @route '/cooperative/members/{member}/opening-balance'
 */
-show.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -72,7 +72,7 @@ show.head = (args: { member: number | { id: number } } | [member: number | { id:
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:104
 * @route '/cooperative/members/{member}/opening-balance/preview'
 */
-export const preview = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const preview = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: preview.url(args, options),
     method: 'post',
 })
@@ -87,7 +87,7 @@ preview.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:104
 * @route '/cooperative/members/{member}/opening-balance/preview'
 */
-preview.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+preview.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -120,7 +120,7 @@ preview.url = (args: { member: number | { id: number } } | [member: number | { i
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:104
 * @route '/cooperative/members/{member}/opening-balance/preview'
 */
-preview.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+preview.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: preview.url(args, options),
     method: 'post',
 })
@@ -130,7 +130,7 @@ preview.post = (args: { member: number | { id: number } } | [member: number | { 
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:117
 * @route '/cooperative/members/{member}/opening-balance/draft'
 */
-export const store = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -145,7 +145,7 @@ store.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:117
 * @route '/cooperative/members/{member}/opening-balance/draft'
 */
-store.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+store.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -178,7 +178,7 @@ store.url = (args: { member: number | { id: number } } | [member: number | { id:
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:117
 * @route '/cooperative/members/{member}/opening-balance/draft'
 */
-store.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -188,7 +188,7 @@ store.post = (args: { member: number | { id: number } } | [member: number | { id
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:141
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-export const post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: post.url(args, options),
     method: 'post',
 })
@@ -203,7 +203,7 @@ post.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:141
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-post.url = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+post.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -236,7 +236,7 @@ post.url = (args: { batch: number | { id: number } } | [batch: number | { id: nu
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:141
 * @route '/cooperative/opening-balances/{batch}/post'
 */
-post.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+post.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: post.url(args, options),
     method: 'post',
 })
@@ -246,7 +246,7 @@ post.post = (args: { batch: number | { id: number } } | [batch: number | { id: n
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:156
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-export const voidMethod = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const voidMethod = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: voidMethod.url(args, options),
     method: 'post',
 })
@@ -261,7 +261,7 @@ voidMethod.definition = {
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:156
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-voidMethod.url = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+voidMethod.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -294,7 +294,7 @@ voidMethod.url = (args: { batch: number | { id: number } } | [batch: number | { 
 * @see app/Http/Controllers/Cooperative/CooperativeOpeningBalanceWizardController.php:156
 * @route '/cooperative/opening-balances/{batch}/void'
 */
-voidMethod.post = (args: { batch: number | { id: number } } | [batch: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+voidMethod.post = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: voidMethod.url(args, options),
     method: 'post',
 })

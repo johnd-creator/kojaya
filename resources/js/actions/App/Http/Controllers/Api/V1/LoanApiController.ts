@@ -82,7 +82,7 @@ apply.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:59
 * @route '/api/v1/loans/{loan}'
 */
-export const show = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -97,7 +97,7 @@ show.definition = {
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:59
 * @route '/api/v1/loans/{loan}'
 */
-show.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -130,7 +130,7 @@ show.url = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:59
 * @route '/api/v1/loans/{loan}'
 */
-show.get = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -140,7 +140,7 @@ show.get = (args: { loan: number | { id: number } } | [loan: number | { id: numb
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:59
 * @route '/api/v1/loans/{loan}'
 */
-show.head = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -150,7 +150,7 @@ show.head = (args: { loan: number | { id: number } } | [loan: number | { id: num
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:68
 * @route '/api/v1/loans/{loan}/review'
 */
-export const review = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const review = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: review.url(args, options),
     method: 'post',
 })
@@ -165,7 +165,7 @@ review.definition = {
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:68
 * @route '/api/v1/loans/{loan}/review'
 */
-review.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+review.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -198,7 +198,7 @@ review.url = (args: { loan: number | { id: number } } | [loan: number | { id: nu
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:68
 * @route '/api/v1/loans/{loan}/review'
 */
-review.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+review.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: review.url(args, options),
     method: 'post',
 })
@@ -208,7 +208,7 @@ review.post = (args: { loan: number | { id: number } } | [loan: number | { id: n
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:77
 * @route '/api/v1/loans/{loan}/approve'
 */
-export const approve = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -223,7 +223,7 @@ approve.definition = {
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:77
 * @route '/api/v1/loans/{loan}/approve'
 */
-approve.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+approve.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -256,7 +256,7 @@ approve.url = (args: { loan: number | { id: number } } | [loan: number | { id: n
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:77
 * @route '/api/v1/loans/{loan}/approve'
 */
-approve.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -266,7 +266,7 @@ approve.post = (args: { loan: number | { id: number } } | [loan: number | { id: 
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:86
 * @route '/api/v1/loans/{loan}/reject'
 */
-export const reject = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -281,7 +281,7 @@ reject.definition = {
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:86
 * @route '/api/v1/loans/{loan}/reject'
 */
-reject.url = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+reject.url = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { loan: args }
     }
@@ -314,7 +314,7 @@ reject.url = (args: { loan: number | { id: number } } | [loan: number | { id: nu
 * @see app/Http/Controllers/Api/V1/LoanApiController.php:86
 * @route '/api/v1/loans/{loan}/reject'
 */
-reject.post = (args: { loan: number | { id: number } } | [loan: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { loan: string | number | { id: string | number } } | [loan: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })

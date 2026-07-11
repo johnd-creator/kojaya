@@ -250,7 +250,7 @@ edit.head = (args: { department: string | number } | [department: string | numbe
 * @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
-export const update = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -265,7 +265,7 @@ update.definition = {
 * @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
-update.url = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+update.url = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { department: args }
     }
@@ -298,7 +298,7 @@ update.url = (args: { department: number | { id: number } } | [department: numbe
 * @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
-update.put = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -308,7 +308,7 @@ update.put = (args: { department: number | { id: number } } | [department: numbe
 * @see app/Http/Controllers/DepartmentController.php:48
 * @route '/departments/{department}'
 */
-update.patch = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
@@ -318,7 +318,7 @@ update.patch = (args: { department: number | { id: number } } | [department: num
 * @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
-export const destroy = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -333,7 +333,7 @@ destroy.definition = {
 * @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
-destroy.url = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+destroy.url = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { department: args }
     }
@@ -366,7 +366,7 @@ destroy.url = (args: { department: number | { id: number } } | [department: numb
 * @see app/Http/Controllers/DepartmentController.php:57
 * @route '/departments/{department}'
 */
-destroy.delete = (args: { department: number | { id: number } } | [department: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { department: string | number | { id: string | number } } | [department: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })

@@ -82,7 +82,7 @@ close.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-export const requestRevision = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const requestRevision = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: requestRevision.url(args, options),
     method: 'post',
 })
@@ -97,7 +97,7 @@ requestRevision.definition = {
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-requestRevision.url = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+requestRevision.url = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { period: args }
     }
@@ -130,7 +130,7 @@ requestRevision.url = (args: { period: number | { id: number } } | [period: numb
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
 * @route '/cooperative/shu/{period}/request-revision'
 */
-requestRevision.post = (args: { period: number | { id: number } } | [period: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+requestRevision.post = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: requestRevision.url(args, options),
     method: 'post',
 })

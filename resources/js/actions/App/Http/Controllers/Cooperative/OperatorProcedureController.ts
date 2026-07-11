@@ -442,7 +442,7 @@ unlock.post = (args: { period: string | number } | [period: string | number ] | 
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-export const reconcilePayment = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reconcilePayment = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcilePayment.url(args, options),
     method: 'post',
 })
@@ -457,7 +457,7 @@ reconcilePayment.definition = {
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePayment.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+reconcilePayment.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -490,7 +490,7 @@ reconcilePayment.url = (args: { payment: number | { id: number } } | [payment: n
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePayment.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reconcilePayment.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcilePayment.url(args, options),
     method: 'post',
 })

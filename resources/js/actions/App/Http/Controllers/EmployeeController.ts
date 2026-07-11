@@ -188,7 +188,7 @@ show.head = (args: { employee: string | number } | [employee: string | number ] 
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-export const edit = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const edit = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: edit.url(args, options),
     method: 'get',
 })
@@ -203,7 +203,7 @@ edit.definition = {
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-edit.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+edit.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -236,7 +236,7 @@ edit.url = (args: { employee: number | { id: number } } | [employee: number | { 
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-edit.get = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+edit.get = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: edit.url(args, options),
     method: 'get',
 })
@@ -246,7 +246,7 @@ edit.get = (args: { employee: number | { id: number } } | [employee: number | { 
 * @see app/Http/Controllers/EmployeeController.php:81
 * @route '/employees/{employee}/edit'
 */
-edit.head = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+edit.head = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: edit.url(args, options),
     method: 'head',
 })
@@ -256,7 +256,7 @@ edit.head = (args: { employee: number | { id: number } } | [employee: number | {
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-export const update = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -271,7 +271,7 @@ update.definition = {
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-update.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+update.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -304,7 +304,7 @@ update.url = (args: { employee: number | { id: number } } | [employee: number | 
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-update.put = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -314,7 +314,7 @@ update.put = (args: { employee: number | { id: number } } | [employee: number | 
 * @see app/Http/Controllers/EmployeeController.php:126
 * @route '/employees/{employee}'
 */
-update.patch = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
@@ -324,7 +324,7 @@ update.patch = (args: { employee: number | { id: number } } | [employee: number 
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-export const destroy = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -339,7 +339,7 @@ destroy.definition = {
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-destroy.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+destroy.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -372,7 +372,7 @@ destroy.url = (args: { employee: number | { id: number } } | [employee: number |
 * @see app/Http/Controllers/EmployeeController.php:135
 * @route '/employees/{employee}'
 */
-destroy.delete = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -382,7 +382,7 @@ destroy.delete = (args: { employee: number | { id: number } } | [employee: numbe
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-export const enableEssAccess = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const enableEssAccess = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: enableEssAccess.url(args, options),
     method: 'post',
 })
@@ -397,7 +397,7 @@ enableEssAccess.definition = {
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-enableEssAccess.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+enableEssAccess.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -430,7 +430,7 @@ enableEssAccess.url = (args: { employee: number | { id: number } } | [employee: 
 * @see app/Http/Controllers/EmployeeController.php:142
 * @route '/employees/{employee}/enable-ess'
 */
-enableEssAccess.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+enableEssAccess.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: enableEssAccess.url(args, options),
     method: 'post',
 })
@@ -440,7 +440,7 @@ enableEssAccess.post = (args: { employee: number | { id: number } } | [employee:
 * @see app/Http/Controllers/EmployeeController.php:163
 * @route '/employees/{employee}/revoke-ess'
 */
-export const revokeEssAccess = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const revokeEssAccess = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revokeEssAccess.url(args, options),
     method: 'post',
 })
@@ -455,7 +455,7 @@ revokeEssAccess.definition = {
 * @see app/Http/Controllers/EmployeeController.php:163
 * @route '/employees/{employee}/revoke-ess'
 */
-revokeEssAccess.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+revokeEssAccess.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -488,7 +488,7 @@ revokeEssAccess.url = (args: { employee: number | { id: number } } | [employee: 
 * @see app/Http/Controllers/EmployeeController.php:163
 * @route '/employees/{employee}/revoke-ess'
 */
-revokeEssAccess.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+revokeEssAccess.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: revokeEssAccess.url(args, options),
     method: 'post',
 })

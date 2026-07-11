@@ -250,7 +250,7 @@ edit.head = (args: { position: string | number } | [position: string | number ] 
 * @see app/Http/Controllers/PositionController.php:47
 * @route '/positions/{position}'
 */
-export const update = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -265,7 +265,7 @@ update.definition = {
 * @see app/Http/Controllers/PositionController.php:47
 * @route '/positions/{position}'
 */
-update.url = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+update.url = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { position: args }
     }
@@ -298,7 +298,7 @@ update.url = (args: { position: number | { id: number } } | [position: number | 
 * @see app/Http/Controllers/PositionController.php:47
 * @route '/positions/{position}'
 */
-update.put = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -308,7 +308,7 @@ update.put = (args: { position: number | { id: number } } | [position: number | 
 * @see app/Http/Controllers/PositionController.php:47
 * @route '/positions/{position}'
 */
-update.patch = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
@@ -318,7 +318,7 @@ update.patch = (args: { position: number | { id: number } } | [position: number 
 * @see app/Http/Controllers/PositionController.php:56
 * @route '/positions/{position}'
 */
-export const destroy = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+export const destroy = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })
@@ -333,7 +333,7 @@ destroy.definition = {
 * @see app/Http/Controllers/PositionController.php:56
 * @route '/positions/{position}'
 */
-destroy.url = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+destroy.url = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { position: args }
     }
@@ -366,7 +366,7 @@ destroy.url = (args: { position: number | { id: number } } | [position: number |
 * @see app/Http/Controllers/PositionController.php:56
 * @route '/positions/{position}'
 */
-destroy.delete = (args: { position: number | { id: number } } | [position: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+destroy.delete = (args: { position: string | number | { id: string | number } } | [position: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
     method: 'delete',
 })

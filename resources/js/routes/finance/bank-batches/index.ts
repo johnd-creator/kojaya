@@ -82,7 +82,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 * @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
-export const exportMethod = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const exportMethod = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: exportMethod.url(args, options),
     method: 'get',
 })
@@ -97,7 +97,7 @@ exportMethod.definition = {
 * @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
-exportMethod.url = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+exportMethod.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -130,7 +130,7 @@ exportMethod.url = (args: { batch: string | { id: string } } | [batch: string | 
 * @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
-exportMethod.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+exportMethod.get = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: exportMethod.url(args, options),
     method: 'get',
 })
@@ -140,7 +140,7 @@ exportMethod.get = (args: { batch: string | { id: string } } | [batch: string | 
 * @see app/Http/Controllers/FinanceBankController.php:58
 * @route '/finance/bank-batches/{batch}/export'
 */
-exportMethod.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+exportMethod.head = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: exportMethod.url(args, options),
     method: 'head',
 })

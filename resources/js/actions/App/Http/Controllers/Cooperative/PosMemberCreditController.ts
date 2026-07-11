@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-export const create = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const create = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: create.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ create.definition = {
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-create.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+create.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -52,7 +52,7 @@ create.url = (args: { member: number | { id: number } } | [member: number | { id
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-create.get = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+create.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: create.url(args, options),
     method: 'get',
 })
@@ -62,7 +62,7 @@ create.get = (args: { member: number | { id: number } } | [member: number | { id
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:17
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-create.head = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+create.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: create.url(args, options),
     method: 'head',
 })
@@ -72,7 +72,7 @@ create.head = (args: { member: number | { id: number } } | [member: number | { i
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:29
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-export const store = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -87,7 +87,7 @@ store.definition = {
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:29
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-store.url = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+store.url = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { member: args }
     }
@@ -120,7 +120,7 @@ store.url = (args: { member: number | { id: number } } | [member: number | { id:
 * @see app/Http/Controllers/Cooperative/PosMemberCreditController.php:29
 * @route '/cooperative/pos/members/{member}/credit/pay'
 */
-store.post = (args: { member: number | { id: number } } | [member: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })

@@ -4,7 +4,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefa
 * @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
-export const updateProgress = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const updateProgress = (args: { project: string | number | { id: string | number }, task: string | number | { id: string | number } } | [project: string | number | { id: string | number }, task: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: updateProgress.url(args, options),
     method: 'post',
 })
@@ -19,7 +19,7 @@ updateProgress.definition = {
 * @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
-updateProgress.url = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions) => {
+updateProgress.url = (args: { project: string | number | { id: string | number }, task: string | number | { id: string | number } } | [project: string | number | { id: string | number }, task: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -49,7 +49,7 @@ updateProgress.url = (args: { project: string | { id: string }, task: string | {
 * @see app/Http/Controllers/ProjectTaskController.php:94
 * @route '/projects/{project}/tasks/{task}/progress'
 */
-updateProgress.post = (args: { project: string | { id: string }, task: string | { id: string } } | [project: string | { id: string }, task: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+updateProgress.post = (args: { project: string | number | { id: string | number }, task: string | number | { id: string | number } } | [project: string | number | { id: string | number }, task: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: updateProgress.url(args, options),
     method: 'post',
 })

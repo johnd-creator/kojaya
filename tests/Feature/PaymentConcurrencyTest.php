@@ -32,16 +32,29 @@ class PaymentConcurrencyTest extends TestCase
     /** @var array<string, string> */
     private array $dbConfig = [];
 
+    /**
+     * Capture the DB connection BEFORE any test's setUp() runs.
+     * Tests\TestCase::setUp() forces putenv('DB_CONNECTION=sqlite') which
+     * would clobber the pgsql value for subsequent tests.
+     */
+    private static string $requiredConnection = '';
+
+    /**
+     * @return list<string>
+     */
+    public static function setUpBeforeClass(): void
+    {
+        self::$requiredConnection = getenv('DB_CONNECTION') ?: 'sqlite';
+    }
+
     public function refreshDatabase(): void {}
 
     protected function setUp(): void
     {
-        $connection = getenv('DB_CONNECTION') ?: 'sqlite';
-
-        if ($connection !== 'pgsql') {
+        if (self::$requiredConnection !== 'pgsql') {
             self::fail(
-                'PaymentConcurrencyTest REQUIRES PostgreSQL. Got DB_CONNECTION='.$connection
-                .'. Use: php artisan test --configuration phpunit.pgsql.xml tests/Feature/PaymentConcurrencyTest.php'
+                'PaymentConcurrencyTest REQUIRES PostgreSQL. Got DB_CONNECTION='.self::$requiredConnection
+                .'. Use: vendor/bin/phpunit --configuration phpunit.pgsql.xml tests/Feature/PaymentConcurrencyTest.php'
             );
         }
 
@@ -57,7 +70,22 @@ class PaymentConcurrencyTest extends TestCase
             'search_path' => 'public',
         ];
 
-        parent::setUp();
+        /*
+         * Do NOT call Tests\TestCase::setUp() — it forces SQLite via
+         * putenv('DB_CONNECTION=sqlite') which clobbers our pgsql env
+         * for both this process and child worker processes.
+         *
+         * Instead, bootstrap the Laravel app directly.
+         */
+        $this->refreshApplication();
+
+        // Re-assert pgsql env for this process and any child workers
+        putenv('DB_CONNECTION=pgsql');
+        putenv('DB_DATABASE='.$this->dbConfig['database']);
+        $_ENV['DB_CONNECTION'] = 'pgsql';
+        $_ENV['DB_DATABASE'] = $this->dbConfig['database'];
+        $_SERVER['DB_CONNECTION'] = 'pgsql';
+        $_SERVER['DB_DATABASE'] = $this->dbConfig['database'];
 
         config()->set('database.default', 'pgsql');
         config()->set('database.connections.pgsql', $this->dbConfig);
@@ -75,6 +103,8 @@ class PaymentConcurrencyTest extends TestCase
         ]);
 
         $this->seed(RolePermissionSeeder::class);
+
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
     }
 
     protected function tearDown(): void
@@ -817,6 +847,7 @@ class PaymentConcurrencyTest extends TestCase
         $dbDatabase = $this->dbConfig['database'];
         $dbUsername = $this->dbConfig['username'];
         $dbPassword = $this->dbConfig['password'];
+        $appKey = config('app.key') ?: getenv('APP_KEY') ?: '';
         $paramsJson = json_encode($params, JSON_THROW_ON_ERROR);
 
         $script = match ($action) {
@@ -853,12 +884,14 @@ putenv("DB_PORT={$dbPort}");
 putenv("DB_DATABASE={$dbDatabase}");
 putenv("DB_USERNAME={$dbUsername}");
 putenv("DB_PASSWORD={$dbPassword}");
+putenv("APP_KEY={$appKey}");
 
 \$_ENV['APP_ENV'] = 'testing';
 \$_ENV['CACHE_STORE'] = 'array';
 \$_ENV['SESSION_DRIVER'] = 'array';
 \$_ENV['QUEUE_CONNECTION'] = 'sync';
 \$_ENV['DB_CONNECTION'] = 'pgsql';
+\$_ENV['APP_KEY'] = '{$appKey}';
 
 require \$repoPath.'/vendor/autoload.php';
 

@@ -29,15 +29,16 @@ class PosInventoryService
         }
 
         try {
-            $default = PosInventoryLocation::query()->create([
-                'code' => 'MAIN',
-                'name' => 'Toko Utama',
-                'location_type' => 'STORE',
-                'is_default' => true,
-                'is_active' => true,
-            ]);
+            $default = DB::transaction(function (): PosInventoryLocation {
+                return PosInventoryLocation::query()->create([
+                    'code' => 'MAIN',
+                    'name' => 'Toko Utama',
+                    'location_type' => 'STORE',
+                    'is_default' => true,
+                    'is_active' => true,
+                ]);
+            });
         } catch (QueryException) {
-            // Concurrent creation — re-fetch the location created by another process
             $default = PosInventoryLocation::query()->where('is_default', true)->firstOrFail();
         }
 

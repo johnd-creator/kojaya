@@ -193,7 +193,7 @@ class PaymentConcurrencyTest extends TestCase
         // Exactly one reservation.created audit (not <= 1, must be === 1)
         $createdAudits = AuditLog::query()
             ->where('action', 'reservation.created')
-            ->where('subject_type', 'member_payment_intent')
+            ->where('subject_type', MemberPaymentIntent::class)
             ->count();
         $this->assertSame(1, $createdAudits, 'C1: exactly one reservation.created audit');
     }
@@ -476,7 +476,7 @@ class PaymentConcurrencyTest extends TestCase
             'payable_type' => MemberPaymentIntent::PAYABLE_STORE_ORDER,
             'client_reference' => 'C5-DUP-PAID',
             'request_fingerprint' => hash('sha256', 'c5-fp'),
-            'amount' => 10000,
+            'amount' => 20000,
             'channel' => 'QRIS',
             'gateway_reference' => $gatewayRef,
             'gateway_status' => 'PENDING',
@@ -537,7 +537,7 @@ class PaymentConcurrencyTest extends TestCase
         // Exactly one consume audit (not multiple from duplicate webhooks)
         $consumeAudits = AuditLog::query()
             ->where('action', 'reservation.consumed')
-            ->where('subject_type', 'member_payment_intent')
+            ->where('subject_type', MemberPaymentIntent::class)
             ->count();
         $this->assertSame(1, $consumeAudits, 'C5: exactly one reservation consumed');
     }
@@ -569,6 +569,7 @@ class PaymentConcurrencyTest extends TestCase
             'request_fingerprint' => hash('sha256', 'c6-fp'),
             'amount' => 10000,
             'channel' => 'QRIS',
+            'gateway_reference' => null,
             'gateway_status' => 'PENDING',
             'gateway_payload' => null,
             'reservation_status' => 'RESERVED',

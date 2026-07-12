@@ -262,3 +262,6 @@ artifacts/
 graphify-out/
 penawaran.md
 old_progress
+
+# Boost generated routes (runtime-registered, not deterministic in CI)
+resources/js/routes/boost/

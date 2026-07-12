@@ -145,7 +145,7 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env
       - run: php artisan key:generate
-      - run: php artisan test --compact tests/Feature/Cooperative/PosTransactionConcurrencyTest.php tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php
+      - run: php artisan test --compact tests/Feature/Cooperative/PosTransactionConcurrencyTest.php tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php tests/Feature/PaymentConcurrencyTest.php
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1

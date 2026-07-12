@@ -88,15 +88,27 @@ class MemberPaymentIntent extends Model
 
     public function gatewayStatus(): PaymentGatewayStatus
     {
-        return PaymentGatewayStatus::tryFrom((string) $this->gateway_status)
-            ?? PaymentGatewayStatus::Pending;
+        $status = PaymentGatewayStatus::tryFrom((string) $this->gateway_status);
+        if ($status === null) {
+            throw new \DomainException(
+                "Invalid gateway_status value '{$this->gateway_status}' for intent {$this->id}."
+            );
+        }
+
+        return $status;
     }
 
     public function reservationStatus(): PaymentReservationStatus
     {
         if ($this->reservation_status !== null) {
-            return PaymentReservationStatus::tryFrom($this->reservation_status)
-                ?? PaymentReservationStatus::None;
+            $status = PaymentReservationStatus::tryFrom($this->reservation_status);
+            if ($status === null) {
+                throw new \DomainException(
+                    "Invalid reservation_status value '{$this->reservation_status}' for intent {$this->id}."
+                );
+            }
+
+            return $status;
         }
 
         $metadata = $this->metadata ?? [];
@@ -116,10 +128,16 @@ class MemberPaymentIntent extends Model
 
     public function settlementStatus(): PaymentSettlementStatus
     {
-        return PaymentSettlementStatus::tryFrom((string) $this->settlement_status)
-            ?? ($this->settled_at !== null
-                ? PaymentSettlementStatus::Settled
-                : PaymentSettlementStatus::NotSettled);
+        if ($this->settlement_status !== null) {
+            $status = PaymentSettlementStatus::tryFrom((string) $this->settlement_status);
+            if ($status !== null) {
+                return $status;
+            }
+        }
+
+        return $this->settled_at !== null
+            ? PaymentSettlementStatus::Settled
+            : PaymentSettlementStatus::NotSettled;
     }
 
     public function isOrderType(): bool
@@ -133,10 +151,17 @@ class MemberPaymentIntent extends Model
      */
     public function isStateCombinationValid(): bool
     {
-        $gateway = $this->gatewayStatus();
-        $reservation = $this->reservationStatus();
-        $settlement = $this->settlementStatus();
+        try {
+            $gateway = $this->gatewayStatus();
+            $reservation = $this->reservationStatus();
+            $settlement = $this->settlementStatus();
+        } catch (\DomainException) {
+            return false;
+        }
 
+        $isOrder = $this->isOrderType();
+
+        // PAID + RELEASED/EXPIRED = invalid
         if ($gateway->isPaid() && in_array($reservation, [
             PaymentReservationStatus::Expired,
             PaymentReservationStatus::Released,
@@ -144,13 +169,30 @@ class MemberPaymentIntent extends Model
             return false;
         }
 
-        if ($gateway->isPaid() && $reservation === PaymentReservationStatus::Consumed
-            && $settlement !== PaymentSettlementStatus::Settled
-            && $settlement !== PaymentSettlementStatus::Settling) {
+        // non-PAID terminal + CONSUMED = invalid
+        if (in_array($gateway, [PaymentGatewayStatus::Expired, PaymentGatewayStatus::Cancelled, PaymentGatewayStatus::Denied], true)
+            && $reservation === PaymentReservationStatus::Consumed) {
             return false;
         }
 
+        // SETTLED without PAID = invalid
         if ($settlement === PaymentSettlementStatus::Settled && ! $gateway->isPaid()) {
+            return false;
+        }
+
+        // SETTLED without CONSUMED for order types = invalid
+        if ($settlement === PaymentSettlementStatus::Settled && $isOrder
+            && $reservation !== PaymentReservationStatus::Consumed) {
+            return false;
+        }
+
+        // CONSUMED without PAID for order types = invalid
+        if ($isOrder && $reservation === PaymentReservationStatus::Consumed && ! $gateway->isPaid()) {
+            return false;
+        }
+
+        // SETTLING without PAID = invalid
+        if ($settlement === PaymentSettlementStatus::Settling && ! $gateway->isPaid()) {
             return false;
         }
 

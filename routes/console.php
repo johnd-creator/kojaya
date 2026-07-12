@@ -30,7 +30,7 @@ Schedule::command('notifications:whatsapp-dues-reminders --days=3')->dailyAt('09
 Schedule::command('orders:expire-reservations --limit=500')->everyTenMinutes()->withoutOverlapping();
 
 // Recover intents stuck in CHARGE_CREATING after provider timeout.
-Schedule::command('orders:recover-stale-charges --minutes=5 --limit=50')->everyFiveMinutes();
+Schedule::command('orders:recover-stale-charges --minutes=5 --limit=50')->everyFiveMinutes()->withoutOverlapping();
 
 // Production operations hygiene
 Schedule::command('operations:prune-retention')->dailyAt('01:30');

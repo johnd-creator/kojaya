@@ -5,6 +5,7 @@ namespace App\Services\Cooperative;
 use App\Exceptions\PaymentIntentConflictException;
 use App\Models\CooperativeMember;
 use App\Models\MemberPaymentIntent;
+use App\Support\CanonicalOrderItem;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
@@ -18,48 +19,63 @@ class MemberOrderIntentService
      * Resolve an existing intent for the same unique key, or create a new
      * one with stock reservation.
      *
+     * The raw items are canonicalised exactly once here and the same
+     * canonical list flows to fingerprint, reserve, metadata, and response.
+     *
      * @param  array<string, mixed>  $canonicalRequest
-     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<int, array<string, mixed>>  $rawItems
      */
     public function resolveOrCreate(
         CooperativeMember $member,
         string $payableType,
         string $clientReference,
         array $canonicalRequest,
-        array $items,
+        array $rawItems,
     ): IntentResolution {
-        $fingerprint = $this->computeFingerprint($member->id, $payableType, $canonicalRequest);
-        $amount = (float) ($canonicalRequest['amount'] ?? 0);
+        $canonicalItems = CanonicalOrderItem::canonicalise($rawItems);
+        $amountMinor = array_reduce(
+            $canonicalItems,
+            static fn (int $carry, CanonicalOrderItem $item): int => $carry + $item->amountMinor(),
+            0
+        );
         $channel = (string) ($canonicalRequest['channel'] ?? 'QRIS');
+        $fingerprint = $this->computeFingerprint(
+            memberId: $member->id,
+            payableType: $payableType,
+            canonicalItems: $canonicalItems,
+            canonicalRequest: $canonicalRequest,
+            amountMinor: $amountMinor,
+            channel: $channel,
+        );
 
         return $this->attemptCreate(
             member: $member,
             payableType: $payableType,
             clientReference: $clientReference,
             fingerprint: $fingerprint,
-            amount: $amount,
+            amountMinor: $amountMinor,
             channel: $channel,
             canonicalRequest: $canonicalRequest,
-            items: $items,
+            canonicalItems: $canonicalItems,
         );
     }
 
     /**
+     * @param  list<CanonicalOrderItem>  $canonicalItems
      * @param  array<string, mixed>  $canonicalRequest
-     * @param  array<int, array<string, mixed>>  $items
      */
     private function attemptCreate(
         CooperativeMember $member,
         string $payableType,
         string $clientReference,
         string $fingerprint,
-        float $amount,
+        int $amountMinor,
         string $channel,
         array $canonicalRequest,
-        array $items,
+        array $canonicalItems,
     ): IntentResolution {
         try {
-            return DB::transaction(function () use ($member, $payableType, $clientReference, $fingerprint, $amount, $channel, $canonicalRequest, $items): IntentResolution {
+            return DB::transaction(function () use ($member, $payableType, $clientReference, $fingerprint, $amountMinor, $channel, $canonicalRequest, $canonicalItems): IntentResolution {
                 $existing = MemberPaymentIntent::query()
                     ->where('cooperative_member_id', $member->id)
                     ->where('payable_type', $payableType)
@@ -69,12 +85,12 @@ class MemberOrderIntentService
                     ->first();
 
                 if ($existing) {
-                    $this->validateExisting($existing, $fingerprint, $amount, $channel);
+                    $this->validateExisting($existing, $fingerprint, $amountMinor, $channel);
 
                     return new IntentResolution($existing, created: false);
                 }
 
-                $reservedItems = $this->reservationService->reserve($items);
+                $reservedItems = $this->reservationService->reserve($canonicalItems);
 
                 $intent = MemberPaymentIntent::query()->create([
                     'user_id' => $canonicalRequest['user_id'] ?? null,
@@ -83,7 +99,7 @@ class MemberOrderIntentService
                     'payable_id' => $canonicalRequest['payable_id'] ?? null,
                     'client_reference' => $clientReference,
                     'request_fingerprint' => $fingerprint,
-                    'amount' => $amount,
+                    'amount' => bcdiv((string) $amountMinor, '100', 2),
                     'channel' => $channel,
                     'gateway_status' => 'PENDING',
                     'reservation_status' => MemberPaymentIntent::RESERVATION_RESERVED,
@@ -104,7 +120,7 @@ class MemberOrderIntentService
                 payableType: $payableType,
                 clientReference: $clientReference,
                 fingerprint: $fingerprint,
-                amount: $amount,
+                amountMinor: $amountMinor,
                 channel: $channel,
             );
         }
@@ -115,10 +131,10 @@ class MemberOrderIntentService
         string $payableType,
         string $clientReference,
         string $fingerprint,
-        float $amount,
+        int $amountMinor,
         string $channel,
     ): IntentResolution {
-        return DB::transaction(function () use ($member, $payableType, $clientReference, $fingerprint, $amount, $channel): IntentResolution {
+        return DB::transaction(function () use ($member, $payableType, $clientReference, $fingerprint, $amountMinor, $channel): IntentResolution {
             $existing = MemberPaymentIntent::query()
                 ->where('cooperative_member_id', $member->id)
                 ->where('payable_type', $payableType)
@@ -126,25 +142,48 @@ class MemberOrderIntentService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $this->validateExisting($existing, $fingerprint, $amount, $channel);
+            $this->validateExisting($existing, $fingerprint, $amountMinor, $channel);
 
             return new IntentResolution($existing, created: false);
         });
     }
 
-    private function validateExisting(MemberPaymentIntent $intent, string $fingerprint, float $amount, string $channel): void
+    /**
+     * Existing intent may only be reused if it is in the exact state:
+     *   gateway=PENDING, reservation=RESERVED, settlement=NOT_SETTLED,
+     *   settled_at=null, expires_at>now, fingerprint exact match,
+     *   amount exact match, channel exact match.
+     *
+     * Legacy null fingerprint fails closed.
+     */
+    private function validateExisting(MemberPaymentIntent $intent, string $fingerprint, int $amountMinor, string $channel): void
     {
         $gatewayStatus = strtoupper((string) $intent->gateway_status);
+        $reservationStatus = $intent->reservationStatus()->value;
+        $settlementStatus = $intent->settlementStatus()->value;
 
-        if ($intent->settled_at !== null || $intent->settlementStatus()->isTerminal()) {
+        // Must be exactly PENDING + RESERVED + NOT_SETTLED for reuse
+        if ($gatewayStatus !== 'PENDING') {
             throw PaymentIntentConflictException::terminalState(
-                'Client reference sudah mencapai status terminal (settled). Gunakan client_reference baru.'
+                'Client reference tidak dalam status PENDING. Gunakan client_reference baru.'
             );
         }
 
-        if (in_array($gatewayStatus, ['PAID', 'EXPIRED', 'CANCELLED', 'DENIED', 'FAILED'], true)) {
+        if ($reservationStatus !== 'RESERVED') {
             throw PaymentIntentConflictException::terminalState(
-                'Client reference sudah kedaluwarsa atau telah mencapai status terminal. Gunakan client_reference baru.'
+                'Client reference tidak memiliki reservasi aktif. Gunakan client_reference baru.'
+            );
+        }
+
+        if ($settlementStatus !== 'NOT_SETTLED' && $settlementStatus !== 'SETTLING') {
+            throw PaymentIntentConflictException::terminalState(
+                'Client reference sudah mencapai status settlement terminal. Gunakan client_reference baru.'
+            );
+        }
+
+        if ($intent->settled_at !== null) {
+            throw PaymentIntentConflictException::terminalState(
+                'Client reference sudah settled. Gunakan client_reference baru.'
             );
         }
 
@@ -154,7 +193,9 @@ class MemberOrderIntentService
             );
         }
 
-        if (abs((float) $intent->amount - $amount) > 0.005) {
+        // Amount comparison using integer minor units (no float tolerance)
+        $existingAmountMinor = (int) bcmul((string) $intent->amount, '100', 0);
+        if ($existingAmountMinor !== $amountMinor) {
             throw PaymentIntentConflictException::payloadMismatch(
                 'Client reference sudah dipakai untuk nominal pembayaran berbeda. Gunakan client_reference baru.'
             );
@@ -166,7 +207,14 @@ class MemberOrderIntentService
             );
         }
 
-        if ($intent->request_fingerprint !== null && $intent->request_fingerprint !== $fingerprint) {
+        // Legacy null fingerprint: fail closed
+        if ($intent->request_fingerprint === null) {
+            throw PaymentIntentConflictException::payloadMismatch(
+                'Client reference tidak memiliki fingerprint. Gunakan client_reference baru.'
+            );
+        }
+
+        if ($intent->request_fingerprint !== $fingerprint) {
             throw PaymentIntentConflictException::payloadMismatch(
                 'Client reference sudah dipakai untuk payload berbeda. Gunakan client_reference baru.'
             );
@@ -174,40 +222,48 @@ class MemberOrderIntentService
     }
 
     /**
-     * Deterministic SHA-256 fingerprint of the canonical request.
+     * Deterministic SHA-256 fingerprint using canonical items and
+     * integer minor units for amounts.
      *
+     * @param  list<CanonicalOrderItem>  $canonicalItems
      * @param  array<string, mixed>  $canonicalRequest
      */
-    private function computeFingerprint(int $memberId, string $payableType, array $canonicalRequest): string
-    {
-        $items = $canonicalRequest['items'] ?? [];
-        $sortable = [];
+    private function computeFingerprint(
+        int $memberId,
+        string $payableType,
+        array $canonicalItems,
+        array $canonicalRequest,
+        int $amountMinor,
+        string $channel,
+    ): string {
+        $itemPayload = [];
+        foreach ($canonicalItems as $item) {
+            $entry = [
+                'pid' => $item->posProductId,
+                'qty' => $item->quantity,
+                'unit_price_minor' => (int) bcmul($item->unitPrice, '100', 0),
+            ];
 
-        foreach (is_array($items) ? $items : [] as $item) {
-            if (! is_array($item)) {
-                continue;
+            if ($item->customization !== null) {
+                $entry['customization'] = $item->customization;
             }
 
-            $sortable[] = [
-                'pid' => (int) ($item['pos_product_id'] ?? 0),
-                'qty' => (int) ($item['quantity'] ?? 1),
-                'price' => round((float) ($item['unit_price'] ?? $item['line_total'] ?? 0), 2),
-            ];
+            $itemPayload[] = $entry;
         }
 
-        usort($sortable, static fn (array $a, array $b): int => $a['pid'] <=> $b['pid']);
-
-        $customization = $canonicalRequest['customization'] ?? null;
-        $fulfillment = $canonicalRequest['fulfillment_method'] ?? $canonicalRequest['fulfillment'] ?? null;
+        $fulfillment = $canonicalRequest['fulfillment_method'] ?? null;
+        $pickupLocation = $canonicalRequest['pickup_location'] ?? null;
+        $notes = $canonicalRequest['notes'] ?? null;
 
         $payload = json_encode([
             'member' => $memberId,
             'payable_type' => $payableType,
-            'items' => $sortable,
-            'customization' => $customization,
+            'items' => $itemPayload,
             'fulfillment' => $fulfillment,
-            'channel' => (string) ($canonicalRequest['channel'] ?? 'QRIS'),
-            'amount' => round((float) ($canonicalRequest['amount'] ?? 0), 2),
+            'pickup_location' => $pickupLocation,
+            'notes' => $notes,
+            'channel' => $channel,
+            'amount_minor' => $amountMinor,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return hash('sha256', $payload);
@@ -215,19 +271,19 @@ class MemberOrderIntentService
 
     /**
      * @param  array<string, mixed>  $canonicalRequest
-     * @param  array<int, array<string, mixed>>  $reservedItems
+     * @param  list<CanonicalOrderItem>  $reservedItems
      * @return array<string, mixed>
      */
     private function buildMetadata(array $canonicalRequest, array $reservedItems): array
     {
-        $metadata = $canonicalRequest['metadata'] ?? [];
+        $metadata = [
+            'items' => array_map(fn (CanonicalOrderItem $item): array => $item->toArray(), $reservedItems),
+            'client_reference' => $canonicalRequest['client_reference'] ?? null,
+        ];
 
-        if (! is_array($metadata)) {
-            $metadata = [];
+        if (isset($canonicalRequest['description'])) {
+            $metadata['description'] = $canonicalRequest['description'];
         }
-
-        $metadata['items'] = $reservedItems;
-        $metadata['client_reference'] = $canonicalRequest['client_reference'] ?? null;
 
         if (isset($canonicalRequest['fulfillment_method'])) {
             $metadata['fulfillment_method'] = $canonicalRequest['fulfillment_method'];
@@ -235,10 +291,6 @@ class MemberOrderIntentService
 
         if (isset($canonicalRequest['pickup_location'])) {
             $metadata['pickup_location'] = $canonicalRequest['pickup_location'];
-        }
-
-        if (isset($canonicalRequest['description'])) {
-            $metadata['description'] = $canonicalRequest['description'];
         }
 
         if (isset($canonicalRequest['notes'])) {

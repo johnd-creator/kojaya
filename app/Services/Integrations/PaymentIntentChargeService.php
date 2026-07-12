@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\MemberPaymentChargeAttempt;
 use App\Models\MemberPaymentIntent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,12 +19,12 @@ class PaymentIntentChargeService
     /**
      * Ensure exactly one active provider charge exists for the intent.
      *
-     * Uses a two-phase locking strategy:
-     *   Transaction A: lock intent, set CHARGE_CREATING, commit
+     * Two-phase locking with attempt fencing:
+     *   Transaction A: lock intent, set CHARGE_CREATING, create attempt record, commit
      *   Provider call: outside the DB transaction
-     *   Transaction B: lock intent, verify, save charge, set PENDING
+     *   Transaction B: lock intent, verify charge_attempt===expectedAttempt, save charge
      *
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string?: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     * @return array<string, mixed>
      */
     public function ensureCharge(MemberPaymentIntent $intent): array
     {
@@ -40,22 +41,26 @@ class PaymentIntentChargeService
 
         /** @var int $attempt */
         $attempt = $phaseA['attempt'];
+        /** @var string $idempotencyKey */
+        $idempotencyKey = $phaseA['idempotency_key'];
 
         try {
             $charge = $this->gateway->buildIntentCharge($intent->refresh());
         } catch (RuntimeException $exception) {
-            $this->handleChargeFailure($intent, $attempt, $exception);
+            $this->handleChargeFailure($intent->id, $attempt, $exception);
 
             throw $exception;
         }
 
-        $this->commitTransactionB($intent, $charge);
+        $this->commitTransactionB($intent->id, $attempt, $charge);
+
+        $this->markAttemptConfirmed($intent->id, $attempt, $charge);
 
         return $charge;
     }
 
     /**
-     * @return array{reusable?: array<string, mixed>, preparing?: bool, attempt?: int}
+     * @return array{reusable?: array<string, mixed>, preparing?: bool, attempt?: int, idempotency_key?: string}
      */
     private function beginTransactionA(MemberPaymentIntent $intent): array
     {
@@ -84,35 +89,71 @@ class PaymentIntentChargeService
             }
 
             if ($status === 'CHARGE_CREATING') {
-                if ($this->isStaleChargeCreating($locked)) {
-                    $locked->forceFill(['gateway_status' => 'PENDING'])->save();
-                } else {
+                $staleAttempt = $this->checkStaleChargeCreating($locked);
+                if ($staleAttempt === null) {
                     return ['preparing' => true];
                 }
+
+                // Stale: mark old attempt UNKNOWN, do NOT blindly reset
+                $this->markAttemptUnknown($locked->id, (int) $locked->charge_attempt);
+                $locked->forceFill([
+                    'gateway_status' => 'PENDING',
+                ])->save();
             }
 
             $nextAttempt = ($locked->charge_attempt ?? 0) + 1;
+            $idempotencyKey = sprintf('member-intent:%s:%s', $locked->id, $nextAttempt);
 
             $locked->forceFill([
                 'gateway_status' => 'CHARGE_CREATING',
                 'charge_attempt' => $nextAttempt,
             ])->save();
 
-            return ['attempt' => $nextAttempt];
+            MemberPaymentChargeAttempt::query()->create([
+                'member_payment_intent_id' => $locked->id,
+                'attempt' => $nextAttempt,
+                'idempotency_key' => $idempotencyKey,
+                'provider_order_id' => null,
+                'state' => MemberPaymentChargeAttempt::STATE_PREPARING,
+                'started_at' => now(),
+            ]);
+
+            return [
+                'attempt' => $nextAttempt,
+                'idempotency_key' => $idempotencyKey,
+            ];
         });
     }
 
     /**
+     * Transaction B: verify charge_attempt === expectedAttempt before saving.
+     *
      * @param  array<string, mixed>  $charge
      */
-    private function commitTransactionB(MemberPaymentIntent $intent, array $charge): void
+    private function commitTransactionB(int $intentId, int $expectedAttempt, array $charge): void
     {
-        DB::transaction(function () use ($intent, $charge): void {
+        DB::transaction(function () use ($intentId, $expectedAttempt, $charge): void {
             $locked = MemberPaymentIntent::query()
                 ->lockForUpdate()
-                ->findOrFail($intent->id);
+                ->findOrFail($intentId);
+
+            // Attempt fencing: only commit if this is still our attempt
+            if ((int) $locked->charge_attempt !== $expectedAttempt) {
+                Log::warning('Charge attempt fencing: stale attempt response discarded', [
+                    'intent_id' => $intentId,
+                    'expected_attempt' => $expectedAttempt,
+                    'actual_attempt' => $locked->charge_attempt,
+                ]);
+
+                return;
+            }
 
             if (strtoupper((string) $locked->gateway_status) !== 'CHARGE_CREATING') {
+                return;
+            }
+
+            // Verify reservation still RESERVED
+            if ($locked->reservationStatus()->value !== 'RESERVED') {
                 return;
             }
 
@@ -125,12 +166,17 @@ class PaymentIntentChargeService
         });
     }
 
-    private function handleChargeFailure(MemberPaymentIntent $intent, int $attempt, RuntimeException $exception): void
+    private function handleChargeFailure(int $intentId, int $expectedAttempt, RuntimeException $exception): void
     {
-        DB::transaction(function () use ($intent, $attempt, $exception): void {
+        DB::transaction(function () use ($intentId, $expectedAttempt, $exception): void {
             $locked = MemberPaymentIntent::query()
                 ->lockForUpdate()
-                ->findOrFail($intent->id);
+                ->findOrFail($intentId);
+
+            // Attempt fencing: only handle failure for our attempt
+            if ((int) $locked->charge_attempt !== $expectedAttempt) {
+                return;
+            }
 
             if (strtoupper((string) $locked->gateway_status) !== 'CHARGE_CREATING') {
                 return;
@@ -140,19 +186,72 @@ class PaymentIntentChargeService
                 'gateway_status' => 'PENDING',
                 'gateway_payload' => array_merge(is_array($locked->gateway_payload) ? $locked->gateway_payload : [], [
                     'charge_failure' => [
-                        'attempt' => $attempt,
+                        'attempt' => $expectedAttempt,
                         'error' => $exception->getMessage(),
                         'at' => now()->toISOString(),
                     ],
                 ]),
             ])->save();
+
+            MemberPaymentChargeAttempt::query()
+                ->where('member_payment_intent_id', $intentId)
+                ->where('attempt', $expectedAttempt)
+                ->update([
+                    'state' => MemberPaymentChargeAttempt::STATE_FAILED,
+                    'completed_at' => now(),
+                    'response_payload' => ['error' => $exception->getMessage()],
+                ]);
         });
 
         Log::error('Payment intent charge creation failed', [
-            'intent_id' => $intent->id,
-            'attempt' => $attempt,
+            'intent_id' => $intentId,
+            'attempt' => $expectedAttempt,
             'error' => $exception->getMessage(),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $charge
+     */
+    private function markAttemptConfirmed(int $intentId, int $attempt, array $charge): void
+    {
+        MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intentId)
+            ->where('attempt', $attempt)
+            ->update([
+                'state' => MemberPaymentChargeAttempt::STATE_CONFIRMED,
+                'provider_reference' => $charge['reference'] ?? null,
+                'response_payload' => $charge,
+                'completed_at' => now(),
+            ]);
+    }
+
+    private function markAttemptUnknown(int $intentId, int $attempt): void
+    {
+        MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intentId)
+            ->where('attempt', $attempt)
+            ->update([
+                'state' => MemberPaymentChargeAttempt::STATE_UNKNOWN,
+                'completed_at' => now(),
+            ]);
+    }
+
+    /**
+     * Check if the current CHARGE_CREATING is stale.
+     * Returns the attempt number if stale, null if still fresh.
+     */
+    private function checkStaleChargeCreating(MemberPaymentIntent $intent): ?int
+    {
+        if ($intent->updated_at === null) {
+            return null;
+        }
+
+        if ($intent->updated_at->addMinutes(self::STALE_CHARGE_MINUTES)->isFuture()) {
+            return null;
+        }
+
+        return (int) $intent->charge_attempt;
     }
 
     /**
@@ -205,12 +304,6 @@ class PaymentIntentChargeService
             'instructions' => $instructions,
             'poll_after_seconds' => (int) ($payload['poll_after_seconds'] ?? 5),
         ];
-    }
-
-    private function isStaleChargeCreating(MemberPaymentIntent $intent): bool
-    {
-        return $intent->updated_at !== null
-            && $intent->updated_at->addMinutes(self::STALE_CHARGE_MINUTES)->isPast();
     }
 
     /**

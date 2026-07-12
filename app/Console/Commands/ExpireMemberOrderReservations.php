@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\MemberPaymentIntent;
 use App\Services\Integrations\MemberPaymentIntentStateService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class ExpireMemberOrderReservations extends Command
 {
@@ -16,9 +15,9 @@ class ExpireMemberOrderReservations extends Command
     public function handle(MemberPaymentIntentStateService $stateService): int
     {
         $limit = max(1, min((int) $this->option('limit'), 1000));
-        $metrics = ['scanned' => 0, 'expired' => 0, 'skipped_paid' => 0, 'skipped_locked' => 0, 'failed' => 0];
 
-        $query = MemberPaymentIntent::query()
+        // Step 1: Get candidate IDs without locking
+        $candidateIds = MemberPaymentIntent::query()
             ->whereIn('payable_type', [
                 MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
                 MemberPaymentIntent::PAYABLE_STORE_ORDER,
@@ -31,25 +30,37 @@ class ExpireMemberOrderReservations extends Command
             })
             ->where('expires_at', '<=', now())
             ->orderBy('id')
-            ->limit($limit);
+            ->limit($limit)
+            ->pluck('id')
+            ->all();
 
-        if (DB::connection()->getDriverName() === 'pgsql') {
-            $query->lockForUpdate()->skipLocked();
-        }
+        $metrics = [
+            'candidates' => count($candidateIds),
+            'expired' => 0,
+            'skipped_state_changed' => 0,
+            'skipped_not_due' => 0,
+            'failed' => 0,
+        ];
 
-        $intents = $query->get();
-        $metrics['scanned'] = $intents->count();
-
-        foreach ($intents as $intent) {
+        // Step 2: Process each ID in its own transaction
+        // The state service does its own lockForUpdate + state validation,
+        // which is the authoritative path.
+        foreach ($candidateIds as $intentId) {
             try {
+                $intent = MemberPaymentIntent::query()->find($intentId);
+                if ($intent === null) {
+                    $metrics['skipped_state_changed']++;
+
+                    continue;
+                }
+
                 $ok = $stateService->expireStaleIntent($intent);
 
                 if ($ok) {
                     $metrics['expired']++;
-                } elseif (strtoupper((string) $intent->gateway_status) === 'PAID') {
-                    $metrics['skipped_paid']++;
                 } else {
-                    $metrics['skipped_locked']++;
+                    // State service rejected — could be state changed, paid, or not due
+                    $metrics['skipped_state_changed']++;
                 }
             } catch (\Throwable) {
                 $metrics['failed']++;
@@ -57,11 +68,11 @@ class ExpireMemberOrderReservations extends Command
         }
 
         $this->info(sprintf(
-            'Scanned %d, expired %d, skipped_paid %d, skipped_locked %d, failed %d.',
-            $metrics['scanned'],
+            'candidates %d, expired %d, skipped_state_changed %d, skipped_not_due %d, failed %d.',
+            $metrics['candidates'],
             $metrics['expired'],
-            $metrics['skipped_paid'],
-            $metrics['skipped_locked'],
+            $metrics['skipped_state_changed'],
+            $metrics['skipped_not_due'],
             $metrics['failed'],
         ));
 

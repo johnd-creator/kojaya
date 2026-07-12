@@ -220,7 +220,12 @@ class PaymentGatewayService
                 return null;
             }
 
-            return $this->stateService->applyGatewayEvent($reference, $event->status, $event->rawPayload);
+            return $this->stateService->applyGatewayEvent(
+                $reference,
+                $event->status,
+                $event->rawPayload,
+                $event->amount > 0 ? $event->amount : null,
+            );
         }
 
         $reference = (string) ($payload['reference'] ?? $payload['gateway_reference'] ?? '');

@@ -87,7 +87,7 @@ class MemberStoreController extends Controller
                 'items' => $items,
                 'client_reference' => $clientReference,
             ],
-            items: $items,
+            rawItems: $items,
         );
 
         $intent = $resolution->intent->refresh();
@@ -100,8 +100,14 @@ class MemberStoreController extends Controller
 
         $charge = $chargeService->ensureCharge($intent);
 
+        // Response is always built from DB metadata (authoritative winner).
+        $meta = $intent->metadata ?? [];
+        $metadataItems = $meta['items'] ?? [];
+        $responseFulfillment = (string) ($meta['fulfillment_method'] ?? $fulfillmentMethod);
+        $responsePickup = $meta['pickup_location'] ?? $pickupLocation;
+
         return response()->json([
-            'data' => $this->formatPendingOrder($intent, $intent->metadata['items'] ?? $items, $charge, $fulfillmentMethod, $pickupLocation),
+            'data' => $this->formatPendingOrder($intent, $metadataItems, $charge, $responseFulfillment, $responsePickup),
         ], 201);
     }
 

@@ -6,6 +6,7 @@ use App\Models\MemberPaymentIntent;
 use App\Models\PosInventoryStock;
 use App\Models\PosProduct;
 use App\Services\AuditLogService;
+use App\Support\CanonicalOrderItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,32 +15,26 @@ class MemberOrderReservationService
     public function __construct(private readonly AuditLogService $auditLogService) {}
 
     /**
-     * @param  array<int, array<string, mixed>>  $items
-     */
-    /**
-     * Reserve stock for the given items.
+     * Reserve stock for canonical items.
      *
-     * Items are canonicalised before locking: duplicate product IDs are
-     * aggregated and the list is sorted by pos_product_id ascending to
-     * guarantee a deadlock-free deterministic lock order.
+     * Items must already be canonicalised (one row per pos_product_id,
+     * sorted ascending). The same canonical list is returned with
+     * reservation_location_id attached.
      *
-     * @param  array<int, array<string, mixed>>  $items
-     * @return array<int, array<string, mixed>>
+     * @param  list<CanonicalOrderItem>  $canonicalItems
+     * @return list<CanonicalOrderItem>
      */
-    public function reserve(array $items): array
+    public function reserve(array $canonicalItems): array
     {
-        $canonical = $this->canonicaliseItems($items);
-
-        return DB::transaction(function () use ($items, $canonical): array {
+        return DB::transaction(function () use ($canonicalItems): array {
             $location = app(PosInventoryService::class)->resolveLocationFor();
             app(PosInventoryService::class)->syncDefaultLocationStocks($location->id);
 
-            $reservedByProductId = [];
-            $reservedItems = [];
+            $reserved = [];
 
-            foreach ($canonical as $entry) {
-                $product = PosProduct::query()->lockForUpdate()->findOrFail($entry['pos_product_id']);
-                $quantity = $entry['quantity'];
+            foreach ($canonicalItems as $item) {
+                $product = PosProduct::query()->lockForUpdate()->findOrFail($item->posProductId);
+                $quantity = $item->quantity;
                 $stock = PosInventoryStock::query()
                     ->where('pos_product_id', $product->id)
                     ->where('pos_inventory_location_id', $location->id)
@@ -55,47 +50,17 @@ class MemberOrderReservationService
 
                 $stock?->increment('reserved', $quantity);
 
-                $reservedByProductId[(int) $product->id] = [
-                    ...$entry['original_item'],
-                    'quantity' => $entry['quantity'],
-                    'reservation_location_id' => $location->id,
-                ];
+                $reserved[] = new CanonicalOrderItem(
+                    posProductId: $item->posProductId,
+                    quantity: $item->quantity,
+                    unitPrice: $item->unitPrice,
+                    reservationLocationId: (string) $location->id,
+                    customization: $item->customization,
+                );
             }
 
-            foreach ($items as $originalItem) {
-                $reservedItems[] = $reservedByProductId[(int) $originalItem['pos_product_id']];
-            }
-
-            return $reservedItems;
+            return $reserved;
         });
-    }
-
-    /**
-     * Aggregate duplicate products and sort by pos_product_id ascending.
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     * @return array<int, array{pos_product_id: int, quantity: int, original_item: array<string, mixed>}>
-     */
-    private function canonicaliseItems(array $items): array
-    {
-        $aggregated = [];
-
-        foreach ($items as $item) {
-            $productId = (int) $item['pos_product_id'];
-            if (! isset($aggregated[$productId])) {
-                $aggregated[$productId] = [
-                    'pos_product_id' => $productId,
-                    'quantity' => 0,
-                    'original_item' => $item,
-                ];
-            }
-            $aggregated[$productId]['quantity'] += (int) ($item['quantity'] ?? 1);
-        }
-
-        $list = array_values($aggregated);
-        usort($list, static fn (array $a, array $b): int => $a['pos_product_id'] <=> $b['pos_product_id']);
-
-        return $list;
     }
 
     public function consume(MemberPaymentIntent $intent): void
@@ -170,6 +135,10 @@ class MemberOrderReservationService
             : null;
     }
 
+    /**
+     * Release reserved stock using canonical metadata from DB.
+     * Items are sorted by pos_product_id to prevent deadlocks.
+     */
     private function releaseReservedStock(MemberPaymentIntent $intent): void
     {
         $metadata = $intent->metadata ?? [];
@@ -179,7 +148,27 @@ class MemberOrderReservationService
             return;
         }
 
-        $sortable = array_filter($items, static fn (mixed $item): bool => is_array($item) && isset($item['reservation_location_id'], $item['pos_product_id']));
+        // Aggregate metadata items by pos_product_id to prevent
+        // double-decrement when metadata contains duplicate rows.
+        $byProductId = [];
+        foreach ($items as $item) {
+            if (! is_array($item) || ! isset($item['reservation_location_id'], $item['pos_product_id'])) {
+                continue;
+            }
+
+            $productId = (int) $item['pos_product_id'];
+            if (! isset($byProductId[$productId])) {
+                $byProductId[$productId] = [
+                    'pos_product_id' => $productId,
+                    'reservation_location_id' => $item['reservation_location_id'],
+                    'quantity' => 0,
+                ];
+            }
+
+            $byProductId[$productId]['quantity'] += (int) ($item['quantity'] ?? 0);
+        }
+
+        $sortable = array_values($byProductId);
         usort($sortable, static fn (array $a, array $b): int => (int) $a['pos_product_id'] <=> (int) $b['pos_product_id']);
 
         foreach ($sortable as $item) {

@@ -68,7 +68,7 @@ class MemberCoffeeOrderController extends Controller
                 'customization' => $items,
                 'client_reference' => $clientReference,
             ],
-            items: $items,
+            rawItems: $items,
         );
 
         $intent = $resolution->intent->refresh();
@@ -81,8 +81,12 @@ class MemberCoffeeOrderController extends Controller
 
         $charge = $chargeService->ensureCharge($intent);
 
+        // Response is always built from DB metadata (authoritative winner),
+        // never from the request loser's items.
+        $metadataItems = $intent->metadata['items'] ?? [];
+
         return response()->json([
-            'data' => $this->formatPendingOrder($intent, $intent->metadata['items'] ?? $items, $charge),
+            'data' => $this->formatPendingOrder($intent, $metadataItems, $charge),
         ], 201);
     }
 

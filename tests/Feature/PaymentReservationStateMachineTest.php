@@ -45,7 +45,7 @@ class PaymentReservationStateMachineTest extends TestCase
                 'channel' => 'QRIS',
                 'items' => $items,
             ],
-            items: $items,
+            rawItems: $items,
         );
 
         $second = $service->resolveOrCreate(
@@ -58,7 +58,7 @@ class PaymentReservationStateMachineTest extends TestCase
                 'channel' => 'QRIS',
                 'items' => $items,
             ],
-            items: $items,
+            rawItems: $items,
         );
 
         $this->assertTrue($first->wasCreated());
@@ -82,7 +82,7 @@ class PaymentReservationStateMachineTest extends TestCase
             payableType: MemberPaymentIntent::PAYABLE_STORE_ORDER,
             clientReference: 'TEST-CONFLICT-001',
             canonicalRequest: ['amount' => 20000, 'channel' => 'QRIS', 'items' => $items1],
-            items: $items1,
+            rawItems: $items1,
         );
 
         $items2 = [['pos_product_id' => $product->id, 'quantity' => 3, 'unit_price' => 10000, 'line_total' => 30000]];
@@ -94,7 +94,7 @@ class PaymentReservationStateMachineTest extends TestCase
             payableType: MemberPaymentIntent::PAYABLE_STORE_ORDER,
             clientReference: 'TEST-CONFLICT-001',
             canonicalRequest: ['amount' => 30000, 'channel' => 'QRIS', 'items' => $items2],
-            items: $items2,
+            rawItems: $items2,
         );
     }
 
@@ -112,7 +112,7 @@ class PaymentReservationStateMachineTest extends TestCase
             payableType: MemberPaymentIntent::PAYABLE_STORE_ORDER,
             clientReference: 'TEST-CHANNEL-001',
             canonicalRequest: ['amount' => 10000, 'channel' => 'QRIS', 'items' => $items],
-            items: $items,
+            rawItems: $items,
         );
 
         $this->expectException(\App\Exceptions\PaymentIntentConflictException::class);
@@ -122,7 +122,7 @@ class PaymentReservationStateMachineTest extends TestCase
             payableType: MemberPaymentIntent::PAYABLE_STORE_ORDER,
             clientReference: 'TEST-CHANNEL-001',
             canonicalRequest: ['amount' => 10000, 'channel' => 'VA', 'items' => $items],
-            items: $items,
+            rawItems: $items,
         );
     }
 
@@ -140,7 +140,7 @@ class PaymentReservationStateMachineTest extends TestCase
             payableType: MemberPaymentIntent::PAYABLE_STORE_ORDER,
             clientReference: 'TEST-FINGERPRINT-001',
             canonicalRequest: ['amount' => 30000, 'channel' => 'QRIS', 'items' => $items],
-            items: $items,
+            rawItems: $items,
         );
 
         $this->assertNotNull($resolution->intent->request_fingerprint);
@@ -362,7 +362,7 @@ class PaymentReservationStateMachineTest extends TestCase
         ])->save();
 
         $this->artisan('orders:recover-stale-charges', ['--minutes' => 5])
-            ->expectsOutputToContain('Recovered 1')
+            ->expectsOutputToContain('Reset 1')
             ->assertExitCode(0);
 
         $this->assertSame('PENDING', $intent->refresh()->gateway_status);

@@ -17,6 +17,8 @@ class MemberPaymentChargeAttempt extends Model
 
     public const STATE_UNKNOWN = 'UNKNOWN';
 
+    public const STATE_ORPHANED = 'ORPHANED';
+
     protected $fillable = [
         'member_payment_intent_id',
         'attempt',
@@ -49,5 +51,10 @@ class MemberPaymentChargeAttempt extends Model
     public function isTerminal(): bool
     {
         return in_array($this->state, [self::STATE_CONFIRMED, self::STATE_FAILED], true);
+    }
+
+    public function isResolvable(): bool
+    {
+        return in_array($this->state, [self::STATE_UNKNOWN, self::STATE_ORPHANED], true);
     }
 }

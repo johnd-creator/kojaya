@@ -2,8 +2,10 @@
 
 namespace App\Services\Integrations;
 
+use App\Enums\ChargeCommitResult;
 use App\Models\MemberPaymentChargeAttempt;
 use App\Models\MemberPaymentIntent;
+use App\Models\PaymentReconciliationIncident;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -20,9 +22,11 @@ class PaymentIntentChargeService
      * Ensure exactly one active provider charge exists for the intent.
      *
      * Two-phase locking with attempt fencing:
-     *   Transaction A: lock intent, set CHARGE_CREATING, create attempt record, commit
+     *   Transaction A: lock intent, set CHARGE_CREATING, create attempt record
+     *                  with stable provider order ID + idempotency key, commit
      *   Provider call: outside the DB transaction
-     *   Transaction B: lock intent, verify charge_attempt===expectedAttempt, save charge
+     *   Transaction B: lock intent, verify charge_attempt===expectedAttempt,
+     *                  save charge, return typed result
      *
      * @return array<string, mixed>
      */
@@ -39,10 +43,19 @@ class PaymentIntentChargeService
             return $this->preparingResponse($intent);
         }
 
+        if (isset($phaseA['reconciliation_required'])) {
+            return $this->reconciliationRequiredResponse($intent);
+        }
+
         /** @var int $attempt */
         $attempt = $phaseA['attempt'];
         /** @var string $idempotencyKey */
         $idempotencyKey = $phaseA['idempotency_key'];
+        /** @var string $providerOrderId */
+        $providerOrderId = $phaseA['provider_order_id'];
+
+        // Mark attempt as SENT before provider call
+        $this->markAttemptSent($intent->id, $attempt);
 
         try {
             $charge = $this->gateway->buildIntentCharge($intent->refresh());
@@ -52,15 +65,26 @@ class PaymentIntentChargeService
             throw $exception;
         }
 
-        $this->commitTransactionB($intent->id, $attempt, $charge);
+        $result = $this->commitTransactionB($intent->id, $attempt, $charge);
 
-        $this->markAttemptConfirmed($intent->id, $attempt, $charge);
+        if ($result === ChargeCommitResult::Committed) {
+            $this->markAttemptConfirmed($intent->id, $attempt, $charge);
 
-        return $charge;
+            return $charge;
+        }
+
+        // Stale or rejected — persist provider evidence on the attempt
+        // and create a reconciliation incident for orphaned charges.
+        if ($charge['reference'] ?? null) {
+            $this->markAttemptOrphaned($intent->id, $attempt, $charge);
+            $this->createOrphanIncident($intent->id, $attempt, $charge, $result);
+        }
+
+        return $this->reconciliationRequiredResponse($intent->refresh());
     }
 
     /**
-     * @return array{reusable?: array<string, mixed>, preparing?: bool, attempt?: int, idempotency_key?: string}
+     * @return array{reusable?: array<string, mixed>, preparing?: bool, reconciliation_required?: bool, attempt?: int, idempotency_key?: string, provider_order_id?: string}
      */
     private function beginTransactionA(MemberPaymentIntent $intent): array
     {
@@ -94,15 +118,30 @@ class PaymentIntentChargeService
                     return ['preparing' => true];
                 }
 
-                // Stale: mark old attempt UNKNOWN, do NOT blindly reset
+                // Stale CHARGE_CREATING: mark attempt UNKNOWN but do NOT reset
+                // intent to PENDING. The intent stays blocked until recovery
+                // reconciliation completes. This prevents creating a new attempt.
                 $this->markAttemptUnknown($locked->id, (int) $locked->charge_attempt);
-                $locked->forceFill([
-                    'gateway_status' => 'PENDING',
-                ])->save();
+
+                Log::warning('Stale CHARGE_CREATING detected, attempt marked UNKNOWN, intent stays blocked', [
+                    'intent_id' => $locked->id,
+                    'attempt' => $staleAttempt,
+                ]);
+
+                return ['reconciliation_required' => true];
             }
 
             $nextAttempt = ($locked->charge_attempt ?? 0) + 1;
             $idempotencyKey = sprintf('member-intent:%s:%s', $locked->id, $nextAttempt);
+            $providerOrderId = sprintf('KOJ-MPI-%d-%d', $locked->id, $nextAttempt);
+
+            $requestPayload = [
+                'intent_id' => $locked->id,
+                'amount' => (float) $locked->amount,
+                'channel' => $locked->channel,
+                'provider_order_id' => $providerOrderId,
+                'idempotency_key' => $idempotencyKey,
+            ];
 
             $locked->forceFill([
                 'gateway_status' => 'CHARGE_CREATING',
@@ -113,14 +152,16 @@ class PaymentIntentChargeService
                 'member_payment_intent_id' => $locked->id,
                 'attempt' => $nextAttempt,
                 'idempotency_key' => $idempotencyKey,
-                'provider_order_id' => null,
+                'provider_order_id' => $providerOrderId,
                 'state' => MemberPaymentChargeAttempt::STATE_PREPARING,
+                'request_payload' => $requestPayload,
                 'started_at' => now(),
             ]);
 
             return [
                 'attempt' => $nextAttempt,
                 'idempotency_key' => $idempotencyKey,
+                'provider_order_id' => $providerOrderId,
             ];
         });
     }
@@ -130,9 +171,9 @@ class PaymentIntentChargeService
      *
      * @param  array<string, mixed>  $charge
      */
-    private function commitTransactionB(int $intentId, int $expectedAttempt, array $charge): void
+    private function commitTransactionB(int $intentId, int $expectedAttempt, array $charge): ChargeCommitResult
     {
-        DB::transaction(function () use ($intentId, $expectedAttempt, $charge): void {
+        return DB::transaction(function () use ($intentId, $expectedAttempt, $charge): ChargeCommitResult {
             $locked = MemberPaymentIntent::query()
                 ->lockForUpdate()
                 ->findOrFail($intentId);
@@ -145,16 +186,26 @@ class PaymentIntentChargeService
                     'actual_attempt' => $locked->charge_attempt,
                 ]);
 
-                return;
+                return ChargeCommitResult::StaleAttempt;
             }
 
-            if (strtoupper((string) $locked->gateway_status) !== 'CHARGE_CREATING') {
-                return;
+            $status = strtoupper((string) $locked->gateway_status);
+
+            if (in_array($status, ['PAID', 'EXPIRED', 'CANCELLED', 'DENIED'], true)) {
+                return ChargeCommitResult::Terminal;
+            }
+
+            if ($status !== 'CHARGE_CREATING') {
+                return ChargeCommitResult::StaleAttempt;
             }
 
             // Verify reservation still RESERVED
             if ($locked->reservationStatus()->value !== 'RESERVED') {
-                return;
+                return ChargeCommitResult::InvalidReservation;
+            }
+
+            if ($locked->expires_at?->isPast() === true) {
+                return ChargeCommitResult::Expired;
             }
 
             $locked->forceFill([
@@ -163,6 +214,8 @@ class PaymentIntentChargeService
                 'gateway_status' => 'PENDING',
                 'gateway_payload' => $charge,
             ])->save();
+
+            return ChargeCommitResult::Committed;
         });
     }
 
@@ -226,6 +279,16 @@ class PaymentIntentChargeService
             ]);
     }
 
+    private function markAttemptSent(int $intentId, int $attempt): void
+    {
+        MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intentId)
+            ->where('attempt', $attempt)
+            ->update([
+                'state' => MemberPaymentChargeAttempt::STATE_SENT,
+            ]);
+    }
+
     private function markAttemptUnknown(int $intentId, int $attempt): void
     {
         MemberPaymentChargeAttempt::query()
@@ -235,6 +298,56 @@ class PaymentIntentChargeService
                 'state' => MemberPaymentChargeAttempt::STATE_UNKNOWN,
                 'completed_at' => now(),
             ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $charge
+     */
+    private function markAttemptOrphaned(int $intentId, int $attempt, array $charge): void
+    {
+        MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intentId)
+            ->where('attempt', $attempt)
+            ->update([
+                'state' => MemberPaymentChargeAttempt::STATE_ORPHANED,
+                'provider_reference' => $charge['reference'] ?? null,
+                'response_payload' => $charge,
+                'completed_at' => now(),
+            ]);
+    }
+
+    /**
+     * Create a reconciliation incident for a provider charge that was
+     * created but cannot be attached to the authoritative intent.
+     *
+     * @param  array<string, mixed>  $charge
+     */
+    private function createOrphanIncident(int $intentId, int $attempt, array $charge, ChargeCommitResult $result): void
+    {
+        $fingerprint = md5($intentId.'|'.$attempt.'|'.($charge['reference'] ?? ''));
+
+        PaymentReconciliationIncident::query()->firstOrCreate(
+            [
+                'deduplication_key' => $fingerprint,
+            ],
+            [
+                'member_payment_intent_id' => $intentId,
+                'gateway_reference' => $charge['reference'] ?? null,
+                'incident_type' => 'orphaned_charge',
+                'status' => PaymentReconciliationIncident::STATUS_OPEN,
+                'provider_status' => $charge['status'] ?? null,
+                'provider_reference' => $charge['reference'] ?? null,
+                'webhook_payload' => ['charge' => $charge, 'reason' => $result->value],
+                'incident_at' => now(),
+            ],
+        );
+
+        Log::error('Orphaned provider charge detected, incident created', [
+            'intent_id' => $intentId,
+            'attempt' => $attempt,
+            'provider_reference' => $charge['reference'] ?? null,
+            'reason' => $result->value,
+        ]);
     }
 
     /**
@@ -319,6 +432,22 @@ class PaymentIntentChargeService
             'amount' => (float) $intent->amount,
             'checkout_url' => null,
             'poll_after_seconds' => 2,
+        ];
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: null, poll_after_seconds: int}
+     */
+    private function reconciliationRequiredResponse(MemberPaymentIntent $intent): array
+    {
+        return [
+            'provider' => (string) ($intent->gateway_provider ?? 'internal'),
+            'reference' => (string) ($intent->gateway_reference ?? ''),
+            'status' => 'RECONCILIATION_REQUIRED',
+            'channel' => $intent->channel,
+            'amount' => (float) $intent->amount,
+            'checkout_url' => null,
+            'poll_after_seconds' => 10,
         ];
     }
 }

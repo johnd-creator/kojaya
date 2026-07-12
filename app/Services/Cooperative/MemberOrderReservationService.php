@@ -56,6 +56,7 @@ class MemberOrderReservationService
                     unitPrice: $item->unitPrice,
                     reservationLocationId: (string) $location->id,
                     customization: $item->customization,
+                    productSnapshot: $item->productSnapshot,
                 );
             }
 

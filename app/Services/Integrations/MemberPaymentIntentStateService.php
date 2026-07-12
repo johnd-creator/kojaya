@@ -26,17 +26,25 @@ class MemberPaymentIntentStateService
      * gateway_status or settlement_status directly.
      *
      * @param  array<string, mixed>|null  $rawPayload
-     * @param  float|null  $providerAmount  The amount from the parsed signed provider event
+     * @param  int|null  $providerAmountMinor  Amount in integer minor units (no float conversion)
+     * @param  float|null  $providerAmount  Deprecated: use providerAmountMinor instead
      */
     public function applyGatewayEvent(
         string $gatewayReference,
         string $newStatus,
         ?array $rawPayload = null,
+        ?int $providerAmountMinor = null,
         ?float $providerAmount = null,
     ): ?MemberPaymentIntent {
         $newStatus = strtoupper($newStatus);
 
-        return DB::transaction(function () use ($gatewayReference, $newStatus, $rawPayload, $providerAmount): ?MemberPaymentIntent {
+        // Backward compat: if float amount provided but no minor, convert
+        // using bcmath to avoid float precision loss
+        if ($providerAmountMinor === null && $providerAmount !== null) {
+            $providerAmountMinor = (int) bcmul((string) $providerAmount, '100', 0);
+        }
+
+        return DB::transaction(function () use ($gatewayReference, $newStatus, $rawPayload, $providerAmountMinor): ?MemberPaymentIntent {
             $intent = MemberPaymentIntent::query()
                 ->where('gateway_reference', $gatewayReference)
                 ->lockForUpdate()
@@ -64,7 +72,7 @@ class MemberPaymentIntentStateService
             // PAID is a verified provider fact: always route through applyPaid
             // which handles reconciliation incidents for mismatched states.
             if ($targetStatus === PaymentGatewayStatus::Paid) {
-                return $this->applyPaid($intent, $payload, $currentStatus, $reservation, $providerAmount);
+                return $this->applyPaid($intent, $payload, $currentStatus, $reservation, $providerAmountMinor);
             }
 
             if (! $currentStatus->canTransitionTo($targetStatus) && $currentStatus !== $targetStatus) {
@@ -99,7 +107,7 @@ class MemberPaymentIntentStateService
         array $payload,
         PaymentGatewayStatus $currentGateway,
         PaymentReservationStatus $reservation,
-        ?float $providerAmount,
+        ?int $providerAmountMinor,
     ): MemberPaymentIntent {
         $settlement = $intent->settlementStatus();
 
@@ -107,15 +115,14 @@ class MemberPaymentIntentStateService
             return $intent;
         }
 
-        // Amount validation in integer minor units
-        if ($providerAmount !== null) {
+        // Amount validation in integer minor units (no float conversion)
+        if ($providerAmountMinor !== null) {
             $expectedMinor = (int) bcmul((string) $intent->amount, '100', 0);
-            $actualMinor = (int) round($providerAmount * 100);
 
-            if ($expectedMinor !== $actualMinor) {
+            if ($expectedMinor !== $providerAmountMinor) {
                 $this->createIncident($intent, $payload, PaymentReconciliationIncident::TYPE_AMOUNT_MISMATCH, [
                     'expected_amount_minor' => (string) $expectedMinor,
-                    'actual_amount_minor' => (string) $actualMinor,
+                    'actual_amount_minor' => (string) $providerAmountMinor,
                     'provider_status' => 'PAID',
                     'provider_reference' => $payload['order_id'] ?? $payload['reference'] ?? null,
                 ]);
@@ -123,7 +130,7 @@ class MemberPaymentIntentStateService
                 Log::error('PAID webhook amount mismatch, incident created', [
                     'intent_id' => $intent->id,
                     'expected' => $expectedMinor,
-                    'actual' => $actualMinor,
+                    'actual' => $providerAmountMinor,
                 ]);
 
                 return $intent;
@@ -336,18 +343,25 @@ class MemberPaymentIntentStateService
      */
     private function createIncident(MemberPaymentIntent $intent, array $payload, string $type, array $extra): void
     {
-        PaymentReconciliationIncident::query()->create([
-            'member_payment_intent_id' => $intent->id,
-            'gateway_reference' => $intent->gateway_reference,
-            'incident_type' => $type,
-            'status' => PaymentReconciliationIncident::STATUS_OPEN,
-            'provider_status' => $extra['provider_status'] ?? null,
-            'provider_reference' => $extra['provider_reference'] ?? null,
-            'expected_amount_minor' => $extra['expected_amount_minor'] ?? null,
-            'actual_amount_minor' => $extra['actual_amount_minor'] ?? null,
-            'webhook_payload' => $payload,
-            'incident_at' => now(),
-        ]);
+        $fingerprint = md5(
+            $intent->id.'|'.$type.'|'.($extra['provider_reference'] ?? $intent->gateway_reference ?? '').'|'.($extra['actual_amount_minor'] ?? '')
+        );
+
+        PaymentReconciliationIncident::query()->firstOrCreate(
+            ['deduplication_key' => $fingerprint],
+            [
+                'member_payment_intent_id' => $intent->id,
+                'gateway_reference' => $intent->gateway_reference,
+                'incident_type' => $type,
+                'status' => PaymentReconciliationIncident::STATUS_OPEN,
+                'provider_status' => $extra['provider_status'] ?? null,
+                'provider_reference' => $extra['provider_reference'] ?? null,
+                'expected_amount_minor' => $extra['expected_amount_minor'] ?? null,
+                'actual_amount_minor' => $extra['actual_amount_minor'] ?? null,
+                'webhook_payload' => $payload,
+                'incident_at' => now(),
+            ],
+        );
 
         $this->auditLogService->log(
             'reconciliation.incident_created',

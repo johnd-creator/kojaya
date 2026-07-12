@@ -362,7 +362,7 @@ class PaymentReservationStateMachineTest extends TestCase
         ])->save();
 
         $this->artisan('orders:recover-stale-charges', ['--minutes' => 5])
-            ->expectsOutputToContain('Reset 1')
+            ->expectsOutputToContain('1 recovered')
             ->assertExitCode(0);
 
         $this->assertSame('PENDING', $intent->refresh()->gateway_status);

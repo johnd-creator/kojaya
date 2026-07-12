@@ -224,7 +224,7 @@ class PaymentGatewayService
                 $reference,
                 $event->status,
                 $event->rawPayload,
-                $event->amount > 0 ? $event->amount : null,
+                $event->amountMinor,
             );
         }
 
@@ -300,6 +300,24 @@ class PaymentGatewayService
             'expires_at' => $expiresAt->toIso8601String(),
             'instructions' => [],
         ];
+    }
+
+    /**
+     * Reconcile a member payment intent charge by its provider order ID.
+     *
+     * For the internal provider, returns null (not found) — allowing safe
+     * retry of the same attempt. For the real provider, queries the provider
+     * status API.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string?: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    public function reconcileIntentCharge(string $providerOrderId): ?array
+    {
+        if (! $this->provider->isConfigured()) {
+            return null;
+        }
+
+        return $this->provider->reconcileIntentCharge($providerOrderId);
     }
 
     /**

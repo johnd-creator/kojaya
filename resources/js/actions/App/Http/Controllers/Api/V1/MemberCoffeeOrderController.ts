@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:19
 * @route '/api/v1/member/coffee/menu'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:19
 * @route '/api/v1/member/coffee/menu'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:19
 * @route '/api/v1/member/coffee/menu'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::index
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:21
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:19
 * @route '/api/v1/member/coffee/menu'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::store
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:45
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:43
 * @route '/api/v1/member/coffee/orders'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -60,7 +60,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::store
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:45
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:43
 * @route '/api/v1/member/coffee/orders'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -69,7 +69,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::store
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:45
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:43
 * @route '/api/v1/member/coffee/orders'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -79,7 +79,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 export const show = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 show.url = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -127,7 +127,7 @@ show.url = (args: { coffeeOrder: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 show.get = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -137,7 +137,7 @@ show.get = (args: { coffeeOrder: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:128
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 show.head = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

@@ -32,7 +32,7 @@ class MemberPaymentSettlementService
 
     public function settle(MemberPaymentIntent $intent): MemberPaymentIntent
     {
-        return DB::transaction(function () use ($intent): MemberPaymentIntent {
+        $intent = DB::transaction(function () use ($intent): MemberPaymentIntent {
             $intent = MemberPaymentIntent::query()
                 ->lockForUpdate()
                 ->with('member.user')
@@ -78,6 +78,8 @@ class MemberPaymentSettlementService
 
             return $intent->refresh();
         });
+
+        return $intent;
     }
 
     private function handleInvalidReservationForSettlement(MemberPaymentIntent $intent, PaymentReservationStatus $reservation): void
@@ -211,7 +213,7 @@ class MemberPaymentSettlementService
             ],
         );
 
-        $this->notificationDispatcher->coffeeOrderReceived($coffeeOrder, $intent->user);
+        DB::afterCommit(fn () => $this->notificationDispatcher->coffeeOrderReceived($coffeeOrder, $intent->user));
 
         return 'coffee_order:'.$coffeeOrder->id;
     }
@@ -256,7 +258,13 @@ class MemberPaymentSettlementService
             'items' => $transactionItems,
         ], $intent->user);
 
-        $this->notificationDispatcher->posSaleCompleted($transaction->load(['items.product', 'payments', 'member']), $intent->user);
+        $transactionId = $transaction->id;
+        DB::afterCommit(function () use ($transactionId): void {
+            $transaction = \App\Models\PosTransaction::query()
+                ->with(['items.product', 'payments', 'member'])
+                ->findOrFail($transactionId);
+            $this->notificationDispatcher->posSaleCompleted($transaction, request()?->user());
+        });
 
         return 'store_transaction:'.$transaction->id;
     }

@@ -175,7 +175,7 @@ class MemberOrderIntentService
             );
         }
 
-        if ($settlementStatus !== 'NOT_SETTLED' && $settlementStatus !== 'SETTLING') {
+        if ($settlementStatus !== 'NOT_SETTLED') {
             throw PaymentIntentConflictException::terminalState(
                 'Client reference sudah mencapai status settlement terminal. Gunakan client_reference baru.'
             );

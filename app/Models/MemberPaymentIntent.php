@@ -133,6 +133,10 @@ class MemberPaymentIntent extends Model
             if ($status !== null) {
                 return $status;
             }
+
+            throw new \DomainException(
+                "Invalid settlement_status value '{$this->settlement_status}' for intent {$this->id}."
+            );
         }
 
         return $this->settled_at !== null

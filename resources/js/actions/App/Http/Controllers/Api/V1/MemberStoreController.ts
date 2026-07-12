@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::catalog
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:20
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:18
 * @route '/api/v1/member/store/catalog'
 */
 export const catalog = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ catalog.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::catalog
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:20
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:18
 * @route '/api/v1/member/store/catalog'
 */
 catalog.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ catalog.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::catalog
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:20
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:18
 * @route '/api/v1/member/store/catalog'
 */
 catalog.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ catalog.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::catalog
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:20
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:18
 * @route '/api/v1/member/store/catalog'
 */
 catalog.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ catalog.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::store
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:58
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:56
 * @route '/api/v1/member/store/orders'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -60,7 +60,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::store
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:58
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:56
 * @route '/api/v1/member/store/orders'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -69,7 +69,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::store
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:58
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:56
 * @route '/api/v1/member/store/orders'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -79,7 +79,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 export const showIntent = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ showIntent.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 showIntent.url = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -127,7 +127,7 @@ showIntent.url = (args: { intent: string | number | { id: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 showIntent.get = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -137,7 +137,7 @@ showIntent.get = (args: { intent: string | number | { id: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:155
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 showIntent.head = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

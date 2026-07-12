@@ -32,20 +32,17 @@ class PaymentConcurrencyTest extends TestCase
     /** @var array<string, string> */
     private array $dbConfig = [];
 
-    /** @var array<string, mixed> */
-    private array $sharedState = [];
-
     public function refreshDatabase(): void {}
 
     protected function setUp(): void
     {
-        $originalConnection = getenv('DB_CONNECTION') ?: 'sqlite';
+        $connection = getenv('DB_CONNECTION') ?: 'sqlite';
 
-        if ($originalConnection !== 'pgsql') {
-            parent::setUp();
-            $this->markTestSkipped('PaymentConcurrencyTest requires PostgreSQL (DB_CONNECTION=pgsql).');
-
-            return;
+        if ($connection !== 'pgsql') {
+            self::fail(
+                'PaymentConcurrencyTest REQUIRES PostgreSQL. Got DB_CONNECTION='.$connection
+                .'. Use: php artisan test --configuration phpunit.pgsql.xml tests/Feature/PaymentConcurrencyTest.php'
+            );
         }
 
         $this->dbConfig = [
@@ -118,7 +115,7 @@ class PaymentConcurrencyTest extends TestCase
         $resultDir = $this->workingDirectory.'/results';
         mkdir($resultDir);
 
-        $workerCount = 8;
+        $workerCount = 32;
         $processes = [];
 
         for ($i = 0; $i < $workerCount; $i++) {
@@ -130,6 +127,10 @@ class PaymentConcurrencyTest extends TestCase
                 $startFile,
                 $resultDir,
                 "c1-{$i}",
+                [
+                    'member_id' => $member->id,
+                    'product_id' => $product->id,
+                ],
             );
         }
 
@@ -141,26 +142,30 @@ class PaymentConcurrencyTest extends TestCase
             $results[] = $this->finishWorker($proc, $resultDir, "c1-{$i}");
         }
 
-        $successes = array_filter($results, fn (array $r): bool => $r['ok']);
-        $conflicts = array_filter($results, fn (array $r): bool => ! $r['ok']);
+        // All 32 workers must produce a result
+        $this->assertCount($workerCount, $results, 'C1: all 32 workers produced a result');
 
-        // All workers should return a result (either created or reused)
+        $successes = array_filter($results, fn (array $r): bool => $r['ok'] ?? false);
+
+        // All successful responses must point to the same intent
+        $intentIds = array_column($successes, 'intent_id');
+        $this->assertCount(1, array_unique($intentIds), 'C1: exactly one unique intent ID across all workers');
+
         // Exactly one intent must exist
         $this->assertSame(1, MemberPaymentIntent::count(), 'C1: exactly one intent');
-        $this->assertSame(1, array_unique(array_column($successes, 'intent_id')), 'C1: one unique intent ID');
 
-        // Reserved stock must be exactly 2
+        // Exactly one reservation for the product
         $this->assertDatabaseHas('pos_inventory_stocks', [
             'pos_product_id' => $product->id,
             'reserved' => 2,
         ], 'pgsql');
 
-        // At most one reservation.created audit
+        // Exactly one reservation.created audit (not <= 1, must be === 1)
         $createdAudits = AuditLog::query()
             ->where('action', 'reservation.created')
             ->where('subject_type', 'member_payment_intent')
             ->count();
-        $this->assertLessThanOrEqual(1, $createdAudits, 'C1: at most one reservation.created audit');
+        $this->assertSame(1, $createdAudits, 'C1: exactly one reservation.created audit');
     }
 
     // ── C2: Parallel same-key different-payload → winner + 409 ────────
@@ -201,10 +206,12 @@ class PaymentConcurrencyTest extends TestCase
             $this->startWorker(
                 $this->writeWorkerScript('c2', ['payload_file' => $this->workingDirectory.'/payload-a.json']),
                 $startFile, $resultDir, 'c2-a',
+                ['payload_file' => $this->workingDirectory.'/payload-a.json'],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c2', ['payload_file' => $this->workingDirectory.'/payload-b.json']),
                 $startFile, $resultDir, 'c2-b',
+                ['payload_file' => $this->workingDirectory.'/payload-b.json'],
             ),
         ];
 
@@ -280,6 +287,7 @@ class PaymentConcurrencyTest extends TestCase
                     'product_id' => $product->id,
                 ]),
                 $startFile, $resultDir, 'c3-a',
+                ['member_id' => $member->id, 'product_id' => $product->id],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c3-resolve', [
@@ -287,6 +295,7 @@ class PaymentConcurrencyTest extends TestCase
                     'product_id' => $product->id,
                 ]),
                 $startFile, $resultDir, 'c3-b',
+                ['member_id' => $member->id, 'product_id' => $product->id],
             ),
         ];
 
@@ -361,10 +370,12 @@ class PaymentConcurrencyTest extends TestCase
             $this->startWorker(
                 $this->writeWorkerScript('c4-paid', ['gateway_reference' => $gatewayRef]),
                 $startFile, $resultDir, 'c4-paid',
+                ['gateway_reference' => $gatewayRef],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c4-expiry', ['intent_id' => $intent->id]),
                 $startFile, $resultDir, 'c4-expiry',
+                ['intent_id' => $intent->id],
             ),
         ];
 
@@ -375,6 +386,9 @@ class PaymentConcurrencyTest extends TestCase
             $this->finishWorker($processes[0], $resultDir, 'c4-paid'),
             $this->finishWorker($processes[1], $resultDir, 'c4-expiry'),
         ];
+
+        // Both workers must have executed
+        $this->assertCount(2, $results, 'C4: both workers produced a result');
 
         $intent->refresh();
 
@@ -389,6 +403,13 @@ class PaymentConcurrencyTest extends TestCase
             && $intent->reservationStatus()->value === 'RELEASED',
             'C4: no illegal PAID+RELEASED combination'
         );
+
+        // If expiry won and PAID came after, a reconciliation incident must exist
+        if ($intent->gatewayStatus()->value === 'EXPIRED') {
+            $this->assertDatabaseHas('payment_reconciliation_incidents', [
+                'member_payment_intent_id' => $intent->id,
+            ], 'pgsql');
+        }
 
         // State combination must be valid
         $this->assertTrue($intent->isStateCombinationValid(), 'C4: state combination valid');
@@ -447,22 +468,29 @@ class PaymentConcurrencyTest extends TestCase
             $this->startWorker(
                 $this->writeWorkerScript('c5-paid', ['gateway_reference' => $gatewayRef]),
                 $startFile, $resultDir, 'c5-a',
+                ['gateway_reference' => $gatewayRef],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c5-paid', ['gateway_reference' => $gatewayRef]),
                 $startFile, $resultDir, 'c5-b',
+                ['gateway_reference' => $gatewayRef],
             ),
         ];
 
         usleep(300000);
         touch($startFile);
 
-        $this->finishWorker($processes[0], $resultDir, 'c5-a');
-        $this->finishWorker($processes[1], $resultDir, 'c5-b');
+        $results = [
+            $this->finishWorker($processes[0], $resultDir, 'c5-a'),
+            $this->finishWorker($processes[1], $resultDir, 'c5-b'),
+        ];
+
+        // Both workers must have executed and returned a result
+        $this->assertCount(2, $results, 'C5: both workers produced a result');
 
         $intent->refresh();
 
-        // Must have exactly one transaction
+        // Must have exactly one POS transaction (settlement processed once)
         $this->assertSame(1, PosTransaction::count(), 'C5: exactly one transaction');
         $this->assertSame('PAID', $intent->gatewayStatus()->value, 'C5: intent is PAID');
         $this->assertSame(
@@ -470,6 +498,13 @@ class PaymentConcurrencyTest extends TestCase
             $intent->reservationStatus()->value,
             'C5: reservation consumed'
         );
+
+        // Exactly one consume audit (not multiple from duplicate webhooks)
+        $consumeAudits = AuditLog::query()
+            ->where('action', 'reservation.consumed')
+            ->where('subject_type', 'member_payment_intent')
+            ->count();
+        $this->assertSame(1, $consumeAudits, 'C5: exactly one reservation consumed');
     }
 
     // ── C6: Parallel charge calls → one provider reference ────────────
@@ -523,10 +558,12 @@ class PaymentConcurrencyTest extends TestCase
             $this->startWorker(
                 $this->writeWorkerScript('c6-charge', ['intent_id' => $intent->id]),
                 $startFile, $resultDir, 'c6-a',
+                ['intent_id' => $intent->id],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c6-charge', ['intent_id' => $intent->id]),
                 $startFile, $resultDir, 'c6-b',
+                ['intent_id' => $intent->id],
             ),
         ];
 
@@ -608,10 +645,12 @@ class PaymentConcurrencyTest extends TestCase
             $this->startWorker(
                 $this->writeWorkerScript('c7-order', ['payload_file' => $this->workingDirectory.'/order1.json']),
                 $startFile, $resultDir, 'c7-a',
+                ['payload_file' => $this->workingDirectory.'/order1.json'],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c7-order', ['payload_file' => $this->workingDirectory.'/order2.json']),
                 $startFile, $resultDir, 'c7-b',
+                ['payload_file' => $this->workingDirectory.'/order2.json'],
             ),
         ];
 
@@ -688,11 +727,13 @@ class PaymentConcurrencyTest extends TestCase
             ],
         ]);
 
-        // Create a stale CHARGE_CREATING attempt record
+        // Create a stale CHARGE_CREATING attempt record with stable provider order ID
+        $providerOrderId = "KOJ-MPI-{$intent->id}-1";
         MemberPaymentChargeAttempt::query()->create([
             'member_payment_intent_id' => $intent->id,
             'attempt' => 1,
             'idempotency_key' => "member-intent:{$intent->id}:1",
+            'provider_order_id' => $providerOrderId,
             'state' => MemberPaymentChargeAttempt::STATE_PREPARING,
             'started_at' => now()->subMinutes(10),
         ]);
@@ -706,11 +747,13 @@ class PaymentConcurrencyTest extends TestCase
             $this->startWorker(
                 $this->writeWorkerScript('c8-recovery', []),
                 $startFile, $resultDir, 'c8-recovery',
+                [],
             ),
             // Process B: call ensureCharge
             $this->startWorker(
                 $this->writeWorkerScript('c6-charge', ['intent_id' => $intent->id]),
                 $startFile, $resultDir, 'c8-charge',
+                ['intent_id' => $intent->id],
             ),
         ];
 
@@ -724,7 +767,9 @@ class PaymentConcurrencyTest extends TestCase
 
         $intent->refresh();
 
-        // Intent must end up in a valid state with exactly one charge reference
+        // With the new recovery behavior, stale CHARGE_CREATING with an UNKNOWN
+        // attempt should NOT be reset to PENDING. The intent stays blocked
+        // until reconciliation completes.
         $gatewayStatus = $intent->gatewayStatus()->value;
         $this->assertContains($gatewayStatus, ['PENDING', 'CHARGE_CREATING'], 'C8: valid gateway state');
 
@@ -737,7 +782,13 @@ class PaymentConcurrencyTest extends TestCase
         $providerRefs = $confirmedAttempts->pluck('provider_reference')->filter()->unique();
         $this->assertLessThanOrEqual(1, $providerRefs->count(), 'C8: at most one unique provider reference');
 
-        // Stale attempt 1 must not be CONFIRMED (either UNKNOWN or FAILED)
+        // No second attempt should be created while first is UNKNOWN
+        $attemptCount = MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intent->id)
+            ->count();
+        $this->assertLessThanOrEqual(1, $attemptCount, 'C8: no second attempt created before reconciliation');
+
+        // Stale attempt 1 must not be CONFIRMED (either UNKNOWN or PREPARING after safe retry)
         $attempt1 = MemberPaymentChargeAttempt::query()
             ->where('member_payment_intent_id', $intent->id)
             ->where('attempt', 1)
@@ -1002,18 +1053,29 @@ PHP;
     {
         return <<<'PHP'
 use App\Services\Integrations\MemberPaymentIntentStateService;
+use App\Services\Integrations\MemberPaymentSettlementService;
+use App\Models\MemberPaymentIntent;
 
 $stateService = app(MemberPaymentIntentStateService::class);
 
 try {
-    $stateService->applyGatewayEvent(
+    $intent = $stateService->applyGatewayEvent(
         $params['gateway_reference'],
         'PAID',
         ['status' => 'PAID', 'reference' => $params['gateway_reference']],
         null,
     );
 
-    file_put_contents($resultFile, json_encode(['ok' => true]));
+    // Full webhook→settlement flow: if PAID and not yet settled, settle
+    if ($intent && $intent->gateway_status === 'PAID' && ! $intent->settled_at) {
+        $settlementService = app(MemberPaymentSettlementService::class);
+        $intent = $settlementService->settle($intent);
+    }
+
+    file_put_contents($resultFile, json_encode([
+        'ok' => true,
+        'settled' => $intent && $intent->settled_at !== null,
+    ]));
     exit(0);
 } catch (Throwable $throwable) {
     file_put_contents($resultFile, json_encode([
@@ -1128,9 +1190,10 @@ PHP;
     // ── Process management ───────────────────────────────────────────────
 
     /**
+     * @param  array<string, mixed>  $params
      * @return array{process: mixed, pipes: array<int, resource>}
      */
-    private function startWorker(string $workerFile, string $startFile, string $resultDir, string $label): array
+    private function startWorker(string $workerFile, string $startFile, string $resultDir, string $label, array $params = []): array
     {
         $resultFile = $resultDir.'/'.$label.'.json';
         $pipes = [];
@@ -1141,7 +1204,7 @@ PHP;
                 base_path(),
                 $startFile,
                 $resultFile,
-                json_encode($this->sharedState, JSON_THROW_ON_ERROR),
+                json_encode($params, JSON_THROW_ON_ERROR),
             ],
             [
                 1 => ['pipe', 'w'],
@@ -1164,8 +1227,31 @@ PHP;
      */
     private function finishWorker(array $worker, string $resultDir, string $label): array
     {
+        $deadline = 30;
+        $stderr = '';
+
+        // Wait for process to finish with a bounded deadline
+        $start = time();
+        while (is_resource($worker['process'] ?? null)) {
+            $status = proc_get_status($worker['process']);
+            if ($status !== false && ! $status['running']) {
+                break;
+            }
+
+            if (time() - $start > $deadline) {
+                // Terminate hung worker
+                if (is_resource($worker['process'] ?? null)) {
+                    proc_terminate($worker['process'], 15);
+                }
+
+                self::fail("Worker {$label} exceeded {$deadline}s deadline.");
+            }
+
+            usleep(100000);
+        }
+
         if (is_resource($worker['pipes'][2] ?? null)) {
-            stream_get_contents($worker['pipes'][2]);
+            $stderr = (string) stream_get_contents($worker['pipes'][2]);
             fclose($worker['pipes'][2]);
         }
 
@@ -1173,15 +1259,27 @@ PHP;
             fclose($worker['pipes'][1]);
         }
 
+        $exitCode = 0;
         if (is_resource($worker['process'] ?? null)) {
-            proc_close($worker['process']);
+            $exitCode = proc_close($worker['process']);
         }
 
         $contents = file_exists($worker['resultFile'])
             ? file_get_contents($worker['resultFile'])
             : '{}';
 
-        return json_decode($contents ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        $result = json_decode($contents ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+
+        if ($exitCode !== 0 && ! isset($result['ok'])) {
+            $result['ok'] = false;
+            $result['message'] = "Worker exited with code {$exitCode}. Stderr: ".substr($stderr, 0, 500);
+        }
+
+        if (! file_exists($worker['resultFile'])) {
+            self::fail("Worker {$label} did not produce a result file. Stderr: ".substr($stderr, 0, 500));
+        }
+
+        return $result;
     }
 
     private function cleanDir(string $dir): void

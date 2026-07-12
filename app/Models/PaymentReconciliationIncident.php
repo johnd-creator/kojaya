@@ -22,6 +22,7 @@ class PaymentReconciliationIncident extends Model
     protected $fillable = [
         'member_payment_intent_id',
         'gateway_reference',
+        'deduplication_key',
         'incident_type',
         'status',
         'provider_status',

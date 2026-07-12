@@ -13,6 +13,7 @@ class WebhookEvent
         public readonly string $paymentMethod,
         public readonly string $channel,
         public readonly float $amount,
+        public readonly ?int $amountMinor = null,
         public readonly ?string $reconciliationReference = null,
         public readonly ?string $fraudStatus = null,
         public readonly array $rawPayload = [],

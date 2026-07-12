@@ -20,6 +20,7 @@ final class CanonicalOrderItem
         public readonly string $unitPrice,
         public readonly ?string $reservationLocationId = null,
         public readonly ?array $customization = null,
+        public readonly ?array $productSnapshot = null,
     ) {}
 
     public function lineTotal(): string
@@ -44,9 +45,11 @@ final class CanonicalOrderItem
         }
 
         if ($this->customization !== null) {
-            foreach ($this->customization as $key => $value) {
-                $result[$key] = $value;
-            }
+            $result['customization'] = $this->customization;
+        }
+
+        if ($this->productSnapshot !== null) {
+            $result['product'] = $this->productSnapshot;
         }
 
         return $result;
@@ -58,7 +61,62 @@ final class CanonicalOrderItem
     }
 
     /**
-     * Canonicalize raw items: aggregate duplicates, sort by pos_product_id.
+     * Stable fingerprint for a customization set. Keys are sorted so that
+     * identical customizations always produce the same key regardless of
+     * insertion order.
+     *
+     * @param  array<string, mixed>|null  $customization
+     */
+    public static function customizationKey(?array $customization): string
+    {
+        if ($customization === null || $customization === []) {
+            return '';
+        }
+
+        $normalized = [];
+        $keys = array_keys($customization);
+        sort($keys);
+
+        foreach ($keys as $key) {
+            $normalized[$key] = self::normalizeCustomizationValue($customization[$key]);
+        }
+
+        return json_encode($normalized, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '';
+    }
+
+    /**
+     * @param  mixed  $value
+     */
+    private static function normalizeCustomizationValue($value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        return strtolower(trim((string) $value));
+    }
+
+    /**
+     * Aggregate key combining product ID, customization, and unit-price
+     * snapshot. Two lines are only merged when all three match.
+     */
+    public function aggregateKey(): string
+    {
+        return sprintf(
+            '%d:%s:%s',
+            $this->posProductId,
+            self::customizationKey($this->customization),
+            $this->unitPrice,
+        );
+    }
+
+    /**
+     * Canonicalize raw items: aggregate duplicates by product + customization
+     * + unit-price, sort by pos_product_id.
+     *
+     * Two lines are only merged when product, customization, and unit-price
+     * are all identical. Different sugar_level or cup_size produce separate
+     * canonical order lines.
      *
      * @param  array<int, array<string, mixed>>  $rawItems
      * @return list<self>
@@ -73,27 +131,35 @@ final class CanonicalOrderItem
             }
 
             $productId = (int) $item['pos_product_id'];
+            $unitPrice = self::normalizeDecimal($item['unit_price'] ?? $item['line_total'] ?? '0');
+            $customization = null;
+            if (isset($item['sugar_level']) || isset($item['ice_level']) || isset($item['cup_size'])) {
+                $customization = array_filter([
+                    'sugar_level' => $item['sugar_level'] ?? null,
+                    'ice_level' => $item['ice_level'] ?? null,
+                    'cup_size' => $item['cup_size'] ?? null,
+                ], fn ($v): bool => $v !== null);
+            }
 
-            if (! isset($aggregated[$productId])) {
-                $unitPrice = self::normalizeDecimal($item['unit_price'] ?? $item['line_total'] ?? '0');
-                $customization = null;
-                if (isset($item['sugar_level']) || isset($item['ice_level']) || isset($item['cup_size'])) {
-                    $customization = array_filter([
-                        'sugar_level' => $item['sugar_level'] ?? null,
-                        'ice_level' => $item['ice_level'] ?? null,
-                        'cup_size' => $item['cup_size'] ?? null,
-                    ], fn ($v): bool => $v !== null);
-                }
+            $key = sprintf('%d:%s:%s', $productId, self::customizationKey($customization), $unitPrice);
 
-                $aggregated[$productId] = [
+            // Capture immutable product snapshot from first occurrence
+            $productSnapshot = null;
+            if (isset($item['product']) && is_array($item['product'])) {
+                $productSnapshot = self::extractProductSnapshot($item['product']);
+            }
+
+            if (! isset($aggregated[$key])) {
+                $aggregated[$key] = [
                     'posProductId' => $productId,
                     'quantity' => 0,
                     'unitPrice' => $unitPrice,
                     'customization' => $customization,
+                    'productSnapshot' => $productSnapshot,
                 ];
             }
 
-            $aggregated[$productId]['quantity'] += (int) ($item['quantity'] ?? 1);
+            $aggregated[$key]['quantity'] += (int) ($item['quantity'] ?? 1);
         }
 
         $list = array_map(
@@ -102,11 +168,19 @@ final class CanonicalOrderItem
                 quantity: $entry['quantity'],
                 unitPrice: $entry['unitPrice'],
                 customization: $entry['customization'],
+                productSnapshot: $entry['productSnapshot'] ?? null,
             ),
             array_values($aggregated)
         );
 
-        usort($list, static fn (self $a, self $b): int => $a->posProductId <=> $b->posProductId);
+        usort($list, static function (self $a, self $b): int {
+            $cmp = $a->posProductId <=> $b->posProductId;
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return self::customizationKey($a->customization) <=> self::customizationKey($b->customization);
+        });
 
         return $list;
     }
@@ -132,7 +206,6 @@ final class CanonicalOrderItem
         if (is_int($value)) {
             return bcadd((string) $value, '0.00', 2);
         }
-
         if (is_float($value)) {
             return bcadd((string) round($value, 2), '0', 2);
         }
@@ -143,5 +216,24 @@ final class CanonicalOrderItem
         }
 
         return bcadd($string, '0.00', 2);
+    }
+
+    /**
+     * Extract an immutable product snapshot for API response/metadata.
+     *
+     * @param  array<string, mixed>  $product
+     * @return array<string, mixed>
+     */
+    private static function extractProductSnapshot(array $product): array
+    {
+        $snapshot = [];
+
+        foreach (['id', 'name', 'sku', 'brand', 'variant', 'image_url', 'unit', 'category', 'price', 'description'] as $field) {
+            if (isset($product[$field])) {
+                $snapshot[$field] = $product[$field];
+            }
+        }
+
+        return $snapshot;
     }
 }

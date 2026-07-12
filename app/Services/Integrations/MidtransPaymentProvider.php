@@ -250,12 +250,18 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             default => strtoupper($paymentType),
         };
 
+        $grossAmount = $payload['gross_amount'] ?? 0;
+        $amountMinor = is_numeric($grossAmount)
+            ? (int) bcmul((string) $grossAmount, '100', 0)
+            : null;
+
         return new WebhookEvent(
             gatewayReference: (string) ($payload['order_id'] ?? ''),
             status: $mappedStatus,
             paymentMethod: $paymentType,
             channel: $channel,
             amount: (float) ($payload['gross_amount'] ?? 0),
+            amountMinor: $amountMinor,
             reconciliationReference: null,
             fraudStatus: $fraudStatus,
             rawPayload: $payload,
@@ -507,5 +513,76 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         }
 
         return null;
+    }
+
+    /**
+     * Reconcile a member payment intent charge by its provider order ID.
+     *
+     * For the internal provider (not configured), returns null to indicate
+     * the charge was not found authoritatively, allowing safe retry.
+     * For the real Midtrans provider, queries GET /v2/{order_id}/status.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string?: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    public function reconcileIntentCharge(string $providerOrderId): ?array
+    {
+        if (! $this->isConfigured()) {
+            return null;
+        }
+
+        $response = Http::withBasicAuth($this->serverKey(), '')
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->get($this->baseUrl.'/v2/'.$providerOrderId.'/status');
+
+        $body = $response->json() ?: [];
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            throw new \RuntimeException(
+                'Provider reconciliation unavailable for order '.$providerOrderId.': '.$response->status()
+            );
+        }
+
+        $transactionStatus = strtolower((string) ($body['transaction_status'] ?? ''));
+
+        if ($transactionStatus === '') {
+            return null;
+        }
+
+        $fraudStatus = strtoupper((string) ($body['fraud_status'] ?? 'accept'));
+        if ($fraudStatus === 'CHALLENGE') {
+            $mappedStatus = 'PENDING';
+        } elseif (in_array(strtoupper($transactionStatus), ['CAPTURE', 'SETTLEMENT'], true)) {
+            $mappedStatus = 'PAID';
+        } elseif (strtoupper($transactionStatus) === 'EXPIRE') {
+            $mappedStatus = 'EXPIRED';
+        } elseif (strtoupper($transactionStatus) === 'CANCEL') {
+            $mappedStatus = 'CANCELLED';
+        } elseif (in_array(strtoupper($transactionStatus), ['DENY', 'FAILURE'], true)) {
+            $mappedStatus = 'FAILED';
+        } else {
+            $mappedStatus = 'PENDING';
+        }
+
+        $qrString = $body['qr_string'] ?? null;
+        $checkoutUrl = null;
+
+        $actions = $body['actions'] ?? [];
+        if (is_array($actions)) {
+            $checkoutUrl = collect($actions)->firstWhere('name', 'deeplink-redirect')['url'] ?? null;
+        }
+
+        return [
+            'provider' => 'midtrans',
+            'reference' => $providerOrderId,
+            'status' => $mappedStatus,
+            'channel' => (string) ($body['payment_type'] ?? 'QRIS'),
+            'amount' => (float) ($body['gross_amount'] ?? 0),
+            'checkout_url' => $checkoutUrl,
+            'qr_string' => $qrString,
+        ];
     }
 }

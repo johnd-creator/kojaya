@@ -32,4 +32,15 @@ interface PaymentGatewayProvider
     public function acknowledgeResponse(): mixed;
 
     public function isConfigured(): bool;
+
+    /**
+     * Reconcile a charge by its provider order ID / reference.
+     *
+     * Returns the charge data if the provider confirms the charge exists,
+     * null if the provider authoritatively says it does not exist,
+     * or throws on ambiguous/unavailable results.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string?: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    public function reconcileIntentCharge(string $providerOrderId): ?array;
 }

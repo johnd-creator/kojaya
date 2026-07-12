@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\PaymentIntentConflictException;
 use App\Http\Middleware\CorrelationIdMiddleware;
 use App\Http\Middleware\EnsureIdempotentWrite;
 use App\Http\Middleware\EnsureIsMember;
@@ -64,6 +65,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (PaymentIntentConflictException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponse::error($exception->getMessage(), 409);
+        });
+
         $exceptions->render(function (ValidationException $exception, Request $request) {
             if (! $request->is('api/*')) {
                 return null;

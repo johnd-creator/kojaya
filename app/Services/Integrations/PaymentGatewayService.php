@@ -6,7 +6,6 @@ use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
-use App\Services\Cooperative\MemberOrderReservationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -15,7 +14,7 @@ class PaymentGatewayService
 {
     public function __construct(
         private readonly PaymentGatewayProvider $provider,
-        private readonly MemberOrderReservationService $reservationService,
+        private readonly MemberPaymentIntentStateService $stateService,
     ) {
         //
     }
@@ -105,11 +104,7 @@ class PaymentGatewayService
             return $existingCharge;
         }
 
-        if (! $this->provider->isConfigured()) {
-            return $this->createIntentChargeInternal($intent);
-        }
-
-        $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+        $charge = $this->buildIntentCharge($intent);
 
         $intent->forceFill([
             'gateway_provider' => $charge['provider'],
@@ -119,6 +114,20 @@ class PaymentGatewayService
         ])->save();
 
         return $charge;
+    }
+
+    /**
+     * Build charge data for the intent without persisting to the DB.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     */
+    public function buildIntentCharge(MemberPaymentIntent $intent): array
+    {
+        if (! $this->provider->isConfigured()) {
+            return $this->createIntentChargeInternal($intent);
+        }
+
+        return $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
     }
 
     /**
@@ -198,113 +207,31 @@ class PaymentGatewayService
     public function applyWebhookToMemberIntent(array $payload, array $headers = []): ?MemberPaymentIntent
     {
         if ($this->provider->isConfigured()) {
-            return $this->applyProviderWebhookToMemberIntent($payload, $headers);
+            if (! $this->provider->verifyWebhook($payload, $headers)) {
+                return null;
+            }
+
+            $event = $this->provider->parseWebhook($payload);
+            $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
+                ? $event->gatewayReference
+                : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
+
+            if ($reference === '') {
+                return null;
+            }
+
+            return $this->stateService->applyGatewayEvent($reference, $event->status, $event->rawPayload);
         }
 
-        return $this->applyInternalWebhookToMemberIntent($payload);
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function applyInternalWebhookToMemberIntent(array $payload): ?MemberPaymentIntent
-    {
         $reference = (string) ($payload['reference'] ?? $payload['gateway_reference'] ?? '');
 
         if ($reference === '') {
             return null;
         }
 
-        $intent = MemberPaymentIntent::query()
-            ->where('gateway_reference', $reference)
-            ->first();
+        $status = strtoupper((string) ($payload['status'] ?? ''));
 
-        if (! $intent) {
-            return null;
-        }
-
-        $newStatus = strtoupper((string) ($payload['status'] ?? ''));
-
-        if (! MidtransPaymentProvider::isTransitionAllowed($intent->gateway_status, $newStatus)) {
-            Log::warning('Payment gateway webhook rejected for member intent: invalid status transition', [
-                'payment_intent_id' => $intent->id,
-                'gateway_reference' => $reference,
-                'current_status' => $intent->gateway_status,
-                'new_status' => $newStatus,
-            ]);
-
-            return $intent;
-        }
-
-        $intent->forceFill([
-            'gateway_status' => $newStatus,
-            'gateway_payload' => $payload,
-        ])->save();
-
-        $this->releaseOrderReservationWhenTerminal($intent);
-
-        return $intent;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     * @param  array<string, string|array<int, string>>  $headers
-     */
-    private function applyProviderWebhookToMemberIntent(array $payload, array $headers): ?MemberPaymentIntent
-    {
-        if (! $this->provider->verifyWebhook($payload, $headers)) {
-            return null;
-        }
-
-        $event = $this->provider->parseWebhook($payload);
-        $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
-            ? $event->gatewayReference
-            : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
-
-        if ($reference === '') {
-            return null;
-        }
-
-        $intent = MemberPaymentIntent::query()
-            ->where('gateway_reference', $reference)
-            ->first();
-
-        if (! $intent) {
-            return null;
-        }
-
-        if (! MidtransPaymentProvider::isTransitionAllowed($intent->gateway_status, $event->status)) {
-            Log::warning('Payment gateway webhook rejected for member intent: invalid status transition', [
-                'payment_intent_id' => $intent->id,
-                'gateway_reference' => $reference,
-                'current_status' => $intent->gateway_status,
-                'new_status' => $event->status,
-            ]);
-
-            return $intent;
-        }
-
-        $intent->forceFill([
-            'gateway_status' => $event->status,
-            'gateway_payload' => $event->rawPayload,
-        ])->save();
-
-        $this->releaseOrderReservationWhenTerminal($intent);
-
-        return $intent;
-    }
-
-    private function releaseOrderReservationWhenTerminal(MemberPaymentIntent $intent): void
-    {
-        if (! in_array($intent->payable_type, [MemberPaymentIntent::PAYABLE_COFFEE_ORDER, MemberPaymentIntent::PAYABLE_STORE_ORDER], true)) {
-            return;
-        }
-
-        if (! in_array(strtoupper($intent->gateway_status), ['CANCELLED', 'EXPIRED', 'FAILED', 'DENY'], true)) {
-            return;
-        }
-
-        $this->reservationService->release($intent);
+        return $this->stateService->applyGatewayEvent($reference, $status, $payload);
     }
 
     /**
@@ -356,24 +283,6 @@ class PaymentGatewayService
     {
         $reference = 'MPI-'.Str::upper(Str::random(12));
         $expiresAt = $intent->expires_at ?? now()->addMinutes(30);
-
-        $intent->forceFill([
-            'gateway_provider' => 'internal',
-            'gateway_reference' => $reference,
-            'gateway_status' => 'PENDING',
-            'gateway_payload' => [
-                'provider' => 'internal',
-                'reference' => $reference,
-                'status' => 'PENDING',
-                'channel' => $intent->channel,
-                'amount' => (float) $intent->amount,
-                'checkout_url' => url("/api/payments/{$reference}/checkout"),
-                'qr_string' => null,
-                'expires_at' => $expiresAt->toIso8601String(),
-                'instructions' => [],
-            ],
-            'expires_at' => $expiresAt,
-        ])->save();
 
         return [
             'provider' => 'internal',

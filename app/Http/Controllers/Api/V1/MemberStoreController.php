@@ -7,13 +7,11 @@ use App\Http\Requests\Api\StoreMemberStoreOrderRequest;
 use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
 use App\Services\AuditLogService;
-use App\Services\Cooperative\MemberOrderReservationService;
-use App\Services\Integrations\PaymentGatewayService;
+use App\Services\Cooperative\MemberOrderIntentService;
+use App\Services\Integrations\PaymentIntentChargeService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class MemberStoreController extends Controller
 {
@@ -57,8 +55,8 @@ class MemberStoreController extends Controller
 
     public function store(
         StoreMemberStoreOrderRequest $request,
-        PaymentGatewayService $gateway,
-        MemberOrderReservationService $reservationService,
+        PaymentIntentChargeService $chargeService,
+        MemberOrderIntentService $intentService,
         AuditLogService $audit,
     ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
@@ -74,81 +72,36 @@ class MemberStoreController extends Controller
         $fulfillmentMethod = (string) ($request->validated('fulfillment_method') ?? 'PICKUP');
         $pickupLocation = $request->validated('pickup_location');
 
-        $existing = MemberPaymentIntent::query()
-            ->where('cooperative_member_id', $member->id)
-            ->where('payable_type', MemberPaymentIntent::PAYABLE_STORE_ORDER)
-            ->whereNull('settled_at')
-            ->where('client_reference', $clientReference)
-            ->latest('id')
-            ->first();
+        $resolution = $intentService->resolveOrCreate(
+            member: $member,
+            payableType: MemberPaymentIntent::PAYABLE_STORE_ORDER,
+            clientReference: $clientReference,
+            canonicalRequest: [
+                'user_id' => $request->user()?->id,
+                'amount' => $subtotal,
+                'channel' => $channel,
+                'description' => 'Belanja Toko Koperasi',
+                'fulfillment_method' => $fulfillmentMethod,
+                'pickup_location' => $pickupLocation,
+                'notes' => $request->validated('notes'),
+                'items' => $items,
+                'client_reference' => $clientReference,
+            ],
+            items: $items,
+        );
 
-        if ($existing) {
-            if ($existing->expires_at?->isPast() === true || strtoupper((string) $existing->gateway_status) !== 'PENDING') {
-                abort(409, 'Client reference sudah kedaluwarsa atau telah mencapai status terminal. Gunakan client_reference baru.');
-            }
+        $intent = $resolution->intent->refresh();
 
-            if (abs((float) $existing->amount - $subtotal) > 0.005 || (string) $existing->channel !== $channel) {
-                abort(409, 'Client reference sudah dipakai untuk nominal atau channel pembayaran berbeda. Gunakan client_reference baru.');
-            }
-
-            $meta = $existing->metadata ?? [];
-            $charge = $gateway->createIntentCharge($existing->refresh());
-
-            return response()->json([
-                'data' => $this->formatPendingOrder(
-                    $existing->refresh(),
-                    $meta['items'] ?? [],
-                    $charge,
-                    (string) ($meta['fulfillment_method'] ?? 'PICKUP'),
-                    $meta['pickup_location'] ?? null,
-                ),
-            ], 201);
+        if ($resolution->wasCreated()) {
+            $audit->log('reservation.created', 'member_payment_intent', $intent, [
+                'reason' => 'Store order stock reservation created.',
+            ]);
         }
 
-        try {
-            $intent = DB::transaction(function () use ($request, $member, $subtotal, $channel, $clientReference, $fulfillmentMethod, $pickupLocation, $items, $reservationService): MemberPaymentIntent {
-                $reservedItems = $reservationService->reserve($items);
-
-                return MemberPaymentIntent::query()->create([
-                    'user_id' => $request->user()?->id,
-                    'cooperative_member_id' => $member->id,
-                    'payable_type' => MemberPaymentIntent::PAYABLE_STORE_ORDER,
-                    'payable_id' => null,
-                    'client_reference' => $clientReference,
-                    'amount' => $subtotal,
-                    'channel' => $channel,
-                    'gateway_status' => 'PENDING',
-                    'reservation_status' => MemberPaymentIntent::RESERVATION_RESERVED,
-                    'metadata' => [
-                        'description' => 'Belanja Toko Koperasi',
-                        'client_reference' => $clientReference,
-                        'fulfillment_method' => $fulfillmentMethod,
-                        'pickup_location' => $pickupLocation,
-                        'notes' => $request->validated('notes'),
-                        'items' => $reservedItems,
-                    ],
-                    'expires_at' => now()->addMinutes(30),
-                ]);
-            });
-        } catch (QueryException $exception) {
-            if (! $this->isClientReferenceConflict($exception)) {
-                throw $exception;
-            }
-
-            $intent = MemberPaymentIntent::query()
-                ->where('cooperative_member_id', $member->id)
-                ->where('payable_type', MemberPaymentIntent::PAYABLE_STORE_ORDER)
-                ->where('client_reference', $clientReference)
-                ->firstOrFail();
-        }
-
-        $audit->log('reservation.created', 'member_payment_intent', $intent, [
-            'reason' => 'Store order stock reservation created.',
-        ]);
-        $charge = $gateway->createIntentCharge($intent);
+        $charge = $chargeService->ensureCharge($intent);
 
         return response()->json([
-            'data' => $this->formatPendingOrder($intent->refresh(), $items, $charge, $fulfillmentMethod, $pickupLocation),
+            'data' => $this->formatPendingOrder($intent, $intent->metadata['items'] ?? $items, $charge, $fulfillmentMethod, $pickupLocation),
         ], 201);
     }
 
@@ -175,15 +128,6 @@ class MemberStoreController extends Controller
             'unit' => $product->unit,
             'image_url' => $product->image_url,
         ];
-    }
-
-    private function isClientReferenceConflict(QueryException $exception): bool
-    {
-        $message = strtolower($exception->getMessage());
-
-        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
-            && str_contains($message, 'member_payment_intents')
-            && str_contains($message, 'client_reference');
     }
 
     /**

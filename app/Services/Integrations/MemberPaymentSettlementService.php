@@ -2,17 +2,21 @@
 
 namespace App\Services\Integrations;
 
+use App\Enums\PaymentReservationStatus;
+use App\Enums\PaymentSettlementStatus;
 use App\Models\CoffeeOrder;
 use App\Models\CooperativeMember;
 use App\Models\LoanInstallment;
 use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeNotificationDispatcher;
 use App\Services\Cooperative\LoanService;
 use App\Services\Cooperative\MemberCreditService;
 use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class MemberPaymentSettlementService
@@ -23,6 +27,7 @@ class MemberPaymentSettlementService
         private readonly PosTransactionService $posTransactionService,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
         private readonly MemberOrderReservationService $reservationService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     public function settle(MemberPaymentIntent $intent): MemberPaymentIntent
@@ -37,7 +42,20 @@ class MemberPaymentSettlementService
                 return $intent;
             }
 
-            if (in_array($intent->payable_type, [MemberPaymentIntent::PAYABLE_COFFEE_ORDER, MemberPaymentIntent::PAYABLE_STORE_ORDER], true)) {
+            $settlement = $intent->settlementStatus();
+            if (! in_array($settlement, [PaymentSettlementStatus::NotSettled, PaymentSettlementStatus::Settling], true)) {
+                return $intent;
+            }
+
+            if ($intent->isOrderType()) {
+                $reservation = $intent->reservationStatus();
+
+                if ($reservation !== PaymentReservationStatus::Reserved) {
+                    $this->handleInvalidReservationForSettlement($intent, $reservation);
+
+                    return $intent;
+                }
+
                 $this->reservationService->consume($intent);
                 $intent->refresh();
             }
@@ -55,10 +73,34 @@ class MemberPaymentSettlementService
             $intent->forceFill([
                 'settled_at' => now(),
                 'settled_by_service' => $settledBy,
+                'settlement_status' => PaymentSettlementStatus::Settled->value,
             ])->save();
 
             return $intent->refresh();
         });
+    }
+
+    private function handleInvalidReservationForSettlement(MemberPaymentIntent $intent, PaymentReservationStatus $reservation): void
+    {
+        Log::error('Settlement guard: PAID intent has invalid reservation state', [
+            'intent_id' => $intent->id,
+            'gateway_status' => $intent->gateway_status,
+            'reservation_status' => $reservation->value,
+        ]);
+
+        $this->auditLogService->log(
+            'settlement.reconciliation_incident',
+            'member_payment_intent',
+            $intent,
+            [
+                'reason' => 'PAID intent reached settlement with reservation state: '.$reservation->value,
+                'requires_manual_resolution' => true,
+            ],
+        );
+
+        $intent->forceFill([
+            'settlement_status' => PaymentSettlementStatus::Failed->value,
+        ])->save();
     }
 
     private function settleLoanInstallment(MemberPaymentIntent $intent): string

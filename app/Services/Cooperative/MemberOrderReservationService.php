@@ -16,16 +16,30 @@ class MemberOrderReservationService
     /**
      * @param  array<int, array<string, mixed>>  $items
      */
+    /**
+     * Reserve stock for the given items.
+     *
+     * Items are canonicalised before locking: duplicate product IDs are
+     * aggregated and the list is sorted by pos_product_id ascending to
+     * guarantee a deadlock-free deterministic lock order.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
     public function reserve(array $items): array
     {
-        return DB::transaction(function () use ($items): array {
+        $canonical = $this->canonicaliseItems($items);
+
+        return DB::transaction(function () use ($items, $canonical): array {
             $location = app(PosInventoryService::class)->resolveLocationFor();
             app(PosInventoryService::class)->syncDefaultLocationStocks($location->id);
 
+            $reservedByProductId = [];
             $reservedItems = [];
-            foreach ($items as $item) {
-                $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
-                $quantity = (int) $item['quantity'];
+
+            foreach ($canonical as $entry) {
+                $product = PosProduct::query()->lockForUpdate()->findOrFail($entry['pos_product_id']);
+                $quantity = $entry['quantity'];
                 $stock = PosInventoryStock::query()
                     ->where('pos_product_id', $product->id)
                     ->where('pos_inventory_location_id', $location->id)
@@ -40,14 +54,48 @@ class MemberOrderReservationService
                 }
 
                 $stock?->increment('reserved', $quantity);
-                $reservedItems[] = [
-                    ...$item,
+
+                $reservedByProductId[(int) $product->id] = [
+                    ...$entry['original_item'],
+                    'quantity' => $entry['quantity'],
                     'reservation_location_id' => $location->id,
                 ];
             }
 
+            foreach ($items as $originalItem) {
+                $reservedItems[] = $reservedByProductId[(int) $originalItem['pos_product_id']];
+            }
+
             return $reservedItems;
         });
+    }
+
+    /**
+     * Aggregate duplicate products and sort by pos_product_id ascending.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array{pos_product_id: int, quantity: int, original_item: array<string, mixed>}>
+     */
+    private function canonicaliseItems(array $items): array
+    {
+        $aggregated = [];
+
+        foreach ($items as $item) {
+            $productId = (int) $item['pos_product_id'];
+            if (! isset($aggregated[$productId])) {
+                $aggregated[$productId] = [
+                    'pos_product_id' => $productId,
+                    'quantity' => 0,
+                    'original_item' => $item,
+                ];
+            }
+            $aggregated[$productId]['quantity'] += (int) ($item['quantity'] ?? 1);
+        }
+
+        $list = array_values($aggregated);
+        usort($list, static fn (array $a, array $b): int => $a['pos_product_id'] <=> $b['pos_product_id']);
+
+        return $list;
     }
 
     public function consume(MemberPaymentIntent $intent): void
@@ -131,11 +179,10 @@ class MemberOrderReservationService
             return;
         }
 
-        foreach ($items as $item) {
-            if (! is_array($item) || ! isset($item['reservation_location_id'], $item['pos_product_id'])) {
-                continue;
-            }
+        $sortable = array_filter($items, static fn (mixed $item): bool => is_array($item) && isset($item['reservation_location_id'], $item['pos_product_id']));
+        usort($sortable, static fn (array $a, array $b): int => (int) $a['pos_product_id'] <=> (int) $b['pos_product_id']);
 
+        foreach ($sortable as $item) {
             $stock = PosInventoryStock::query()
                 ->where('pos_product_id', $item['pos_product_id'])
                 ->where('pos_inventory_location_id', $item['reservation_location_id'])

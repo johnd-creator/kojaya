@@ -134,8 +134,14 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
         $payload = $this->applyChannelPayload($payload, $channel);
 
+        $idempotencyKey = sprintf(
+            'member-intent:%s:%s',
+            $intent->id,
+            $intent->charge_attempt ?: 1
+        );
+
         $response = $this->sendChargeRequest(
-            idempotencyKey: 'member-intent-'.$intent->id.'-'.$intent->gateway_status,
+            idempotencyKey: $idempotencyKey,
             endpoint: $this->endpointForChannel($channel),
             payload: $payload,
         );

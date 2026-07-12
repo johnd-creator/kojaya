@@ -326,7 +326,9 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
     private function generateIntentOrderId(MemberPaymentIntent $intent): string
     {
-        return sprintf('KOJ-MPI-%d-%s', $intent->id, Str::upper(Str::random(8)));
+        $attempt = (int) ($intent->charge_attempt ?: 1);
+
+        return sprintf('KOJ-MPI-%d-%d', $intent->id, $attempt);
     }
 
     private function endpointForChannel(string $channel): string

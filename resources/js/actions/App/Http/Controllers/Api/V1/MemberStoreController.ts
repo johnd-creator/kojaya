@@ -79,7 +79,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:108
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 export const showIntent = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ showIntent.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:108
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 showIntent.url = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -127,7 +127,7 @@ showIntent.url = (args: { intent: string | number | { id: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:108
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 showIntent.get = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -137,7 +137,7 @@ showIntent.get = (args: { intent: string | number | { id: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberStoreController::showIntent
-* @see app/Http/Controllers/Api/V1/MemberStoreController.php:114
+* @see app/Http/Controllers/Api/V1/MemberStoreController.php:108
 * @route '/api/v1/member/payment-intents/{intent}'
 */
 showIntent.head = (args: { intent: string | number | { id: string | number } } | [intent: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

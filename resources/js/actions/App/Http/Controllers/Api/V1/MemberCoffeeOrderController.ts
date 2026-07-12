@@ -79,7 +79,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:87
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 export const show = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:87
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 show.url = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
@@ -127,7 +127,7 @@ show.url = (args: { coffeeOrder: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:87
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 show.get = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -137,7 +137,7 @@ show.get = (args: { coffeeOrder: string | number | { id: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Api\V1\MemberCoffeeOrderController::show
-* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:93
+* @see app/Http/Controllers/Api/V1/MemberCoffeeOrderController.php:87
 * @route '/api/v1/member/coffee/orders/{coffeeOrder}'
 */
 show.head = (args: { coffeeOrder: string | number | { id: string | number } } | [coffeeOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({

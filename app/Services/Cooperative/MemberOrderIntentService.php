@@ -5,6 +5,7 @@ namespace App\Services\Cooperative;
 use App\Exceptions\PaymentIntentConflictException;
 use App\Models\CooperativeMember;
 use App\Models\MemberPaymentIntent;
+use App\Services\AuditLogService;
 use App\Support\CanonicalOrderItem;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ class MemberOrderIntentService
 {
     public function __construct(
         private readonly MemberOrderReservationService $reservationService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     /**
@@ -107,6 +109,13 @@ class MemberOrderIntentService
                     'metadata' => $this->buildMetadata($canonicalRequest, $reservedItems),
                     'expires_at' => $canonicalRequest['expires_at'] ?? now()->addMinutes(30),
                 ]);
+
+                $this->auditLogService->log(
+                    'reservation.created',
+                    'member_payment_intent',
+                    $intent,
+                    ['reason' => 'Stock reservation created for new payment intent.']
+                );
 
                 return new IntentResolution($intent, created: true);
             });

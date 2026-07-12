@@ -286,7 +286,8 @@ class PaymentGatewayService
      */
     public function createIntentChargeInternal(MemberPaymentIntent $intent): array
     {
-        $reference = 'MPI-'.Str::upper(Str::random(12));
+        $attempt = (int) ($intent->charge_attempt ?: 1);
+        $reference = sprintf('MPI-%d-%d', $intent->id, $attempt);
         $expiresAt = $intent->expires_at ?? now()->addMinutes(30);
 
         return [

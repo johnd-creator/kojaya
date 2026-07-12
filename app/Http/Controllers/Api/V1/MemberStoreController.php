@@ -92,12 +92,6 @@ class MemberStoreController extends Controller
 
         $intent = $resolution->intent->refresh();
 
-        if ($resolution->wasCreated()) {
-            $audit->log('reservation.created', 'member_payment_intent', $intent, [
-                'reason' => 'Store order stock reservation created.',
-            ]);
-        }
-
         $charge = $chargeService->ensureCharge($intent);
 
         // Response is always built from DB metadata (authoritative winner).

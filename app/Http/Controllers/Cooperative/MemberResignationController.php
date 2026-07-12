@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Models\MemberResignationRequest;
@@ -16,12 +17,21 @@ class MemberResignationController extends Controller
 {
     public function __construct(private readonly MemberResignationRequestService $service) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         Gate::authorize('viewAny', MemberResignationRequest::class);
 
-        $query = MemberResignationRequest::query()
-            ->with(['member.organization', 'reviewer'])
+        $baseQuery = MemberResignationRequest::query()
+            ->with(['member.organization', 'reviewer']);
+
+        // Scope by organization through the member relation.
+        if (! $scopeService->canViewAllOrganizations($request->user())) {
+            $baseQuery->whereHas('member', function ($memberQuery) use ($request): void {
+                $memberQuery->where('organization_id', $request->user()->organization_id);
+            });
+        }
+
+        $query = (clone $baseQuery)
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request): void {
                 $search = $request->string('search')->toString();
@@ -34,9 +44,33 @@ class MemberResignationController extends Controller
             ->orderByRaw("CASE status WHEN 'PENDING' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at')
             ->paginate(15)
+            ->through(fn (MemberResignationRequest $request): array => [
+                'id' => $request->id,
+                'status' => $request->status,
+                'reason' => $request->reason,
+                'effective_date' => $request->effective_date?->toDateString(),
+                'review_notes' => $request->review_notes,
+                'requested_at' => $request->requested_at?->toISOString(),
+                'reviewed_at' => $request->reviewed_at?->toISOString(),
+                'created_at' => $request->created_at?->toISOString(),
+                'member' => $request->member ? [
+                    'id' => $request->member->id,
+                    'name' => $request->member->nama_anggota_clean,
+                    'member_code' => $request->member->no_anggota_display,
+                    'status' => $request->member->status,
+                    'organization' => $request->member->organization ? [
+                        'id' => $request->member->organization->id,
+                        'name' => $request->member->organization->name,
+                    ] : null,
+                ] : null,
+                'reviewer' => $request->reviewer ? [
+                    'id' => $request->reviewer->id,
+                    'name' => $request->reviewer->name,
+                ] : null,
+            ])
             ->withQueryString();
 
-        $statusCounts = MemberResignationRequest::query()
+        $statusCounts = (clone $baseQuery)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');

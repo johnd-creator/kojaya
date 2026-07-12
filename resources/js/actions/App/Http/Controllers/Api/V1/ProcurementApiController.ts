@@ -1,10 +1,10 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\ProcurementApiController::vendorPerformance
 * @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
 * @route '/api/v1/procurement/vendors/{vendor}/performance'
 */
-export const vendorPerformance = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const vendorPerformance = (args: { vendor: string | number | { id: string | number } } | [vendor: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: vendorPerformance.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ vendorPerformance.definition = {
 * @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
 * @route '/api/v1/procurement/vendors/{vendor}/performance'
 */
-vendorPerformance.url = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+vendorPerformance.url = (args: { vendor: string | number | { id: string | number } } | [vendor: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { vendor: args }
     }
@@ -52,7 +52,7 @@ vendorPerformance.url = (args: { vendor: string | { id: string } } | [vendor: st
 * @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
 * @route '/api/v1/procurement/vendors/{vendor}/performance'
 */
-vendorPerformance.get = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+vendorPerformance.get = (args: { vendor: string | number | { id: string | number } } | [vendor: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: vendorPerformance.url(args, options),
     method: 'get',
 })
@@ -62,47 +62,10 @@ vendorPerformance.get = (args: { vendor: string | { id: string } } | [vendor: st
 * @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
 * @route '/api/v1/procurement/vendors/{vendor}/performance'
 */
-vendorPerformance.head = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+vendorPerformance.head = (args: { vendor: string | number | { id: string | number } } | [vendor: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: vendorPerformance.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\ProcurementApiController::vendorPerformance
-* @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
-* @route '/api/v1/procurement/vendors/{vendor}/performance'
-*/
-const vendorPerformanceForm = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: vendorPerformance.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\ProcurementApiController::vendorPerformance
-* @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
-* @route '/api/v1/procurement/vendors/{vendor}/performance'
-*/
-vendorPerformanceForm.get = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: vendorPerformance.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\ProcurementApiController::vendorPerformance
-* @see app/Http/Controllers/Api/V1/ProcurementApiController.php:12
-* @route '/api/v1/procurement/vendors/{vendor}/performance'
-*/
-vendorPerformanceForm.head = (args: { vendor: string | { id: string } } | [vendor: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: vendorPerformance.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-vendorPerformance.form = vendorPerformanceForm
 
 const ProcurementApiController = { vendorPerformance }
 

@@ -202,6 +202,8 @@ class RolePermissionSeeder extends Seeder
         Role::where('name', 'Pengurus Koperasi')->first()?->syncPermissions([
             'view_cooperative_member',
             'manage_cooperative_member',
+            'view_cooperative_member_pii',
+            'update_cooperative_member_pii',
             'validate_cooperative_member',
             'approve_cooperative_member',
             'manage_cooperative_dues',
@@ -224,6 +226,8 @@ class RolePermissionSeeder extends Seeder
             'manage_cooperative_ledger',
             'view_cooperative_all',
             'manage_cooperative_settings',
+            'export_cooperative_member',
+            'review_cooperative_resignation',
             'approve_pos_void',
             'manage_cooperative_opening_balance',
             'approve_cooperative_opening_balance',
@@ -252,6 +256,7 @@ class RolePermissionSeeder extends Seeder
             'view_cooperative_ledger',
             'manage_cooperative_ledger',
             'manage_cooperative_opening_balance',
+            'review_cooperative_resignation',
             'approve_pos_void',
         ]);
 
@@ -275,6 +280,8 @@ class RolePermissionSeeder extends Seeder
             'manage_pos_products',
             'view_pos_reports',
             'view_cooperative_ledger',
+            'export_cooperative_member',
+            'review_cooperative_resignation',
             'approve_pos_void',
             'manage_cooperative_opening_balance',
         ]);
@@ -289,10 +296,11 @@ class RolePermissionSeeder extends Seeder
             'view_pos_reports',
         ]);
 
-        // Anggota
+        // Anggota — self-service only; administrative access is enforced
+        // by the member portal middleware (ownership via cooperativeMember relation)
+        // and cooperative policies, NOT by admin permissions.
         Role::where('name', 'Anggota')->first()?->syncPermissions([
-            'view_cooperative_member',
-            'view_cooperative_loan',
+            'member_portal_access',
         ]);
 
         // Ensure initially there's a head office (Pusat) Organization
@@ -311,16 +319,24 @@ class RolePermissionSeeder extends Seeder
             ]
         );
 
-        // Create Super Admin User
-        $user = User::updateOrCreate(
-            ['email' => 'admin@erp.com'],
-            [
-                'name' => 'System Admin ERP',
-                'password' => Hash::make('password'),
-                'organization_id' => $pusat->id,
-            ]
-        );
+        // Create a Super Admin user only in non-production environments.
+        // Production deployments must bootstrap the initial admin via a secure
+        // command (e.g. php artisan admin:create) or a secret manager — never via
+        // the seeder with a known password.
+        if (! app()->environment('production')) {
+            $adminEmail = config('app.admin_email', 'admin@erp.com');
+            $adminPassword = config('app.admin_password', 'password');
 
-        $user->assignRole('System Admin');
+            $user = User::updateOrCreate(
+                ['email' => $adminEmail],
+                [
+                    'name' => 'System Admin ERP',
+                    'password' => Hash::make($adminPassword),
+                    'organization_id' => $pusat->id,
+                ]
+            );
+
+            $user->assignRole('System Admin');
+        }
     }
 }

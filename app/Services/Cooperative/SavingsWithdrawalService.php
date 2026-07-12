@@ -85,6 +85,7 @@ class SavingsWithdrawalService
 
             CooperativeLedgerEntry::query()->create([
                 'cooperative_member_id' => $locked->cooperative_member_id,
+                'organization_id' => $member->organization_id,
                 'cooperative_payment_id' => null,
                 'source_type' => SavingsWithdrawal::class,
                 'source_id' => $locked->id,

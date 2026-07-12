@@ -1,7 +1,7 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:29
 * @route '/api/technician/work-orders'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:29
 * @route '/api/technician/work-orders'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:29
 * @route '/api/technician/work-orders'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:29
 * @route '/api/technician/work-orders'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,45 +44,8 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
-* @route '/api/technician/work-orders'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
-* @route '/api/technician/work-orders'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::index
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:26
-* @route '/api/technician/work-orders'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:57
 * @route '/api/technician/work-orders/{id}'
 */
 export const show = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +60,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:57
 * @route '/api/technician/work-orders/{id}'
 */
 show.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -124,7 +87,7 @@ show.url = (args: { id: string | number } | [id: string | number ] | string | nu
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:57
 * @route '/api/technician/work-orders/{id}'
 */
 show.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -134,7 +97,7 @@ show.get = (args: { id: string | number } | [id: string | number ] | string | nu
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:57
 * @route '/api/technician/work-orders/{id}'
 */
 show.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -143,45 +106,8 @@ show.head = (args: { id: string | number } | [id: string | number ] | string | n
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
-* @route '/api/technician/work-orders/{id}'
-*/
-const showForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
-* @route '/api/technician/work-orders/{id}'
-*/
-showForm.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::show
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:54
-* @route '/api/technician/work-orders/{id}'
-*/
-showForm.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::start
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:67
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:70
 * @route '/api/technician/work-orders/{id}/start'
 */
 export const start = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -196,7 +122,7 @@ start.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::start
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:67
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:70
 * @route '/api/technician/work-orders/{id}/start'
 */
 start.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -223,7 +149,7 @@ start.url = (args: { id: string | number } | [id: string | number ] | string | n
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::start
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:67
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:70
 * @route '/api/technician/work-orders/{id}/start'
 */
 start.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -232,30 +158,8 @@ start.post = (args: { id: string | number } | [id: string | number ] | string | 
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::start
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:67
-* @route '/api/technician/work-orders/{id}/start'
-*/
-const startForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: start.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::start
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:67
-* @route '/api/technician/work-orders/{id}/start'
-*/
-startForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: start.url(args, options),
-    method: 'post',
-})
-
-start.form = startForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::complete
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:96
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:99
 * @route '/api/technician/work-orders/{id}/complete'
 */
 export const complete = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -270,7 +174,7 @@ complete.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::complete
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:96
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:99
 * @route '/api/technician/work-orders/{id}/complete'
 */
 complete.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -297,7 +201,7 @@ complete.url = (args: { id: string | number } | [id: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::complete
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:96
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:99
 * @route '/api/technician/work-orders/{id}/complete'
 */
 complete.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -306,30 +210,8 @@ complete.post = (args: { id: string | number } | [id: string | number ] | string
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::complete
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:96
-* @route '/api/technician/work-orders/{id}/complete'
-*/
-const completeForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: complete.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::complete
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:96
-* @route '/api/technician/work-orders/{id}/complete'
-*/
-completeForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: complete.url(args, options),
-    method: 'post',
-})
-
-complete.form = completeForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::updateChecklist
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:137
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:140
 * @route '/api/technician/work-orders/{id}/checklists/{checklistId}'
 */
 export const updateChecklist = (args: { id: string | number, checklistId: string | number } | [id: string | number, checklistId: string | number ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -344,7 +226,7 @@ updateChecklist.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::updateChecklist
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:137
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:140
 * @route '/api/technician/work-orders/{id}/checklists/{checklistId}'
 */
 updateChecklist.url = (args: { id: string | number, checklistId: string | number } | [id: string | number, checklistId: string | number ], options?: RouteQueryOptions) => {
@@ -370,7 +252,7 @@ updateChecklist.url = (args: { id: string | number, checklistId: string | number
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::updateChecklist
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:137
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:140
 * @route '/api/technician/work-orders/{id}/checklists/{checklistId}'
 */
 updateChecklist.post = (args: { id: string | number, checklistId: string | number } | [id: string | number, checklistId: string | number ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -379,30 +261,8 @@ updateChecklist.post = (args: { id: string | number, checklistId: string | numbe
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::updateChecklist
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:137
-* @route '/api/technician/work-orders/{id}/checklists/{checklistId}'
-*/
-const updateChecklistForm = (args: { id: string | number, checklistId: string | number } | [id: string | number, checklistId: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateChecklist.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::updateChecklist
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:137
-* @route '/api/technician/work-orders/{id}/checklists/{checklistId}'
-*/
-updateChecklistForm.post = (args: { id: string | number, checklistId: string | number } | [id: string | number, checklistId: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateChecklist.url(args, options),
-    method: 'post',
-})
-
-updateChecklist.form = updateChecklistForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storeAttachment
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:164
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:167
 * @route '/api/technician/work-orders/{id}/attachments'
 */
 export const storeAttachment = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -417,7 +277,7 @@ storeAttachment.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storeAttachment
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:164
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:167
 * @route '/api/technician/work-orders/{id}/attachments'
 */
 storeAttachment.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -444,7 +304,7 @@ storeAttachment.url = (args: { id: string | number } | [id: string | number ] | 
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storeAttachment
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:164
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:167
 * @route '/api/technician/work-orders/{id}/attachments'
 */
 storeAttachment.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -453,30 +313,8 @@ storeAttachment.post = (args: { id: string | number } | [id: string | number ] |
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storeAttachment
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:164
-* @route '/api/technician/work-orders/{id}/attachments'
-*/
-const storeAttachmentForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storeAttachment.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storeAttachment
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:164
-* @route '/api/technician/work-orders/{id}/attachments'
-*/
-storeAttachmentForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storeAttachment.url(args, options),
-    method: 'post',
-})
-
-storeAttachment.form = storeAttachmentForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storePart
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:196
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:199
 * @route '/api/technician/work-orders/{id}/parts'
 */
 export const storePart = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -491,7 +329,7 @@ storePart.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storePart
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:196
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:199
 * @route '/api/technician/work-orders/{id}/parts'
 */
 storePart.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -518,7 +356,7 @@ storePart.url = (args: { id: string | number } | [id: string | number ] | string
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storePart
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:196
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:199
 * @route '/api/technician/work-orders/{id}/parts'
 */
 storePart.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -527,30 +365,8 @@ storePart.post = (args: { id: string | number } | [id: string | number ] | strin
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storePart
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:196
-* @route '/api/technician/work-orders/{id}/parts'
-*/
-const storePartForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storePart.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::storePart
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:196
-* @route '/api/technician/work-orders/{id}/parts'
-*/
-storePartForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: storePart.url(args, options),
-    method: 'post',
-})
-
-storePart.form = storePartForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::sync
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:212
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:215
 * @route '/api/technician/work-orders/{id}/sync'
 */
 export const sync = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -565,7 +381,7 @@ sync.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::sync
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:212
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:215
 * @route '/api/technician/work-orders/{id}/sync'
 */
 sync.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -592,7 +408,7 @@ sync.url = (args: { id: string | number } | [id: string | number ] | string | nu
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::sync
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:212
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:215
 * @route '/api/technician/work-orders/{id}/sync'
 */
 sync.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -601,30 +417,8 @@ sync.post = (args: { id: string | number } | [id: string | number ] | string | n
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::sync
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:212
-* @route '/api/technician/work-orders/{id}/sync'
-*/
-const syncForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: sync.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::sync
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:212
-* @route '/api/technician/work-orders/{id}/sync'
-*/
-syncForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: sync.url(args, options),
-    method: 'post',
-})
-
-sync.form = syncForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:303
 * @route '/api/technician/work-orders/{id}/timeline'
 */
 export const timeline = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -639,7 +433,7 @@ timeline.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:303
 * @route '/api/technician/work-orders/{id}/timeline'
 */
 timeline.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -666,7 +460,7 @@ timeline.url = (args: { id: string | number } | [id: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:303
 * @route '/api/technician/work-orders/{id}/timeline'
 */
 timeline.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -676,7 +470,7 @@ timeline.get = (args: { id: string | number } | [id: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:303
 * @route '/api/technician/work-orders/{id}/timeline'
 */
 timeline.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -685,45 +479,8 @@ timeline.head = (args: { id: string | number } | [id: string | number ] | string
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
-* @route '/api/technician/work-orders/{id}/timeline'
-*/
-const timelineForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: timeline.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
-* @route '/api/technician/work-orders/{id}/timeline'
-*/
-timelineForm.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: timeline.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::timeline
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:300
-* @route '/api/technician/work-orders/{id}/timeline'
-*/
-timelineForm.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: timeline.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-timeline.form = timelineForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::escalate
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:314
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:317
 * @route '/api/technician/work-orders/{id}/escalate'
 */
 export const escalate = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -738,7 +495,7 @@ escalate.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::escalate
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:314
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:317
 * @route '/api/technician/work-orders/{id}/escalate'
 */
 escalate.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -765,7 +522,7 @@ escalate.url = (args: { id: string | number } | [id: string | number ] | string 
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::escalate
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:314
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:317
 * @route '/api/technician/work-orders/{id}/escalate'
 */
 escalate.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -774,30 +531,8 @@ escalate.post = (args: { id: string | number } | [id: string | number ] | string
 })
 
 /**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::escalate
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:314
-* @route '/api/technician/work-orders/{id}/escalate'
-*/
-const escalateForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: escalate.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::escalate
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:314
-* @route '/api/technician/work-orders/{id}/escalate'
-*/
-escalateForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: escalate.url(args, options),
-    method: 'post',
-})
-
-escalate.form = escalateForm
-
-/**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::reopen
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:336
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:339
 * @route '/api/technician/work-orders/{id}/reopen'
 */
 export const reopen = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -812,7 +547,7 @@ reopen.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::reopen
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:336
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:339
 * @route '/api/technician/work-orders/{id}/reopen'
 */
 reopen.url = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -839,35 +574,13 @@ reopen.url = (args: { id: string | number } | [id: string | number ] | string | 
 
 /**
 * @see \App\Http\Controllers\Api\TechnicianWorkOrderController::reopen
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:336
+* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:339
 * @route '/api/technician/work-orders/{id}/reopen'
 */
 reopen.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reopen.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::reopen
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:336
-* @route '/api/technician/work-orders/{id}/reopen'
-*/
-const reopenForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reopen.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\TechnicianWorkOrderController::reopen
-* @see app/Http/Controllers/Api/TechnicianWorkOrderController.php:336
-* @route '/api/technician/work-orders/{id}/reopen'
-*/
-reopenForm.post = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reopen.url(args, options),
-    method: 'post',
-})
-
-reopen.form = reopenForm
 
 const TechnicianWorkOrderController = { index, show, start, complete, updateChecklist, storeAttachment, storePart, sync, timeline, escalate, reopen }
 

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::index
 * @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:18
@@ -42,43 +42,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::index
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:18
-* @route '/cooperative/pos/inventory/transfers'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::index
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:18
-* @route '/cooperative/pos/inventory/transfers'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::index
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:18
-* @route '/cooperative/pos/inventory/transfers'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::create
@@ -125,43 +88,6 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::create
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:31
-* @route '/cooperative/pos/inventory/transfers/create'
-*/
-const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::create
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:31
-* @route '/cooperative/pos/inventory/transfers/create'
-*/
-createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::create
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:31
-* @route '/cooperative/pos/inventory/transfers/create'
-*/
-createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-create.form = createForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::store
 * @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:38
 * @route '/cooperative/pos/inventory/transfers'
@@ -194,28 +120,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::store
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:38
-* @route '/cooperative/pos/inventory/transfers'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosInventoryTransferController::store
-* @see app/Http/Controllers/Cooperative/PosInventoryTransferController.php:38
-* @route '/cooperative/pos/inventory/transfers'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 const PosInventoryTransferController = { index, create, store }
 

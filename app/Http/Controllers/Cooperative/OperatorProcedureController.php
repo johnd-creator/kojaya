@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\LockPeriodRequest;
 use App\Http\Requests\Cooperative\ReconcilePaymentRequest;
 use App\Models\CooperativeClosingChecklist;
 use App\Models\CooperativePayment;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\CooperativePeriodLockService;
 use App\Services\Cooperative\OperatorProcedureService;
@@ -19,34 +20,34 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class OperatorProcedureController extends Controller
 {
-    public function dashboard(OperatorProcedureService $service): Response
+    public function dashboard(Request $request, OperatorProcedureService $service): Response
     {
         $this->authorizePermission('view_cooperative_report');
 
         return Inertia::render('Cooperative/Operator/Dashboard', [
-            'analytics' => Inertia::defer(fn (): array => $service->analytics(), 'analytics'),
+            'analytics' => Inertia::defer(fn (): array => $service->analytics($request->user()), 'analytics'),
         ]);
     }
 
-    public function approvalInbox(OperatorProcedureService $service): JsonResponse
+    public function approvalInbox(Request $request, OperatorProcedureService $service): JsonResponse
     {
         $this->authorizePermission('view_cooperative_report');
 
-        return response()->json(['data' => $service->approvalInbox()]);
+        return response()->json(['data' => $service->approvalInbox($request->user())]);
     }
 
-    public function exceptions(OperatorProcedureService $service): JsonResponse
+    public function exceptions(Request $request, OperatorProcedureService $service): JsonResponse
     {
         $this->authorizePermission('view_cooperative_report');
 
-        return response()->json(['data' => $service->exceptions()]);
+        return response()->json(['data' => $service->exceptions($request->user())]);
     }
 
-    public function analytics(OperatorProcedureService $service): JsonResponse
+    public function analytics(Request $request, OperatorProcedureService $service): JsonResponse
     {
         $this->authorizePermission('view_cooperative_report');
 
-        return response()->json(['data' => $service->analytics()]);
+        return response()->json(['data' => $service->analytics($request->user())]);
     }
 
     public function closingPage(): Response
@@ -109,13 +110,17 @@ class OperatorProcedureController extends Controller
         ]);
     }
 
-    public function export(Request $request, OperatorProcedureService $service): \Symfony\Component\HttpFoundation\Response
+    public function export(Request $request, OperatorProcedureService $service, AuditLogService $audit): \Symfony\Component\HttpFoundation\Response
     {
         $this->authorizePermission('view_cooperative_report');
 
         $type = (string) $request->query('type', 'members');
         $period = $request->query('period') ? (string) $request->query('period') : null;
-        $csv = $service->export($type, $period);
+        $audit->log('cooperative.exported', 'cooperative.operator', null, [
+            'new' => ['type' => $type, 'period' => $period],
+            'reason' => 'Operator cockpit export requested.',
+        ]);
+        $csv = $service->export($type, $period, $request->user());
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',

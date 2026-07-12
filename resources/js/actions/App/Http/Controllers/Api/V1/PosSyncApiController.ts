@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\PosSyncApiController::catalog
 * @see app/Http/Controllers/Api/V1/PosSyncApiController.php:18
@@ -44,43 +44,6 @@ catalog.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::catalog
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:18
-* @route '/api/v1/pos/sync/catalog'
-*/
-const catalogForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: catalog.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::catalog
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:18
-* @route '/api/v1/pos/sync/catalog'
-*/
-catalogForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: catalog.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::catalog
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:18
-* @route '/api/v1/pos/sync/catalog'
-*/
-catalogForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: catalog.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-catalog.form = catalogForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\PosSyncApiController::enqueue
 * @see app/Http/Controllers/Api/V1/PosSyncApiController.php:31
 * @route '/api/v1/pos/sync/enqueue'
@@ -113,28 +76,6 @@ enqueue.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: enqueue.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::enqueue
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:31
-* @route '/api/v1/pos/sync/enqueue'
-*/
-const enqueueForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: enqueue.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::enqueue
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:31
-* @route '/api/v1/pos/sync/enqueue'
-*/
-enqueueForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: enqueue.url(options),
-    method: 'post',
-})
-
-enqueue.form = enqueueForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\PosSyncApiController::process
@@ -189,28 +130,6 @@ process.post = (args: { idempotency_key: string | number } | [idempotency_key: s
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::process
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:63
-* @route '/api/v1/pos/sync/process/{idempotency_key}'
-*/
-const processForm = (args: { idempotency_key: string | number } | [idempotency_key: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: process.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::process
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:63
-* @route '/api/v1/pos/sync/process/{idempotency_key}'
-*/
-processForm.post = (args: { idempotency_key: string | number } | [idempotency_key: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: process.url(args, options),
-    method: 'post',
-})
-
-process.form = processForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\PosSyncApiController::processBatch
 * @see app/Http/Controllers/Api/V1/PosSyncApiController.php:72
 * @route '/api/v1/pos/sync/batch'
@@ -243,28 +162,6 @@ processBatch.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: processBatch.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::processBatch
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:72
-* @route '/api/v1/pos/sync/batch'
-*/
-const processBatchForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: processBatch.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::processBatch
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:72
-* @route '/api/v1/pos/sync/batch'
-*/
-processBatchForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: processBatch.url(options),
-    method: 'post',
-})
-
-processBatch.form = processBatchForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\PosSyncApiController::status
@@ -327,43 +224,6 @@ status.head = (args: { idempotency_key: string | number } | [idempotency_key: st
     url: status.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::status
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:86
-* @route '/api/v1/pos/sync/status/{idempotency_key}'
-*/
-const statusForm = (args: { idempotency_key: string | number } | [idempotency_key: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: status.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::status
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:86
-* @route '/api/v1/pos/sync/status/{idempotency_key}'
-*/
-statusForm.get = (args: { idempotency_key: string | number } | [idempotency_key: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: status.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PosSyncApiController::status
-* @see app/Http/Controllers/Api/V1/PosSyncApiController.php:86
-* @route '/api/v1/pos/sync/status/{idempotency_key}'
-*/
-statusForm.head = (args: { idempotency_key: string | number } | [idempotency_key: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: status.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-status.form = statusForm
 
 const PosSyncApiController = { catalog, enqueue, process, processBatch, status }
 

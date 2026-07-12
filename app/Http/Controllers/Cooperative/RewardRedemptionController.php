@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\UpdateRedemptionStatusRequest;
 use App\Models\RewardRedemption;
@@ -13,11 +14,12 @@ use Inertia\Response;
 
 class RewardRedemptionController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         $this->authorize('viewAny', RewardRedemption::class);
 
         $query = RewardRedemption::query()->with(['reward', 'member']);
+        $scopeService->scopeVisibleTo($query, $request->user());
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));

@@ -104,7 +104,24 @@ const memberStatusTone = computed(() => {
   }
 });
 
-const submit = (): void => form.put(update(props.member.id).url);
+const submit = (): void => {
+  form
+    .transform((data) => ({
+      employee_id: data.employee_id,
+      no_anggota: data.no_anggota,
+      nama_anggota: data.nama_anggota,
+      name: data.name,
+      email: data.email,
+      no_telp: data.no_telp,
+      phone: data.phone,
+      jenis_anggota: data.jenis_anggota,
+      jenis_kelamin: data.jenis_kelamin,
+      kategori: data.kategori,
+      autodebet: data.autodebet,
+      opening_saving_balance: data.opening_saving_balance,
+    }))
+    .put(update(props.member.id).url);
+};
 </script>
 
 <template>
@@ -223,6 +240,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   id="edit-member-active-date"
                   v-model="form.tanggal_aktif"
                   type="date"
+                  readonly
                   required
                 />
                 <InputError :message="form.errors.tanggal_aktif" />
@@ -243,6 +261,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   id="edit-member-join-date"
                   v-model="form.joined_at"
                   type="date"
+                  readonly
                 />
                 <InputError :message="form.errors.joined_at" />
               </div>
@@ -251,6 +270,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                 <select
                   id="edit-member-status"
                   v-model="form.status"
+                  disabled
                   class="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950"
                 >
                   <option
@@ -332,6 +352,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   id="edit-member-npwp"
                   v-model="form.npwp"
                   maxlength="30"
+                  readonly
                 />
                 <InputError :message="form.errors.npwp" />
               </div>
@@ -341,6 +362,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   id="edit-member-identity"
                   v-model="form.identity_number"
                   maxlength="20"
+                  readonly
                 />
                 <InputError :message="form.errors.identity_number" />
               </div>
@@ -350,6 +372,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   id="edit-member-address"
                   v-model="form.address"
                   rows="2"
+                  readonly
                   placeholder="Alamat lengkap"
                   class="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950"
                 />
@@ -488,6 +511,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   v-model="form.no_rekening"
                   maxlength="30"
                   :disabled="form.autodebet === 'MANUAL'"
+                  readonly
                   placeholder="Kosong untuk manual"
                 />
                 <InputError :message="form.errors.no_rekening" />
@@ -528,6 +552,7 @@ const submit = (): void => form.put(update(props.member.id).url);
                   v-model="form.member_login_password"
                   type="password"
                   autocomplete="new-password"
+                  disabled
                   placeholder="Kosongkan jika tidak berubah"
                 />
                 <InputError :message="form.errors.member_login_password" />

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\BankReconciliationController::index
 * @see app/Http/Controllers/BankReconciliationController.php:11
@@ -44,48 +44,11 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:11
-* @route '/finance/bank-reconciliation'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:11
-* @route '/finance/bank-reconciliation'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\BankReconciliationController::index
-* @see app/Http/Controllers/BankReconciliationController.php:11
-* @route '/finance/bank-reconciliation'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\BankReconciliationController::show
 * @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
-export const show = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -100,7 +63,7 @@ show.definition = {
 * @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
-show.url = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+show.url = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { batch: args }
     }
@@ -133,7 +96,7 @@ show.url = (args: { batch: string | { id: string } } | [batch: string | { id: st
 * @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
-show.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -143,47 +106,10 @@ show.get = (args: { batch: string | { id: string } } | [batch: string | { id: st
 * @see app/Http/Controllers/BankReconciliationController.php:24
 * @route '/finance/bank-reconciliation/{batch}'
 */
-show.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { batch: string | number | { id: string | number } } | [batch: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:24
-* @route '/finance/bank-reconciliation/{batch}'
-*/
-const showForm = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:24
-* @route '/finance/bank-reconciliation/{batch}'
-*/
-showForm.get = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\BankReconciliationController::show
-* @see app/Http/Controllers/BankReconciliationController.php:24
-* @route '/finance/bank-reconciliation/{batch}'
-*/
-showForm.head = (args: { batch: string | { id: string } } | [batch: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
 
 const BankReconciliationController = { index, show }
 

@@ -1,10 +1,10 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectTeamController::index
 * @see app/Http/Controllers/ProjectTeamController.php:50
 * @route '/projects/{project}/team'
 */
-export const index = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const index = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ index.definition = {
 * @see app/Http/Controllers/ProjectTeamController.php:50
 * @route '/projects/{project}/team'
 */
-index.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+index.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -52,7 +52,7 @@ index.url = (args: { project: string | { id: string } } | [project: string | { i
 * @see app/Http/Controllers/ProjectTeamController.php:50
 * @route '/projects/{project}/team'
 */
-index.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+index.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -62,54 +62,17 @@ index.get = (args: { project: string | { id: string } } | [project: string | { i
 * @see app/Http/Controllers/ProjectTeamController.php:50
 * @route '/projects/{project}/team'
 */
-index.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+index.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::index
-* @see app/Http/Controllers/ProjectTeamController.php:50
-* @route '/projects/{project}/team'
-*/
-const indexForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::index
-* @see app/Http/Controllers/ProjectTeamController.php:50
-* @route '/projects/{project}/team'
-*/
-indexForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::index
-* @see app/Http/Controllers/ProjectTeamController.php:50
-* @route '/projects/{project}/team'
-*/
-indexForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ProjectTeamController::store
 * @see app/Http/Controllers/ProjectTeamController.php:66
 * @route '/projects/{project}/team'
 */
-export const store = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -124,7 +87,7 @@ store.definition = {
 * @see app/Http/Controllers/ProjectTeamController.php:66
 * @route '/projects/{project}/team'
 */
-store.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+store.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -157,32 +120,10 @@ store.url = (args: { project: string | { id: string } } | [project: string | { i
 * @see app/Http/Controllers/ProjectTeamController.php:66
 * @route '/projects/{project}/team'
 */
-store.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::store
-* @see app/Http/Controllers/ProjectTeamController.php:66
-* @route '/projects/{project}/team'
-*/
-const storeForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::store
-* @see app/Http/Controllers/ProjectTeamController.php:66
-* @route '/projects/{project}/team'
-*/
-storeForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ProjectTeamController::update
@@ -246,53 +187,6 @@ update.patch = (args: { project: string | number, team: string | number } | [pro
 })
 
 /**
-* @see \App\Http\Controllers\ProjectTeamController::update
-* @see app/Http/Controllers/ProjectTeamController.php:94
-* @route '/projects/{project}/team/{team}'
-*/
-const updateForm = (args: { project: string | number, team: string | number } | [project: string | number, team: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::update
-* @see app/Http/Controllers/ProjectTeamController.php:94
-* @route '/projects/{project}/team/{team}'
-*/
-updateForm.put = (args: { project: string | number, team: string | number } | [project: string | number, team: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::update
-* @see app/Http/Controllers/ProjectTeamController.php:94
-* @route '/projects/{project}/team/{team}'
-*/
-updateForm.patch = (args: { project: string | number, team: string | number } | [project: string | number, team: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
-
-/**
 * @see \App\Http\Controllers\ProjectTeamController::destroy
 * @see app/Http/Controllers/ProjectTeamController.php:112
 * @route '/projects/{project}/team/{team}'
@@ -344,43 +238,11 @@ destroy.delete = (args: { project: string | number, team: string | number } | [p
 })
 
 /**
-* @see \App\Http\Controllers\ProjectTeamController::destroy
-* @see app/Http/Controllers/ProjectTeamController.php:112
-* @route '/projects/{project}/team/{team}'
-*/
-const destroyForm = (args: { project: string | number, team: string | number } | [project: string | number, team: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::destroy
-* @see app/Http/Controllers/ProjectTeamController.php:112
-* @route '/projects/{project}/team/{team}'
-*/
-destroyForm.delete = (args: { project: string | number, team: string | number } | [project: string | number, team: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
-
-/**
 * @see \App\Http\Controllers\ProjectTeamController::availability
 * @see app/Http/Controllers/ProjectTeamController.php:18
 * @route '/projects/{project}/team/availability'
 */
-export const availability = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const availability = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: availability.url(args, options),
     method: 'get',
 })
@@ -395,7 +257,7 @@ availability.definition = {
 * @see app/Http/Controllers/ProjectTeamController.php:18
 * @route '/projects/{project}/team/availability'
 */
-availability.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+availability.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -428,7 +290,7 @@ availability.url = (args: { project: string | { id: string } } | [project: strin
 * @see app/Http/Controllers/ProjectTeamController.php:18
 * @route '/projects/{project}/team/availability'
 */
-availability.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+availability.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: availability.url(args, options),
     method: 'get',
 })
@@ -438,54 +300,17 @@ availability.get = (args: { project: string | { id: string } } | [project: strin
 * @see app/Http/Controllers/ProjectTeamController.php:18
 * @route '/projects/{project}/team/availability'
 */
-availability.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+availability.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: availability.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::availability
-* @see app/Http/Controllers/ProjectTeamController.php:18
-* @route '/projects/{project}/team/availability'
-*/
-const availabilityForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: availability.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::availability
-* @see app/Http/Controllers/ProjectTeamController.php:18
-* @route '/projects/{project}/team/availability'
-*/
-availabilityForm.get = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: availability.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::availability
-* @see app/Http/Controllers/ProjectTeamController.php:18
-* @route '/projects/{project}/team/availability'
-*/
-availabilityForm.head = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: availability.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-availability.form = availabilityForm
 
 /**
 * @see \App\Http\Controllers\ProjectTeamController::bulkAssign
 * @see app/Http/Controllers/ProjectTeamController.php:119
 * @route '/projects/{project}/team/bulk-assign'
 */
-export const bulkAssign = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const bulkAssign = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: bulkAssign.url(args, options),
     method: 'post',
 })
@@ -500,7 +325,7 @@ bulkAssign.definition = {
 * @see app/Http/Controllers/ProjectTeamController.php:119
 * @route '/projects/{project}/team/bulk-assign'
 */
-bulkAssign.url = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+bulkAssign.url = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { project: args }
     }
@@ -533,39 +358,17 @@ bulkAssign.url = (args: { project: string | { id: string } } | [project: string 
 * @see app/Http/Controllers/ProjectTeamController.php:119
 * @route '/projects/{project}/team/bulk-assign'
 */
-bulkAssign.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+bulkAssign.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: bulkAssign.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::bulkAssign
-* @see app/Http/Controllers/ProjectTeamController.php:119
-* @route '/projects/{project}/team/bulk-assign'
-*/
-const bulkAssignForm = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: bulkAssign.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::bulkAssign
-* @see app/Http/Controllers/ProjectTeamController.php:119
-* @route '/projects/{project}/team/bulk-assign'
-*/
-bulkAssignForm.post = (args: { project: string | { id: string } } | [project: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: bulkAssign.url(args, options),
-    method: 'post',
-})
-
-bulkAssign.form = bulkAssignForm
 
 /**
 * @see \App\Http\Controllers\ProjectTeamController::updateMobilization
 * @see app/Http/Controllers/ProjectTeamController.php:103
 * @route '/projects/{project}/team/{teamMember}/mobilization'
 */
-export const updateMobilization = (args: { project: string | number, teamMember: string | { id: string } } | [project: string | number, teamMember: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const updateMobilization = (args: { project: string | number, teamMember: string | number | { id: string | number } } | [project: string | number, teamMember: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: updateMobilization.url(args, options),
     method: 'post',
 })
@@ -580,7 +383,7 @@ updateMobilization.definition = {
 * @see app/Http/Controllers/ProjectTeamController.php:103
 * @route '/projects/{project}/team/{teamMember}/mobilization'
 */
-updateMobilization.url = (args: { project: string | number, teamMember: string | { id: string } } | [project: string | number, teamMember: string | { id: string } ], options?: RouteQueryOptions) => {
+updateMobilization.url = (args: { project: string | number, teamMember: string | number | { id: string | number } } | [project: string | number, teamMember: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             project: args[0],
@@ -608,32 +411,10 @@ updateMobilization.url = (args: { project: string | number, teamMember: string |
 * @see app/Http/Controllers/ProjectTeamController.php:103
 * @route '/projects/{project}/team/{teamMember}/mobilization'
 */
-updateMobilization.post = (args: { project: string | number, teamMember: string | { id: string } } | [project: string | number, teamMember: string | { id: string } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+updateMobilization.post = (args: { project: string | number, teamMember: string | number | { id: string | number } } | [project: string | number, teamMember: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: updateMobilization.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::updateMobilization
-* @see app/Http/Controllers/ProjectTeamController.php:103
-* @route '/projects/{project}/team/{teamMember}/mobilization'
-*/
-const updateMobilizationForm = (args: { project: string | number, teamMember: string | { id: string } } | [project: string | number, teamMember: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateMobilization.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectTeamController::updateMobilization
-* @see app/Http/Controllers/ProjectTeamController.php:103
-* @route '/projects/{project}/team/{teamMember}/mobilization'
-*/
-updateMobilizationForm.post = (args: { project: string | number, teamMember: string | { id: string } } | [project: string | number, teamMember: string | { id: string } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateMobilization.url(args, options),
-    method: 'post',
-})
-
-updateMobilization.form = updateMobilizationForm
 
 const ProjectTeamController = { index, store, update, destroy, availability, bulkAssign, updateMobilization }
 

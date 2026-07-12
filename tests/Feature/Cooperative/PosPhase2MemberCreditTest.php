@@ -4,6 +4,7 @@ namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosMemberCreditPayment;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -26,7 +27,9 @@ class PosPhase2MemberCreditTest extends TestCase
     {
         $cashier = $this->cashier();
         $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'credit_limit' => 0,
         ]);
         $product = PosProduct::factory()->create([
@@ -52,7 +55,9 @@ class PosPhase2MemberCreditTest extends TestCase
     {
         $cashier = $this->cashier();
         $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'credit_limit' => 100000,
         ]);
         $product = PosProduct::factory()->create([
@@ -82,7 +87,9 @@ class PosPhase2MemberCreditTest extends TestCase
     {
         $cashier = $this->cashier();
         $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'credit_limit' => 10000,
             'outstanding_balance' => 8000,
         ]);
@@ -109,7 +116,9 @@ class PosPhase2MemberCreditTest extends TestCase
     {
         $cashier = $this->cashier();
         $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'credit_limit' => 100000,
             'outstanding_balance' => 20000,
         ]);
@@ -129,7 +138,9 @@ class PosPhase2MemberCreditTest extends TestCase
     {
         $cashier = $this->cashier();
         $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'credit_limit' => 100000,
             'outstanding_balance' => 10000,
         ]);
@@ -144,7 +155,9 @@ class PosPhase2MemberCreditTest extends TestCase
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'credit_limit' => 100000,
         ]);
         $product = PosProduct::factory()->create([
@@ -182,7 +195,7 @@ class PosPhase2MemberCreditTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo('access_cooperative_pos');
 
         return $user;
@@ -190,7 +203,7 @@ class PosPhase2MemberCreditTest extends TestCase
 
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;

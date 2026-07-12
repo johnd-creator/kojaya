@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Contracts\Cooperative\LoanServiceContract;
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\ApplyLoanRequest;
 use App\Http\Requests\Cooperative\ApproveLoanRequest;
@@ -18,10 +20,13 @@ use Illuminate\Http\Request;
 
 class LoanApiController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    use ResolvesApiPageSize;
+
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $user = $this->authorizedUser($request, 'viewAny', Loan::class);
         $query = Loan::query()->with(['member', 'loanType', 'installments']);
+        $scopeService->scopeVisibleTo($query, $user);
 
         if (! $user->can('view_cooperative_all') && ! $user->can('manage_cooperative_loan')) {
             $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('user_id', $user->id));
@@ -31,13 +36,16 @@ class LoanApiController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        return response()->json($query->latest()->paginate($request->integer('per_page', 15)));
+        return response()->json($query->latest()->paginate($this->apiPageSize($request)));
     }
 
-    public function apply(ApplyLoanRequest $request, LoanServiceContract $loanService): JsonResponse
-    {
+    public function apply(
+        ApplyLoanRequest $request,
+        LoanServiceContract $loanService,
+        OrganizationScopedQueryService $scopeService,
+    ): JsonResponse {
         $user = $this->authorizedUser($request, 'create', Loan::class);
-        $member = $this->resolveMember($request, $user);
+        $member = $this->resolveMember($request, $user, $scopeService);
 
         $loan = $loanService->apply([
             ...$request->validated(),
@@ -110,16 +118,22 @@ class LoanApiController extends Controller
         return $user;
     }
 
-    private function resolveMember(Request $request, \App\Models\User $user): CooperativeMember
-    {
+    private function resolveMember(
+        Request $request,
+        \App\Models\User $user,
+        OrganizationScopedQueryService $scopeService,
+    ): CooperativeMember {
+        $memberQuery = CooperativeMember::query();
+        $scopeService->scopeVisibleTo($memberQuery, $user);
+
         if ($user->can('view_cooperative_member') && ! $user->can('manage_cooperative_loan')) {
-            return CooperativeMember::query()->where('user_id', $user->id)->firstOrFail();
+            return $memberQuery->where('user_id', $user->id)->firstOrFail();
         }
 
         $memberId = $request->integer('cooperative_member_id');
 
         abort_unless($memberId, 422, 'cooperative_member_id wajib diisi.');
 
-        return CooperativeMember::query()->findOrFail($memberId);
+        return $memberQuery->whereKey($memberId)->firstOrFail();
     }
 }

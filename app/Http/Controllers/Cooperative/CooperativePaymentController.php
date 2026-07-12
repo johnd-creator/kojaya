@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\BulkApprovePaymentsRequest;
 use App\Http\Requests\Cooperative\StoreCooperativePaymentRequest;
@@ -19,11 +20,12 @@ class CooperativePaymentController extends Controller
 {
     private const SORT_WHITELIST = ['paid_at', 'status', 'amount', 'id'];
 
-    public function index(Request $request): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         $this->authorize('viewAny', CooperativePayment::class);
 
         $query = CooperativePayment::query()->with(['member', 'invoice.contributionType', 'contributionType']);
+        $scopeService->scopeVisibleTo($query, $request->user());
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -38,7 +40,8 @@ class CooperativePaymentController extends Controller
 
         return Inertia::render('Cooperative/Payments/Index', [
             'payments' => $query->paginate(20)->withQueryString(),
-            'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
+            'members' => tap(CooperativeMember::query()->active(), fn ($memberQuery) => $scopeService->scopeVisibleTo($memberQuery, $request->user()))
+                ->orderBy('name')->get(['id', 'member_no', 'name']),
             'contributionTypes' => $this->paymentContributionTypes()->get(),
             'filters' => array_merge(
                 $request->only(['status']),
@@ -67,15 +70,17 @@ class CooperativePaymentController extends Controller
         return back()->with('success', 'Pembayaran simpanan berhasil dicatat.');
     }
 
-    public function bulkApprove(BulkApprovePaymentsRequest $request, CooperativePaymentService $service): RedirectResponse
+    public function bulkApprove(BulkApprovePaymentsRequest $request, CooperativePaymentService $service, OrganizationScopedQueryService $scopeService): RedirectResponse
     {
         abort_unless($this->canApprovePaymentsFromUi($request), 403);
 
         $ids = $request->validated('ids');
 
-        $payments = CooperativePayment::query()
-            ->whereIn('id', $ids)
-            ->get();
+        $paymentQuery = CooperativePayment::query()->whereIn('id', $ids);
+        $scopeService->scopeVisibleTo($paymentQuery, $request->user());
+        $payments = $paymentQuery->get();
+
+        abort_if($payments->count() !== count(array_unique($ids)), 403, 'Semua pembayaran harus berada dalam organisasi yang sama.');
 
         $results = [
             'approved' => 0,

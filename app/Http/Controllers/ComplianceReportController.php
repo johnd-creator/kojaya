@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Models\EmployeeCertificate;
 use App\Models\MedicalCheckup;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class ComplianceReportController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function certificateCompliance(Request $request): JsonResponse
     {
         $query = EmployeeCertificate::query()
@@ -112,7 +115,7 @@ class ComplianceReportController extends Controller
             $query->where('e.organization_id', $request->user()->organization_id);
         }
 
-        $nonCompliant = $query->paginate($request->input('per_page', 20));
+        $nonCompliant = $query->paginate($this->apiPageSize($request));
 
         return response()->json([
             'data' => $nonCompliant,

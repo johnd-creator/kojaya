@@ -10,48 +10,44 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureMemberFullyActive
 {
-    /**
-     * Statuses yang dianggap "fully active" untuk fitur finansial.
-     *
-     * @var array<int, string>
-     */
-    private const ACTIVE_STATUSES = [
-        CooperativeMember::VALIDATION_ACTIVE,
-    ];
-
     public function __construct(
         private readonly AuditLogService $audit,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        $member = $request->user()?->cooperativeMember;
+        $member = $request->user()?->cooperativeMember()->first();
 
         if (! $member) {
             return redirect()->route('member.dashboard');
         }
 
-        $status = $member->validation_status ?: $member->status;
-
-        if (in_array($status, self::ACTIVE_STATUSES, true)) {
+        if ($this->isFullyActive($member)) {
             return $next($request);
         }
 
-        $this->logAccessDenied($request, $member, $status);
+        $this->logAccessDenied($request, $member);
 
         return redirect()
             ->route('member.onboarding')
-            ->with('warning', $this->messageFor($status));
+            ->with('warning', $this->messageFor($member->validation_status));
     }
 
-    private function logAccessDenied(Request $request, CooperativeMember $member, string $status): void
+    private function isFullyActive(CooperativeMember $member): bool
+    {
+        return $member->status === CooperativeMember::VALIDATION_ACTIVE
+            && $member->validation_status === CooperativeMember::VALIDATION_ACTIVE;
+    }
+
+    private function logAccessDenied(Request $request, CooperativeMember $member): void
     {
         try {
             $this->audit->log('sso.member.gated_access_denied', 'cooperative.sso', $member, [
                 'new' => [
                     'attempted_url' => $request->fullUrl(),
                     'method' => $request->method(),
-                    'validation_status' => $status,
+                    'validation_status' => $member->validation_status,
+                    'member_status' => $member->status,
                 ],
             ]);
         } catch (\Throwable) {

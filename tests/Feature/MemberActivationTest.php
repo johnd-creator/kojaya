@@ -24,12 +24,13 @@ class MemberActivationTest extends TestCase
         $this->admin->assignRole('System Admin');
     }
 
-    public function test_activate_replaces_tmp_number_with_kop_format(): void
+    public function test_pending_member_cannot_be_activated_directly(): void
     {
         $member = CooperativeMember::factory()->create([
             'no_anggota' => 'TMP0LNWGQU',
             'member_no' => 'TMP0LNWGQU',
             'status' => 'PENDING',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
 
         $this->actingAs($this->admin)
@@ -38,8 +39,8 @@ class MemberActivationTest extends TestCase
 
         $member->refresh();
 
-        $this->assertSame('ACTIVE', $member->status);
-        $this->assertMatchesRegularExpression('/^KOP-\d+$/', $member->no_anggota);
+        $this->assertSame('PENDING', $member->status);
+        $this->assertSame('TMP0LNWGQU', $member->no_anggota);
         $this->assertSame($member->no_anggota, $member->member_no);
     }
 
@@ -49,6 +50,7 @@ class MemberActivationTest extends TestCase
             'no_anggota' => 'KOP-005',
             'member_no' => 'KOP-005',
             'status' => 'INACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_INACTIVE,
         ]);
 
         $this->actingAs($this->admin)

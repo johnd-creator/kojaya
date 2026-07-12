@@ -13,5 +13,6 @@ enum ApiErrorCode: string
     case BusinessRuleViolation = 'BUSINESS_RULE_VIOLATION';
     case PeriodLocked = 'PERIOD_LOCKED';
     case InsufficientBalance = 'INSUFFICIENT_BALANCE';
+    case MemberNotActive = 'MEMBER_NOT_ACTIVE';
     case ServerError = 'SERVER_ERROR';
 }

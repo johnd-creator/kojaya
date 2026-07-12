@@ -48,6 +48,8 @@ enum PermissionEnum: string
     // Cooperative
     case COOPERATIVE_MEMBER_VIEW = 'view_cooperative_member';
     case COOPERATIVE_MEMBER_MANAGE = 'manage_cooperative_member';
+    case COOPERATIVE_MEMBER_PII_VIEW = 'view_cooperative_member_pii';
+    case COOPERATIVE_MEMBER_PII_WRITE = 'update_cooperative_member_pii';
     case COOPERATIVE_DUES_MANAGE = 'manage_cooperative_dues';
     case COOPERATIVE_PAYMENT_MANAGE = 'manage_cooperative_payment';
     case COOPERATIVE_LOAN_VIEW = 'view_cooperative_loan';
@@ -114,6 +116,9 @@ enum PermissionEnum: string
     case ESS_PORTAL_ACCESS = 'access_ess_portal';
     case OWN_PAYSLIP_VIEW = 'view_own_payslip';
 
+    // --- Member Portal (self-service, ownership enforced by middleware/policy) ---
+    case MEMBER_PORTAL_ACCESS = 'member_portal_access';
+
     // --- NEW: Cooperative Extended ---
     case COOPERATIVE_POINTS_MANAGE = 'manage_cooperative_points';
     case COOPERATIVE_REWARDS_MANAGE = 'manage_cooperative_rewards';
@@ -132,6 +137,8 @@ enum PermissionEnum: string
     case COOPERATIVE_MEMBER_VALIDATE = 'validate_cooperative_member';
     case COOPERATIVE_MEMBER_VERIFY = 'verify_cooperative_member';
     case COOPERATIVE_MEMBER_APPROVE = 'approve_cooperative_member';
+    case COOPERATIVE_MEMBER_EXPORT = 'export_cooperative_member';
+    case COOPERATIVE_RESIGNATION_REVIEW = 'review_cooperative_resignation';
     case COOPERATIVE_OPENING_BALANCE_MANAGE = 'manage_cooperative_opening_balance';
     case COOPERATIVE_OPENING_BALANCE_APPROVE = 'approve_cooperative_opening_balance';
     case COOPERATIVE_OPENING_BALANCE_VOID = 'void_cooperative_opening_balance';

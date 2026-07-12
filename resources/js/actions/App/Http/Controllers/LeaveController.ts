@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\LeaveController::selfService
 * @see app/Http/Controllers/LeaveController.php:21
@@ -44,43 +44,6 @@ selfService.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:21
-* @route '/leaves/self-service'
-*/
-const selfServiceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: selfService.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:21
-* @route '/leaves/self-service'
-*/
-selfServiceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: selfService.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\LeaveController::selfService
-* @see app/Http/Controllers/LeaveController.php:21
-* @route '/leaves/self-service'
-*/
-selfServiceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: selfService.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-selfService.form = selfServiceForm
-
-/**
 * @see \App\Http\Controllers\LeaveController::store
 * @see app/Http/Controllers/LeaveController.php:45
 * @route '/leaves/self-service'
@@ -113,28 +76,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:45
-* @route '/leaves/self-service'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\LeaveController::store
-* @see app/Http/Controllers/LeaveController.php:45
-* @route '/leaves/self-service'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\LeaveController::index
@@ -181,48 +122,11 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:95
-* @route '/leaves'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:95
-* @route '/leaves'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\LeaveController::index
-* @see app/Http/Controllers/LeaveController.php:95
-* @route '/leaves'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\LeaveController::updateStatus
 * @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-export const updateStatus = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateStatus = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
@@ -237,7 +141,7 @@ updateStatus.definition = {
 * @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-updateStatus.url = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+updateStatus.url = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { leave: args }
     }
@@ -270,42 +174,10 @@ updateStatus.url = (args: { leave: number | { id: number } } | [leave: number | 
 * @see app/Http/Controllers/LeaveController.php:116
 * @route '/leaves/{leave}/status'
 */
-updateStatus.put = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateStatus.put = (args: { leave: string | number | { id: string | number } } | [leave: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
-
-/**
-* @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:116
-* @route '/leaves/{leave}/status'
-*/
-const updateStatusForm = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\LeaveController::updateStatus
-* @see app/Http/Controllers/LeaveController.php:116
-* @route '/leaves/{leave}/status'
-*/
-updateStatusForm.put = (args: { leave: number | { id: number } } | [leave: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-updateStatus.form = updateStatusForm
 
 const LeaveController = { selfService, store, index, updateStatus }
 

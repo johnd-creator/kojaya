@@ -1,7 +1,7 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:17
 * @route '/cooperative/redemptions'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:17
 * @route '/cooperative/redemptions'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:17
 * @route '/cooperative/redemptions'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:17
 * @route '/cooperative/redemptions'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,48 +44,11 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
-* @route '/cooperative/redemptions'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
-* @route '/cooperative/redemptions'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::index
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:16
-* @route '/cooperative/redemptions'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-export const show = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -97,10 +60,10 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-show.url = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+show.url = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { redemption: args }
     }
@@ -130,67 +93,30 @@ show.url = (args: { redemption: string | { id: string } } | [redemption: string 
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-show.get = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:34
 * @route '/cooperative/redemptions/{redemption}'
 */
-show.head = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
-* @route '/cooperative/redemptions/{redemption}'
-*/
-const showForm = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
-* @route '/cooperative/redemptions/{redemption}'
-*/
-showForm.get = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::show
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:32
-* @route '/cooperative/redemptions/{redemption}'
-*/
-showForm.head = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::updateStatus
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:43
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:45
 * @route '/cooperative/redemptions/{redemption}/status'
 */
-export const updateStatus = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const updateStatus = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
@@ -202,10 +128,10 @@ updateStatus.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::updateStatus
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:43
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:45
 * @route '/cooperative/redemptions/{redemption}/status'
 */
-updateStatus.url = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+updateStatus.url = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { redemption: args }
     }
@@ -235,45 +161,13 @@ updateStatus.url = (args: { redemption: string | { id: string } } | [redemption:
 
 /**
 * @see \App\Http\Controllers\Cooperative\RewardRedemptionController::updateStatus
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:43
+* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:45
 * @route '/cooperative/redemptions/{redemption}/status'
 */
-updateStatus.put = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+updateStatus.put = (args: { redemption: string | number | { id: string | number } } | [redemption: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: updateStatus.url(args, options),
     method: 'put',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::updateStatus
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:43
-* @route '/cooperative/redemptions/{redemption}/status'
-*/
-const updateStatusForm = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\RewardRedemptionController::updateStatus
-* @see app/Http/Controllers/Cooperative/RewardRedemptionController.php:43
-* @route '/cooperative/redemptions/{redemption}/status'
-*/
-updateStatusForm.put = (args: { redemption: string | { id: string } } | [redemption: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: updateStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-updateStatus.form = updateStatusForm
 
 const redemptions = {
     index: Object.assign(index, index),

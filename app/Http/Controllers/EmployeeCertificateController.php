@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Requests\StoreEmployeeCertificateRequest;
 use App\Http\Requests\UpdateEmployeeCertificateRequest;
 use App\Http\Requests\UploadEmployeeDocumentRequest;
@@ -14,12 +15,14 @@ use Illuminate\Support\Facades\Storage;
 
 class EmployeeCertificateController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request, string $employeeId)
     {
         $certificates = Employee::findOrFail($employeeId)
             ->certificates()
             ->orderBy('created_at', 'desc')
-            ->paginate($request->input('per_page', 20));
+            ->paginate($this->apiPageSize($request));
 
         return EmployeeCertificateResource::collection($certificates);
     }

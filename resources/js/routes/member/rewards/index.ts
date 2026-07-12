@@ -1,10 +1,10 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::redeem
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-export const redeem = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const redeem = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeem.url(args, options),
     method: 'post',
 })
@@ -19,7 +19,7 @@ redeem.definition = {
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeem.url = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+redeem.url = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reward: args }
     }
@@ -52,32 +52,10 @@ redeem.url = (args: { reward: string | { id: string } } | [reward: string | { id
 * @see app/Http/Controllers/MemberPortalController.php:478
 * @route '/member/rewards/{reward}/redeem'
 */
-redeem.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+redeem.post = (args: { reward: string | number | { id: string | number } } | [reward: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: redeem.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::redeem
-* @see app/Http/Controllers/MemberPortalController.php:478
-* @route '/member/rewards/{reward}/redeem'
-*/
-const redeemForm = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: redeem.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\MemberPortalController::redeem
-* @see app/Http/Controllers/MemberPortalController.php:478
-* @route '/member/rewards/{reward}/redeem'
-*/
-redeemForm.post = (args: { reward: string | { id: string } } | [reward: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: redeem.url(args, options),
-    method: 'post',
-})
-
-redeem.form = redeemForm
 
 const rewards = {
     redeem: Object.assign(redeem, redeem),

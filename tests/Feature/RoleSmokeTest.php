@@ -316,7 +316,7 @@ class RoleSmokeTest extends TestCase
 
         $permissionNames = $adminKoperasi->permissions->pluck('name');
 
-        $this->assertCount(20, $permissionNames);
+        $this->assertCount(22, $permissionNames);
 
         foreach ([
             'view_cooperative_member',
@@ -337,6 +337,8 @@ class RoleSmokeTest extends TestCase
             'manage_pos_products',
             'view_pos_reports',
             'view_cooperative_ledger',
+            'export_cooperative_member',
+            'review_cooperative_resignation',
             'approve_pos_void',
             'manage_cooperative_opening_balance',
         ] as $permission) {

@@ -1,10 +1,10 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EmployeeContractController::index
 * @see app/Http/Controllers/EmployeeContractController.php:13
 * @route '/employees/{employee}/contracts'
 */
-export const index = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const index = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -19,7 +19,7 @@ index.definition = {
 * @see app/Http/Controllers/EmployeeContractController.php:13
 * @route '/employees/{employee}/contracts'
 */
-index.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+index.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -52,7 +52,7 @@ index.url = (args: { employee: number | { id: number } } | [employee: number | {
 * @see app/Http/Controllers/EmployeeContractController.php:13
 * @route '/employees/{employee}/contracts'
 */
-index.get = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+index.get = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: index.url(args, options),
     method: 'get',
 })
@@ -62,54 +62,17 @@ index.get = (args: { employee: number | { id: number } } | [employee: number | {
 * @see app/Http/Controllers/EmployeeContractController.php:13
 * @route '/employees/{employee}/contracts'
 */
-index.head = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+index.head = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::index
-* @see app/Http/Controllers/EmployeeContractController.php:13
-* @route '/employees/{employee}/contracts'
-*/
-const indexForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::index
-* @see app/Http/Controllers/EmployeeContractController.php:13
-* @route '/employees/{employee}/contracts'
-*/
-indexForm.get = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::index
-* @see app/Http/Controllers/EmployeeContractController.php:13
-* @route '/employees/{employee}/contracts'
-*/
-indexForm.head = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::store
 * @see app/Http/Controllers/EmployeeContractController.php:27
 * @route '/employees/{employee}/contracts'
 */
-export const store = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const store = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
@@ -124,7 +87,7 @@ store.definition = {
 * @see app/Http/Controllers/EmployeeContractController.php:27
 * @route '/employees/{employee}/contracts'
 */
-store.url = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+store.url = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { employee: args }
     }
@@ -157,39 +120,17 @@ store.url = (args: { employee: number | { id: number } } | [employee: number | {
 * @see app/Http/Controllers/EmployeeContractController.php:27
 * @route '/employees/{employee}/contracts'
 */
-store.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+store.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::store
-* @see app/Http/Controllers/EmployeeContractController.php:27
-* @route '/employees/{employee}/contracts'
-*/
-const storeForm = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::store
-* @see app/Http/Controllers/EmployeeContractController.php:27
-* @route '/employees/{employee}/contracts'
-*/
-storeForm.post = (args: { employee: number | { id: number } } | [employee: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
 * @see app/Http/Controllers/EmployeeContractController.php:37
 * @route '/employees/{employee}/contracts/{contract}'
 */
-export const update = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -204,7 +145,7 @@ update.definition = {
 * @see app/Http/Controllers/EmployeeContractController.php:37
 * @route '/employees/{employee}/contracts/{contract}'
 */
-update.url = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions) => {
+update.url = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
             employee: args[0],
@@ -234,7 +175,7 @@ update.url = (args: { employee: number | { id: number }, contract: number | { id
 * @see app/Http/Controllers/EmployeeContractController.php:37
 * @route '/employees/{employee}/contracts/{contract}'
 */
-update.put = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -244,57 +185,10 @@ update.put = (args: { employee: number | { id: number }, contract: number | { id
 * @see app/Http/Controllers/EmployeeContractController.php:37
 * @route '/employees/{employee}/contracts/{contract}'
 */
-update.patch = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:37
-* @route '/employees/{employee}/contracts/{contract}'
-*/
-const updateForm = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:37
-* @route '/employees/{employee}/contracts/{contract}'
-*/
-updateForm.put = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\EmployeeContractController::update
-* @see app/Http/Controllers/EmployeeContractController.php:37
-* @route '/employees/{employee}/contracts/{contract}'
-*/
-updateForm.patch = (args: { employee: number | { id: number }, contract: number | { id: number } } | [employee: number | { id: number }, contract: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
 
 const contracts = {
     index: Object.assign(index, index),

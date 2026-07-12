@@ -34,7 +34,8 @@ class RegistrationTest extends TestCase
         $this->assertDatabaseHas('cooperative_members', [
             'email' => 'anggota@example.com',
             'name' => 'Anggota Baru',
-            'status' => 'ACTIVE',
+            'status' => 'PENDING',
+            'validation_status' => 'PENDING',
         ]);
 
         $user = auth()->user();

@@ -1381,6 +1381,474 @@
                 }
             }
         },
+        "/api/v1/member/notifications": {
+            "get": {
+                "summary": "Mengambil Member/Notifications",
+                "operationId": "get_api_v1_member_notifications",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/notifications/recent": {
+            "get": {
+                "summary": "Mengambil Member/Notifications/Recent",
+                "operationId": "get_api_v1_member_notifications_recent",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/notifications/unread-count": {
+            "get": {
+                "summary": "Mengambil Member/Notifications/Unread-Count",
+                "operationId": "get_api_v1_member_notifications_unread-count",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/notifications/summary": {
+            "get": {
+                "summary": "Mengambil Member/Notifications/Summary",
+                "operationId": "get_api_v1_member_notifications_summary",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/notifications/preferences": {
+            "get": {
+                "summary": "Mengambil Member/Notifications/Preferences",
+                "operationId": "get_api_v1_member_notifications_preferences",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            },
+            "put": {
+                "summary": "Mengupdate Member/Notifications/Preferences",
+                "operationId": "put_api_v1_member_notifications_preferences",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/notifications/{notification}/read": {
+            "patch": {
+                "summary": "PATCH Member/Notifications/{Notification}/Read",
+                "operationId": "patch_api_v1_member_notifications__notification__read",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "parameters": [
+                    {
+                        "name": "notification",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/member/notifications/mark-all-read": {
+            "post": {
+                "summary": "Membuat Member/Notifications/Mark-All-Read",
+                "operationId": "post_api_v1_member_notifications_mark-all-read",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ]
+            }
+        },
         "/api/v1/member/savings/summary": {
             "get": {
                 "summary": "Mengambil Member/Savings/Summary",
@@ -2792,10 +3260,10 @@
                 ]
             }
         },
-        "/api/v1/member/notifications": {
+        "/api/v1/member/store/catalog": {
             "get": {
-                "summary": "Mengambil Member/Notifications",
-                "operationId": "get_api_v1_member_notifications",
+                "summary": "Mengambil Member/Store/Catalog",
+                "operationId": "get_api_v1_member_store_catalog",
                 "tags": [
                     "Member"
                 ],
@@ -2825,245 +3293,13 @@
                 },
                 "x-required-abilities": [
                     "member:read"
-                ],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
                 ]
             }
         },
-        "/api/v1/member/notifications/recent": {
-            "get": {
-                "summary": "Mengambil Member/Notifications/Recent",
-                "operationId": "get_api_v1_member_notifications_recent",
-                "tags": [
-                    "Member"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationError"
-                    },
-                    "429": {
-                        "description": "Too many requests"
-                    }
-                },
-                "x-required-abilities": [
-                    "member:read"
-                ],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
-                ]
-            }
-        },
-        "/api/v1/member/notifications/unread-count": {
-            "get": {
-                "summary": "Mengambil Member/Notifications/Unread-Count",
-                "operationId": "get_api_v1_member_notifications_unread-count",
-                "tags": [
-                    "Member"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationError"
-                    },
-                    "429": {
-                        "description": "Too many requests"
-                    }
-                },
-                "x-required-abilities": [
-                    "member:read"
-                ],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
-                ]
-            }
-        },
-        "/api/v1/member/notifications/summary": {
-            "get": {
-                "summary": "Mengambil Member/Notifications/Summary",
-                "operationId": "get_api_v1_member_notifications_summary",
-                "tags": [
-                    "Member"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationError"
-                    },
-                    "429": {
-                        "description": "Too many requests"
-                    }
-                },
-                "x-required-abilities": [
-                    "member:read"
-                ],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
-                ]
-            }
-        },
-        "/api/v1/member/notifications/preferences": {
-            "get": {
-                "summary": "Mengambil Member/Notifications/Preferences",
-                "operationId": "get_api_v1_member_notifications_preferences",
-                "tags": [
-                    "Member"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationError"
-                    },
-                    "429": {
-                        "description": "Too many requests"
-                    }
-                },
-                "x-required-abilities": [
-                    "member:read"
-                ],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
-                ]
-            },
-            "put": {
-                "summary": "Mengupdate Member/Notifications/Preferences",
-                "operationId": "put_api_v1_member_notifications_preferences",
+        "/api/v1/member/store/orders": {
+            "post": {
+                "summary": "Membuat Member/Store/Orders",
+                "operationId": "post_api_v1_member_store_orders",
                 "tags": [
                     "Member"
                 ],
@@ -3093,96 +3329,6 @@
                 },
                 "x-required-abilities": [
                     "member:write"
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
-                ]
-            }
-        },
-        "/api/v1/member/notifications/{notification}/read": {
-            "patch": {
-                "summary": "PATCH Member/Notifications/{Notification}/Read",
-                "operationId": "patch_api_v1_member_notifications__notification__read",
-                "tags": [
-                    "Member"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthenticated"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationError"
-                    },
-                    "429": {
-                        "description": "Too many requests"
-                    }
-                },
-                "x-required-abilities": [
-                    "member:write"
-                ],
-                "parameters": [
-                    {
-                        "name": "notification",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
-                        }
-                    }
                 ],
                 "requestBody": {
                     "required": true,
@@ -3196,10 +3342,10 @@
                 }
             }
         },
-        "/api/v1/member/notifications/mark-all-read": {
-            "post": {
-                "summary": "Membuat Member/Notifications/Mark-All-Read",
-                "operationId": "post_api_v1_member_notifications_mark-all-read",
+        "/api/v1/member/payment-intents/{intent}": {
+            "get": {
+                "summary": "Mengambil Member/Payment-Intents/{Intent}",
+                "operationId": "get_api_v1_member_payment-intents__intent",
                 "tags": [
                     "Member"
                 ],
@@ -3228,33 +3374,15 @@
                     }
                 },
                 "x-required-abilities": [
-                    "member:write"
+                    "member:read"
                 ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
                 "parameters": [
                     {
-                        "name": "page",
-                        "in": "query",
+                        "name": "intent",
+                        "in": "path",
+                        "required": true,
                         "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 15
+                            "type": "string"
                         }
                     }
                 ]
@@ -3407,9 +3535,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -3459,9 +3584,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -3523,9 +3645,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -3577,9 +3696,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "member",
@@ -3637,9 +3753,144 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
+                "parameters": [
+                    {
+                        "name": "member",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/members/{member}/sensitive-data": {
+            "patch": {
+                "summary": "PATCH Members/{Member}/Sensitive-Data",
+                "operationId": "patch_api_v1_members__member__sensitive-data",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "member",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/members/{member}/account": {
+            "patch": {
+                "summary": "PATCH Members/{Member}/Account",
+                "operationId": "patch_api_v1_members__member__account",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
                 "parameters": [
                     {
                         "name": "member",
@@ -3709,9 +3960,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "member",
@@ -3781,9 +4029,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "member",
@@ -3853,9 +4098,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "resignationRequest",
@@ -3925,9 +4167,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -3979,9 +4218,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4025,9 +4261,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4089,9 +4322,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4153,9 +4383,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "payment",
@@ -4224,10 +4451,7 @@
                     "429": {
                         "description": "Too many requests"
                     }
-                },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ]
+                }
             }
         },
         "/api/v1/savings/ledger": {
@@ -4261,9 +4485,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -4315,9 +4536,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -4369,9 +4587,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4433,9 +4648,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4495,9 +4707,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4567,9 +4776,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4639,9 +4845,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "loan",
@@ -4711,9 +4914,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -5487,9 +5687,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5541,9 +5738,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5595,9 +5789,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5649,9 +5840,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:read"
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -5701,9 +5889,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -5765,9 +5950,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "parameters": [
                     {
                         "name": "notification",
@@ -5837,9 +6019,6 @@
                         "description": "Too many requests"
                     }
                 },
-                "x-required-abilities": [
-                    "cooperative:write"
-                ],
                 "requestBody": {
                     "required": true,
                     "content": {

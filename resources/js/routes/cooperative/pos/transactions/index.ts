@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 import receipt24fea0 from './receipt'
 /**
 * @see \App\Http\Controllers\Cooperative\PosRegisterController::store
@@ -33,28 +33,6 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosRegisterController::store
-* @see app/Http/Controllers/Cooperative/PosRegisterController.php:27
-* @route '/cooperative/pos/transactions'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosRegisterController::store
-* @see app/Http/Controllers/Cooperative/PosRegisterController.php:27
-* @route '/cooperative/pos/transactions'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::index
@@ -101,48 +79,11 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::index
-* @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:15
-* @route '/cooperative/pos/transactions'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::index
-* @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:15
-* @route '/cooperative/pos/transactions'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::index
-* @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:15
-* @route '/cooperative/pos/transactions'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::show
 * @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
 * @route '/cooperative/pos/transactions/{transaction}'
 */
-export const show = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -157,7 +98,7 @@ show.definition = {
 * @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
 * @route '/cooperative/pos/transactions/{transaction}'
 */
-show.url = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+show.url = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { transaction: args }
     }
@@ -190,7 +131,7 @@ show.url = (args: { transaction: number | { id: number } } | [transaction: numbe
 * @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
 * @route '/cooperative/pos/transactions/{transaction}'
 */
-show.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -200,54 +141,17 @@ show.get = (args: { transaction: number | { id: number } } | [transaction: numbe
 * @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
 * @route '/cooperative/pos/transactions/{transaction}'
 */
-show.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::show
-* @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
-* @route '/cooperative/pos/transactions/{transaction}'
-*/
-const showForm = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::show
-* @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
-* @route '/cooperative/pos/transactions/{transaction}'
-*/
-showForm.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionHistoryController::show
-* @see app/Http/Controllers/Cooperative/PosTransactionHistoryController.php:73
-* @route '/cooperative/pos/transactions/{transaction}'
-*/
-showForm.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::receipt
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
 * @route '/cooperative/pos/transactions/{transaction}/receipt'
 */
-export const receipt = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const receipt = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: receipt.url(args, options),
     method: 'get',
 })
@@ -262,7 +166,7 @@ receipt.definition = {
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
 * @route '/cooperative/pos/transactions/{transaction}/receipt'
 */
-receipt.url = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+receipt.url = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { transaction: args }
     }
@@ -295,7 +199,7 @@ receipt.url = (args: { transaction: number | { id: number } } | [transaction: nu
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
 * @route '/cooperative/pos/transactions/{transaction}/receipt'
 */
-receipt.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+receipt.get = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: receipt.url(args, options),
     method: 'get',
 })
@@ -305,47 +209,10 @@ receipt.get = (args: { transaction: number | { id: number } } | [transaction: nu
 * @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
 * @route '/cooperative/pos/transactions/{transaction}/receipt'
 */
-receipt.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+receipt.head = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: receipt.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::receipt
-* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
-* @route '/cooperative/pos/transactions/{transaction}/receipt'
-*/
-const receiptForm = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: receipt.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::receipt
-* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
-* @route '/cooperative/pos/transactions/{transaction}/receipt'
-*/
-receiptForm.get = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: receipt.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosTransactionReceiptController::receipt
-* @see app/Http/Controllers/Cooperative/PosTransactionReceiptController.php:12
-* @route '/cooperative/pos/transactions/{transaction}/receipt'
-*/
-receiptForm.head = (args: { transaction: number | { id: number } } | [transaction: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: receipt.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-receipt.form = receiptForm
 
 const transactions = {
     store: Object.assign(store, store),

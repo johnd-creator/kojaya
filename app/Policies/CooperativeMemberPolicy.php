@@ -15,8 +15,10 @@ class CooperativeMemberPolicy extends BasePolicy
 
     public function view(User $user, CooperativeMember $cooperativeMember): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)
-            || ($this->can($user, PermissionEnum::COOPERATIVE_MEMBER_VIEW->value) && $cooperativeMember->user_id === $user->id);
+        return ($this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value) && $this->visibleTo($user, $cooperativeMember))
+            || ($this->can($user, PermissionEnum::COOPERATIVE_MEMBER_VIEW->value)
+                && $cooperativeMember->user_id === $user->id
+                && $this->sameOrganization($user, $cooperativeMember));
     }
 
     public function create(User $user): bool
@@ -26,7 +28,8 @@ class CooperativeMemberPolicy extends BasePolicy
 
     public function update(User $user, CooperativeMember $cooperativeMember): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)
+            && $this->visibleTo($user, $cooperativeMember);
     }
 
     public function activate(User $user, CooperativeMember $cooperativeMember): bool
@@ -34,13 +37,37 @@ class CooperativeMemberPolicy extends BasePolicy
         return $this->update($user, $cooperativeMember);
     }
 
+    public function updateSensitiveData(User $user, CooperativeMember $cooperativeMember): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_PII_WRITE->value)
+            && $this->visibleTo($user, $cooperativeMember);
+    }
+
     public function resign(User $user, CooperativeMember $cooperativeMember): bool
     {
         return $this->update($user, $cooperativeMember);
     }
 
+    public function posCredit(User $user, CooperativeMember $cooperativeMember): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_POS_ACCESS->value)
+            && $this->visibleTo($user, $cooperativeMember);
+    }
+
     public function delete(User $user, CooperativeMember $cooperativeMember): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)
+            && $this->visibleTo($user, $cooperativeMember);
+    }
+
+    public function export(User $user): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_EXPORT->value);
+    }
+
+    private function visibleTo(User $user, CooperativeMember $member): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
+            || $this->sameOrganization($user, $member);
     }
 }

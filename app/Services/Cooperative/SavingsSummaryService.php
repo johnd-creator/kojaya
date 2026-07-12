@@ -16,7 +16,18 @@ class SavingsSummaryService
      */
     public function summary(?CooperativeMember $member = null, array $filters = []): array
     {
-        $rows = $this->ledgerQuery($member, $filters)
+        return $this->summaryFromQuery($this->ledgerQuery($member, $filters));
+    }
+
+    /**
+     * Calculate a summary from an already-scoped ledger query.
+     *
+     * @param  Builder<CooperativeLedgerEntry>  $ledgerQuery
+     * @return array{total_balance: float, by_category: array<string, float>, uncategorized: float}
+     */
+    public function summaryFromQuery(Builder $ledgerQuery): array
+    {
+        $rows = (clone $ledgerQuery)
             ->leftJoin('cooperative_contribution_types', 'cooperative_ledger_entries.cooperative_contribution_type_id', '=', 'cooperative_contribution_types.id')
             ->selectRaw('COALESCE(cooperative_contribution_types.category, cooperative_ledger_entries.category_snapshot, ? ) as category_key', ['UNCATEGORIZED'])
             ->selectRaw('COALESCE(SUM(cooperative_ledger_entries.credit - cooperative_ledger_entries.debit), 0) as balance')

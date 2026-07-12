@@ -10,24 +10,30 @@ class MemberResignationRequestPolicy extends BasePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->canAny($user, [
-            PermissionEnum::COOPERATIVE_MEMBER_VIEW->value,
-            PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value,
-            PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value,
-        ]);
+        return $this->can($user, PermissionEnum::COOPERATIVE_RESIGNATION_REVIEW->value);
     }
 
     public function view(User $user, MemberResignationRequest $resignationRequest): bool
     {
-        return $this->viewAny($user)
-            || $resignationRequest->member?->user_id === $user->id;
+        return ($this->can($user, PermissionEnum::COOPERATIVE_RESIGNATION_REVIEW->value) && $this->visibleTo($user, $resignationRequest))
+            || ($resignationRequest->member?->user_id === $user->id
+                && $resignationRequest->member !== null
+                && $this->sameOrganization($user, $resignationRequest->member));
     }
 
     public function approve(User $user, MemberResignationRequest $resignationRequest): bool
     {
         return $this->canAny($user, [
-            PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value,
+            PermissionEnum::COOPERATIVE_RESIGNATION_REVIEW->value,
             PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value,
-        ]);
+        ]) && $this->visibleTo($user, $resignationRequest);
+    }
+
+    private function visibleTo(User $user, MemberResignationRequest $request): bool
+    {
+        $member = $request->member;
+
+        return $member !== null && ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
+            || $this->sameOrganization($user, $member));
     }
 }

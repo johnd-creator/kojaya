@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosShiftController::index
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:19
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::index
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:19
-* @route '/cooperative/pos/shifts'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::index
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:19
-* @route '/cooperative/pos/shifts'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::index
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:19
-* @route '/cooperative/pos/shifts'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosShiftController::open
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:35
 * @route '/cooperative/pos/shifts/open'
@@ -115,33 +78,11 @@ open.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::open
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:35
-* @route '/cooperative/pos/shifts/open'
-*/
-const openForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: open.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::open
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:35
-* @route '/cooperative/pos/shifts/open'
-*/
-openForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: open.url(options),
-    method: 'post',
-})
-
-open.form = openForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosShiftController::close
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:48
 * @route '/cooperative/pos/shifts/{shift}/close'
 */
-export const close = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const close = (args: { shift: string | number | { id: string | number } } | [shift: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: close.url(args, options),
     method: 'post',
 })
@@ -156,7 +97,7 @@ close.definition = {
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:48
 * @route '/cooperative/pos/shifts/{shift}/close'
 */
-close.url = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+close.url = (args: { shift: string | number | { id: string | number } } | [shift: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { shift: args }
     }
@@ -189,32 +130,10 @@ close.url = (args: { shift: number | { id: number } } | [shift: number | { id: n
 * @see app/Http/Controllers/Cooperative/PosShiftController.php:48
 * @route '/cooperative/pos/shifts/{shift}/close'
 */
-close.post = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+close.post = (args: { shift: string | number | { id: string | number } } | [shift: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: close.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::close
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:48
-* @route '/cooperative/pos/shifts/{shift}/close'
-*/
-const closeForm = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: close.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosShiftController::close
-* @see app/Http/Controllers/Cooperative/PosShiftController.php:48
-* @route '/cooperative/pos/shifts/{shift}/close'
-*/
-closeForm.post = (args: { shift: number | { id: number } } | [shift: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: close.url(args, options),
-    method: 'post',
-})
-
-close.form = closeForm
 
 const shifts = {
     index: Object.assign(index, index),

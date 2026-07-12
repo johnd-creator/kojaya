@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\GenerateDuesRequest;
 use App\Models\CooperativeDuesInvoice;
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
 
 class CooperativeDuesApiController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function invoices(Request $request): JsonResponse
     {
         $this->authorizeCooperativeAccess($request);
@@ -39,7 +42,7 @@ class CooperativeDuesApiController extends Controller
             ->when($request->filled('contribution_type_id'), fn ($query) => $query->where('cooperative_contribution_type_id', $request->input('contribution_type_id')))
             ->when($request->filled('category'), fn ($query) => $query->whereHas('contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category'))));
 
-        return response()->json($query->orderByDesc('period')->paginate($request->integer('per_page', 15)));
+        return response()->json($query->orderByDesc('period')->paginate($this->apiPageSize($request)));
     }
 
     public function generate(GenerateDuesRequest $request, DuesGenerationService $service): JsonResponse

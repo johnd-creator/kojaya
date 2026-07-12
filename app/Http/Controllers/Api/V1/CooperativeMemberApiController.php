@@ -2,31 +2,44 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
+use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
+use App\Http\Resources\CooperativeMemberResource;
 use App\Http\Resources\MemberResignationRequestResource;
 use App\Models\CooperativeMember;
 use App\Models\MemberResignationRequest;
+use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
-use App\Services\Cooperative\CooperativeOpeningBalanceService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberResignationRequestService;
+use App\Services\Cooperative\MemberStatusTransitionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CooperativeMemberApiController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    use ResolvesApiPageSize;
+
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $this->authorize('viewAny', CooperativeMember::class);
 
         $members = CooperativeMember::query()
-            ->with('organization')
-            ->when(! $this->canViewAllMembers($request), fn ($query) => $query->where('user_id', $request->user()?->id))
+            ->with('organization');
+
+        $scopeService->scopeVisibleTo($members, $request->user());
+
+        $members = $members
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
                 $query->where(function ($query) use ($search): void {
@@ -37,98 +50,172 @@ class CooperativeMemberApiController extends Controller
             })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->orderBy('name')
-            ->paginate($request->integer('per_page', 15));
+            ->paginate($this->apiPageSize($request));
 
-        return response()->json($members);
+        return CooperativeMemberResource::collection($members)->response();
     }
 
     public function store(
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         MemberNumberGenerator $memberNumberGenerator,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
-        CooperativeOpeningBalanceService $openingBalanceService,
     ): JsonResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $memberNo = $memberNumberGenerator->generate();
 
-        $member = CooperativeMember::query()->create([
-            ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
-            'organization_id' => $headOfficeResolver->resolve()->id,
-            'no_anggota' => $memberNo,
-            'member_no' => $memberNo,
-            'joined_at' => $request->input('joined_at') ?: now()->toDateString(),
-            'status' => $request->input('status', 'PENDING'),
-        ]);
+        $member = DB::transaction(function () use ($request, $headOfficeResolver, $memberNo): CooperativeMember {
+            $member = CooperativeMember::query()->create([
+                ...$request->safe()->only([
+                    'employee_id',
+                    'no_anggota',
+                    'tanggal_aktif',
+                    'nama_anggota',
+                    'member_no',
+                    'name',
+                    'email',
+                    'phone',
+                    'no_telp',
+                    'jenis_anggota',
+                    'jenis_kelamin',
+                    'kategori',
+                    'autodebet',
+                ]),
+                'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
+                'no_anggota' => $memberNo,
+                'member_no' => $memberNo,
+                'joined_at' => $request->validated('tanggal_aktif'),
+                'status' => CooperativeMember::VALIDATION_PENDING,
+                'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            ]);
 
-        $userProvisioningService->provision($member, $request->validated('member_login_password'));
-
-        $openingBalanceWarning = $this->resolveOpeningBalanceWarning(
-            $member,
-            $request->validated('opening_saving_balance'),
-            $request->user(),
-            $openingBalanceService,
-        );
+            return $member->refresh();
+        });
 
         return response()->json([
-            'data' => $member->load('organization'),
-            'meta' => array_filter([
-                'opening_balance' => $openingBalanceWarning,
-            ]),
+            'data' => new CooperativeMemberResource($member->load('organization')),
+            'meta' => $this->openingBalanceWizardMeta($member, $request->validated('opening_saving_balance')),
         ], 201);
     }
 
-    public function show(Request $request, CooperativeMember $member): JsonResponse
+    public function show(Request $request, CooperativeMember $member, AuditLogService $audit): JsonResponse
     {
         $this->authorize('view', $member);
 
+        if ($request->user()?->can(\App\Enums\PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value)) {
+            $audit->log('member.pii.viewed', 'cooperative.member', $member);
+        }
+
         return response()->json([
-            'data' => $member->load(['organization', 'documents', 'invoices.contributionType', 'ledgerEntries']),
+            'data' => new CooperativeMemberResource($member->load('organization')),
         ]);
     }
 
     public function update(
         UpdateCooperativeMemberRequest $request,
         CooperativeMember $member,
-        CooperativeHeadOfficeResolver $headOfficeResolver,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
-        CooperativeOpeningBalanceService $openingBalanceService,
+        AuditLogService $audit,
     ): JsonResponse {
         $this->authorize('update', $member);
+        $before = $member->only(['name', 'email', 'phone', 'status', 'validation_status']);
 
-        $member->update([
-            ...$request->safe()->except(['member_login_password', 'opening_saving_balance']),
-            'organization_id' => $headOfficeResolver->resolve()->id,
+        $member = DB::transaction(function () use ($request, $member): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->update([
+                ...$request->safe()->only([
+                    'employee_id',
+                    'no_anggota',
+                    'nama_anggota',
+                    'name',
+                    'email',
+                    'no_telp',
+                    'phone',
+                    'jenis_anggota',
+                    'jenis_kelamin',
+                    'kategori',
+                    'autodebet',
+                ]),
+            ]);
+
+            return $member->refresh();
+        });
+
+        $audit->log('member.profile.updated', 'cooperative.member', $member, [
+            'old' => $before,
+            'new' => $member->only(['name', 'email', 'phone', 'status', 'validation_status']),
+            'reason' => 'Cooperative member profile updated through API.',
         ]);
-
-        $userProvisioningService->provision($member->refresh(), $request->validated('member_login_password'));
-
-        $openingBalanceWarning = $this->resolveOpeningBalanceWarning(
-            $member->refresh(),
-            $request->validated('opening_saving_balance'),
-            $request->user(),
-            $openingBalanceService,
-        );
 
         return response()->json([
-            'data' => $member->refresh()->load('organization'),
-            'meta' => array_filter([
-                'opening_balance' => $openingBalanceWarning,
-            ]),
+            'data' => new CooperativeMemberResource($member->refresh()->load('organization')),
+            'meta' => $this->openingBalanceWizardMeta($member, $request->validated('opening_saving_balance')),
         ]);
+    }
+
+    public function updateSensitiveData(
+        UpdateCooperativeMemberSensitiveDataRequest $request,
+        CooperativeMember $member,
+        AuditLogService $audit,
+    ): JsonResponse {
+        $this->authorize('updateSensitiveData', $member);
+
+        $fields = array_keys($request->validated());
+        $member = DB::transaction(function () use ($request, $member): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->update($request->validated());
+
+            return $member->refresh();
+        });
+
+        $audit->log('member.pii.updated', 'cooperative.member', $member, [
+            'new' => ['fields' => $fields],
+            'reason' => 'Cooperative member sensitive data updated through dedicated API action.',
+        ]);
+
+        return response()->json([
+            'data' => new CooperativeMemberResource($member->load('organization')),
+        ]);
+    }
+
+    public function linkAccount(
+        LinkCooperativeMemberAccountRequest $request,
+        CooperativeMember $member,
+        CooperativeMemberUserProvisioningService $userProvisioningService,
+        AuditLogService $audit,
+    ): JsonResponse {
+        $this->authorize('update', $member);
+        $previousUserId = $member->user_id;
+
+        $member = DB::transaction(function () use ($request, $member, $userProvisioningService): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->forceFill(['user_id' => $request->validated('user_id')])->save();
+            $userProvisioningService->provision($member->refresh());
+
+            return $member->refresh();
+        });
+
+        if ($previousUserId !== null && (int) $previousUserId !== (int) $member->user_id) {
+            User::query()->find($previousUserId)?->removeRole('Anggota');
+        }
+
+        $audit->log('member.account.linked', 'cooperative.member', $member, [
+            'old' => ['user_id' => $previousUserId],
+            'new' => ['user_id' => $member->user_id],
+            'reason' => $request->validated('reason'),
+        ]);
+
+        return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
     }
 
     public function activate(
         Request $request,
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
         MemberNumberGenerator $memberNumberGenerator,
+        MemberStatusTransitionService $transitions,
     ): JsonResponse {
         $this->authorize('activate', $member);
 
         $updateData = [
-            'status' => 'ACTIVE',
             'joined_at' => $member->joined_at ?: now()->toDateString(),
             'resigned_at' => null,
         ];
@@ -139,28 +226,34 @@ class CooperativeMemberApiController extends Controller
             $updateData['member_no'] = $noAnggota;
         }
 
-        $member->update($updateData);
+        $member = DB::transaction(function () use ($member, $updateData, $transitions, $request): CooperativeMember {
+            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+            $member->forceFill($updateData)->save();
 
-        $userProvisioningService->provision($member->refresh());
+            return $transitions->activate($member->refresh(), $request->user());
+        });
 
-        return response()->json(['data' => $member->refresh()]);
+        return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);
     }
 
     public function resign(Request $request, CooperativeMember $member, CooperativeMemberService $memberService): JsonResponse
     {
         $this->authorize('resign', $member);
 
-        $memberService->resign($member);
+        $memberService->resign($member, $request->user());
 
-        return response()->json(['data' => $member->refresh()]);
+        return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);
     }
 
-    public function resignationRequests(Request $request): JsonResponse
+    public function resignationRequests(Request $request, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $this->authorize('viewAny', MemberResignationRequest::class);
 
         $query = MemberResignationRequest::query()
-            ->with(['member.organization', 'reviewer'])
+            ->with(['member.organization', 'reviewer']);
+        $scopeService->scopeVisibleTo($query, $request->user());
+
+        $query
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request): void {
                 $search = $request->string('search')->toString();
@@ -175,7 +268,7 @@ class CooperativeMemberApiController extends Controller
             ->orderByDesc('created_at');
 
         return MemberResignationRequestResource::collection(
-            $query->paginate($request->integer('per_page', 15))
+            $query->paginate($this->apiPageSize($request))
         )->response();
     }
 
@@ -205,65 +298,21 @@ class CooperativeMemberApiController extends Controller
         ]);
     }
 
-    private function canViewAllMembers(Request $request): bool
+    /** @return array<string, array<string, mixed>> */
+    private function openingBalanceWizardMeta(CooperativeMember $member, mixed $openingSavingBalance): array
     {
-        $user = $request->user();
-
-        return $user?->can('view_cooperative_all')
-            || $user?->can('manage_cooperative_member')
-            || $user?->can('manage_cooperative_payment')
-            || $user?->can('access_cooperative_pos')
-            || $user?->can('view_cooperative_report');
-    }
-
-    /**
-     * Tentukan apakah API harus menulis ledger legacy atau hanya memberi
-     * warning bahwa wizard saldo awal adalah jalur yang benar.
-     *
-     * - Jika user punya permission wizard dan nominal > 0, **tidak** menulis
-     *   ledger sama sekali dan kembalikan metadata berisi URL/state wizard
-     *   agar client admin bisa mengarahkan operator ke wizard.
-     * - Jika anggota sudah punya batch aktif (POSTED/DRAFT), tolak tulis
-     *   legacy agar ledger wizard tidak tertimpa.
-     * - Jika user tidak punya permission wizard dan anggota belum punya
-     *   batch aktif, tulis entry legacy seperti perilaku lama.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function resolveOpeningBalanceWarning(
-        CooperativeMember $member,
-        mixed $openingSavingBalance,
-        mixed $user,
-        CooperativeOpeningBalanceService $openingBalanceService,
-    ): ?array {
         $amount = is_numeric($openingSavingBalance) ? (float) $openingSavingBalance : 0.0;
 
         if ($amount <= 0) {
-            return null;
+            return [];
         }
 
-        $hasWizardBatch = $member->activeOpeningBalanceBatch() !== null;
-
-        if ($hasWizardBatch) {
-            return [
-                'mode' => 'wizard_locked',
-                'message' => 'Anggota sudah memiliki batch saldo awal (wizard). Saldo awal tidak lagi dapat diisi lewat API; gunakan endpoint wizard untuk koreksi.',
-                'wizard_url' => route('cooperative.members.opening-balance.show', $member, false),
-            ];
-        }
-
-        if ($user !== null && method_exists($user, 'can') && $user->can('manage_cooperative_opening_balance')) {
-            return [
+        return [
+            'opening_balance' => [
                 'mode' => 'wizard_required',
                 'message' => 'Saldo awal historis harus diisi melalui Wizard Saldo Awal agar tercatat rapi ke ledger per kategori dan periode.',
                 'wizard_url' => route('cooperative.members.opening-balance.show', $member, false),
-            ];
-        }
-
-        // User tanpa permission wizard: tulis ledger legacy sebagai fallback
-        // (untuk operator/admin lama yang belum bermigrasi ke wizard).
-        $openingBalanceService->sync($member, $amount);
-
-        return null;
+            ],
+        ];
     }
 }

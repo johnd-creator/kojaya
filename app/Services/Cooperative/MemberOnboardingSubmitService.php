@@ -2,9 +2,9 @@
 
 namespace App\Services\Cooperative;
 
-use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +13,7 @@ class MemberOnboardingSubmitService
 {
     public function __construct(
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+        private readonly AuditLogService $audit,
     ) {}
 
     /**
@@ -87,18 +88,11 @@ class MemberOnboardingSubmitService
     private function writeAuditLog(CooperativeMember $member, ?User $actor): void
     {
         try {
-            AuditLog::create([
-                'user_id' => $actor?->id ?? $member->user_id,
-                'action' => 'sso.member_onboarding.submitted',
-                'module' => 'cooperative.sso',
-                'subject_type' => CooperativeMember::class,
-                'subject_id' => $member->id,
-                'old_values' => null,
-                'new_values' => [
+            $this->audit->log('sso.member_onboarding.submitted', 'cooperative.sso', $member, [
+                'new' => [
                     'validation_status' => $member->validation_status,
                 ],
-                'ip_address' => request()?->ip(),
-                'user_agent' => request()?->userAgent(),
+                'reason' => 'Member onboarding submitted for validation.',
             ]);
         } catch (\Throwable) {
             // audit log best-effort, never break onboarding

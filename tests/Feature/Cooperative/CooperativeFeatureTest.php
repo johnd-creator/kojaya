@@ -57,12 +57,15 @@ class CooperativeFeatureTest extends TestCase
         ]);
 
         $this->actingAs($user)->post(route('cooperative.members.store'), [
-            'organization_id' => $branch->id,
             'name' => 'Anggota Test',
+            'nama_anggota' => 'Anggota Test',
             'email' => 'anggota@test.local',
             'phone' => '08123',
-            'joined_at' => '2026-05-01',
-            'status' => 'ACTIVE',
+            'tanggal_aktif' => '2026-05-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
         ])->assertRedirect(route('cooperative.members.index'));
 
         $member = CooperativeMember::query()->where('email', 'anggota@test.local')->firstOrFail();
@@ -71,7 +74,7 @@ class CooperativeFeatureTest extends TestCase
         $this->assertNotSame($branch->id, $member->organization_id);
     }
 
-    public function test_member_creation_provisions_member_user_and_opening_balance(): void
+    public function test_member_creation_starts_pending_and_generates_opening_balance(): void
     {
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
@@ -87,19 +90,21 @@ class CooperativeFeatureTest extends TestCase
 
         $this->actingAs($user)->post(route('cooperative.members.store'), [
             'name' => 'Anggota Login',
+            'nama_anggota' => 'Anggota Login',
             'email' => 'anggota-login@test.local',
             'phone' => '08123',
-            'joined_at' => '2026-05-01',
-            'status' => 'ACTIVE',
-            'member_login_password' => 'password-anggota',
+            'tanggal_aktif' => '2026-05-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
         ])->assertRedirect(route('cooperative.members.index'));
 
         $member = CooperativeMember::query()->where('email', 'anggota-login@test.local')->firstOrFail();
-        $memberUser = User::query()->where('email', 'anggota-login@test.local')->firstOrFail();
 
-        $this->assertSame($memberUser->id, $member->user_id);
-        $this->assertTrue($memberUser->hasRole('Anggota'));
-        $this->assertTrue(Hash::check('password-anggota', $memberUser->password));
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->validation_status);
+        $this->assertNull($member->user_id);
         $this->assertDatabaseHas('cooperative_dues_invoices', [
             'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $pokok->id,
@@ -117,10 +122,14 @@ class CooperativeFeatureTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('cooperative.members.store'), [
             'name' => 'Anggota Migrasi',
+            'nama_anggota' => 'Anggota Migrasi',
             'email' => 'anggota-migrasi@test.local',
             'phone' => '08123',
-            'joined_at' => '2020-01-01',
-            'status' => 'ACTIVE',
+            'tanggal_aktif' => '2020-01-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
             'opening_saving_balance' => 125000,
         ]);
 
@@ -137,11 +146,11 @@ class CooperativeFeatureTest extends TestCase
         );
     }
 
-    public function test_member_creation_legacy_opening_balance_used_when_user_lacks_permission(): void
+    public function test_member_creation_without_wizard_permission_does_not_write_legacy_opening_balance(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        // Role ad-hoc: boleh create anggota TAPI tidak boleh wizard saldo awal,
-        // sehingga jalur legacy sync() dipakai.
+        // Role ad-hoc boleh create anggota, tetapi saldo awal hanya boleh
+        // ditulis melalui wizard.
         $user = User::factory()->create();
         $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Creator']);
         $legacyRole->syncPermissions([
@@ -152,44 +161,50 @@ class CooperativeFeatureTest extends TestCase
 
         $this->actingAs($user)->post(route('cooperative.members.store'), [
             'name' => 'Anggota Tanpa Wizard',
+            'nama_anggota' => 'Anggota Tanpa Wizard',
             'email' => 'anggota-no-wizard@test.local',
             'phone' => '08123',
-            'joined_at' => '2020-01-01',
-            'status' => 'ACTIVE',
+            'tanggal_aktif' => '2020-01-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
             'opening_saving_balance' => 75000,
-        ])->assertRedirect(route('cooperative.members.index'));
+        ])->assertRedirect();
 
         $member = CooperativeMember::query()->where('email', 'anggota-no-wizard@test.local')->firstOrFail();
 
-        $this->assertDatabaseHas('cooperative_ledger_entries', [
+        $this->assertDatabaseMissing('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'OPENING_BALANCE',
-            'credit' => 75000,
         ]);
     }
 
-    public function test_member_creation_links_existing_user_without_changing_password(): void
+    public function test_member_creation_does_not_link_existing_user_without_dedicated_action(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        $admin = User::factory()->create();
+        $organization = app(\App\Services\Cooperative\CooperativeHeadOfficeResolver::class)->resolve();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
         $admin->assignRole('System Admin');
         $existingUser = User::factory()->create([
             'email' => 'existing-member@test.local',
             'password' => Hash::make('old-password'),
+            'organization_id' => $organization->id,
         ]);
 
         $this->actingAs($admin)->post(route('cooperative.members.store'), [
             'name' => 'Existing Member',
+            'nama_anggota' => 'Existing Member',
             'email' => 'existing-member@test.local',
-            'joined_at' => '2026-05-01',
-            'status' => 'ACTIVE',
-            'member_login_password' => 'new-password',
-        ])->assertRedirect(route('cooperative.members.index'));
+            'user_id' => $existingUser->id,
+            'tanggal_aktif' => '2026-05-01',
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
+        ])->assertSessionHasErrors('user_id');
 
-        $member = CooperativeMember::query()->where('email', 'existing-member@test.local')->firstOrFail();
-
-        $this->assertSame($existingUser->id, $member->user_id);
-        $this->assertTrue($existingUser->refresh()->hasRole('Anggota'));
+        $this->assertDatabaseMissing('cooperative_members', ['email' => 'existing-member@test.local']);
         $this->assertTrue(Hash::check('old-password', $existingUser->password));
     }
 
@@ -217,12 +232,12 @@ class CooperativeFeatureTest extends TestCase
             );
     }
 
-    public function test_member_opening_balance_can_be_updated_without_duplicate_entries(): void
+    public function test_member_update_with_opening_balance_does_not_write_legacy_entries(): void
     {
         $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
-        // Buat role ad-hoc: boleh update anggota TAPI tidak boleh wizard saldo awal,
-        // supaya jalur legacy sync() masih dipakai di sini.
+        // Buat role ad-hoc boleh update anggota, tetapi tidak boleh menulis
+        // saldo awal lewat jalur legacy.
         $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Tester']);
         $legacyRole->syncPermissions([
             'view_cooperative_member',
@@ -233,36 +248,38 @@ class CooperativeFeatureTest extends TestCase
             'name' => 'Opening Balance',
             'email' => 'opening@test.local',
         ]);
+        $admin->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->actingAs($admin)->put(route('cooperative.members.update', $member), [
             'name' => 'Opening Balance',
+            'nama_anggota' => 'Opening Balance',
             'email' => 'opening@test.local',
             'phone' => '08123',
-            'identity_number' => '12345',
-            'address' => 'Alamat',
-            'joined_at' => '2026-05-01',
-            'status' => 'ACTIVE',
-            'notes' => 'Migrasi',
+            'no_anggota' => $member->no_anggota,
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
             'opening_saving_balance' => 150000,
-        ])->assertRedirect(route('cooperative.members.index'));
+        ])->assertRedirect();
 
         $this->actingAs($admin)->put(route('cooperative.members.update', $member), [
             'name' => 'Opening Balance',
+            'nama_anggota' => 'Opening Balance',
             'email' => 'opening@test.local',
             'phone' => '08123',
-            'identity_number' => '12345',
-            'address' => 'Alamat',
-            'joined_at' => '2026-05-01',
-            'status' => 'ACTIVE',
-            'notes' => 'Migrasi',
+            'no_anggota' => $member->no_anggota,
+            'jenis_anggota' => 'AB',
+            'jenis_kelamin' => 'L',
+            'kategori' => 'IP',
+            'autodebet' => 'MANUAL',
             'opening_saving_balance' => 200000,
-        ])->assertRedirect(route('cooperative.members.index'));
+        ])->assertRedirect();
 
-        $this->assertSame(1, $member->ledgerEntries()->where('entry_type', 'OPENING_BALANCE')->count());
-        $this->assertDatabaseHas('cooperative_ledger_entries', [
+        $this->assertSame(0, $member->ledgerEntries()->where('entry_type', 'OPENING_BALANCE')->count());
+        $this->assertDatabaseMissing('cooperative_ledger_entries', [
             'cooperative_member_id' => $member->id,
             'entry_type' => 'OPENING_BALANCE',
-            'credit' => 200000,
         ]);
     }
 
@@ -271,7 +288,11 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('System Admin');
-        $member = $this->member(['status' => 'PENDING', 'joined_at' => null]);
+        $member = $this->member([
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_INACTIVE,
+            'joined_at' => null,
+        ]);
 
         $this->actingAs($user)->post(route('cooperative.members.activate', $member))->assertRedirect();
         $this->assertSame('ACTIVE', $member->refresh()->status);
@@ -286,7 +307,10 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('System Admin');
-        $member = $this->member(['status' => 'ACTIVE']);
+        $member = $this->member([
+            'status' => CooperativeMember::VALIDATION_ACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -942,6 +966,7 @@ class CooperativeFeatureTest extends TestCase
         $adminKoperasi = User::factory()->create();
         $adminKoperasi->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $adminKoperasi->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1052,6 +1077,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('System Admin');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1171,6 +1197,7 @@ class CooperativeFeatureTest extends TestCase
         $approver = User::factory()->create();
         $approver->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $approver->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1216,6 +1243,7 @@ class CooperativeFeatureTest extends TestCase
         $adminKoperasi = User::factory()->create();
         $adminKoperasi->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $adminKoperasi->forceFill(['organization_id' => $member->organization_id])->save();
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',

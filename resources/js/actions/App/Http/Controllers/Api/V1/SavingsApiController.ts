@@ -1,7 +1,7 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:16
 * @route '/api/v1/savings/categories'
 */
 export const categories = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ categories.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:16
 * @route '/api/v1/savings/categories'
 */
 categories.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ categories.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:16
 * @route '/api/v1/savings/categories'
 */
 categories.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ categories.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:16
 * @route '/api/v1/savings/categories'
 */
 categories.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,45 +44,8 @@ categories.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
-* @route '/api/v1/savings/categories'
-*/
-const categoriesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: categories.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
-* @route '/api/v1/savings/categories'
-*/
-categoriesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: categories.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\SavingsApiController::categories
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:13
-* @route '/api/v1/savings/categories'
-*/
-categoriesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: categories.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-categories.form = categoriesForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:37
 * @route '/api/v1/savings/ledger'
 */
 export const ledger = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +60,7 @@ ledger.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:37
 * @route '/api/v1/savings/ledger'
 */
 ledger.url = (options?: RouteQueryOptions) => {
@@ -106,7 +69,7 @@ ledger.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:37
 * @route '/api/v1/savings/ledger'
 */
 ledger.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,50 +79,13 @@ ledger.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
+* @see app/Http/Controllers/Api/V1/SavingsApiController.php:37
 * @route '/api/v1/savings/ledger'
 */
 ledger.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: ledger.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
-* @route '/api/v1/savings/ledger'
-*/
-const ledgerForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: ledger.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
-* @route '/api/v1/savings/ledger'
-*/
-ledgerForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: ledger.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\SavingsApiController::ledger
-* @see app/Http/Controllers/Api/V1/SavingsApiController.php:34
-* @route '/api/v1/savings/ledger'
-*/
-ledgerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: ledger.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-ledger.form = ledgerForm
 
 const SavingsApiController = { categories, ledger }
 

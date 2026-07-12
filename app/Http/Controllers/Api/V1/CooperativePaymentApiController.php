@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\MarkDuesPaidRequest;
 use App\Http\Requests\Cooperative\StoreCooperativePaymentRequest;
 use App\Models\CooperativeDuesInvoice;
+use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Services\Cooperative\CooperativePaymentService;
 use Illuminate\Http\JsonResponse;
@@ -14,11 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 class CooperativePaymentApiController extends Controller
 {
-    public function store(StoreCooperativePaymentRequest $request, CooperativePaymentService $service): JsonResponse
+    public function store(StoreCooperativePaymentRequest $request, CooperativePaymentService $service, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $this->authorizeCooperativeAccess($request);
 
         $data = $request->validated();
+        $memberQuery = CooperativeMember::query()->whereKey($data['cooperative_member_id']);
+        $scopeService->scopeVisibleTo($memberQuery, $request->user());
+        $memberQuery->firstOrFail();
 
         if ($request->hasFile('proof')) {
             $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin-api', 'public');
@@ -36,15 +41,16 @@ class CooperativePaymentApiController extends Controller
     public function approve(Request $request, CooperativePayment $payment, CooperativePaymentService $service): JsonResponse
     {
         $this->authorizeCooperativeAccess($request);
+        $this->authorize('approve', $payment);
 
         return response()->json(['data' => $service->approve($payment, $request->user())]);
     }
 
-    public function batch(MarkDuesPaidRequest $request, CooperativePaymentService $service): JsonResponse
+    public function batch(MarkDuesPaidRequest $request, CooperativePaymentService $service, OrganizationScopedQueryService $scopeService): JsonResponse
     {
         $this->authorizeCooperativeAccess($request);
 
-        $result = DB::transaction(function () use ($request, $service): array {
+        $result = DB::transaction(function () use ($request, $service, $scopeService): array {
             $payments = collect();
 
             $invoices = CooperativeDuesInvoice::query()
@@ -53,6 +59,14 @@ class CooperativePaymentApiController extends Controller
                 ->whereIn('status', ['UNPAID', 'PARTIAL'])
                 ->lockForUpdate()
                 ->get();
+
+            $visibleInvoices = $invoices->filter(function (CooperativeDuesInvoice $invoice) use ($scopeService, $request): bool {
+                $memberQuery = CooperativeMember::query()->whereKey($invoice->cooperative_member_id);
+                $scopeService->scopeVisibleTo($memberQuery, $request->user());
+
+                return $memberQuery->exists();
+            });
+            abort_if($visibleInvoices->count() !== count($request->validated('invoice_ids')), 403, 'Semua invoice harus berada dalam organisasi yang sama.');
 
             foreach ($invoices as $invoice) {
                 $remainingAmount = round((float) $invoice->amount - (float) $invoice->paid_amount, 2);

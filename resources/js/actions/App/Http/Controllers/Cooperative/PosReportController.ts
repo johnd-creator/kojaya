@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::index
 * @see app/Http/Controllers/Cooperative/PosReportController.php:26
@@ -42,43 +42,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::index
-* @see app/Http/Controllers/Cooperative/PosReportController.php:26
-* @route '/cooperative/pos/reports'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::index
-* @see app/Http/Controllers/Cooperative/PosReportController.php:26
-* @route '/cooperative/pos/reports'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::index
-* @see app/Http/Controllers/Cooperative/PosReportController.php:26
-* @route '/cooperative/pos/reports'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
@@ -125,43 +88,6 @@ exportCsv.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:50
-* @route '/cooperative/pos/reports/export.csv'
-*/
-const exportCsvForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportCsv.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:50
-* @route '/cooperative/pos/reports/export.csv'
-*/
-exportCsvForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportCsv.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::exportCsv
-* @see app/Http/Controllers/Cooperative/PosReportController.php:50
-* @route '/cooperative/pos/reports/export.csv'
-*/
-exportCsvForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportCsv.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-exportCsv.form = exportCsvForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosReportController::enqueuePdf
 * @see app/Http/Controllers/Cooperative/PosReportController.php:60
 * @route '/cooperative/pos/reports/export.pdf'
@@ -196,33 +122,11 @@ enqueuePdf.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosReportController::enqueuePdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:60
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-const enqueuePdfForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: enqueuePdf.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::enqueuePdf
-* @see app/Http/Controllers/Cooperative/PosReportController.php:60
-* @route '/cooperative/pos/reports/export.pdf'
-*/
-enqueuePdfForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: enqueuePdf.url(options),
-    method: 'post',
-})
-
-enqueuePdf.form = enqueuePdfForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosReportController::pdfStatus
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-export const pdfStatus = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const pdfStatus = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: pdfStatus.url(args, options),
     method: 'get',
 })
@@ -237,7 +141,7 @@ pdfStatus.definition = {
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-pdfStatus.url = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions) => {
+pdfStatus.url = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { job: args }
     }
@@ -270,7 +174,7 @@ pdfStatus.url = (args: { job: string | { uuid: string } } | [job: string | { uui
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-pdfStatus.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+pdfStatus.get = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: pdfStatus.url(args, options),
     method: 'get',
 })
@@ -280,54 +184,17 @@ pdfStatus.get = (args: { job: string | { uuid: string } } | [job: string | { uui
 * @see app/Http/Controllers/Cooperative/PosReportController.php:98
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
 */
-pdfStatus.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+pdfStatus.head = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: pdfStatus.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdfStatus
-* @see app/Http/Controllers/Cooperative/PosReportController.php:98
-* @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
-*/
-const pdfStatusForm = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdfStatus.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdfStatus
-* @see app/Http/Controllers/Cooperative/PosReportController.php:98
-* @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
-*/
-pdfStatusForm.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdfStatus.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdfStatus
-* @see app/Http/Controllers/Cooperative/PosReportController.php:98
-* @route '/cooperative/pos/reports/export.pdf/jobs/{job}/status'
-*/
-pdfStatusForm.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdfStatus.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-pdfStatus.form = pdfStatusForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosReportController::pdfDownload
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-export const pdfDownload = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const pdfDownload = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: pdfDownload.url(args, options),
     method: 'get',
 })
@@ -342,7 +209,7 @@ pdfDownload.definition = {
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-pdfDownload.url = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions) => {
+pdfDownload.url = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { job: args }
     }
@@ -375,7 +242,7 @@ pdfDownload.url = (args: { job: string | { uuid: string } } | [job: string | { u
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-pdfDownload.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+pdfDownload.get = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: pdfDownload.url(args, options),
     method: 'get',
 })
@@ -385,47 +252,10 @@ pdfDownload.get = (args: { job: string | { uuid: string } } | [job: string | { u
 * @see app/Http/Controllers/Cooperative/PosReportController.php:117
 * @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
 */
-pdfDownload.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+pdfDownload.head = (args: { job: string | number | { uuid: string | number } } | [job: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: pdfDownload.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdfDownload
-* @see app/Http/Controllers/Cooperative/PosReportController.php:117
-* @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
-*/
-const pdfDownloadForm = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdfDownload.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdfDownload
-* @see app/Http/Controllers/Cooperative/PosReportController.php:117
-* @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
-*/
-pdfDownloadForm.get = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdfDownload.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReportController::pdfDownload
-* @see app/Http/Controllers/Cooperative/PosReportController.php:117
-* @route '/cooperative/pos/reports/export.pdf/jobs/{job}/download'
-*/
-pdfDownloadForm.head = (args: { job: string | { uuid: string } } | [job: string | { uuid: string } ] | string | { uuid: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: pdfDownload.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-pdfDownload.form = pdfDownloadForm
 
 const PosReportController = { index, exportCsv, enqueuePdf, pdfStatus, pdfDownload }
 

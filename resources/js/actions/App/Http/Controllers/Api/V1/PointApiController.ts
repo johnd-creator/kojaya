@@ -1,7 +1,7 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
+* @see app/Http/Controllers/Api/V1/PointApiController.php:16
 * @route '/api/v1/points/balance'
 */
 export const balance = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ balance.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
+* @see app/Http/Controllers/Api/V1/PointApiController.php:16
 * @route '/api/v1/points/balance'
 */
 balance.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ balance.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
+* @see app/Http/Controllers/Api/V1/PointApiController.php:16
 * @route '/api/v1/points/balance'
 */
 balance.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ balance.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
+* @see app/Http/Controllers/Api/V1/PointApiController.php:16
 * @route '/api/v1/points/balance'
 */
 balance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,45 +44,8 @@ balance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
-* @route '/api/v1/points/balance'
-*/
-const balanceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: balance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
-* @route '/api/v1/points/balance'
-*/
-balanceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: balance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PointApiController::balance
-* @see app/Http/Controllers/Api/V1/PointApiController.php:13
-* @route '/api/v1/points/balance'
-*/
-balanceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: balance.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-balance.form = balanceForm
-
-/**
 * @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
+* @see app/Http/Controllers/Api/V1/PointApiController.php:30
 * @route '/api/v1/points/history'
 */
 export const history = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +60,7 @@ history.definition = {
 
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
+* @see app/Http/Controllers/Api/V1/PointApiController.php:30
 * @route '/api/v1/points/history'
 */
 history.url = (options?: RouteQueryOptions) => {
@@ -106,7 +69,7 @@ history.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
+* @see app/Http/Controllers/Api/V1/PointApiController.php:30
 * @route '/api/v1/points/history'
 */
 history.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,50 +79,13 @@ history.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
+* @see app/Http/Controllers/Api/V1/PointApiController.php:30
 * @route '/api/v1/points/history'
 */
 history.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: history.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
-* @route '/api/v1/points/history'
-*/
-const historyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: history.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
-* @route '/api/v1/points/history'
-*/
-historyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: history.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Api\V1\PointApiController::history
-* @see app/Http/Controllers/Api/V1/PointApiController.php:27
-* @route '/api/v1/points/history'
-*/
-historyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: history.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-history.form = historyForm
 
 const PointApiController = { balance, history }
 

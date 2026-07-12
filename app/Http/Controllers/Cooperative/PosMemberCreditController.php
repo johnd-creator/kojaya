@@ -16,6 +16,7 @@ class PosMemberCreditController extends Controller
 
     public function create(CooperativeMember $member): Response
     {
+        $this->authorize('posCredit', $member);
         $member->load(['creditPayments' => fn ($q) => $q->orderByDesc('paid_at')->limit(50)]);
 
         return Inertia::render('Cooperative/Pos/Credit/Pay', [
@@ -29,6 +30,7 @@ class PosMemberCreditController extends Controller
         StorePosMemberCreditPaymentRequest $request,
         CooperativeMember $member,
     ): RedirectResponse {
+        $this->authorize('posCredit', $member);
         $this->service->recordPayment(
             $member,
             (float) $request->validated('amount'),

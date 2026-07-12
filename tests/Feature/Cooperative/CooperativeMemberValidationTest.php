@@ -130,7 +130,8 @@ class CooperativeMemberValidationTest extends TestCase
         $validator->givePermissionTo('verify_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
 
         $this->actingAs($validator)
@@ -143,14 +144,14 @@ class CooperativeMemberValidationTest extends TestCase
         $this->assertSame(CooperativeMember::VALIDATION_INACTIVE, $member->fresh()->status);
     }
 
-    public function test_revision_does_not_overwrite_member_lifecycle_status(): void
+    public function test_revision_sets_member_to_inactive_lifecycle_state(): void
     {
         $validator = User::factory()->create();
         $validator->givePermissionTo('verify_cooperative_member');
 
         $member = CooperativeMember::factory()->create([
             'status' => CooperativeMember::VALIDATION_PENDING,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
 
         $this->actingAs($validator)
@@ -160,7 +161,7 @@ class CooperativeMemberValidationTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(CooperativeMember::VALIDATION_REVISION, $member->fresh()->validation_status);
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->status);
+        $this->assertSame(CooperativeMember::VALIDATION_INACTIVE, $member->fresh()->status);
     }
 
     public function test_non_validator_cannot_verify(): void

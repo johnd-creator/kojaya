@@ -21,11 +21,20 @@ class MemberPaymentIntent extends Model
 
     public const PAYABLE_STORE_ORDER = 'store_order';
 
+    public const RESERVATION_RESERVED = 'RESERVED';
+
+    public const RESERVATION_CONSUMED = 'CONSUMED';
+
+    public const RESERVATION_RELEASED = 'RELEASED';
+
+    public const RESERVATION_EXPIRED = 'EXPIRED';
+
     protected $fillable = [
         'user_id',
         'cooperative_member_id',
         'payable_type',
         'payable_id',
+        'client_reference',
         'amount',
         'channel',
         'gateway_provider',
@@ -33,6 +42,7 @@ class MemberPaymentIntent extends Model
         'gateway_status',
         'gateway_payload',
         'metadata',
+        'reservation_status',
         'expires_at',
         'settled_at',
         'settled_by_service',

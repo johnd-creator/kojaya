@@ -29,15 +29,25 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        Validator::make($input, [
+        $validator = Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
             'phone' => ['nullable', 'string', 'max:20'],
-            'identity_number' => ['nullable', 'string', 'max:40', 'unique:'.CooperativeMember::class.',identity_number'],
+            'identity_number' => ['nullable', 'string', 'max:40'],
             'address' => ['nullable', 'string', 'max:500'],
         ], [
             'identity_number.unique' => 'NIK ini sudah terdaftar di koperasi.',
-        ])->validate();
+        ]);
+
+        $validator->after(function ($validator) use ($input): void {
+            $blindIndex = CooperativeMember::blindIndexFor('identity_number', $input['identity_number'] ?? null);
+
+            if ($blindIndex !== null && CooperativeMember::query()->where('identity_number_bidx', $blindIndex)->exists()) {
+                $validator->errors()->add('identity_number', 'NIK ini sudah terdaftar di koperasi.');
+            }
+        });
+
+        $validator->validate();
 
         return DB::transaction(function () use ($input) {
             $organization = $this->headOfficeResolver->resolve();
@@ -62,7 +72,8 @@ class CreateNewUser implements CreatesNewUsers
                 'identity_number' => $input['identity_number'] ?? null,
                 'address' => $input['address'] ?? null,
                 'joined_at' => now()->toDateString(),
-                'status' => 'ACTIVE',
+                'status' => CooperativeMember::VALIDATION_PENDING,
+                'validation_status' => CooperativeMember::VALIDATION_PENDING,
             ]);
 
             return $user;

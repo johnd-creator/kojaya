@@ -27,6 +27,14 @@ abstract class BasePolicy
     {
         $organizationId = $model->getAttribute('organization_id');
 
-        return $organizationId !== null && (string) $organizationId === (string) $user->organization_id;
+        if ($organizationId === null && method_exists($model, 'member')) {
+            $member = $model->relationLoaded('member')
+                ? $model->getRelation('member')
+                : $model->member()->first(['organization_id']);
+            $organizationId = $member?->organization_id;
+        }
+
+        return ($organizationId === null && $user->organization_id === null)
+            || ($organizationId !== null && (string) $organizationId === (string) $user->organization_id);
     }
 }

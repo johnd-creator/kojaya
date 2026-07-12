@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\ReimbursementController::index
 * @see app/Http/Controllers/ReimbursementController.php:16
@@ -42,43 +42,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:16
-* @route '/reimbursements'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:16
-* @route '/reimbursements'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::index
-* @see app/Http/Controllers/ReimbursementController.php:16
-* @route '/reimbursements'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::create
@@ -125,43 +88,6 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:33
-* @route '/reimbursements/create'
-*/
-const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:33
-* @route '/reimbursements/create'
-*/
-createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::create
-* @see app/Http/Controllers/ReimbursementController.php:33
-* @route '/reimbursements/create'
-*/
-createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-create.form = createForm
-
-/**
 * @see \App\Http\Controllers\ReimbursementController::store
 * @see app/Http/Controllers/ReimbursementController.php:38
 * @route '/reimbursements'
@@ -196,33 +122,11 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:38
-* @route '/reimbursements'
-*/
-const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::store
-* @see app/Http/Controllers/ReimbursementController.php:38
-* @route '/reimbursements'
-*/
-storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(options),
-    method: 'post',
-})
-
-store.form = storeForm
-
-/**
 * @see \App\Http\Controllers\ReimbursementController::show
 * @see app/Http/Controllers/ReimbursementController.php:74
 * @route '/reimbursements/{reimbursement}'
 */
-export const show = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -237,7 +141,7 @@ show.definition = {
 * @see app/Http/Controllers/ReimbursementController.php:74
 * @route '/reimbursements/{reimbursement}'
 */
-show.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+show.url = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reimbursement: args }
     }
@@ -270,7 +174,7 @@ show.url = (args: { reimbursement: string | { id: string } } | [reimbursement: s
 * @see app/Http/Controllers/ReimbursementController.php:74
 * @route '/reimbursements/{reimbursement}'
 */
-show.get = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -280,47 +184,10 @@ show.get = (args: { reimbursement: string | { id: string } } | [reimbursement: s
 * @see app/Http/Controllers/ReimbursementController.php:74
 * @route '/reimbursements/{reimbursement}'
 */
-show.head = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:74
-* @route '/reimbursements/{reimbursement}'
-*/
-const showForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:74
-* @route '/reimbursements/{reimbursement}'
-*/
-showForm.get = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::show
-* @see app/Http/Controllers/ReimbursementController.php:74
-* @route '/reimbursements/{reimbursement}'
-*/
-showForm.head = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::edit
@@ -385,43 +252,6 @@ edit.head = (args: { reimbursement: string | number } | [reimbursement: string |
 })
 
 /**
-* @see \App\Http\Controllers\ReimbursementController::edit
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}/edit'
-*/
-const editForm = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: edit.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::edit
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}/edit'
-*/
-editForm.get = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: edit.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::edit
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}/edit'
-*/
-editForm.head = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: edit.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-edit.form = editForm
-
-/**
 * @see \App\Http\Controllers\ReimbursementController::update
 * @see app/Http/Controllers/ReimbursementController.php:0
 * @route '/reimbursements/{reimbursement}'
@@ -484,53 +314,6 @@ update.patch = (args: { reimbursement: string | number } | [reimbursement: strin
 })
 
 /**
-* @see \App\Http\Controllers\ReimbursementController::update
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}'
-*/
-const updateForm = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::update
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}'
-*/
-updateForm.put = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PUT',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::update
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}'
-*/
-updateForm.patch = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
-
-/**
 * @see \App\Http\Controllers\ReimbursementController::destroy
 * @see app/Http/Controllers/ReimbursementController.php:0
 * @route '/reimbursements/{reimbursement}'
@@ -583,43 +366,11 @@ destroy.delete = (args: { reimbursement: string | number } | [reimbursement: str
 })
 
 /**
-* @see \App\Http\Controllers\ReimbursementController::destroy
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}'
-*/
-const destroyForm = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::destroy
-* @see app/Http/Controllers/ReimbursementController.php:0
-* @route '/reimbursements/{reimbursement}'
-*/
-destroyForm.delete = (args: { reimbursement: string | number } | [reimbursement: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: destroy.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'DELETE',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-destroy.form = destroyForm
-
-/**
 * @see \App\Http\Controllers\ReimbursementController::approve
 * @see app/Http/Controllers/ReimbursementController.php:104
 * @route '/reimbursements/{reimbursement}/approve'
 */
-export const approve = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const approve = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
@@ -634,7 +385,7 @@ approve.definition = {
 * @see app/Http/Controllers/ReimbursementController.php:104
 * @route '/reimbursements/{reimbursement}/approve'
 */
-approve.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+approve.url = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reimbursement: args }
     }
@@ -667,39 +418,17 @@ approve.url = (args: { reimbursement: string | { id: string } } | [reimbursement
 * @see app/Http/Controllers/ReimbursementController.php:104
 * @route '/reimbursements/{reimbursement}/approve'
 */
-approve.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+approve.post = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: approve.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:104
-* @route '/reimbursements/{reimbursement}/approve'
-*/
-const approveForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::approve
-* @see app/Http/Controllers/ReimbursementController.php:104
-* @route '/reimbursements/{reimbursement}/approve'
-*/
-approveForm.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: approve.url(args, options),
-    method: 'post',
-})
-
-approve.form = approveForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::reject
 * @see app/Http/Controllers/ReimbursementController.php:120
 * @route '/reimbursements/{reimbursement}/reject'
 */
-export const reject = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reject = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
@@ -714,7 +443,7 @@ reject.definition = {
 * @see app/Http/Controllers/ReimbursementController.php:120
 * @route '/reimbursements/{reimbursement}/reject'
 */
-reject.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+reject.url = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reimbursement: args }
     }
@@ -747,39 +476,17 @@ reject.url = (args: { reimbursement: string | { id: string } } | [reimbursement:
 * @see app/Http/Controllers/ReimbursementController.php:120
 * @route '/reimbursements/{reimbursement}/reject'
 */
-reject.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reject.post = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reject.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:120
-* @route '/reimbursements/{reimbursement}/reject'
-*/
-const rejectForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::reject
-* @see app/Http/Controllers/ReimbursementController.php:120
-* @route '/reimbursements/{reimbursement}/reject'
-*/
-rejectForm.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reject.url(args, options),
-    method: 'post',
-})
-
-reject.form = rejectForm
 
 /**
 * @see \App\Http\Controllers\ReimbursementController::pay
 * @see app/Http/Controllers/ReimbursementController.php:138
 * @route '/reimbursements/{reimbursement}/pay'
 */
-export const pay = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const pay = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: pay.url(args, options),
     method: 'post',
 })
@@ -794,7 +501,7 @@ pay.definition = {
 * @see app/Http/Controllers/ReimbursementController.php:138
 * @route '/reimbursements/{reimbursement}/pay'
 */
-pay.url = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions) => {
+pay.url = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { reimbursement: args }
     }
@@ -827,32 +534,10 @@ pay.url = (args: { reimbursement: string | { id: string } } | [reimbursement: st
 * @see app/Http/Controllers/ReimbursementController.php:138
 * @route '/reimbursements/{reimbursement}/pay'
 */
-pay.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+pay.post = (args: { reimbursement: string | number | { id: string | number } } | [reimbursement: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: pay.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:138
-* @route '/reimbursements/{reimbursement}/pay'
-*/
-const payForm = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: pay.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\ReimbursementController::pay
-* @see app/Http/Controllers/ReimbursementController.php:138
-* @route '/reimbursements/{reimbursement}/pay'
-*/
-payForm.post = (args: { reimbursement: string | { id: string } } | [reimbursement: string | { id: string } ] | string | { id: string }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: pay.url(args, options),
-    method: 'post',
-})
-
-pay.form = payForm
 
 const reimbursements = {
     index: Object.assign(index, index),

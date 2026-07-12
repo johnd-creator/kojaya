@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\EssLeaveRequest;
 use App\Http\Requests\Api\EssOvertimeRequest;
@@ -30,6 +31,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EssController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function dashboard(Request $request): JsonResponse
     {
         $employee = $this->employeeOrAbort($request);
@@ -132,7 +135,7 @@ class EssController extends Controller
         return response()->json(Attendance::query()
             ->where('employee_id', $employee->id)
             ->orderByDesc('date')
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($this->apiPageSize($request)));
     }
 
     public function checkIn(AttendanceApiLocationRequest $request): JsonResponse
@@ -287,7 +290,7 @@ class EssController extends Controller
                 ->with(['type', 'approver:id,name'])
                 ->where('employee_id', $employee->id)
                 ->latest()
-                ->paginate($request->integer('per_page', 15)),
+                ->paginate($this->apiPageSize($request)),
             'balance' => $this->leaveBalance($employee),
         ]);
     }
@@ -350,7 +353,7 @@ class EssController extends Controller
             ->with('overtimeRule')
             ->where('employee_id', $employee->id)
             ->latest()
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($this->apiPageSize($request)));
     }
 
     public function storeOvertime(EssOvertimeRequest $request): JsonResponse
@@ -401,7 +404,7 @@ class EssController extends Controller
             ->with('items')
             ->where('user_id', $request->user()->id)
             ->latest()
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($this->apiPageSize($request)));
     }
 
     public function storeReimbursement(EssReimbursementRequest $request): JsonResponse
@@ -450,7 +453,7 @@ class EssController extends Controller
             ->where('employee_id', $employee->id)
             ->whereIn('status', ['PROCESSED', 'PAID'])
             ->latest('period')
-            ->paginate($request->integer('per_page', 12)));
+            ->paginate($this->apiPageSize($request, 12)));
     }
 
     public function downloadPayslip(Request $request, Payroll $payroll): Response
@@ -485,7 +488,7 @@ class EssController extends Controller
         return response()->json($request->user()
             ->notifications()
             ->latest()
-            ->paginate($request->integer('per_page', 15)));
+            ->paginate($this->apiPageSize($request)));
     }
 
     public function geofence(Request $request): JsonResponse

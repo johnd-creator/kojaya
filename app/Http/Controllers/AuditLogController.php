@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Response;
 
 class AuditLogController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizePermission('view_audit_logs');
@@ -33,7 +36,7 @@ class AuditLogController extends Controller
         }
 
         $logs = $query->orderBy('created_at', 'desc')
-            ->paginate($request->per_page ?? 15);
+            ->paginate($this->apiPageSize($request));
 
         return Response::json([
             'data' => AuditLogResource::collection($logs),

@@ -10,6 +10,7 @@ use App\Models\PosProduct;
 use App\Services\Cooperative\CooperativeNotificationDispatcher;
 use App\Services\Cooperative\LoanService;
 use App\Services\Cooperative\MemberCreditService;
+use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +22,7 @@ class MemberPaymentSettlementService
         private readonly MemberCreditService $memberCreditService,
         private readonly PosTransactionService $posTransactionService,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+        private readonly MemberOrderReservationService $reservationService,
     ) {}
 
     public function settle(MemberPaymentIntent $intent): MemberPaymentIntent
@@ -33,6 +35,11 @@ class MemberPaymentSettlementService
 
             if ($intent->gateway_status !== 'PAID' || $intent->isSettled()) {
                 return $intent;
+            }
+
+            if (in_array($intent->payable_type, [MemberPaymentIntent::PAYABLE_COFFEE_ORDER, MemberPaymentIntent::PAYABLE_STORE_ORDER], true)) {
+                $this->reservationService->consume($intent);
+                $intent->refresh();
             }
 
             $settledBy = match ($intent->payable_type) {

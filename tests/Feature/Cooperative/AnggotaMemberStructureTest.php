@@ -36,8 +36,6 @@ class AnggotaMemberStructureTest extends TestCase
             'no_anggota' => '003',
             'tanggal_aktif' => '2015-01-01',
             'nama_anggota' => 'Budi Santoso*',
-            'status' => 'ACTIVE',
-            'npwp' => '12.345.678.9-012.000',
             'no_telp' => '081234560003',
             'jenis_anggota' => 'AB',
             'jenis_kelamin' => 'L',
@@ -54,6 +52,8 @@ class AnggotaMemberStructureTest extends TestCase
         $this->assertSame('ALB', $member->jenis_anggota);
         $this->assertSame('081234560003', $member->phone);
         $this->assertNull($member->no_rekening);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->validation_status);
     }
 
     public function test_cooperative_members_index_filters_and_exports_anggota(): void

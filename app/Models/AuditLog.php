@@ -15,14 +15,19 @@ class AuditLog extends Model
 
     protected $fillable = [
         'user_id',
+        'correlation_id',
+        'organization_id',
+        'actor_roles',
         'action',
         'module',
         'subject_type',
         'subject_id',
         'old_values',
         'new_values',
+        'reason',
         'ip_address',
         'user_agent',
+        'occurred_at',
     ];
 
     protected function casts(): array
@@ -30,7 +35,9 @@ class AuditLog extends Model
         return [
             'old_values' => 'array',
             'new_values' => 'array',
+            'actor_roles' => 'array',
             'created_at' => 'datetime',
+            'occurred_at' => 'datetime',
         ];
     }
 

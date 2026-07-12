@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\CooperativeMember;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -58,5 +59,21 @@ class CompleteMemberOnboardingRequest extends FormRequest
             'jenis_kelamin.required' => 'Pilih jenis kelamin.',
             'kategori.required' => 'Pilih perusahaan.',
         ];
+    }
+
+    protected function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Contracts\Validation\Validator $validator): void {
+            $value = $this->input('identity_number');
+            $blindIndex = CooperativeMember::blindIndexFor('identity_number', $value);
+            $memberId = $this->user()?->cooperativeMember?->id;
+
+            if ($blindIndex !== null && CooperativeMember::query()
+                ->where('identity_number_bidx', $blindIndex)
+                ->when($memberId, fn ($query) => $query->where($query->getModel()->getKeyName(), '!=', $memberId))
+                ->exists()) {
+                $validator->errors()->add('identity_number', 'Nomor identitas sudah dipakai anggota lain.');
+            }
+        });
     }
 }

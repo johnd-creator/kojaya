@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Requests\StoreMedicalCheckupRequest;
 use App\Http\Requests\UpdateMedicalCheckupRequest;
 use App\Http\Requests\UploadEmployeeDocumentRequest;
@@ -14,12 +15,14 @@ use Illuminate\Support\Facades\Storage;
 
 class MedicalCheckupController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request, string $employeeId)
     {
         $mcuRecords = Employee::findOrFail($employeeId)
             ->medicalCheckups()
             ->orderBy('checkup_date', 'desc')
-            ->paginate($request->input('per_page', 20));
+            ->paginate($this->apiPageSize($request));
 
         return MedicalCheckupResource::collection($mcuRecords);
     }

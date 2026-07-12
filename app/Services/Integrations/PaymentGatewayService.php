@@ -6,13 +6,17 @@ use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use App\Services\Cooperative\MemberOrderReservationService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PaymentGatewayService
 {
-    public function __construct(private readonly PaymentGatewayProvider $provider)
-    {
+    public function __construct(
+        private readonly PaymentGatewayProvider $provider,
+        private readonly MemberOrderReservationService $reservationService,
+    ) {
         //
     }
 
@@ -237,6 +241,8 @@ class PaymentGatewayService
             'gateway_payload' => $payload,
         ])->save();
 
+        $this->releaseOrderReservationWhenTerminal($intent);
+
         return $intent;
     }
 
@@ -283,7 +289,22 @@ class PaymentGatewayService
             'gateway_payload' => $event->rawPayload,
         ])->save();
 
+        $this->releaseOrderReservationWhenTerminal($intent);
+
         return $intent;
+    }
+
+    private function releaseOrderReservationWhenTerminal(MemberPaymentIntent $intent): void
+    {
+        if (! in_array($intent->payable_type, [MemberPaymentIntent::PAYABLE_COFFEE_ORDER, MemberPaymentIntent::PAYABLE_STORE_ORDER], true)) {
+            return;
+        }
+
+        if (! in_array(strtoupper($intent->gateway_status), ['CANCELLED', 'EXPIRED', 'FAILED', 'DENY'], true)) {
+            return;
+        }
+
+        $this->reservationService->release($intent);
     }
 
     /**
@@ -334,7 +355,7 @@ class PaymentGatewayService
     public function createIntentChargeInternal(MemberPaymentIntent $intent): array
     {
         $reference = 'MPI-'.Str::upper(Str::random(12));
-        $expiresAt = now()->addDay();
+        $expiresAt = $intent->expires_at ?? now()->addMinutes(30);
 
         $intent->forceFill([
             'gateway_provider' => 'internal',
@@ -385,6 +406,10 @@ class PaymentGatewayService
      */
     private function existingPendingIntentCharge(MemberPaymentIntent $intent): ?array
     {
+        if ($intent->expires_at?->isPast() === true) {
+            return null;
+        }
+
         return $this->existingPendingChargeFromPayload(
             gatewayStatus: $intent->gateway_status,
             payload: $intent->gateway_payload,
@@ -409,6 +434,20 @@ class PaymentGatewayService
 
         if (($payload['channel'] ?? null) !== $channel || empty($payload['reference'])) {
             return null;
+        }
+
+        if (isset($payload['amount']) && abs((float) $payload['amount'] - $amount) > 0.005) {
+            return null;
+        }
+
+        if (! empty($payload['expires_at'])) {
+            try {
+                if (CarbonImmutable::parse((string) $payload['expires_at'])->isPast()) {
+                    return null;
+                }
+            } catch (\Throwable) {
+                return null;
+            }
         }
 
         // Don't reuse a "hollow" charge whose provider call failed and left no

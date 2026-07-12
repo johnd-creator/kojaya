@@ -1,7 +1,7 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:23
 * @route '/cooperative/operator/dashboard'
 */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:23
 * @route '/cooperative/operator/dashboard'
 */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:23
 * @route '/cooperative/operator/dashboard'
 */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:23
 * @route '/cooperative/operator/dashboard'
 */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,45 +44,8 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
-* @route '/cooperative/operator/dashboard'
-*/
-const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
-* @route '/cooperative/operator/dashboard'
-*/
-dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::dashboard
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:22
-* @route '/cooperative/operator/dashboard'
-*/
-dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: dashboard.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-dashboard.form = dashboardForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:32
 * @route '/cooperative/operator/approval-inbox'
 */
 export const approvalInbox = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +60,7 @@ approvalInbox.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:32
 * @route '/cooperative/operator/approval-inbox'
 */
 approvalInbox.url = (options?: RouteQueryOptions) => {
@@ -106,7 +69,7 @@ approvalInbox.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:32
 * @route '/cooperative/operator/approval-inbox'
 */
 approvalInbox.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +79,7 @@ approvalInbox.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:32
 * @route '/cooperative/operator/approval-inbox'
 */
 approvalInbox.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -125,45 +88,8 @@ approvalInbox.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
-* @route '/cooperative/operator/approval-inbox'
-*/
-const approvalInboxForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: approvalInbox.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
-* @route '/cooperative/operator/approval-inbox'
-*/
-approvalInboxForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: approvalInbox.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::approvalInbox
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:31
-* @route '/cooperative/operator/approval-inbox'
-*/
-approvalInboxForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: approvalInbox.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-approvalInbox.form = approvalInboxForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:39
 * @route '/cooperative/operator/exceptions'
 */
 export const exceptions = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -178,7 +104,7 @@ exceptions.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:39
 * @route '/cooperative/operator/exceptions'
 */
 exceptions.url = (options?: RouteQueryOptions) => {
@@ -187,7 +113,7 @@ exceptions.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:39
 * @route '/cooperative/operator/exceptions'
 */
 exceptions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -197,7 +123,7 @@ exceptions.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:39
 * @route '/cooperative/operator/exceptions'
 */
 exceptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -206,45 +132,8 @@ exceptions.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
-* @route '/cooperative/operator/exceptions'
-*/
-const exceptionsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exceptions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
-* @route '/cooperative/operator/exceptions'
-*/
-exceptionsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exceptions.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exceptions
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:38
-* @route '/cooperative/operator/exceptions'
-*/
-exceptionsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exceptions.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-exceptions.form = exceptionsForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:46
 * @route '/cooperative/operator/analytics'
 */
 export const analytics = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -259,7 +148,7 @@ analytics.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:46
 * @route '/cooperative/operator/analytics'
 */
 analytics.url = (options?: RouteQueryOptions) => {
@@ -268,7 +157,7 @@ analytics.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:46
 * @route '/cooperative/operator/analytics'
 */
 analytics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -278,7 +167,7 @@ analytics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:46
 * @route '/cooperative/operator/analytics'
 */
 analytics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -287,45 +176,8 @@ analytics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
-* @route '/cooperative/operator/analytics'
-*/
-const analyticsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: analytics.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
-* @route '/cooperative/operator/analytics'
-*/
-analyticsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: analytics.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::analytics
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:45
-* @route '/cooperative/operator/analytics'
-*/
-analyticsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: analytics.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-analytics.form = analyticsForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:53
 * @route '/cooperative/operator/closing'
 */
 export const closingPage = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -340,7 +192,7 @@ closingPage.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:53
 * @route '/cooperative/operator/closing'
 */
 closingPage.url = (options?: RouteQueryOptions) => {
@@ -349,7 +201,7 @@ closingPage.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:53
 * @route '/cooperative/operator/closing'
 */
 closingPage.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -359,7 +211,7 @@ closingPage.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:53
 * @route '/cooperative/operator/closing'
 */
 closingPage.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -368,45 +220,8 @@ closingPage.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
-* @route '/cooperative/operator/closing'
-*/
-const closingPageForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: closingPage.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
-* @route '/cooperative/operator/closing'
-*/
-closingPageForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: closingPage.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closingPage
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:52
-* @route '/cooperative/operator/closing'
-*/
-closingPageForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: closingPage.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-closingPage.form = closingPageForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
 * @route '/cooperative/operator/closing/{period}'
 */
 export const closing = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -421,7 +236,7 @@ closing.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
 * @route '/cooperative/operator/closing/{period}'
 */
 closing.url = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -448,7 +263,7 @@ closing.url = (args: { period: string | number } | [period: string | number ] | 
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
 * @route '/cooperative/operator/closing/{period}'
 */
 closing.get = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -458,7 +273,7 @@ closing.get = (args: { period: string | number } | [period: string | number ] | 
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:60
 * @route '/cooperative/operator/closing/{period}'
 */
 closing.head = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -467,45 +282,8 @@ closing.head = (args: { period: string | number } | [period: string | number ] |
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
-* @route '/cooperative/operator/closing/{period}'
-*/
-const closingForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: closing.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
-* @route '/cooperative/operator/closing/{period}'
-*/
-closingForm.get = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: closing.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::closing
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:59
-* @route '/cooperative/operator/closing/{period}'
-*/
-closingForm.head = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: closing.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-closing.form = closingForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::completeClosingStep
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:79
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 export const completeClosingStep = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -520,7 +298,7 @@ completeClosingStep.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::completeClosingStep
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:79
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 completeClosingStep.url = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -547,7 +325,7 @@ completeClosingStep.url = (args: { period: string | number } | [period: string |
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::completeClosingStep
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:79
 * @route '/cooperative/operator/closing/{period}/steps'
 */
 completeClosingStep.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -556,30 +334,8 @@ completeClosingStep.post = (args: { period: string | number } | [period: string 
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::completeClosingStep
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
-* @route '/cooperative/operator/closing/{period}/steps'
-*/
-const completeClosingStepForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: completeClosingStep.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::completeClosingStep
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:78
-* @route '/cooperative/operator/closing/{period}/steps'
-*/
-completeClosingStepForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: completeClosingStep.url(args, options),
-    method: 'post',
-})
-
-completeClosingStep.form = completeClosingStepForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:87
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:88
 * @route '/cooperative/operator/closing/{period}/lock'
 */
 export const lock = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -594,7 +350,7 @@ lock.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:87
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:88
 * @route '/cooperative/operator/closing/{period}/lock'
 */
 lock.url = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -621,7 +377,7 @@ lock.url = (args: { period: string | number } | [period: string | number ] | str
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:87
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:88
 * @route '/cooperative/operator/closing/{period}/lock'
 */
 lock.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -630,30 +386,8 @@ lock.post = (args: { period: string | number } | [period: string | number ] | st
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:87
-* @route '/cooperative/operator/closing/{period}/lock'
-*/
-const lockForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: lock.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::lock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:87
-* @route '/cooperative/operator/closing/{period}/lock'
-*/
-lockForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: lock.url(args, options),
-    method: 'post',
-})
-
-lock.form = lockForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:94
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:95
 * @route '/cooperative/operator/closing/{period}/unlock'
 */
 export const unlock = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -668,7 +402,7 @@ unlock.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:94
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:95
 * @route '/cooperative/operator/closing/{period}/unlock'
 */
 unlock.url = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -695,7 +429,7 @@ unlock.url = (args: { period: string | number } | [period: string | number ] | s
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:94
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:95
 * @route '/cooperative/operator/closing/{period}/unlock'
 */
 unlock.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -704,33 +438,11 @@ unlock.post = (args: { period: string | number } | [period: string | number ] | 
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:94
-* @route '/cooperative/operator/closing/{period}/unlock'
-*/
-const unlockForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: unlock.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::unlock
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:94
-* @route '/cooperative/operator/closing/{period}/unlock'
-*/
-unlockForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: unlock.url(args, options),
-    method: 'post',
-})
-
-unlock.form = unlockForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::reconcilePayment
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-export const reconcilePayment = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const reconcilePayment = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcilePayment.url(args, options),
     method: 'post',
 })
@@ -742,10 +454,10 @@ reconcilePayment.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::reconcilePayment
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePayment.url = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
+reconcilePayment.url = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { payment: args }
     }
@@ -775,39 +487,17 @@ reconcilePayment.url = (args: { payment: number | { id: number } } | [payment: n
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::reconcilePayment
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:104
 * @route '/cooperative/operator/payments/{payment}/reconcile'
 */
-reconcilePayment.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+reconcilePayment.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: reconcilePayment.url(args, options),
     method: 'post',
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::reconcilePayment
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
-* @route '/cooperative/operator/payments/{payment}/reconcile'
-*/
-const reconcilePaymentForm = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reconcilePayment.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::reconcilePayment
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:103
-* @route '/cooperative/operator/payments/{payment}/reconcile'
-*/
-reconcilePaymentForm.post = (args: { payment: number | { id: number } } | [payment: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: reconcilePayment.url(args, options),
-    method: 'post',
-})
-
-reconcilePayment.form = reconcilePaymentForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:113
 * @route '/cooperative/operator/export'
 */
 export const exportMethod = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -822,7 +512,7 @@ exportMethod.definition = {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:113
 * @route '/cooperative/operator/export'
 */
 exportMethod.url = (options?: RouteQueryOptions) => {
@@ -831,7 +521,7 @@ exportMethod.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:113
 * @route '/cooperative/operator/export'
 */
 exportMethod.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -841,50 +531,13 @@ exportMethod.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:113
 * @route '/cooperative/operator/export'
 */
 exportMethod.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: exportMethod.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
-* @route '/cooperative/operator/export'
-*/
-const exportMethodForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportMethod.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
-* @route '/cooperative/operator/export'
-*/
-exportMethodForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportMethod.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::exportMethod
-* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:112
-* @route '/cooperative/operator/export'
-*/
-exportMethodForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportMethod.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-exportMethod.form = exportMethodForm
 
 const OperatorProcedureController = { dashboard, approvalInbox, exceptions, analytics, closingPage, closing, completeClosingStep, lock, unlock, reconcilePayment, exportMethod, export: exportMethod }
 

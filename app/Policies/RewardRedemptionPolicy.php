@@ -15,11 +15,13 @@ class RewardRedemptionPolicy extends BasePolicy
 
     public function view(User $user, RewardRedemption $rewardRedemption): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value)
+            && ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value) || $this->sameOrganization($user, $rewardRedemption));
     }
 
     public function update(User $user, RewardRedemption $rewardRedemption): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value)
+            && ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value) || $this->sameOrganization($user, $rewardRedemption));
     }
 }

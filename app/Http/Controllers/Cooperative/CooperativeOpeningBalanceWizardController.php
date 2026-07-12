@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\Cooperative\OpeningBalanceBatchStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\PostOpeningBalanceRequest;
@@ -21,9 +22,13 @@ class CooperativeOpeningBalanceWizardController extends Controller
 {
     public function __construct(private readonly CooperativeOpeningBalanceWizardService $service) {}
 
-    public function show(Request $request, CooperativeMember $member): Response
-    {
+    public function show(
+        Request $request,
+        CooperativeMember $member,
+        OrganizationScopedQueryService $scopeService,
+    ): Response {
         $this->authorizeWizardAccess($request, 'manage_cooperative_opening_balance');
+        $member = $this->scopedMember($member, $request, $scopeService);
 
         $member->load([
             'organization',
@@ -96,8 +101,12 @@ class CooperativeOpeningBalanceWizardController extends Controller
         ]);
     }
 
-    public function preview(PreviewOpeningBalanceRequest $request, CooperativeMember $member): \Illuminate\Http\JsonResponse
-    {
+    public function preview(
+        PreviewOpeningBalanceRequest $request,
+        CooperativeMember $member,
+        OrganizationScopedQueryService $scopeService,
+    ): \Illuminate\Http\JsonResponse {
+        $member = $this->scopedMember($member, $request, $scopeService);
         $preview = $this->service->preview($member, $request->validated());
 
         return response()->json([
@@ -105,8 +114,12 @@ class CooperativeOpeningBalanceWizardController extends Controller
         ]);
     }
 
-    public function store(StoreOpeningBalanceDraftRequest $request, CooperativeMember $member): RedirectResponse
-    {
+    public function store(
+        StoreOpeningBalanceDraftRequest $request,
+        CooperativeMember $member,
+        OrganizationScopedQueryService $scopeService,
+    ): RedirectResponse {
+        $member = $this->scopedMember($member, $request, $scopeService);
         $organization = $member->organization;
 
         if (! $organization) {
@@ -125,8 +138,12 @@ class CooperativeOpeningBalanceWizardController extends Controller
             ->with('success', 'Draft saldo awal berhasil disimpan sebagai '.$batch->status->label().'.');
     }
 
-    public function post(PostOpeningBalanceRequest $request, CooperativeMemberOpeningBalanceBatch $batch): RedirectResponse
-    {
+    public function post(
+        PostOpeningBalanceRequest $request,
+        CooperativeMemberOpeningBalanceBatch $batch,
+        OrganizationScopedQueryService $scopeService,
+    ): RedirectResponse {
+        $this->assertBatchVisible($batch, $request, $scopeService);
         abort_unless($batch->status === OpeningBalanceBatchStatus::Draft, 422, 'Batch sudah diproses.');
 
         $this->service->post($batch->fresh(), $request->user());
@@ -136,8 +153,12 @@ class CooperativeOpeningBalanceWizardController extends Controller
             ->with('success', 'Saldo awal berhasil diposting ke ledger simpanan.');
     }
 
-    public function void(VoidOpeningBalanceRequest $request, CooperativeMemberOpeningBalanceBatch $batch): RedirectResponse
-    {
+    public function void(
+        VoidOpeningBalanceRequest $request,
+        CooperativeMemberOpeningBalanceBatch $batch,
+        OrganizationScopedQueryService $scopeService,
+    ): RedirectResponse {
+        $this->assertBatchVisible($batch, $request, $scopeService);
         abort_unless($batch->status === OpeningBalanceBatchStatus::Posted, 422, 'Hanya batch berstatus POSTED yang bisa di-void.');
 
         $this->service->void($batch->fresh(), $request->user(), $request->string('reason')->toString());
@@ -150,5 +171,26 @@ class CooperativeOpeningBalanceWizardController extends Controller
     private function authorizeWizardAccess(Request $request, string $permission): void
     {
         abort_unless($request->user()?->can($permission) ?? false, 403, 'Anda tidak memiliki akses ke wizard saldo awal.');
+    }
+
+    private function scopedMember(
+        CooperativeMember $member,
+        Request $request,
+        OrganizationScopedQueryService $scopeService,
+    ): CooperativeMember {
+        $query = CooperativeMember::query()->whereKey($member->id);
+        $scopeService->scopeVisibleTo($query, $request->user());
+
+        return $query->firstOrFail();
+    }
+
+    private function assertBatchVisible(
+        CooperativeMemberOpeningBalanceBatch $batch,
+        Request $request,
+        OrganizationScopedQueryService $scopeService,
+    ): void {
+        $memberQuery = CooperativeMember::query()->whereKey($batch->cooperative_member_id);
+        $scopeService->scopeVisibleTo($memberQuery, $request->user());
+        abort_unless($memberQuery->exists(), 404);
     }
 }

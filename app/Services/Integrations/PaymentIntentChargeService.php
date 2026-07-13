@@ -3,6 +3,8 @@
 namespace App\Services\Integrations;
 
 use App\Enums\ChargeCommitResult;
+use App\Enums\ProviderChargeOutcome;
+use App\Exceptions\ProviderChargeException;
 use App\Models\MemberPaymentChargeAttempt;
 use App\Models\MemberPaymentIntent;
 use App\Models\PaymentReconciliationIncident;
@@ -59,8 +61,17 @@ class PaymentIntentChargeService
 
         try {
             $charge = $this->gateway->buildIntentCharge($intent->refresh());
+        } catch (ProviderChargeException $exception) {
+            $this->handleProviderChargeException($intent->id, $attempt, $exception);
+
+            throw $exception;
         } catch (RuntimeException $exception) {
-            $this->handleChargeFailure($intent->id, $attempt, $exception);
+            // Unclassified RuntimeException from unknown source — treat as Unknown
+            $this->handleProviderChargeException(
+                $intent->id,
+                $attempt,
+                ProviderChargeException::unknown($exception->getMessage(), null, $exception),
+            );
 
             throw $exception;
         }
@@ -112,7 +123,42 @@ class PaymentIntentChargeService
                 return ['reusable' => $existing];
             }
 
+            // PENDING with a PREPARING attempt from a previous safe retry:
+            // reuse the same attempt identity (attempt number, idempotency
+            // key, provider order ID) instead of creating a new attempt.
+            if ($status === 'PENDING' && $locked->charge_attempt > 0) {
+                $reusableAttempt = MemberPaymentChargeAttempt::query()
+                    ->where('member_payment_intent_id', $locked->id)
+                    ->where('attempt', (int) $locked->charge_attempt)
+                    ->where('state', MemberPaymentChargeAttempt::STATE_PREPARING)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($reusableAttempt) {
+                    $locked->forceFill([
+                        'gateway_status' => 'CHARGE_CREATING',
+                    ])->save();
+
+                    return [
+                        'attempt' => (int) $reusableAttempt->attempt,
+                        'idempotency_key' => $reusableAttempt->idempotency_key,
+                        'provider_order_id' => $reusableAttempt->provider_order_id,
+                    ];
+                }
+            }
+
             if ($status === 'CHARGE_CREATING') {
+                // If attempt is already UNKNOWN (from a provider failure),
+                // block immediately — no need to wait for staleness.
+                $attemptState = MemberPaymentChargeAttempt::query()
+                    ->where('member_payment_intent_id', $locked->id)
+                    ->where('attempt', (int) $locked->charge_attempt)
+                    ->value('state');
+
+                if ($attemptState === MemberPaymentChargeAttempt::STATE_UNKNOWN) {
+                    return ['reconciliation_required' => true];
+                }
+
                 $staleAttempt = $this->checkStaleChargeCreating($locked);
                 if ($staleAttempt === null) {
                     return ['preparing' => true];
@@ -219,48 +265,140 @@ class PaymentIntentChargeService
         });
     }
 
-    private function handleChargeFailure(int $intentId, int $expectedAttempt, RuntimeException $exception): void
+    /**
+     * Apply the correct recovery behaviour based on the classified provider
+     * outcome.
+     *
+     * Unknown: intent stays CHARGE_CREATING, attempt → UNKNOWN, create incident.
+     * DefinitiveNotCreated: attempt → PREPARING, intent → PENDING (safe retry
+     *   of the same attempt via beginTransactionA reuse path).
+     * DefinitiveRejected: attempt → FAILED, intent → PENDING (new attempt).
+     */
+    private function handleProviderChargeException(int $intentId, int $expectedAttempt, ProviderChargeException $exception): void
     {
-        DB::transaction(function () use ($intentId, $expectedAttempt, $exception): void {
+        $outcome = $exception->outcome;
+
+        DB::transaction(function () use ($intentId, $expectedAttempt, $exception, $outcome): void {
             $locked = MemberPaymentIntent::query()
                 ->lockForUpdate()
                 ->findOrFail($intentId);
 
-            // Attempt fencing: only handle failure for our attempt
+            // Attempt fencing: only handle for our attempt
             if ((int) $locked->charge_attempt !== $expectedAttempt) {
                 return;
             }
 
-            if (strtoupper((string) $locked->gateway_status) !== 'CHARGE_CREATING') {
+            if ($outcome === ProviderChargeOutcome::Unknown) {
+                // Keep intent in CHARGE_CREATING — do NOT reset to PENDING.
+                // The charge may have been created; block until reconciliation.
+                $this->markAttemptUnknown($locked->id, $expectedAttempt);
+
+                $this->createChargeFailureIncident($locked, $expectedAttempt, $exception, 'charge_unknown');
+
+                $locked->forceFill([
+                    'gateway_payload' => array_merge(is_array($locked->gateway_payload) ? $locked->gateway_payload : [], [
+                        'charge_failure' => [
+                            'attempt' => $expectedAttempt,
+                            'outcome' => $outcome->value,
+                            'error' => $exception->getMessage(),
+                            'at' => now()->toISOString(),
+                        ],
+                    ]),
+                ])->save();
+
                 return;
             }
 
-            $locked->forceFill([
-                'gateway_status' => 'PENDING',
-                'gateway_payload' => array_merge(is_array($locked->gateway_payload) ? $locked->gateway_payload : [], [
-                    'charge_failure' => [
-                        'attempt' => $expectedAttempt,
-                        'error' => $exception->getMessage(),
-                        'at' => now()->toISOString(),
-                    ],
-                ]),
-            ])->save();
+            // DefinitiveNotCreated or DefinitiveRejected: safe to allow retry.
+            $status = strtoupper((string) $locked->gateway_status);
 
-            MemberPaymentChargeAttempt::query()
-                ->where('member_payment_intent_id', $intentId)
-                ->where('attempt', $expectedAttempt)
-                ->update([
-                    'state' => MemberPaymentChargeAttempt::STATE_FAILED,
-                    'completed_at' => now(),
-                    'response_payload' => ['error' => $exception->getMessage()],
-                ]);
+            if ($status !== 'CHARGE_CREATING') {
+                return;
+            }
+
+            if ($outcome === ProviderChargeOutcome::DefinitiveNotCreated) {
+                // Mark attempt PREPARING so beginTransactionA reuses it for
+                // safe retry with the same identity. Reset intent to PENDING.
+                $this->resetAttemptForRetry($locked->id, $expectedAttempt);
+
+                $locked->forceFill(['gateway_status' => 'PENDING'])->save();
+            } else {
+                // DefinitiveRejected: mark attempt FAILED, reset intent to PENDING.
+                MemberPaymentChargeAttempt::query()
+                    ->where('member_payment_intent_id', $intentId)
+                    ->where('attempt', $expectedAttempt)
+                    ->update([
+                        'state' => MemberPaymentChargeAttempt::STATE_FAILED,
+                        'completed_at' => now(),
+                        'response_payload' => ['error' => $exception->getMessage()],
+                    ]);
+
+                $locked->forceFill([
+                    'gateway_status' => 'PENDING',
+                    'gateway_payload' => array_merge(is_array($locked->gateway_payload) ? $locked->gateway_payload : [], [
+                        'charge_failure' => [
+                            'attempt' => $expectedAttempt,
+                            'outcome' => $outcome->value,
+                            'error' => $exception->getMessage(),
+                            'at' => now()->toISOString(),
+                        ],
+                    ]),
+                ])->save();
+            }
         });
 
         Log::error('Payment intent charge creation failed', [
             'intent_id' => $intentId,
             'attempt' => $expectedAttempt,
+            'outcome' => $outcome->value,
             'error' => $exception->getMessage(),
         ]);
+    }
+
+    /**
+     * Reset an attempt back to PREPARING so that beginTransactionA can reuse
+     * the same attempt number, idempotency key, and provider order ID.
+     */
+    private function resetAttemptForRetry(int $intentId, int $attempt): void
+    {
+        MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intentId)
+            ->where('attempt', $attempt)
+            ->update([
+                'state' => MemberPaymentChargeAttempt::STATE_PREPARING,
+                'provider_reference' => null,
+                'response_payload' => null,
+                'completed_at' => null,
+            ]);
+    }
+
+    /**
+     * Create a reconciliation incident for a failed charge creation.
+     */
+    private function createChargeFailureIncident(
+        MemberPaymentIntent $intent,
+        int $attempt,
+        ProviderChargeException $exception,
+        string $type,
+    ): void {
+        $fingerprint = md5($intent->id.'|'.$attempt.'|'.$type);
+
+        PaymentReconciliationIncident::query()->firstOrCreate(
+            ['deduplication_key' => $fingerprint],
+            [
+                'member_payment_intent_id' => $intent->id,
+                'gateway_reference' => $intent->gateway_reference,
+                'incident_type' => $type,
+                'status' => PaymentReconciliationIncident::STATUS_OPEN,
+                'webhook_payload' => [
+                    'attempt' => $attempt,
+                    'outcome' => $exception->outcome->value,
+                    'error' => $exception->getMessage(),
+                    'http_status' => $exception->httpStatus,
+                ],
+                'incident_at' => now(),
+            ],
+        );
     }
 
     /**

@@ -2,8 +2,10 @@
 
 namespace App\Services\Integrations;
 
+use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -372,6 +374,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         $appStatusCode = (int) ($body['status_code'] ?? $httpStatus);
 
         if (! $response->successful() || $appStatusCode >= 400) {
+            $message = 'Midtrans '.$context.' failed: '.($body['status_message'] ?? 'HTTP '.$httpStatus);
+
             Log::error('Midtrans '.$context.' failed', [
                 'entity_id' => $entityId,
                 'order_id' => $orderId,
@@ -380,7 +384,14 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
                 'body' => $body,
             ]);
 
-            throw new \RuntimeException('Midtrans '.$context.' failed: '.($body['status_message'] ?? 'HTTP '.$httpStatus));
+            // 5xx server errors and ambiguous app-level codes are Unknown:
+            // the charge may or may not have been created.
+            if ($httpStatus >= 500 || $appStatusCode >= 500) {
+                throw ProviderChargeException::unknown($message, $httpStatus);
+            }
+
+            // 4xx client errors are definitive rejections.
+            throw ProviderChargeException::rejected($message, $httpStatus);
         }
     }
 
@@ -393,12 +404,28 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             ->withHeader('Idempotency-Key', $idempotencyKey)
             ->post($this->baseUrl.$endpoint, $payload);
 
-        $response = $request();
+        try {
+            $response = $request();
+        } catch (ConnectionException $e) {
+            throw ProviderChargeException::unknown(
+                'Provider connection failure: '.$e->getMessage(),
+                null,
+                $e,
+            );
+        }
 
         if ($response->status() === 404 && ($response->json() ?: []) === []) {
             usleep(500_000);
 
-            return $request();
+            try {
+                return $request();
+            } catch (ConnectionException $e) {
+                throw ProviderChargeException::unknown(
+                    'Provider connection failure on retry: '.$e->getMessage(),
+                    null,
+                    $e,
+                );
+            }
         }
 
         return $response;
@@ -566,7 +593,7 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         } elseif (in_array(strtoupper($transactionStatus), ['DENY', 'FAILURE'], true)) {
             $mappedStatus = 'FAILED';
         } else {
-            $mappedStatus = 'PENDING';
+            $mappedStatus = 'UNKNOWN';
         }
 
         $qrString = $body['qr_string'] ?? null;

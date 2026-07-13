@@ -4,6 +4,7 @@ namespace App\Services\Integrations;
 
 use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Exceptions\PaymentGatewayWebhookVerificationException;
+use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
 use Carbon\CarbonImmutable;
@@ -127,7 +128,15 @@ class PaymentGatewayService
             return $this->createIntentChargeInternal($intent);
         }
 
-        return $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+        $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+
+        if (empty($charge['reference'])) {
+            throw ProviderChargeException::notCreated(
+                'Provider returned charge without a reference (malformed or empty response).'
+            );
+        }
+
+        return $charge;
     }
 
     /**

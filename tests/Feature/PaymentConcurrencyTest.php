@@ -590,16 +590,20 @@ class PaymentConcurrencyTest extends TestCase
         $resultDir = $this->workingDirectory.'/results';
         mkdir($resultDir);
 
+        // Shared counter file to track provider create-call count
+        $counterFile = $this->workingDirectory.'/c6-create-counter.txt';
+        file_put_contents($counterFile, '0');
+
         $processes = [
             $this->startWorker(
                 $this->writeWorkerScript('c6-charge', ['intent_id' => $intent->id]),
                 $startFile, $resultDir, 'c6-a',
-                ['intent_id' => $intent->id],
+                ['intent_id' => $intent->id, 'counter_file' => $counterFile],
             ),
             $this->startWorker(
                 $this->writeWorkerScript('c6-charge', ['intent_id' => $intent->id]),
                 $startFile, $resultDir, 'c6-b',
-                ['intent_id' => $intent->id],
+                ['intent_id' => $intent->id, 'counter_file' => $counterFile],
             ),
         ];
 
@@ -613,19 +617,27 @@ class PaymentConcurrencyTest extends TestCase
 
         $intent->refresh();
 
-        // Workers may return a charge reference or PREPARING (if the other
-        // worker is still creating the charge). Either way, all non-empty
-        // references must be identical.
-        $refs = array_filter(array_column($results, 'reference'));
-        $this->assertGreaterThanOrEqual(1, count($refs), 'C6: at least one worker returned a reference');
-        $this->assertCount(1, array_unique($refs), 'C6: exactly one unique reference');
+        // Assert exact provider create-call count === 1
+        $createCallCount = (int) trim(file_get_contents($counterFile) ?: '0');
+        $this->assertSame(1, $createCallCount, 'C6: provider create-call count must be exactly 1');
 
-        // Only one charge attempt should be CONFIRMED, not two
+        // Assert exact attempt count === 1
+        $attemptCount = MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intent->id)
+            ->count();
+        $this->assertSame(1, $attemptCount, 'C6: exactly one charge attempt');
+
+        // Assert exact confirmed attempt count === 1
         $confirmed = MemberPaymentChargeAttempt::query()
             ->where('member_payment_intent_id', $intent->id)
             ->where('state', MemberPaymentChargeAttempt::STATE_CONFIRMED)
             ->count();
         $this->assertSame(1, $confirmed, 'C6: exactly one confirmed charge attempt');
+
+        // All non-empty references must be identical
+        $refs = array_filter(array_column($results, 'reference'));
+        $this->assertGreaterThanOrEqual(1, count($refs), 'C6: at least one worker returned a reference');
+        $this->assertCount(1, array_unique($refs), 'C6: exactly one unique reference');
     }
 
     // ── C7: Two concurrent orders with opposite item ordering ─────────
@@ -737,7 +749,9 @@ class PaymentConcurrencyTest extends TestCase
             'stock' => 50,
         ]);
 
-        // Create intent stuck in stale CHARGE_CREATING
+        // Create intent stuck in stale CHARGE_CREATING with UNKNOWN attempt.
+        // This simulates a provider call that timed out: the provider recorded
+        // the charge server-side but the response was lost.
         $intent = MemberPaymentIntent::factory()->create([
             'cooperative_member_id' => $member->id,
             'user_id' => $user->id,
@@ -763,14 +777,15 @@ class PaymentConcurrencyTest extends TestCase
             ],
         ]);
 
-        // Create a stale CHARGE_CREATING attempt record with stable provider order ID
         $providerOrderId = "KOJ-MPI-{$intent->id}-1";
+
+        // Create attempt in UNKNOWN state (timed-out provider call)
         MemberPaymentChargeAttempt::query()->create([
             'member_payment_intent_id' => $intent->id,
             'attempt' => 1,
             'idempotency_key' => "member-intent:{$intent->id}:1",
             'provider_order_id' => $providerOrderId,
-            'state' => MemberPaymentChargeAttempt::STATE_PREPARING,
+            'state' => MemberPaymentChargeAttempt::STATE_UNKNOWN,
             'started_at' => now()->subMinutes(10),
         ]);
 
@@ -778,18 +793,37 @@ class PaymentConcurrencyTest extends TestCase
         $resultDir = $this->workingDirectory.'/results';
         mkdir($resultDir);
 
+        // Shared store file for fake provider: pre-store the charge that was
+        // recorded by the provider before the response timed out.
+        $storeFile = $this->workingDirectory.'/c8-provider-store.json';
+        file_put_contents($storeFile, json_encode([
+            $providerOrderId => [
+                'provider' => 'fake',
+                'reference' => $providerOrderId,
+                'status' => 'PENDING',
+                'channel' => 'QRIS',
+                'amount' => 10000.0,
+                'checkout_url' => null,
+                'qr_string' => 'fake-qr-string',
+            ],
+        ]));
+
+        // Counter starts at 1: the original timed-out provider create call
+        $counterFile = $this->workingDirectory.'/c8-create-counter.txt';
+        file_put_contents($counterFile, '1');
+
         $processes = [
             // Process A: run recovery command
             $this->startWorker(
                 $this->writeWorkerScript('c8-recovery', []),
                 $startFile, $resultDir, 'c8-recovery',
-                [],
+                ['store_file' => $storeFile, 'counter_file' => $counterFile],
             ),
             // Process B: call ensureCharge
             $this->startWorker(
-                $this->writeWorkerScript('c6-charge', ['intent_id' => $intent->id]),
+                $this->writeWorkerScript('c8-charge', []),
                 $startFile, $resultDir, 'c8-charge',
-                ['intent_id' => $intent->id],
+                ['intent_id' => $intent->id, 'store_file' => $storeFile, 'counter_file' => $counterFile],
             ),
         ];
 
@@ -803,39 +837,29 @@ class PaymentConcurrencyTest extends TestCase
 
         $intent->refresh();
 
-        // With the new recovery behavior, stale CHARGE_CREATING with an UNKNOWN
-        // attempt should NOT be reset to PENDING. The intent stays blocked
-        // until reconciliation completes.
-        $gatewayStatus = $intent->gatewayStatus()->value;
-        $this->assertContains($gatewayStatus, ['PENDING', 'CHARGE_CREATING'], 'C8: valid gateway state');
+        // Assert exact provider create-call count === 1 (only the original timed-out call)
+        $createCallCount = (int) trim(file_get_contents($counterFile) ?: '0');
+        $this->assertSame(1, $createCallCount, 'C8: provider create-call count must be exactly 1');
 
-        // No confirmed charge attempts with duplicate provider references
-        $confirmedAttempts = MemberPaymentChargeAttempt::query()
-            ->where('member_payment_intent_id', $intent->id)
-            ->where('state', MemberPaymentChargeAttempt::STATE_CONFIRMED)
-            ->get();
-
-        $providerRefs = $confirmedAttempts->pluck('provider_reference')->filter()->unique();
-        $this->assertLessThanOrEqual(1, $providerRefs->count(), 'C8: at most one unique provider reference');
-
-        // No second attempt should be created while first is UNKNOWN
+        // Assert exact attempt count === 1
         $attemptCount = MemberPaymentChargeAttempt::query()
             ->where('member_payment_intent_id', $intent->id)
             ->count();
-        $this->assertLessThanOrEqual(1, $attemptCount, 'C8: no second attempt created before reconciliation');
+        $this->assertSame(1, $attemptCount, 'C8: exactly one charge attempt');
 
-        // Stale attempt 1 must not be CONFIRMED (either UNKNOWN or PREPARING after safe retry)
-        $attempt1 = MemberPaymentChargeAttempt::query()
+        // No orphan untracked: every attempt must be in a known state
+        $orphaned = MemberPaymentChargeAttempt::query()
             ->where('member_payment_intent_id', $intent->id)
-            ->where('attempt', 1)
-            ->first();
-        if ($attempt1) {
-            $this->assertNotSame(
+            ->whereNotIn('state', [
+                MemberPaymentChargeAttempt::STATE_PREPARING,
+                MemberPaymentChargeAttempt::STATE_SENT,
                 MemberPaymentChargeAttempt::STATE_CONFIRMED,
-                $attempt1->state,
-                'C8: stale attempt 1 is not CONFIRMED'
-            );
-        }
+                MemberPaymentChargeAttempt::STATE_FAILED,
+                MemberPaymentChargeAttempt::STATE_UNKNOWN,
+                MemberPaymentChargeAttempt::STATE_ORPHANED,
+            ])
+            ->count();
+        $this->assertSame(0, $orphaned, 'C8: no orphan untracked attempts');
 
         // State combination must be valid
         $this->assertTrue($intent->isStateCombinationValid(), 'C8: valid state combination');
@@ -866,6 +890,7 @@ class PaymentConcurrencyTest extends TestCase
             'c6-charge' => $this->workerTemplateC6Charge(),
             'c7-order' => $this->workerTemplateC7Order(),
             'c8-recovery' => $this->workerTemplateC8Recovery(),
+            'c8-charge' => $this->workerTemplateC8Charge(),
             default => throw new \InvalidArgumentException("Unknown action: {$action}"),
         };
 
@@ -1131,7 +1156,42 @@ PHP;
     {
         return <<<'PHP'
 use App\Models\MemberPaymentIntent;
+use App\Services\Integrations\PaymentGatewayService;
 use App\Services\Integrations\PaymentIntentChargeService;
+
+// Define a counting gateway that tracks provider calls via a shared file.
+if (! class_exists('CountingGateway')) {
+    class CountingGateway extends PaymentGatewayService
+    {
+        public static string $counterFile = '';
+
+        public function buildIntentCharge(MemberPaymentIntent $intent): array
+        {
+            if (self::$counterFile !== '') {
+                $fp = fopen(self::$counterFile, 'c+');
+                if ($fp) {
+                    flock($fp, LOCK_EX);
+                    $count = (int) trim(fread($fp, 32) ?: '0');
+                    $count++;
+                    ftruncate($fp, 0);
+                    rewind($fp);
+                    fwrite($fp, (string) $count);
+                    fflush($fp);
+                    flock($fp, LOCK_UN);
+                    fclose($fp);
+                }
+            }
+
+            return parent::buildIntentCharge($intent);
+        }
+    }
+}
+
+CountingGateway::$counterFile = $params['counter_file'] ?? '';
+
+app()->bind(PaymentGatewayService::class, function ($app) {
+    return $app->make(CountingGateway::class);
+});
 
 $intent = MemberPaymentIntent::query()->findOrFail((int) $params['intent_id']);
 $chargeService = app(PaymentIntentChargeService::class);
@@ -1201,7 +1261,8 @@ PHP;
 
     private function workerTemplateC8Recovery(): string
     {
-        return <<<'PHP'
+        return $this->fakeRecoveryProviderSetup().<<<'PHP'
+
 use Illuminate\Support\Facades\Artisan;
 
 try {
@@ -1223,6 +1284,163 @@ try {
     ]));
     exit(1);
 }
+PHP;
+    }
+
+    private function workerTemplateC8Charge(): string
+    {
+        return $this->fakeRecoveryProviderSetup().<<<'PHP'
+
+use App\Models\MemberPaymentIntent;
+use App\Services\Integrations\PaymentIntentChargeService;
+
+$intent = MemberPaymentIntent::query()->findOrFail((int) $params['intent_id']);
+$chargeService = app(PaymentIntentChargeService::class);
+
+try {
+    $charge = $chargeService->ensureCharge($intent);
+
+    file_put_contents($resultFile, json_encode([
+        'ok' => true,
+        'reference' => $charge['reference'] ?? null,
+    ]));
+    exit(0);
+} catch (Throwable $throwable) {
+    file_put_contents($resultFile, json_encode([
+        'ok' => false,
+        'class' => $throwable::class,
+        'message' => $throwable->getMessage(),
+    ]));
+    exit(1);
+}
+PHP;
+    }
+
+    /**
+     * Returns PHP code defining a fake provider that stores charges in a shared
+     * file, counts create calls, and supports reconciliation. Used by C8 workers
+     * to simulate a provider that recorded a charge before a response timeout.
+     */
+    private function fakeRecoveryProviderSetup(): string
+    {
+        return <<<'PHP'
+if (! class_exists('FakeRecoveryProvider')) {
+    class FakeRecoveryProvider implements \App\Contracts\Integrations\PaymentGatewayProvider
+    {
+        public static string $storeFile = '';
+
+        public static string $counterFile = '';
+
+        public function isConfigured(): bool
+        {
+            return true;
+        }
+
+        public function createIntentCharge(\App\Models\MemberPaymentIntent $intent): array
+        {
+            self::incrementCounter();
+
+            $orderId = sprintf('KOJ-MPI-%d-%d', $intent->id, $intent->charge_attempt ?: 1);
+
+            $store = self::readStore();
+            if (isset($store[$orderId])) {
+                return $store[$orderId];
+            }
+
+            $charge = [
+                'provider' => 'fake',
+                'reference' => $orderId,
+                'status' => 'PENDING',
+                'channel' => $intent->channel,
+                'amount' => (float) $intent->amount,
+                'checkout_url' => null,
+                'qr_string' => 'fake-qr-string',
+            ];
+            $store[$orderId] = $charge;
+            self::writeStore($store);
+
+            return $charge;
+        }
+
+        public function reconcileIntentCharge(string $providerOrderId): ?array
+        {
+            $store = self::readStore();
+
+            return $store[$providerOrderId] ?? null;
+        }
+
+        public function createCharge(\App\Models\CooperativePayment $payment, string $channel): array
+        {
+            return [];
+        }
+
+        public function verifyWebhook(array $payload, array $headers): bool
+        {
+            return false;
+        }
+
+        public function parseWebhook(array $payload): \App\Services\Integrations\WebhookEvent
+        {
+            throw new \RuntimeException('Not implemented');
+        }
+
+        public function acknowledgeResponse(): mixed
+        {
+            return null;
+        }
+
+        private static function readStore(): array
+        {
+            if (! file_exists(self::$storeFile)) {
+                return [];
+            }
+
+            $data = json_decode(file_get_contents(self::$storeFile) ?: '{}', true);
+
+            return is_array($data) ? $data : [];
+        }
+
+        private static function writeStore(array $store): void
+        {
+            $fp = fopen(self::$storeFile, 'c+');
+            if (! $fp) {
+                return;
+            }
+            flock($fp, LOCK_EX);
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, json_encode($store));
+            fflush($fp);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        }
+
+        private static function incrementCounter(): void
+        {
+            $fp = fopen(self::$counterFile, 'c+');
+            if (! $fp) {
+                return;
+            }
+            flock($fp, LOCK_EX);
+            $count = (int) trim(fread($fp, 32) ?: '0');
+            $count++;
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, (string) $count);
+            fflush($fp);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        }
+    }
+}
+
+FakeRecoveryProvider::$storeFile = $params['store_file'] ?? '';
+FakeRecoveryProvider::$counterFile = $params['counter_file'] ?? '';
+
+config()->set('services.midtrans.server_key', 'fake-configured-key');
+app()->bind(\App\Contracts\Integrations\PaymentGatewayProvider::class, function () {
+    return new FakeRecoveryProvider();
+});
 PHP;
     }
 

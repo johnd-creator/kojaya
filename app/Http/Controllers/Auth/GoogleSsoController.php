@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\Sso\GoogleSsoService;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -183,15 +182,16 @@ class GoogleSsoController extends Controller
             'code' => $exception->getCode(),
         ];
 
-        $requestException = $exception instanceof RequestException
-            ? $exception
-            : ($exception->getPrevious() instanceof RequestException ? $exception->getPrevious() : null);
+        foreach ([$exception, $exception->getPrevious()] as $candidate) {
+            if ($candidate !== null && method_exists($candidate, 'getRequest')) {
+                $request = $candidate->getRequest();
+                $context['guzzle_request'] = $request->getMethod().' '.$request->getUri();
 
-        if ($requestException instanceof RequestException && $requestException->getRequest() !== null) {
-            $context['guzzle_request'] = $requestException->getRequest()->getMethod().' '.$requestException->getRequest()->getUri();
+                if (method_exists($candidate, 'hasResponse') && $candidate->hasResponse()) {
+                    $context['guzzle_status'] = $candidate->getResponse()->getStatusCode();
+                }
 
-            if ($requestException->hasResponse()) {
-                $context['guzzle_status'] = $requestException->getResponse()->getStatusCode();
+                break;
             }
         }
 

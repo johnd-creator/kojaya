@@ -58,6 +58,8 @@ jobs:
       - run: php artisan key:generate
       - run: npm run build
       - run: php artisan wayfinder:generate
+        env:
+          APP_ENV: local
       - run: git diff --exit-code resources/js/actions resources/js/routes
 
   unit-feature-tests:
@@ -145,6 +147,14 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env
       - run: php artisan key:generate
+      - run: vendor/bin/phpunit --configuration phpunit.pgsql.xml tests/Feature/PaymentConcurrencyTest.php
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: kojaya_test
+          DB_USERNAME: kojaya
+          DB_PASSWORD: kojaya
       - run: php artisan test --compact tests/Feature/Cooperative/PosTransactionConcurrencyTest.php tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php
         env:
           DB_CONNECTION: pgsql

@@ -27,6 +27,8 @@ class DemoMemberSeederTest extends TestCase
     {
         Carbon::setTestNow('2026-06-24 10:00:00');
 
+        $this->fakeCooperativeReceiptIssuance();
+
         $this->seed(RolePermissionSeeder::class);
         $this->seed(CooperativeSeeder::class);
         $this->seed(AnggotaSeeder::class);

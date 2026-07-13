@@ -6,6 +6,7 @@ use App\Models\MemberPaymentIntent;
 use App\Models\PosInventoryStock;
 use App\Models\PosProduct;
 use App\Services\AuditLogService;
+use App\Support\CanonicalOrderItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -14,18 +15,26 @@ class MemberOrderReservationService
     public function __construct(private readonly AuditLogService $auditLogService) {}
 
     /**
-     * @param  array<int, array<string, mixed>>  $items
+     * Reserve stock for canonical items.
+     *
+     * Items must already be canonicalised (one row per pos_product_id,
+     * sorted ascending). The same canonical list is returned with
+     * reservation_location_id attached.
+     *
+     * @param  list<CanonicalOrderItem>  $canonicalItems
+     * @return list<CanonicalOrderItem>
      */
-    public function reserve(array $items): array
+    public function reserve(array $canonicalItems): array
     {
-        return DB::transaction(function () use ($items): array {
+        return DB::transaction(function () use ($canonicalItems): array {
             $location = app(PosInventoryService::class)->resolveLocationFor();
             app(PosInventoryService::class)->syncDefaultLocationStocks($location->id);
 
-            $reservedItems = [];
-            foreach ($items as $item) {
-                $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
-                $quantity = (int) $item['quantity'];
+            $reserved = [];
+
+            foreach ($canonicalItems as $item) {
+                $product = PosProduct::query()->lockForUpdate()->findOrFail($item->posProductId);
+                $quantity = $item->quantity;
                 $stock = PosInventoryStock::query()
                     ->where('pos_product_id', $product->id)
                     ->where('pos_inventory_location_id', $location->id)
@@ -40,13 +49,18 @@ class MemberOrderReservationService
                 }
 
                 $stock?->increment('reserved', $quantity);
-                $reservedItems[] = [
-                    ...$item,
-                    'reservation_location_id' => $location->id,
-                ];
+
+                $reserved[] = new CanonicalOrderItem(
+                    posProductId: $item->posProductId,
+                    quantity: $item->quantity,
+                    unitPrice: $item->unitPrice,
+                    reservationLocationId: (string) $location->id,
+                    customization: $item->customization,
+                    productSnapshot: $item->productSnapshot,
+                );
             }
 
-            return $reservedItems;
+            return $reserved;
         });
     }
 
@@ -122,6 +136,10 @@ class MemberOrderReservationService
             : null;
     }
 
+    /**
+     * Release reserved stock using canonical metadata from DB.
+     * Items are sorted by pos_product_id to prevent deadlocks.
+     */
     private function releaseReservedStock(MemberPaymentIntent $intent): void
     {
         $metadata = $intent->metadata ?? [];
@@ -131,11 +149,30 @@ class MemberOrderReservationService
             return;
         }
 
+        // Aggregate metadata items by pos_product_id to prevent
+        // double-decrement when metadata contains duplicate rows.
+        $byProductId = [];
         foreach ($items as $item) {
             if (! is_array($item) || ! isset($item['reservation_location_id'], $item['pos_product_id'])) {
                 continue;
             }
 
+            $productId = (int) $item['pos_product_id'];
+            if (! isset($byProductId[$productId])) {
+                $byProductId[$productId] = [
+                    'pos_product_id' => $productId,
+                    'reservation_location_id' => $item['reservation_location_id'],
+                    'quantity' => 0,
+                ];
+            }
+
+            $byProductId[$productId]['quantity'] += (int) ($item['quantity'] ?? 0);
+        }
+
+        $sortable = array_values($byProductId);
+        usort($sortable, static fn (array $a, array $b): int => (int) $a['pos_product_id'] <=> (int) $b['pos_product_id']);
+
+        foreach ($sortable as $item) {
             $stock = PosInventoryStock::query()
                 ->where('pos_product_id', $item['pos_product_id'])
                 ->where('pos_inventory_location_id', $item['reservation_location_id'])

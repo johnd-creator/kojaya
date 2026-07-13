@@ -4,18 +4,20 @@ namespace App\Services\Integrations;
 
 use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Exceptions\PaymentGatewayWebhookVerificationException;
+use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
-use App\Services\Cooperative\MemberOrderReservationService;
+use App\Support\Money\MinorAmount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class PaymentGatewayService
 {
     public function __construct(
         private readonly PaymentGatewayProvider $provider,
-        private readonly MemberOrderReservationService $reservationService,
+        private readonly MemberPaymentIntentStateService $stateService,
     ) {
         //
     }
@@ -67,7 +69,7 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: int, amount_minor: int, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     public function createCharge(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
@@ -78,7 +80,7 @@ class PaymentGatewayService
         }
 
         if (! $this->provider->isConfigured()) {
-            return $this->createChargeInternal($payment, $channel);
+            return $this->publicChargePayload($this->createChargeInternal($payment, $channel));
         }
 
         $charge = $this->provider->createCharge($payment, $channel);
@@ -105,11 +107,7 @@ class PaymentGatewayService
             return $existingCharge;
         }
 
-        if (! $this->provider->isConfigured()) {
-            return $this->createIntentChargeInternal($intent);
-        }
-
-        $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+        $charge = $this->buildIntentCharge($intent);
 
         $intent->forceFill([
             'gateway_provider' => $charge['provider'],
@@ -117,6 +115,28 @@ class PaymentGatewayService
             'gateway_status' => 'PENDING',
             'gateway_payload' => $charge,
         ])->save();
+
+        return $charge;
+    }
+
+    /**
+     * Build charge data for the intent without persisting to the DB.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     */
+    public function buildIntentCharge(MemberPaymentIntent $intent): array
+    {
+        if (! $this->provider->isConfigured()) {
+            return $this->createIntentChargeInternal($intent);
+        }
+
+        $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+
+        if (empty($charge['reference'])) {
+            throw ProviderChargeException::notCreated(
+                'Provider returned charge without a reference (malformed or empty response).'
+            );
+        }
 
         return $charge;
     }
@@ -198,113 +218,36 @@ class PaymentGatewayService
     public function applyWebhookToMemberIntent(array $payload, array $headers = []): ?MemberPaymentIntent
     {
         if ($this->provider->isConfigured()) {
-            return $this->applyProviderWebhookToMemberIntent($payload, $headers);
+            if (! $this->provider->verifyWebhook($payload, $headers)) {
+                return null;
+            }
+
+            $event = $this->provider->parseWebhook($payload);
+            $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
+                ? $event->gatewayReference
+                : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
+
+            if ($reference === '') {
+                return null;
+            }
+
+            return $this->stateService->applyGatewayEvent(
+                $reference,
+                $event->status,
+                $event->rawPayload,
+                $event->amountMinor,
+            );
         }
 
-        return $this->applyInternalWebhookToMemberIntent($payload);
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function applyInternalWebhookToMemberIntent(array $payload): ?MemberPaymentIntent
-    {
         $reference = (string) ($payload['reference'] ?? $payload['gateway_reference'] ?? '');
 
         if ($reference === '') {
             return null;
         }
 
-        $intent = MemberPaymentIntent::query()
-            ->where('gateway_reference', $reference)
-            ->first();
+        $status = strtoupper((string) ($payload['status'] ?? ''));
 
-        if (! $intent) {
-            return null;
-        }
-
-        $newStatus = strtoupper((string) ($payload['status'] ?? ''));
-
-        if (! MidtransPaymentProvider::isTransitionAllowed($intent->gateway_status, $newStatus)) {
-            Log::warning('Payment gateway webhook rejected for member intent: invalid status transition', [
-                'payment_intent_id' => $intent->id,
-                'gateway_reference' => $reference,
-                'current_status' => $intent->gateway_status,
-                'new_status' => $newStatus,
-            ]);
-
-            return $intent;
-        }
-
-        $intent->forceFill([
-            'gateway_status' => $newStatus,
-            'gateway_payload' => $payload,
-        ])->save();
-
-        $this->releaseOrderReservationWhenTerminal($intent);
-
-        return $intent;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     * @param  array<string, string|array<int, string>>  $headers
-     */
-    private function applyProviderWebhookToMemberIntent(array $payload, array $headers): ?MemberPaymentIntent
-    {
-        if (! $this->provider->verifyWebhook($payload, $headers)) {
-            return null;
-        }
-
-        $event = $this->provider->parseWebhook($payload);
-        $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
-            ? $event->gatewayReference
-            : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
-
-        if ($reference === '') {
-            return null;
-        }
-
-        $intent = MemberPaymentIntent::query()
-            ->where('gateway_reference', $reference)
-            ->first();
-
-        if (! $intent) {
-            return null;
-        }
-
-        if (! MidtransPaymentProvider::isTransitionAllowed($intent->gateway_status, $event->status)) {
-            Log::warning('Payment gateway webhook rejected for member intent: invalid status transition', [
-                'payment_intent_id' => $intent->id,
-                'gateway_reference' => $reference,
-                'current_status' => $intent->gateway_status,
-                'new_status' => $event->status,
-            ]);
-
-            return $intent;
-        }
-
-        $intent->forceFill([
-            'gateway_status' => $event->status,
-            'gateway_payload' => $event->rawPayload,
-        ])->save();
-
-        $this->releaseOrderReservationWhenTerminal($intent);
-
-        return $intent;
-    }
-
-    private function releaseOrderReservationWhenTerminal(MemberPaymentIntent $intent): void
-    {
-        if (! in_array($intent->payable_type, [MemberPaymentIntent::PAYABLE_COFFEE_ORDER, MemberPaymentIntent::PAYABLE_STORE_ORDER], true)) {
-            return;
-        }
-
-        if (! in_array(strtoupper($intent->gateway_status), ['CANCELLED', 'EXPIRED', 'FAILED', 'DENY'], true)) {
-            return;
-        }
-
-        $this->reservationService->release($intent);
+        return $this->stateService->applyGatewayEvent($reference, $status, $payload);
     }
 
     /**
@@ -314,6 +257,8 @@ class PaymentGatewayService
     {
         $reference = 'PAY-'.Str::upper(Str::random(12));
         $expiresAt = now()->addDay()->toIso8601String();
+        $amountMinor = MinorAmount::fromDecimal($payment->amount);
+        $amountDecimal = MinorAmount::toDecimalString($amountMinor);
 
         $payment->forceFill([
             'payment_method' => $channel,
@@ -325,7 +270,8 @@ class PaymentGatewayService
                 'reference' => $reference,
                 'status' => 'PENDING',
                 'channel' => $channel,
-                'amount' => (float) $payment->amount,
+                'amount' => $amountDecimal,
+                'amount_minor' => $amountMinor,
                 'checkout_url' => url("/api/payments/{$reference}/checkout"),
                 'qr_string' => null,
                 'qr_image_url' => $channel === 'QRIS' ? route('api.v1.member.payments.qris-image', $payment, false) : null,
@@ -340,7 +286,8 @@ class PaymentGatewayService
             'reference' => $reference,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $payment->amount,
+            'amount' => $amountDecimal,
+            'amount_minor' => $amountMinor,
             'checkout_url' => url("/api/payments/{$reference}/checkout"),
             'qr_image_url' => $channel === 'QRIS' ? route('api.v1.member.payments.qris-image', $payment, false) : null,
             'expires_at' => $expiresAt,
@@ -354,33 +301,18 @@ class PaymentGatewayService
      */
     public function createIntentChargeInternal(MemberPaymentIntent $intent): array
     {
-        $reference = 'MPI-'.Str::upper(Str::random(12));
+        $attempt = (int) ($intent->charge_attempt ?: 1);
+        $reference = sprintf('MPI-%d-%d', $intent->id, $attempt);
         $expiresAt = $intent->expires_at ?? now()->addMinutes(30);
-
-        $intent->forceFill([
-            'gateway_provider' => 'internal',
-            'gateway_reference' => $reference,
-            'gateway_status' => 'PENDING',
-            'gateway_payload' => [
-                'provider' => 'internal',
-                'reference' => $reference,
-                'status' => 'PENDING',
-                'channel' => $intent->channel,
-                'amount' => (float) $intent->amount,
-                'checkout_url' => url("/api/payments/{$reference}/checkout"),
-                'qr_string' => null,
-                'expires_at' => $expiresAt->toIso8601String(),
-                'instructions' => [],
-            ],
-            'expires_at' => $expiresAt,
-        ])->save();
+        $amountMinor = MinorAmount::fromDecimal($intent->amount);
 
         return [
             'provider' => 'internal',
             'reference' => $reference,
             'status' => 'PENDING',
             'channel' => $intent->channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::toDecimalString($amountMinor),
+            'amount_minor' => $amountMinor,
             'checkout_url' => url("/api/payments/{$reference}/checkout"),
             'qr_string' => null,
             'expires_at' => $expiresAt->toIso8601String(),
@@ -389,16 +321,36 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
+     * Reconcile a member payment intent charge by its provider order ID.
+     *
+     * For the internal provider, returns null (not found) — allowing safe
+     * retry of the same attempt. For the real provider, queries the provider
+     * status API.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string?: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    public function reconcileIntentCharge(string $providerOrderId): ?array
+    {
+        if (! $this->provider->isConfigured()) {
+            return null;
+        }
+
+        return $this->provider->reconcileIntentCharge($providerOrderId);
+    }
+
+    /**
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: int, amount_minor: int, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
     private function existingPendingCharge(CooperativePayment $payment, string $channel): ?array
     {
-        return $this->existingPendingChargeFromPayload(
+        $charge = $this->existingPendingChargeFromPayload(
             gatewayStatus: $payment->gateway_status,
             payload: $payment->gateway_payload,
-            amount: (float) $payment->amount,
+            amountMinor: MinorAmount::fromDecimal($payment->amount),
             channel: $channel,
         );
+
+        return $charge === null ? null : $this->publicChargePayload($charge);
     }
 
     /**
@@ -413,7 +365,7 @@ class PaymentGatewayService
         return $this->existingPendingChargeFromPayload(
             gatewayStatus: $intent->gateway_status,
             payload: $intent->gateway_payload,
-            amount: (float) $intent->amount,
+            amountMinor: MinorAmount::fromDecimal($intent->amount),
             channel: $intent->channel,
         );
     }
@@ -422,7 +374,7 @@ class PaymentGatewayService
      * @param  array<string, mixed>|null  $payload
      * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
-    private function existingPendingChargeFromPayload(?string $gatewayStatus, ?array $payload, float $amount, string $channel): ?array
+    private function existingPendingChargeFromPayload(?string $gatewayStatus, ?array $payload, int $amountMinor, string $channel): ?array
     {
         if ($gatewayStatus !== 'PENDING' || ! is_array($payload)) {
             return null;
@@ -436,7 +388,12 @@ class PaymentGatewayService
             return null;
         }
 
-        if (isset($payload['amount']) && abs((float) $payload['amount'] - $amount) > 0.005) {
+        // Exact amount comparison in minor units — no float tolerance
+        if (isset($payload['amount_minor'])) {
+            if ((int) $payload['amount_minor'] !== $amountMinor) {
+                return null;
+            }
+        } elseif (isset($payload['amount']) && MinorAmount::fromDecimal($payload['amount']) !== $amountMinor) {
             return null;
         }
 
@@ -469,7 +426,12 @@ class PaymentGatewayService
             'reference' => (string) $payload['reference'],
             'status' => (string) ($payload['status'] ?? 'PENDING'),
             'channel' => (string) $payload['channel'],
-            'amount' => (float) ($payload['amount'] ?? $amount),
+            'amount' => MinorAmount::normalizeToFixedScale(
+                $payload['amount'] ?? MinorAmount::toDecimalString($amountMinor)
+            ),
+            'amount_minor' => isset($payload['amount_minor'])
+                ? (int) $payload['amount_minor']
+                : $amountMinor,
             'checkout_url' => isset($payload['checkout_url']) ? (string) $payload['checkout_url'] : null,
             'qr_image_url' => isset($payload['qr_image_url']) ? (string) $payload['qr_image_url'] : null,
             'expires_at' => isset($payload['expires_at']) ? (string) $payload['expires_at'] : null,
@@ -497,19 +459,28 @@ class PaymentGatewayService
 
     /**
      * @param  array<string, mixed>  $charge
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: int, amount_minor: int, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     private function publicChargePayload(array $charge): array
     {
         $instructions = is_array($charge['instructions'] ?? null) ? $charge['instructions'] : [];
         unset($instructions['qr_action_url']);
 
+        $amountMinor = isset($charge['amount_minor'])
+            ? (int) $charge['amount_minor']
+            : MinorAmount::fromDecimal($charge['amount'] ?? '0.00');
+
+        if ($amountMinor % 100 !== 0) {
+            throw new InvalidArgumentException('Public payment charge amount must be a whole Rupiah value.');
+        }
+
         return [
             'provider' => (string) ($charge['provider'] ?? 'internal'),
             'reference' => (string) ($charge['reference'] ?? ''),
             'status' => (string) ($charge['status'] ?? 'PENDING'),
             'channel' => (string) ($charge['channel'] ?? 'QRIS'),
-            'amount' => (float) ($charge['amount'] ?? 0),
+            'amount' => intdiv($amountMinor, 100),
+            'amount_minor' => $amountMinor,
             'checkout_url' => isset($charge['checkout_url']) ? (string) $charge['checkout_url'] : null,
             'qr_image_url' => isset($charge['qr_image_url']) ? (string) $charge['qr_image_url'] : null,
             'expires_at' => isset($charge['expires_at']) ? (string) $charge['expires_at'] : null,

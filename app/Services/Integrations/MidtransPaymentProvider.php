@@ -2,8 +2,11 @@
 
 namespace App\Services\Integrations;
 
+use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use App\Support\Money\MinorAmount;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -37,7 +40,9 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     public function createCharge(CooperativePayment $payment, string $channel): array
     {
         $orderId = $this->generateOrderId($payment);
-        $amount = (int) round($payment->amount);
+        $amount = $this->grossAmountForMidtrans($payment->amount);
+        $amountMinor = MinorAmount::fromDecimal($payment->amount);
+        $amountDecimal = MinorAmount::toDecimalString($amountMinor);
 
         $transactionDetails = [
             'order_id' => $orderId,
@@ -85,12 +90,20 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             $checkoutUrl = $body['redirect_url'] ?? null;
         }
 
+        if (! $this->hasUsablePresentation($channel, $qrString, $checkoutUrl, $body)) {
+            throw ProviderChargeException::unknown(
+                'Provider returned 2xx with empty or malformed response for order '.$orderId.': no usable payment presentation.',
+                $response->status(),
+            );
+        }
+
         return [
             'provider' => 'midtrans',
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $payment->amount,
+            'amount' => $amountDecimal,
+            'amount_minor' => $amountMinor,
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
             'qr_image_url' => route('api.v1.member.payments.qris-image', $payment, false),
@@ -107,7 +120,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     public function createIntentCharge(MemberPaymentIntent $intent): array
     {
         $orderId = $this->generateIntentOrderId($intent);
-        $amount = (int) round((float) $intent->amount);
+        $amount = $this->grossAmountForMidtrans($intent->amount);
+        $amountMinor = MinorAmount::fromDecimal($intent->amount);
         $channel = $intent->channel;
         $metadata = $intent->metadata ?? [];
 
@@ -134,8 +148,14 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
         $payload = $this->applyChannelPayload($payload, $channel);
 
+        $idempotencyKey = sprintf(
+            'member-intent:%s:%s',
+            $intent->id,
+            $intent->charge_attempt ?: 1
+        );
+
         $response = $this->sendChargeRequest(
-            idempotencyKey: 'member-intent-'.$intent->id.'-'.$intent->gateway_status,
+            idempotencyKey: $idempotencyKey,
             endpoint: $this->endpointForChannel($channel),
             payload: $payload,
         );
@@ -161,12 +181,24 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             $checkoutUrl = $body['redirect_url'] ?? null;
         }
 
+        // Validate that the 2xx response actually contains a usable payment
+        // presentation. An empty or malformed body on HTTP 2xx is ambiguous —
+        // the charge may have been created server-side without returning
+        // actionable data. Surface as Unknown so reconciliation can resolve it.
+        if (! $this->hasUsablePresentation($channel, $qrString, $checkoutUrl, $body)) {
+            throw ProviderChargeException::unknown(
+                'Provider returned 2xx with empty or malformed response for order '.$orderId.': no usable payment presentation.',
+                $response->status(),
+            );
+        }
+
         return [
             'provider' => 'midtrans',
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::toDecimalString($amountMinor),
+            'amount_minor' => $amountMinor,
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
             'expires_at' => $body['expiry_time'] ?? null,
@@ -244,12 +276,17 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             default => strtoupper($paymentType),
         };
 
+        $grossAmount = $payload['gross_amount'] ?? '0';
+        $amountDecimal = MinorAmount::normalizeToFixedScale((string) $grossAmount);
+        $amountMinor = MinorAmount::fromDecimal($amountDecimal);
+
         return new WebhookEvent(
             gatewayReference: (string) ($payload['order_id'] ?? ''),
             status: $mappedStatus,
             paymentMethod: $paymentType,
             channel: $channel,
-            amount: (float) ($payload['gross_amount'] ?? 0),
+            amount: $amountDecimal,
+            amountMinor: $amountMinor,
             reconciliationReference: null,
             fraudStatus: $fraudStatus,
             rawPayload: $payload,
@@ -314,7 +351,9 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
     private function generateIntentOrderId(MemberPaymentIntent $intent): string
     {
-        return sprintf('KOJ-MPI-%d-%s', $intent->id, Str::upper(Str::random(8)));
+        $attempt = (int) ($intent->charge_attempt ?: 1);
+
+        return sprintf('KOJ-MPI-%d-%d', $intent->id, $attempt);
     }
 
     private function endpointForChannel(string $channel): string
@@ -358,6 +397,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         $appStatusCode = (int) ($body['status_code'] ?? $httpStatus);
 
         if (! $response->successful() || $appStatusCode >= 400) {
+            $message = 'Midtrans '.$context.' failed: '.($body['status_message'] ?? 'HTTP '.$httpStatus);
+
             Log::error('Midtrans '.$context.' failed', [
                 'entity_id' => $entityId,
                 'order_id' => $orderId,
@@ -366,7 +407,14 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
                 'body' => $body,
             ]);
 
-            throw new \RuntimeException('Midtrans '.$context.' failed: '.($body['status_message'] ?? 'HTTP '.$httpStatus));
+            // 5xx server errors and ambiguous app-level codes are Unknown:
+            // the charge may or may not have been created.
+            if ($httpStatus >= 500 || $appStatusCode >= 500) {
+                throw ProviderChargeException::unknown($message, $httpStatus);
+            }
+
+            // 4xx client errors are definitive rejections.
+            throw ProviderChargeException::rejected($message, $httpStatus);
         }
     }
 
@@ -379,12 +427,28 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             ->withHeader('Idempotency-Key', $idempotencyKey)
             ->post($this->baseUrl.$endpoint, $payload);
 
-        $response = $request();
+        try {
+            $response = $request();
+        } catch (ConnectionException $e) {
+            throw ProviderChargeException::unknown(
+                'Provider connection failure: '.$e->getMessage(),
+                null,
+                $e,
+            );
+        }
 
         if ($response->status() === 404 && ($response->json() ?: []) === []) {
             usleep(500_000);
 
-            return $request();
+            try {
+                return $request();
+            } catch (ConnectionException $e) {
+                throw ProviderChargeException::unknown(
+                    'Provider connection failure on retry: '.$e->getMessage(),
+                    null,
+                    $e,
+                );
+            }
         }
 
         return $response;
@@ -450,18 +514,84 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     }
 
     /**
+     * Validate that the 2xx response contains a usable payment presentation.
+     *
+     * For QRIS: must have qr_string, or a generate-qr-code/generate-qr-code-v2
+     * action URL, or a redirect_url.
+     * For E_WALLET: must have a deeplink-redirect or activate-deeplink action,
+     * or a redirect_url.
+     * For VA/TRANSFER: must have va_numbers or permata_va_number.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    private function hasUsablePresentation(string $channel, ?string $qrString, ?string $checkoutUrl, array $body): bool
+    {
+        if ($qrString !== null && $qrString !== '') {
+            return true;
+        }
+
+        if ($checkoutUrl !== null && $checkoutUrl !== '') {
+            return true;
+        }
+
+        if ($channel === 'QRIS') {
+            $actions = $body['actions'] ?? [];
+            if (is_array($actions)) {
+                foreach (['generate-qr-code-v2', 'generate-qr-code'] as $name) {
+                    $action = collect($actions)->firstWhere('name', $name);
+                    if (is_array($action) && ! empty($action['url'])) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        if ($channel === 'E_WALLET') {
+            $actions = $body['actions'] ?? [];
+            if (is_array($actions)) {
+                foreach (['deeplink-redirect', 'activate-deeplink'] as $name) {
+                    $action = collect($actions)->firstWhere('name', $name);
+                    if (is_array($action) && ! empty($action['url'])) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        if (in_array($channel, ['VA', 'TRANSFER'], true)) {
+            $vaNumbers = $body['va_numbers'] ?? [];
+            if (is_array($vaNumbers) && $vaNumbers !== []) {
+                return true;
+            }
+
+            return ! empty($body['permata_va_number'])
+                || ! empty($body['bill_key'])
+                || ! empty($body['biller_code']);
+        }
+
+        // For unknown channels, require at least a redirect_url or non-empty body
+        return ! empty($body['redirect_url']) || $body !== [];
+    }
+
+    /**
      * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
      */
     private function createChargeInternal(CooperativePayment $payment, string $channel): array
     {
         $orderId = $this->generateOrderId($payment);
+        $amountMinor = MinorAmount::fromDecimal($payment->amount);
 
         return [
             'provider' => 'midtrans',
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $payment->amount,
+            'amount' => MinorAmount::toDecimalString($amountMinor),
+            'amount_minor' => $amountMinor,
             'checkout_url' => url("/api/payments/{$orderId}/checkout"),
             'qr_string' => null,
         ];
@@ -501,5 +631,88 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         }
 
         return null;
+    }
+
+    /**
+     * Reconcile a member payment intent charge by its provider order ID.
+     *
+     * For the internal provider (not configured), returns null to indicate
+     * the charge was not found authoritatively, allowing safe retry.
+     * For the real Midtrans provider, queries GET /v2/{order_id}/status.
+     *
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string?: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>}|null
+     */
+    public function reconcileIntentCharge(string $providerOrderId): ?array
+    {
+        if (! $this->isConfigured()) {
+            return null;
+        }
+
+        $response = Http::withBasicAuth($this->serverKey(), '')
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->get($this->baseUrl.'/v2/'.$providerOrderId.'/status');
+
+        $body = $response->json() ?: [];
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            throw new \RuntimeException(
+                'Provider reconciliation unavailable for order '.$providerOrderId.': '.$response->status()
+            );
+        }
+
+        $transactionStatus = strtolower((string) ($body['transaction_status'] ?? ''));
+
+        if ($transactionStatus === '') {
+            return null;
+        }
+
+        $fraudStatus = strtoupper((string) ($body['fraud_status'] ?? 'accept'));
+        if ($fraudStatus === 'CHALLENGE') {
+            $mappedStatus = 'PENDING';
+        } elseif (in_array(strtoupper($transactionStatus), ['CAPTURE', 'SETTLEMENT'], true)) {
+            $mappedStatus = 'PAID';
+        } elseif (strtoupper($transactionStatus) === 'EXPIRE') {
+            $mappedStatus = 'EXPIRED';
+        } elseif (strtoupper($transactionStatus) === 'CANCEL') {
+            $mappedStatus = 'CANCELLED';
+        } elseif (in_array(strtoupper($transactionStatus), ['DENY', 'FAILURE'], true)) {
+            $mappedStatus = 'FAILED';
+        } else {
+            $mappedStatus = 'UNKNOWN';
+        }
+
+        $qrString = $body['qr_string'] ?? null;
+        $checkoutUrl = null;
+
+        $actions = $body['actions'] ?? [];
+        if (is_array($actions)) {
+            $checkoutUrl = collect($actions)->firstWhere('name', 'deeplink-redirect')['url'] ?? null;
+        }
+
+        return [
+            'provider' => 'midtrans',
+            'reference' => $providerOrderId,
+            'status' => $mappedStatus,
+            'channel' => (string) ($body['payment_type'] ?? 'QRIS'),
+            'amount' => MinorAmount::normalizeToFixedScale((string) ($body['gross_amount'] ?? '0')),
+            'amount_minor' => MinorAmount::fromDecimal((string) ($body['gross_amount'] ?? '0')),
+            'checkout_url' => $checkoutUrl,
+            'qr_string' => $qrString,
+        ];
+    }
+
+    private function grossAmountForMidtrans(int|float|string $amount): int
+    {
+        $amountMinor = MinorAmount::fromDecimal($amount);
+
+        if ($amountMinor % 100 !== 0) {
+            throw new \InvalidArgumentException('Midtrans requires whole-rupiah amounts.');
+        }
+
+        return intdiv($amountMinor, 100);
     }
 }

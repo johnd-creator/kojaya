@@ -26,8 +26,14 @@ Schedule::command('sanctum:prune-expired --hours=24')->dailyAt('01:00');
 Schedule::command('notifications:outbox:process --limit=100')->everyThirtySeconds();
 Schedule::command('notifications:whatsapp-dues-reminders --days=3')->dailyAt('09:00');
 
+// Cooperative notification outbox delivery (exactly-once settlement notifications)
+Schedule::command('cooperative:deliver-notification-outbox --limit=100')->everyMinute();
+
 // Release stock held by abandoned member store/coffee payment intents.
-Schedule::command('orders:expire-reservations --limit=500')->everyTenMinutes();
+Schedule::command('orders:expire-reservations --limit=500')->everyTenMinutes()->withoutOverlapping();
+
+// Recover intents stuck in CHARGE_CREATING after provider timeout.
+Schedule::command('orders:recover-stale-charges --minutes=5 --limit=50')->everyFiveMinutes()->withoutOverlapping();
 
 // Production operations hygiene
 Schedule::command('operations:prune-retention')->dailyAt('01:30');

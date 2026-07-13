@@ -238,7 +238,7 @@ class MemberStoreOrderApiTest extends TestCase
         $intent->forceFill(['expires_at' => now()->subMinute()])->save();
 
         $this->artisan('orders:expire-reservations', ['--limit' => 10])
-            ->expectsOutput('Expired 1 order reservation(s).')
+            ->expectsOutputToContain('expired 1')
             ->assertExitCode(0);
 
         $this->assertSame(MemberPaymentIntent::RESERVATION_EXPIRED, $intent->refresh()->reservation_status);

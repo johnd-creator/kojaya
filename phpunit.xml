@@ -11,6 +11,7 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
             <exclude>tests/Feature/LegacyErp</exclude>
+            <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>
@@ -20,6 +21,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_KEY" value="base64:yXZjUpYTnOZAdY8kMRonJfT4KgnYCcuz+Y5N+JsP484="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>

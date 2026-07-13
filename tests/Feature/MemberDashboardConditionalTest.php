@@ -20,7 +20,8 @@ class MemberDashboardConditionalTest extends TestCase
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
-        $this->seed(\Database\Seeders\CooperativeSeeder::class);
+        CooperativeContributionType::factory()->pokok()->create(['code' => 'POKOK']);
+        CooperativeContributionType::factory()->wajib(100000)->create(['code' => 'WAJIB']);
     }
 
     public function test_pending_member_can_access_member_dashboard(): void

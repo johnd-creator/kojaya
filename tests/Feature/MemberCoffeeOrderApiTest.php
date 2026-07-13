@@ -53,6 +53,7 @@ class MemberCoffeeOrderApiTest extends TestCase
     public function test_seeded_coffee_products_are_available_in_member_menu(): void
     {
         $this->actingMember(['member:read']);
+        $this->fakeCooperativeReceiptIssuance();
         $this->seed(CooperativeSeeder::class);
 
         $this->getJson('/api/v1/member/coffee/menu')

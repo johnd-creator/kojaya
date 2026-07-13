@@ -8,13 +8,11 @@ use App\Models\CoffeeOrder;
 use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
 use App\Services\AuditLogService;
-use App\Services\Cooperative\MemberOrderReservationService;
-use App\Services\Integrations\PaymentGatewayService;
+use App\Services\Cooperative\MemberOrderIntentService;
+use App\Services\Integrations\PaymentIntentChargeService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class MemberCoffeeOrderController extends Controller
 {
@@ -44,8 +42,8 @@ class MemberCoffeeOrderController extends Controller
 
     public function store(
         StoreMemberCoffeeOrderRequest $request,
-        PaymentGatewayService $gateway,
-        MemberOrderReservationService $reservationService,
+        PaymentIntentChargeService $chargeService,
+        MemberOrderIntentService $intentService,
         AuditLogService $audit,
     ): JsonResponse {
         $member = $request->user()?->cooperativeMember()->active()->first();
@@ -57,71 +55,32 @@ class MemberCoffeeOrderController extends Controller
         $clientReference = $request->validated('client_reference')
             ?: 'COFFEE-'.$member->id.'-'.now()->format('YmdHisv');
 
-        $existing = MemberPaymentIntent::query()
-            ->where('cooperative_member_id', $member->id)
-            ->where('payable_type', MemberPaymentIntent::PAYABLE_COFFEE_ORDER)
-            ->whereNull('settled_at')
-            ->where('client_reference', $clientReference)
-            ->latest('id')
-            ->first();
+        $resolution = $intentService->resolveOrCreate(
+            member: $member,
+            payableType: MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
+            clientReference: $clientReference,
+            canonicalRequest: [
+                'user_id' => $request->user()?->id,
+                'amount' => $subtotal,
+                'channel' => $channel,
+                'description' => 'Pesanan Kopi Kojaya',
+                'items' => $items,
+                'customization' => $items,
+                'client_reference' => $clientReference,
+            ],
+            rawItems: $items,
+        );
 
-        if ($existing) {
-            if ($existing->expires_at?->isPast() === true || strtoupper((string) $existing->gateway_status) !== 'PENDING') {
-                abort(409, 'Client reference sudah kedaluwarsa atau telah mencapai status terminal. Gunakan client_reference baru.');
-            }
+        $intent = $resolution->intent->refresh();
 
-            if (abs((float) $existing->amount - $subtotal) > 0.005 || (string) $existing->channel !== $channel) {
-                abort(409, 'Client reference sudah dipakai untuk nominal atau channel pembayaran berbeda. Gunakan client_reference baru.');
-            }
+        $charge = $chargeService->ensureCharge($intent);
 
-            $charge = $gateway->createIntentCharge($existing->refresh());
-
-            return response()->json([
-                'data' => $this->formatPendingOrder($existing->refresh(), $existing->metadata['items'] ?? [], $charge),
-            ], 201);
-        }
-
-        try {
-            $intent = DB::transaction(function () use ($request, $member, $subtotal, $channel, $clientReference, $items, $reservationService): MemberPaymentIntent {
-                $reservedItems = $reservationService->reserve($items);
-
-                return MemberPaymentIntent::query()->create([
-                    'user_id' => $request->user()?->id,
-                    'cooperative_member_id' => $member->id,
-                    'payable_type' => MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
-                    'payable_id' => null,
-                    'client_reference' => $clientReference,
-                    'amount' => $subtotal,
-                    'channel' => $channel,
-                    'gateway_status' => 'PENDING',
-                    'reservation_status' => MemberPaymentIntent::RESERVATION_RESERVED,
-                    'metadata' => [
-                        'description' => 'Pesanan Kopi Kojaya',
-                        'client_reference' => $clientReference,
-                        'items' => $reservedItems,
-                    ],
-                    'expires_at' => now()->addMinutes(30),
-                ]);
-            });
-        } catch (QueryException $exception) {
-            if (! $this->isClientReferenceConflict($exception)) {
-                throw $exception;
-            }
-
-            $intent = MemberPaymentIntent::query()
-                ->where('cooperative_member_id', $member->id)
-                ->where('payable_type', MemberPaymentIntent::PAYABLE_COFFEE_ORDER)
-                ->where('client_reference', $clientReference)
-                ->firstOrFail();
-        }
-
-        $audit->log('reservation.created', 'member_payment_intent', $intent, [
-            'reason' => 'Coffee order stock reservation created.',
-        ]);
-        $charge = $gateway->createIntentCharge($intent);
+        // Response is always built from DB metadata (authoritative winner),
+        // never from the request loser's items.
+        $metadataItems = $intent->metadata['items'] ?? [];
 
         return response()->json([
-            'data' => $this->formatPendingOrder($intent->refresh(), $items, $charge),
+            'data' => $this->formatPendingOrder($intent, $metadataItems, $charge),
         ], 201);
     }
 
@@ -156,15 +115,6 @@ class MemberCoffeeOrderController extends Controller
                     ->orWhere('name', 'like', '%Matcha%')
                     ->orWhere('name', 'like', '%Chocolate%');
             });
-    }
-
-    private function isClientReferenceConflict(QueryException $exception): bool
-    {
-        $message = strtolower($exception->getMessage());
-
-        return in_array((string) $exception->getCode(), ['23000', '23505'], true)
-            && str_contains($message, 'member_payment_intents')
-            && str_contains($message, 'client_reference');
     }
 
     private function formatProduct(PosProduct $product): array
@@ -226,6 +176,14 @@ class MemberCoffeeOrderController extends Controller
      */
     private function formatPendingOrder(MemberPaymentIntent $intent, array $items, array $charge): array
     {
+        $flattenedItems = array_map(function (array $item): array {
+            if (isset($item['customization']) && is_array($item['customization'])) {
+                return array_merge($item, $item['customization']);
+            }
+
+            return $item;
+        }, $items);
+
         return [
             'id' => 'intent:'.$intent->id,
             'payment_intent_id' => $intent->id,
@@ -256,8 +214,8 @@ class MemberCoffeeOrderController extends Controller
                 'expires_at' => $intent->expires_at?->toISOString(),
             ],
             'charge' => $charge,
-            'items' => $items,
-            'item' => $items[0]['product'] ?? null,
+            'items' => $flattenedItems,
+            'item' => $flattenedItems[0]['product'] ?? null,
             'customization' => [
                 'items' => $items,
             ],

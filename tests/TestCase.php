@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Models\CooperativeReceipt;
+use App\Services\Cooperative\CooperativeReceiptService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -28,5 +30,14 @@ abstract class TestCase extends BaseTestCase
         app()->config->set('database.connections.sqlite.database', ':memory:');
         $this->artisan('migrate', ['--force' => true]);
         $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
+
+    protected function fakeCooperativeReceiptIssuance(): void
+    {
+        $this->mock(CooperativeReceiptService::class)
+            ->shouldReceive('issue')
+            ->atLeast()
+            ->once()
+            ->andReturnUsing(static fn (): CooperativeReceipt => new CooperativeReceipt);
     }
 }

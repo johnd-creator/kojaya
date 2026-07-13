@@ -3,26 +3,21 @@
 namespace App\Console\Commands;
 
 use App\Models\MemberPaymentIntent;
-use App\Services\Cooperative\MemberOrderReservationService;
+use App\Services\Integrations\MemberPaymentIntentStateService;
 use Illuminate\Console\Command;
 
 class ExpireMemberOrderReservations extends Command
 {
     protected $signature = 'orders:expire-reservations {--limit=100 : Maximum intents to process per run}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Release expired store and coffee order reservations safely';
 
-    public function handle(MemberOrderReservationService $reservationService): int
+    public function handle(MemberPaymentIntentStateService $stateService): int
     {
         $limit = max(1, min((int) $this->option('limit'), 1000));
-        $expired = 0;
 
-        MemberPaymentIntent::query()
+        // Step 1: Get candidate IDs without locking
+        $candidateIds = MemberPaymentIntent::query()
             ->whereIn('payable_type', [
                 MemberPaymentIntent::PAYABLE_COFFEE_ORDER,
                 MemberPaymentIntent::PAYABLE_STORE_ORDER,
@@ -36,14 +31,50 @@ class ExpireMemberOrderReservations extends Command
             ->where('expires_at', '<=', now())
             ->orderBy('id')
             ->limit($limit)
-            ->get()
-            ->each(function (MemberPaymentIntent $intent) use ($reservationService, &$expired): void {
-                if ($reservationService->expire($intent)) {
-                    $expired++;
-                }
-            });
+            ->pluck('id')
+            ->all();
 
-        $this->info("Expired {$expired} order reservation(s).");
+        $metrics = [
+            'candidates' => count($candidateIds),
+            'expired' => 0,
+            'skipped_state_changed' => 0,
+            'skipped_not_due' => 0,
+            'failed' => 0,
+        ];
+
+        // Step 2: Process each ID in its own transaction
+        // The state service does its own lockForUpdate + state validation,
+        // which is the authoritative path.
+        foreach ($candidateIds as $intentId) {
+            try {
+                $intent = MemberPaymentIntent::query()->find($intentId);
+                if ($intent === null) {
+                    $metrics['skipped_state_changed']++;
+
+                    continue;
+                }
+
+                $ok = $stateService->expireStaleIntent($intent);
+
+                if ($ok) {
+                    $metrics['expired']++;
+                } else {
+                    // State service rejected — could be state changed, paid, or not due
+                    $metrics['skipped_state_changed']++;
+                }
+            } catch (\Throwable) {
+                $metrics['failed']++;
+            }
+        }
+
+        $this->info(sprintf(
+            'candidates %d, expired %d, skipped_state_changed %d, skipped_not_due %d, failed %d.',
+            $metrics['candidates'],
+            $metrics['expired'],
+            $metrics['skipped_state_changed'],
+            $metrics['skipped_not_due'],
+            $metrics['failed'],
+        ));
 
         return self::SUCCESS;
     }

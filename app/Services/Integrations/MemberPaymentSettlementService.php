@@ -11,6 +11,7 @@ use App\Models\MemberPaymentIntent;
 use App\Models\PosProduct;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeNotificationDispatcher;
+use App\Services\Cooperative\CooperativeNotificationOutboxService;
 use App\Services\Cooperative\LoanService;
 use App\Services\Cooperative\MemberCreditService;
 use App\Services\Cooperative\MemberOrderReservationService;
@@ -27,6 +28,7 @@ class MemberPaymentSettlementService
         private readonly MemberCreditService $memberCreditService,
         private readonly PosTransactionService $posTransactionService,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+        private readonly CooperativeNotificationOutboxService $outboxService,
         private readonly MemberOrderReservationService $reservationService,
         private readonly AuditLogService $auditLogService,
     ) {}
@@ -214,7 +216,23 @@ class MemberPaymentSettlementService
             ],
         );
 
-        DB::afterCommit(fn () => $this->notificationDispatcher->coffeeOrderReceived($coffeeOrder, $intent->user));
+        DB::afterCommit(function () use ($coffeeOrder, $intent): void {
+            if ($coffeeOrder->member?->user) {
+                $this->outboxService->enqueueForUser(
+                    $coffeeOrder->member->user,
+                    "member.coffee_order.received:{$coffeeOrder->id}",
+                    [
+                        'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
+                        'type' => 'coffee',
+                        'category' => 'info',
+                        'title' => 'Pesanan kopi diterima',
+                        'body' => 'Pesanan kopi Anda sudah diterima dan menunggu diproses.',
+                    ],
+                );
+            }
+
+            $this->notificationDispatcher->coffeeOrderReceived($coffeeOrder, $intent->user);
+        });
 
         return 'coffee_order:'.$coffeeOrder->id;
     }
@@ -258,6 +276,20 @@ class MemberPaymentSettlementService
             'discount_amount' => 0,
             'items' => $transactionItems,
         ], $intent->user);
+
+        if ($intent->user) {
+            $this->outboxService->enqueueForUser(
+                $intent->user,
+                "member.pos.sale_completed:{$transaction->id}",
+                [
+                    'deduplication_key' => "member.pos.sale_completed:{$transaction->id}",
+                    'type' => 'pos',
+                    'category' => 'success',
+                    'title' => 'Transaksi belanja selesai',
+                    'body' => "Transaksi {$transaction->transaction_no} berhasil. Total Rp ".number_format((float) $transaction->total_amount, 0, ',', '.').'.',
+                ],
+            );
+        }
 
         $transactionId = $transaction->id;
         DB::afterCommit(function () use ($transactionId): void {

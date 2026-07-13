@@ -7,6 +7,7 @@ use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use App\Support\Money\MinorAmount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -378,7 +379,8 @@ class PaymentGatewayService
             return null;
         }
 
-        if (isset($payload['amount']) && abs((float) $payload['amount'] - $amount) > 0.005) {
+        // Exact amount comparison in minor units — no float tolerance
+        if (isset($payload['amount']) && ! MinorAmount::equals($payload['amount'], $amount)) {
             return null;
         }
 

@@ -15,6 +15,7 @@ use App\Services\Cooperative\LoanService;
 use App\Services\Cooperative\MemberCreditService;
 use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Cooperative\PosTransactionService;
+use App\Support\Money\MinorAmount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -118,7 +119,7 @@ class MemberPaymentSettlementService
         }
 
         $remainingDue = round((float) $installment->amount_due - (float) $installment->amount_paid, 2);
-        if ((float) $intent->amount > $remainingDue + 0.005) {
+        if (MinorAmount::greaterThan($intent->amount, $remainingDue)) {
             throw ValidationException::withMessages([
                 'amount' => 'Nominal payment intent melebihi sisa cicilan.',
             ]);

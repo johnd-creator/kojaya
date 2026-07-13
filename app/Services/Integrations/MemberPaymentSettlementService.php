@@ -231,13 +231,7 @@ class MemberPaymentSettlementService
             $coffeeOutbox = $this->outboxService->enqueueForUser(
                 $coffeeOrder->member->user,
                 "member.coffee_order.received:{$coffeeOrder->id}",
-                [
-                    'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
-                    'type' => 'coffee',
-                    'category' => 'info',
-                    'title' => 'Pesanan kopi diterima',
-                    'body' => 'Pesanan kopi Anda sudah diterima dan menunggu diproses.',
-                ],
+                $this->notificationDispatcher->coffeeOrderReceivedPayload($coffeeOrder, $intent->user),
             );
         }
 
@@ -309,13 +303,7 @@ class MemberPaymentSettlementService
             $settlementOutbox = $this->outboxService->enqueueForUser(
                 $intent->user,
                 "member.pos.sale_completed:{$transaction->id}",
-                [
-                    'deduplication_key' => "member.pos.sale_completed:{$transaction->id}",
-                    'type' => 'pos',
-                    'category' => 'success',
-                    'title' => 'Transaksi belanja selesai',
-                    'body' => "Transaksi {$transaction->transaction_no} berhasil. Total Rp ".number_format((float) $transaction->total_amount, 0, ',', '.').'.',
-                ],
+                $this->notificationDispatcher->posSaleCompletedPayload($transaction, $intent->user),
             );
         }
 

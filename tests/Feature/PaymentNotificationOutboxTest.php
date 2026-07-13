@@ -84,11 +84,13 @@ class PaymentNotificationOutboxTest extends TestCase
             ->count();
         $this->assertSame(1, $outboxCount, 'C5: exactly one settlement outbox entry');
 
-        $notificationCount = $user->notifications()
+        $notification = $user->notifications()
             ->where('type', 'App\\Notifications\\CooperativeDatabaseNotification')
             ->where('id', CooperativeNotificationOutbox::query()->firstOrFail()->id)
-            ->count();
-        $this->assertSame(1, $notificationCount, 'C5: exactly one delivered member notification');
+            ->firstOrFail();
+        $this->assertSame(1, $user->notifications()->whereKey($notification->id)->count(), 'C5: exactly one delivered member notification');
+        $this->assertSame('member.pos.sale_completed', $notification->data['event_type']);
+        $this->assertSame('/member/transactions', $notification->data['action']['url']);
     }
 
     public function test_outbox_delivery_retry_produces_at_most_one_notification(): void

@@ -169,15 +169,25 @@ class CooperativeNotificationDispatcher
     {
         $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);
 
-        $this->notifyMember($coffeeOrder->member?->user, [
-            ...$this->coffeeOrderPayload($coffeeOrder, 'member.coffee_order.received', 'coffee', 'info', 'Pesanan kopi diterima', 'Pesanan kopi Anda sudah diterima dan menunggu diproses.', $actor, $this->routePath('member.transactions')),
-            'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
-        ]);
+        $this->notifyMember($coffeeOrder->member?->user, $this->coffeeOrderReceivedPayload($coffeeOrder, $actor));
 
         $this->notifyRoles(['Admin Koperasi'], $coffeeOrder->member?->organization_id, [
             ...$this->coffeeOrderPayload($coffeeOrder, 'admin.coffee_order.received', 'coffee', 'info', 'Pesanan kopi baru', "Pesanan kopi {$coffeeOrder->member?->name} perlu diproses.", $actor, $this->routePath('cooperative.pos.coffee-orders.index')),
             'deduplication_key' => "admin.coffee_order.received:{$coffeeOrder->id}",
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function coffeeOrderReceivedPayload(CoffeeOrder $coffeeOrder, ?User $actor = null): array
+    {
+        $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);
+
+        return [
+            ...$this->coffeeOrderPayload($coffeeOrder, 'member.coffee_order.received', 'coffee', 'info', 'Pesanan kopi diterima', 'Pesanan kopi Anda sudah diterima dan menunggu diproses.', $actor, $this->routePath('member.transactions')),
+            'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
+        ];
     }
 
     public function coffeeOrderReceivedForAdmins(CoffeeOrder $coffeeOrder, ?User $actor = null): void
@@ -326,10 +336,20 @@ class CooperativeNotificationDispatcher
     {
         $transaction->loadMissing('member.user');
 
-        $this->notifyMember($transaction->member?->user, [
+        $this->notifyMember($transaction->member?->user, $this->posSaleCompletedPayload($transaction, $actor));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function posSaleCompletedPayload(PosTransaction $transaction, ?User $actor = null): array
+    {
+        $transaction->loadMissing('member.user');
+
+        return [
             ...$this->posPayload($transaction, 'member.pos.sale_completed', 'pos', 'success', 'Transaksi belanja selesai', "Transaksi {$transaction->transaction_no} berhasil. Total Rp ".number_format((float) $transaction->total_amount, 0, ',', '.').'.', $actor, $this->routePath('member.transactions')),
             'deduplication_key' => "member.pos.sale_completed:{$transaction->id}",
-        ]);
+        ];
     }
 
     public function posVoidRequested(PosTransaction $transaction, User $requester, ?string $organizationId = null): void

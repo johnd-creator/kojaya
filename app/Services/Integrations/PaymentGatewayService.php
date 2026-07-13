@@ -11,6 +11,7 @@ use App\Support\Money\MinorAmount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class PaymentGatewayService
 {
@@ -68,7 +69,7 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: int, amount_minor: int, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     public function createCharge(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
@@ -79,7 +80,7 @@ class PaymentGatewayService
         }
 
         if (! $this->provider->isConfigured()) {
-            return $this->createChargeInternal($payment, $channel);
+            return $this->publicChargePayload($this->createChargeInternal($payment, $channel));
         }
 
         $charge = $this->provider->createCharge($payment, $channel);
@@ -338,16 +339,18 @@ class PaymentGatewayService
     }
 
     /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: int, amount_minor: int, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
     private function existingPendingCharge(CooperativePayment $payment, string $channel): ?array
     {
-        return $this->existingPendingChargeFromPayload(
+        $charge = $this->existingPendingChargeFromPayload(
             gatewayStatus: $payment->gateway_status,
             payload: $payment->gateway_payload,
             amountMinor: MinorAmount::fromDecimal($payment->amount),
             channel: $channel,
         );
+
+        return $charge === null ? null : $this->publicChargePayload($charge);
     }
 
     /**
@@ -456,22 +459,28 @@ class PaymentGatewayService
 
     /**
      * @param  array<string, mixed>  $charge
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
+     * @return array{provider: string, reference: string, status: string, channel: string, amount: int, amount_minor: int, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}
      */
     private function publicChargePayload(array $charge): array
     {
         $instructions = is_array($charge['instructions'] ?? null) ? $charge['instructions'] : [];
         unset($instructions['qr_action_url']);
 
+        $amountMinor = isset($charge['amount_minor'])
+            ? (int) $charge['amount_minor']
+            : MinorAmount::fromDecimal($charge['amount'] ?? '0.00');
+
+        if ($amountMinor % 100 !== 0) {
+            throw new InvalidArgumentException('Public payment charge amount must be a whole Rupiah value.');
+        }
+
         return [
             'provider' => (string) ($charge['provider'] ?? 'internal'),
             'reference' => (string) ($charge['reference'] ?? ''),
             'status' => (string) ($charge['status'] ?? 'PENDING'),
             'channel' => (string) ($charge['channel'] ?? 'QRIS'),
-            'amount' => MinorAmount::normalizeToFixedScale($charge['amount'] ?? '0.00'),
-            'amount_minor' => isset($charge['amount_minor'])
-                ? (int) $charge['amount_minor']
-                : MinorAmount::fromDecimal($charge['amount'] ?? '0.00'),
+            'amount' => intdiv($amountMinor, 100),
+            'amount_minor' => $amountMinor,
             'checkout_url' => isset($charge['checkout_url']) ? (string) $charge['checkout_url'] : null,
             'qr_image_url' => isset($charge['qr_image_url']) ? (string) $charge['qr_image_url'] : null,
             'expires_at' => isset($charge['expires_at']) ? (string) $charge['expires_at'] : null,

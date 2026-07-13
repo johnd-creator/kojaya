@@ -16,7 +16,7 @@ class UserRoleIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Run seeders to populate roles and organizations
+        $this->fakeCooperativeReceiptIssuance();
         $this->artisan('db:seed');
     }
 

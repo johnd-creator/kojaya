@@ -392,6 +392,7 @@ class RoleSmokeTest extends TestCase
 
     public function test_cooperative_seeder_can_assign_admin_koperasi_after_role_permission_seeder_runs(): void
     {
+        $this->fakeCooperativeReceiptIssuance();
         $this->seed(CooperativeSeeder::class);
 
         $adminKoperasi = User::query()

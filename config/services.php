@@ -64,6 +64,10 @@ return [
         'auto_link_existing_members' => env('GOOGLE_SSO_AUTO_LINK_EXISTING_MEMBERS', true),
         'allow_new_member_registration' => env('GOOGLE_SSO_ALLOW_NEW_MEMBER_REGISTRATION', true),
         'hosted_domains' => array_filter(array_map('trim', explode(',', (string) env('GOOGLE_SSO_HOSTED_DOMAINS', '')))),
+        'guzzle' => [
+            'connect_timeout' => (float) env('GOOGLE_SSO_CONNECT_TIMEOUT', 5),
+            'timeout' => (float) env('GOOGLE_SSO_TIMEOUT', 15),
+        ],
     ],
 
     'auth_sso' => [

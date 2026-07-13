@@ -32,8 +32,9 @@ class GoogleSsoController extends Controller
             return Socialite::driver('google')
                 ->redirect();
         } catch (Throwable $exception) {
-            Log::warning('Google SSO redirect failed', ['error' => $exception->getMessage()]);
-            $this->googleSso->logFailure('redirect_failed', ['error' => $exception->getMessage()]);
+            $context = $this->exceptionContext($exception);
+            Log::warning('Google SSO redirect failed', $context);
+            $this->googleSso->logFailure('redirect_failed', $context);
 
             return redirect()->route('login')
                 ->withErrors(['sso' => 'Tidak dapat memulai login Google. Coba lagi nanti.']);
@@ -52,8 +53,9 @@ class GoogleSsoController extends Controller
 
             return Socialite::driver('google')->redirect();
         } catch (Throwable $exception) {
-            Log::warning('Google SSO link redirect failed', ['error' => $exception->getMessage()]);
-            $this->googleSso->logFailure('link_redirect_failed', ['error' => $exception->getMessage()]);
+            $context = $this->exceptionContext($exception);
+            Log::warning('Google SSO link redirect failed', $context);
+            $this->googleSso->logFailure('link_redirect_failed', $context);
 
             return back()->withErrors(['sso' => 'Tidak dapat memulai tautan Google. Coba lagi nanti.']);
         }
@@ -69,8 +71,9 @@ class GoogleSsoController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (Throwable $exception) {
-            Log::warning('Google SSO callback failed', ['error' => $exception->getMessage()]);
-            $this->googleSso->logFailure('callback_failed', ['error' => $exception->getMessage()]);
+            $context = $this->exceptionContext($exception);
+            Log::warning('Google SSO callback failed', $context);
+            $this->googleSso->logFailure('callback_failed', $context);
 
             return redirect()->route('login')
                 ->withErrors(['sso' => 'Login Google gagal diproses. Coba lagi.']);
@@ -166,5 +169,32 @@ class GoogleSsoController extends Controller
         }
 
         return route('dashboard', absolute: false);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function exceptionContext(Throwable $exception): array
+    {
+        $context = [
+            'exception' => $exception::class,
+            'message' => $exception->getMessage() ?: '(empty message)',
+            'code' => $exception->getCode(),
+        ];
+
+        foreach ([$exception, $exception->getPrevious()] as $candidate) {
+            if ($candidate !== null && method_exists($candidate, 'getRequest')) {
+                $request = $candidate->getRequest();
+                $context['guzzle_request'] = $request->getMethod().' '.$request->getUri();
+
+                if (method_exists($candidate, 'hasResponse') && $candidate->hasResponse()) {
+                    $context['guzzle_status'] = $candidate->getResponse()->getStatusCode();
+                }
+
+                break;
+            }
+        }
+
+        return $context;
     }
 }

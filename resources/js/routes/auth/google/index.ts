@@ -45,7 +45,7 @@ redirect.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::callback
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:62
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:64
 * @route '/auth/google/callback'
 */
 export const callback = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -60,7 +60,7 @@ callback.definition = {
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::callback
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:62
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:64
 * @route '/auth/google/callback'
 */
 callback.url = (options?: RouteQueryOptions) => {
@@ -69,7 +69,7 @@ callback.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::callback
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:62
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:64
 * @route '/auth/google/callback'
 */
 callback.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -79,7 +79,7 @@ callback.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::callback
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:62
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:64
 * @route '/auth/google/callback'
 */
 callback.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -89,7 +89,7 @@ callback.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::link
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:43
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:44
 * @route '/auth/google/link'
 */
 export const link = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -104,7 +104,7 @@ link.definition = {
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::link
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:43
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:44
 * @route '/auth/google/link'
 */
 link.url = (options?: RouteQueryOptions) => {
@@ -113,7 +113,7 @@ link.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::link
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:43
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:44
 * @route '/auth/google/link'
 */
 link.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -123,7 +123,7 @@ link.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Auth\GoogleSsoController::link
-* @see app/Http/Controllers/Auth/GoogleSsoController.php:43
+* @see app/Http/Controllers/Auth/GoogleSsoController.php:44
 * @route '/auth/google/link'
 */
 link.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({

@@ -8,6 +8,7 @@ use App\Contracts\Integrations\PaymentGatewayProvider;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
 use App\Services\Integrations\WebhookEvent;
+use App\Support\Money\MinorAmount;
 
 /**
  * Fake provider for concurrency tests that simulates real provider behavior:
@@ -58,7 +59,8 @@ class ConcurrencyPaymentGatewayProvider implements PaymentGatewayProvider
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $intent->channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::normalizeToFixedScale($intent->amount),
+            'amount_minor' => MinorAmount::fromDecimal($intent->amount),
             'checkout_url' => null,
             'qr_string' => 'fake-qr-string-'.$orderId,
             'idempotency_key' => $idempotencyKey,

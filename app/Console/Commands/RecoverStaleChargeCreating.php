@@ -8,6 +8,7 @@ use App\Models\PaymentReconciliationIncident;
 use App\Services\Integrations\MemberPaymentIntentStateService;
 use App\Services\Integrations\MemberPaymentSettlementService;
 use App\Services\Integrations\PaymentGatewayService;
+use App\Support\Money\MinorAmount;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -196,7 +197,7 @@ class RecoverStaleChargeCreating extends Command
     {
         $attempt = (int) $snapshot['attempt'];
 
-        return DB::transaction(function () use ($intentId, $attempt, $providerCharge, $reconcileError): array {
+        return DB::transaction(function () use ($intentId, $attempt, $snapshot, $providerCharge, $reconcileError): array {
             $locked = MemberPaymentIntent::query()
                 ->lockForUpdate()
                 ->findOrFail($intentId);
@@ -273,10 +274,10 @@ class RecoverStaleChargeCreating extends Command
             // For all known statuses: attach the charge reference first,
             // mark attempt CONFIRMED, set gateway_status to PENDING. Then
             // Phase C routes PAID/terminal through the state service.
-            $amountMinor = null;
-            $amount = (float) ($providerCharge['amount'] ?? 0);
-            if ($amount > 0) {
-                $amountMinor = (int) bcmul((string) $amount, '100', 0);
+            $amountMinor = $providerCharge['amount_minor'] ?? null;
+
+            if ($amountMinor === null && array_key_exists('amount', $providerCharge)) {
+                $amountMinor = MinorAmount::fromDecimal($providerCharge['amount']);
             }
 
             $attemptRecord->forceFill([

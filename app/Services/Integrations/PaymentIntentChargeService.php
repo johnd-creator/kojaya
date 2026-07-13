@@ -8,6 +8,7 @@ use App\Exceptions\ProviderChargeException;
 use App\Models\MemberPaymentChargeAttempt;
 use App\Models\MemberPaymentIntent;
 use App\Models\PaymentReconciliationIncident;
+use App\Support\Money\MinorAmount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -204,7 +205,8 @@ class PaymentIntentChargeService
 
             $requestPayload = [
                 'intent_id' => $locked->id,
-                'amount' => (float) $locked->amount,
+                'amount' => MinorAmount::normalizeToFixedScale($locked->amount),
+                'amount_minor' => MinorAmount::fromDecimal($locked->amount),
                 'channel' => $locked->channel,
                 'provider_order_id' => $providerOrderId,
                 'idempotency_key' => $idempotencyKey,
@@ -597,7 +599,10 @@ class PaymentIntentChargeService
             'reference' => (string) $payload['reference'],
             'status' => (string) ($payload['status'] ?? 'PENDING'),
             'channel' => (string) ($payload['channel'] ?? $intent->channel),
-            'amount' => (float) ($payload['amount'] ?? $intent->amount),
+            'amount' => MinorAmount::normalizeToFixedScale($payload['amount'] ?? $intent->amount),
+            'amount_minor' => isset($payload['amount_minor'])
+                ? (int) $payload['amount_minor']
+                : MinorAmount::fromDecimal($payload['amount'] ?? $intent->amount),
             'checkout_url' => isset($payload['checkout_url']) ? (string) $payload['checkout_url'] : null,
             'qr_image_url' => isset($payload['qr_image_url']) ? (string) $payload['qr_image_url'] : null,
             'expires_at' => isset($payload['expires_at']) ? (string) $payload['expires_at'] : null,
@@ -616,7 +621,8 @@ class PaymentIntentChargeService
             'reference' => (string) ($intent->gateway_reference ?? ''),
             'status' => 'PREPARING',
             'channel' => $intent->channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::normalizeToFixedScale($intent->amount),
+            'amount_minor' => MinorAmount::fromDecimal($intent->amount),
             'checkout_url' => null,
             'poll_after_seconds' => 2,
         ];
@@ -632,7 +638,8 @@ class PaymentIntentChargeService
             'reference' => (string) ($intent->gateway_reference ?? ''),
             'status' => 'RECONCILIATION_REQUIRED',
             'channel' => $intent->channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::normalizeToFixedScale($intent->amount),
+            'amount_minor' => MinorAmount::fromDecimal($intent->amount),
             'checkout_url' => null,
             'poll_after_seconds' => 10,
         ];

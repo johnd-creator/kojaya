@@ -751,13 +751,15 @@ class PaymentChargeRecoveryTest extends TestCase
                 public function createIntentCharge(\App\Models\MemberPaymentIntent $intent): array
                 {
                     $orderId = sprintf('KOJ-MPI-%d-%d', $intent->id, $intent->charge_attempt ?: 1);
+                    $amountMinor = \App\Support\Money\MinorAmount::fromDecimal($intent->amount);
 
                     return $this->charges[$orderId] ?? [
                         'provider' => 'fake',
                         'reference' => $orderId,
                         'status' => 'PENDING',
                         'channel' => 'QRIS',
-                        'amount' => (float) $intent->amount,
+                        'amount' => \App\Support\Money\MinorAmount::toDecimalString($amountMinor),
+                        'amount_minor' => $amountMinor,
                         'checkout_url' => null,
                         'qr_string' => null,
                     ];

@@ -120,15 +120,21 @@ class MemberPaymentSettlementService
             ]);
         }
 
-        $remainingDue = round((float) $installment->amount_due - (float) $installment->amount_paid, 2);
-        if (MinorAmount::greaterThan($intent->amount, $remainingDue)) {
+        $remainingDueMinor = MinorAmount::fromDecimal($installment->amount_due) - MinorAmount::fromDecimal($installment->amount_paid);
+        if ($remainingDueMinor < 0) {
+            $remainingDueMinor = 0;
+        }
+
+        if (MinorAmount::fromDecimal($intent->amount) > $remainingDueMinor) {
             throw ValidationException::withMessages([
                 'amount' => 'Nominal payment intent melebihi sisa cicilan.',
             ]);
         }
 
+        $intentAmount = MinorAmount::toDecimalString(MinorAmount::fromDecimal($intent->amount));
+
         $payment = $this->loanService->recordPayment($installment->loan, [
-            'amount' => (float) $intent->amount,
+            'amount' => $intentAmount,
             'paid_at' => now()->toDateString(),
             'payment_method' => $intent->channel,
             'reference_no' => $intent->gateway_reference,
@@ -148,9 +154,11 @@ class MemberPaymentSettlementService
             ]);
         }
 
+        $intentAmount = MinorAmount::toDecimalString(MinorAmount::fromDecimal($intent->amount));
+
         $payment = $this->memberCreditService->recordPayment(
             member: $member,
-            amount: (float) $intent->amount,
+            amount: $intentAmount,
             receiver: null,
             referenceNo: $intent->gateway_reference,
             notes: 'Settlement gateway anggota untuk kredit POS.',
@@ -164,6 +172,7 @@ class MemberPaymentSettlementService
     {
         $metadata = $intent->metadata ?? [];
         $items = $metadata['items'] ?? [];
+        $intentAmount = MinorAmount::toDecimalString(MinorAmount::fromDecimal($intent->amount));
 
         if (! is_array($items) || $items === []) {
             throw ValidationException::withMessages([
@@ -194,8 +203,8 @@ class MemberPaymentSettlementService
             'client_reference' => (string) ($metadata['client_reference'] ?? 'COFFEE-INTENT-'.$intent->id),
             'cooperative_member_id' => $intent->cooperative_member_id,
             'payment_method' => $intent->channel,
-            'amount' => (float) $intent->amount,
-            'cash_received' => (float) $intent->amount,
+            'amount' => $intentAmount,
+            'cash_received' => $intentAmount,
             'discount_amount' => 0,
             'items' => $transactionItems,
         ], $intent->user);
@@ -216,22 +225,38 @@ class MemberPaymentSettlementService
             ],
         );
 
-        DB::afterCommit(function () use ($coffeeOrder, $intent): void {
-            if ($coffeeOrder->member?->user) {
-                $this->outboxService->enqueueForUser(
-                    $coffeeOrder->member->user,
-                    "member.coffee_order.received:{$coffeeOrder->id}",
-                    [
-                        'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
-                        'type' => 'coffee',
-                        'category' => 'info',
-                        'title' => 'Pesanan kopi diterima',
-                        'body' => 'Pesanan kopi Anda sudah diterima dan menunggu diproses.',
-                    ],
-                );
+        $coffeeOutbox = null;
+
+        if ($coffeeOrder->member?->user) {
+            $coffeeOutbox = $this->outboxService->enqueueForUser(
+                $coffeeOrder->member->user,
+                "member.coffee_order.received:{$coffeeOrder->id}",
+                [
+                    'deduplication_key' => "member.coffee_order.received:{$coffeeOrder->id}",
+                    'type' => 'coffee',
+                    'category' => 'info',
+                    'title' => 'Pesanan kopi diterima',
+                    'body' => 'Pesanan kopi Anda sudah diterima dan menunggu diproses.',
+                ],
+            );
+        }
+
+        $coffeeOrderId = $coffeeOrder->id;
+        $coffeeOutboxId = $coffeeOutbox?->id;
+        DB::afterCommit(function () use ($coffeeOrderId, $coffeeOutboxId, $intent): void {
+            if ($coffeeOutboxId !== null) {
+                $outbox = \App\Models\CooperativeNotificationOutbox::query()->find($coffeeOutboxId);
+
+                if ($outbox !== null) {
+                    $this->outboxService->deliver($outbox);
+                }
             }
 
-            $this->notificationDispatcher->coffeeOrderReceived($coffeeOrder, $intent->user);
+            $coffeeOrder = CoffeeOrder::query()
+                ->with(['member.user', 'product', 'transaction'])
+                ->findOrFail($coffeeOrderId);
+
+            $this->notificationDispatcher->coffeeOrderReceivedForAdmins($coffeeOrder, $intent->user);
         });
 
         return 'coffee_order:'.$coffeeOrder->id;
@@ -241,6 +266,7 @@ class MemberPaymentSettlementService
     {
         $metadata = $intent->metadata ?? [];
         $items = $metadata['items'] ?? [];
+        $intentAmount = MinorAmount::toDecimalString(MinorAmount::fromDecimal($intent->amount));
 
         if (! is_array($items) || $items === []) {
             throw ValidationException::withMessages([
@@ -271,14 +297,16 @@ class MemberPaymentSettlementService
             'client_reference' => (string) ($metadata['client_reference'] ?? 'STORE-INTENT-'.$intent->id),
             'cooperative_member_id' => $intent->cooperative_member_id,
             'payment_method' => $intent->channel,
-            'amount' => (float) $intent->amount,
-            'cash_received' => (float) $intent->amount,
+            'amount' => $intentAmount,
+            'cash_received' => $intentAmount,
             'discount_amount' => 0,
             'items' => $transactionItems,
         ], $intent->user);
 
+        $settlementOutbox = null;
+
         if ($intent->user) {
-            $this->outboxService->enqueueForUser(
+            $settlementOutbox = $this->outboxService->enqueueForUser(
                 $intent->user,
                 "member.pos.sale_completed:{$transaction->id}",
                 [
@@ -291,12 +319,17 @@ class MemberPaymentSettlementService
             );
         }
 
-        $transactionId = $transaction->id;
-        DB::afterCommit(function () use ($transactionId): void {
-            $transaction = \App\Models\PosTransaction::query()
-                ->with(['items.product', 'payments', 'member'])
-                ->findOrFail($transactionId);
-            $this->notificationDispatcher->posSaleCompleted($transaction, request()?->user());
+        $settlementOutboxId = $settlementOutbox?->id;
+        DB::afterCommit(function () use ($settlementOutboxId): void {
+            if ($settlementOutboxId === null) {
+                return;
+            }
+
+            $outbox = \App\Models\CooperativeNotificationOutbox::query()->find($settlementOutboxId);
+
+            if ($outbox !== null) {
+                $this->outboxService->deliver($outbox);
+            }
         });
 
         return 'store_transaction:'.$transaction->id;

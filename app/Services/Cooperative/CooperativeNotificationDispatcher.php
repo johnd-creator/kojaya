@@ -180,6 +180,16 @@ class CooperativeNotificationDispatcher
         ]);
     }
 
+    public function coffeeOrderReceivedForAdmins(CoffeeOrder $coffeeOrder, ?User $actor = null): void
+    {
+        $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);
+
+        $this->notifyRoles(['Admin Koperasi'], $coffeeOrder->member?->organization_id, [
+            ...$this->coffeeOrderPayload($coffeeOrder, 'admin.coffee_order.received', 'coffee', 'info', 'Pesanan kopi baru', "Pesanan kopi {$coffeeOrder->member?->name} perlu diproses.", $actor, $this->routePath('cooperative.pos.coffee-orders.index')),
+            'deduplication_key' => "admin.coffee_order.received:{$coffeeOrder->id}",
+        ]);
+    }
+
     public function coffeeOrderStatusChanged(CoffeeOrder $coffeeOrder, ?User $actor = null): void
     {
         $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);

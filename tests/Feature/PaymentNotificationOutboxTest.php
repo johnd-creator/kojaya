@@ -72,6 +72,7 @@ class PaymentNotificationOutboxTest extends TestCase
 
         // Assertions
         $this->assertSame(1, PosTransaction::count(), 'C5: exactly one transaction');
+        $transaction = PosTransaction::query()->firstOrFail();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->assertSame('PAID', $intent->gatewayStatus()->value);
@@ -79,9 +80,15 @@ class PaymentNotificationOutboxTest extends TestCase
 
         // One outbox entry created
         $outboxCount = CooperativeNotificationOutbox::query()
-            ->where('deduplication_key', "member.pos.sale_completed:{$intent->id}")
+            ->where('deduplication_key', "member.pos.sale_completed:{$transaction->id}")
             ->count();
         $this->assertSame(1, $outboxCount, 'C5: exactly one settlement outbox entry');
+
+        $notificationCount = $user->notifications()
+            ->where('type', 'App\\Notifications\\CooperativeDatabaseNotification')
+            ->where('id', CooperativeNotificationOutbox::query()->firstOrFail()->id)
+            ->count();
+        $this->assertSame(1, $notificationCount, 'C5: exactly one delivered member notification');
     }
 
     public function test_outbox_delivery_retry_produces_at_most_one_notification(): void
@@ -138,5 +145,34 @@ class PaymentNotificationOutboxTest extends TestCase
         $this->assertNull($second, 'Duplicate enqueue must return null');
 
         $this->assertSame(1, CooperativeNotificationOutbox::count());
+    }
+
+    public function test_deliver_pending_claims_and_delivers_one_notification_once(): void
+    {
+        $user = \App\Models\User::factory()->create();
+        $outbox = CooperativeNotificationOutbox::query()->create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'user_id' => $user->id,
+            'deduplication_key' => 'claim-test-key',
+            'payload' => [
+                'deduplication_key' => 'claim-test-key',
+                'type' => 'pos',
+                'category' => 'info',
+                'title' => 'Claim test',
+                'body' => 'Claim test body.',
+            ],
+            'status' => CooperativeNotificationOutbox::STATUS_PENDING,
+            'attempts' => 0,
+            'available_at' => now(),
+        ]);
+
+        $outboxService = app(\App\Services\Cooperative\CooperativeNotificationOutboxService::class);
+
+        $this->assertSame(1, $outboxService->deliverPending(1));
+        $this->assertSame(0, $outboxService->deliverPending(1));
+
+        $outbox->refresh();
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, $outbox->status);
+        $this->assertSame(1, $user->notifications()->where('id', $outbox->id)->count());
     }
 }

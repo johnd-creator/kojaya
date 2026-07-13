@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CooperativeNotificationOutbox extends Model
 {
+    public const STATUS_PENDING = 'PENDING';
+
+    public const STATUS_PROCESSING = 'PROCESSING';
+
+    public const STATUS_DELIVERED = 'DELIVERED';
+
+    public const STATUS_FAILED = 'FAILED';
+
     protected $table = 'cooperative_notification_outbox';
 
     public $incrementing = false;

@@ -4,6 +4,7 @@ namespace App\Services\Cooperative;
 
 use App\Models\CooperativeNotificationOutbox;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -47,7 +48,22 @@ class CooperativeNotificationOutboxService
                 ->lockForUpdate()
                 ->findOrFail($outbox->id);
 
-            if ($locked->status !== 'PENDING') {
+            if (in_array($locked->status, [
+                CooperativeNotificationOutbox::STATUS_DELIVERED,
+                CooperativeNotificationOutbox::STATUS_FAILED,
+            ], true)) {
+                return;
+            }
+
+            if ($locked->status === CooperativeNotificationOutbox::STATUS_PENDING) {
+                $locked->forceFill([
+                    'status' => CooperativeNotificationOutbox::STATUS_PROCESSING,
+                    'available_at' => now()->addMinutes(5),
+                    'last_error' => null,
+                ])->save();
+            }
+
+            if ($locked->status !== CooperativeNotificationOutbox::STATUS_PROCESSING) {
                 return;
             }
 
@@ -55,12 +71,10 @@ class CooperativeNotificationOutboxService
             $notificationUuid = $locked->id;
 
             try {
-                // Use the outbox UUID as the notification ID for deduplication.
-                // The notification dispatch system already checks firstOrCreate.
                 $this->dispatchNotification($locked->user_id, $notificationUuid, $payload);
 
                 $locked->forceFill([
-                    'status' => 'DELIVERED',
+                    'status' => CooperativeNotificationOutbox::STATUS_DELIVERED,
                     'delivered_at' => now(),
                 ])->save();
             } catch (\Throwable $throwable) {
@@ -68,13 +82,13 @@ class CooperativeNotificationOutboxService
 
                 if ($attempts >= 5) {
                     $locked->forceFill([
-                        'status' => 'FAILED',
+                        'status' => CooperativeNotificationOutbox::STATUS_FAILED,
                         'attempts' => $attempts,
                         'last_error' => class_basename($throwable).': '.substr($throwable->getMessage(), 0, 100),
                     ])->save();
                 } else {
                     $locked->forceFill([
-                        'status' => 'PENDING',
+                        'status' => CooperativeNotificationOutbox::STATUS_PENDING,
                         'attempts' => $attempts,
                         'last_error' => class_basename($throwable).': '.substr($throwable->getMessage(), 0, 100),
                         'available_at' => now()->addMinutes($attempts * 5),
@@ -91,14 +105,13 @@ class CooperativeNotificationOutboxService
     {
         $delivered = 0;
 
-        $pending = CooperativeNotificationOutbox::query()
-            ->where('status', 'PENDING')
-            ->where('available_at', '<=', now())
-            ->orderBy('available_at')
-            ->limit($limit)
-            ->get();
+        while ($delivered < $limit) {
+            $outbox = $this->claimNextPending();
 
-        foreach ($pending as $outbox) {
+            if ($outbox === null) {
+                break;
+            }
+
             $this->deliver($outbox);
             $delivered++;
         }
@@ -111,23 +124,17 @@ class CooperativeNotificationOutboxService
      */
     private function insertIgnore(string $uuid, ?int $userId, string $deduplicationKey, array $payload): int
     {
-        try {
-            return DB::table('cooperative_notification_outbox')->insertOrIgnore([
-                'id' => $uuid,
-                'user_id' => $userId,
-                'deduplication_key' => $deduplicationKey,
-                'payload' => json_encode($payload, JSON_THROW_ON_ERROR),
-                'status' => 'PENDING',
-                'attempts' => 0,
-                'available_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } catch (\Throwable) {
-            // Insert may fail on unique constraint — that's fine,
-            // it means deduplication worked.
-            return 0;
-        }
+        return DB::table('cooperative_notification_outbox')->insertOrIgnore([
+            'id' => $uuid,
+            'user_id' => $userId,
+            'deduplication_key' => $deduplicationKey,
+            'payload' => json_encode($payload, JSON_THROW_ON_ERROR),
+            'status' => CooperativeNotificationOutbox::STATUS_PENDING,
+            'attempts' => 0,
+            'available_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function dispatchNotification(?int $userId, string $uuid, array $payload): void
@@ -142,24 +149,52 @@ class CooperativeNotificationOutboxService
             return;
         }
 
-        $deduplicationKey = (string) ($payload['deduplication_key'] ?? '');
-
-        if ($deduplicationKey !== '') {
-            $exists = $user->notifications()
-                ->where('type', 'App\\Notifications\\CooperativeDatabaseNotification')
-                ->where('data->deduplication_key', $deduplicationKey)
-                ->exists();
-
-            if ($exists) {
-                return;
-            }
-        }
-
-        $user->notifications()->create([
+        DB::table('notifications')->insertOrIgnore([
             'id' => $uuid,
             'type' => 'App\\Notifications\\CooperativeDatabaseNotification',
-            'data' => $payload,
+            'notifiable_type' => $user::class,
+            'notifiable_id' => $user->getKey(),
+            'data' => json_encode($payload, JSON_THROW_ON_ERROR),
             'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
+    }
+
+    private function claimNextPending(): ?CooperativeNotificationOutbox
+    {
+        return DB::transaction(function (): ?CooperativeNotificationOutbox {
+            $now = CarbonImmutable::now();
+
+            $locked = CooperativeNotificationOutbox::query()
+                ->where(function ($query) use ($now): void {
+                    $query
+                        ->where(function ($pending) use ($now): void {
+                            $pending
+                                ->where('status', CooperativeNotificationOutbox::STATUS_PENDING)
+                                ->where('available_at', '<=', $now);
+                        })
+                        ->orWhere(function ($processing) use ($now): void {
+                            $processing
+                                ->where('status', CooperativeNotificationOutbox::STATUS_PROCESSING)
+                                ->where('available_at', '<=', $now);
+                        });
+                })
+                ->orderBy('available_at')
+                ->lock('FOR UPDATE SKIP LOCKED')
+                ->first();
+
+            if ($locked === null) {
+                return null;
+            }
+
+            $locked->forceFill([
+                'status' => CooperativeNotificationOutbox::STATUS_PROCESSING,
+                'available_at' => $now->addMinutes(5),
+                'last_error' => null,
+            ])->save();
+
+            return $locked->refresh();
+        });
     }
 }

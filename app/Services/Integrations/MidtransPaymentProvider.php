@@ -5,6 +5,7 @@ namespace App\Services\Integrations;
 use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use App\Support\Money\MinorAmount;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -39,7 +40,9 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     public function createCharge(CooperativePayment $payment, string $channel): array
     {
         $orderId = $this->generateOrderId($payment);
-        $amount = (int) round($payment->amount);
+        $amount = $this->grossAmountForMidtrans($payment->amount);
+        $amountMinor = MinorAmount::fromDecimal($payment->amount);
+        $amountDecimal = MinorAmount::toDecimalString($amountMinor);
 
         $transactionDetails = [
             'order_id' => $orderId,
@@ -99,7 +102,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $payment->amount,
+            'amount' => $amountDecimal,
+            'amount_minor' => $amountMinor,
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
             'qr_image_url' => route('api.v1.member.payments.qris-image', $payment, false),
@@ -116,7 +120,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     public function createIntentCharge(MemberPaymentIntent $intent): array
     {
         $orderId = $this->generateIntentOrderId($intent);
-        $amount = (int) round((float) $intent->amount);
+        $amount = $this->grossAmountForMidtrans($intent->amount);
+        $amountMinor = MinorAmount::fromDecimal($intent->amount);
         $channel = $intent->channel;
         $metadata = $intent->metadata ?? [];
 
@@ -192,7 +197,8 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::toDecimalString($amountMinor),
+            'amount_minor' => $amountMinor,
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
             'expires_at' => $body['expiry_time'] ?? null,
@@ -270,17 +276,16 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             default => strtoupper($paymentType),
         };
 
-        $grossAmount = $payload['gross_amount'] ?? 0;
-        $amountMinor = is_numeric($grossAmount)
-            ? (int) bcmul((string) $grossAmount, '100', 0)
-            : null;
+        $grossAmount = $payload['gross_amount'] ?? '0';
+        $amountDecimal = MinorAmount::normalizeToFixedScale((string) $grossAmount);
+        $amountMinor = MinorAmount::fromDecimal($amountDecimal);
 
         return new WebhookEvent(
             gatewayReference: (string) ($payload['order_id'] ?? ''),
             status: $mappedStatus,
             paymentMethod: $paymentType,
             channel: $channel,
-            amount: (float) ($payload['gross_amount'] ?? 0),
+            amount: $amountDecimal,
             amountMinor: $amountMinor,
             reconciliationReference: null,
             fraudStatus: $fraudStatus,
@@ -578,13 +583,15 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     private function createChargeInternal(CooperativePayment $payment, string $channel): array
     {
         $orderId = $this->generateOrderId($payment);
+        $amountMinor = MinorAmount::fromDecimal($payment->amount);
 
         return [
             'provider' => 'midtrans',
             'reference' => $orderId,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $payment->amount,
+            'amount' => MinorAmount::toDecimalString($amountMinor),
+            'amount_minor' => $amountMinor,
             'checkout_url' => url("/api/payments/{$orderId}/checkout"),
             'qr_string' => null,
         ];
@@ -691,9 +698,21 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             'reference' => $providerOrderId,
             'status' => $mappedStatus,
             'channel' => (string) ($body['payment_type'] ?? 'QRIS'),
-            'amount' => (float) ($body['gross_amount'] ?? 0),
+            'amount' => MinorAmount::normalizeToFixedScale((string) ($body['gross_amount'] ?? '0')),
+            'amount_minor' => MinorAmount::fromDecimal((string) ($body['gross_amount'] ?? '0')),
             'checkout_url' => $checkoutUrl,
             'qr_string' => $qrString,
         ];
+    }
+
+    private function grossAmountForMidtrans(int|float|string $amount): int
+    {
+        $amountMinor = MinorAmount::fromDecimal($amount);
+
+        if ($amountMinor % 100 !== 0) {
+            throw new \InvalidArgumentException('Midtrans requires whole-rupiah amounts.');
+        }
+
+        return intdiv($amountMinor, 100);
     }
 }

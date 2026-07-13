@@ -323,8 +323,7 @@ class PaymentCanonicalItemTest extends TestCase
             $intent->gateway_reference,
             'PAID',
             ['status' => 'PAID'],
-            null,
-            (float) $intent->amount,
+            \App\Support\Money\MinorAmount::fromDecimal($intent->amount),
         );
 
         $intent->refresh();
@@ -619,15 +618,13 @@ class PaymentCanonicalItemTest extends TestCase
             $intent->gateway_reference,
             'PAID',
             ['status' => 'PAID'],
-            null,
-            (float) $intent->amount,
+            \App\Support\Money\MinorAmount::fromDecimal($intent->amount),
         );
         $stateService->applyGatewayEvent(
             $intent->gateway_reference,
             'PAID',
             ['status' => 'PAID'],
-            null,
-            (float) $intent->amount,
+            \App\Support\Money\MinorAmount::fromDecimal($intent->amount),
         );
 
         $incidentCount = \App\Models\PaymentReconciliationIncident::query()

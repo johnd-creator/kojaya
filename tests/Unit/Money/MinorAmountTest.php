@@ -40,12 +40,11 @@ class MinorAmountTest extends TestCase
         MinorAmount::fromDecimal('');
     }
 
-    public function test_more_than_two_decimals_truncates_to_two(): void
+    public function test_more_than_two_decimals_throws(): void
     {
-        // bcadd with scale 2 truncates (not rounds): 100.999 → 100.99
-        $this->assertSame(10099, MinorAmount::fromDecimal('100.999'));
-        // 100.999999 truncates same way
-        $this->assertSame(10099, MinorAmount::fromDecimal('100.999999'));
+        $this->expectException(\InvalidArgumentException::class);
+
+        MinorAmount::fromDecimal('100.999');
     }
 
     public function test_leading_zero_preserved_in_to_decimal_string(): void

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Support\Money\MinorAmount;
+
 /**
  * Immutable canonical representation of a single order line after aggregation.
  *
@@ -57,7 +59,7 @@ final class CanonicalOrderItem
 
     public function amountMinor(): int
     {
-        return (int) bcmul($this->lineTotal(), '100', 0);
+        return MinorAmount::fromDecimal($this->lineTotal());
     }
 
     /**
@@ -203,19 +205,11 @@ final class CanonicalOrderItem
             return '0.00';
         }
 
-        if (is_int($value)) {
-            return bcadd((string) $value, '0.00', 2);
-        }
-        if (is_float($value)) {
-            return bcadd((string) round($value, 2), '0', 2);
-        }
-
-        $string = (string) $value;
-        if (! is_numeric($string)) {
+        try {
+            return MinorAmount::normalizeToFixedScale($value);
+        } catch (\InvalidArgumentException) {
             return '0.00';
         }
-
-        return bcadd($string, '0.00', 2);
     }
 
     /**

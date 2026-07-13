@@ -256,6 +256,8 @@ class PaymentGatewayService
     {
         $reference = 'PAY-'.Str::upper(Str::random(12));
         $expiresAt = now()->addDay()->toIso8601String();
+        $amountMinor = MinorAmount::fromDecimal($payment->amount);
+        $amountDecimal = MinorAmount::toDecimalString($amountMinor);
 
         $payment->forceFill([
             'payment_method' => $channel,
@@ -267,7 +269,8 @@ class PaymentGatewayService
                 'reference' => $reference,
                 'status' => 'PENDING',
                 'channel' => $channel,
-                'amount' => (float) $payment->amount,
+                'amount' => $amountDecimal,
+                'amount_minor' => $amountMinor,
                 'checkout_url' => url("/api/payments/{$reference}/checkout"),
                 'qr_string' => null,
                 'qr_image_url' => $channel === 'QRIS' ? route('api.v1.member.payments.qris-image', $payment, false) : null,
@@ -282,7 +285,8 @@ class PaymentGatewayService
             'reference' => $reference,
             'status' => 'PENDING',
             'channel' => $channel,
-            'amount' => (float) $payment->amount,
+            'amount' => $amountDecimal,
+            'amount_minor' => $amountMinor,
             'checkout_url' => url("/api/payments/{$reference}/checkout"),
             'qr_image_url' => $channel === 'QRIS' ? route('api.v1.member.payments.qris-image', $payment, false) : null,
             'expires_at' => $expiresAt,
@@ -299,13 +303,15 @@ class PaymentGatewayService
         $attempt = (int) ($intent->charge_attempt ?: 1);
         $reference = sprintf('MPI-%d-%d', $intent->id, $attempt);
         $expiresAt = $intent->expires_at ?? now()->addMinutes(30);
+        $amountMinor = MinorAmount::fromDecimal($intent->amount);
 
         return [
             'provider' => 'internal',
             'reference' => $reference,
             'status' => 'PENDING',
             'channel' => $intent->channel,
-            'amount' => (float) $intent->amount,
+            'amount' => MinorAmount::toDecimalString($amountMinor),
+            'amount_minor' => $amountMinor,
             'checkout_url' => url("/api/payments/{$reference}/checkout"),
             'qr_string' => null,
             'expires_at' => $expiresAt->toIso8601String(),
@@ -339,7 +345,7 @@ class PaymentGatewayService
         return $this->existingPendingChargeFromPayload(
             gatewayStatus: $payment->gateway_status,
             payload: $payment->gateway_payload,
-            amount: (float) $payment->amount,
+            amountMinor: MinorAmount::fromDecimal($payment->amount),
             channel: $channel,
         );
     }
@@ -356,7 +362,7 @@ class PaymentGatewayService
         return $this->existingPendingChargeFromPayload(
             gatewayStatus: $intent->gateway_status,
             payload: $intent->gateway_payload,
-            amount: (float) $intent->amount,
+            amountMinor: MinorAmount::fromDecimal($intent->amount),
             channel: $intent->channel,
         );
     }
@@ -365,7 +371,7 @@ class PaymentGatewayService
      * @param  array<string, mixed>|null  $payload
      * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_image_url?: string|null, expires_at?: string|null, instructions?: array<string, mixed>, poll_after_seconds?: int}|null
      */
-    private function existingPendingChargeFromPayload(?string $gatewayStatus, ?array $payload, float $amount, string $channel): ?array
+    private function existingPendingChargeFromPayload(?string $gatewayStatus, ?array $payload, int $amountMinor, string $channel): ?array
     {
         if ($gatewayStatus !== 'PENDING' || ! is_array($payload)) {
             return null;
@@ -380,7 +386,11 @@ class PaymentGatewayService
         }
 
         // Exact amount comparison in minor units — no float tolerance
-        if (isset($payload['amount']) && ! MinorAmount::equals($payload['amount'], $amount)) {
+        if (isset($payload['amount_minor'])) {
+            if ((int) $payload['amount_minor'] !== $amountMinor) {
+                return null;
+            }
+        } elseif (isset($payload['amount']) && MinorAmount::fromDecimal($payload['amount']) !== $amountMinor) {
             return null;
         }
 
@@ -413,7 +423,12 @@ class PaymentGatewayService
             'reference' => (string) $payload['reference'],
             'status' => (string) ($payload['status'] ?? 'PENDING'),
             'channel' => (string) $payload['channel'],
-            'amount' => (float) ($payload['amount'] ?? $amount),
+            'amount' => MinorAmount::normalizeToFixedScale(
+                $payload['amount'] ?? MinorAmount::toDecimalString($amountMinor)
+            ),
+            'amount_minor' => isset($payload['amount_minor'])
+                ? (int) $payload['amount_minor']
+                : $amountMinor,
             'checkout_url' => isset($payload['checkout_url']) ? (string) $payload['checkout_url'] : null,
             'qr_image_url' => isset($payload['qr_image_url']) ? (string) $payload['qr_image_url'] : null,
             'expires_at' => isset($payload['expires_at']) ? (string) $payload['expires_at'] : null,
@@ -453,7 +468,10 @@ class PaymentGatewayService
             'reference' => (string) ($charge['reference'] ?? ''),
             'status' => (string) ($charge['status'] ?? 'PENDING'),
             'channel' => (string) ($charge['channel'] ?? 'QRIS'),
-            'amount' => (float) ($charge['amount'] ?? 0),
+            'amount' => MinorAmount::normalizeToFixedScale($charge['amount'] ?? '0.00'),
+            'amount_minor' => isset($charge['amount_minor'])
+                ? (int) $charge['amount_minor']
+                : MinorAmount::fromDecimal($charge['amount'] ?? '0.00'),
             'checkout_url' => isset($charge['checkout_url']) ? (string) $charge['checkout_url'] : null,
             'qr_image_url' => isset($charge['qr_image_url']) ? (string) $charge['qr_image_url'] : null,
             'expires_at' => isset($charge['expires_at']) ? (string) $charge['expires_at'] : null,

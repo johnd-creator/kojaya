@@ -74,21 +74,45 @@ final class MinorAmount
         }
 
         if (is_float($value)) {
-            // Round to 2 decimal places before converting to string
-            // to avoid floating-point representation issues (e.g. 0.1 + 0.2 = 0.30000000000000004)
-            $rounded = round($value, 2);
+            if (! is_finite($value)) {
+                throw new \InvalidArgumentException('Invalid float value: '.var_export($value, true));
+            }
 
-            return bcadd((string) $rounded, '0.00', 2);
+            if ($value < 0) {
+                throw new \InvalidArgumentException('Negative amount is not allowed: '.var_export($value, true));
+            }
+
+            // Float input is accepted only as a legacy boundary and normalized
+            // immediately to a deterministic fixed-scale decimal string.
+            return number_format($value, 2, '.', '');
         }
 
         $string = (string) $value;
         $string = trim($string);
 
-        if ($string === '' || ! is_numeric($string)) {
+        if ($string === '') {
             throw new \InvalidArgumentException('Invalid numeric value: '.var_export($value, true));
         }
 
-        return bcadd($string, '0.00', 2);
+        if (str_starts_with($string, '-')) {
+            throw new \InvalidArgumentException('Negative amount is not allowed: '.$string);
+        }
+
+        if (! preg_match('/^\d+(?:\.(\d+))?$/', $string, $matches)) {
+            throw new \InvalidArgumentException('Invalid numeric value: '.var_export($value, true));
+        }
+
+        $fraction = $matches[1] ?? '';
+
+        if (strlen($fraction) > 2) {
+            throw new \InvalidArgumentException('Amount must not have more than 2 decimal places: '.$string);
+        }
+
+        [$integerPart, $decimalPart] = array_pad(explode('.', $string, 2), 2, '');
+        $integerPart = ltrim($integerPart, '0');
+        $integerPart = $integerPart === '' ? '0' : $integerPart;
+
+        return $integerPart.'.'.str_pad($decimalPart, 2, '0');
     }
 
     /**

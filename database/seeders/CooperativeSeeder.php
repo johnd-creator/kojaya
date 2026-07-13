@@ -146,12 +146,14 @@ class CooperativeSeeder extends Seeder
         foreach ($names as $index => [$name, $joinedAt]) {
             $number = $index + 1;
             $email = 'anggota'.$number.'@koperasijayabersama.id';
+            $memberNumber = 'KOP-'.str_pad((string) $number, 3, '0', STR_PAD_LEFT);
             $member = CooperativeMember::withTrashed()->updateOrCreate(
                 ['email' => $email],
                 [
                     'organization_id' => $headOffice->id,
                     'name' => $name,
-                    'member_no' => 'KOP-'.Carbon::parse($joinedAt)->format('Y').'-'.str_pad((string) $number, 5, '0', STR_PAD_LEFT),
+                    'member_no' => $memberNumber,
+                    'no_anggota' => $memberNumber,
                     'email' => $email,
                     'phone' => '08123456'.str_pad((string) $number, 4, '0', STR_PAD_LEFT),
                     'identity_number' => '317400000000'.str_pad((string) $number, 4, '0', STR_PAD_LEFT),

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosReturnController::create
 * @see app/Http/Controllers/Cooperative/PosReturnController.php:17
@@ -68,43 +68,6 @@ create.head = (args: { transaction: string | number | { id: string | number } } 
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\PosReturnController::create
-* @see app/Http/Controllers/Cooperative/PosReturnController.php:17
-* @route '/cooperative/pos/transactions/{transaction}/returns/create'
-*/
-const createForm = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReturnController::create
-* @see app/Http/Controllers/Cooperative/PosReturnController.php:17
-* @route '/cooperative/pos/transactions/{transaction}/returns/create'
-*/
-createForm.get = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReturnController::create
-* @see app/Http/Controllers/Cooperative/PosReturnController.php:17
-* @route '/cooperative/pos/transactions/{transaction}/returns/create'
-*/
-createForm.head = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: create.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-create.form = createForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\PosReturnController::store
 * @see app/Http/Controllers/Cooperative/PosReturnController.php:46
 * @route '/cooperative/pos/transactions/{transaction}/returns'
@@ -161,28 +124,6 @@ store.post = (args: { transaction: string | number | { id: string | number } } |
     url: store.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReturnController::store
-* @see app/Http/Controllers/Cooperative/PosReturnController.php:46
-* @route '/cooperative/pos/transactions/{transaction}/returns'
-*/
-const storeForm = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\PosReturnController::store
-* @see app/Http/Controllers/Cooperative/PosReturnController.php:46
-* @route '/cooperative/pos/transactions/{transaction}/returns'
-*/
-storeForm.post = (args: { transaction: string | number | { id: string | number } } | [transaction: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: store.url(args, options),
-    method: 'post',
-})
-
-store.form = storeForm
 
 const returns = {
     create: Object.assign(create, create),

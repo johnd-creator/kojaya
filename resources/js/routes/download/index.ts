@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\DocumentDownloadController::payslip
 * @see app/Http/Controllers/DocumentDownloadController.php:15
@@ -60,43 +60,6 @@ payslip.head = (args: { id: string | number } | [id: string | number ] | string 
     url: payslip.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::payslip
-* @see app/Http/Controllers/DocumentDownloadController.php:15
-* @route '/download/payslip/{id}'
-*/
-const payslipForm = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payslip.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::payslip
-* @see app/Http/Controllers/DocumentDownloadController.php:15
-* @route '/download/payslip/{id}'
-*/
-payslipForm.get = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payslip.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::payslip
-* @see app/Http/Controllers/DocumentDownloadController.php:15
-* @route '/download/payslip/{id}'
-*/
-payslipForm.head = (args: { id: string | number } | [id: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payslip.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-payslip.form = payslipForm
 
 /**
 * @see \App\Http\Controllers\DocumentDownloadController::mcu
@@ -167,43 +130,6 @@ mcu.head = (args: { mcu: string | number | { id: string | number } } | [mcu: str
 })
 
 /**
-* @see \App\Http\Controllers\DocumentDownloadController::mcu
-* @see app/Http/Controllers/DocumentDownloadController.php:46
-* @route '/download/mcu/{mcu}'
-*/
-const mcuForm = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcu.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::mcu
-* @see app/Http/Controllers/DocumentDownloadController.php:46
-* @route '/download/mcu/{mcu}'
-*/
-mcuForm.get = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcu.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::mcu
-* @see app/Http/Controllers/DocumentDownloadController.php:46
-* @route '/download/mcu/{mcu}'
-*/
-mcuForm.head = (args: { mcu: string | number | { id: string | number } } | [mcu: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcu.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-mcu.form = mcuForm
-
-/**
 * @see \App\Http\Controllers\DocumentDownloadController::certificate
 * @see app/Http/Controllers/DocumentDownloadController.php:71
 * @route '/download/certificate/{employee}/{certificate}'
@@ -269,43 +195,6 @@ certificate.head = (args: { employee: string | number | { id: string | number },
 })
 
 /**
-* @see \App\Http\Controllers\DocumentDownloadController::certificate
-* @see app/Http/Controllers/DocumentDownloadController.php:71
-* @route '/download/certificate/{employee}/{certificate}'
-*/
-const certificateForm = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificate.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::certificate
-* @see app/Http/Controllers/DocumentDownloadController.php:71
-* @route '/download/certificate/{employee}/{certificate}'
-*/
-certificateForm.get = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificate.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::certificate
-* @see app/Http/Controllers/DocumentDownloadController.php:71
-* @route '/download/certificate/{employee}/{certificate}'
-*/
-certificateForm.head = (args: { employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, certificate: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificate.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-certificate.form = certificateForm
-
-/**
 * @see \App\Http\Controllers\DocumentDownloadController::kyc
 * @see app/Http/Controllers/DocumentDownloadController.php:100
 * @route '/download/kyc/{memberId}/{documentId}'
@@ -365,43 +254,6 @@ kyc.head = (args: { memberId: string | number, documentId: string | number } | [
     url: kyc.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::kyc
-* @see app/Http/Controllers/DocumentDownloadController.php:100
-* @route '/download/kyc/{memberId}/{documentId}'
-*/
-const kycForm = (args: { memberId: string | number, documentId: string | number } | [memberId: string | number, documentId: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: kyc.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::kyc
-* @see app/Http/Controllers/DocumentDownloadController.php:100
-* @route '/download/kyc/{memberId}/{documentId}'
-*/
-kycForm.get = (args: { memberId: string | number, documentId: string | number } | [memberId: string | number, documentId: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: kyc.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::kyc
-* @see app/Http/Controllers/DocumentDownloadController.php:100
-* @route '/download/kyc/{memberId}/{documentId}'
-*/
-kycForm.head = (args: { memberId: string | number, documentId: string | number } | [memberId: string | number, documentId: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: kyc.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-kyc.form = kycForm
 
 /**
 * @see \App\Http\Controllers\DocumentDownloadController::cooperativeReceipt
@@ -470,43 +322,6 @@ cooperativeReceipt.head = (args: { receipt: string | number | { id: string | num
     url: cooperativeReceipt.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::cooperativeReceipt
-* @see app/Http/Controllers/DocumentDownloadController.php:128
-* @route '/download/cooperative-receipts/{receipt}'
-*/
-const cooperativeReceiptForm = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: cooperativeReceipt.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::cooperativeReceipt
-* @see app/Http/Controllers/DocumentDownloadController.php:128
-* @route '/download/cooperative-receipts/{receipt}'
-*/
-cooperativeReceiptForm.get = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: cooperativeReceipt.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\DocumentDownloadController::cooperativeReceipt
-* @see app/Http/Controllers/DocumentDownloadController.php:128
-* @route '/download/cooperative-receipts/{receipt}'
-*/
-cooperativeReceiptForm.head = (args: { receipt: string | number | { id: string | number } } | [receipt: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: cooperativeReceipt.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-cooperativeReceipt.form = cooperativeReceiptForm
 
 const download = {
     payslip: Object.assign(payslip, payslip),

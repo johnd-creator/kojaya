@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\AnnualShuController::index
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:18
@@ -44,43 +44,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::index
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:18
-* @route '/cooperative/shu'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::index
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:18
-* @route '/cooperative/shu'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::index
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:18
-* @route '/cooperative/shu'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
-
-/**
 * @see \App\Http\Controllers\Cooperative\AnnualShuController::close
 * @see app/Http/Controllers/Cooperative/AnnualShuController.php:40
 * @route '/cooperative/shu/close'
@@ -113,28 +76,6 @@ close.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: close.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::close
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:40
-* @route '/cooperative/shu/close'
-*/
-const closeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: close.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::close
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:40
-* @route '/cooperative/shu/close'
-*/
-closeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: close.url(options),
-    method: 'post',
-})
-
-close.form = closeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\AnnualShuController::requestRevision
@@ -193,28 +134,6 @@ requestRevision.post = (args: { period: string | number | { id: string | number 
     url: requestRevision.url(args, options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::requestRevision
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
-* @route '/cooperative/shu/{period}/request-revision'
-*/
-const requestRevisionForm = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestRevision.url(args, options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\AnnualShuController::requestRevision
-* @see app/Http/Controllers/Cooperative/AnnualShuController.php:56
-* @route '/cooperative/shu/{period}/request-revision'
-*/
-requestRevisionForm.post = (args: { period: string | number | { id: string | number } } | [period: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: requestRevision.url(args, options),
-    method: 'post',
-})
-
-requestRevision.form = requestRevisionForm
 
 const AnnualShuController = { index, close, requestRevision }
 

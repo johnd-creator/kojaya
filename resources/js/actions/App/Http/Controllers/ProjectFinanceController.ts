@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectFinanceController::index
 * @see app/Http/Controllers/ProjectFinanceController.php:20
@@ -66,43 +66,6 @@ index.head = (args: { project: string | number | { id: string | number } } | [pr
     url: index.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::index
-* @see app/Http/Controllers/ProjectFinanceController.php:20
-* @route '/projects/{project}/financials'
-*/
-const indexForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::index
-* @see app/Http/Controllers/ProjectFinanceController.php:20
-* @route '/projects/{project}/financials'
-*/
-indexForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::index
-* @see app/Http/Controllers/ProjectFinanceController.php:20
-* @route '/projects/{project}/financials'
-*/
-indexForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ProjectFinanceController::summary
@@ -173,43 +136,6 @@ summary.head = (args: { project: string | number | { id: string | number } } | [
 })
 
 /**
-* @see \App\Http\Controllers\ProjectFinanceController::summary
-* @see app/Http/Controllers/ProjectFinanceController.php:140
-* @route '/projects/{project}/financial-summary'
-*/
-const summaryForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: summary.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::summary
-* @see app/Http/Controllers/ProjectFinanceController.php:140
-* @route '/projects/{project}/financial-summary'
-*/
-summaryForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: summary.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::summary
-* @see app/Http/Controllers/ProjectFinanceController.php:140
-* @route '/projects/{project}/financial-summary'
-*/
-summaryForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: summary.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-summary.form = summaryForm
-
-/**
 * @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
@@ -278,43 +204,6 @@ budgetAnalysis.head = (args: { project: string | number | { id: string | number 
 })
 
 /**
-* @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
-* @see app/Http/Controllers/ProjectFinanceController.php:153
-* @route '/projects/{project}/budget-analysis'
-*/
-const budgetAnalysisForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: budgetAnalysis.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
-* @see app/Http/Controllers/ProjectFinanceController.php:153
-* @route '/projects/{project}/budget-analysis'
-*/
-budgetAnalysisForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: budgetAnalysis.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
-* @see app/Http/Controllers/ProjectFinanceController.php:153
-* @route '/projects/{project}/budget-analysis'
-*/
-budgetAnalysisForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: budgetAnalysis.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-budgetAnalysis.form = budgetAnalysisForm
-
-/**
 * @see \App\Http\Controllers\ProjectFinanceController::transactions
 * @see app/Http/Controllers/ProjectFinanceController.php:163
 * @route '/projects/{project}/transactions'
@@ -381,43 +270,6 @@ transactions.head = (args: { project: string | number | { id: string | number } 
     url: transactions.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::transactions
-* @see app/Http/Controllers/ProjectFinanceController.php:163
-* @route '/projects/{project}/transactions'
-*/
-const transactionsForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::transactions
-* @see app/Http/Controllers/ProjectFinanceController.php:163
-* @route '/projects/{project}/transactions'
-*/
-transactionsForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ProjectFinanceController::transactions
-* @see app/Http/Controllers/ProjectFinanceController.php:163
-* @route '/projects/{project}/transactions'
-*/
-transactionsForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: transactions.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-transactions.form = transactionsForm
 
 const ProjectFinanceController = { index, summary, budgetAnalysis, transactions }
 

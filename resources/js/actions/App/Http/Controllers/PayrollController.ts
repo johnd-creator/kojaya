@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\PayrollController::index
 * @see app/Http/Controllers/PayrollController.php:31
@@ -42,43 +42,6 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:31
-* @route '/payrolls'
-*/
-const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:31
-* @route '/payrolls'
-*/
-indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::index
-* @see app/Http/Controllers/PayrollController.php:31
-* @route '/payrolls'
-*/
-indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::show
@@ -149,43 +112,6 @@ show.head = (args: { payroll: string | number | { id: string | number } } | [pay
 })
 
 /**
-* @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:69
-* @route '/payrolls/{payroll}'
-*/
-const showForm = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:69
-* @route '/payrolls/{payroll}'
-*/
-showForm.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::show
-* @see app/Http/Controllers/PayrollController.php:69
-* @route '/payrolls/{payroll}'
-*/
-showForm.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: show.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-show.form = showForm
-
-/**
 * @see \App\Http\Controllers\PayrollController::generate
 * @see app/Http/Controllers/PayrollController.php:76
 * @route '/payrolls/generate'
@@ -218,28 +144,6 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: generate.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:76
-* @route '/payrolls/generate'
-*/
-const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: generate.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::generate
-* @see app/Http/Controllers/PayrollController.php:76
-* @route '/payrolls/generate'
-*/
-generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: generate.url(options),
-    method: 'post',
-})
-
-generate.form = generateForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::downloadPdf
@@ -310,43 +214,6 @@ downloadPdf.head = (args: { payroll: string | number | { id: string | number } }
 })
 
 /**
-* @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:89
-* @route '/payrolls/{payroll}/download-pdf'
-*/
-const downloadPdfForm = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: downloadPdf.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:89
-* @route '/payrolls/{payroll}/download-pdf'
-*/
-downloadPdfForm.get = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: downloadPdf.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::downloadPdf
-* @see app/Http/Controllers/PayrollController.php:89
-* @route '/payrolls/{payroll}/download-pdf'
-*/
-downloadPdfForm.head = (args: { payroll: string | number | { id: string | number } } | [payroll: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: downloadPdf.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-downloadPdf.form = downloadPdfForm
-
-/**
 * @see \App\Http\Controllers\PayrollController::thrIndex
 * @see app/Http/Controllers/PayrollController.php:111
 * @route '/payrolls/thr'
@@ -391,43 +258,6 @@ thrIndex.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\PayrollController::thrIndex
-* @see app/Http/Controllers/PayrollController.php:111
-* @route '/payrolls/thr'
-*/
-const thrIndexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: thrIndex.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::thrIndex
-* @see app/Http/Controllers/PayrollController.php:111
-* @route '/payrolls/thr'
-*/
-thrIndexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: thrIndex.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::thrIndex
-* @see app/Http/Controllers/PayrollController.php:111
-* @route '/payrolls/thr'
-*/
-thrIndexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: thrIndex.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-thrIndex.form = thrIndexForm
-
-/**
 * @see \App\Http\Controllers\PayrollController::previewThr
 * @see app/Http/Controllers/PayrollController.php:148
 * @route '/payrolls/thr/preview'
@@ -460,28 +290,6 @@ previewThr.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: previewThr.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\PayrollController::previewThr
-* @see app/Http/Controllers/PayrollController.php:148
-* @route '/payrolls/thr/preview'
-*/
-const previewThrForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: previewThr.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::previewThr
-* @see app/Http/Controllers/PayrollController.php:148
-* @route '/payrolls/thr/preview'
-*/
-previewThrForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: previewThr.url(options),
-    method: 'post',
-})
-
-previewThr.form = previewThrForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::generateThr
@@ -518,28 +326,6 @@ generateThr.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
-* @see \App\Http\Controllers\PayrollController::generateThr
-* @see app/Http/Controllers/PayrollController.php:166
-* @route '/payrolls/thr/generate'
-*/
-const generateThrForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: generateThr.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::generateThr
-* @see app/Http/Controllers/PayrollController.php:166
-* @route '/payrolls/thr/generate'
-*/
-generateThrForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: generateThr.url(options),
-    method: 'post',
-})
-
-generateThr.form = generateThrForm
-
-/**
 * @see \App\Http\Controllers\PayrollController::submitForApproval
 * @see app/Http/Controllers/PayrollController.php:195
 * @route '/payrolls/submit-for-approval'
@@ -572,28 +358,6 @@ submitForApproval.post = (options?: RouteQueryOptions): RouteDefinition<'post'> 
     url: submitForApproval.url(options),
     method: 'post',
 })
-
-/**
-* @see \App\Http\Controllers\PayrollController::submitForApproval
-* @see app/Http/Controllers/PayrollController.php:195
-* @route '/payrolls/submit-for-approval'
-*/
-const submitForApprovalForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submitForApproval.url(options),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::submitForApproval
-* @see app/Http/Controllers/PayrollController.php:195
-* @route '/payrolls/submit-for-approval'
-*/
-submitForApprovalForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: submitForApproval.url(options),
-    method: 'post',
-})
-
-submitForApproval.form = submitForApprovalForm
 
 /**
 * @see \App\Http\Controllers\PayrollController::exportBankTransfer
@@ -656,43 +420,6 @@ exportBankTransfer.head = (args: { batch: string | number } | [batch: string | n
     url: exportBankTransfer.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\PayrollController::exportBankTransfer
-* @see app/Http/Controllers/PayrollController.php:232
-* @route '/payrolls/export/{batch}/bank-transfer'
-*/
-const exportBankTransferForm = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportBankTransfer.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::exportBankTransfer
-* @see app/Http/Controllers/PayrollController.php:232
-* @route '/payrolls/export/{batch}/bank-transfer'
-*/
-exportBankTransferForm.get = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportBankTransfer.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\PayrollController::exportBankTransfer
-* @see app/Http/Controllers/PayrollController.php:232
-* @route '/payrolls/export/{batch}/bank-transfer'
-*/
-exportBankTransferForm.head = (args: { batch: string | number } | [batch: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: exportBankTransfer.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-exportBankTransfer.form = exportBankTransferForm
 
 const PayrollController = { index, show, generate, downloadPdf, thrIndex, previewThr, generateThr, submitForApproval, exportBankTransfer }
 

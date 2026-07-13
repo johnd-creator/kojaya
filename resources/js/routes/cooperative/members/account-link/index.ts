@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
 * @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:276
@@ -56,38 +56,6 @@ update.patch = (args: { member: string | number | { id: string | number } } | [m
     url: update.url(args, options),
     method: 'patch',
 })
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:276
-* @route '/cooperative/members/{member}/account'
-*/
-const updateForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-/**
-* @see \App\Http\Controllers\Cooperative\CooperativeMemberController::update
-* @see app/Http/Controllers/Cooperative/CooperativeMemberController.php:276
-* @route '/cooperative/members/{member}/account'
-*/
-updateForm.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
-    action: update.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'PATCH',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'post',
-})
-
-update.form = updateForm
 
 const accountLink = {
     update: Object.assign(update, update),

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ReportController::page
 * @see app/Http/Controllers/ReportController.php:33
@@ -42,43 +42,6 @@ page.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: page.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReportController::page
-* @see app/Http/Controllers/ReportController.php:33
-* @route '/reports'
-*/
-const pageForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: page.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::page
-* @see app/Http/Controllers/ReportController.php:33
-* @route '/reports'
-*/
-pageForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: page.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::page
-* @see app/Http/Controllers/ReportController.php:33
-* @route '/reports'
-*/
-pageForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: page.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-page.form = pageForm
 
 /**
 * @see \App\Http\Controllers\ReportController::consolidatedStats
@@ -125,43 +88,6 @@ consolidatedStats.head = (options?: RouteQueryOptions): RouteDefinition<'head'> 
 })
 
 /**
-* @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:253
-* @route '/api/reports/consolidated-stats'
-*/
-const consolidatedStatsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedStats.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:253
-* @route '/api/reports/consolidated-stats'
-*/
-consolidatedStatsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedStats.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedStats
-* @see app/Http/Controllers/ReportController.php:253
-* @route '/api/reports/consolidated-stats'
-*/
-consolidatedStatsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedStats.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-consolidatedStats.form = consolidatedStatsForm
-
-/**
 * @see \App\Http\Controllers\ReportController::consolidatedPayroll
 * @see app/Http/Controllers/ReportController.php:268
 * @route '/api/reports/consolidated-payroll'
@@ -206,43 +132,6 @@ consolidatedPayroll.head = (options?: RouteQueryOptions): RouteDefinition<'head'
 })
 
 /**
-* @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:268
-* @route '/api/reports/consolidated-payroll'
-*/
-const consolidatedPayrollForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedPayroll.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:268
-* @route '/api/reports/consolidated-payroll'
-*/
-consolidatedPayrollForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedPayroll.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedPayroll
-* @see app/Http/Controllers/ReportController.php:268
-* @route '/api/reports/consolidated-payroll'
-*/
-consolidatedPayrollForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedPayroll.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-consolidatedPayroll.form = consolidatedPayrollForm
-
-/**
 * @see \App\Http\Controllers\ReportController::consolidatedAttendance
 * @see app/Http/Controllers/ReportController.php:290
 * @route '/api/reports/consolidated-attendance'
@@ -285,43 +174,6 @@ consolidatedAttendance.head = (options?: RouteQueryOptions): RouteDefinition<'he
     url: consolidatedAttendance.url(options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:290
-* @route '/api/reports/consolidated-attendance'
-*/
-const consolidatedAttendanceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedAttendance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:290
-* @route '/api/reports/consolidated-attendance'
-*/
-consolidatedAttendanceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedAttendance.url(options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::consolidatedAttendance
-* @see app/Http/Controllers/ReportController.php:290
-* @route '/api/reports/consolidated-attendance'
-*/
-consolidatedAttendanceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: consolidatedAttendance.url({
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-consolidatedAttendance.form = consolidatedAttendanceForm
 
 /**
 * @see \App\Http\Controllers\ReportController::index
@@ -384,43 +236,6 @@ index.head = (args: { project: string | number } | [project: string | number ] |
     url: index.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:42
-* @route '/projects/{project}/api/reports'
-*/
-const indexForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:42
-* @route '/projects/{project}/api/reports'
-*/
-indexForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::index
-* @see app/Http/Controllers/ReportController.php:42
-* @route '/projects/{project}/api/reports'
-*/
-indexForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: index.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\ReportController::payslip
@@ -487,43 +302,6 @@ payslip.head = (args: { project: string | number, employeeId: string | number, p
 })
 
 /**
-* @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:121
-* @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
-*/
-const payslipForm = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payslip.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:121
-* @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
-*/
-payslipForm.get = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payslip.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::payslip
-* @see app/Http/Controllers/ReportController.php:121
-* @route '/projects/{project}/api/reports/payslip/{employeeId}/{period}'
-*/
-payslipForm.head = (args: { project: string | number, employeeId: string | number, period: string | number } | [project: string | number, employeeId: string | number, period: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payslip.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-payslip.form = payslipForm
-
-/**
 * @see \App\Http\Controllers\ReportController::payrollSummary
 * @see app/Http/Controllers/ReportController.php:145
 * @route '/projects/{project}/api/reports/payroll-summary'
@@ -584,43 +362,6 @@ payrollSummary.head = (args: { project: string | number } | [project: string | n
     url: payrollSummary.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:145
-* @route '/projects/{project}/api/reports/payroll-summary'
-*/
-const payrollSummaryForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payrollSummary.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:145
-* @route '/projects/{project}/api/reports/payroll-summary'
-*/
-payrollSummaryForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payrollSummary.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::payrollSummary
-* @see app/Http/Controllers/ReportController.php:145
-* @route '/projects/{project}/api/reports/payroll-summary'
-*/
-payrollSummaryForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payrollSummary.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-payrollSummary.form = payrollSummaryForm
 
 /**
 * @see \App\Http\Controllers\ReportController::payrollDetail
@@ -685,43 +426,6 @@ payrollDetail.head = (args: { project: string | number } | [project: string | nu
 })
 
 /**
-* @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:163
-* @route '/projects/{project}/api/reports/payroll-detail'
-*/
-const payrollDetailForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payrollDetail.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:163
-* @route '/projects/{project}/api/reports/payroll-detail'
-*/
-payrollDetailForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payrollDetail.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::payrollDetail
-* @see app/Http/Controllers/ReportController.php:163
-* @route '/projects/{project}/api/reports/payroll-detail'
-*/
-payrollDetailForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: payrollDetail.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-payrollDetail.form = payrollDetailForm
-
-/**
 * @see \App\Http\Controllers\ReportController::attendanceReport
 * @see app/Http/Controllers/ReportController.php:181
 * @route '/projects/{project}/api/reports/attendance'
@@ -782,43 +486,6 @@ attendanceReport.head = (args: { project: string | number } | [project: string |
     url: attendanceReport.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:181
-* @route '/projects/{project}/api/reports/attendance'
-*/
-const attendanceReportForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: attendanceReport.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:181
-* @route '/projects/{project}/api/reports/attendance'
-*/
-attendanceReportForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: attendanceReport.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::attendanceReport
-* @see app/Http/Controllers/ReportController.php:181
-* @route '/projects/{project}/api/reports/attendance'
-*/
-attendanceReportForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: attendanceReport.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-attendanceReport.form = attendanceReportForm
 
 /**
 * @see \App\Http\Controllers\ReportController::leaveReport
@@ -883,43 +550,6 @@ leaveReport.head = (args: { project: string | number } | [project: string | numb
 })
 
 /**
-* @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:198
-* @route '/projects/{project}/api/reports/leave'
-*/
-const leaveReportForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: leaveReport.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:198
-* @route '/projects/{project}/api/reports/leave'
-*/
-leaveReportForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: leaveReport.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::leaveReport
-* @see app/Http/Controllers/ReportController.php:198
-* @route '/projects/{project}/api/reports/leave'
-*/
-leaveReportForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: leaveReport.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-leaveReport.form = leaveReportForm
-
-/**
 * @see \App\Http\Controllers\ReportController::certificateCompliance
 * @see app/Http/Controllers/ReportController.php:216
 * @route '/projects/{project}/api/reports/certificate-compliance'
@@ -982,43 +612,6 @@ certificateCompliance.head = (args: { project: string | number } | [project: str
 })
 
 /**
-* @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:216
-* @route '/projects/{project}/api/reports/certificate-compliance'
-*/
-const certificateComplianceForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificateCompliance.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:216
-* @route '/projects/{project}/api/reports/certificate-compliance'
-*/
-certificateComplianceForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificateCompliance.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::certificateCompliance
-* @see app/Http/Controllers/ReportController.php:216
-* @route '/projects/{project}/api/reports/certificate-compliance'
-*/
-certificateComplianceForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: certificateCompliance.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-certificateCompliance.form = certificateComplianceForm
-
-/**
 * @see \App\Http\Controllers\ReportController::mcuCompliance
 * @see app/Http/Controllers/ReportController.php:233
 * @route '/projects/{project}/api/reports/mcu-compliance'
@@ -1079,43 +672,6 @@ mcuCompliance.head = (args: { project: string | number } | [project: string | nu
     url: mcuCompliance.url(args, options),
     method: 'head',
 })
-
-/**
-* @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:233
-* @route '/projects/{project}/api/reports/mcu-compliance'
-*/
-const mcuComplianceForm = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcuCompliance.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:233
-* @route '/projects/{project}/api/reports/mcu-compliance'
-*/
-mcuComplianceForm.get = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcuCompliance.url(args, options),
-    method: 'get',
-})
-
-/**
-* @see \App\Http\Controllers\ReportController::mcuCompliance
-* @see app/Http/Controllers/ReportController.php:233
-* @route '/projects/{project}/api/reports/mcu-compliance'
-*/
-mcuComplianceForm.head = (args: { project: string | number } | [project: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
-    action: mcuCompliance.url(args, {
-        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
-            _method: 'HEAD',
-            ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
-    }),
-    method: 'get',
-})
-
-mcuCompliance.form = mcuComplianceForm
 
 const ReportController = { page, consolidatedStats, consolidatedPayroll, consolidatedAttendance, index, payslip, payrollSummary, payrollDetail, attendanceReport, leaveReport, certificateCompliance, mcuCompliance }
 

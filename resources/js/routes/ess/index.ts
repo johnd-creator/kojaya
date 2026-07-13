@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 import attendance from './attendance'
 import profile937a89 from './profile'
 /**
@@ -46,6 +46,43 @@ geofence.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\AttendanceController::geofence
+* @see app/Http/Controllers/AttendanceController.php:335
+* @route '/ess/geofence'
+*/
+const geofenceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::geofence
+* @see app/Http/Controllers/AttendanceController.php:335
+* @route '/ess/geofence'
+*/
+geofenceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\AttendanceController::geofence
+* @see app/Http/Controllers/AttendanceController.php:335
+* @route '/ess/geofence'
+*/
+geofenceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: geofence.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+geofence.form = geofenceForm
+
+/**
 * @see \App\Http\Controllers\EssPortalController::dashboard
 * @see app/Http/Controllers/EssPortalController.php:16
 * @route '/ess'
@@ -88,6 +125,43 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: dashboard.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\EssPortalController::dashboard
+* @see app/Http/Controllers/EssPortalController.php:16
+* @route '/ess'
+*/
+const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: dashboard.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::dashboard
+* @see app/Http/Controllers/EssPortalController.php:16
+* @route '/ess'
+*/
+dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: dashboard.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::dashboard
+* @see app/Http/Controllers/EssPortalController.php:16
+* @route '/ess'
+*/
+dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: dashboard.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+dashboard.form = dashboardForm
 
 /**
 * @see \App\Http\Controllers\EssPortalController::profile
@@ -134,6 +208,43 @@ profile.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\EssPortalController::profile
+* @see app/Http/Controllers/EssPortalController.php:51
+* @route '/ess/profile'
+*/
+const profileForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: profile.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::profile
+* @see app/Http/Controllers/EssPortalController.php:51
+* @route '/ess/profile'
+*/
+profileForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: profile.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::profile
+* @see app/Http/Controllers/EssPortalController.php:51
+* @route '/ess/profile'
+*/
+profileForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: profile.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+profile.form = profileForm
+
+/**
 * @see \App\Http\Controllers\EssPortalController::payslips
 * @see app/Http/Controllers/EssPortalController.php:85
 * @route '/ess/payslips'
@@ -178,6 +289,43 @@ payslips.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\EssPortalController::payslips
+* @see app/Http/Controllers/EssPortalController.php:85
+* @route '/ess/payslips'
+*/
+const payslipsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: payslips.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::payslips
+* @see app/Http/Controllers/EssPortalController.php:85
+* @route '/ess/payslips'
+*/
+payslipsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: payslips.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::payslips
+* @see app/Http/Controllers/EssPortalController.php:85
+* @route '/ess/payslips'
+*/
+payslipsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: payslips.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+payslips.form = payslipsForm
+
+/**
 * @see \App\Http\Controllers\EssPortalController::compliance
 * @see app/Http/Controllers/EssPortalController.php:101
 * @route '/ess/compliance'
@@ -220,6 +368,43 @@ compliance.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: compliance.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\EssPortalController::compliance
+* @see app/Http/Controllers/EssPortalController.php:101
+* @route '/ess/compliance'
+*/
+const complianceForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: compliance.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::compliance
+* @see app/Http/Controllers/EssPortalController.php:101
+* @route '/ess/compliance'
+*/
+complianceForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: compliance.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EssPortalController::compliance
+* @see app/Http/Controllers/EssPortalController.php:101
+* @route '/ess/compliance'
+*/
+complianceForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: compliance.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+compliance.form = complianceForm
 
 const ess = {
     attendance: Object.assign(attendance, attendance),

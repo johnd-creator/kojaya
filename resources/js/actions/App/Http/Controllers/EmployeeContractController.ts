@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\EmployeeContractController::index
 * @see app/Http/Controllers/EmployeeContractController.php:13
@@ -68,6 +68,43 @@ index.head = (args: { employee: string | number | { id: string | number } } | [e
 })
 
 /**
+* @see \App\Http\Controllers\EmployeeContractController::index
+* @see app/Http/Controllers/EmployeeContractController.php:13
+* @route '/employees/{employee}/contracts'
+*/
+const indexForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::index
+* @see app/Http/Controllers/EmployeeContractController.php:13
+* @route '/employees/{employee}/contracts'
+*/
+indexForm.get = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::index
+* @see app/Http/Controllers/EmployeeContractController.php:13
+* @route '/employees/{employee}/contracts'
+*/
+indexForm.head = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\EmployeeContractController::store
 * @see app/Http/Controllers/EmployeeContractController.php:27
 * @route '/employees/{employee}/contracts'
@@ -124,6 +161,28 @@ store.post = (args: { employee: string | number | { id: string | number } } | [e
     url: store.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::store
+* @see app/Http/Controllers/EmployeeContractController.php:27
+* @route '/employees/{employee}/contracts'
+*/
+const storeForm = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::store
+* @see app/Http/Controllers/EmployeeContractController.php:27
+* @route '/employees/{employee}/contracts'
+*/
+storeForm.post = (args: { employee: string | number | { id: string | number } } | [employee: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\EmployeeContractController::update
@@ -189,6 +248,53 @@ update.patch = (args: { employee: string | number | { id: string | number }, con
     url: update.url(args, options),
     method: 'patch',
 })
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::update
+* @see app/Http/Controllers/EmployeeContractController.php:37
+* @route '/employees/{employee}/contracts/{contract}'
+*/
+const updateForm = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::update
+* @see app/Http/Controllers/EmployeeContractController.php:37
+* @route '/employees/{employee}/contracts/{contract}'
+*/
+updateForm.put = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\EmployeeContractController::update
+* @see app/Http/Controllers/EmployeeContractController.php:37
+* @route '/employees/{employee}/contracts/{contract}'
+*/
+updateForm.patch = (args: { employee: string | number | { id: string | number }, contract: string | number | { id: string | number } } | [employee: string | number | { id: string | number }, contract: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
 
 const EmployeeContractController = { index, store, update }
 

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 import financials from './financials'
 import ganttLink from './gantt-link'
 import tasks from './tasks'
@@ -50,6 +50,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\ProjectController::index
+* @see app/Http/Controllers/ProjectController.php:18
+* @route '/projects'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::index
+* @see app/Http/Controllers/ProjectController.php:18
+* @route '/projects'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::index
+* @see app/Http/Controllers/ProjectController.php:18
+* @route '/projects'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\ProjectController::create
 * @see app/Http/Controllers/ProjectController.php:61
 * @route '/projects/create'
@@ -94,6 +131,43 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\ProjectController::create
+* @see app/Http/Controllers/ProjectController.php:61
+* @route '/projects/create'
+*/
+const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::create
+* @see app/Http/Controllers/ProjectController.php:61
+* @route '/projects/create'
+*/
+createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::create
+* @see app/Http/Controllers/ProjectController.php:61
+* @route '/projects/create'
+*/
+createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+create.form = createForm
+
+/**
 * @see \App\Http\Controllers\ProjectController::store
 * @see app/Http/Controllers/ProjectController.php:69
 * @route '/projects'
@@ -126,6 +200,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectController::store
+* @see app/Http/Controllers/ProjectController.php:69
+* @route '/projects'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::store
+* @see app/Http/Controllers/ProjectController.php:69
+* @route '/projects'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\ProjectController::show
@@ -196,6 +292,43 @@ show.head = (args: { project: string | number | { id: string | number } } | [pro
 })
 
 /**
+* @see \App\Http\Controllers\ProjectController::show
+* @see app/Http/Controllers/ProjectController.php:81
+* @route '/projects/{project}'
+*/
+const showForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::show
+* @see app/Http/Controllers/ProjectController.php:81
+* @route '/projects/{project}'
+*/
+showForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::show
+* @see app/Http/Controllers/ProjectController.php:81
+* @route '/projects/{project}'
+*/
+showForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\ProjectController::edit
 * @see app/Http/Controllers/ProjectController.php:109
 * @route '/projects/{project}/edit'
@@ -264,6 +397,43 @@ edit.head = (args: { project: string | number | { id: string | number } } | [pro
 })
 
 /**
+* @see \App\Http\Controllers\ProjectController::edit
+* @see app/Http/Controllers/ProjectController.php:109
+* @route '/projects/{project}/edit'
+*/
+const editForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::edit
+* @see app/Http/Controllers/ProjectController.php:109
+* @route '/projects/{project}/edit'
+*/
+editForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::edit
+* @see app/Http/Controllers/ProjectController.php:109
+* @route '/projects/{project}/edit'
+*/
+editForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+edit.form = editForm
+
+/**
 * @see \App\Http\Controllers\ProjectController::update
 * @see app/Http/Controllers/ProjectController.php:120
 * @route '/projects/{project}'
@@ -320,6 +490,38 @@ update.put = (args: { project: string | number | { id: string | number } } | [pr
     url: update.url(args, options),
     method: 'put',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectController::update
+* @see app/Http/Controllers/ProjectController.php:120
+* @route '/projects/{project}'
+*/
+const updateForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::update
+* @see app/Http/Controllers/ProjectController.php:120
+* @route '/projects/{project}'
+*/
+updateForm.put = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\ProjectController::destroy
@@ -380,6 +582,38 @@ destroy.delete = (args: { project: string | number | { id: string | number } } |
 })
 
 /**
+* @see \App\Http\Controllers\ProjectController::destroy
+* @see app/Http/Controllers/ProjectController.php:129
+* @route '/projects/{project}'
+*/
+const destroyForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::destroy
+* @see app/Http/Controllers/ProjectController.php:129
+* @route '/projects/{project}'
+*/
+destroyForm.delete = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+destroy.form = destroyForm
+
+/**
 * @see \App\Http\Controllers\ProjectController::updateProgress
 * @see app/Http/Controllers/ProjectController.php:136
 * @route '/projects/{project}/progress'
@@ -436,6 +670,28 @@ updateProgress.post = (args: { project: string | number | { id: string | number 
     url: updateProgress.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectController::updateProgress
+* @see app/Http/Controllers/ProjectController.php:136
+* @route '/projects/{project}/progress'
+*/
+const updateProgressForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProgress.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectController::updateProgress
+* @see app/Http/Controllers/ProjectController.php:136
+* @route '/projects/{project}/progress'
+*/
+updateProgressForm.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateProgress.url(args, options),
+    method: 'post',
+})
+
+updateProgress.form = updateProgressForm
 
 /**
 * @see \App\Http\Controllers\ProjectFinanceController::financialSummary
@@ -506,6 +762,43 @@ financialSummary.head = (args: { project: string | number | { id: string | numbe
 })
 
 /**
+* @see \App\Http\Controllers\ProjectFinanceController::financialSummary
+* @see app/Http/Controllers/ProjectFinanceController.php:140
+* @route '/projects/{project}/financial-summary'
+*/
+const financialSummaryForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: financialSummary.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::financialSummary
+* @see app/Http/Controllers/ProjectFinanceController.php:140
+* @route '/projects/{project}/financial-summary'
+*/
+financialSummaryForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: financialSummary.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::financialSummary
+* @see app/Http/Controllers/ProjectFinanceController.php:140
+* @route '/projects/{project}/financial-summary'
+*/
+financialSummaryForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: financialSummary.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+financialSummary.form = financialSummaryForm
+
+/**
 * @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
 * @see app/Http/Controllers/ProjectFinanceController.php:153
 * @route '/projects/{project}/budget-analysis'
@@ -572,6 +865,43 @@ budgetAnalysis.head = (args: { project: string | number | { id: string | number 
     url: budgetAnalysis.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
+* @see app/Http/Controllers/ProjectFinanceController.php:153
+* @route '/projects/{project}/budget-analysis'
+*/
+const budgetAnalysisForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: budgetAnalysis.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
+* @see app/Http/Controllers/ProjectFinanceController.php:153
+* @route '/projects/{project}/budget-analysis'
+*/
+budgetAnalysisForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: budgetAnalysis.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::budgetAnalysis
+* @see app/Http/Controllers/ProjectFinanceController.php:153
+* @route '/projects/{project}/budget-analysis'
+*/
+budgetAnalysisForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: budgetAnalysis.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+budgetAnalysis.form = budgetAnalysisForm
 
 /**
 * @see \App\Http\Controllers\ProjectFinanceController::transactions
@@ -642,6 +972,43 @@ transactions.head = (args: { project: string | number | { id: string | number } 
 })
 
 /**
+* @see \App\Http\Controllers\ProjectFinanceController::transactions
+* @see app/Http/Controllers/ProjectFinanceController.php:163
+* @route '/projects/{project}/transactions'
+*/
+const transactionsForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: transactions.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::transactions
+* @see app/Http/Controllers/ProjectFinanceController.php:163
+* @route '/projects/{project}/transactions'
+*/
+transactionsForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: transactions.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectFinanceController::transactions
+* @see app/Http/Controllers/ProjectFinanceController.php:163
+* @route '/projects/{project}/transactions'
+*/
+transactionsForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: transactions.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+transactions.form = transactionsForm
+
+/**
 * @see \App\Http\Controllers\ProjectGanttController::ganttData
 * @see app/Http/Controllers/ProjectGanttController.php:12
 * @route '/projects/{project}/gantt-data'
@@ -708,6 +1075,43 @@ ganttData.head = (args: { project: string | number | { id: string | number } } |
     url: ganttData.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectGanttController::ganttData
+* @see app/Http/Controllers/ProjectGanttController.php:12
+* @route '/projects/{project}/gantt-data'
+*/
+const ganttDataForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: ganttData.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectGanttController::ganttData
+* @see app/Http/Controllers/ProjectGanttController.php:12
+* @route '/projects/{project}/gantt-data'
+*/
+ganttDataForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: ganttData.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectGanttController::ganttData
+* @see app/Http/Controllers/ProjectGanttController.php:12
+* @route '/projects/{project}/gantt-data'
+*/
+ganttDataForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: ganttData.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+ganttData.form = ganttDataForm
 
 const projects = {
     index: Object.assign(index, index),

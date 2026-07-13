@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::index
 * @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:33
@@ -44,6 +44,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::index
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:33
+* @route '/api/v1/members'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::index
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:33
+* @route '/api/v1/members'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::index
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:33
+* @route '/api/v1/members'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::store
 * @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:58
 * @route '/api/v1/members'
@@ -76,6 +113,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::store
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:58
+* @route '/api/v1/members'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::store
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:58
+* @route '/api/v1/members'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
@@ -120,6 +179,43 @@ resignationRequests.head = (options?: RouteQueryOptions): RouteDefinition<'head'
     url: resignationRequests.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
+* @route '/api/v1/members/resignation-requests'
+*/
+const resignationRequestsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: resignationRequests.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
+* @route '/api/v1/members/resignation-requests'
+*/
+resignationRequestsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: resignationRequests.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resignationRequests
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:248
+* @route '/api/v1/members/resignation-requests'
+*/
+resignationRequestsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: resignationRequests.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+resignationRequests.form = resignationRequestsForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
@@ -190,6 +286,43 @@ show.head = (args: { member: string | number | { id: string | number } } | [memb
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
+* @route '/api/v1/members/{member}'
+*/
+const showForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
+* @route '/api/v1/members/{member}'
+*/
+showForm.get = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::show
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:101
+* @route '/api/v1/members/{member}'
+*/
+showForm.head = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
 * @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:114
 * @route '/api/v1/members/{member}'
@@ -246,6 +379,38 @@ update.put = (args: { member: string | number | { id: string | number } } | [mem
     url: update.url(args, options),
     method: 'put',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:114
+* @route '/api/v1/members/{member}'
+*/
+const updateForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::update
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:114
+* @route '/api/v1/members/{member}'
+*/
+updateForm.put = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::updateSensitiveData
@@ -306,6 +471,38 @@ updateSensitiveData.patch = (args: { member: string | number | { id: string | nu
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::updateSensitiveData
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:155
+* @route '/api/v1/members/{member}/sensitive-data'
+*/
+const updateSensitiveDataForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateSensitiveData.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::updateSensitiveData
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:155
+* @route '/api/v1/members/{member}/sensitive-data'
+*/
+updateSensitiveDataForm.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: updateSensitiveData.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+updateSensitiveData.form = updateSensitiveDataForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::linkAccount
 * @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:180
 * @route '/api/v1/members/{member}/account'
@@ -362,6 +559,38 @@ linkAccount.patch = (args: { member: string | number | { id: string | number } }
     url: linkAccount.url(args, options),
     method: 'patch',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::linkAccount
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:180
+* @route '/api/v1/members/{member}/account'
+*/
+const linkAccountForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: linkAccount.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::linkAccount
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:180
+* @route '/api/v1/members/{member}/account'
+*/
+linkAccountForm.patch = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: linkAccount.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+linkAccount.form = linkAccountForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
@@ -422,6 +651,28 @@ activate.post = (args: { member: string | number | { id: string | number } } | [
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:210
+* @route '/api/v1/members/{member}/activate'
+*/
+const activateForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: activate.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::activate
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:210
+* @route '/api/v1/members/{member}/activate'
+*/
+activateForm.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: activate.url(args, options),
+    method: 'post',
+})
+
+activate.form = activateForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
 * @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:239
 * @route '/api/v1/members/{member}/resign'
@@ -480,6 +731,28 @@ resign.post = (args: { member: string | number | { id: string | number } } | [me
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:239
+* @route '/api/v1/members/{member}/resign'
+*/
+const resignForm = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: resign.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::resign
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:239
+* @route '/api/v1/members/{member}/resign'
+*/
+resignForm.post = (args: { member: string | number | { id: string | number } } | [member: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: resign.url(args, options),
+    method: 'post',
+})
+
+resign.form = resignForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::processResignationRequest
 * @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:275
 * @route '/api/v1/members/resignation-requests/{resignationRequest}/process'
@@ -536,6 +809,28 @@ processResignationRequest.post = (args: { resignationRequest: string | number | 
     url: processResignationRequest.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::processResignationRequest
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:275
+* @route '/api/v1/members/resignation-requests/{resignationRequest}/process'
+*/
+const processResignationRequestForm = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: processResignationRequest.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativeMemberApiController::processResignationRequest
+* @see app/Http/Controllers/Api/V1/CooperativeMemberApiController.php:275
+* @route '/api/v1/members/resignation-requests/{resignationRequest}/process'
+*/
+processResignationRequestForm.post = (args: { resignationRequest: string | number | { id: string | number } } | [resignationRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: processResignationRequest.url(args, options),
+    method: 'post',
+})
+
+processResignationRequest.form = processResignationRequestForm
 
 const CooperativeMemberApiController = { index, store, resignationRequests, show, update, updateSensitiveData, linkAccount, activate, resign, processResignationRequest }
 

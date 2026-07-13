@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\PosVoidController::store
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:31
@@ -50,6 +50,28 @@ store.post = (args: { transaction: string | number } | [transaction: string | nu
     url: store.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::store
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:31
+* @route '/cooperative/pos/transactions/{transaction}/void-request'
+*/
+const storeForm = (args: { transaction: string | number } | [transaction: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::store
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:31
+* @route '/cooperative/pos/transactions/{transaction}/void-request'
+*/
+storeForm.post = (args: { transaction: string | number } | [transaction: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\PosVoidController::process
@@ -110,6 +132,28 @@ process.post = (args: { voidRequest: string | number | { id: string | number } }
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::process
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:39
+* @route '/cooperative/pos/void-requests/{voidRequest}/process'
+*/
+const processForm = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: process.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::process
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:39
+* @route '/cooperative/pos/void-requests/{voidRequest}/process'
+*/
+processForm.post = (args: { voidRequest: string | number | { id: string | number } } | [voidRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: process.url(args, options),
+    method: 'post',
+})
+
+process.form = processForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\PosVoidController::index
 * @see app/Http/Controllers/Cooperative/PosVoidController.php:18
 * @route '/cooperative/pos/void-requests'
@@ -152,6 +196,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::index
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:18
+* @route '/cooperative/pos/void-requests'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::index
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:18
+* @route '/cooperative/pos/void-requests'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\PosVoidController::index
+* @see app/Http/Controllers/Cooperative/PosVoidController.php:18
+* @route '/cooperative/pos/void-requests'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 const PosVoidController = { store, process, index }
 

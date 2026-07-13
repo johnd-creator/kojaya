@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\BudgetLineController::store
 * @see app/Http/Controllers/BudgetLineController.php:17
@@ -58,6 +58,28 @@ store.post = (args: { budget: string | number | { id: string | number } } | [bud
 })
 
 /**
+* @see \App\Http\Controllers\BudgetLineController::store
+* @see app/Http/Controllers/BudgetLineController.php:17
+* @route '/budgets/{budget}/lines'
+*/
+const storeForm = (args: { budget: string | number | { id: string | number } } | [budget: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetLineController::store
+* @see app/Http/Controllers/BudgetLineController.php:17
+* @route '/budgets/{budget}/lines'
+*/
+storeForm.post = (args: { budget: string | number | { id: string | number } } | [budget: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(args, options),
+    method: 'post',
+})
+
+store.form = storeForm
+
+/**
 * @see \App\Http\Controllers\BudgetLineController::update
 * @see app/Http/Controllers/BudgetLineController.php:41
 * @route '/budgets/{budget}/lines/{line}'
@@ -113,6 +135,38 @@ update.put = (args: { budget: string | number | { id: string | number }, line: s
 })
 
 /**
+* @see \App\Http\Controllers\BudgetLineController::update
+* @see app/Http/Controllers/BudgetLineController.php:41
+* @route '/budgets/{budget}/lines/{line}'
+*/
+const updateForm = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetLineController::update
+* @see app/Http/Controllers/BudgetLineController.php:41
+* @route '/budgets/{budget}/lines/{line}'
+*/
+updateForm.put = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
+
+/**
 * @see \App\Http\Controllers\BudgetLineController::destroy
 * @see app/Http/Controllers/BudgetLineController.php:66
 * @route '/budgets/{budget}/lines/{line}'
@@ -166,6 +220,38 @@ destroy.delete = (args: { budget: string | number | { id: string | number }, lin
     url: destroy.url(args, options),
     method: 'delete',
 })
+
+/**
+* @see \App\Http\Controllers\BudgetLineController::destroy
+* @see app/Http/Controllers/BudgetLineController.php:66
+* @route '/budgets/{budget}/lines/{line}'
+*/
+const destroyForm = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\BudgetLineController::destroy
+* @see app/Http/Controllers/BudgetLineController.php:66
+* @route '/budgets/{budget}/lines/{line}'
+*/
+destroyForm.delete = (args: { budget: string | number | { id: string | number }, line: string | number | { id: string | number } } | [budget: string | number | { id: string | number }, line: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+destroy.form = destroyForm
 
 const BudgetLineController = { store, update, destroy }
 

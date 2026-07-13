@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
 * @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
+* @route '/cooperative/savings/withdrawals'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
+* @route '/cooperative/savings/withdrawals'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::index
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:20
+* @route '/cooperative/savings/withdrawals'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
@@ -100,6 +137,28 @@ process.post = (args: { withdrawal: string | number | { id: string | number } } 
     url: process.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
+* @route '/cooperative/savings/withdrawals/{withdrawal}/process'
+*/
+const processForm = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: process.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\SavingsWithdrawalController::process
+* @see app/Http/Controllers/Cooperative/SavingsWithdrawalController.php:36
+* @route '/cooperative/savings/withdrawals/{withdrawal}/process'
+*/
+processForm.post = (args: { withdrawal: string | number | { id: string | number } } | [withdrawal: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: process.url(args, options),
+    method: 'post',
+})
+
+process.form = processForm
 
 const SavingsWithdrawalController = { index, process }
 

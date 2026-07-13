@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
 * @see app/Http/Controllers/Cooperative/CooperativeReportController.php:29
@@ -42,6 +42,43 @@ summary.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: summary.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:29
+* @route '/api/v1/reports/cooperative-summary'
+*/
+const summaryForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: summary.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:29
+* @route '/api/v1/reports/cooperative-summary'
+*/
+summaryForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: summary.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::summary
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:29
+* @route '/api/v1/reports/cooperative-summary'
+*/
+summaryForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: summary.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+summary.form = summaryForm
 
 /**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
@@ -88,6 +125,43 @@ sales.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:36
+* @route '/api/v1/reports/sales'
+*/
+const salesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: sales.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:36
+* @route '/api/v1/reports/sales'
+*/
+salesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: sales.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::sales
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:36
+* @route '/api/v1/reports/sales'
+*/
+salesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: sales.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+sales.form = salesForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
 * @see app/Http/Controllers/Cooperative/CooperativeReportController.php:50
 * @route '/api/v1/reports/npl-aging'
@@ -132,6 +206,43 @@ nplAging.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:50
+* @route '/api/v1/reports/npl-aging'
+*/
+const nplAgingForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: nplAging.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:50
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAgingForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: nplAging.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::nplAging
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:50
+* @route '/api/v1/reports/npl-aging'
+*/
+nplAgingForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: nplAging.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+nplAging.form = nplAgingForm
+
+/**
 * @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
 * @see app/Http/Controllers/Cooperative/CooperativeReportController.php:22
 * @route '/cooperative/reports'
@@ -174,6 +285,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:22
+* @route '/cooperative/reports'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:22
+* @route '/cooperative/reports'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\CooperativeReportController::index
+* @see app/Http/Controllers/Cooperative/CooperativeReportController.php:22
+* @route '/cooperative/reports'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 const CooperativeReportController = { summary, sales, nplAging, index }
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\Provider;
@@ -25,6 +26,8 @@ class GoogleSsoFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Cache::flush();
 
         Role::firstOrCreate(['name' => 'Anggota']);
         Role::firstOrCreate(['name' => 'Admin Koperasi']);

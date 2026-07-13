@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class RoleManagementTest extends TestCase
@@ -17,10 +18,12 @@ class RoleManagementTest extends TestCase
     {
         parent::setUp();
 
-        Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
-        Permission::create(['name' => 'users.manage', 'guard_name' => 'web']);
-        Permission::create(['name' => 'roles.manage', 'guard_name' => 'web']);
-        Permission::create(['name' => 'manage_roles', 'guard_name' => 'web']);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        Permission::firstOrCreate(['name' => 'users.view', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'users.manage', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'roles.manage', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'manage_roles', 'guard_name' => 'web']);
     }
 
     private function adminUser(): User

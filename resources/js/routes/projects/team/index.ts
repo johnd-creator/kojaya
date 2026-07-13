@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ProjectTeamController::availability
 * @see app/Http/Controllers/ProjectTeamController.php:18
@@ -68,6 +68,43 @@ availability.head = (args: { project: string | number | { id: string | number } 
 })
 
 /**
+* @see \App\Http\Controllers\ProjectTeamController::availability
+* @see app/Http/Controllers/ProjectTeamController.php:18
+* @route '/projects/{project}/team/availability'
+*/
+const availabilityForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: availability.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectTeamController::availability
+* @see app/Http/Controllers/ProjectTeamController.php:18
+* @route '/projects/{project}/team/availability'
+*/
+availabilityForm.get = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: availability.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectTeamController::availability
+* @see app/Http/Controllers/ProjectTeamController.php:18
+* @route '/projects/{project}/team/availability'
+*/
+availabilityForm.head = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: availability.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+availability.form = availabilityForm
+
+/**
 * @see \App\Http\Controllers\ProjectTeamController::bulkAssign
 * @see app/Http/Controllers/ProjectTeamController.php:119
 * @route '/projects/{project}/team/bulk-assign'
@@ -126,6 +163,28 @@ bulkAssign.post = (args: { project: string | number | { id: string | number } } 
 })
 
 /**
+* @see \App\Http\Controllers\ProjectTeamController::bulkAssign
+* @see app/Http/Controllers/ProjectTeamController.php:119
+* @route '/projects/{project}/team/bulk-assign'
+*/
+const bulkAssignForm = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: bulkAssign.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectTeamController::bulkAssign
+* @see app/Http/Controllers/ProjectTeamController.php:119
+* @route '/projects/{project}/team/bulk-assign'
+*/
+bulkAssignForm.post = (args: { project: string | number | { id: string | number } } | [project: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: bulkAssign.url(args, options),
+    method: 'post',
+})
+
+bulkAssign.form = bulkAssignForm
+
+/**
 * @see \App\Http\Controllers\ProjectTeamController::mobilization
 * @see app/Http/Controllers/ProjectTeamController.php:103
 * @route '/projects/{project}/team/{teamMember}/mobilization'
@@ -177,6 +236,28 @@ mobilization.post = (args: { project: string | number, teamMember: string | numb
     url: mobilization.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\ProjectTeamController::mobilization
+* @see app/Http/Controllers/ProjectTeamController.php:103
+* @route '/projects/{project}/team/{teamMember}/mobilization'
+*/
+const mobilizationForm = (args: { project: string | number, teamMember: string | number | { id: string | number } } | [project: string | number, teamMember: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: mobilization.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\ProjectTeamController::mobilization
+* @see app/Http/Controllers/ProjectTeamController.php:103
+* @route '/projects/{project}/team/{teamMember}/mobilization'
+*/
+mobilizationForm.post = (args: { project: string | number, teamMember: string | number | { id: string | number } } | [project: string | number, teamMember: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: mobilization.url(args, options),
+    method: 'post',
+})
+
+mobilization.form = mobilizationForm
 
 const team = {
     availability: Object.assign(availability, availability),

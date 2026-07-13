@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\MemberPortalController::submit
 * @see app/Http/Controllers/MemberPortalController.php:209
@@ -34,6 +34,28 @@ submit.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\MemberPortalController::submit
+* @see app/Http/Controllers/MemberPortalController.php:209
+* @route '/member/onboarding'
+*/
+const submitForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: submit.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::submit
+* @see app/Http/Controllers/MemberPortalController.php:209
+* @route '/member/onboarding'
+*/
+submitForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: submit.url(options),
+    method: 'post',
+})
+
+submit.form = submitForm
+
+/**
 * @see \App\Http\Controllers\MemberPortalController::steps
 * @see app/Http/Controllers/MemberPortalController.php:220
 * @route '/member/onboarding/steps'
@@ -66,6 +88,28 @@ steps.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: steps.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::steps
+* @see app/Http/Controllers/MemberPortalController.php:220
+* @route '/member/onboarding/steps'
+*/
+const stepsForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: steps.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\MemberPortalController::steps
+* @see app/Http/Controllers/MemberPortalController.php:220
+* @route '/member/onboarding/steps'
+*/
+stepsForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: steps.url(options),
+    method: 'post',
+})
+
+steps.form = stepsForm
 
 const onboarding = {
     submit: Object.assign(submit, submit),

@@ -176,6 +176,14 @@ class MemberCoffeeOrderController extends Controller
      */
     private function formatPendingOrder(MemberPaymentIntent $intent, array $items, array $charge): array
     {
+        $flattenedItems = array_map(function (array $item): array {
+            if (isset($item['customization']) && is_array($item['customization'])) {
+                return array_merge($item, $item['customization']);
+            }
+
+            return $item;
+        }, $items);
+
         return [
             'id' => 'intent:'.$intent->id,
             'payment_intent_id' => $intent->id,
@@ -206,8 +214,8 @@ class MemberCoffeeOrderController extends Controller
                 'expires_at' => $intent->expires_at?->toISOString(),
             ],
             'charge' => $charge,
-            'items' => $items,
-            'item' => $items[0]['product'] ?? null,
+            'items' => $flattenedItems,
+            'item' => $flattenedItems[0]['product'] ?? null,
             'customization' => [
                 'items' => $items,
             ],

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::index
 * @see app/Http/Controllers/Procurement/PurchaseOrderController.php:18
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::index
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:18
+* @route '/procurement/purchase-orders'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::index
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:18
+* @route '/procurement/purchase-orders'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::index
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:18
+* @route '/procurement/purchase-orders'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
@@ -100,6 +137,28 @@ fromPr.post = (args: { purchaseRequest: string | number | { id: string | number 
     url: fromPr.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
+* @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
+*/
+const fromPrForm = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: fromPr.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::fromPr
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:73
+* @route '/procurement/purchase-orders/from-pr/{purchaseRequest}'
+*/
+fromPrForm.post = (args: { purchaseRequest: string | number | { id: string | number } } | [purchaseRequest: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: fromPr.url(args, options),
+    method: 'post',
+})
+
+fromPr.form = fromPrForm
 
 /**
 * @see \App\Http\Controllers\Procurement\PurchaseOrderController::show
@@ -168,6 +227,43 @@ show.head = (args: { purchaseOrder: string | number | { id: string | number } } 
     url: show.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::show
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
+* @route '/procurement/purchase-orders/{purchaseOrder}'
+*/
+const showForm = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::show
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
+* @route '/procurement/purchase-orders/{purchaseOrder}'
+*/
+showForm.get = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Procurement\PurchaseOrderController::show
+* @see app/Http/Controllers/Procurement/PurchaseOrderController.php:44
+* @route '/procurement/purchase-orders/{purchaseOrder}'
+*/
+showForm.head = (args: { purchaseOrder: string | number | { id: string | number } } | [purchaseOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
 
 const pos = {
     index: Object.assign(index, index),

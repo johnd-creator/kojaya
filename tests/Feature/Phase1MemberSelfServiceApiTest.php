@@ -256,6 +256,8 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
     public function test_member_loan_application_is_idempotent_with_matching_key(): void
     {
+        \Illuminate\Support\Facades\Cache::flush();
+
         [$user, $member] = $this->memberUser();
         $loanType = LoanType::factory()->create(['is_active' => true]);
         $payload = [
@@ -268,13 +270,15 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
         Sanctum::actingAs($user, ['member:read', 'member:write']);
 
+        $idempotencyKey = 'loan-apply-'.\Illuminate\Support\Str::uuid()->toString();
+
         $firstLoanId = $this->postJson('/api/v1/member/loans', $payload, [
-            'Idempotency-Key' => 'loan-apply-key-001',
+            'Idempotency-Key' => $idempotencyKey,
         ])->assertCreated()
             ->json('data.id');
 
         $this->postJson('/api/v1/member/loans', $payload, [
-            'Idempotency-Key' => 'loan-apply-key-001',
+            'Idempotency-Key' => $idempotencyKey,
         ])->assertCreated()
             ->assertHeader('X-Idempotency-Replayed', 'true')
             ->assertJsonPath('data.id', $firstLoanId);
@@ -287,10 +291,14 @@ class Phase1MemberSelfServiceApiTest extends TestCase
 
     public function test_idempotency_key_rejects_different_payload_reuse(): void
     {
+        \Illuminate\Support\Facades\Cache::flush();
+
         [$user] = $this->memberUser();
         $loanType = LoanType::factory()->create(['is_active' => true]);
 
         Sanctum::actingAs($user, ['member:read', 'member:write']);
+
+        $idempotencyKey = 'loan-apply-'.\Illuminate\Support\Str::uuid()->toString();
 
         $this->postJson('/api/v1/member/loans', [
             'loan_type_id' => $loanType->id,
@@ -298,7 +306,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'term_months' => 6,
             'first_due_date' => now()->addMonth()->toDateString(),
         ], [
-            'Idempotency-Key' => 'loan-apply-key-002',
+            'Idempotency-Key' => $idempotencyKey,
         ])->assertCreated();
 
         $this->postJson('/api/v1/member/loans', [
@@ -307,7 +315,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'term_months' => 6,
             'first_due_date' => now()->addMonth()->toDateString(),
         ], [
-            'Idempotency-Key' => 'loan-apply-key-002',
+            'Idempotency-Key' => $idempotencyKey,
         ])->assertConflict()
             ->assertJsonPath('error_code', 'CONFLICT');
     }

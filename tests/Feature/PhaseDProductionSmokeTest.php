@@ -200,6 +200,8 @@ class PhaseDProductionSmokeTest extends TestCase
 
     public function test_member_loan_application_to_admin_review_smoke_flow(): void
     {
+        \Illuminate\Support\Facades\Cache::flush();
+
         Role::firstOrCreate(['name' => 'Anggota']);
         $memberUser = User::factory()->create([
             'organization_id' => $this->org->id,

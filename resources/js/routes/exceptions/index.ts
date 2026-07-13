@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\ExceptionReportController::index
 * @see app/Http/Controllers/ExceptionReportController.php:12
@@ -44,6 +44,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\ExceptionReportController::index
+* @see app/Http/Controllers/ExceptionReportController.php:12
+* @route '/exceptions'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::index
+* @see app/Http/Controllers/ExceptionReportController.php:12
+* @route '/exceptions'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::index
+* @see app/Http/Controllers/ExceptionReportController.php:12
+* @route '/exceptions'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\ExceptionReportController::data
 * @see app/Http/Controllers/ExceptionReportController.php:21
 * @route '/exceptions/data'
@@ -86,6 +123,43 @@ data.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: data.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::data
+* @see app/Http/Controllers/ExceptionReportController.php:21
+* @route '/exceptions/data'
+*/
+const dataForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: data.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::data
+* @see app/Http/Controllers/ExceptionReportController.php:21
+* @route '/exceptions/data'
+*/
+dataForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: data.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::data
+* @see app/Http/Controllers/ExceptionReportController.php:21
+* @route '/exceptions/data'
+*/
+dataForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: data.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+data.form = dataForm
 
 /**
 * @see \App\Http\Controllers\ExceptionReportController::module
@@ -148,6 +222,43 @@ module.head = (args: { module: string | number } | [module: string | number ] | 
     url: module.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::module
+* @see app/Http/Controllers/ExceptionReportController.php:28
+* @route '/exceptions/{module}'
+*/
+const moduleForm = (args: { module: string | number } | [module: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: module.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::module
+* @see app/Http/Controllers/ExceptionReportController.php:28
+* @route '/exceptions/{module}'
+*/
+moduleForm.get = (args: { module: string | number } | [module: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: module.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\ExceptionReportController::module
+* @see app/Http/Controllers/ExceptionReportController.php:28
+* @route '/exceptions/{module}'
+*/
+moduleForm.head = (args: { module: string | number } | [module: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: module.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+module.form = moduleForm
 
 const exceptions = {
     index: Object.assign(index, index),

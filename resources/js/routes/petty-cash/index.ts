@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 import transactions from './transactions'
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::index
@@ -45,6 +45,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\PettyCashAccountController::index
+* @see app/Http/Controllers/PettyCashAccountController.php:12
+* @route '/petty-cash'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::index
+* @see app/Http/Controllers/PettyCashAccountController.php:12
+* @route '/petty-cash'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::index
+* @see app/Http/Controllers/PettyCashAccountController.php:12
+* @route '/petty-cash'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
+
+/**
 * @see \App\Http\Controllers\PettyCashAccountController::create
 * @see app/Http/Controllers/PettyCashAccountController.php:0
 * @route '/petty-cash/create'
@@ -89,6 +126,43 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\PettyCashAccountController::create
+* @see app/Http/Controllers/PettyCashAccountController.php:0
+* @route '/petty-cash/create'
+*/
+const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::create
+* @see app/Http/Controllers/PettyCashAccountController.php:0
+* @route '/petty-cash/create'
+*/
+createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::create
+* @see app/Http/Controllers/PettyCashAccountController.php:0
+* @route '/petty-cash/create'
+*/
+createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+create.form = createForm
+
+/**
 * @see \App\Http\Controllers\PettyCashAccountController::store
 * @see app/Http/Controllers/PettyCashAccountController.php:28
 * @route '/petty-cash'
@@ -121,6 +195,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::store
+* @see app/Http/Controllers/PettyCashAccountController.php:28
+* @route '/petty-cash'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::store
+* @see app/Http/Controllers/PettyCashAccountController.php:28
+* @route '/petty-cash'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::show
@@ -185,6 +281,43 @@ show.head = (args: { petty_cash: string | number } | [petty_cash: string | numbe
 })
 
 /**
+* @see \App\Http\Controllers\PettyCashAccountController::show
+* @see app/Http/Controllers/PettyCashAccountController.php:38
+* @route '/petty-cash/{petty_cash}'
+*/
+const showForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::show
+* @see app/Http/Controllers/PettyCashAccountController.php:38
+* @route '/petty-cash/{petty_cash}'
+*/
+showForm.get = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::show
+* @see app/Http/Controllers/PettyCashAccountController.php:38
+* @route '/petty-cash/{petty_cash}'
+*/
+showForm.head = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\PettyCashAccountController::edit
 * @see app/Http/Controllers/PettyCashAccountController.php:0
 * @route '/petty-cash/{petty_cash}/edit'
@@ -245,6 +378,43 @@ edit.head = (args: { petty_cash: string | number } | [petty_cash: string | numbe
     url: edit.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::edit
+* @see app/Http/Controllers/PettyCashAccountController.php:0
+* @route '/petty-cash/{petty_cash}/edit'
+*/
+const editForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::edit
+* @see app/Http/Controllers/PettyCashAccountController.php:0
+* @route '/petty-cash/{petty_cash}/edit'
+*/
+editForm.get = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::edit
+* @see app/Http/Controllers/PettyCashAccountController.php:0
+* @route '/petty-cash/{petty_cash}/edit'
+*/
+editForm.head = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\PettyCashAccountController::update
@@ -309,6 +479,53 @@ update.patch = (args: { petty_cash: string | number } | [petty_cash: string | nu
 })
 
 /**
+* @see \App\Http\Controllers\PettyCashAccountController::update
+* @see app/Http/Controllers/PettyCashAccountController.php:50
+* @route '/petty-cash/{petty_cash}'
+*/
+const updateForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::update
+* @see app/Http/Controllers/PettyCashAccountController.php:50
+* @route '/petty-cash/{petty_cash}'
+*/
+updateForm.put = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::update
+* @see app/Http/Controllers/PettyCashAccountController.php:50
+* @route '/petty-cash/{petty_cash}'
+*/
+updateForm.patch = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
+
+/**
 * @see \App\Http\Controllers\PettyCashAccountController::destroy
 * @see app/Http/Controllers/PettyCashAccountController.php:62
 * @route '/petty-cash/{petty_cash}'
@@ -359,6 +576,38 @@ destroy.delete = (args: { petty_cash: string | number } | [petty_cash: string | 
     url: destroy.url(args, options),
     method: 'delete',
 })
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::destroy
+* @see app/Http/Controllers/PettyCashAccountController.php:62
+* @route '/petty-cash/{petty_cash}'
+*/
+const destroyForm = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PettyCashAccountController::destroy
+* @see app/Http/Controllers/PettyCashAccountController.php:62
+* @route '/petty-cash/{petty_cash}'
+*/
+destroyForm.delete = (args: { petty_cash: string | number } | [petty_cash: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+destroy.form = destroyForm
 
 const pettyCash = {
     index: Object.assign(index, index),

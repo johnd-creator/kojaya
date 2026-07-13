@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\PosApiController::products
 * @see app/Http/Controllers/Api/V1/PosApiController.php:16
@@ -44,6 +44,43 @@ products.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\PosApiController::products
+* @see app/Http/Controllers/Api/V1/PosApiController.php:16
+* @route '/api/v1/pos/products'
+*/
+const productsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: products.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\PosApiController::products
+* @see app/Http/Controllers/Api/V1/PosApiController.php:16
+* @route '/api/v1/pos/products'
+*/
+productsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: products.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\PosApiController::products
+* @see app/Http/Controllers/Api/V1/PosApiController.php:16
+* @route '/api/v1/pos/products'
+*/
+productsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: products.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+products.form = productsForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\PosApiController::store
 * @see app/Http/Controllers/Api/V1/PosApiController.php:37
 * @route '/api/v1/pos/transactions'
@@ -78,6 +115,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\PosApiController::store
+* @see app/Http/Controllers/Api/V1/PosApiController.php:37
+* @route '/api/v1/pos/transactions'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\PosApiController::store
+* @see app/Http/Controllers/Api/V1/PosApiController.php:37
+* @route '/api/v1/pos/transactions'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\PosApiController::processReturn
 * @see app/Http/Controllers/Api/V1/PosApiController.php:46
 * @route '/api/v1/pos/returns'
@@ -110,6 +169,28 @@ processReturn.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
     url: processReturn.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\PosApiController::processReturn
+* @see app/Http/Controllers/Api/V1/PosApiController.php:46
+* @route '/api/v1/pos/returns'
+*/
+const processReturnForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: processReturn.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\PosApiController::processReturn
+* @see app/Http/Controllers/Api/V1/PosApiController.php:46
+* @route '/api/v1/pos/returns'
+*/
+processReturnForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: processReturn.url(options),
+    method: 'post',
+})
+
+processReturn.form = processReturnForm
 
 const PosApiController = { products, store, processReturn }
 

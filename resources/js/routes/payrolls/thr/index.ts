@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\PayrollController::preview
 * @see app/Http/Controllers/PayrollController.php:148
@@ -34,6 +34,28 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\PayrollController::preview
+* @see app/Http/Controllers/PayrollController.php:148
+* @route '/payrolls/thr/preview'
+*/
+const previewForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: preview.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PayrollController::preview
+* @see app/Http/Controllers/PayrollController.php:148
+* @route '/payrolls/thr/preview'
+*/
+previewForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: preview.url(options),
+    method: 'post',
+})
+
+preview.form = previewForm
+
+/**
 * @see \App\Http\Controllers\PayrollController::generate
 * @see app/Http/Controllers/PayrollController.php:166
 * @route '/payrolls/thr/generate'
@@ -66,6 +88,28 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: generate.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\PayrollController::generate
+* @see app/Http/Controllers/PayrollController.php:166
+* @route '/payrolls/thr/generate'
+*/
+const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: generate.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\PayrollController::generate
+* @see app/Http/Controllers/PayrollController.php:166
+* @route '/payrolls/thr/generate'
+*/
+generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: generate.url(options),
+    method: 'post',
+})
+
+generate.form = generateForm
 
 const thr = {
     preview: Object.assign(preview, preview),

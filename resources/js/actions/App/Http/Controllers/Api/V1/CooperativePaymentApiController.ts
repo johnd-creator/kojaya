@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::store
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:19
@@ -34,6 +34,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::store
+* @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:19
+* @route '/api/v1/dues/payments'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::store
+* @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:19
+* @route '/api/v1/dues/payments'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
+
+/**
 * @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::batch
 * @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:49
 * @route '/api/v1/dues/payments/batch'
@@ -66,6 +88,28 @@ batch.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: batch.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::batch
+* @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:49
+* @route '/api/v1/dues/payments/batch'
+*/
+const batchForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: batch.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::batch
+* @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:49
+* @route '/api/v1/dues/payments/batch'
+*/
+batchForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: batch.url(options),
+    method: 'post',
+})
+
+batch.form = batchForm
 
 /**
 * @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::approve
@@ -124,6 +168,28 @@ approve.post = (args: { payment: string | number | { id: string | number } } | [
     url: approve.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::approve
+* @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:41
+* @route '/api/v1/dues/payments/{payment}/approve'
+*/
+const approveForm = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: approve.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Api\V1\CooperativePaymentApiController::approve
+* @see app/Http/Controllers/Api/V1/CooperativePaymentApiController.php:41
+* @route '/api/v1/dues/payments/{payment}/approve'
+*/
+approveForm.post = (args: { payment: string | number | { id: string | number } } | [payment: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: approve.url(args, options),
+    method: 'post',
+})
+
+approve.form = approveForm
 
 const CooperativePaymentApiController = { store, batch, approve }
 

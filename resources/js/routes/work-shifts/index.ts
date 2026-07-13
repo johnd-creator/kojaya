@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\WorkShiftController::index
 * @see app/Http/Controllers/WorkShiftController.php:12
@@ -42,6 +42,43 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: index.url(options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::index
+* @see app/Http/Controllers/WorkShiftController.php:12
+* @route '/work-shifts'
+*/
+const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::index
+* @see app/Http/Controllers/WorkShiftController.php:12
+* @route '/work-shifts'
+*/
+indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::index
+* @see app/Http/Controllers/WorkShiftController.php:12
+* @route '/work-shifts'
+*/
+indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: index.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::create
@@ -88,6 +125,43 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
+* @see \App\Http\Controllers\WorkShiftController::create
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/create'
+*/
+const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::create
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/create'
+*/
+createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::create
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/create'
+*/
+createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: create.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+create.form = createForm
+
+/**
 * @see \App\Http\Controllers\WorkShiftController::store
 * @see app/Http/Controllers/WorkShiftController.php:23
 * @route '/work-shifts'
@@ -120,6 +194,28 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: store.url(options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::store
+* @see app/Http/Controllers/WorkShiftController.php:23
+* @route '/work-shifts'
+*/
+const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::store
+* @see app/Http/Controllers/WorkShiftController.php:23
+* @route '/work-shifts'
+*/
+storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: store.url(options),
+    method: 'post',
+})
+
+store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::show
@@ -184,6 +280,43 @@ show.head = (args: { work_shift: string | number } | [work_shift: string | numbe
 })
 
 /**
+* @see \App\Http\Controllers\WorkShiftController::show
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}'
+*/
+const showForm = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::show
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}'
+*/
+showForm.get = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::show
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}'
+*/
+showForm.head = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: show.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+show.form = showForm
+
+/**
 * @see \App\Http\Controllers\WorkShiftController::edit
 * @see app/Http/Controllers/WorkShiftController.php:0
 * @route '/work-shifts/{work_shift}/edit'
@@ -244,6 +377,43 @@ edit.head = (args: { work_shift: string | number } | [work_shift: string | numbe
     url: edit.url(args, options),
     method: 'head',
 })
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::edit
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}/edit'
+*/
+const editForm = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::edit
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}/edit'
+*/
+editForm.get = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::edit
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}/edit'
+*/
+editForm.head = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: edit.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+edit.form = editForm
 
 /**
 * @see \App\Http\Controllers\WorkShiftController::update
@@ -308,6 +478,53 @@ update.patch = (args: { work_shift: string | number } | [work_shift: string | nu
 })
 
 /**
+* @see \App\Http\Controllers\WorkShiftController::update
+* @see app/Http/Controllers/WorkShiftController.php:32
+* @route '/work-shifts/{work_shift}'
+*/
+const updateForm = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::update
+* @see app/Http/Controllers/WorkShiftController.php:32
+* @route '/work-shifts/{work_shift}'
+*/
+updateForm.put = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PUT',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::update
+* @see app/Http/Controllers/WorkShiftController.php:32
+* @route '/work-shifts/{work_shift}'
+*/
+updateForm.patch = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: update.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'PATCH',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+update.form = updateForm
+
+/**
 * @see \App\Http\Controllers\WorkShiftController::destroy
 * @see app/Http/Controllers/WorkShiftController.php:0
 * @route '/work-shifts/{work_shift}'
@@ -358,6 +575,38 @@ destroy.delete = (args: { work_shift: string | number } | [work_shift: string | 
     url: destroy.url(args, options),
     method: 'delete',
 })
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::destroy
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}'
+*/
+const destroyForm = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\WorkShiftController::destroy
+* @see app/Http/Controllers/WorkShiftController.php:0
+* @route '/work-shifts/{work_shift}'
+*/
+destroyForm.delete = (args: { work_shift: string | number } | [work_shift: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: destroy.url(args, {
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'DELETE',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'post',
+})
+
+destroy.form = destroyForm
 
 const workShifts = {
     index: Object.assign(index, index),

@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, applyUrlDefaults } from './../../../../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
 * @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:79
@@ -50,6 +50,28 @@ complete.post = (args: { period: string | number } | [period: string | number ] 
     url: complete.url(args, options),
     method: 'post',
 })
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:79
+* @route '/cooperative/operator/closing/{period}/steps'
+*/
+const completeForm = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: complete.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Cooperative\OperatorProcedureController::complete
+* @see app/Http/Controllers/Cooperative/OperatorProcedureController.php:79
+* @route '/cooperative/operator/closing/{period}/steps'
+*/
+completeForm.post = (args: { period: string | number } | [period: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: complete.url(args, options),
+    method: 'post',
+})
+
+complete.form = completeForm
 
 const steps = {
     complete: Object.assign(complete, complete),

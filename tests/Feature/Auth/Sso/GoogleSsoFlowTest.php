@@ -7,6 +7,8 @@ use App\Models\CooperativeMember;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Firebase\JWT\JWT;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request as Psr7Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 use Mockery;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -139,6 +142,47 @@ class GoogleSsoFlowTest extends TestCase
             ->assertSessionHasErrors('sso');
 
         $this->assertGuest();
+    }
+
+    public function test_callback_logs_exception_class_when_provider_throws_invalid_state(): void
+    {
+        $driver = Mockery::mock(Provider::class);
+        $driver->shouldReceive('user')->andThrow(new InvalidStateException);
+        Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
+
+        $this->assertGuest();
+
+        $audit = AuditLog::query()->where('action', 'sso.google.login_failed')->latest('id')->first();
+        $this->assertNotNull($audit, 'Expected an SSO failure audit log entry.');
+        $this->assertSame('callback_failed', $audit->new_values['reason'] ?? null);
+        $this->assertStringContainsString('InvalidStateException', $audit->new_values['exception'] ?? '');
+        $this->assertSame('(empty message)', $audit->new_values['message'] ?? null);
+    }
+
+    public function test_callback_handles_provider_connection_timeout_gracefully(): void
+    {
+        $psr7Request = new Psr7Request('POST', 'https://oauth2.googleapis.com/token');
+        $connectException = new ConnectException('cURL error 28: Operation timed out', $psr7Request);
+
+        $driver = Mockery::mock(Provider::class);
+        $driver->shouldReceive('user')->andThrow($connectException);
+        Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
+
+        $this->assertGuest();
+
+        $audit = AuditLog::query()->where('action', 'sso.google.login_failed')->latest('id')->first();
+        $this->assertNotNull($audit, 'Expected an SSO failure audit log entry.');
+        $this->assertStringContainsString('ConnectException', $audit->new_values['exception'] ?? '');
+        $this->assertStringContainsString('timed out', $audit->new_values['message'] ?? '');
+        $this->assertStringContainsString('oauth2.googleapis.com/token', $audit->new_values['guzzle_request'] ?? '');
     }
 
     public function test_callback_accepts_email_inside_allowed_hosted_domains(): void

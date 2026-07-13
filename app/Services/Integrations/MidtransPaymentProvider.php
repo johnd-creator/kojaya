@@ -87,6 +87,13 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
             $checkoutUrl = $body['redirect_url'] ?? null;
         }
 
+        if (! $this->hasUsablePresentation($channel, $qrString, $checkoutUrl, $body)) {
+            throw ProviderChargeException::unknown(
+                'Provider returned 2xx with empty or malformed response for order '.$orderId.': no usable payment presentation.',
+                $response->status(),
+            );
+        }
+
         return [
             'provider' => 'midtrans',
             'reference' => $orderId,
@@ -167,6 +174,17 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
         if (! $checkoutUrl && ! $qrString) {
             $checkoutUrl = $body['redirect_url'] ?? null;
+        }
+
+        // Validate that the 2xx response actually contains a usable payment
+        // presentation. An empty or malformed body on HTTP 2xx is ambiguous —
+        // the charge may have been created server-side without returning
+        // actionable data. Surface as Unknown so reconciliation can resolve it.
+        if (! $this->hasUsablePresentation($channel, $qrString, $checkoutUrl, $body)) {
+            throw ProviderChargeException::unknown(
+                'Provider returned 2xx with empty or malformed response for order '.$orderId.': no usable payment presentation.',
+                $response->status(),
+            );
         }
 
         return [
@@ -488,6 +506,70 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     public function isConfigured(): bool
     {
         return $this->serverKey() !== '';
+    }
+
+    /**
+     * Validate that the 2xx response contains a usable payment presentation.
+     *
+     * For QRIS: must have qr_string, or a generate-qr-code/generate-qr-code-v2
+     * action URL, or a redirect_url.
+     * For E_WALLET: must have a deeplink-redirect or activate-deeplink action,
+     * or a redirect_url.
+     * For VA/TRANSFER: must have va_numbers or permata_va_number.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    private function hasUsablePresentation(string $channel, ?string $qrString, ?string $checkoutUrl, array $body): bool
+    {
+        if ($qrString !== null && $qrString !== '') {
+            return true;
+        }
+
+        if ($checkoutUrl !== null && $checkoutUrl !== '') {
+            return true;
+        }
+
+        if ($channel === 'QRIS') {
+            $actions = $body['actions'] ?? [];
+            if (is_array($actions)) {
+                foreach (['generate-qr-code-v2', 'generate-qr-code'] as $name) {
+                    $action = collect($actions)->firstWhere('name', $name);
+                    if (is_array($action) && ! empty($action['url'])) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        if ($channel === 'E_WALLET') {
+            $actions = $body['actions'] ?? [];
+            if (is_array($actions)) {
+                foreach (['deeplink-redirect', 'activate-deeplink'] as $name) {
+                    $action = collect($actions)->firstWhere('name', $name);
+                    if (is_array($action) && ! empty($action['url'])) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        if (in_array($channel, ['VA', 'TRANSFER'], true)) {
+            $vaNumbers = $body['va_numbers'] ?? [];
+            if (is_array($vaNumbers) && $vaNumbers !== []) {
+                return true;
+            }
+
+            return ! empty($body['permata_va_number'])
+                || ! empty($body['bill_key'])
+                || ! empty($body['biller_code']);
+        }
+
+        // For unknown channels, require at least a redirect_url or non-empty body
+        return ! empty($body['redirect_url']) || $body !== [];
     }
 
     /**

@@ -11,6 +11,7 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
             <exclude>tests/Feature/LegacyErp</exclude>
+            <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>

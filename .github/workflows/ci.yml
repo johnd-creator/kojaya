@@ -58,6 +58,8 @@ jobs:
       - run: php artisan key:generate
       - run: npm run build
       - run: php artisan wayfinder:generate
+        env:
+          APP_ENV: local
       - run: git diff --exit-code resources/js/actions resources/js/routes
 
   unit-feature-tests:

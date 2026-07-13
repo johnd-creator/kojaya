@@ -84,7 +84,28 @@ class PaymentIntentChargeService
             return $charge;
         }
 
-        // Stale or rejected — persist provider evidence on the attempt
+        // Late response for the same charge — already committed or reconciled.
+        // No orphan, no incident, no duplicate.
+        if (in_array($result, [ChargeCommitResult::AlreadyCommitted, ChargeCommitResult::ReconciledSameAttempt], true)) {
+            Log::info('Late provider response for same charge, discarded gracefully', [
+                'intent_id' => $intent->id,
+                'attempt' => $attempt,
+                'result' => $result->value,
+            ]);
+
+            $refreshed = $intent->refresh();
+
+            $existingCharge = $this->extractReusableCharge($refreshed);
+
+            return $existingCharge ?? $this->reconciliationRequiredResponse($refreshed);
+        }
+
+        // Terminal state — no charge to persist
+        if ($result === ChargeCommitResult::Terminal) {
+            return $this->reconciliationRequiredResponse($intent->refresh());
+        }
+
+        // Genuinely stale or invalid — persist provider evidence on the attempt
         // and create a reconciliation incident for orphaned charges.
         if ($charge['reference'] ?? null) {
             $this->markAttemptOrphaned($intent->id, $attempt, $charge);
@@ -215,6 +236,14 @@ class PaymentIntentChargeService
     /**
      * Transaction B: verify charge_attempt === expectedAttempt before saving.
      *
+     * Late-response rules:
+     *   1. If attempt is the same but intent has already moved to PENDING
+     *      with the SAME provider reference → AlreadyCommitted/ReconciledSameAttempt.
+     *      No orphan, no incident, no overwrite.
+     *   2. If attempt is the same but intent has a DIFFERENT provider reference
+     *      → StaleAttempt (orphan + incident for genuinely different charge).
+     *   3. Only authoritative response may change gateway payload.
+     *
      * @param  array<string, mixed>  $charge
      */
     private function commitTransactionB(int $intentId, int $expectedAttempt, array $charge): ChargeCommitResult
@@ -226,6 +255,15 @@ class PaymentIntentChargeService
 
             // Attempt fencing: only commit if this is still our attempt
             if ((int) $locked->charge_attempt !== $expectedAttempt) {
+                $incomingRef = (string) ($charge['reference'] ?? '');
+                $existingRef = (string) $locked->gateway_reference;
+
+                // If the incoming reference matches an existing reference,
+                // this is a duplicate response for the same charge — not an orphan.
+                if ($incomingRef !== '' && $incomingRef === $existingRef) {
+                    return ChargeCommitResult::AlreadyCommitted;
+                }
+
                 Log::warning('Charge attempt fencing: stale attempt response discarded', [
                     'intent_id' => $intentId,
                     'expected_attempt' => $expectedAttempt,
@@ -241,7 +279,18 @@ class PaymentIntentChargeService
                 return ChargeCommitResult::Terminal;
             }
 
+            // Late response: attempt matches but intent is no longer CHARGE_CREATING.
+            // Recovery may have already linked this charge.
             if ($status !== 'CHARGE_CREATING') {
+                $incomingRef = (string) ($charge['reference'] ?? '');
+                $existingRef = (string) $locked->gateway_reference;
+
+                // Same reference → recovery already linked it. No-op.
+                if ($incomingRef !== '' && $incomingRef === $existingRef) {
+                    return ChargeCommitResult::ReconciledSameAttempt;
+                }
+
+                // Different reference → genuinely stale/different charge.
                 return ChargeCommitResult::StaleAttempt;
             }
 

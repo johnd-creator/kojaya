@@ -1,16 +1,37 @@
 <?php
 
+$appKey = (string) env('APP_KEY', '');
+if (str_starts_with($appKey, 'base64:')) {
+    $appKey = base64_decode(substr($appKey, 7), true) ?: '';
+}
+
+$localFallbackKey = static function (string $purpose) use ($appKey): string {
+    if ($appKey === '') {
+        return '';
+    }
+
+    return 'base64:'.base64_encode(hash_hmac('sha256', $purpose, $appKey, true));
+};
+
+$isProduction = env('APP_ENV') === 'production';
+$encryptionKeyV1 = env('PII_ENCRYPTION_KEY_V1', $isProduction ? '' : $localFallbackKey('kojaya-pii-encryption-v1'));
+$legacyEncryptionKey = env('PII_ENCRYPTION_LEGACY_KEY', $isProduction ? '' : ($appKey === '' ? '' : 'base64:'.base64_encode($appKey)));
+$blindIndexKeyV1 = env('PII_BLIND_INDEX_KEY_V1', $isProduction ? '' : $localFallbackKey('kojaya-pii-blind-index-v1'));
+$encryptionKeys = ['v1' => $encryptionKeyV1];
+$blindIndexKeys = ['v1' => $blindIndexKeyV1];
+
+if (($encryptionKeyV2 = env('PII_ENCRYPTION_KEY_V2')) !== null && $encryptionKeyV2 !== '') {
+    $encryptionKeys['v2'] = $encryptionKeyV2;
+}
+
+if (($blindIndexKeyV2 = env('PII_BLIND_INDEX_KEY_V2')) !== null && $blindIndexKeyV2 !== '') {
+    $blindIndexKeys['v2'] = $blindIndexKeyV2;
+}
+
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | PII blind-index key
-    |--------------------------------------------------------------------------
-    |
-    | Keep this key in the deployment secret manager. The application key is
-    | used only as a local-development fallback so tests and fresh installs do
-    | not silently produce an unusable index.
-    |
-    */
-    'blind_index_key' => env('PII_BLIND_INDEX_KEY', env('APP_KEY', '')),
-    'blind_index_version' => env('PII_BLIND_INDEX_VERSION', 'v1'),
+    'encryption_keys' => $encryptionKeys,
+    'encryption_current_version' => env('PII_ENCRYPTION_CURRENT_VERSION', 'v1'),
+    'legacy_encryption_key' => $legacyEncryptionKey !== '' ? $legacyEncryptionKey : null,
+    'blind_index_keys' => $blindIndexKeys,
+    'blind_index_current_version' => env('PII_BLIND_INDEX_CURRENT_VERSION', 'v1'),
 ];

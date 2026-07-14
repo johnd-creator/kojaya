@@ -58,6 +58,7 @@ use App\Policies\WorkOrderPolicy;
 use App\Services\Cooperative\LoanService;
 use App\Services\Integrations\MidtransPaymentProvider;
 use App\Services\Integrations\PaymentGatewayProvider;
+use App\Services\Security\PiiCryptoService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -82,10 +83,18 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LoanServiceContract::class, LoanService::class);
         $this->app->bind(PaymentGatewayProviderContract::class, MidtransPaymentProvider::class);
         $this->app->bind(PaymentGatewayProvider::class, MidtransPaymentProvider::class);
+        $this->app->singleton(PiiCryptoService::class, fn (): PiiCryptoService => new PiiCryptoService(
+            config('security.encryption_keys', []),
+            (string) config('security.encryption_current_version', 'v1'),
+            config('security.blind_index_keys', []),
+            (string) config('security.blind_index_current_version', 'v1'),
+            config('security.legacy_encryption_key'),
+        ));
     }
 
     public function boot(): void
     {
+        $this->app->make(PiiCryptoService::class);
         $this->configureDefaults();
         $this->registerPolicies();
         $this->registerRateLimiters();

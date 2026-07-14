@@ -110,10 +110,10 @@ class MemberExportAuthorizationTest extends TestCase
         $row = $scoped->query()->first();
         $mapped = $scoped->map($row);
 
-        // NPWP at position 4, No Rekening at position 10
-        $this->assertNotEquals('12.345.678.9-012.000', $mapped[4]);
-        $this->assertNotEquals('1234567890', $mapped[10]);
-        $this->assertStringEndsWith('7890', $mapped[10]);
+        // NPWP at position 5, No Rekening at position 11
+        $this->assertNotEquals('12.345.678.9-012.000', $mapped[5]);
+        $this->assertNotEquals('1234567890', $mapped[11]);
+        $this->assertStringEndsWith('7890', $mapped[11]);
     }
 
     public function test_actual_export_content_is_scoped_to_the_requested_organization(): void
@@ -209,5 +209,39 @@ class MemberExportAuthorizationTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         OrganizationVisibility::organization('');
+    }
+
+    public function test_full_pii_export_requires_dedicated_permission(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.export', ['include_pii' => 1, 'reason' => 'Audit']))
+            ->assertForbidden();
+    }
+
+    public function test_full_pii_export_requires_reason_and_is_audited(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', ['include_pii' => 1]))
+            ->assertSessionHasErrors('reason');
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', [
+                'include_pii' => 1,
+                'reason' => 'Verifikasi bisnis.',
+            ]))
+            ->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'member.pii.exported',
+            'reason' => 'Verifikasi bisnis.',
+        ]);
     }
 }

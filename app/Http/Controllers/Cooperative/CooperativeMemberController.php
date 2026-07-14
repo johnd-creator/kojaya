@@ -6,6 +6,7 @@ use App\Contracts\OrganizationScopedQueryService;
 use App\Exports\AnggotaExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
+use App\Http\Requests\Cooperative\MemberExportRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
@@ -24,6 +25,8 @@ use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -388,29 +391,54 @@ class CooperativeMemberController extends Controller
     }
 
     public function export(
-        Request $request,
+        MemberExportRequest $request,
         OrganizationScopedQueryService $scopeService,
         AuditLogService $audit,
     ): BinaryFileResponse {
         $this->authorize('export', CooperativeMember::class);
         $visibility = $scopeService->visibilityFor($request->user());
+        $includePii = $request->boolean('include_pii');
+
+        if ($includePii) {
+            $this->authorize('exportSensitive', CooperativeMember::class);
+        }
+
+        $filters = $request->only(['search', 'status', 'jenis_anggota', 'kategori']);
+        $export = new AnggotaExport($filters, $visibility, $includePii);
+
+        if (! $includePii) {
+            $audit->log('member.pii.exported', 'cooperative.member', null, [
+                'new' => [
+                    'filters' => $filters,
+                    'scope' => $visibility->global ? 'global' : 'organization',
+                    'organization_id' => $visibility->organizationId,
+                    'masked' => true,
+                ],
+                'reason' => 'Cooperative member masked export requested.',
+            ]);
+
+            return Excel::download($export, 'daftar-anggota.xlsx');
+        }
+
+        $path = 'tmp/member-exports/'.Str::uuid().'.xlsx';
+        if (! Excel::store($export, $path, 'local')) {
+            throw new \RuntimeException('Sensitive member export could not be created.');
+        }
 
         $audit->log('member.pii.exported', 'cooperative.member', null, [
             'new' => [
-                'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
+                'filters' => $filters,
                 'scope' => $visibility->global ? 'global' : 'organization',
                 'organization_id' => $visibility->organizationId,
+                'masked' => false,
+                'fields' => ['identity_number', 'npwp', 'no_rekening'],
             ],
-            'reason' => 'Cooperative member export requested.',
+            'reason' => (string) $request->validated('reason'),
         ]);
 
-        return Excel::download(
-            new AnggotaExport(
-                $request->only(['search', 'status', 'jenis_anggota', 'kategori']),
-                $visibility,
-            ),
-            'daftar-anggota.xlsx'
-        );
+        return response()
+            ->download(Storage::disk('local')->path($path), 'daftar-anggota-sensitive.xlsx')
+            ->deleteFileAfterSend(true);
     }
 
     private function canViewAllMembers(Request $request): bool

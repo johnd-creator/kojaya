@@ -37,8 +37,6 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::get('/version', \App\Http\Controllers\Api\VersionController::class)->middleware('throttle:api');
-
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware(['auth:sanctum', 'ability:profile:read', 'throttle:api']);

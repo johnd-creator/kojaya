@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cooperative;
 
 use App\Contracts\OrganizationScopedQueryService;
+use App\Enums\PermissionEnum;
 use App\Exports\AnggotaExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
@@ -38,8 +39,10 @@ class CooperativeMemberController extends Controller
         Request $request,
         OrganizationScopedQueryService $scopeService,
         CooperativeMemberPageDataService $memberPageData,
+        AuditLogService $audit,
     ): Response {
         $this->authorize('viewAny', CooperativeMember::class);
+        $visibility = $scopeService->visibilityFor($request->user());
 
         $scopedQuery = CooperativeMember::query()
             ->with('organization')
@@ -49,10 +52,12 @@ class CooperativeMemberController extends Controller
         $scopeService->scopeVisibleTo($scopedQuery, $request->user());
 
         $query = $scopedQuery;
+        $sensitiveSearchUsed = false;
+        $canSearchSensitive = $request->user()?->can(PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value) ?? false;
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
-            $query->where(function ($query) use ($search): void {
+            $query->where(function ($query) use ($search, $canSearchSensitive, &$sensitiveSearchUsed): void {
                 $query->where('no_anggota', 'like', "%{$search}%")
                     ->orWhere('member_no', 'like', "%{$search}%")
                     ->orWhere('nama_anggota', 'like', "%{$search}%")
@@ -60,10 +65,19 @@ class CooperativeMemberController extends Controller
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('no_telp', 'like', "%{$search}%");
 
-                $identityIndex = CooperativeMember::blindIndexFor('identity_number', $search);
-                $npwpIndex = CooperativeMember::blindIndexFor('npwp', $search);
-                $query->when($identityIndex, fn ($query) => $query->orWhere('identity_number_bidx', $identityIndex))
-                    ->when($npwpIndex, fn ($query) => $query->orWhere('npwp_bidx', $npwpIndex));
+                if (! $canSearchSensitive) {
+                    return;
+                }
+
+                foreach (['identity_number', 'npwp'] as $field) {
+                    $indexes = CooperativeMember::blindIndexesFor($field, $search);
+                    if ($indexes === []) {
+                        continue;
+                    }
+
+                    $sensitiveSearchUsed = true;
+                    $query->orWhereIn($field.'_bidx', array_values($indexes));
+                }
             });
         }
 
@@ -88,10 +102,26 @@ class CooperativeMemberController extends Controller
         $statsQuery = CooperativeMember::query();
         $scopeService->scopeVisibleTo($statsQuery, $request->user());
 
+        $members = $query->orderBy('no_anggota')->paginate(15)->through(
+            fn (CooperativeMember $member): array => $memberPageData->list($member),
+        )->withQueryString();
+
+        if ($sensitiveSearchUsed) {
+            $audit->log('member.pii.searched', 'cooperative.member', null, [
+                'new' => [
+                    'search_used' => true,
+                    'search_mode' => 'exact_sensitive',
+                    'scope' => $visibility->global ? 'global' : 'organization',
+                    'organization_id' => $visibility->organizationId,
+                    'include_pii' => false,
+                    'record_count' => $members->total(),
+                ],
+                'reason' => 'Sensitive member exact search performed.',
+            ]);
+        }
+
         return Inertia::render('Cooperative/Members/Index', [
-            'members' => $query->orderBy('no_anggota')->paginate(15)->through(
-                fn (CooperativeMember $member): array => $memberPageData->list($member),
-            )->withQueryString(),
+            'members' => $members,
             'filters' => $request->only(['search', 'status', 'jenis_anggota', 'kategori', 'validation_status']),
             'options' => $this->options(),
             'stats' => Inertia::defer(function () use ($statsQuery): array {
@@ -404,14 +434,27 @@ class CooperativeMemberController extends Controller
         }
 
         $filters = $request->only(['search', 'status', 'jenis_anggota', 'kategori']);
-        $export = new AnggotaExport($filters, $visibility, $includePii);
+        $canSearchSensitive = $request->user()?->can(PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value) ?? false;
+        $export = new AnggotaExport($filters, $visibility, $includePii, $canSearchSensitive);
+        $search = (string) ($filters['search'] ?? '');
+        $sensitiveSearchUsed = $canSearchSensitive && (
+            CooperativeMember::blindIndexesFor('identity_number', $search) !== []
+            || CooperativeMember::blindIndexesFor('npwp', $search) !== []
+        );
+        $auditMetadata = [
+            'search_used' => filled($search),
+            'search_mode' => $sensitiveSearchUsed ? 'exact_sensitive' : 'non_sensitive',
+            'scope' => $visibility->global ? 'global' : 'organization',
+            'organization_id' => $visibility->organizationId,
+            'include_pii' => $includePii,
+            'requested_fields' => ['identity_number', 'npwp', 'no_rekening'],
+            'record_count' => $export->query()->count(),
+        ];
 
         if (! $includePii) {
             $audit->log('member.pii.exported', 'cooperative.member', null, [
                 'new' => [
-                    'filters' => $filters,
-                    'scope' => $visibility->global ? 'global' : 'organization',
-                    'organization_id' => $visibility->organizationId,
+                    ...$auditMetadata,
                     'masked' => true,
                 ],
                 'reason' => 'Cooperative member masked export requested.',
@@ -427,18 +470,24 @@ class CooperativeMemberController extends Controller
 
         $audit->log('member.pii.exported', 'cooperative.member', null, [
             'new' => [
-                'filters' => $filters,
-                'scope' => $visibility->global ? 'global' : 'organization',
-                'organization_id' => $visibility->organizationId,
+                ...$auditMetadata,
                 'masked' => false,
-                'fields' => ['identity_number', 'npwp', 'no_rekening'],
             ],
-            'reason' => (string) $request->validated('reason'),
+            'reason' => $this->safeExportReason((string) $request->validated('reason')),
         ]);
 
         return response()
             ->download(Storage::disk('local')->path($path), 'daftar-anggota-sensitive.xlsx')
             ->deleteFileAfterSend(true);
+    }
+
+    private function safeExportReason(string $reason): string
+    {
+        $digits = preg_replace('/\D+/', '', $reason) ?? '';
+
+        return strlen($digits) >= 8
+            ? 'Sensitive export reason supplied.'
+            : $reason;
     }
 
     private function canViewAllMembers(Request $request): bool
@@ -479,7 +528,7 @@ class CooperativeMemberController extends Controller
             'no_telp' => $data['no_telp'] ?? $data['phone'] ?? null,
             'phone' => $data['no_telp'] ?? $data['phone'] ?? null,
             'joined_at' => $data['tanggal_aktif'],
-            'no_rekening' => null,
+            'no_rekening' => $data['no_rekening'] ?? null,
         ];
     }
 

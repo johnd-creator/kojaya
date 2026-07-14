@@ -15,6 +15,7 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
         private readonly array $filters,
         private readonly OrganizationVisibility $visibility,
         private readonly bool $includeSensitiveData = false,
+        private readonly bool $allowSensitiveSearch = false,
     ) {}
 
     public function query(): Builder
@@ -33,8 +34,16 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
                     ->orWhere('name', 'like', "%{$search}%")
                     ->orWhere('no_telp', 'like', "%{$search}%");
 
-                $npwpIndex = CooperativeMember::blindIndexFor('npwp', $search);
-                $query->when($npwpIndex, fn (Builder $query) => $query->orWhere('npwp_bidx', $npwpIndex));
+                if (! $this->allowSensitiveSearch) {
+                    return;
+                }
+
+                foreach (['identity_number', 'npwp'] as $field) {
+                    $indexes = CooperativeMember::blindIndexesFor($field, $search);
+                    if ($indexes !== []) {
+                        $query->orWhereIn($field.'_bidx', array_values($indexes));
+                    }
+                }
             });
         }
 

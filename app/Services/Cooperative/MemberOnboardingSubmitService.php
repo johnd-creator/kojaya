@@ -30,20 +30,18 @@ class MemberOnboardingSubmitService
         }
 
         return DB::transaction(function () use ($member, $data, $actor): CooperativeMember {
-            $member->forceFill([
+            $memberAttributes = [
                 'name' => $data['name'],
                 'nama_anggota' => $data['name'],
                 'phone' => $data['phone'],
                 'no_telp' => $data['phone'],
                 'address' => $data['address'],
                 'identity_number' => $data['identity_number'],
-                'npwp' => $data['npwp'] ?? null,
                 'jenis_kelamin' => $data['jenis_kelamin'],
                 'kategori' => $data['kategori'],
                 'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
                 'tempat_lahir' => $data['tempat_lahir'] ?? null,
                 'pekerjaan' => $data['pekerjaan'] ?? null,
-                'no_rekening' => $data['no_rekening'] ?? null,
                 'nama_bank' => $data['nama_bank'] ?? null,
                 'nama_pemilik_rekening' => $data['nama_pemilik_rekening'] ?? null,
                 'profile_completed_at' => Carbon::now(),
@@ -52,7 +50,17 @@ class MemberOnboardingSubmitService
                 'status' => $member->status === CooperativeMember::VALIDATION_ACTIVE
                     ? CooperativeMember::VALIDATION_ACTIVE
                     : CooperativeMember::VALIDATION_PENDING,
-            ])->save();
+            ];
+
+            if (array_key_exists('npwp', $data)) {
+                $memberAttributes['npwp'] = $data['npwp'];
+            }
+
+            if (array_key_exists('no_rekening', $data)) {
+                $memberAttributes['no_rekening'] = $data['no_rekening'];
+            }
+
+            $member->forceFill($memberAttributes)->save();
 
             $user = $member->user;
             if ($user && $user->email !== $data['email']) {

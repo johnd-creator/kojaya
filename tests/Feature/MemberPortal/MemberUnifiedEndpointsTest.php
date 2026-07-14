@@ -119,7 +119,7 @@ class MemberUnifiedEndpointsTest extends TestCase
             'jenis_kelamin' => 'L',
             'tempat_lahir' => 'Surabaya',
             'nama_bank' => 'Mandiri',
-            'no_rekening' => null,
+            'no_rekening' => '9876543210',
         ]);
         $this->assertNotNull(DB::table('cooperative_members')->where('id', $member->id)->value('no_rekening_enc'));
         $this->assertSame('9876543210', $member->refresh()->no_rekening);

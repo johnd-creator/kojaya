@@ -14,6 +14,7 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
     public function __construct(
         private readonly array $filters,
         private readonly OrganizationVisibility $visibility,
+        private readonly bool $includeSensitiveData = false,
     ) {}
 
     public function query(): Builder
@@ -61,6 +62,7 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
             'Tanggal Aktif',
             'Nama Anggota',
             'Status',
+            'Identity Number',
             'NPWP',
             'No Telp',
             'Jenis Anggota',
@@ -78,7 +80,8 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
             $member->tanggal_aktif?->toDateString() ?? $member->joined_at?->toDateString(),
             $member->nama_anggota_clean,
             $member->status_badge['label'],
-            $this->maskNpwp($member->npwp),
+            $this->includeSensitiveData ? $member->identity_number : $this->maskValue($member->identity_number),
+            $this->includeSensitiveData ? $member->npwp : $this->maskNpwp($member->npwp),
             $member->no_telp ?: $member->phone,
             $member->jenis_anggota_label,
             match ($member->jenis_kelamin) {
@@ -93,7 +96,7 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
                 default => null,
             },
             $member->autodebet,
-            $this->maskRekening($member->no_rekening),
+            $this->includeSensitiveData ? $member->no_rekening : $this->maskRekening($member->no_rekening),
         ];
     }
 
@@ -110,6 +113,17 @@ class AnggotaExport implements FromQuery, WithHeadings, WithMapping
         }
 
         return substr($digits, 0, 3).'.'.substr($digits, 3, 3).'.***.***';
+    }
+
+    private function maskValue(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $visible = min(4, strlen($value));
+
+        return str_repeat('*', max(strlen($value) - $visible, 0)).substr($value, -$visible);
     }
 
     private function maskRekening(?string $rekening): ?string

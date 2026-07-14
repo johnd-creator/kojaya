@@ -437,6 +437,8 @@ class CooperativeMemberController extends Controller
         $canSearchSensitive = $request->user()?->can(PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value) ?? false;
         $export = new AnggotaExport($filters, $visibility, $includePii, $canSearchSensitive);
         $search = (string) ($filters['search'] ?? '');
+        $reasonCode = $request->validated('reason_code')
+            ?: (filled($request->validated('reason')) ? 'other' : null);
         $sensitiveSearchUsed = $canSearchSensitive && (
             CooperativeMember::blindIndexesFor('identity_number', $search) !== []
             || CooperativeMember::blindIndexesFor('npwp', $search) !== []
@@ -449,6 +451,8 @@ class CooperativeMemberController extends Controller
             'include_pii' => $includePii,
             'requested_fields' => ['identity_number', 'npwp', 'no_rekening'],
             'record_count' => $export->query()->count(),
+            'reason_code' => $reasonCode,
+            'reason_supplied' => $reasonCode !== null,
         ];
 
         if (! $includePii) {
@@ -473,21 +477,11 @@ class CooperativeMemberController extends Controller
                 ...$auditMetadata,
                 'masked' => false,
             ],
-            'reason' => $this->safeExportReason((string) $request->validated('reason')),
         ]);
 
         return response()
             ->download(Storage::disk('local')->path($path), 'daftar-anggota-sensitive.xlsx')
             ->deleteFileAfterSend(true);
-    }
-
-    private function safeExportReason(string $reason): string
-    {
-        $digits = preg_replace('/\D+/', '', $reason) ?? '';
-
-        return strlen($digits) >= 8
-            ? 'Sensitive export reason supplied.'
-            : $reason;
     }
 
     private function canViewAllMembers(Request $request): bool

@@ -83,16 +83,19 @@ class CooperativeMember extends Model
     ];
 
     protected $hidden = [
+        'identity_number',
         'identity_number_enc',
         'identity_number_key_version',
         'identity_number_bidx',
         'identity_number_bidx_version',
         'identity_number_migrated_at',
+        'npwp',
         'npwp_enc',
         'npwp_key_version',
         'npwp_bidx',
         'npwp_bidx_version',
         'npwp_migrated_at',
+        'no_rekening',
         'no_rekening_enc',
         'no_rekening_key_version',
         'no_rekening_bidx',

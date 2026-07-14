@@ -43,12 +43,17 @@ class AuthController extends Controller
         $abilities = $this->abilityResolver->for($user, $validated['app'] ?? null);
         $deviceName = $validated['device_name'] ?? $this->defaultDeviceName($validated['app'] ?? null);
         $token = $user->createToken($deviceName, $abilities);
+        $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,
             'abilities' => $abilities,
-            'user' => $this->sessionPayload($user->refresh()->load(['roles', 'employee', 'cooperativeMember'])),
+            'user' => $this->sessionPayload($user),
+            'member_status' => $user->cooperativeMember?->status,
+            'validation_status' => $user->cooperativeMember?->validation_status,
+            'onboarding_next_step' => $this->onboardingNextStep($user),
+            'auth_result' => 'login_existing',
         ]);
     }
 

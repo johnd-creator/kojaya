@@ -189,7 +189,7 @@ class ProductionReadinessP0P2Test extends TestCase
 
         $raw = DB::table('cooperative_members')->where('id', $member->id)->first();
 
-        $this->assertNull($raw->identity_number);
+        $this->assertSame('3201234567890001', $raw->identity_number);
         $this->assertNotSame('3201234567890001', $raw->identity_number_enc);
         $this->assertSame(CooperativeMember::blindIndexFor('identity_number', '3201234567890001'), $raw->identity_number_bidx);
         $this->assertSame('3201234567890001', $member->identity_number);

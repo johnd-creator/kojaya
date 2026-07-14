@@ -28,6 +28,7 @@
         <env name="PII_BLIND_INDEX_CURRENT_VERSION" value="v1" force="true"/>
         <env name="PII_BLIND_INDEX_ACTIVE_VERSIONS" value="v1" force="true"/>
         <env name="PII_ROLLOUT_PHASE" value="dual_write" force="true"/>
+        <env name="PII_ALLOW_SCHEMA_ROLLBACK" value="true" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>

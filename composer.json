@@ -69,6 +69,21 @@
         "test:lint": [
             "pint --parallel --test"
         ],
+        "lint:dirty": [
+            "vendor/bin/pint --dirty"
+        ],
+        "test:fast": [
+            "php artisan test --compact --exclude-group=slow --exclude-group=pgsql --exclude-group=external"
+        ],
+        "test:sso": [
+            "php artisan test --compact tests/Feature/Auth/Sso"
+        ],
+        "test:payment": [
+            "php artisan test --compact tests/Unit/Money tests/Feature/PaymentChargeRecoveryTest.php tests/Feature/PaymentNotificationOutboxTest.php tests/Feature/PaymentReservationStateMachineTest.php"
+        ],
+        "test:full": [
+            "php artisan test --compact --parallel"
+        ],
         "test": [
             "@php artisan config:clear --ansi",
             "@test:lint",

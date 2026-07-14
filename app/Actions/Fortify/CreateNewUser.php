@@ -40,9 +40,9 @@ class CreateNewUser implements CreatesNewUsers
         ]);
 
         $validator->after(function ($validator) use ($input): void {
-            $blindIndex = CooperativeMember::blindIndexFor('identity_number', $input['identity_number'] ?? null);
+            $blindIndexes = CooperativeMember::blindIndexesFor('identity_number', $input['identity_number'] ?? null);
 
-            if ($blindIndex !== null && CooperativeMember::query()->where('identity_number_bidx', $blindIndex)->exists()) {
+            if ($blindIndexes !== [] && CooperativeMember::query()->whereIn('identity_number_bidx', array_values($blindIndexes))->exists()) {
                 $validator->errors()->add('identity_number', 'NIK ini sudah terdaftar di koperasi.');
             }
         });

@@ -65,6 +65,11 @@ class CooperativeMemberPolicy extends BasePolicy
         return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_EXPORT->value);
     }
 
+    public function exportSensitive(User $user): bool
+    {
+        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_PII_EXPORT->value);
+    }
+
     private function visibleTo(User $user, CooperativeMember $member): bool
     {
         return $this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)

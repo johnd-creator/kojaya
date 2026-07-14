@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Encryption\DecryptException;
+use App\Exceptions\PiiPlaintextRetiredException;
+use App\Services\Security\PiiCryptoService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Str;
 
 class CooperativeMember extends Model
 {
@@ -84,12 +83,24 @@ class CooperativeMember extends Model
     ];
 
     protected $hidden = [
+        'identity_number',
         'identity_number_enc',
+        'identity_number_key_version',
         'identity_number_bidx',
+        'identity_number_bidx_version',
+        'identity_number_migrated_at',
+        'npwp',
         'npwp_enc',
+        'npwp_key_version',
         'npwp_bidx',
+        'npwp_bidx_version',
+        'npwp_migrated_at',
+        'no_rekening',
         'no_rekening_enc',
+        'no_rekening_key_version',
         'no_rekening_bidx',
+        'no_rekening_bidx_version',
+        'no_rekening_migrated_at',
     ];
 
     protected static function booted(): void
@@ -105,32 +116,20 @@ class CooperativeMember extends Model
 
     public static function blindIndexFor(string $field, mixed $value): ?string
     {
-        $normalized = match ($field) {
-            'identity_number' => preg_replace('/\D+/', '', (string) $value) ?? '',
-            'npwp' => preg_replace('/\D+/', '', (string) $value) ?? '',
-            'no_rekening' => strtoupper(trim((string) $value)),
-            default => trim((string) $value),
-        };
+        return app(PiiCryptoService::class)->blindIndex($field, $value);
+    }
 
-        if ($normalized === '') {
-            return null;
-        }
-
-        $key = (string) config('security.blind_index_key');
-        if (Str::startsWith($key, 'base64:')) {
-            $key = base64_decode(substr($key, 7), true) ?: $key;
-        }
-
-        return hash_hmac(
-            'sha256',
-            (string) config('security.blind_index_version', 'v1').'|'.$field.'|'.$normalized,
-            $key,
-        );
+    /**
+     * @return array<string, string>
+     */
+    public static function blindIndexesFor(string $field, mixed $value): array
+    {
+        return app(PiiCryptoService::class)->blindIndexesForActiveVersions($field, $value);
     }
 
     public function getIdentityNumberAttribute(mixed $value): ?string
     {
-        return $this->decryptSensitiveValue('identity_number_enc', $value);
+        return $this->decryptSensitiveValue('identity_number', 'identity_number_enc', $value);
     }
 
     public function setIdentityNumberAttribute(mixed $value): void
@@ -140,7 +139,7 @@ class CooperativeMember extends Model
 
     public function getNpwpAttribute(mixed $value): ?string
     {
-        return $this->decryptSensitiveValue('npwp_enc', $value);
+        return $this->decryptSensitiveValue('npwp', 'npwp_enc', $value);
     }
 
     public function setNpwpAttribute(mixed $value): void
@@ -150,7 +149,7 @@ class CooperativeMember extends Model
 
     public function getNoRekeningAttribute(mixed $value): ?string
     {
-        return $this->decryptSensitiveValue('no_rekening_enc', $value);
+        return $this->decryptSensitiveValue('no_rekening', 'no_rekening_enc', $value);
     }
 
     public function setNoRekeningAttribute(mixed $value): void
@@ -158,15 +157,15 @@ class CooperativeMember extends Model
         $this->setSensitiveValue('no_rekening', 'no_rekening_enc', 'no_rekening_bidx', $value);
     }
 
-    private function decryptSensitiveValue(string $encryptedField, mixed $legacyValue): ?string
+    private function decryptSensitiveValue(string $field, string $encryptedField, mixed $legacyValue): ?string
     {
         $encrypted = $this->attributes[$encryptedField] ?? null;
         if (is_string($encrypted) && $encrypted !== '') {
-            try {
-                return Crypt::decryptString($encrypted);
-            } catch (DecryptException) {
-                return $legacyValue !== null ? (string) $legacyValue : null;
-            }
+            return app(PiiCryptoService::class)->decrypt($encrypted, $field, (string) $this->getKey());
+        }
+
+        if ($legacyValue !== null && ! app(PiiCryptoService::class)->keepsPlaintextCompatibilityCopy()) {
+            throw PiiPlaintextRetiredException::forField($field);
         }
 
         return $legacyValue !== null ? (string) $legacyValue : null;
@@ -174,12 +173,21 @@ class CooperativeMember extends Model
 
     private function setSensitiveValue(string $plainField, string $encryptedField, string $blindIndexField, mixed $value): void
     {
-        $normalized = $value === null ? null : trim((string) $value);
-        $this->attributes[$plainField] = null;
-        $this->attributes[$encryptedField] = $normalized === null || $normalized === ''
+        $value = $value === null ? null : trim((string) $value);
+        $value = $value === '' ? null : $value;
+        $crypto = app(PiiCryptoService::class);
+        $this->attributes[$plainField] = $crypto->keepsPlaintextCompatibilityCopy() ? $value : null;
+        $this->attributes[$encryptedField] = $crypto->encrypt($value);
+        $this->attributes[$plainField.'_key_version'] = $value === null || $value === ''
             ? null
-            : Crypt::encryptString($normalized);
-        $this->attributes[$blindIndexField] = self::blindIndexFor($plainField, $normalized);
+            : $crypto->currentEncryptionVersion();
+        $this->attributes[$blindIndexField] = $crypto->blindIndex($plainField, $value);
+        $this->attributes[$blindIndexField.'_version'] = $value === null || $value === ''
+            ? null
+            : $crypto->currentBlindIndexVersion();
+        $this->attributes[$plainField.'_migrated_at'] = $value === null || $value === ''
+            ? null
+            : now()->toDateTimeString();
     }
 
     protected function casts(): array
@@ -197,6 +205,9 @@ class CooperativeMember extends Model
             'last_sso_login_at' => 'datetime',
             'credit_limit' => 'decimal:2',
             'outstanding_balance' => 'decimal:2',
+            'identity_number_migrated_at' => 'datetime',
+            'npwp_migrated_at' => 'datetime',
+            'no_rekening_migrated_at' => 'datetime',
         ];
     }
 

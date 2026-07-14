@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Enums\PermissionEnum;
 use App\Exports\AnggotaExport;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Support\OrganizationVisibility;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -110,10 +112,10 @@ class MemberExportAuthorizationTest extends TestCase
         $row = $scoped->query()->first();
         $mapped = $scoped->map($row);
 
-        // NPWP at position 4, No Rekening at position 10
-        $this->assertNotEquals('12.345.678.9-012.000', $mapped[4]);
-        $this->assertNotEquals('1234567890', $mapped[10]);
-        $this->assertStringEndsWith('7890', $mapped[10]);
+        // NPWP at position 5, No Rekening at position 11
+        $this->assertNotEquals('12.345.678.9-012.000', $mapped[5]);
+        $this->assertNotEquals('1234567890', $mapped[11]);
+        $this->assertStringEndsWith('7890', $mapped[11]);
     }
 
     public function test_actual_export_content_is_scoped_to_the_requested_organization(): void
@@ -209,5 +211,152 @@ class MemberExportAuthorizationTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         OrganizationVisibility::organization('');
+    }
+
+    public function test_full_pii_export_requires_dedicated_permission(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.export', ['include_pii' => 1, 'reason' => 'Audit']))
+            ->assertForbidden();
+    }
+
+    public function test_full_pii_export_requires_reason_and_is_audited(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', ['include_pii' => 1]))
+            ->assertSessionHasErrors('reason');
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', [
+                'include_pii' => 1,
+                'reason_code' => 'business_verification',
+            ]))
+            ->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'member.pii.exported',
+            'reason' => null,
+            'new_values->reason_code' => 'business_verification',
+            'new_values->reason_supplied' => true,
+        ]);
+    }
+
+    public function test_legacy_free_text_export_reason_is_not_persisted(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+        $sentinel = 'sensitive reason sentinel 3201234567890001';
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', [
+                'include_pii' => 1,
+                'reason' => $sentinel,
+            ]))
+            ->assertOk();
+
+        $auditContents = DB::table('audit_logs')
+            ->where('action', 'member.pii.exported')
+            ->get()
+            ->map(fn (object $audit): string => json_encode((array) $audit, JSON_THROW_ON_ERROR))
+            ->implode(' ');
+        $audit = DB::table('audit_logs')
+            ->where('action', 'member.pii.exported')
+            ->latest('id')
+            ->first();
+        $newValues = json_decode((string) $audit->new_values, true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString($sentinel, $auditContents);
+        $this->assertSame('other', $newValues['reason_code']);
+        $this->assertTrue($newValues['reason_supplied']);
+    }
+
+    public function test_pii_viewer_can_exact_search_formatted_and_unformatted_nik_and_npwp(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'identity_number' => '3201-2345 6789 0001',
+            'npwp' => '12.345.678.9-012.000',
+        ]);
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.index', ['search' => '3201-2345 6789 0001']))
+            ->assertInertia(fn ($page) => $page->has('members.data', 1));
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.index', ['search' => '3201234567890001']))
+            ->assertInertia(fn ($page) => $page->has('members.data', 1));
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.index', ['search' => '12.345.678.9-012.000']))
+            ->assertInertia(fn ($page) => $page->has('members.data', 1));
+    }
+
+    public function test_non_pii_viewer_cannot_discover_members_by_nik_or_npwp(): void
+    {
+        $organization = Organization::factory()->create();
+        $cashier = User::factory()->create(['organization_id' => $organization->id]);
+        $cashier->assignRole('Kasir Koperasi');
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'identity_number' => '3201234567890001',
+            'npwp' => '123456789012000',
+        ]);
+
+        $this->actingAs($cashier)
+            ->get(route('cooperative.members.index', ['search' => '3201234567890001']))
+            ->assertInertia(fn ($page) => $page->has('members.data', 0));
+
+        $this->actingAs($cashier)
+            ->get(route('cooperative.members.index', ['search' => '123456789012000']))
+            ->assertInertia(fn ($page) => $page->has('members.data', 0));
+    }
+
+    public function test_organization_scope_hides_sensitive_search_existence(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+        $viewer = User::factory()->create(['organization_id' => $orgA->id]);
+        $viewer->assignRole('Admin Koperasi');
+        $viewer->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_PII_VIEW->value);
+        CooperativeMember::factory()->create([
+            'organization_id' => $orgB->id,
+            'identity_number' => '3201234567890001',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('cooperative.members.index', ['search' => '3201234567890001']))
+            ->assertInertia(fn ($page) => $page->has('members.data', 0));
+    }
+
+    public function test_export_audit_does_not_store_raw_sensitive_search_value(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Pengurus Koperasi');
+        $sentinel = '3201234567890001';
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'identity_number' => $sentinel,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.export', ['search' => $sentinel]))
+            ->assertOk();
+
+        $auditContents = DB::table('audit_logs')->pluck('new_values')->implode(' ');
+        $this->assertStringNotContainsString($sentinel, $auditContents);
+        $this->assertStringContainsString('search_mode', $auditContents);
     }
 }

@@ -26,19 +26,43 @@ final class PiiCryptoService
     ];
 
     /**
+     * @var list<string>
+     */
+    private readonly array $activeBlindIndexVersionList;
+
+    /**
+     * @var array<string, string>
+     */
+    private readonly array $encryptionKeys;
+
+    private readonly string $currentEncryptionVersion;
+
+    /**
+     * @var array<string, string>
+     */
+    private readonly array $blindIndexKeys;
+
+    private readonly string $currentBlindIndexVersion;
+
+    /**
      * @param  array<string, string>  $encryptionKeys
      * @param  array<string, string>  $blindIndexKeys
      * @param  list<string>|null  $activeBlindIndexVersions
      */
     public function __construct(
-        private readonly array $encryptionKeys,
-        private readonly string $currentEncryptionVersion,
-        private readonly array $blindIndexKeys,
-        private readonly string $currentBlindIndexVersion,
+        array $encryptionKeys,
+        string $currentEncryptionVersion,
+        array $blindIndexKeys,
+        string $currentBlindIndexVersion,
         private readonly ?string $legacyEncryptionKey = null,
-        private readonly ?array $activeBlindIndexVersions = null,
+        ?array $activeBlindIndexVersions = null,
         private readonly string $rolloutPhase = self::ROLLOUT_DUAL_WRITE,
     ) {
+        $this->encryptionKeys = $this->normalizeKeyMap($encryptionKeys, 'encryption');
+        $this->currentEncryptionVersion = $this->normalizeVersion($currentEncryptionVersion, 'encryption');
+        $this->blindIndexKeys = $this->normalizeKeyMap($blindIndexKeys, 'blind index');
+        $this->currentBlindIndexVersion = $this->normalizeVersion($currentBlindIndexVersion, 'blind index');
+
         if (! in_array($this->rolloutPhase, [
             self::ROLLOUT_DUAL_WRITE,
             self::ROLLOUT_ENCRYPTED_PREFERRED,
@@ -65,9 +89,34 @@ final class PiiCryptoService
             $this->currentBlindIndexVersion,
         );
 
-        foreach ($this->activeBlindIndexVersions() as $version) {
+        $configuredActiveVersions = $activeBlindIndexVersions ?? array_keys($this->blindIndexKeys);
+        if ($configuredActiveVersions === []) {
+            throw new RuntimeException('PII active blind-index versions must not be empty.');
+        }
+
+        $normalizedActiveVersions = [];
+        foreach ($configuredActiveVersions as $version) {
+            $normalizedVersion = $this->normalizeVersion($version, 'active blind index');
+            if (in_array($normalizedVersion, $normalizedActiveVersions, true)) {
+                throw new RuntimeException("PII active blind-index version [{$normalizedVersion}] is duplicated.");
+            }
+
+            $normalizedActiveVersions[] = $normalizedVersion;
+        }
+
+        if (! in_array($this->currentBlindIndexVersion, $normalizedActiveVersions, true)) {
+            throw new RuntimeException('The current PII blind-index version must be active.');
+        }
+
+        foreach ($normalizedActiveVersions as $version) {
+            if (! array_key_exists($version, $this->blindIndexKeys)) {
+                throw new RuntimeException("PII blind index key [{$version}] is missing.");
+            }
+
             $this->decodedKey($this->blindIndexKeys[$version] ?? '', 'blind index', $version);
         }
+
+        $this->activeBlindIndexVersionList = $normalizedActiveVersions;
 
         foreach ($this->encryptionKeys as $encryptionVersion => $configuredEncryptionKey) {
             $decodedEncryptionKey = $this->decodedKey($configuredEncryptionKey, 'encryption', (string) $encryptionVersion);
@@ -113,22 +162,28 @@ final class PiiCryptoService
      */
     public function activeBlindIndexVersions(): array
     {
-        return $this->activeBlindIndexVersions ?? array_keys($this->blindIndexKeys);
+        return $this->activeBlindIndexVersionList;
     }
 
     public function hasEncryptionVersion(string $version): bool
     {
-        return isset($this->encryptionKeys[$version]);
+        return isset($this->encryptionKeys[$this->normalizeVersion($version, 'encryption')]);
     }
 
     public function hasBlindIndexVersion(string $version): bool
     {
-        return isset($this->blindIndexKeys[$version]);
+        return isset($this->blindIndexKeys[$this->normalizeVersion($version, 'blind index')]);
     }
 
     public function normalizeForIndex(string $field, mixed $value): ?string
     {
+        return $this->normalizeForIndexVersion($field, $value, $this->currentBlindIndexVersion);
+    }
+
+    public function normalizeForIndexVersion(string $field, mixed $value, string $version): ?string
+    {
         $this->assertField($field);
+        $version = $this->normalizeVersion($version, 'blind index');
 
         if ($value === null) {
             return null;
@@ -141,7 +196,10 @@ final class PiiCryptoService
         }
 
         return match ($field) {
-            'identity_number', 'npwp', 'no_rekening' => preg_replace('/\D+/', '', $value) ?? '',
+            'identity_number', 'npwp' => preg_replace('/\D+/', '', $value) ?? '',
+            'no_rekening' => $version === 'v1'
+                ? strtoupper($value)
+                : preg_replace('/\D+/', '', $value) ?? '',
         } ?: null;
     }
 
@@ -156,7 +214,8 @@ final class PiiCryptoService
 
     public function blindIndexForVersion(string $field, mixed $value, string $version): ?string
     {
-        $normalized = $this->normalizeForIndex($field, $value);
+        $version = $this->normalizeVersion($version, 'blind index');
+        $normalized = $this->normalizeForIndexVersion($field, $value, $version);
         if ($normalized === null) {
             return null;
         }
@@ -191,7 +250,7 @@ final class PiiCryptoService
             return null;
         }
 
-        $version ??= $this->currentEncryptionVersion;
+        $version = $this->normalizeVersion($version ?? $this->currentEncryptionVersion, 'encryption');
         $payload = [
             'version' => $version,
             'ciphertext' => $this->encrypter($version)->encryptString($value),
@@ -266,6 +325,8 @@ final class PiiCryptoService
 
     private function encrypter(string $version): Encrypter
     {
+        $version = $this->normalizeVersion($version, 'encryption');
+
         return new Encrypter(
             $this->decodedKey($this->encryptionKeys[$version] ?? '', 'encryption', $version),
             'aes-256-cbc',
@@ -292,6 +353,36 @@ final class PiiCryptoService
         foreach ($keys as $version => $key) {
             $this->decodedKey($key, $purpose, (string) $version);
         }
+    }
+
+    /**
+     * @param  array<string, string>  $keys
+     * @return array<string, string>
+     */
+    private function normalizeKeyMap(array $keys, string $purpose): array
+    {
+        $normalizedKeys = [];
+
+        foreach ($keys as $version => $key) {
+            $normalizedVersion = $this->normalizeVersion($version, $purpose);
+            if (array_key_exists($normalizedVersion, $normalizedKeys)) {
+                throw new RuntimeException("PII {$purpose} version [{$normalizedVersion}] is duplicated.");
+            }
+
+            $normalizedKeys[$normalizedVersion] = (string) $key;
+        }
+
+        return $normalizedKeys;
+    }
+
+    private function normalizeVersion(mixed $version, string $purpose): string
+    {
+        $normalizedVersion = strtolower(trim((string) $version));
+        if ($normalizedVersion === '') {
+            throw new RuntimeException("PII {$purpose} version must not be empty.");
+        }
+
+        return $normalizedVersion;
     }
 
     private function decodedKey(string $key, string $purpose, string $version): string

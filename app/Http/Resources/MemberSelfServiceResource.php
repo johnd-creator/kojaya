@@ -20,6 +20,7 @@ class MemberSelfServiceResource extends JsonResource
             'phone' => $canViewSensitiveData ? $this->phone : $this->mask($this->phone),
             'address' => $canViewSensitiveData ? $this->address : null,
             'status' => $this->status,
+            'validation_status' => $this->validation_status,
             'joined_at' => $this->joined_at?->toDateString(),
             'resigned_at' => $this->resigned_at?->toDateString(),
             'gender' => $this->jenis_kelamin,

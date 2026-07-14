@@ -62,6 +62,38 @@ class MemberUnifiedEndpointsTest extends TestCase
             ->assertJsonPath('data.member.bank_account_holder', 'Budi Santoso');
     }
 
+    public function test_profile_exposes_member_status_and_validation_status(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $member->forceFill([
+            'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ])->save();
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/profile')
+            ->assertOk()
+            ->assertJsonPath('data.member.status', 'ACTIVE')
+            ->assertJsonPath('data.member.validation_status', CooperativeMember::VALIDATION_ACTIVE);
+    }
+
+    public function test_profile_reflects_pending_validation_status(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $member->forceFill([
+            'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ])->save();
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/profile')
+            ->assertOk()
+            ->assertJsonPath('data.member.status', 'ACTIVE')
+            ->assertJsonPath('data.member.validation_status', CooperativeMember::VALIDATION_PENDING_REVIEW);
+    }
+
     public function test_profile_update_persists_extended_fields(): void
     {
         [$user, $member] = $this->memberUser();

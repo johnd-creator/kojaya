@@ -14,9 +14,21 @@ $localFallbackKey = static function (string $purpose) use ($appKey): string {
 };
 
 $isProduction = env('APP_ENV') === 'production';
-$encryptionKeyV1 = env('PII_ENCRYPTION_KEY_V1', $isProduction ? '' : $localFallbackKey('kojaya-pii-encryption-v1'));
-$legacyEncryptionKey = env('PII_ENCRYPTION_LEGACY_KEY', $isProduction ? '' : ($appKey === '' ? '' : 'base64:'.base64_encode($appKey)));
-$blindIndexKeyV1 = env('PII_BLIND_INDEX_KEY_V1', $isProduction ? '' : $localFallbackKey('kojaya-pii-blind-index-v1'));
+$resolveOptionalKey = static function (string $envVar, string $purpose) use ($isProduction, $localFallbackKey): string {
+    $value = env($envVar);
+    if ($value !== null && $value !== '') {
+        return $value;
+    }
+
+    return $isProduction ? '' : $localFallbackKey($purpose);
+};
+
+$encryptionKeyV1 = $resolveOptionalKey('PII_ENCRYPTION_KEY_V1', 'kojaya-pii-encryption-v1');
+$legacyEncryptionKey = env('PII_ENCRYPTION_LEGACY_KEY');
+if ($legacyEncryptionKey === null || $legacyEncryptionKey === '') {
+    $legacyEncryptionKey = $isProduction || $appKey === '' ? '' : 'base64:'.base64_encode($appKey);
+}
+$blindIndexKeyV1 = $resolveOptionalKey('PII_BLIND_INDEX_KEY_V1', 'kojaya-pii-blind-index-v1');
 $encryptionKeys = ['v1' => $encryptionKeyV1];
 $blindIndexKeys = ['v1' => $blindIndexKeyV1];
 

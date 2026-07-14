@@ -34,6 +34,7 @@ class PiiCryptoServiceTest extends TestCase
         $ciphertext = $service->encrypt('12.345.678.9-012.000');
 
         $this->assertNotNull($ciphertext);
+        $this->assertSame('v1', $service->envelopeVersion($ciphertext));
         $this->assertStringContainsString('"version":"v1"', (string) base64_decode((string) $ciphertext));
         $this->assertSame(
             '12.345.678.9-012.000',
@@ -86,6 +87,35 @@ class PiiCryptoServiceTest extends TestCase
         $this->assertSame('3201234567890001', $service->decrypt($ciphertext, 'identity_number', 'member-1'));
     }
 
+    public function test_v1_blind_index_matches_the_legacy_main_contract(): void
+    {
+        $service = $this->service();
+        $expected = hash_hmac(
+            'sha256',
+            'v1|identity_number|3201234567890001',
+            base64_decode(substr($this->key('blind-index'), 7), true),
+        );
+
+        $this->assertSame($expected, $service->blindIndexForVersion('identity_number', '3201-2345 6789 0001', 'v1'));
+    }
+
+    public function test_active_version_search_returns_all_configured_candidates(): void
+    {
+        $service = new PiiCryptoService(
+            ['v1' => $this->key('encryption-v1'), 'v2' => $this->key('encryption-v2')],
+            'v2',
+            ['v1' => $this->key('blind-index-v1'), 'v2' => $this->key('blind-index-v2')],
+            'v2',
+            null,
+            ['v1', 'v2'],
+        );
+
+        $indexes = $service->blindIndexesForActiveVersions('npwp', '12.345.678.9-012.000');
+
+        $this->assertSame(['v1', 'v2'], array_keys($indexes));
+        $this->assertNotSame($indexes['v1'], $indexes['v2']);
+    }
+
     public function test_previous_unversioned_ciphertext_requires_an_explicit_legacy_key(): void
     {
         $legacyKey = $this->key('legacy-encryption');
@@ -106,6 +136,33 @@ class PiiCryptoServiceTest extends TestCase
         $this->assertSame(
             '3201234567890001',
             $service->decrypt($legacyCiphertext, 'identity_number', 'member-1'),
+        );
+        $this->assertNull($service->envelopeVersion($legacyCiphertext));
+    }
+
+    public function test_unknown_envelope_version_fails_closed_without_legacy_fallback(): void
+    {
+        $ciphertext = base64_encode(json_encode([
+            'version' => 'v9',
+            'ciphertext' => 'opaque',
+        ], JSON_THROW_ON_ERROR));
+
+        $this->expectException(PiiDecryptionException::class);
+
+        $this->service()->decrypt($ciphertext, 'identity_number', 'member-1');
+    }
+
+    public function test_encryption_and_blind_index_keys_must_not_be_identical(): void
+    {
+        $sameKey = $this->key('same-key');
+
+        $this->expectException(RuntimeException::class);
+
+        new PiiCryptoService(
+            ['v1' => $sameKey],
+            'v1',
+            ['v1' => $sameKey],
+            'v1',
         );
     }
 

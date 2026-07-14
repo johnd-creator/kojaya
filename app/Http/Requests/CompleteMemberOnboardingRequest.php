@@ -65,11 +65,11 @@ class CompleteMemberOnboardingRequest extends FormRequest
     {
         $validator->after(function (\Illuminate\Contracts\Validation\Validator $validator): void {
             $value = $this->input('identity_number');
-            $blindIndex = CooperativeMember::blindIndexFor('identity_number', $value);
+            $blindIndexes = CooperativeMember::blindIndexesFor('identity_number', $value);
             $memberId = $this->user()?->cooperativeMember?->id;
 
-            if ($blindIndex !== null && CooperativeMember::query()
-                ->where('identity_number_bidx', $blindIndex)
+            if ($blindIndexes !== [] && CooperativeMember::query()
+                ->whereIn('identity_number_bidx', array_values($blindIndexes))
                 ->when($memberId, fn ($query) => $query->where($query->getModel()->getKeyName(), '!=', $memberId))
                 ->exists()) {
                 $validator->errors()->add('identity_number', 'Nomor identitas sudah dipakai anggota lain.');

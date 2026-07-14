@@ -17,6 +17,9 @@ final class MemberSensitiveDataInspector
      *         status: string,
      *         legacy: ?string,
      *         decrypted: ?string,
+     *         envelope_version: ?string,
+     *         encryption_version: ?string,
+     *         bidx_version: ?string,
      *         issues: list<string>
      *     }>,
      *     has_legacy_plaintext: bool,
@@ -37,8 +40,25 @@ final class MemberSensitiveDataInspector
             $decrypted = null;
             $issues = [];
             $hasEncrypted = is_string($encrypted) && $encrypted !== '';
+            $envelopeVersion = $hasEncrypted ? $this->crypto->envelopeVersion($encrypted) : null;
+            $recordedEncryptionVersion = is_string($encryptionVersion) ? $encryptionVersion : null;
+            $recordedBlindIndexVersion = is_string($blindIndexVersion) ? $blindIndexVersion : null;
 
             if ($hasEncrypted) {
+                if ($envelopeVersion === null) {
+                    $issues[] = 'legacy_ciphertext';
+                } elseif (! $this->crypto->hasEncryptionVersion($envelopeVersion)) {
+                    $issues[] = 'unknown_key_version';
+                }
+
+                if ($recordedEncryptionVersion === null) {
+                    $issues[] = 'missing_key_version';
+                } elseif ($envelopeVersion !== null && $recordedEncryptionVersion !== $envelopeVersion) {
+                    $issues[] = 'envelope_version_mismatch';
+                } elseif (! $this->crypto->hasEncryptionVersion($recordedEncryptionVersion)) {
+                    $issues[] = 'unknown_key_version';
+                }
+
                 try {
                     $decrypted = $this->crypto->decrypt($encrypted, $field, (string) ($record['id'] ?? ''));
                 } catch (PiiDecryptionException) {
@@ -46,8 +66,12 @@ final class MemberSensitiveDataInspector
                 }
 
                 $status = $legacy !== null
-                    ? ($decrypted === $legacy ? 'dual_equal' : 'dual_mismatch')
+                    ? ($decrypted !== null && $decrypted === $legacy ? 'dual_equal' : 'dual_mismatch')
                     : 'encrypted_only';
+
+                if ($decrypted !== null && $legacy !== null && $decrypted !== $legacy) {
+                    $issues[] = 'plaintext_encrypted_mismatch';
+                }
             } elseif ($legacy !== null) {
                 $status = 'legacy_only';
             } else {
@@ -55,24 +79,31 @@ final class MemberSensitiveDataInspector
             }
 
             if ($decrypted !== null || $legacy !== null) {
-                $expectedBlindIndex = $this->crypto->blindIndex($field, $decrypted ?? $legacy);
-                if ($blindIndex !== $expectedBlindIndex) {
-                    $issues[] = $blindIndex === null ? 'missing_bidx' : 'bidx_mismatch';
+                if ($blindIndex === null) {
+                    $issues[] = 'missing_bidx';
+                } elseif ($recordedBlindIndexVersion === null || ! $this->crypto->hasBlindIndexVersion($recordedBlindIndexVersion)) {
+                    $issues[] = 'unknown_bidx_version';
+                } else {
+                    $expectedBlindIndex = $this->crypto->blindIndexForVersion(
+                        $field,
+                        $decrypted ?? $legacy,
+                        $recordedBlindIndexVersion,
+                    );
+
+                    if ($blindIndex !== $expectedBlindIndex) {
+                        $issues[] = 'bidx_mismatch';
+                    }
                 }
             } elseif ($blindIndex !== null) {
                 $issues[] = 'orphan_bidx';
             }
 
-            if ($hasEncrypted && $encryptionVersion !== $this->crypto->currentEncryptionVersion()) {
-                $issues[] = 'key_version_mismatch';
-            }
-
-            if ($blindIndex !== null && $blindIndexVersion !== $this->crypto->currentBlindIndexVersion()) {
-                $issues[] = 'bidx_version_mismatch';
-            }
-
-            if ($hasEncrypted && $migratedAt === null) {
+            if (($hasEncrypted || $blindIndex !== null) && $migratedAt === null) {
                 $issues[] = 'missing_migrated_at';
+            }
+
+            if ($this->crypto->allowsPlaintextRetirement() && $legacy !== null) {
+                $issues[] = 'plaintext_remaining_after_retirement';
             }
 
             if ($status === 'empty' && (
@@ -87,6 +118,9 @@ final class MemberSensitiveDataInspector
                 'status' => $status,
                 'legacy' => is_string($legacy) ? $legacy : null,
                 'decrypted' => $decrypted,
+                'envelope_version' => $envelopeVersion,
+                'encryption_version' => $recordedEncryptionVersion,
+                'bidx_version' => $recordedBlindIndexVersion,
                 'issues' => array_values(array_unique($issues)),
             ];
         }

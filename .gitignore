@@ -262,3 +262,7 @@ artifacts/
 graphify-out/
 penawaran.md
 old_progress
+
+# Wayfinder generated TypeScript
+/resources/js/actions/
+/resources/js/routes/

@@ -96,7 +96,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->app->make(PiiCryptoService::class);
         $this->configureDefaults();
         $this->registerPolicies();
         $this->registerRateLimiters();

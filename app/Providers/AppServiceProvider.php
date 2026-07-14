@@ -89,6 +89,8 @@ class AppServiceProvider extends ServiceProvider
             config('security.blind_index_keys', []),
             (string) config('security.blind_index_current_version', 'v1'),
             config('security.legacy_encryption_key'),
+            config('security.blind_index_active_versions'),
+            (string) config('security.rollout_phase', PiiCryptoService::ROLLOUT_DUAL_WRITE),
         ));
     }
 

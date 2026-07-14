@@ -28,10 +28,17 @@ if (($blindIndexKeyV2 = env('PII_BLIND_INDEX_KEY_V2')) !== null && $blindIndexKe
     $blindIndexKeys['v2'] = $blindIndexKeyV2;
 }
 
+$activeBlindIndexVersions = array_values(array_filter(
+    array_map('trim', explode(',', (string) env('PII_BLIND_INDEX_ACTIVE_VERSIONS', 'v1'))),
+    static fn (string $version): bool => $version !== '',
+));
+
 return [
     'encryption_keys' => $encryptionKeys,
     'encryption_current_version' => env('PII_ENCRYPTION_CURRENT_VERSION', 'v1'),
     'legacy_encryption_key' => $legacyEncryptionKey !== '' ? $legacyEncryptionKey : null,
     'blind_index_keys' => $blindIndexKeys,
     'blind_index_current_version' => env('PII_BLIND_INDEX_CURRENT_VERSION', 'v1'),
+    'blind_index_active_versions' => $activeBlindIndexVersions,
+    'rollout_phase' => env('PII_ROLLOUT_PHASE', 'dual_write'),
 ];

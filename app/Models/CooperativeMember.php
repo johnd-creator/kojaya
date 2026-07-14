@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\PiiPlaintextRetiredException;
 use App\Services\Security\PiiCryptoService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -115,6 +116,14 @@ class CooperativeMember extends Model
         return app(PiiCryptoService::class)->blindIndex($field, $value);
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function blindIndexesFor(string $field, mixed $value): array
+    {
+        return app(PiiCryptoService::class)->blindIndexesForActiveVersions($field, $value);
+    }
+
     public function getIdentityNumberAttribute(mixed $value): ?string
     {
         return $this->decryptSensitiveValue('identity_number', 'identity_number_enc', $value);
@@ -152,16 +161,21 @@ class CooperativeMember extends Model
             return app(PiiCryptoService::class)->decrypt($encrypted, $field, (string) $this->getKey());
         }
 
+        if ($legacyValue !== null && ! app(PiiCryptoService::class)->keepsPlaintextCompatibilityCopy()) {
+            throw PiiPlaintextRetiredException::forField($field);
+        }
+
         return $legacyValue !== null ? (string) $legacyValue : null;
     }
 
     private function setSensitiveValue(string $plainField, string $encryptedField, string $blindIndexField, mixed $value): void
     {
         $value = $value === null ? null : trim((string) $value);
+        $value = $value === '' ? null : $value;
         $crypto = app(PiiCryptoService::class);
-        $this->attributes[$plainField] = null;
+        $this->attributes[$plainField] = $crypto->keepsPlaintextCompatibilityCopy() ? $value : null;
         $this->attributes[$encryptedField] = $crypto->encrypt($value);
-        $this->attributes[$encryptedField.'_key_version'] = $value === null || $value === ''
+        $this->attributes[$plainField.'_key_version'] = $value === null || $value === ''
             ? null
             : $crypto->currentEncryptionVersion();
         $this->attributes[$blindIndexField] = $crypto->blindIndex($plainField, $value);

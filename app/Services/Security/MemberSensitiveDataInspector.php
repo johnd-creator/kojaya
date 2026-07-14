@@ -72,6 +72,10 @@ final class MemberSensitiveDataInspector
                 if ($decrypted !== null && $legacy !== null && $decrypted !== $legacy) {
                     $issues[] = 'plaintext_encrypted_mismatch';
                 }
+
+                if ($decrypted !== null && $legacy === null && $this->crypto->keepsPlaintextCompatibilityCopy()) {
+                    $issues[] = 'missing_plaintext_compatibility_copy';
+                }
             } elseif ($legacy !== null) {
                 $status = 'legacy_only';
             } else {

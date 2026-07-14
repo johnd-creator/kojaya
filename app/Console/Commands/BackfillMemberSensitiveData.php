@@ -236,12 +236,18 @@ class BackfillMemberSensitiveData extends Command
 
             $expectedLegacyState = $details['status'] === 'legacy_only'
                 && $issues === ['missing_bidx'];
+            $expectedEncryptedOnlyRotationState = $rotateToCurrent
+                && $details['status'] === 'encrypted_only'
+                && $details['decrypted'] !== null;
+            $expectedCompatibilityRepairState = $crypto->keepsPlaintextCompatibilityCopy()
+                && $details['status'] === 'encrypted_only'
+                && $issues === ['missing_plaintext_compatibility_copy'];
             $expectedRetirementState = $retirePlaintext
                 && array_diff($issues, ['plaintext_remaining_after_retirement']) === [];
             $expectedLegacyRetirementState = $retirePlaintext
                 && $details['status'] === 'legacy_only'
                 && array_diff($issues, ['missing_bidx', 'plaintext_remaining_after_retirement']) === [];
-            if ($issues !== [] && ! $repair && ! $expectedLegacyState && ! $expectedRetirementState && ! $expectedLegacyRetirementState) {
+            if ($issues !== [] && ! $repair && ! $expectedLegacyState && ! $expectedEncryptedOnlyRotationState && ! $expectedCompatibilityRepairState && ! $expectedRetirementState && ! $expectedLegacyRetirementState) {
                 throw new RuntimeException('PII repair is required for inconsistent metadata.');
             }
 
@@ -283,7 +289,7 @@ class BackfillMemberSensitiveData extends Command
             }
 
             $updates = array_merge($updates, [
-                $field => $retirePlaintext ? null : $details['legacy'],
+                $field => $retirePlaintext ? null : $value,
                 $field.'_enc' => $encrypted,
                 $field.'_key_version' => $encrypted === null ? null : $crypto->currentEncryptionVersion(),
                 $field.'_bidx' => $blindIndex,

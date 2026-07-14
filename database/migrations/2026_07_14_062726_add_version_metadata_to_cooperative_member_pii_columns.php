@@ -23,18 +23,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('cooperative_members', function (Blueprint $table): void {
-            $table->dropColumn([
-                'identity_number_key_version',
-                'identity_number_bidx_version',
-                'identity_number_migrated_at',
-                'npwp_key_version',
-                'npwp_bidx_version',
-                'npwp_migrated_at',
-                'no_rekening_key_version',
-                'no_rekening_bidx_version',
-                'no_rekening_migrated_at',
-            ]);
-        });
+        throw new RuntimeException(
+            'PII metadata rollback is blocked after rollout. Restore a backup or use the approved rollback procedure.',
+        );
     }
 };

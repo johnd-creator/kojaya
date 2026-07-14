@@ -17,17 +17,21 @@ class VerifyMemberSensitiveData extends Command
 
     protected $description = 'Verify member PII encryption, blind-index parity, key versions, and plaintext retirement';
 
-    public function handle(MemberSensitiveDataInspector $inspector): int
+    public function handle(MemberSensitiveDataInspector $inspector, PiiCryptoService $crypto): int
     {
         $chunk = max(1, min((int) $this->option('chunk'), 1000));
         $limit = $this->option('limit') !== null ? max(1, (int) $this->option('limit')) : null;
         $fromId = (string) ($this->option('from-id') ?: '');
         $report = [
+            'rollout_phase' => $crypto->rolloutPhase(),
             'processed' => 0,
             'consistent_fields' => 0,
             'issues' => [],
             'field_counts' => [],
             'value_counts' => [],
+            'encryption_versions' => [],
+            'blind_index_versions' => [],
+            'envelope_versions' => [],
             'last_id' => null,
         ];
 
@@ -62,12 +66,18 @@ class VerifyMemberSensitiveData extends Command
                         $report['issues'][$issue] = ($report['issues'][$issue] ?? 0) + 1;
                     }
 
-                    if ($details['legacy'] !== null) {
-                        $report['issues']['plaintext_remaining'] = ($report['issues']['plaintext_remaining'] ?? 0) + 1;
+                    if ($details['issues'] === []) {
+                        $report['consistent_fields']++;
                     }
 
-                    if ($details['issues'] === [] && $details['legacy'] === null) {
-                        $report['consistent_fields']++;
+                    foreach ([
+                        'encryption_versions' => $details['encryption_version'],
+                        'blind_index_versions' => $details['bidx_version'],
+                        'envelope_versions' => $details['envelope_version'],
+                    ] as $counter => $version) {
+                        if (is_string($version) && $version !== '') {
+                            $report[$counter][$field][$version] = ($report[$counter][$field][$version] ?? 0) + 1;
+                        }
                     }
 
                     if (filled($record[$field.'_enc'] ?? null)) {

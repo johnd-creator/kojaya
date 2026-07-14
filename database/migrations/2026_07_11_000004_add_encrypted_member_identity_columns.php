@@ -24,8 +24,18 @@ return new class extends Migration
 
     public function down(): void
     {
-        throw new RuntimeException(
-            'PII encrypted columns are irreversible after rollout. Restore a backup or use a dedicated rollback procedure.',
-        );
+        Schema::table('cooperative_members', function (Blueprint $table): void {
+            $table->dropIndex('cooperative_members_identity_bidx_index');
+            $table->dropIndex('cooperative_members_npwp_bidx_index');
+            $table->dropIndex('cooperative_members_account_bidx_index');
+            $table->dropColumn([
+                'identity_number_enc',
+                'identity_number_bidx',
+                'npwp_enc',
+                'npwp_bidx',
+                'no_rekening_enc',
+                'no_rekening_bidx',
+            ]);
+        });
     }
 };

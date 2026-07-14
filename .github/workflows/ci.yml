@@ -38,6 +38,9 @@ jobs:
       - run: npm ci --prefer-offline --no-audit
       - run: cp .env.example .env
       - run: php artisan key:generate
+      - run: php artisan wayfinder:generate
+        env:
+          APP_ENV: local
       - run: npm run build
 
   generated-drift:
@@ -56,11 +59,14 @@ jobs:
       - run: npm ci --prefer-offline --no-audit
       - run: cp .env.example .env
       - run: php artisan key:generate
-      - run: npm run build
+      - run: test -z "$(git ls-files resources/js/actions resources/js/routes)"
       - run: php artisan wayfinder:generate
         env:
           APP_ENV: local
-      - run: git diff --exit-code resources/js/actions resources/js/routes
+      - run: |
+          test -n "$(find resources/js/actions -type f -print -quit)"
+          test -n "$(find resources/js/routes -type f -print -quit)"
+      - run: npm run build
 
   unit-feature-tests:
     name: PHPUnit Parallel
@@ -81,6 +87,9 @@ jobs:
       - run: npm ci --prefer-offline --no-audit
       - run: cp .env.example .env
       - run: php artisan key:generate
+      - run: php artisan wayfinder:generate
+        env:
+          APP_ENV: local
       - run: npm run build
       # Required evidence command (profile is enabled through Collision below because
       # ParaTest 7 does not accept Laravel's --profile option as a CLI argument).

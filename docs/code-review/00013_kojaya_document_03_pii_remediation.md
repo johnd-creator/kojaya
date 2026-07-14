@@ -6,8 +6,8 @@ Scope: Plan 03 — PII Encryption Rollout. Plan 04 was not started.
 
 ## Evidence identity
 
-- Actual starting SHA: `366dec2cd1729388ebd205527da6433de79bf725`
-- Implementation ending SHA before this evidence commit: `c8651533`
+- Actual starting SHA for this remediation: `a06926c1eb544de8668a6eca97b5a91477586d2e`
+- Implementation ending SHA before this evidence commit: `8bc0cf78`
 - Branch: `remediation/document-03-pii-encryption-rollout-clean`
 
 ## Rollout phases
@@ -56,9 +56,18 @@ The plaintext column remains in the schema. The default backfill preserves plain
 ## Migration rollback policy
 
 - The historical encrypted-column migration is unchanged from the source migration.
-- The metadata migration now fails fast before dropping any PII metadata column.
+- The metadata migration now fails fast unless `security.pii_allow_schema_rollback` is explicitly true. The default is true only for `APP_ENV=testing`; production, staging, local, and other environments default to false.
 - Migration verification ran against the disposable SQLite `:memory:` test database. Fresh test migrations exposed all PII metadata columns; the metadata rollback guard threw before schema modification and the column list remained unchanged.
+- When explicitly permitted for a disposable test database, rollback removes only the nine metadata columns introduced by the metadata migration. Plaintext, ciphertext, and blind-index value columns remain intact.
 - Schema rollback requires the approved backup/procedure path and is not part of application rollback.
+
+## DatabaseMigrations regression remediation
+
+Independent GLM verification reported a fast repository suite result of 668 passed, 4 skipped, and 415 failed. The failures were distributed across approximately 63 test classes using Laravel's `DatabaseMigrations` trait.
+
+The root cause was the metadata migration throwing unconditionally from `down()`, which runs during `DatabaseMigrations` teardown. The migration now checks the explicit `PII_ALLOW_SCHEMA_ROLLBACK` / `security.pii_allow_schema_rollback` permission before changing schema. The `.env.example` value is false and is documented for disposable automated-test databases only.
+
+The dedicated `PiiDatabaseMigrationsCompatibilityTest` uses `DatabaseMigrations` without changing existing test classes. It proves setup, the test body, and teardown rollback complete with the testing-only default. Production and staging remain fail-closed unless the explicit rollback configuration is deliberately enabled.
 
 ## Focused verification
 
@@ -69,6 +78,8 @@ Commands executed:
 php artisan test --compact tests/Unit/Security/PiiCryptoServiceTest.php tests/Unit/Security/MemberSensitiveDataInspectorTest.php
 php artisan test --compact tests/Feature/Security/MemberSensitiveDataRolloutTest.php tests/Feature/Security/MemberSensitiveDataSerializationTest.php tests/Feature/Security/PiiMigrationGuardTest.php tests/Feature/Cooperative/MemberExportAuthorizationTest.php
 php artisan test --compact tests/Feature/MemberPortal/MemberUnifiedEndpointsTest.php tests/Feature/ProductionReadinessP0P2Test.php
+php artisan test --compact tests/Feature/Security/PiiMigrationGuardTest.php tests/Feature/Security/PiiDatabaseMigrationsCompatibilityTest.php
+php artisan test --compact tests/Unit/Security/PiiCryptoServiceTest.php tests/Unit/Security/MemberSensitiveDataInspectorTest.php tests/Feature/Security/MemberSensitiveDataRolloutTest.php tests/Feature/Security/MemberSensitiveDataSerializationTest.php tests/Feature/Security/PiiMigrationGuardTest.php tests/Feature/Security/PiiDatabaseMigrationsCompatibilityTest.php tests/Feature/Cooperative/MemberExportAuthorizationTest.php
 ```
 
 Focused tests covered crypto compatibility, envelope and metadata inspection, staged rollout, retirement guards, rotation, stale-snapshot safety, authorization, organization scope, audit sanitization, and member profile preservation.
@@ -79,6 +90,8 @@ Results:
 - Final-gap rollout, authorization, serialization, migration, export, and audit tests: 37 passed, 199 assertions.
 - Affected member endpoint and P0 privacy regressions: 26 passed, 141 assertions.
 - Total focused result: 82 passed, 371 assertions.
+- Migration guard and DatabaseMigrations regression: 5 passed, 36 assertions.
+- Focused Document 03 set including the regression: 59 passed, 255 assertions.
 - Failed, skipped, and risky tests: none reported.
 
 ## Intentionally skipped
@@ -90,11 +103,14 @@ Results:
 - Seeder execution against a shared database
 - Frontend build
 - GitHub Actions monitoring
+- Fast repository suite verification; independent GLM rerun remains pending
 
 ## Residual risks
 
 - No production migration or deployment was performed.
 - Production key provisioning, backup, rollback rehearsal, and operator approval remain deployment responsibilities.
+- The fast repository suite has not been rerun by Codex; its independent GLM verification remains pending.
+- `PII_ALLOW_SCHEMA_ROLLBACK` must remain false outside disposable automated-test databases.
 - Document 03 remains ready for independent review; it is not accepted by this remediation.
 
 READY FOR INDEPENDENT REVIEW

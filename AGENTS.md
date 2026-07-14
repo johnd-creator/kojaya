@@ -109,6 +109,132 @@ This project has domain-specific skills available. You MUST activate the relevan
 - **Document Your Changes:** If you make architectural decisions, update `docs/decisions.md`
 - **Log Significant Changes:** Add entries to `docs/log.md` for major features
 
+## AI Agent Execution Policy
+
+The user owns the decision to run expensive verification. Agents must work only within the requested scope and must not start another remediation document or roadmap phase.
+
+### Required Pre-Work Summary
+
+Before implementation, state briefly:
+
+```text
+scope
+risk level
+likely affected files
+checks planned
+heavy checks intentionally not run
+```
+
+### Risk Classification
+
+#### Level 1 — Low Risk
+
+Documentation, copywriting, comments, logging, small UI changes, and non-critical configuration.
+
+Default verification:
+
+```text
+diff review
+syntax check when relevant
+vendor/bin/pint --dirty when PHP changed
+```
+
+#### Level 2 — Module Risk
+
+One controller, service, or module; Google SSO; notifications; member profile; or one non-destructive migration.
+
+Default verification:
+
+```text
+vendor/bin/pint --dirty when PHP changed
+1–3 directly related test files when permitted
+```
+
+#### Level 3 — Cross-Module Risk
+
+Authorization, shared services, API contracts, money handling, outbox behavior, or global middleware.
+
+Default verification:
+
+```text
+focused unit tests
+focused feature tests
+no full suite unless explicitly requested by the user
+```
+
+#### Level 4 — High-Risk Data or Concurrency
+
+Payments, locking, idempotency, reservations, PII encryption, key rotation, backfills, or schema transformations.
+
+Default verification:
+
+```text
+focused high-risk tests
+PostgreSQL tests only with explicit user approval
+full suite delegated to CI or the user
+```
+
+### Verification and Waiting Rules
+
+Unless the user explicitly instructs otherwise, agents MUST NOT run:
+
+```text
+php artisan test --compact without a path or filter
+full PHPUnit suite
+parallel PHPUnit suite
+coverage
+PostgreSQL concurrency suites
+migrate:fresh --seed
+npm run build
+full OpenAPI drift checks
+full Wayfinder regeneration
+```
+
+The default workflow is:
+
+```text
+inspect repository state
+→ classify change risk
+→ implement only the requested scope
+→ run lightweight checks
+→ run only directly related tests when permitted
+→ inspect final diff
+→ commit and push
+→ report results
+→ stop
+```
+
+Agents MUST NOT wait for GitHub Actions, deployment pipelines, coverage, nightly workflows, background queues, or scheduled tasks after pushing. Full verification is allowed only for tasks explicitly named final acceptance, release verification, merge readiness, CI debugging, or test-suite remediation, and remote workflow monitoring still requires explicit user instruction.
+
+### Scope Discipline and Failure Handling
+
+Agents MUST NOT:
+
+- refactor unrelated files;
+- manually change generated files;
+- modify CI unless the task is about CI;
+- start another remediation document or roadmap phase;
+- force-push or amend shared commits;
+- wait for deployment or CI completion.
+
+When a targeted test fails, fix only the root cause and rerun the same relevant test. Do not escalate automatically to the full suite. When CI fails, read the exact failing job, reproduce only the failing command when necessary, apply a focused fix, run focused verification, push, and stop.
+
+### Mandatory Final Report
+
+After push, report:
+
+```text
+branch
+starting SHA
+ending SHA
+commit SHA
+files changed
+checks executed
+checks intentionally skipped
+expected CI jobs
+remaining risks
+```
+
 ## Database Safety - Do Not Reset Local Data
 
 **CRITICAL:** The local development database may contain working demo data, login users, roles, permissions, and manually prepared QA state. Do not destroy or reseed it while implementing or testing a feature.
@@ -228,8 +354,8 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 # Test Enforcement
 
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+- Every production-code change must be covered by a new or updated test. Documentation-only changes are verified by diff review and do not require tests unless the user asks for them.
+- When tests are relevant, provide the user the exact targeted test command to run. Expensive verification remains subject to the AI Agent Execution Policy and explicit user instruction.
 - Tests must not mutate the shared `.env` database. PHPUnit must run with the testing environment/database configured by `phpunit.xml` or explicit `APP_ENV=testing`/test DB variables.
 - Before running tests that use database traits or migrations, verify they target a test database, not `DB_DATABASE=kojaya_erp`. If unsure, run a read-only check of `APP_ENV` and database name first.
 - Do not use `migrate:fresh`, `db:wipe`, broad seeders, or manual truncation as part of test setup. Use Laravel testing traits, factories, and per-test setup data instead.
@@ -354,17 +480,17 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 
 - This application uses PHPUnit for testing. All tests must be written as PHPUnit classes. Use `php artisan make:test --phpunit {name}` to create a new test.
 - If you see a test using "Pest", convert it to PHPUnit.
-- Every time a test has been updated, run that singular test.
+- Every time a test has been updated, provide the user the exact singular test command to run.
 - When the tests relating to your feature are passing, ask the user if they would like to also run the entire test suite to make sure everything is still passing.
 - Tests should cover all happy paths, failure paths, and edge cases.
 - You must not remove any tests or test files from the tests directory without approval. These are not temporary or helper files; these are core to the application.
 
 ## Running Tests
 
-- Run the minimal number of tests, using an appropriate filter, before finalizing.
-- To run all tests: `php artisan test --compact`.
+- Use a targeted file or filter for relevant verification when the risk policy permits it.
+- To run all tests: `php artisan test --compact` — only when explicitly requested by the user.
 - To run all tests in a file: `php artisan test --compact tests/Feature/ExampleTest.php`.
-- To filter on a particular test name: `php artisan test --compact --filter=testName` (recommended after making a change to a related file).
+- To filter on a particular test name: `php artisan test --compact --filter=testName`.
 
 === inertia-vue/core rules ===
 

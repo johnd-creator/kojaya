@@ -41,4 +41,8 @@ return [
     'blind_index_current_version' => env('PII_BLIND_INDEX_CURRENT_VERSION', 'v1'),
     'blind_index_active_versions' => $activeBlindIndexVersions,
     'rollout_phase' => env('PII_ROLLOUT_PHASE', 'dual_write'),
+    'pii_allow_schema_rollback' => filter_var(
+        env('PII_ALLOW_SCHEMA_ROLLBACK', env('APP_ENV') === 'testing'),
+        FILTER_VALIDATE_BOOL,
+    ),
 ];

@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Services\Cooperative\MemberProfileService;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -94,6 +95,58 @@ class MemberSensitiveDataRolloutTest extends TestCase
         $this->assertNotNull($raw['identity_number_enc']);
         $this->assertSame('v1', $raw['identity_number_key_version']);
         $this->artisan('members:verify-sensitive-data')->assertExitCode(0);
+    }
+
+    public function test_verification_fails_for_a_missing_plaintext_compatibility_copy(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'identity_number' => '3201234567890001',
+        ]);
+        DB::table('cooperative_members')->where('id', $member->id)->update([
+            'identity_number' => null,
+        ]);
+        $report = tempnam(sys_get_temp_dir(), 'pii-verify-');
+
+        $this->artisan('members:verify-sensitive-data', [
+            '--report' => $report,
+        ])->assertExitCode(1);
+
+        $contents = (string) file_get_contents($report);
+        $this->assertStringContainsString('missing_plaintext_compatibility_copy', $contents);
+        $this->assertStringNotContainsString('3201234567890001', $contents);
+        @unlink($report);
+    }
+
+    public function test_dry_run_reports_missing_compatibility_copy_and_normal_backfill_repairs_it(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'identity_number' => '3201234567890001',
+        ]);
+        DB::table('cooperative_members')->where('id', $member->id)->update([
+            'identity_number' => null,
+        ]);
+        $report = tempnam(sys_get_temp_dir(), 'pii-backfill-');
+
+        $this->artisan('members:backfill-sensitive-data', [
+            '--dry-run' => true,
+            '--report' => $report,
+        ])->assertExitCode(0);
+
+        $this->assertNull(DB::table('cooperative_members')->where('id', $member->id)->value('identity_number'));
+        $contents = (string) file_get_contents($report);
+        $this->assertStringContainsString('missing_plaintext_compatibility_copy', $contents);
+        $this->assertStringNotContainsString('3201234567890001', $contents);
+
+        $this->artisan('members:backfill-sensitive-data', [
+            '--report' => $report,
+        ])->assertExitCode(0);
+
+        $this->assertSame(
+            '3201234567890001',
+            DB::table('cooperative_members')->where('id', $member->id)->value('identity_number'),
+        );
+        $this->artisan('members:verify-sensitive-data')->assertExitCode(0);
+        @unlink($report);
     }
 
     public function test_plaintext_retirement_requires_explicit_phase_and_confirmation(): void
@@ -213,6 +266,38 @@ class MemberSensitiveDataRolloutTest extends TestCase
         $this->assertSame('v2', $raw['identity_number_key_version']);
         $this->assertSame('v2', $raw['identity_number_bidx_version']);
         $this->assertSame('3201234567890001', $raw['identity_number']);
+    }
+
+    public function test_legacy_encrypted_only_rotation_restores_plaintext_compatibility(): void
+    {
+        $member = CooperativeMember::factory()->create();
+        $value = '3201234567890001';
+        $legacyKey = (string) config('security.legacy_encryption_key');
+        $legacyEncrypter = new Encrypter(
+            base64_decode(substr($legacyKey, 7), true),
+            'aes-256-cbc',
+        );
+
+        DB::table('cooperative_members')->where('id', $member->id)->update([
+            'identity_number' => null,
+            'identity_number_enc' => $legacyEncrypter->encryptString($value),
+            'identity_number_key_version' => null,
+            'identity_number_bidx' => null,
+            'identity_number_bidx_version' => null,
+            'identity_number_migrated_at' => null,
+        ]);
+
+        $this->artisan('members:backfill-sensitive-data', [
+            '--rotate-to-current' => true,
+            '--limit' => 1,
+        ])->assertExitCode(0);
+
+        $raw = (array) DB::table('cooperative_members')->where('id', $member->id)->first();
+        $this->assertSame($value, $raw['identity_number']);
+        $this->assertSame('v1', $raw['identity_number_key_version']);
+        $this->assertSame('v1', $raw['identity_number_bidx_version']);
+        $this->assertSame('v1', app(\App\Services\Security\PiiCryptoService::class)->envelopeVersion($raw['identity_number_enc']));
+        $this->assertSame($value, $raw['identity_number']);
     }
 
     public function test_backfill_reloads_the_row_after_candidate_selection(): void

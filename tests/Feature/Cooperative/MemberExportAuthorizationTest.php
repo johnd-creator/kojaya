@@ -237,14 +237,46 @@ class MemberExportAuthorizationTest extends TestCase
         $this->actingAs($pengurus)
             ->get(route('cooperative.members.export', [
                 'include_pii' => 1,
-                'reason' => 'Verifikasi bisnis.',
+                'reason_code' => 'business_verification',
             ]))
             ->assertOk();
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'member.pii.exported',
-            'reason' => 'Verifikasi bisnis.',
+            'reason' => null,
+            'new_values->reason_code' => 'business_verification',
+            'new_values->reason_supplied' => true,
         ]);
+    }
+
+    public function test_legacy_free_text_export_reason_is_not_persisted(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+        $sentinel = 'sensitive reason sentinel 3201234567890001';
+
+        $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', [
+                'include_pii' => 1,
+                'reason' => $sentinel,
+            ]))
+            ->assertOk();
+
+        $auditContents = DB::table('audit_logs')
+            ->where('action', 'member.pii.exported')
+            ->get()
+            ->map(fn (object $audit): string => json_encode((array) $audit, JSON_THROW_ON_ERROR))
+            ->implode(' ');
+        $audit = DB::table('audit_logs')
+            ->where('action', 'member.pii.exported')
+            ->latest('id')
+            ->first();
+        $newValues = json_decode((string) $audit->new_values, true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString($sentinel, $auditContents);
+        $this->assertSame('other', $newValues['reason_code']);
+        $this->assertTrue($newValues['reason_supplied']);
     }
 
     public function test_pii_viewer_can_exact_search_formatted_and_unformatted_nik_and_npwp(): void

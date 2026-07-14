@@ -23,8 +23,8 @@ class PiiCryptoServiceTest extends TestCase
             $service->blindIndex('npwp', '123456789012000'),
         );
         $this->assertSame(
-            $service->blindIndex('no_rekening', '1234 5678'),
-            $service->blindIndex('no_rekening', '12345678'),
+            $service->blindIndex('no_rekening', ' ab-12 '),
+            $service->blindIndex('no_rekening', 'AB-12'),
         );
     }
 
@@ -90,13 +90,96 @@ class PiiCryptoServiceTest extends TestCase
     public function test_v1_blind_index_matches_the_legacy_main_contract(): void
     {
         $service = $this->service();
-        $expected = hash_hmac(
+        $identityExpected = hash_hmac(
             'sha256',
             'v1|identity_number|3201234567890001',
             base64_decode(substr($this->key('blind-index'), 7), true),
         );
+        $npwpExpected = hash_hmac(
+            'sha256',
+            'v1|npwp|123456789012000',
+            base64_decode(substr($this->key('blind-index'), 7), true),
+        );
+        $accountExpected = hash_hmac(
+            'sha256',
+            'v1|no_rekening|AB-12',
+            base64_decode(substr($this->key('blind-index'), 7), true),
+        );
 
-        $this->assertSame($expected, $service->blindIndexForVersion('identity_number', '3201-2345 6789 0001', 'v1'));
+        $this->assertSame($identityExpected, $service->blindIndexForVersion('identity_number', '3201-2345 6789 0001', 'v1'));
+        $this->assertSame($npwpExpected, $service->blindIndexForVersion('npwp', '12.345.678.9-012.000', 'v1'));
+        $this->assertSame($accountExpected, $service->blindIndexForVersion('no_rekening', ' ab-12 ', 'v1'));
+    }
+
+    public function test_empty_active_versions_are_rejected(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        new PiiCryptoService(
+            ['v1' => $this->key('encryption')],
+            'v1',
+            ['v1' => $this->key('blind-index')],
+            'v1',
+            null,
+            [],
+        );
+    }
+
+    public function test_current_version_must_be_active(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        new PiiCryptoService(
+            ['v1' => $this->key('encryption-v1'), 'v2' => $this->key('encryption-v2')],
+            'v2',
+            ['v1' => $this->key('blind-index-v1'), 'v2' => $this->key('blind-index-v2')],
+            'v2',
+            null,
+            ['v1'],
+        );
+    }
+
+    public function test_duplicate_active_versions_after_normalization_are_rejected(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        new PiiCryptoService(
+            ['v1' => $this->key('encryption')],
+            'v1',
+            ['v1' => $this->key('blind-index')],
+            'v1',
+            null,
+            ['v1', ' V1 '],
+        );
+    }
+
+    public function test_active_version_without_a_key_is_rejected(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        new PiiCryptoService(
+            ['v1' => $this->key('encryption')],
+            'v1',
+            ['v1' => $this->key('blind-index')],
+            'v1',
+            null,
+            ['v1', 'v2'],
+        );
+    }
+
+    public function test_valid_active_versions_are_normalized_and_ordered(): void
+    {
+        $service = new PiiCryptoService(
+            ['v1' => $this->key('encryption-v1'), 'V2' => $this->key('encryption-v2')],
+            ' V2 ',
+            ['v1' => $this->key('blind-index-v1'), 'V2' => $this->key('blind-index-v2')],
+            ' V2 ',
+            null,
+            [' V1 ', 'v2'],
+        );
+
+        $this->assertSame('v2', $service->currentBlindIndexVersion());
+        $this->assertSame(['v1', 'v2'], $service->activeBlindIndexVersions());
     }
 
     public function test_active_version_search_returns_all_configured_candidates(): void

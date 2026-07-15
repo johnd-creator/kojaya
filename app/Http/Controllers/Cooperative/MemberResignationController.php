@@ -24,12 +24,7 @@ class MemberResignationController extends Controller
         $baseQuery = MemberResignationRequest::query()
             ->with(['member.organization', 'reviewer']);
 
-        // Scope by organization through the member relation.
-        if (! $scopeService->canViewAllOrganizations($request->user())) {
-            $baseQuery->whereHas('member', function ($memberQuery) use ($request): void {
-                $memberQuery->where('organization_id', $request->user()->organization_id);
-            });
-        }
+        $scopeService->scopeVisibleTo($baseQuery, $request->user());
 
         $query = (clone $baseQuery)
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))

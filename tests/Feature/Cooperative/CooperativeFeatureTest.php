@@ -151,7 +151,8 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         // Role ad-hoc boleh create anggota, tetapi saldo awal hanya boleh
         // ditulis melalui wizard.
-        $user = User::factory()->create();
+        $organization = app(\App\Services\Cooperative\CooperativeHeadOfficeResolver::class)->resolve();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $legacyRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Legacy Opening Balance Creator']);
         $legacyRole->syncPermissions([
             'view_cooperative_member',
@@ -741,7 +742,8 @@ class CooperativeFeatureTest extends TestCase
     public function test_ledger_page_filters_members_by_partial_name_or_member_number_case_insensitively(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        $user = User::factory()->create();
+        $organization = app(\App\Services\Cooperative\CooperativeHeadOfficeResolver::class)->resolve();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('Admin Koperasi');
         $matchingMember = $this->member([
             'status' => 'ACTIVE',
@@ -768,6 +770,7 @@ class CooperativeFeatureTest extends TestCase
 
         CooperativeLedgerEntry::query()->create([
             'cooperative_member_id' => $matchingMember->id,
+            'organization_id' => $organization->id,
             'cooperative_contribution_type_id' => $type->id,
             'entry_type' => 'SAVING_PAYMENT',
             'ledger_scope' => 'SAVINGS',
@@ -778,6 +781,7 @@ class CooperativeFeatureTest extends TestCase
         ]);
         CooperativeLedgerEntry::query()->create([
             'cooperative_member_id' => $otherMember->id,
+            'organization_id' => $organization->id,
             'cooperative_contribution_type_id' => $type->id,
             'entry_type' => 'SAVING_PAYMENT',
             'ledger_scope' => 'SAVINGS',
@@ -1452,7 +1456,8 @@ class CooperativeFeatureTest extends TestCase
     public function test_manual_payment_page_excludes_wajib_contribution_type(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        $user = User::factory()->create();
+        $organization = app(\App\Services\Cooperative\CooperativeHeadOfficeResolver::class)->resolve();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('Admin Koperasi');
 
         CooperativeContributionType::query()->create([

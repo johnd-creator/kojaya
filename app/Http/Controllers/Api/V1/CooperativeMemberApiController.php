@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Concerns\ResolvesApiPageSize;
 use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\FindCooperativeMemberAccountCandidatesRequest;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
+use App\Http\Requests\Cooperative\UnlinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
 use App\Http\Resources\CooperativeMemberResource;
@@ -16,9 +18,10 @@ use App\Models\CooperativeMember;
 use App\Models\MemberResignationRequest;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
-use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
+use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberResignationRequestService;
 use App\Services\Cooperative\MemberStatusTransitionService;
@@ -59,12 +62,17 @@ class CooperativeMemberApiController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         MemberNumberGenerator $memberNumberGenerator,
+        OrganizationScopeService $scopeService,
     ): JsonResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $memberNo = $memberNumberGenerator->generate();
+        $visibility = $scopeService->visibilityFor($request->user(), \App\Enums\PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        $organizationId = $visibility->global
+            ? $headOfficeResolver->resolve()->id
+            : $visibility->organizationId;
 
-        $member = DB::transaction(function () use ($request, $headOfficeResolver, $memberNo): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $organizationId, $memberNo): CooperativeMember {
             $member = CooperativeMember::query()->create([
                 ...$request->safe()->only([
                     'employee_id',
@@ -81,7 +89,7 @@ class CooperativeMemberApiController extends Controller
                     'kategori',
                     'autodebet',
                 ]),
-                'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
+                'organization_id' => $organizationId,
                 'no_anggota' => $memberNo,
                 'member_no' => $memberNo,
                 'joined_at' => $request->validated('tanggal_aktif'),
@@ -180,29 +188,29 @@ class CooperativeMemberApiController extends Controller
     public function linkAccount(
         LinkCooperativeMemberAccountRequest $request,
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
-        AuditLogService $audit,
+        MemberAccountLinkService $linkService,
     ): JsonResponse {
-        $this->authorize('update', $member);
-        $previousUserId = $member->user_id;
+        $member = $linkService->link($request->user(), $member, User::query()->findOrFail($request->validated('user_id')), $request->validated('reason'));
 
-        $member = DB::transaction(function () use ($request, $member, $userProvisioningService): CooperativeMember {
-            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
-            $member->forceFill(['user_id' => $request->validated('user_id')])->save();
-            $userProvisioningService->provision($member->refresh());
+        return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
+    }
 
-            return $member->refresh();
-        });
-
-        if ($previousUserId !== null && (int) $previousUserId !== (int) $member->user_id) {
-            User::query()->find($previousUserId)?->removeRole('Anggota');
-        }
-
-        $audit->log('member.account.linked', 'cooperative.member', $member, [
-            'old' => ['user_id' => $previousUserId],
-            'new' => ['user_id' => $member->user_id],
-            'reason' => $request->validated('reason'),
+    public function accountLinkCandidates(
+        FindCooperativeMemberAccountCandidatesRequest $request,
+        CooperativeMember $member,
+        MemberAccountLinkService $linkService,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $linkService->candidates($request->user(), $member, $request->validated('email')),
         ]);
+    }
+
+    public function unlinkAccount(
+        UnlinkCooperativeMemberAccountRequest $request,
+        CooperativeMember $member,
+        MemberAccountLinkService $linkService,
+    ): JsonResponse {
+        $member = $linkService->unlink($request->user(), $member, $request->validated('reason'));
 
         return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
     }

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Enums\TokenApp;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RotateTokenRequest extends FormRequest
 {
@@ -22,6 +24,7 @@ class RotateTokenRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'app' => ['nullable', 'string', Rule::enum(TokenApp::class)],
             'device_name' => ['nullable', 'string', 'max:255'],
         ];
     }

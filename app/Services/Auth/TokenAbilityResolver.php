@@ -7,6 +7,10 @@ use App\Models\User;
 
 class TokenAbilityResolver
 {
+    public function __construct(
+        private readonly AbilityCutoverPolicy $cutover,
+    ) {}
+
     /**
      * Backward-compatible coarse abilities retained during the migration
      * from cooperative:read/write to granular domain abilities.
@@ -45,6 +49,7 @@ class TokenAbilityResolver
      */
     public function for(User $user, ?string $app): array
     {
+        $phase = $this->cutover->phase();
         $abilities = ['profile:read'];
 
         if ($user->cooperativeMember) {
@@ -55,13 +60,15 @@ class TokenAbilityResolver
         // --- Granular cooperative abilities (P1.2) ---
         $abilities = array_merge($abilities, $this->resolveCooperativeAbilities($user));
 
-        // --- Legacy coarse abilities (backward compatibility) ---
-        if ($this->canAny($user, self::LEGACY_COOPERATIVE_READ_PERMS)) {
-            $abilities[] = 'cooperative:read';
-        }
+        // Legacy abilities are issued only during the explicit instrument phase.
+        if ($phase->value === 'instrument') {
+            if ($this->canAny($user, self::LEGACY_COOPERATIVE_READ_PERMS)) {
+                $abilities[] = 'cooperative:read';
+            }
 
-        if ($this->canAny($user, self::LEGACY_COOPERATIVE_WRITE_PERMS)) {
-            $abilities[] = 'cooperative:write';
+            if ($this->canAny($user, self::LEGACY_COOPERATIVE_WRITE_PERMS)) {
+                $abilities[] = 'cooperative:write';
+            }
         }
 
         if ($user->employee || $this->canAny($user, [
@@ -112,6 +119,7 @@ class TokenAbilityResolver
             'member' => $this->only($abilities, ['profile:read', 'member:read', 'member:write']),
             'ess' => $this->only($abilities, ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read']),
             'technician' => $this->only($abilities, ['profile:read', 'work-orders:read', 'work-orders:write', 'work-orders:review']),
+            'admin' => $this->onlyAdmin($abilities),
             default => $abilities,
         };
     }
@@ -249,5 +257,23 @@ class TokenAbilityResolver
     private function only(array $abilities, array $allowed): array
     {
         return array_values(array_intersect($abilities, $allowed));
+    }
+
+    /**
+     * Admin tokens may carry documented admin domains, but never member, ESS,
+     * technician, or wildcard abilities as an accidental combined profile.
+     *
+     * @param  array<int, string>  $abilities
+     * @return array<int, string>
+     */
+    private function onlyAdmin(array $abilities): array
+    {
+        return array_values(array_filter($abilities, static function (string $ability): bool {
+            return $ability === 'profile:read'
+                || str_starts_with($ability, 'cooperative.')
+                || str_starts_with($ability, 'cooperative:')
+                || str_starts_with($ability, 'pos:')
+                || str_starts_with($ability, 'reports:');
+        }));
     }
 }

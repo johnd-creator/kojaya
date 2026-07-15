@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Services\Authorization\OrganizationScopeService;
 use Illuminate\Database\Eloquent\Model;
 
 abstract class BasePolicy
@@ -25,16 +26,12 @@ abstract class BasePolicy
 
     protected function sameOrganization(User $user, Model $model): bool
     {
-        $organizationId = $model->getAttribute('organization_id');
+        try {
+            app(OrganizationScopeService::class)->assertVisible($user, $model);
 
-        if ($organizationId === null && method_exists($model, 'member')) {
-            $member = $model->relationLoaded('member')
-                ? $model->getRelation('member')
-                : $model->member()->first(['organization_id']);
-            $organizationId = $member?->organization_id;
+            return true;
+        } catch (\Throwable) {
+            return false;
         }
-
-        return ($organizationId === null && $user->organization_id === null)
-            || ($organizationId !== null && (string) $organizationId === (string) $user->organization_id);
     }
 }

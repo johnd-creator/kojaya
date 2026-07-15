@@ -227,7 +227,8 @@ kojaya/
 - **Middleware:** `auth:sanctum`
 - **Features:**
    - API tokens with 30-day expiration (configurable)
-   - Token abilities (permissions): profile:read, cooperative:read/write, pos:read/write, reports:read, work-orders:read/write, employee-documents:read/write
+   - Token abilities are app-specific and granular: member (`profile:read`, `member:*`), ESS (`ess:*`, `attendance:*`, `payroll:read`), technician (`work-orders:*`), and admin cooperative/POS/report abilities resolved from current permissions.
+   - New tokens never receive `*`; `cooperative:read/write` are legacy compatibility abilities governed by the validated cutover phase and grace deadlines.
    - Mobile-first authentication
 
 #### **3. Role-Based Access Control (RBAC)**

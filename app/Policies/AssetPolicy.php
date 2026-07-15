@@ -15,13 +15,13 @@ class AssetPolicy extends BasePolicy
 
     public function view(User $user, Asset $asset): bool
     {
-        return $this->can($user, 'view_asset_all')
-            || ($this->can($user, 'view_asset_unit') && $this->sameOrganization($user, $asset));
+        return $this->canAny($user, ['view_asset_all', 'view_asset_unit'])
+            && $this->sameOrganization($user, $asset);
     }
 
     public function update(User $user, Asset $asset): bool
     {
         return $this->can($user, 'manage_asset')
-            && ($this->can($user, 'view_asset_all') || $this->sameOrganization($user, $asset));
+            && $this->sameOrganization($user, $asset);
     }
 }

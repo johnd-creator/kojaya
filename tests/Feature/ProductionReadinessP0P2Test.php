@@ -280,7 +280,7 @@ class ProductionReadinessP0P2Test extends TestCase
             PermissionEnum::VENDORS_MANAGE->value,
         ]);
 
-        $loan = Loan::factory()->active()->create();
+        $loan = Loan::factory()->active()->create(['organization_id' => $organization->id]);
         $restructure = LoanRestructure::query()->create([
             'loan_id' => $loan->id,
             'cooperative_member_id' => $loan->cooperative_member_id,

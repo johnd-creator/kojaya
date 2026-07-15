@@ -2,29 +2,16 @@
 
 namespace App\Models\Traits;
 
+use App\Services\Authorization\OrganizationScopeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Provides a reusable local scope for filtering data by the authenticated
- * user's organization. Roles with "all" access (System Admin, Admin Pusat,
- * HR Pusat, Finance Pusat) see every record; unit-level roles see only
- * records matching their own organization_id.
+ * Provides the legacy ERP organization scope for models outside the
+ * cooperative authorization registry.
  */
 trait HasOrganizationScope
 {
-    /**
-     * Roles that are allowed to view data across ALL organizations.
-     *
-     * @var list<string>
-     */
-    protected static array $allAccessRoles = [
-        'System Admin',
-        'Admin Pusat',
-        'HR Pusat',
-        'Finance Pusat',
-    ];
-
     /**
      * Scope: filter records by the current user's organization.
      *
@@ -38,14 +25,9 @@ trait HasOrganizationScope
             return $query->whereRaw('1 = 0'); // guest → no data
         }
 
-        if ($user->hasAnyRole(static::$allAccessRoles)) {
-            return $query; // full access → no filter
-        }
+        $scope = app(OrganizationScopeService::class);
 
-        return $query->where(
-            $this->getTable().'.organization_id',
-            $user->organization_id,
-        );
+        return $scope->scopeVisibleTo($query, $user, $scope->globalPermissionFor($this));
     }
 
     /**
@@ -54,10 +36,21 @@ trait HasOrganizationScope
      */
     public function scopeForOrganization(Builder $query, string $organizationId): Builder
     {
-        return $query->where(
-            $this->getTable().'.organization_id',
-            $organizationId,
-        );
+        $user = Auth::user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $scope = app(OrganizationScopeService::class);
+        $selectedOrganizationId = $scope->assertOrganizationIdentifier($organizationId);
+        $visibility = $scope->visibilityFor($user, $scope->globalPermissionFor($this));
+
+        if (! $visibility->global && (string) $visibility->organizationId !== $selectedOrganizationId) {
+            throw new \Illuminate\Auth\Access\AuthorizationException('The selected organization is outside the user scope.');
+        }
+
+        return $query->where($this->qualifyColumn('organization_id'), $selectedOrganizationId);
     }
 
     /**
@@ -72,16 +65,27 @@ trait HasOrganizationScope
      */
     public function scopeForActiveOrganization(Builder $query): Builder
     {
-        $activeOrgId = session('active_organization_id');
+        $user = Auth::user();
 
-        // If no active organization, return all (consolidated view)
-        if (! $activeOrgId) {
-            return $query;
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(
-            $this->getTable().'.organization_id',
-            $activeOrgId,
-        );
+        $scope = app(OrganizationScopeService::class);
+        $globalPermission = $scope->globalPermissionFor($this);
+        $activeOrgId = session('active_organization_id');
+
+        if (! $activeOrgId) {
+            return $scope->scopeVisibleTo($query, $user, $globalPermission);
+        }
+
+        $selectedOrganizationId = $scope->assertOrganizationIdentifier((string) $activeOrgId);
+        $visibility = $scope->visibilityFor($user, $globalPermission);
+
+        if (! $visibility->global && (string) $visibility->organizationId !== $selectedOrganizationId) {
+            throw new \Illuminate\Auth\Access\AuthorizationException('The selected organization is outside the user scope.');
+        }
+
+        return $query->where($this->qualifyColumn('organization_id'), $selectedOrganizationId);
     }
 }

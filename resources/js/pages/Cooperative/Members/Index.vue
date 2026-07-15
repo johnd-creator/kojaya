@@ -146,7 +146,6 @@ const reviewProcessing = ref(false);
 
 const editMemberForm = useForm({
   employee_id: "",
-  user_id: "",
   no_anggota: "",
   tanggal_aktif: "",
   nama_anggota: "",
@@ -170,7 +169,6 @@ const editMemberForm = useForm({
 });
 const createMemberForm = useForm({
   employee_id: "",
-  user_id: "",
   no_anggota: "",
   tanggal_aktif: new Date().toISOString().slice(0, 10),
   nama_anggota: "",
@@ -257,7 +255,6 @@ const openEditDialog = (row: any): void => {
   editMemberForm.reset();
   editMemberForm.clearErrors();
   editMemberForm.employee_id = row.employee_id ?? "";
-  editMemberForm.user_id = row.user_id ?? "";
   editMemberForm.no_anggota = row.no_anggota ?? row.member_no ?? "";
   editMemberForm.tanggal_aktif = (row.tanggal_aktif ?? row.joined_at ?? "").slice(0, 10);
   editMemberForm.nama_anggota = row.nama_anggota ?? row.name ?? "";

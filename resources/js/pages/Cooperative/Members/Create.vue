@@ -7,7 +7,6 @@ import { index, store } from "@/routes/cooperative/members";
 
 const props = defineProps<{
   employees: any[];
-  users: any[];
   options: {
     statuses: Array<{ value: string; label: string }>;
     jenisAnggota: Array<{ value: string; label: string }>;
@@ -19,7 +18,6 @@ const props = defineProps<{
 
 const form = useForm({
   employee_id: "",
-  user_id: "",
   no_anggota: "",
   tanggal_aktif: new Date().toISOString().slice(0, 10),
   nama_anggota: "",

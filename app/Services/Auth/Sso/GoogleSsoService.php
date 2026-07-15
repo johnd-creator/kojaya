@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
-use Spatie\Permission\Models\Role;
 use Throwable;
 
 class GoogleSsoService
@@ -101,7 +100,16 @@ class GoogleSsoService
             : null;
 
         if ($member) {
-            return $this->linkToExistingMember($member, $googleUser, $email, $providerId);
+            $this->logSecurity('sso.google.manual_member_link_required', [
+                'member_id' => $member->id,
+                'organization_id' => $member->organization_id,
+            ]);
+
+            return [
+                'user' => null,
+                'result' => self::RESULT_NO_REGISTRATION,
+                'reason' => 'manual_member_link_required',
+            ];
         }
 
         if (! $this->allowsNewMemberRegistration()) {
@@ -191,44 +199,6 @@ class GoogleSsoService
         $this->audit->logAuth('sso.google.existing_user_linked', $user->id);
 
         return ['user' => $user, 'result' => self::RESULT_LOGIN_LINKED, 'social_account' => $social];
-    }
-
-    /**
-     * @return array{user: User, result: string, social_account: SocialAccount, member: CooperativeMember}
-     */
-    private function linkToExistingMember(CooperativeMember $member, SocialiteUser $googleUser, string $email, string $providerId): array
-    {
-        $social = DB::transaction(function () use ($member, $googleUser, $email): SocialAccount {
-            $user = $member->user;
-            if (! $user) {
-                $user = User::query()->create([
-                    'name' => $googleUser->getName() ?: ($member->nama_anggota ?: $member->name),
-                    'email' => $email,
-                    'password' => bcrypt(Str::random(40)),
-                    'organization_id' => $member->organization_id,
-                ]);
-                $this->markEmailVerifiedFromGoogle($user);
-                $member->forceFill(['user_id' => $user->id])->save();
-            }
-
-            $this->markEmailVerifiedFromGoogle($user);
-
-            if (! $user->hasRole('Anggota')) {
-                $role = Role::query()->firstOrCreate(['name' => 'Anggota']);
-                $user->assignRole($role);
-            }
-
-            return $this->linking->link($user, $googleUser, self::PROVIDER);
-        });
-
-        $this->audit->logAuth('sso.google.existing_member_linked', $member->user_id);
-
-        return [
-            'user' => $social->user,
-            'result' => self::RESULT_LOGIN_LINKED,
-            'social_account' => $social,
-            'member' => $member->refresh(),
-        ];
     }
 
     /**

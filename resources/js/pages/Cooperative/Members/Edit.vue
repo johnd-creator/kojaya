@@ -11,8 +11,6 @@ import {
   Pencil,
   Phone,
   Save,
-  UserCog,
-  Users,
 } from "lucide-vue-next";
 import { computed } from "vue";
 import StatusPill from "@/components/dashboard/StatusPill.vue";
@@ -31,7 +29,6 @@ import { index, show, update } from "@/routes/cooperative/members";
 const props = defineProps<{
   member: any;
   employees: any[];
-  users: any[];
   openingSavingBalance: number | string | null;
   options: {
     statuses: Array<{ value: string; label: string }>;
@@ -44,7 +41,6 @@ const props = defineProps<{
 
 const form = useForm({
   employee_id: props.member.employee_id ?? "",
-  user_id: props.member.user_id ?? "",
   no_anggota: props.member.no_anggota ?? props.member.member_no ?? "",
   tanggal_aktif: props.member.tanggal_aktif ?? props.member.joined_at ?? "",
   nama_anggota: props.member.nama_anggota ?? props.member.name ?? "",

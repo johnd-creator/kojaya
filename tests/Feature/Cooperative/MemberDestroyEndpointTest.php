@@ -31,7 +31,7 @@ class MemberDestroyEndpointTest extends TestCase
             'user_id' => $memberUser->id,
         ]);
 
-        $memberUser->createToken('mobile', ['member:read']);
+        $memberUser->createToken('mobile', ['profile:read', 'member:read', 'member:write']);
         $this->assertSame(1, $memberUser->tokens()->count());
         $this->assertTrue($memberUser->hasRole('Anggota'));
 
@@ -94,7 +94,7 @@ class MemberDestroyEndpointTest extends TestCase
             'user_id' => $memberUser->id,
         ]);
 
-        $memberUser->createToken('mobile', ['member:read']);
+        $memberUser->createToken('mobile', ['profile:read', 'member:read', 'member:write']);
 
         $anggotaActor = User::factory()->create(['organization_id' => $org->id]);
         $anggotaActor->assignRole('Anggota');

@@ -66,7 +66,7 @@ Content-Type: application/json
 - `member` - Kojayaku member app (abilities: `profile:read`, `member:read`, `member:write`)
 - `ess` - Employee Self-Service (abilities: `ess:read`, `ess:write`, `attendance:read`, `attendance:write`, `payroll:read`)
 - `technician` - Technician app (abilities: `work-orders:read`, `work-orders:write`)
-- `admin` - Admin panel (abilities: `*` wildcard for System Admin/Admin Pusat)
+- `admin` - Admin panel with granular cooperative, POS, and reporting abilities. New tokens never receive `*`; legacy wildcard or combined tokens must be explicitly rotated.
 
 #### 2. **Use Token in Requests**
 ```http
@@ -132,9 +132,17 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
+  "app": "member",
   "device_name": "Android Phone"
 }
 ```
+
+`app` is optional when the current token already has explicit `token_app`
+metadata or can be classified as one exact legacy profile. It is required for
+an unsafe legacy token (wildcard, combined, empty, or unknown abilities). The
+selected app cannot elevate permissions; the new ability set is resolved from
+the user's current permissions and the app profile. A safe legacy token cannot
+be changed into another app profile during rotation.
 
 **Response (200):**
 ```json
@@ -142,6 +150,8 @@ Content-Type: application/json
   "token_type": "Bearer",
   "token": "2|xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "abilities": ["profile:read", "member:read", "member:write"],
+  "token_app": "member",
+  "token_version": "v1",
   "expires_at": null
 }
 ```
@@ -1204,6 +1214,30 @@ Content-Type: application/json
   "reason": "Pindah domisili"
 }
 ```
+
+### **Resolve Account-Link Candidate**
+```http
+GET /api/v1/members/{member}/account-link/candidates?email=member@example.com
+Authorization: Bearer {token}
+```
+
+The lookup is an exact email lookup scoped to the member's organization. It
+returns only verified, ordinary users who are not already linked to another
+cooperative member. It is not a user directory and does not perform linking.
+Use the returned candidate ID with the dedicated account-link action and a
+controlled reason code.
+
+### **Link or Unlink Member Account**
+```http
+POST /api/v1/members/{member}/account-link
+DELETE /api/v1/members/{member}/account-link
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+Link requires `user_id` and a controlled `reason`; unlink requires only the
+controlled `reason`. Both actions verify organization ownership, eligibility,
+and authorization transactionally.
 
 ## 💰 Cooperative Dues API
 
@@ -2517,8 +2551,9 @@ PUT /api/v1/notifications/preferences
 ```
 
 Authorization:
-- `cooperative:read` for list, recent, and summary.
-- `cooperative:write` for mark-read and preferences.
+- Granular cooperative abilities for list, recent, summary, and mutation
+  routes. `cooperative:read` and `cooperative:write` are legacy compatibility
+  abilities only during the explicitly configured cutover grace phase.
 - Results are scoped by authenticated user, organization, role, and permission.
 
 ### **Core Cooperative Event Types**
@@ -2676,10 +2711,10 @@ Business error envelopes may additionally expose `error_code` values such as `PE
 
 | Ability | Granted To |
 |---------|-----------|
-| `*` | System Admin, Admin Pusat |
+| `*` | Never issued by new token profiles; legacy wildcard tokens require explicit rotation |
 | `profile:read` | All authenticated users |
 | `member:read`, `member:write` | Anggota, cooperative members |
-| `cooperative:read`, `cooperative:write` | Admin/Pengurus/Kasir Koperasi sesuai permission operasional; bukan untuk token app anggota |
+| `cooperative:read`, `cooperative:write` | Legacy compatibility only during the configured cutover phase; new issuers use granular cooperative abilities |
 | `ess:read`, `ess:write` | Employees |
 | `attendance:read`, `attendance:write` | Employees |
 | `payroll:read` | Employees |

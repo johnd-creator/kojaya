@@ -15,8 +15,10 @@ class PayrollPolicy extends BasePolicy
 
     public function view(User $user, Payroll $payroll): bool
     {
-        return $this->can($user, PermissionEnum::PAYROLL_VIEW_ALL->value)
-            || ($this->can($user, PermissionEnum::PAYROLL_VIEW_UNIT->value) && $this->sameOrganization($user, $payroll));
+        return $this->canAny($user, [
+            PermissionEnum::PAYROLL_VIEW_ALL->value,
+            PermissionEnum::PAYROLL_VIEW_UNIT->value,
+        ]) && $this->sameOrganization($user, $payroll);
     }
 
     public function create(User $user): bool
@@ -27,13 +29,13 @@ class PayrollPolicy extends BasePolicy
     public function update(User $user, Payroll $payroll): bool
     {
         return $this->can($user, PermissionEnum::PAYROLL_PROCESS->value)
-            && ($this->can($user, PermissionEnum::PAYROLL_VIEW_ALL->value) || $this->sameOrganization($user, $payroll));
+            && $this->sameOrganization($user, $payroll);
     }
 
     public function approve(User $user, Payroll $payroll): bool
     {
         return $this->can($user, PermissionEnum::PAYROLL_APPROVE->value)
-            && ($this->can($user, PermissionEnum::PAYROLL_VIEW_ALL->value) || $this->sameOrganization($user, $payroll));
+            && $this->sameOrganization($user, $payroll);
     }
 
     public function submitForApproval(User $user): bool

@@ -19,19 +19,25 @@ class LoanRestructurePolicy extends BasePolicy
 
     public function view(User $user, LoanRestructure $loanRestructure): bool
     {
-        return $this->viewAny($user)
-            || ($this->can($user, PermissionEnum::COOPERATIVE_LOAN_VIEW->value) && $loanRestructure->member?->user_id === $user->id);
+        return ($this->viewAny($user) && $this->sameOrganization($user, $loanRestructure))
+            || ($this->can($user, PermissionEnum::COOPERATIVE_LOAN_VIEW->value)
+                && $loanRestructure->member?->user_id === $user->id
+                && $this->sameOrganization($user, $loanRestructure));
     }
 
     public function create(User $user, Loan $loan): bool
     {
         return $this->can($user, PermissionEnum::COOPERATIVE_LOAN_MANAGE->value)
-            || ($this->can($user, PermissionEnum::COOPERATIVE_LOAN_VIEW->value) && $loan->member?->user_id === $user->id);
+            && $this->sameOrganization($user, $loan)
+            || ($this->can($user, PermissionEnum::COOPERATIVE_LOAN_VIEW->value)
+                && $loan->member?->user_id === $user->id
+                && $this->sameOrganization($user, $loan));
     }
 
     public function approve(User $user, LoanRestructure $loanRestructure): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_LOAN_APPROVE->value);
+        return $this->can($user, PermissionEnum::COOPERATIVE_LOAN_APPROVE->value)
+            && $this->sameOrganization($user, $loanRestructure);
     }
 
     public function reject(User $user, LoanRestructure $loanRestructure): bool

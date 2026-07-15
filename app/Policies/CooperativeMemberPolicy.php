@@ -5,6 +5,8 @@ namespace App\Policies;
 use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\User;
+use App\Services\Authorization\OrganizationScopeService;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class CooperativeMemberPolicy extends BasePolicy
 {
@@ -23,7 +25,17 @@ class CooperativeMemberPolicy extends BasePolicy
 
     public function create(User $user): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+        if (! $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)) {
+            return false;
+        }
+
+        try {
+            app(OrganizationScopeService::class)->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+
+            return true;
+        } catch (AuthorizationException) {
+            return false;
+        }
     }
 
     public function update(User $user, CooperativeMember $cooperativeMember): bool
@@ -72,7 +84,6 @@ class CooperativeMemberPolicy extends BasePolicy
 
     private function visibleTo(User $user, CooperativeMember $member): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
-            || $this->sameOrganization($user, $member);
+        return $this->sameOrganization($user, $member);
     }
 }

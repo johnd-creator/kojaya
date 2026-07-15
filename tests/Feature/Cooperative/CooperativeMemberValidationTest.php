@@ -39,6 +39,7 @@ class CooperativeMemberValidationTest extends TestCase
             'status' => CooperativeMember::VALIDATION_PENDING,
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
+        $validator->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->assertFalse($user->hasRole('Anggota'));
 
@@ -71,6 +72,7 @@ class CooperativeMemberValidationTest extends TestCase
             'admin_validated_at' => now(),
             'admin_validated_by' => User::factory()->create()->id,
         ]);
+        $validator->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->assertFalse($user->hasRole('Anggota'));
 
@@ -133,6 +135,7 @@ class CooperativeMemberValidationTest extends TestCase
             'status' => CooperativeMember::VALIDATION_PENDING,
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
+        $validator->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->actingAs($validator)
             ->post(route('cooperative.members.reject', $member), [
@@ -153,6 +156,7 @@ class CooperativeMemberValidationTest extends TestCase
             'status' => CooperativeMember::VALIDATION_PENDING,
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
+        $validator->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->actingAs($validator)
             ->post(route('cooperative.members.request-revision', $member), [
@@ -221,6 +225,7 @@ class CooperativeMemberValidationTest extends TestCase
         $member = CooperativeMember::factory()->create([
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
         ]);
+        $validator->forceFill(['organization_id' => $member->organization_id])->save();
 
         $this->actingAs($validator)
             ->post(route('cooperative.members.validate', $member))

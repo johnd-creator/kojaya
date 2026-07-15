@@ -51,11 +51,17 @@ class CooperativePaymentController extends Controller
         ]);
     }
 
-    public function store(StoreCooperativePaymentRequest $request, CooperativePaymentService $service): RedirectResponse
-    {
+    public function store(
+        StoreCooperativePaymentRequest $request,
+        CooperativePaymentService $service,
+        OrganizationScopedQueryService $scopeService,
+    ): RedirectResponse {
         $this->authorize('create', CooperativePayment::class);
 
         $data = $request->validated();
+        $memberQuery = CooperativeMember::query()->whereKey($data['cooperative_member_id']);
+        $scopeService->scopeVisibleTo($memberQuery, $request->user());
+        $memberQuery->firstOrFail();
 
         if ($request->hasFile('proof')) {
             $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin', 'public');

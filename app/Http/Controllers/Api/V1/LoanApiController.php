@@ -36,7 +36,9 @@ class LoanApiController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        return response()->json($query->latest()->paginate($this->apiPageSize($request)));
+        return LoanResource::collection(
+            $query->latest()->paginate($this->apiPageSize($request)),
+        )->response();
     }
 
     public function apply(
@@ -53,7 +55,9 @@ class LoanApiController extends Controller
             'organization_id' => $member->organization_id,
         ], $user);
 
-        return response()->json(['data' => $loan], 201);
+        return response()->json([
+            'data' => new LoanResource($loan->load(['member', 'loanType', 'installments'])),
+        ], 201);
     }
 
     public function show(Request $request, Loan $loan): JsonResponse

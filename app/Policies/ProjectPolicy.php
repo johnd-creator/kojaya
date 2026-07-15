@@ -15,8 +15,8 @@ class ProjectPolicy extends BasePolicy
 
     public function view(User $user, Project $project): bool
     {
-        return $this->can($user, 'view_project_all')
-            || ($this->can($user, 'view_project_unit') && $this->sameOrganization($user, $project));
+        return $this->canAny($user, ['view_project_all', 'view_project_unit'])
+            && $this->sameOrganization($user, $project);
     }
 
     public function update(User $user, Project $project): bool

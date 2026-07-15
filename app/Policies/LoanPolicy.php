@@ -15,8 +15,7 @@ class LoanPolicy extends BasePolicy
 
     public function view(User $user, Loan $loan): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
-            || (($this->can($user, PermissionEnum::COOPERATIVE_LOAN_MANAGE->value)
+        return (($this->can($user, PermissionEnum::COOPERATIVE_LOAN_MANAGE->value)
                 || $this->can($user, PermissionEnum::COOPERATIVE_LOAN_APPROVE->value)) && $this->sameOrganization($user, $loan))
             || ($this->can($user, PermissionEnum::COOPERATIVE_LOAN_VIEW->value)
                 && $loan->member?->user_id === $user->id
@@ -69,7 +68,6 @@ class LoanPolicy extends BasePolicy
 
     private function visibleTo(User $user, Loan $loan): bool
     {
-        return $this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
-            || $this->sameOrganization($user, $loan);
+        return $this->sameOrganization($user, $loan);
     }
 }

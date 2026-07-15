@@ -37,9 +37,9 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
 
     public function test_api_store_with_opening_saving_balance_requires_wizard_even_when_user_lacks_wizard_permission(): void
     {
-        $this->actingAdmin('no-wizard');
-
         $organization = Organization::factory()->create();
+        $admin = $this->actingAdmin('no-wizard');
+        $admin->forceFill(['organization_id' => $organization->id])->save();
 
         $response = $this->postJson('/api/v1/members', [
             'name' => 'Anggota API Legacy',

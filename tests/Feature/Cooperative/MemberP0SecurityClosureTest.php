@@ -61,6 +61,47 @@ class MemberP0SecurityClosureTest extends TestCase
         $this->assertDatabaseMissing('cooperative_members', ['email' => 'p0-create@test.local']);
     }
 
+    public function test_null_organization_non_global_web_create_is_denied_without_creation(): void
+    {
+        $role = Role::firstOrCreate(['name' => 'Unscoped Member Creator']);
+        $role->syncPermissions(['manage_cooperative_member']);
+        $actor = User::factory()->create(['organization_id' => null]);
+        $actor->assignRole($role);
+
+        $this->actingAs($actor)
+            ->post(route('cooperative.members.store'), $this->storePayload() + ['email' => 'unscoped-web@test.local'])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('cooperative_members', ['email' => 'unscoped-web@test.local']);
+    }
+
+    public function test_null_organization_non_global_api_create_is_denied_without_creation(): void
+    {
+        $role = Role::firstOrCreate(['name' => 'Unscoped API Member Creator']);
+        $role->syncPermissions(['manage_cooperative_member']);
+        $actor = User::factory()->create(['organization_id' => null]);
+        $actor->assignRole($role);
+        Sanctum::actingAs($actor, ['cooperative.member.write']);
+
+        $this->postJson('/api/v1/members', $this->storePayload() + ['email' => 'unscoped-api@test.local'])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('cooperative_members', ['email' => 'unscoped-api@test.local']);
+    }
+
+    public function test_generic_member_create_and_edit_do_not_expose_user_lists(): void
+    {
+        [$admin, $member] = $this->memberAndUser();
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.create'))
+            ->assertInertia(fn ($page) => $page->missing('users'));
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.edit', $member))
+            ->assertInertia(fn ($page) => $page->missing('users'));
+    }
+
     public function test_valid_create_starts_pending_without_implicit_account_link(): void
     {
         $admin = User::factory()->create();
@@ -147,12 +188,13 @@ class MemberP0SecurityClosureTest extends TestCase
     public function test_account_link_has_a_dedicated_reasoned_action(): void
     {
         [$admin, $member] = $this->memberAndUser();
+        $member->forceFill(['user_id' => null])->save();
         $linkedUser = User::factory()->create(['organization_id' => $member->organization_id]);
 
         $this->actingAs($admin)
             ->patch(route('cooperative.members.account-link.update', $member), [
                 'user_id' => $linkedUser->id,
-                'reason' => 'Akun anggota diverifikasi oleh operator.',
+                'reason' => 'business_verification',
             ])
             ->assertRedirect();
 

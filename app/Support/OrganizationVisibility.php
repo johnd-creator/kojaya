@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Enums\PermissionEnum;
+use App\Enums\OrganizationVisibilityState;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
@@ -17,14 +17,18 @@ use InvalidArgumentException;
  */
 final readonly class OrganizationVisibility
 {
+    public readonly bool $global;
+
     private function __construct(
-        public bool $global,
+        public OrganizationVisibilityState $state,
         public ?string $organizationId,
-    ) {}
+    ) {
+        $this->global = $state === OrganizationVisibilityState::GLOBAL;
+    }
 
     public static function global(): self
     {
-        return new self(true, null);
+        return new self(OrganizationVisibilityState::GLOBAL, null);
     }
 
     public static function organization(string $organizationId): self
@@ -33,29 +37,12 @@ final readonly class OrganizationVisibility
             throw new InvalidArgumentException('An organization id is required for scoped visibility.');
         }
 
-        return new self(false, $organizationId);
+        return new self(OrganizationVisibilityState::ORGANIZATION, $organizationId);
     }
 
-    /**
-     * Resolve visibility from a user's permissions and organization.
-     *
-     * @param  callable(string): bool  $can  Permission checker ($user->can(...) or equivalent).
-     *
-     * @throws AuthorizationException when a non-global user has no organization.
-     */
-    public static function fromUser(callable $can, ?string $organizationId): self
+    public static function denied(): self
     {
-        if ($can(PermissionEnum::COOPERATIVE_VIEW_ALL->value)) {
-            return self::global();
-        }
-
-        if ($organizationId === null) {
-            throw new AuthorizationException(
-                'A cooperative organization is required for this operation.',
-            );
-        }
-
-        return self::organization($organizationId);
+        return new self(OrganizationVisibilityState::DENIED, null);
     }
 
     /**
@@ -68,8 +55,12 @@ final readonly class OrganizationVisibility
      */
     public function applyTo(Builder $query): Builder
     {
-        if ($this->global) {
+        if ($this->state === OrganizationVisibilityState::GLOBAL) {
             return $query;
+        }
+
+        if ($this->state === OrganizationVisibilityState::DENIED) {
+            throw new AuthorizationException('Organization visibility is denied.');
         }
 
         return $query->where('organization_id', $this->organizationId);

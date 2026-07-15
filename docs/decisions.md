@@ -938,6 +938,46 @@ Legacy lifecycle rows diaudit melalui `members:audit-status-consistency` dan dip
 - CI tetap gagal pada generated drift, tetapi seluruh evidence checks tetap dieksekusi untuk diagnosis.
 - Data legacy yang belum konsisten terlihat sebelum strict active gate ditegakkan.
 
+## 🎯 ADR-026: Document 04 Organization Authorization dan App-Specific Token Cutover
+
+**Status:** ✅ Accepted
+**Date:** July 15, 2026
+**Deciders:** Engineering
+
+### Context
+
+Review Document 04 menemukan dua jalur operasional yang belum lengkap: member
+existing tanpa `user_id` berhenti pada `manual_member_link_required`, dan token
+legacy dengan ability wildcard/combined tidak memiliki kontrak rotasi yang
+eksplisit. Dokumentasi lama juga masih menyebut wildcard admin sebagai profil
+yang didukung.
+
+### Decision
+
+- Account linking memakai endpoint dedicated untuk exact-email candidate lookup
+  yang dibatasi ke organization anggota, hanya mengembalikan user terverifikasi
+  yang belum tertaut, lalu memakai endpoint link transactional dengan controlled
+  reason code. Generic create/edit tetap tidak menerima `user_id`.
+- `POST /api/token/rotate` menerima `app` hanya jika token legacy unsafe dan
+  membutuhkan salah satu profile `member`, `ess`, `technician`, atau `admin`.
+  Token dengan metadata atau legacy profile yang aman wajib mempertahankan
+  profile-nya; pemilihan app tidak menambah permission.
+- Metadata `token_app` dan `token_version` menjadi bagian dari response rotasi;
+  ability baru selalu dihitung dari permission user saat ini. Wildcard tidak
+  diterbitkan oleh issuer baru.
+- Cooperative tetap menjadi domain aktif Document 04. Role ERP/PT KBU,
+  finance/HR workflow, dan Document 05 tetap deferred.
+
+### Consequences
+
+- Operator memiliki jalur aman untuk menyelesaikan existing member tanpa broad
+  user directory atau email-only auto-link.
+- Unsafe legacy tokens tidak dapat diputar diam-diam ke profile lain dan harus
+  melewati keputusan app yang eksplisit.
+- Client mobile perlu mengirim `app` hanya saat menerima error bahwa legacy
+  token membutuhkan explicit application rotation; client tidak boleh meminta
+  wildcard abilities.
+
 ---
 
 ## 📚 References

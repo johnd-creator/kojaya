@@ -94,7 +94,7 @@ class MemberResignationControllerTest extends TestCase
             'organization_id' => $organization->id,
             'user_id' => $memberUser->id,
         ]);
-        $memberUser->createToken('member-mobile', ['member:read', 'member:write']);
+        $memberUser->createToken('member-mobile', ['profile:read', 'member:read', 'member:write']);
 
         $request = MemberResignationRequest::query()->create([
             'cooperative_member_id' => $member->id,

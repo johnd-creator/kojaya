@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\TokenApp;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MobileLoginRequest;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\Sso\GoogleSsoService;
-use App\Services\Auth\TokenAbilityResolver;
+use App\Services\Auth\TokenIssuanceService;
+use App\Services\Cooperative\MemberAccessRevocationService;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Client\ConnectionException;
@@ -23,7 +25,10 @@ use Throwable;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly TokenAbilityResolver $abilityResolver) {}
+    public function __construct(
+        private readonly TokenIssuanceService $tokenIssuer,
+        private readonly MemberAccessRevocationService $tokenRevocation,
+    ) {}
 
     public function login(MobileLoginRequest $request): JsonResponse
     {
@@ -40,9 +45,12 @@ class AuthController extends Controller
             ]);
         }
 
-        $abilities = $this->abilityResolver->for($user, $validated['app'] ?? null);
-        $deviceName = $validated['device_name'] ?? $this->defaultDeviceName($validated['app'] ?? null);
-        $token = $user->createToken($deviceName, $abilities);
+        $app = isset($validated['app'])
+            ? TokenApp::from($validated['app'])
+            : $this->defaultTokenAppFor($user);
+        $deviceName = $validated['device_name'] ?? $this->defaultDeviceName($app->value);
+        $token = $this->tokenIssuer->issue($user, $app, $deviceName, $validated['device_id'] ?? null);
+        $abilities = $token->accessToken->abilities;
 
         return response()->json([
             'token_type' => 'Bearer',
@@ -63,6 +71,12 @@ class AuthController extends Controller
                 'abilities' => $request->user()->currentAccessToken() instanceof PersonalAccessToken
                     ? $request->user()->currentAccessToken()->abilities
                     : null,
+                'token_app' => $request->user()->currentAccessToken() instanceof PersonalAccessToken
+                    ? $request->user()->currentAccessToken()->token_app
+                    : null,
+                'token_version' => $request->user()->currentAccessToken() instanceof PersonalAccessToken
+                    ? $request->user()->currentAccessToken()->token_version
+                    : null,
             ],
         ]);
     }
@@ -80,7 +94,11 @@ class AuthController extends Controller
 
     public function logoutAll(Request $request): JsonResponse
     {
-        $request->user()->tokens()->delete();
+        $this->tokenRevocation->revokeAccountWide(
+            $request->user(),
+            'User initiated account-wide token revocation.',
+            $request->user(),
+        );
 
         return response()->json(['message' => 'All tokens revoked.']);
     }
@@ -95,6 +113,19 @@ class AuthController extends Controller
         };
     }
 
+    private function defaultTokenAppFor(User $user): TokenApp
+    {
+        if ($user->cooperativeMember) {
+            return TokenApp::MEMBER;
+        }
+
+        if ($user->employee) {
+            return TokenApp::ESS;
+        }
+
+        return TokenApp::ADMIN;
+    }
+
     public function loginWithGoogle(
         Request $request,
         GoogleSsoService $googleSso
@@ -107,10 +138,10 @@ class AuthController extends Controller
 
         $request->validate([
             'id_token' => 'required|string',
-            'device_name' => 'nullable|string',
-            'device_id' => 'nullable|string',
+            'device_name' => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:100',
             'platform' => 'nullable|string',
-            'app' => 'nullable|string',
+            'app' => 'nullable|string|in:member,ess,technician,admin',
         ]);
 
         $idToken = $request->input('id_token');
@@ -211,11 +242,12 @@ class AuthController extends Controller
             $googleSso->recordLogin($social);
         }
 
-        $app = $request->input('app');
-        $abilities = $this->abilityResolver->for($user, $app);
-
-        $deviceName = $request->input('device_name') ?? $this->defaultDeviceName($app);
-        $token = $user->createToken($deviceName, $abilities);
+        $app = $request->filled('app')
+            ? TokenApp::from((string) $request->input('app'))
+            : $this->defaultTokenAppFor($user);
+        $deviceName = $request->input('device_name') ?? $this->defaultDeviceName($app->value);
+        $token = $this->tokenIssuer->issue($user, $app, $deviceName, $request->input('device_id'));
+        $abilities = $token->accessToken->abilities;
         $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
         return response()->json([

@@ -17,6 +17,7 @@ use App\Services\AuditLogService;
 use App\Support\AuditContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class LoanService implements LoanServiceContract
@@ -344,11 +345,13 @@ class LoanService implements LoanServiceContract
         ], $context);
 
         try {
-            $writtenOffLoan = DB::transaction(function () use ($loan, $actor, $note): Loan {
+            $writtenOffLoan = DB::transaction(function () use ($loan, $actor, $note, $context): Loan {
                 $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
 
                 if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Defaulted], true)) {
-                    return $loan;
+                    throw ValidationException::withMessages([
+                        'status' => 'Loan cannot be written off from its current status ['.$loan->status->value.'].',
+                    ]);
                 }
 
                 $fromStatus = $loan->status->value;
@@ -359,6 +362,22 @@ class LoanService implements LoanServiceContract
                 ])->save();
 
                 $this->logApproval($loan, $fromStatus, LoanStatus::WrittenOff->value, $actor, $note);
+
+                $this->audit->log('loan.writeoff.completed', 'cooperative.loan', $loan, [
+                    'old' => [
+                        'loan_id' => $loan->getKey(),
+                        'organization_id' => $loan->organization_id,
+                        'status' => $fromStatus,
+                    ],
+                    'new' => [
+                        'loan_id' => $loan->getKey(),
+                        'organization_id' => $loan->organization_id,
+                        'status' => $loan->status->value,
+                        'note_supplied' => is_string($note) && trim($note) !== '',
+                        'completed_at' => now()->toDateTimeString(),
+                    ],
+                    'reason' => 'Loan write-off completed.',
+                ], $context);
 
                 DB::afterCommit(fn () => $this->notificationDispatcher->loanWrittenOff($loan, $actor));
 
@@ -376,15 +395,6 @@ class LoanService implements LoanServiceContract
 
             throw $exception;
         }
-
-        $this->audit->log('loan.writeoff.completed', 'cooperative.loan', $writtenOffLoan, [
-            'new' => [
-                'loan_id' => $writtenOffLoan->getKey(),
-                'status' => $writtenOffLoan->status->value,
-                'note_supplied' => is_string($note) && trim($note) !== '',
-            ],
-            'reason' => 'Loan write-off completed.',
-        ], $context);
 
         return $writtenOffLoan;
     }

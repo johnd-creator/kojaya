@@ -25,5 +25,10 @@ class ApiPaginationHardeningTest extends TestCase
             ->getJson('/api/notifications?per_page=-1')
             ->assertOk()
             ->assertJsonPath('meta.per_page', 1);
+
+        $this->actingAs($user)
+            ->getJson('/api/notifications?per_page=not-a-number')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 15);
     }
 }

@@ -6,16 +6,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Provides a reusable local scope for filtering data by the authenticated
- * user's organization. Roles with "all" access (System Admin, Admin Pusat,
- * HR Pusat, Finance Pusat) see every record; unit-level roles see only
- * records matching their own organization_id.
+ * Provides the legacy ERP organization scope for models outside the
+ * cooperative authorization registry.
  */
 trait HasOrganizationScope
 {
     /**
-     * Roles that are allowed to view data across ALL organizations.
-     *
      * @var list<string>
      */
     protected static array $allAccessRoles = [
@@ -39,7 +35,7 @@ trait HasOrganizationScope
         }
 
         if ($user->hasAnyRole(static::$allAccessRoles)) {
-            return $query; // full access → no filter
+            return $query;
         }
 
         return $query->where(
@@ -74,9 +70,8 @@ trait HasOrganizationScope
     {
         $activeOrgId = session('active_organization_id');
 
-        // If no active organization, return all (consolidated view)
         if (! $activeOrgId) {
-            return $query;
+            return $this->scopeForUser($query);
         }
 
         return $query->where(

@@ -2,10 +2,9 @@
 
 namespace App\Contracts;
 
-use App\Enums\PermissionEnum;
 use App\Models\User;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Support\OrganizationVisibility;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -16,6 +15,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class OrganizationScopedQueryService
 {
+    public function __construct(
+        private readonly OrganizationScopeService $scopeService,
+    ) {}
+
     /**
      * Apply organization scoping to a cooperative query builder.
      *
@@ -27,27 +30,7 @@ class OrganizationScopedQueryService
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->can(PermissionEnum::COOPERATIVE_VIEW_ALL->value)) {
-            return $query;
-        }
-
-        if (method_exists($query->getModel(), 'member') && ! in_array('organization_id', $query->getModel()->getFillable(), true)) {
-            return $query->whereHas('member', function (Builder $memberQuery) use ($user): void {
-                if ($user->organization_id === null) {
-                    $memberQuery->whereNull('organization_id');
-
-                    return;
-                }
-
-                $memberQuery->where('organization_id', $user->organization_id);
-            });
-        }
-
-        if ($user->organization_id === null) {
-            return $query->whereNull('organization_id');
-        }
-
-        return $query->where('organization_id', $user->organization_id);
+        return $this->scopeService->scopeVisibleTo($query, $user);
     }
 
     /**
@@ -55,7 +38,7 @@ class OrganizationScopedQueryService
      */
     public function canViewAllOrganizations(User $user): bool
     {
-        return $user->can(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        return $this->scopeService->visibilityFor($user)->global;
     }
 
     /**
@@ -64,23 +47,11 @@ class OrganizationScopedQueryService
      */
     public function scopeOrganizationIdFor(User $user): ?string
     {
-        if ($this->canViewAllOrganizations($user)) {
-            return null;
-        }
-
-        return $user->organization_id;
+        return $this->scopeService->visibilityFor($user)->organizationId;
     }
 
     public function visibilityFor(User $user): OrganizationVisibility
     {
-        if ($this->canViewAllOrganizations($user)) {
-            return OrganizationVisibility::global();
-        }
-
-        if ($user->organization_id === null) {
-            throw new AuthorizationException('A cooperative organization is required for this operation.');
-        }
-
-        return OrganizationVisibility::organization((string) $user->organization_id);
+        return $this->scopeService->visibilityFor($user);
     }
 }

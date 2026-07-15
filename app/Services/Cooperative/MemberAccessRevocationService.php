@@ -6,6 +6,7 @@ use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class MemberAccessRevocationService
 {
@@ -29,9 +30,17 @@ class MemberAccessRevocationService
             return 0;
         }
 
-        $tokens = $user->tokens()->get()->filter(
-            fn ($token): bool => $token->can('member:read') || $token->can('member:write'),
-        );
+        $tokens = $user->tokens()->where('token_app', 'member')->get();
+
+        if ($tokens->isEmpty() && config('security.ability_cutover_phase') === 'instrument') {
+            $tokens = $user->tokens()->get()->filter(
+                fn (PersonalAccessToken $token): bool => $token->token_app === null
+                    && $token->can('member:read')
+                    && collect($token->abilities ?: [])->every(
+                        fn (string $ability): bool => in_array($ability, ['profile:read', 'member:read', 'member:write'], true),
+                    ),
+            );
+        }
 
         if ($tokens->isEmpty()) {
             return 0;
@@ -41,6 +50,48 @@ class MemberAccessRevocationService
         $user->tokens()->whereKey($tokens->modelKeys())->delete();
 
         $this->logRevocation($member, $actor, $reason, $count);
+
+        return $count;
+    }
+
+    public function revokeMemberAppTokens(User $user, string $reason, ?User $actor = null, ?CooperativeMember $member = null): int
+    {
+        $tokens = $user->tokens()->where('token_app', 'member')->get();
+
+        if ($tokens->isEmpty() && config('security.ability_cutover_phase') === 'instrument') {
+            $tokens = $user->tokens()->get()->filter(
+                fn (PersonalAccessToken $token): bool => $token->token_app === null
+                    && $token->can('member:read')
+                    && collect($token->abilities ?: [])->every(
+                        fn (string $ability): bool => in_array($ability, ['profile:read', 'member:read', 'member:write'], true),
+                    ),
+            );
+        }
+
+        $count = $tokens->count();
+        if ($count > 0) {
+            $user->tokens()->whereKey($tokens->modelKeys())->delete();
+        }
+
+        if ($member) {
+            $this->logRevocation($member, $actor, $reason, $count);
+        }
+
+        return $count;
+    }
+
+    public function revokeAccountWide(User $user, string $reason, ?User $actor = null): int
+    {
+        $count = $user->tokens()->count();
+        $user->tokens()->delete();
+
+        $this->audit->log('account.tokens.revoked', 'auth.token', null, [
+            'new' => [
+                'affected_user_id' => $user->id,
+                'tokens_revoked' => $count,
+            ],
+            'reason' => $reason,
+        ]);
 
         return $count;
     }

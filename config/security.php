@@ -57,4 +57,9 @@ return [
         env('PII_ALLOW_SCHEMA_ROLLBACK', env('APP_ENV') === 'testing'),
         FILTER_VALIDATE_BOOL,
     ),
+    'token_version' => env('TOKEN_VERSION', 'v1'),
+    'ability_cutover_phase' => env('ABILITY_CUTOVER_PHASE', 'instrument'),
+    'legacy_ability_fallback_enabled' => filter_var(env('LEGACY_ABILITY_FALLBACK_ENABLED', false), FILTER_VALIDATE_BOOL),
+    'legacy_ability_fallback_expires_at' => env('LEGACY_ABILITY_FALLBACK_EXPIRES_AT'),
+    'legacy_token_grace_until' => env('LEGACY_TOKEN_GRACE_UNTIL'),
 ];

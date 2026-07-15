@@ -147,6 +147,7 @@ class MemberP0SecurityClosureTest extends TestCase
     public function test_account_link_has_a_dedicated_reasoned_action(): void
     {
         [$admin, $member] = $this->memberAndUser();
+        $member->forceFill(['user_id' => null])->save();
         $linkedUser = User::factory()->create(['organization_id' => $member->organization_id]);
 
         $this->actingAs($admin)

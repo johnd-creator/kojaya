@@ -40,7 +40,7 @@ class LegacyTokenClassifier
                 || str_starts_with($ability, 'pos:')
                 || str_starts_with($ability, 'reports:'));
 
-            if (count($adminAbilities) === count($abilities) - 1) {
+            if ($adminAbilities !== [] && count($adminAbilities) === count($abilities) - 1) {
                 return 'admin';
             }
         }

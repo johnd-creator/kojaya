@@ -25,5 +25,6 @@ class LegacyTokenClassifierTest extends TestCase
         $this->assertSame('unsafe', $classifier->classify(['profile:read', 'member:read', 'ess:read']));
         $this->assertSame('unsafe', $classifier->classify([]));
         $this->assertSame('unsafe', $classifier->classify(['profile:read', 'unknown:ability']));
+        $this->assertSame('unsafe', $classifier->classify(['profile:read']));
     }
 }

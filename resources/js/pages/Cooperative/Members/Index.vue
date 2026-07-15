@@ -280,7 +280,19 @@ const openEditDialog = (row: any): void => {
 
 const submitEditMember = (): void => {
   if (!editMemberId.value) return;
-  editMemberForm.put(update(editMemberId.value).url, {
+  editMemberForm.transform((data) => ({
+    employee_id: data.employee_id || undefined,
+    no_anggota: data.no_anggota || undefined,
+    nama_anggota: data.nama_anggota,
+    name: data.name,
+    email: data.email || undefined,
+    no_telp: data.no_telp || undefined,
+    phone: data.phone || undefined,
+    jenis_anggota: data.jenis_anggota,
+    jenis_kelamin: data.jenis_kelamin,
+    kategori: data.kategori,
+    autodebet: data.autodebet,
+  })).put(update(editMemberId.value).url, {
     preserveScroll: true,
     onSuccess: () => {
       editMemberDialogOpen.value = false;

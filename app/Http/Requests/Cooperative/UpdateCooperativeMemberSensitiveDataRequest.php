@@ -3,9 +3,19 @@
 namespace App\Http\Requests\Cooperative;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateCooperativeMemberSensitiveDataRequest extends FormRequest
 {
+    private const MASK_PATTERN = '/^\*+/';
+
+    /** @var list<string> */
+    private const MASKED_FIELDS = [
+        'identity_number',
+        'npwp',
+        'no_rekening',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -23,5 +33,39 @@ class UpdateCooperativeMemberSensitiveDataRequest extends FormRequest
             'address' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            foreach (self::MASKED_FIELDS as $field) {
+                $value = $this->input($field);
+
+                if ($value !== null && is_string($value) && preg_match(self::MASK_PATTERN, $value)) {
+                    $validator->errors()->add(
+                        $field,
+                        'Nilai masked tidak dapat disimpan. Kosongkan field untuk mempertahankan nilai existing atau isi nilai asli.',
+                    );
+                }
+            }
+        });
+    }
+
+    /**
+     * Determine which sensitive fields should be cleared (explicit null).
+     *
+     * @return list<string>
+     */
+    public function fieldsToClear(): array
+    {
+        $clear = [];
+
+        foreach (self::MASKED_FIELDS as $field) {
+            if ($this->input($field) === null && $this->exists($field)) {
+                $clear[] = $field;
+            }
+        }
+
+        return $clear;
     }
 }

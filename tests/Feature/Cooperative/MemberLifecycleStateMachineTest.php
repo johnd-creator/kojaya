@@ -461,7 +461,7 @@ class MemberLifecycleStateMachineTest extends TestCase
             'organization_id' => $org->id,
         ]);
 
-        $user->createToken('test', ['member:read']);
+        $user->createToken('test', ['profile:read', 'member:read', 'member:write']);
 
         return [$user, $member];
     }

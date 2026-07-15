@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -33,7 +34,8 @@ class OperatorDashboardDeferredTest extends TestCase
 
     public function test_operator_dashboard_loads_deferred_analytics(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->givePermissionTo('view_cooperative_report');
 
         $this->actingAs($user)

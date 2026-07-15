@@ -4,6 +4,7 @@ namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
+use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -21,7 +22,8 @@ class PaymentSortBulkTest extends TestCase
 
     public function test_payments_index_defaults_to_paid_at_desc_sort(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->givePermissionTo('manage_cooperative_payment');
 
         $this->actingAs($user)
@@ -36,9 +38,13 @@ class PaymentSortBulkTest extends TestCase
 
     public function test_payments_sort_respects_whitelist(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->givePermissionTo('manage_cooperative_payment');
-        $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $member = CooperativeMember::factory()->create([
+            'status' => 'ACTIVE',
+            'organization_id' => $organization->id,
+        ]);
 
         CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now()->subDay(), 'cooperative_member_id' => $member->id]);
         CooperativePayment::query()->create(['status' => 'APPROVED', 'amount' => 200, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
@@ -59,7 +65,8 @@ class PaymentSortBulkTest extends TestCase
 
     public function test_payments_sort_rejects_invalid_field(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->givePermissionTo('manage_cooperative_payment');
 
         $this->actingAs($user)
@@ -73,7 +80,8 @@ class PaymentSortBulkTest extends TestCase
 
     public function test_payments_sort_rejects_invalid_direction(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->givePermissionTo('manage_cooperative_payment');
 
         $this->actingAs($user)
@@ -214,9 +222,13 @@ class PaymentSortBulkTest extends TestCase
 
     public function test_payments_filter_by_status(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->givePermissionTo('manage_cooperative_payment');
-        $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $member = CooperativeMember::factory()->create([
+            'status' => 'ACTIVE',
+            'organization_id' => $organization->id,
+        ]);
 
         CooperativePayment::query()->create(['status' => 'PENDING', 'amount' => 100, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);
         CooperativePayment::query()->create(['status' => 'APPROVED', 'amount' => 200, 'payment_method' => 'CASH', 'paid_at' => now(), 'cooperative_member_id' => $member->id]);

@@ -419,3 +419,52 @@ machines, PII encryption behavior, PII migrations/backfill, or Document 05.
   provided for operator execution rather than run by Codex in this task.
 
 Status remains: READY FOR INDEPENDENT REVIEW.
+
+## Full-suite regression remediation
+
+The operator-provided `php artisan test --compact` run exposed 22 failures,
+5 skipped tests, and 1116 passing tests with 6221 assertions. The failures
+were not caused by a broad authorization bypass; they exposed stale fixtures
+and one legacy-token classification edge case after the Document 04 contract
+was enforced.
+
+The remediation applies the following corrections:
+
+- legacy cooperative feature fixtures now give non-global actors the same
+  organization as their target records; null-organization actors remain
+  fail-closed;
+- validation, payment, dashboard, opening-balance, and policy fixtures now
+  explicitly align actor and target organization where the test intends a
+  successful operation;
+- legacy member-token lifecycle fixtures now use the exact legacy member
+  ability profile, while partial, empty, combined, and unknown profiles remain
+  unsafe and are not silently revoked as member tokens;
+- `LegacyTokenClassifier` no longer classifies a profile containing only
+  `profile:read` as an admin token; incomplete profiles remain unsafe;
+- the resource-policy regression fixture now creates the loan in the actor's
+  organization so the policy assertion tests the intended same-organization
+  contract.
+
+The user should rerun the affected regression classes and then the full suite:
+
+    php artisan test --compact \
+      tests/Feature/Api/V1/CooperativeMemberApiControllerOpeningBalanceTest.php \
+      tests/Feature/Cooperative/CooperativeFeatureTest.php \
+      tests/Feature/Cooperative/CooperativeMemberValidationTest.php \
+      tests/Feature/Cooperative/MemberDestroyEndpointTest.php \
+      tests/Feature/Cooperative/MemberLifecycleStateMachineTest.php \
+      tests/Feature/Cooperative/MemberResignationControllerTest.php \
+      tests/Feature/Cooperative/OperatorDashboardDeferredTest.php \
+      tests/Feature/Cooperative/PaymentSortBulkTest.php \
+      tests/Feature/P0SecurityTest.php \
+      tests/Feature/ProductionReadinessP0P2Test.php \
+      tests/Unit/Security/LegacyTokenClassifierTest.php
+
+    php artisan test --compact
+
+Codex did not rerun the long PHPUnit commands in accordance with the
+repository test policy. The result of the rerun remains pending operator or
+independent GLM verification. No payment/reservation state machine, PII
+encryption code, PII migration, or Document 05 code was changed.
+
+Status remains: READY FOR INDEPENDENT REVIEW.

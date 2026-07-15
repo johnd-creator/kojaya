@@ -770,6 +770,7 @@ class CooperativeFeatureTest extends TestCase
 
         CooperativeLedgerEntry::query()->create([
             'cooperative_member_id' => $matchingMember->id,
+            'organization_id' => $organization->id,
             'cooperative_contribution_type_id' => $type->id,
             'entry_type' => 'SAVING_PAYMENT',
             'ledger_scope' => 'SAVINGS',
@@ -780,6 +781,7 @@ class CooperativeFeatureTest extends TestCase
         ]);
         CooperativeLedgerEntry::query()->create([
             'cooperative_member_id' => $otherMember->id,
+            'organization_id' => $organization->id,
             'cooperative_contribution_type_id' => $type->id,
             'entry_type' => 'SAVING_PAYMENT',
             'ledger_scope' => 'SAVINGS',

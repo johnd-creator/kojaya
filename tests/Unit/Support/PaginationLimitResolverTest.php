@@ -39,4 +39,15 @@ class PaginationLimitResolverTest extends TestCase
 
         $this->assertSame(100, (new PaginationLimitResolver)->resolve($request, maximum: 100));
     }
+
+    public function test_named_limit_parameter_uses_the_same_contract(): void
+    {
+        $resolver = new PaginationLimitResolver;
+
+        $this->assertSame(5, $resolver->resolve(Request::create('/api/example'), 'limit', default: 5, maximum: 10));
+        $this->assertSame(1, $resolver->resolve(Request::create('/api/example?limit=-1'), 'limit', default: 5, maximum: 10));
+        $this->assertSame(10, $resolver->resolve(Request::create('/api/example?limit=999'), 'limit', default: 5, maximum: 10));
+        $this->assertSame(5, $resolver->resolve(Request::create('/api/example?limit=bad'), 'limit', default: 5, maximum: 10));
+        $this->assertSame(5, $resolver->resolve(Request::create('/api/example?limit[]=bad'), 'limit', default: 5, maximum: 10));
+    }
 }

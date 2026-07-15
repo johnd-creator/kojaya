@@ -11,4 +11,9 @@ trait ResolvesApiPageSize
     {
         return app(PaginationLimitResolver::class)->resolve($request, 'per_page', $default, $maximum);
     }
+
+    protected function apiLimit(Request $request, string $parameter = 'limit', int $default = 15, int $maximum = 50): int
+    {
+        return app(PaginationLimitResolver::class)->resolve($request, $parameter, $default, $maximum);
+    }
 }

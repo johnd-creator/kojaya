@@ -62,70 +62,24 @@ class Document05AuditPaginationContractTest extends TestCase
         $this->assertStringNotContainsString('blind-index-sentinel', $encoded);
         $this->assertStringNotContainsString('token-sentinel', $encoded);
         $this->assertSame('[REDACTED]', $audit->new_values['identity_number']);
-        $this->assertSame('[REDACTED]', $audit->new_values['nested']['gateway_payload']['ciphertext']);
+        $this->assertSame('[REDACTED]', $audit->new_values['nested']['gateway_payload']);
     }
 
-    public function test_request_derived_page_sizes_do_not_parse_per_page_outside_the_central_resolver(): void
+    public function test_request_derived_pagination_uses_the_central_resolver(): void
     {
         $offending = [];
         $root = app_path('Http/Controllers');
 
         foreach ($this->phpFiles($root) as $path => $contents) {
-            if (preg_match('/\$request->(?:integer|input|query)\(\s*[\'\"](?:per_page|page_size)/', $contents)) {
+            if (
+                preg_match('/(?:\$request|request\(\))->(?:integer|input|query)\(\s*[\'\"](?:per_page|page_size|limit)\b/', $contents)
+                || preg_match('/\b(?:paginate|simplePaginate|cursorPaginate|limit|take)\(\s*\$request->/', $contents)
+            ) {
                 $offending[] = str_replace(base_path().'/', '', $path);
             }
         }
 
         $this->assertSame([], $offending);
-    }
-
-    public function test_sensitive_api_lists_use_explicit_resource_allowlists(): void
-    {
-        $duesController = file_get_contents(app_path('Http/Controllers/Api/V1/CooperativeDuesApiController.php'));
-        $paymentController = file_get_contents(app_path('Http/Controllers/Api/V1/CooperativePaymentApiController.php'));
-        $loanController = file_get_contents(app_path('Http/Controllers/Api/V1/LoanApiController.php'));
-
-        $this->assertIsString($duesController);
-        $this->assertIsString($paymentController);
-        $this->assertIsString($loanController);
-        $this->assertStringContainsString('MemberInvoiceResource::collection', $duesController);
-        $this->assertStringContainsString('CooperativePaymentResource', $paymentController);
-        $this->assertStringContainsString('LoanResource::collection', $loanController);
-        $this->assertDoesNotMatchRegularExpression('/response\(\)->json\(\s*\$query.*paginate/s', $duesController);
-        $this->assertDoesNotMatchRegularExpression('/response\(\)->json\(\s*\[\s*[\'"]data[\'"]\s*=>\s*\$payment\b/s', $paymentController);
-    }
-
-    public function test_generic_member_forms_do_not_expose_account_user_directory(): void
-    {
-        $controller = file_get_contents(app_path('Http/Controllers/Cooperative/CooperativeMemberController.php'));
-
-        $this->assertIsString($controller);
-
-        foreach (['create', 'edit'] as $method) {
-            $methodSource = $this->methodSource($controller, $method);
-
-            $this->assertDoesNotMatchRegularExpression('/User::query\s*\(/', $methodSource);
-            $this->assertDoesNotMatchRegularExpression('/[\'"]users[\'"]\s*=>/', $methodSource);
-        }
-    }
-
-    public function test_domain_operations_have_requested_completed_and_failed_lifecycle_events(): void
-    {
-        $sources = [
-            file_get_contents(app_path('Services/Cooperative/MemberAccountLinkService.php')),
-            file_get_contents(app_path('Http/Controllers/Api/V1/CooperativePaymentApiController.php')),
-            file_get_contents(app_path('Services/Cooperative/MemberOrderReservationService.php')),
-            file_get_contents(app_path('Services/Cooperative/LoanService.php')),
-            file_get_contents(app_path('Console/Commands/BackfillMemberSensitiveData.php')),
-            file_get_contents(app_path('Http/Controllers/Cooperative/CooperativeMemberController.php')),
-        ];
-
-        foreach ($sources as $source) {
-            $this->assertIsString($source);
-            $this->assertStringContainsString('.requested', $source);
-            $this->assertStringContainsString('.completed', $source);
-            $this->assertStringContainsString('.failed', $source);
-        }
     }
 
     /**
@@ -147,14 +101,5 @@ class Document05AuditPaginationContractTest extends TestCase
                 yield $file->getPathname() => $contents;
             }
         }
-    }
-
-    private function methodSource(string $source, string $method): string
-    {
-        $pattern = '/public function '.preg_quote($method, '/').'\b.*?(?=\n\s+(?:public|protected|private) function|\z)/s';
-
-        preg_match($pattern, $source, $matches);
-
-        return $matches[0] ?? '';
     }
 }

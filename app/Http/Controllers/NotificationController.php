@@ -32,7 +32,7 @@ class NotificationController extends Controller
 
     public function recent(Request $request): JsonResponse
     {
-        $limit = min(max($request->integer('limit', 5), 1), 10);
+        $limit = $this->apiLimit($request, default: 5, maximum: 10);
         $notifications = $this->filteredNotifications($request)
             ->orderByDesc('created_at')
             ->limit($limit)

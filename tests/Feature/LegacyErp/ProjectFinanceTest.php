@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\PettyCashTransaction;
 use App\Models\Project;
 use App\Models\Reimbursement;
+use App\Models\User;
 use App\Services\ProjectFinanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -125,5 +126,32 @@ class ProjectFinanceTest extends TestCase
         $this->assertEquals(150000, $costs['total']);
         $this->assertEquals(100000, $costs['breakdown']['reimbursements']);
         $this->assertEquals(50000, $costs['breakdown']['petty_cash']);
+    }
+
+    public function test_transactions_endpoint_bounds_request_derived_limit(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $project = Project::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $client = \App\Models\Client::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        Invoice::factory()->paid()->count(51)->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $organization->id,
+            'client_id' => $client->id,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('projects.transactions', [
+                'project' => $project,
+                'limit' => 999999,
+            ]))
+            ->assertOk()
+            ->assertJsonCount(50, 'data');
     }
 }

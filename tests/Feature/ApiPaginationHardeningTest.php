@@ -31,4 +31,27 @@ class ApiPaginationHardeningTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.per_page', 15);
     }
+
+    public function test_notification_recent_uses_the_same_resolver_with_endpoint_maximum(): void
+    {
+        $user = User::factory()->create();
+        NotificationFactory::new()->forUser($user)->count(12)->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/notifications/recent?limit=999999')
+            ->assertOk()
+            ->assertJsonCount(10, 'data')
+            ->assertJsonPath('meta.limit', 10);
+
+        $this->actingAs($user)
+            ->getJson('/api/notifications/recent?limit=-1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.limit', 1);
+
+        $this->actingAs($user)
+            ->getJson('/api/notifications/recent?limit[]=invalid')
+            ->assertOk()
+            ->assertJsonPath('meta.limit', 5);
+    }
 }

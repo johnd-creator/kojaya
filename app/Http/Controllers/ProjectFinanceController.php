@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Models\Project;
 use App\Services\ProjectFinanceService;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,8 @@ use Inertia\Inertia;
 
 class ProjectFinanceController extends Controller
 {
+    use ResolvesApiPageSize;
+
     protected ProjectFinanceService $financeService;
 
     public function __construct(ProjectFinanceService $financeService)
@@ -162,7 +165,7 @@ class ProjectFinanceController extends Controller
      */
     public function transactions(Request $request, Project $project): JsonResponse
     {
-        $limit = $request->query('limit', 20);
+        $limit = $this->apiLimit($request, default: 20);
 
         // 1. Invoices (Revenue)
         $invoices = $project->invoices()

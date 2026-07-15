@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\CooperativeShuPeriodStatus;
 use App\Enums\InstallmentStatus;
@@ -62,6 +63,8 @@ use Illuminate\Support\Str;
 
 class MemberSelfServiceController extends Controller
 {
+    use ResolvesApiPageSize;
+
     private const QRIS_IMAGE_MAX_BYTES = 262144;
 
     private const QRIS_IMAGE_CONTENT_TYPES = [
@@ -690,7 +693,7 @@ class MemberSelfServiceController extends Controller
 
         $category = $request->input('category'); // dues|loan|pos_credit
         $status = $request->input('status');
-        $perPage = min(max($request->integer('per_page', 15), 1), 50);
+        $perPage = $this->apiPageSize($request);
 
         $bills = collect();
 
@@ -860,7 +863,7 @@ class MemberSelfServiceController extends Controller
     {
         $member = $this->memberOrAbort($request);
 
-        $perPage = min(max($request->integer('per_page', 15), 1), 50);
+        $perPage = $this->apiPageSize($request);
         $source = $request->input('source'); // pos|payment
 
         $items = collect();
@@ -1054,7 +1057,7 @@ class MemberSelfServiceController extends Controller
 
     private function perPage(Request $request): int
     {
-        return min(max($request->integer('per_page', 15), 1), 50);
+        return $this->apiPageSize($request);
     }
 
     protected function pendingLoanPaymentIntent(Request $request, CooperativeMember $member, string $id, string $channel): MemberPaymentIntent

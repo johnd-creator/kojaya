@@ -1013,6 +1013,20 @@ or oversized values, while selected endpoints returned raw Eloquent models.
 - Sensitive paginated API responses use explicit Resources or DTO-style
   allowlists. Member invoices and cooperative payments no longer return raw
   Eloquent paginator/model serialization.
+- Project finance transaction limits and recent notification limits use the
+  same resolver with endpoint-specific defaults and ceilings. Static checks
+  only prohibit raw request-derived pagination; runtime tests exercise the
+  routes.
+- Member/access revocation deletes tokens and writes the authoritative audit
+  event in one database transaction. Audit failure is monitored through the
+  application log and is never retried through the same audit sink.
+- Sensitive export files follow requested/completed/failed lifecycle events,
+  include a safe checksum after creation, and are deleted when mandatory
+  completion audit or response construction fails. The historical export event
+  remains best effort after authoritative completion.
+- OpenAPI response schemas for members, loans, invoices, cooperative payments,
+  and payment batches are generated from explicit resource contracts rather
+  than the generic success envelope.
 
 ### Consequences
 

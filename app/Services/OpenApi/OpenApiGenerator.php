@@ -96,6 +96,16 @@ class OpenApiGenerator
             ],
         ];
 
+        $responseSchema = $this->responseSchemaFor($method, $uri);
+        if ($responseSchema !== null) {
+            $item['responses']['200']['content']['application/json']['schema'] = $responseSchema;
+        }
+
+        if ($this->returnsCreatedResponse($method, $uri)) {
+            $item['responses']['201'] = $item['responses']['200'];
+            unset($item['responses']['200']);
+        }
+
         $abilities = $this->abilities($middleware);
 
         if ($abilities !== []) {
@@ -145,11 +155,7 @@ class OpenApiGenerator
                     'in' => 'query',
                     'schema' => ['type' => 'integer', 'default' => 1],
                 ],
-                [
-                    'name' => 'per_page',
-                    'in' => 'query',
-                    'schema' => ['type' => 'integer', 'default' => 15],
-                ],
+                $this->paginationParameter($uri),
             ];
         }
 
@@ -204,6 +210,166 @@ class OpenApiGenerator
                     'success' => ['type' => 'boolean', 'example' => true],
                     'data' => ['type' => 'object'],
                     'message' => ['type' => 'string'],
+                ],
+            ],
+            'ApiPaginationLinks' => [
+                'type' => 'object',
+                'required' => ['first', 'last', 'prev', 'next'],
+                'properties' => [
+                    'first' => ['type' => 'string', 'format' => 'uri', 'nullable' => true],
+                    'last' => ['type' => 'string', 'format' => 'uri', 'nullable' => true],
+                    'prev' => ['type' => 'string', 'format' => 'uri', 'nullable' => true],
+                    'next' => ['type' => 'string', 'format' => 'uri', 'nullable' => true],
+                ],
+            ],
+            'ApiPaginationMeta' => [
+                'type' => 'object',
+                'required' => ['current_page', 'from', 'last_page', 'per_page', 'to', 'total', 'path'],
+                'properties' => [
+                    'current_page' => ['type' => 'integer'],
+                    'from' => ['type' => 'integer', 'nullable' => true],
+                    'last_page' => ['type' => 'integer'],
+                    'per_page' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
+                    'to' => ['type' => 'integer', 'nullable' => true],
+                    'total' => ['type' => 'integer'],
+                    'path' => ['type' => 'string', 'format' => 'uri'],
+                ],
+            ],
+            'CooperativeMemberResource' => [
+                'type' => 'object',
+                'required' => ['id', 'organization_id', 'member_no', 'no_anggota', 'name', 'email', 'phone', 'status', 'validation_status', 'joined_at', 'identity_number', 'npwp', 'no_rekening', 'nama_pemilik_rekening', 'nama_bank', 'address'],
+                'properties' => [
+                    'id' => ['type' => 'integer'],
+                    'organization_id' => ['type' => 'integer', 'nullable' => true],
+                    'member_no' => ['type' => 'string'],
+                    'no_anggota' => ['type' => 'string'],
+                    'name' => ['type' => 'string'],
+                    'email' => ['type' => 'string', 'format' => 'email', 'nullable' => true],
+                    'phone' => ['type' => 'string', 'nullable' => true],
+                    'status' => ['type' => 'string'],
+                    'validation_status' => ['type' => 'string'],
+                    'joined_at' => ['type' => 'string', 'format' => 'date', 'nullable' => true],
+                    'identity_number' => ['type' => 'string', 'nullable' => true],
+                    'npwp' => ['type' => 'string', 'nullable' => true],
+                    'no_rekening' => ['type' => 'string', 'nullable' => true],
+                    'nama_pemilik_rekening' => ['type' => 'string', 'nullable' => true],
+                    'nama_bank' => ['type' => 'string', 'nullable' => true],
+                    'address' => ['type' => 'string', 'nullable' => true],
+                    'organization' => ['type' => 'object', 'nullable' => true],
+                ],
+            ],
+            'PaginatedMemberResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'links', 'meta', 'success'],
+                'properties' => [
+                    'data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/CooperativeMemberResource']],
+                    'links' => ['$ref' => '#/components/schemas/ApiPaginationLinks'],
+                    'meta' => ['$ref' => '#/components/schemas/ApiPaginationMeta'],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'MemberResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'success'],
+                'properties' => [
+                    'data' => ['$ref' => '#/components/schemas/CooperativeMemberResource'],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'MemberInvoice' => [
+                'type' => 'object',
+                'required' => ['id', 'period', 'amount', 'paid_amount', 'remaining_amount', 'due_date', 'status'],
+                'properties' => [
+                    'id' => ['type' => 'integer'],
+                    'period' => ['type' => 'string'],
+                    'amount' => ['type' => 'number'],
+                    'paid_amount' => ['type' => 'number'],
+                    'remaining_amount' => ['type' => 'number'],
+                    'due_date' => ['type' => 'string', 'format' => 'date', 'nullable' => true],
+                    'status' => ['type' => 'string'],
+                    'contribution_type' => [
+                        'type' => 'object',
+                        'nullable' => true,
+                        'properties' => [
+                            'id' => ['type' => 'integer'],
+                            'code' => ['type' => 'string'],
+                            'name' => ['type' => 'string'],
+                            'category' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+            'PaginatedMemberInvoiceResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'links', 'meta', 'success'],
+                'properties' => [
+                    'data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/MemberInvoice']],
+                    'links' => ['$ref' => '#/components/schemas/ApiPaginationLinks'],
+                    'meta' => ['$ref' => '#/components/schemas/ApiPaginationMeta'],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'CooperativePaymentResource' => [
+                'type' => 'object',
+                'required' => ['id', 'member_id', 'invoice_id', 'amount', 'payment_method', 'status', 'paid_at', 'approved_at', 'approved_by', 'reference_no', 'receipt_no', 'receipt_issued_at'],
+                'properties' => [
+                    'id' => ['type' => 'integer'],
+                    'member_id' => ['type' => 'integer'],
+                    'invoice_id' => ['type' => 'integer', 'nullable' => true],
+                    'amount' => ['type' => 'number'],
+                    'payment_method' => ['type' => 'string'],
+                    'status' => ['type' => 'string'],
+                    'paid_at' => ['type' => 'string', 'format' => 'date', 'nullable' => true],
+                    'approved_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'approved_by' => ['type' => 'integer', 'nullable' => true],
+                    'reference_no' => ['type' => 'string', 'nullable' => true],
+                    'receipt_no' => ['type' => 'string', 'nullable' => true],
+                    'receipt_issued_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'contribution_type' => ['type' => 'object', 'nullable' => true],
+                    'invoice' => ['allOf' => [['$ref' => '#/components/schemas/MemberInvoice']], 'nullable' => true],
+                    'member' => ['type' => 'object', 'nullable' => true],
+                ],
+            ],
+            'CooperativePaymentResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'success'],
+                'properties' => [
+                    'data' => ['$ref' => '#/components/schemas/CooperativePaymentResource'],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'BatchCooperativePaymentResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'success'],
+                'properties' => [
+                    'data' => [
+                        'type' => 'object',
+                        'required' => ['processed_count', 'total_amount', 'payments'],
+                        'properties' => [
+                            'processed_count' => ['type' => 'integer'],
+                            'total_amount' => ['type' => 'number'],
+                            'payments' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/CooperativePaymentResource']],
+                        ],
+                    ],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'PaginatedLoanResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'links', 'meta', 'success'],
+                'properties' => [
+                    'data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Loan']],
+                    'links' => ['$ref' => '#/components/schemas/ApiPaginationLinks'],
+                    'meta' => ['$ref' => '#/components/schemas/ApiPaginationMeta'],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
+            'LoanResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'success'],
+                'properties' => [
+                    'data' => ['$ref' => '#/components/schemas/Loan'],
+                    'success' => ['type' => 'boolean', 'example' => true],
                 ],
             ],
             'Member' => [
@@ -318,12 +484,66 @@ class OpenApiGenerator
             ],
             'Loan' => [
                 'type' => 'object',
+                'required' => [
+                    'id',
+                    'member_id',
+                    'loan_type_id',
+                    'principal_amount',
+                    'interest_rate',
+                    'admin_fee',
+                    'late_fee_per_day',
+                    'term_months',
+                    'installment_amount',
+                    'total_interest_amount',
+                    'total_amount',
+                    'outstanding_amount',
+                    'applied_at',
+                    'first_due_date',
+                    'manager_reviewed_at',
+                    'manager_reviewed_by',
+                    'approved_at',
+                    'approved_by',
+                    'disbursed_at',
+                    'rejected_at',
+                    'status',
+                    'approval_stage',
+                    'reference_no',
+                    'purpose',
+                    'notes',
+                    'rejection_reason',
+                ],
                 'properties' => [
                     'id' => ['type' => 'integer'],
-                    'loan_no' => ['type' => 'string'],
-                    'principal' => ['type' => 'number'],
+                    'member_id' => ['type' => 'integer'],
+                    'loan_type_id' => ['type' => 'integer'],
+                    'principal_amount' => ['type' => 'number'],
+                    'interest_rate' => ['type' => 'number'],
+                    'admin_fee' => ['type' => 'number'],
+                    'late_fee_per_day' => ['type' => 'number'],
+                    'term_months' => ['type' => 'integer'],
+                    'installment_amount' => ['type' => 'number'],
+                    'total_interest_amount' => ['type' => 'number'],
+                    'total_amount' => ['type' => 'number'],
+                    'outstanding_amount' => ['type' => 'number'],
+                    'applied_at' => ['type' => 'string', 'format' => 'date', 'nullable' => true],
+                    'first_due_date' => ['type' => 'string', 'format' => 'date', 'nullable' => true],
+                    'manager_reviewed_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'manager_reviewed_by' => ['type' => 'integer', 'nullable' => true],
+                    'approved_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'approved_by' => ['type' => 'integer', 'nullable' => true],
+                    'disbursed_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                    'rejected_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                     'status' => ['type' => 'string', 'enum' => ['APPLIED', 'MANAGER_APPROVED', 'APPROVED', 'ACTIVE', 'PAID_OFF', 'REJECTED', 'DEFAULTED', 'WRITTEN_OFF']],
-                    'loanType' => ['$ref' => '#/components/schemas/LoanType'],
+                    'approval_stage' => ['type' => 'string', 'nullable' => true],
+                    'reference_no' => ['type' => 'string', 'nullable' => true],
+                    'purpose' => ['type' => 'string', 'nullable' => true],
+                    'notes' => ['type' => 'string', 'nullable' => true],
+                    'rejection_reason' => ['type' => 'string', 'nullable' => true],
+                    'member' => ['type' => 'object', 'nullable' => true],
+                    'loan_type' => ['type' => 'object', 'nullable' => true],
+                    'installments' => ['type' => 'array', 'items' => ['type' => 'object']],
+                    'payments' => ['type' => 'array', 'items' => ['type' => 'object'], 'nullable' => true],
+                    'approval_logs' => ['type' => 'array', 'items' => ['type' => 'object'], 'nullable' => true],
                 ],
             ],
             'LoanType' => [
@@ -501,6 +721,56 @@ class OpenApiGenerator
             str_ends_with($uri, 'api/v1/member/onboarding/steps') => ['$ref' => '#/components/schemas/MemberOnboardingStepRequest'],
             default => null,
         };
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function responseSchemaFor(string $method, string $uri): ?array
+    {
+        $method = strtolower($method);
+
+        return match (true) {
+            $method === 'get' && $uri === 'api/v1/members' => ['$ref' => '#/components/schemas/PaginatedMemberResponse'],
+            $method === 'get' && $uri === 'api/v1/members/{member}' => ['$ref' => '#/components/schemas/MemberResponse'],
+            $method === 'get' && $uri === 'api/v1/loans' => ['$ref' => '#/components/schemas/PaginatedLoanResponse'],
+            $method === 'get' && $uri === 'api/v1/loans/{loan}' => ['$ref' => '#/components/schemas/LoanResponse'],
+            $method === 'get' && $uri === 'api/v1/dues/invoices' => ['$ref' => '#/components/schemas/PaginatedMemberInvoiceResponse'],
+            $method === 'post' && $uri === 'api/v1/dues/payments/batch' => ['$ref' => '#/components/schemas/BatchCooperativePaymentResponse'],
+            $method === 'post' && in_array($uri, ['api/v1/dues/payments', 'api/v1/dues/payments/{payment}/approve'], true) => ['$ref' => '#/components/schemas/CooperativePaymentResponse'],
+            default => null,
+        };
+    }
+
+    private function returnsCreatedResponse(string $method, string $uri): bool
+    {
+        return strtolower($method) === 'post'
+            && in_array($uri, ['api/v1/dues/payments', 'api/v1/dues/payments/batch'], true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function paginationParameter(string $uri): array
+    {
+        if (str_ends_with($uri, '/notifications/recent')) {
+            return [
+                'name' => 'limit',
+                'in' => 'query',
+                'schema' => ['type' => 'integer', 'default' => 5, 'minimum' => 1, 'maximum' => 10],
+            ];
+        }
+
+        return [
+            'name' => 'per_page',
+            'in' => 'query',
+            'schema' => [
+                'type' => 'integer',
+                'default' => 15,
+                'minimum' => 1,
+                'maximum' => str_starts_with($uri, 'api/v1/dues/') ? 100 : 50,
+            ],
+        ];
     }
 
     /**

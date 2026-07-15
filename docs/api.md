@@ -2746,6 +2746,37 @@ Business error envelopes may additionally expose `error_code` values such as `PE
 
 ---
 
+## 📋 Document 05 Response and Pagination Contracts
+
+The generated contract is the authority in docs/openapi.json; run
+"php artisan openapi:snapshot --check" to detect drift.
+
+Document 05 API responses use the normalizer's "success: true" field.
+Paginated responses contain exactly "data", "links", "meta", and "success".
+"meta.per_page" is bounded to 1–50, except the documented administrative dues
+invoice endpoint, which may use 1–100.
+
+The following resources are explicit allowlists:
+
+- CooperativeMemberResource for member list/detail responses;
+- LoanResource for loan list/detail responses;
+- MemberInvoiceResource for /api/v1/dues/invoices;
+- CooperativePaymentResource for payment store and approve;
+- BatchCooperativePaymentResponse for payment batch results.
+
+Payment resources do not expose "gateway_payload", "proof_path", token data,
+authorization headers, encrypted fields, blind indexes, or unrelated model
+columns. Invoice fields are "id", "period", "amount", "paid_amount",
+"remaining_amount", "due_date", "status", and the nullable
+"contribution_type" object. Payment fields are the documented payment identity,
+amount, method, status, timestamps, receipt/reference values, and nullable
+allowlisted relations.
+
+Standard pagination parameters use "per_page"; /api/notifications/recent
+uses "limit" with default 5 and maximum 10. Both are resolved by the same
+centralized bounded resolver. Omitted or malformed values use the endpoint
+default, values below 1 become 1, and oversized values are clamped.
+
 ## 🧪 Testing API
 
 ### **Using cURL**

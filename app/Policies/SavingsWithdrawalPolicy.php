@@ -20,7 +20,8 @@ class SavingsWithdrawalPolicy extends BasePolicy
     {
         return ($this->viewAny($user)
                 && ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value) || $this->sameOrganization($user, $savingsWithdrawal)))
-            || $savingsWithdrawal->member?->user_id === $user->id;
+            || ($savingsWithdrawal->member?->user_id === $user->id
+                && $this->sameOrganization($user, $savingsWithdrawal));
     }
 
     public function approve(User $user, SavingsWithdrawal $savingsWithdrawal): bool

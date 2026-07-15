@@ -229,7 +229,7 @@ class OpenApiGenerator
                     'current_page' => ['type' => 'integer'],
                     'from' => ['type' => 'integer', 'nullable' => true],
                     'last_page' => ['type' => 'integer'],
-                    'per_page' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100],
+                    'per_page' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 50],
                     'to' => ['type' => 'integer', 'nullable' => true],
                     'total' => ['type' => 'integer'],
                     'path' => ['type' => 'string', 'format' => 'uri'],
@@ -768,7 +768,7 @@ class OpenApiGenerator
                 'type' => 'integer',
                 'default' => 15,
                 'minimum' => 1,
-                'maximum' => str_starts_with($uri, 'api/v1/dues/') ? 100 : 50,
+                'maximum' => 50,
             ],
         ];
     }

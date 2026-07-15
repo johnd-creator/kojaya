@@ -167,7 +167,7 @@ class MemberStatusTransitionService
                 'reason' => $reason ?? 'Member access revoked.',
             ], AuditContext::forActor($actor));
 
-            $this->accessRevocation->revokeAfterCommit($member, 'delete_access', $actor);
+            $this->accessRevocation->revokeFor($member->refresh(), 'delete_access', $actor);
 
             return $member->refresh();
         });
@@ -214,7 +214,7 @@ class MemberStatusTransitionService
             ], AuditContext::forActor($actor));
 
             if ($revokeMemberTokens) {
-                $this->accessRevocation->revokeAfterCommit($member, $action, $actor);
+                $this->accessRevocation->revokeFor($member->refresh(), $action, $actor);
             }
 
             return $member->refresh();

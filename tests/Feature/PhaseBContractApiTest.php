@@ -131,7 +131,7 @@ class PhaseBContractApiTest extends TestCase
         $duesParameters = collect($spec['paths']['/api/v1/dues/invoices']['get']['parameters'])->keyBy('name');
         $notificationParameters = collect($spec['paths']['/api/notifications/recent']['get']['parameters'])->keyBy('name');
 
-        $this->assertSame(100, $duesParameters['per_page']['schema']['maximum']);
+        $this->assertSame(50, $duesParameters['per_page']['schema']['maximum']);
         $this->assertSame(10, $notificationParameters['limit']['schema']['maximum']);
     }
 
@@ -756,6 +756,95 @@ class PhaseBContractApiTest extends TestCase
                 && $request['notification']['title'] === 'Pembayaran diterima'
                 && $request['data']['payment_id'] === '55';
         });
+    }
+
+    public function test_dues_pagination_caps_per_page_at_50_runtime(): void
+    {
+        $org = \App\Models\Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $org->id]);
+        $admin->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $org->id,
+        ]);
+        $type = CooperativeContributionType::query()->create([
+            'organization_id' => $member->organization_id,
+            'code' => 'WAJIB_PAGINATION',
+            'name' => 'Iuran Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        for ($i = 0; $i < 55; $i++) {
+            CooperativeDuesInvoice::query()->create([
+                'cooperative_member_id' => $member->id,
+                'cooperative_contribution_type_id' => $type->id,
+                'organization_id' => $member->organization_id,
+                'period' => now()->subMonths($i)->format('Y-m'),
+                'amount' => 100000,
+                'paid_amount' => 0,
+                'due_date' => now()->addWeek()->toDateString(),
+                'status' => 'UNPAID',
+            ]);
+        }
+
+        Sanctum::actingAs($admin, ['cooperative.dues.read', 'cooperative:read']);
+
+        $response = $this->getJson('/api/v1/dues/invoices?per_page=999999');
+        $response->assertOk();
+        $this->assertSame(50, $response->json('meta.per_page'));
+        $this->assertCount(50, $response->json('data'));
+
+        $response = $this->getJson('/api/v1/dues/invoices?per_page=51');
+        $response->assertOk();
+        $this->assertSame(50, $response->json('meta.per_page'));
+    }
+
+    public function test_dues_pagination_non_numeric_and_zero_uses_resolver_defaults(): void
+    {
+        $org = \App\Models\Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $org->id]);
+        $admin->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $org->id,
+        ]);
+        $type = CooperativeContributionType::query()->create([
+            'organization_id' => $member->organization_id,
+            'code' => 'WAJIB_DEFAULTS',
+            'name' => 'Iuran Wajib',
+            'category' => 'WAJIB',
+            'default_amount' => 100000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+
+        for ($i = 0; $i < 3; $i++) {
+            CooperativeDuesInvoice::query()->create([
+                'cooperative_member_id' => $member->id,
+                'cooperative_contribution_type_id' => $type->id,
+                'organization_id' => $member->organization_id,
+                'period' => now()->subMonths($i)->format('Y-m'),
+                'amount' => 100000,
+                'paid_amount' => 0,
+                'due_date' => now()->addWeek()->toDateString(),
+                'status' => 'UNPAID',
+            ]);
+        }
+
+        Sanctum::actingAs($admin, ['cooperative.dues.read', 'cooperative:read']);
+
+        $nonNumeric = $this->getJson('/api/v1/dues/invoices?per_page=abc');
+        $nonNumeric->assertOk();
+        $this->assertSame(15, $nonNumeric->json('meta.per_page'), 'Non-numeric per_page must use default.');
+
+        $zero = $this->getJson('/api/v1/dues/invoices?per_page=0');
+        $zero->assertOk();
+        $this->assertSame(1, $zero->json('meta.per_page'), 'Zero per_page must clamp to minimum 1.');
+
+        $negative = $this->getJson('/api/v1/dues/invoices?per_page=-5');
+        $negative->assertOk();
+        $this->assertSame(1, $negative->json('meta.per_page'), 'Negative per_page must clamp to minimum 1.');
     }
 
     /**

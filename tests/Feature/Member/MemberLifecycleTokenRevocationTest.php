@@ -5,11 +5,13 @@ namespace Tests\Feature\Member;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\MemberAccessRevocationService;
 use App\Services\Cooperative\MemberValidationService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class MemberLifecycleTokenRevocationTest extends TestCase
@@ -107,6 +109,28 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         $this->assertSame(2, $user->tokens()->count());
         $this->assertTrue($user->tokens()->where('name', 'ess-mobile')->exists());
         $this->assertTrue($user->tokens()->where('name', 'technician-mobile')->exists());
+    }
+
+    public function test_mandatory_audit_failure_rolls_back_member_token_revocation(): void
+    {
+        [$user, $member] = $this->activeMemberWithToken();
+        $admin = $this->adminUser($member->organization_id);
+        $tokenId = $user->tokens()->firstOrFail()->id;
+        $audit = Mockery::mock(AuditLogService::class);
+        $audit->shouldReceive('log')
+            ->once()
+            ->andThrow(new \RuntimeException('simulated mandatory audit failure'));
+        $this->app->instance(AuditLogService::class, $audit);
+
+        try {
+            app(MemberAccessRevocationService::class)->revokeFor($member, 'deactivated', $admin);
+            $this->fail('Expected mandatory audit failure.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('simulated mandatory audit failure', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $tokenId]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.access.revoked']);
     }
 
     public function test_revocation_with_no_tokens_returns_zero(): void

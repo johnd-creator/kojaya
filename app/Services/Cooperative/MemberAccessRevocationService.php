@@ -9,6 +9,8 @@ use App\Services\Auth\LegacyTokenClassifier;
 use App\Support\AuditContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class MemberAccessRevocationService
 {
@@ -44,50 +46,62 @@ class MemberAccessRevocationService
             return 0;
         }
 
-        $tokens = $this->memberProfileTokens($user);
+        try {
+            return DB::transaction(function () use ($member, $user, $actor, $reason): int {
+                $count = $this->revokeSelectedMemberTokens($user);
+                $this->logRevocation($member, $user, $actor, $reason, $count);
 
-        if ($tokens->isEmpty()) {
-            return 0;
+                return $count;
+            });
+        } catch (Throwable $exception) {
+            $this->monitorFailure($member, $user, $reason, $exception);
+
+            throw $exception;
         }
-
-        $count = $tokens->count();
-        $user->tokens()->whereKey($tokens->modelKeys())->delete();
-
-        $this->logRevocation($member, $actor, $reason, $count);
-
-        return $count;
     }
 
     public function revokeMemberAppTokens(User $user, string $reason, ?User $actor = null, ?CooperativeMember $member = null): int
     {
-        $tokens = $this->memberProfileTokens($user);
+        try {
+            return DB::transaction(function () use ($user, $reason, $actor, $member): int {
+                $count = $this->revokeSelectedMemberTokens($user);
+                $this->logRevocation($member, $user, $actor, $reason, $count);
 
-        $count = $tokens->count();
-        if ($count > 0) {
-            $user->tokens()->whereKey($tokens->modelKeys())->delete();
+                return $count;
+            });
+        } catch (Throwable $exception) {
+            $this->monitorFailure($member, $user, $reason, $exception);
+
+            throw $exception;
         }
-
-        if ($member) {
-            $this->logRevocation($member, $actor, $reason, $count);
-        }
-
-        return $count;
     }
 
     public function revokeAccountWide(User $user, string $reason, ?User $actor = null): int
     {
-        $count = $user->tokens()->count();
-        $user->tokens()->delete();
+        try {
+            return DB::transaction(function () use ($user, $reason, $actor): int {
+                $count = $user->tokens()->count();
+                $user->tokens()->delete();
 
-        $this->audit->log('account.tokens.revoked', 'auth.token', null, [
-            'new' => [
+                $this->audit->log('account.tokens.revoked', 'auth.token', null, [
+                    'new' => [
+                        'affected_user_id' => $user->id,
+                        'tokens_revoked' => $count,
+                    ],
+                    'reason' => $this->safeReason($reason),
+                ], AuditContext::forActor($actor));
+
+                return $count;
+            });
+        } catch (Throwable $exception) {
+            Log::critical('Mandatory account token revocation audit failed; transaction rolled back.', [
                 'affected_user_id' => $user->id,
-                'tokens_revoked' => $count,
-            ],
-            'reason' => $this->safeReason($reason),
-        ], AuditContext::forActor($actor));
+                'reason_code' => $this->safeReason($reason),
+                'exception_class' => $exception::class,
+            ]);
 
-        return $count;
+            throw $exception;
+        }
     }
 
     /**
@@ -100,26 +114,57 @@ class MemberAccessRevocationService
         DB::afterCommit(fn () => $this->revokeFor($member->refresh(), $reason, $actor));
     }
 
-    private function logRevocation(CooperativeMember $member, ?User $actor, string $reason, int $count): void
-    {
+    private function logRevocation(
+        ?CooperativeMember $member,
+        User $user,
+        ?User $actor,
+        string $reason,
+        int $count,
+    ): void {
         $reasonCode = $this->safeReason($reason);
 
-        try {
-            $this->audit->log('member.access.revoked', 'cooperative.lifecycle', $member, [
+        $this->audit->log(
+            'member.access.revoked',
+            $member ? 'cooperative.lifecycle' : 'auth.token',
+            $member,
+            [
                 'new' => [
                     'reason_code' => $reasonCode,
                     'tokens_revoked' => $count,
-                    'member_status' => $member->status,
-                    'validation_status' => $member->validation_status,
-                    'affected_user_id' => $member->user_id,
+                    'member_status' => $member?->status,
+                    'validation_status' => $member?->validation_status,
+                    'affected_user_id' => $member?->user_id ?? $user->id,
                 ],
                 'reason' => 'Controlled member access revocation.',
-            ], AuditContext::forActor($actor));
-        } catch (\Throwable) {
-            $this->audit->log('member_access_revocation.audit_failed', 'cooperative.lifecycle', $member, [
-                'new' => ['reason_code' => $reasonCode, 'error' => 'Failed to write revocation audit log.'],
-            ]);
+            ],
+            AuditContext::forActor($actor),
+        );
+    }
+
+    private function revokeSelectedMemberTokens(User $user): int
+    {
+        $tokens = $this->memberProfileTokens($user);
+        $count = $tokens->count();
+
+        if ($count > 0) {
+            $user->tokens()->whereKey($tokens->modelKeys())->delete();
         }
+
+        return $count;
+    }
+
+    private function monitorFailure(
+        ?CooperativeMember $member,
+        User $user,
+        string $reason,
+        Throwable $exception,
+    ): void {
+        Log::critical('Mandatory member access revocation audit failed; transaction rolled back.', [
+            'member_id' => $member?->getKey(),
+            'affected_user_id' => $user->getKey(),
+            'reason_code' => $this->safeReason($reason),
+            'exception_class' => $exception::class,
+        ]);
     }
 
     /**

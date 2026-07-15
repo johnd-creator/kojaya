@@ -132,6 +132,7 @@ class OrganizationManagementTest extends TestCase
     public function test_user_can_switch_active_organization_context(): void
     {
         $organization = Organization::factory()->create();
+        $this->adminUser->givePermissionTo(Permission::findOrCreate('view_cooperative_all', 'web'));
 
         $this->actingAs($this->adminUser)
             ->from(route('organizations.index'))

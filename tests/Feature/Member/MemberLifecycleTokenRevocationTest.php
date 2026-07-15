@@ -171,7 +171,7 @@ class MemberLifecycleTokenRevocationTest extends TestCase
             'organization_id' => $organization->id,
         ]);
 
-        $user->createToken('mobile-test', ['member:read', 'member:write']);
+        $user->createToken('mobile-test', ['profile:read', 'member:read', 'member:write']);
 
         return [$user, $member];
     }

@@ -303,7 +303,7 @@ class MemberUpdateCommandSeparationTest extends TestCase
         $this->actingAs($admin)
             ->patch(route('cooperative.members.account-link.update', $member), [
                 'user_id' => $newUser->id,
-                'reason' => 'Account relink after data correction',
+                'reason' => 'member_correction',
             ])
             ->assertSessionHas('success');
 

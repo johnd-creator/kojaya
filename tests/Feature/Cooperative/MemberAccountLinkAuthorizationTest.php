@@ -80,6 +80,67 @@ class MemberAccountLinkAuthorizationTest extends TestCase
         $this->assertNull($member->fresh()->user_id);
     }
 
+    public function test_all_privileged_and_operational_roles_are_denied_as_link_targets(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+
+        foreach ([
+            'System Admin',
+            'Admin Pusat',
+            'Pengurus Koperasi',
+            'Manajer Koperasi',
+            'Admin Koperasi',
+            'Kasir Koperasi',
+            'Finance Pusat',
+            'Finance Unit',
+            'HR Pusat',
+            'HR Unit',
+            'Employee',
+            'Technician',
+        ] as $roleName) {
+            $target = User::factory()->create(['organization_id' => $organization->id]);
+            $target->assignRole($roleName);
+            $member = CooperativeMember::factory()->active()->create([
+                'organization_id' => $organization->id,
+                'user_id' => null,
+            ]);
+
+            $this->actingAs($actor)
+                ->post(route('cooperative.members.account-link.store', $member), [
+                    'user_id' => $target->id,
+                    'reason' => 'business_verification',
+                ])
+                ->assertSessionHasErrors('user_id');
+
+            $this->assertNull($member->fresh()->user_id, "Role [{$roleName}] was linked unexpectedly.");
+        }
+    }
+
+    public function test_unsupported_reason_code_is_rejected_without_mutation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('cooperative.members.account-link.store', $member), [
+                'user_id' => $target->id,
+                'reason' => 'free-form-sensitive-reason',
+            ])
+            ->assertSessionHasErrors('reason');
+
+        $this->assertNull($member->fresh()->user_id);
+    }
+
     public function test_unlink_revokes_member_tokens_but_preserves_other_app_tokens(): void
     {
         $this->seed(RolePermissionSeeder::class);

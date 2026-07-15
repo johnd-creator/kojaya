@@ -72,4 +72,49 @@ class TokenAppMetadataTest extends TestCase
 
         $this->assertSame(0, $user->fresh()->tokens()->count());
     }
+
+    public function test_member_revocation_unions_explicit_and_exact_legacy_member_profiles(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+        ]);
+
+        $explicit = $user->createToken('explicit-member', ['member:read']);
+        $explicit->accessToken->forceFill(['token_app' => 'member'])->save();
+        $legacy = $user->createToken('legacy-member', ['profile:read', 'member:read', 'member:write']);
+        $ess = $user->createToken('legacy-ess', ['profile:read', 'ess:read', 'ess:write', 'attendance:read', 'attendance:write', 'payroll:read']);
+        $technician = $user->createToken('legacy-technician', ['profile:read', 'work-orders:read', 'work-orders:write', 'work-orders:review']);
+        $unsafe = $user->createToken('unsafe', ['*']);
+
+        app(MemberAccessRevocationService::class)->revokeFor($member, 'deactivated');
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $explicit->accessToken->id]);
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $legacy->accessToken->id]);
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $ess->accessToken->id]);
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $technician->accessToken->id]);
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $unsafe->accessToken->id]);
+    }
+
+    public function test_member_revocation_is_independent_of_cutover_phase(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+        ]);
+
+        foreach (['instrument', 'rotate', 'deprecate', 'remove'] as $phase) {
+            config()->set('security.ability_cutover_phase', $phase);
+            $token = $user->createToken('legacy-'.$phase, ['profile:read', 'member:read', 'member:write']);
+            app(MemberAccessRevocationService::class)->revokeFor($member, 'deactivated');
+
+            $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
+        }
+    }
 }

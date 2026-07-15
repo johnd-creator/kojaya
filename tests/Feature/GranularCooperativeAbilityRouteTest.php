@@ -32,7 +32,8 @@ class GranularCooperativeAbilityRouteTest extends TestCase
 
     public function test_legacy_cooperative_ability_remains_accepted_during_cutover(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('Admin Koperasi');
         Sanctum::actingAs($user, ['cooperative:read']);
 

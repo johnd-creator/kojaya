@@ -114,6 +114,28 @@ class OrganizationScopeContractTest extends TestCase
         app(OrganizationScopeService::class)->scopeVisibleTo($model->newQuery(), $user);
     }
 
+    public function test_unsupported_model_fails_closed_for_global_and_system_admin_users(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $model = new class extends Model {};
+        $global = User::factory()->create(['organization_id' => null]);
+        $global->givePermissionTo(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+
+        $this->expectException(OrganizationScopeException::class);
+        app(OrganizationScopeService::class)->scopeVisibleTo($model->newQuery(), $global);
+    }
+
+    public function test_system_admin_cannot_bypass_an_unsupported_model_contract(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $model = new class extends Model {};
+        $systemAdmin = User::factory()->create();
+        $systemAdmin->assignRole('System Admin');
+
+        $this->expectException(OrganizationScopeException::class);
+        app(OrganizationScopeService::class)->scopeVisibleTo($model->newQuery(), $systemAdmin);
+    }
+
     public function test_broken_explicit_path_fails_closed(): void
     {
         $this->seed(RolePermissionSeeder::class);
@@ -129,6 +151,23 @@ class OrganizationScopeContractTest extends TestCase
 
         $this->expectException(OrganizationScopeException::class);
 
+        app(OrganizationScopeService::class)->assertVisible($user, $model);
+    }
+
+    public function test_broken_explicit_path_fails_closed_for_global_user(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = User::factory()->create(['organization_id' => null]);
+        $user->givePermissionTo(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        $model = new class extends Model implements OrganizationScopedModel
+        {
+            public function organizationScopePath(): string
+            {
+                return 'missingRelation.organization_id';
+            }
+        };
+
+        $this->expectException(OrganizationScopeException::class);
         app(OrganizationScopeService::class)->assertVisible($user, $model);
     }
 }

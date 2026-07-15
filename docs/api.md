@@ -2646,6 +2646,21 @@ API responses include `X-Response-Time-Ms`, and timing metadata is logged with t
 ### **Pagination Response (Laravel Paginator)**
 All list endpoints return Laravel's standard paginator format:
 
+Pagination limits are resolved centrally for API, ESS, technician, notification,
+cooperative, POS, procurement, certificate, MCU, support, audit, and compliance
+list surfaces:
+
+- omitted or empty per_page: 15;
+- values below 1 (including 0 and -1): 1;
+- values 1 through 50: accepted as requested;
+- values above 50: capped at 50;
+- non-numeric, array, or malformed values: default to 15;
+- the documented cooperative dues management screen may use an explicit
+  administrative ceiling of 100.
+
+Controllers must use the shared page-size resolver. They must not parse
+per_page or page_size directly from the request.
+
 ```json
 {
   "current_page": 1,

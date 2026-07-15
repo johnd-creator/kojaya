@@ -980,6 +980,52 @@ yang didukung.
 
 ---
 
+## 🎯 ADR-027: Document 05 Audit Context, Bounded Pagination, dan Response Contracts
+
+**Status:** READY FOR INDEPENDENT REVIEW
+**Date:** July 15, 2026
+**Deciders:** Engineering
+
+### Context
+
+Audit events emitted from HTTP requests, queued jobs, scheduled commands, and
+domain services could derive actor data from ambient authentication state. API
+pagination also had several local parsers with different behavior for malformed
+or oversized values, while selected endpoints returned raw Eloquent models.
+
+### Decision
+
+- Audit writes accept an explicit AuditContext containing actor, roles,
+  organization, correlation ID, source, and request metadata. Domain and CLI
+  operations pass their actor/source explicitly.
+- Audit persistence is mandatory for security-sensitive lifecycle events
+  (export, PII operations, account linking, token/access changes, and
+  financial state transitions). The operation fails or rolls back when its
+  required audit write fails. Best-effort telemetry is limited to
+  non-authoritative metrics and is not used as the audit record.
+- Audit redaction recursively removes sensitive values by field name,
+  including nested crypto, token, gateway, authorization, and bank-account
+  payloads. Export audit events use requested/completed/failed lifecycle
+  actions and retain only safe filter metadata.
+- PaginationLimitResolver defines the API contract as default 15, minimum 1,
+  maximum 50, malformed input falling back to 15, with 100 reserved for the
+  documented administrative dues surface.
+- Sensitive paginated API responses use explicit Resources or DTO-style
+  allowlists. Member invoices and cooperative payments no longer return raw
+  Eloquent paginator/model serialization.
+
+### Consequences
+
+- Background and domain audit records no longer depend on whichever user
+  happens to be present in the current request context.
+- Audit consumers must handle lifecycle events as intent and outcome events;
+  the historical successful member export event remains as a compatibility
+  alias.
+- New list endpoints must use the shared resolver and explicit response
+  contract tests.
+- Full-suite and external database verification remain independent review
+  responsibilities for this branch.
+
 ## 📚 References
 
 - [Laravel Documentation](https://laravel.com/docs)
@@ -990,4 +1036,4 @@ yang didukung.
 
 ---
 
-*Last Updated: July 11, 2026*
+*Last Updated: July 15, 2026*

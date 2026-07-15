@@ -15,7 +15,8 @@ class ReimbursementPolicy extends BasePolicy
 
     public function update(User $user, Reimbursement $reimbursement): bool
     {
-        return $this->can($user, 'manage_reimbursement');
+        return $this->can($user, 'manage_reimbursement')
+            && $this->sameOrganization($user, $reimbursement);
     }
 
     public function approve(User $user, Reimbursement $reimbursement): bool
@@ -28,6 +29,6 @@ class ReimbursementPolicy extends BasePolicy
             return false;
         }
 
-        return true;
+        return $this->sameOrganization($user, $reimbursement);
     }
 }

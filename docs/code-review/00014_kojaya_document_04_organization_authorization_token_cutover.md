@@ -352,4 +352,70 @@ development or production database was modified.
 - Independent GLM full verification remains pending, including any routes or
   organization-owned models outside the focused matrix.
 
+## Senior remediation plan update
+
+The follow-up plan was applied without changing payment/reservation state
+machines, PII encryption behavior, PII migrations/backfill, or Document 05.
+
+### Remediation identity
+
+- Actual remediation update starting SHA: ff5b80ca57a949495f644371aa3e4200050cad23
+- Ending implementation SHA before this evidence commit: 1f9aec0a76f196432ba00bab62f91a6898db997f
+- Branch: remediation/document-04-organization-auth-token-cutover
+
+### Account-link resolution
+
+- Added exact-email candidate lookup for web and API under the dedicated
+  account-link path.
+- Candidate results are restricted to the member organization, verified users,
+  users without an existing cooperative-member link, and non-privileged
+  accounts. The endpoint is not a broad user directory and does not mutate
+  either record.
+- Existing transactional link/unlink actions remain the only mutation path;
+  controlled reason codes, organization checks, role eligibility, and
+  member-only token revocation remain enforced there.
+- Google SSO continues to refuse email-only auto-linking for an existing member
+  without an account. Operators now have an exact, scoped candidate route to
+  resolve that state safely.
+- Generic member create/edit forms no longer carry `user_id`.
+
+### Unsafe legacy token rotation
+
+- `POST /api/token/rotate` accepts an optional `app` enum: `member`, `ess`,
+  `technician`, or `admin`.
+- `app` is required only when the current token is wildcard, combined, empty,
+  unknown, or otherwise unsafe. Safe legacy profiles and tokens with explicit
+  metadata must preserve their current app profile; a safe profile cannot be
+  switched to another app during rotation.
+- New abilities are resolved from current user permissions through the existing
+  app-specific issuer. Rotation creates the replacement before deleting the
+  old token, and the response exposes only safe metadata (`token_app` and
+  `token_version`) alongside the bearer token response contract.
+- Wildcard abilities are not issued by the new profile resolver and app choice
+  cannot grant permissions beyond the current user authorization.
+
+### Contract and documentation updates
+
+- OpenAPI generator and snapshot now describe the rotation `app` contract and
+  the exact account-link candidate route.
+- API and architecture docs no longer claim that the admin app receives a
+  wildcard token. Legacy cooperative abilities are documented as a staged
+  compatibility concern only.
+- ADR-026 records the app-specific token and account-link decisions; the
+  operator boundary remains cooperative-only while ERP role/workflow scope is
+  deferred.
+
+### Verification prepared
+
+- PHP syntax lint passed for every changed PHP implementation and test file.
+- `vendor/bin/pint --dirty --format agent` passed.
+- `php artisan wayfinder:generate --no-interaction` passed; generated output
+  remains ignored.
+- Focused regression coverage was added to `P0SecurityTest`,
+  `MemberAccountLinkAuthorizationTest`, and `GoogleSsoFlowTest` for unsafe
+  rotation, app-profile preservation, exact scoped candidates, duplicate-link
+  protection, and the no-auto-link SSO path.
+- The repository AGENTS test policy requires focused PHPUnit commands to be
+  provided for operator execution rather than run by Codex in this task.
+
 Status remains: READY FOR INDEPENDENT REVIEW.

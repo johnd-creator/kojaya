@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Cooperative;
 
+use App\Enums\AccountLinkReasonCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +25,7 @@ class LinkCooperativeMemberAccountRequest extends FormRequest
                 'exists:users,id',
                 Rule::unique('cooperative_members', 'user_id')->ignore($memberId),
             ],
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
+            'reason' => ['required', 'string', Rule::in(AccountLinkReasonCode::values())],
         ];
     }
 }

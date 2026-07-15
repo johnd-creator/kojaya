@@ -2,6 +2,7 @@
 
 namespace App\Services\Cooperative;
 
+use App\Enums\AccountLinkReasonCode;
 use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\User;
@@ -14,15 +15,6 @@ use Spatie\Permission\Models\Role;
 
 class MemberAccountLinkService
 {
-    /** @var list<string> */
-    private const REASON_CODES = [
-        'business_verification',
-        'regulatory_request',
-        'member_correction',
-        'internal_audit',
-        'other',
-    ];
-
     public function __construct(
         private readonly OrganizationScopeService $scope,
         private readonly MemberAccessRevocationService $accessRevocation,
@@ -172,11 +164,22 @@ class MemberAccountLinkService
             PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value,
             PermissionEnum::COOPERATIVE_MEMBER_APPROVE->value,
             PermissionEnum::COOPERATIVE_LOAN_APPROVE->value,
+            PermissionEnum::COOPERATIVE_LOAN_MANAGE->value,
             PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value,
             PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+            PermissionEnum::COOPERATIVE_SETTINGS_MANAGE->value,
+            PermissionEnum::COOPERATIVE_POS_ACCESS->value,
             PermissionEnum::EMPLOYEE_VIEW_ALL->value,
             PermissionEnum::PAYROLL_PROCESS->value,
             PermissionEnum::PAYROLL_APPROVE->value,
+            'manage_clients',
+            'manage_departments',
+            'manage_petty_cash',
+            'manage_reimbursement',
+            'manage_salary_structures',
+            'manage_spare_parts',
+            'manage_vendors',
+            'manage_warehouses',
         ] as $permission) {
             if ($user->can($permission)) {
                 return true;
@@ -188,6 +191,14 @@ class MemberAccountLinkService
 
     private function reasonCode(string $reason): string
     {
-        return in_array($reason, self::REASON_CODES, true) ? $reason : 'other';
+        $reasonCode = AccountLinkReasonCode::tryFrom($reason);
+
+        if ($reasonCode === null) {
+            throw ValidationException::withMessages([
+                'reason' => 'Reason code akun tidak valid.',
+            ]);
+        }
+
+        return $reasonCode->value;
     }
 }

@@ -17,6 +17,7 @@ use App\Models\CooperativeMember;
 use App\Models\MemberResignationRequest;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\MemberAccountLinkService;
@@ -60,12 +61,17 @@ class CooperativeMemberApiController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         MemberNumberGenerator $memberNumberGenerator,
+        OrganizationScopeService $scopeService,
     ): JsonResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $memberNo = $memberNumberGenerator->generate();
+        $visibility = $scopeService->visibilityFor($request->user(), \App\Enums\PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        $organizationId = $visibility->global
+            ? $headOfficeResolver->resolve()->id
+            : $visibility->organizationId;
 
-        $member = DB::transaction(function () use ($request, $headOfficeResolver, $memberNo): CooperativeMember {
+        $member = DB::transaction(function () use ($request, $organizationId, $memberNo): CooperativeMember {
             $member = CooperativeMember::query()->create([
                 ...$request->safe()->only([
                     'employee_id',
@@ -82,7 +88,7 @@ class CooperativeMemberApiController extends Controller
                     'kategori',
                     'autodebet',
                 ]),
-                'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
+                'organization_id' => $organizationId,
                 'no_anggota' => $memberNo,
                 'member_no' => $memberNo,
                 'joined_at' => $request->validated('tanggal_aktif'),

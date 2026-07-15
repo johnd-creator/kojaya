@@ -16,6 +16,7 @@ use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberPageDataService;
 use App\Services\Cooperative\CooperativeMemberService;
@@ -141,18 +142,15 @@ class CooperativeMemberController extends Controller
         ]);
     }
 
-    public function create(Request $request, OrganizationScopedQueryService $scopeService): Response
+    public function create(Request $request): Response
     {
         $this->authorize('create', CooperativeMember::class);
 
         $employees = Employee::query()->select('id', 'first_name', 'last_name', 'employee_code');
-        $users = User::query()->select('id', 'name', 'email');
-        $scopeService->scopeVisibleTo($employees, $request->user());
-        $scopeService->scopeVisibleTo($users, $request->user());
+        app(OrganizationScopeService::class)->scopeVisibleTo($employees, $request->user(), 'view_employee_all');
 
         return Inertia::render('Cooperative/Members/Create', [
             'employees' => $employees->orderBy('first_name')->get(),
-            'users' => $users->orderBy('name')->get(),
             'options' => $this->options(),
         ]);
     }
@@ -161,15 +159,20 @@ class CooperativeMemberController extends Controller
         StoreCooperativeMemberRequest $request,
         CooperativeHeadOfficeResolver $headOfficeResolver,
         DuesGenerationService $duesGenerationService,
+        OrganizationScopeService $scopeService,
     ): RedirectResponse {
         $this->authorize('create', CooperativeMember::class);
 
         $data = $this->memberPayload($request);
+        $visibility = $scopeService->visibilityFor($request->user(), PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        $organizationId = $visibility->global
+            ? $headOfficeResolver->resolve()->id
+            : $visibility->organizationId;
 
-        $member = DB::transaction(function () use ($data, $headOfficeResolver, $request): CooperativeMember {
+        $member = DB::transaction(function () use ($data, $organizationId): CooperativeMember {
             $member = CooperativeMember::query()->create([
                 ...$data,
-                'organization_id' => $request->user()->organization_id ?? $headOfficeResolver->resolve()->id,
+                'organization_id' => $organizationId,
                 'status' => CooperativeMember::VALIDATION_PENDING,
                 'validation_status' => CooperativeMember::VALIDATION_PENDING,
             ]);
@@ -228,7 +231,6 @@ class CooperativeMemberController extends Controller
     public function edit(
         Request $request,
         CooperativeMember $member,
-        OrganizationScopedQueryService $scopeService,
         CooperativeMemberPageDataService $memberPageData,
     ): Response {
         $this->authorize('update', $member);
@@ -236,14 +238,11 @@ class CooperativeMemberController extends Controller
         $member->load('ledgerEntries');
 
         $employees = Employee::query()->select('id', 'first_name', 'last_name', 'employee_code');
-        $users = User::query()->select('id', 'name', 'email');
-        $scopeService->scopeVisibleTo($employees, $request->user());
-        $scopeService->scopeVisibleTo($users, $request->user());
+        app(OrganizationScopeService::class)->scopeVisibleTo($employees, $request->user(), 'view_employee_all');
 
         return Inertia::render('Cooperative/Members/Edit', [
             'member' => $memberPageData->edit($member, $request->user()),
             'employees' => $employees->orderBy('first_name')->get(),
-            'users' => $users->orderBy('name')->get(),
             'openingSavingBalance' => $member->ledgerEntries->firstWhere('entry_type', 'OPENING_BALANCE')?->credit,
             'options' => $this->options(),
         ]);

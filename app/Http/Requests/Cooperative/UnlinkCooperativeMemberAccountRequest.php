@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Cooperative;
 
+use App\Enums\AccountLinkReasonCode;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UnlinkCooperativeMemberAccountRequest extends FormRequest
 {
@@ -15,7 +17,7 @@ class UnlinkCooperativeMemberAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
+            'reason' => ['required', 'string', Rule::in(AccountLinkReasonCode::values())],
         ];
     }
 }

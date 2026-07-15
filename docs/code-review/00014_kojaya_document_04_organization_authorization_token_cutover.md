@@ -436,6 +436,9 @@ The remediation applies the following corrections:
 - validation, payment, dashboard, opening-balance, and policy fixtures now
   explicitly align actor and target organization where the test intends a
   successful operation;
+- ledger regression fixtures now also assign `organization_id` to the ledger
+  rows themselves; member ownership alone is not a substitute for the
+  explicit ledger-entry scope contract;
 - legacy member-token lifecycle fixtures now use the exact legacy member
   ability profile, while partial, empty, combined, and unknown profiles remain
   unsafe and are not silently revoked as member tokens;

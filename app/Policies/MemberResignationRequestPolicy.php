@@ -33,7 +33,6 @@ class MemberResignationRequestPolicy extends BasePolicy
     {
         $member = $request->member;
 
-        return $member !== null && ($this->can($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)
-            || $this->sameOrganization($user, $member));
+        return $member !== null && $this->sameOrganization($user, $member);
     }
 }

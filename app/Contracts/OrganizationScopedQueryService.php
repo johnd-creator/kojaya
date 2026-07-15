@@ -2,6 +2,7 @@
 
 namespace App\Contracts;
 
+use App\Enums\PermissionEnum;
 use App\Models\User;
 use App\Services\Authorization\OrganizationScopeService;
 use App\Support\OrganizationVisibility;
@@ -30,7 +31,7 @@ class OrganizationScopedQueryService
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return $this->scopeService->scopeVisibleTo($query, $user);
+        return $this->scopeService->scopeVisibleTo($query, $user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
     }
 
     /**
@@ -38,7 +39,7 @@ class OrganizationScopedQueryService
      */
     public function canViewAllOrganizations(User $user): bool
     {
-        return $this->scopeService->visibilityFor($user)->global;
+        return $this->scopeService->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)->global;
     }
 
     /**
@@ -47,11 +48,11 @@ class OrganizationScopedQueryService
      */
     public function scopeOrganizationIdFor(User $user): ?string
     {
-        return $this->scopeService->visibilityFor($user)->organizationId;
+        return $this->scopeService->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value)->organizationId;
     }
 
     public function visibilityFor(User $user): OrganizationVisibility
     {
-        return $this->scopeService->visibilityFor($user);
+        return $this->scopeService->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
     }
 }

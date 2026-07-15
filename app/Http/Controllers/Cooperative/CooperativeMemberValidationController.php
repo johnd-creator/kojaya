@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\RejectCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\RequestCooperativeMemberRevisionRequest;
 use App\Http\Requests\Cooperative\ValidateCooperativeMemberRequest;
 use App\Models\CooperativeMember;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\MemberValidationService;
 use Illuminate\Http\RedirectResponse;
 
@@ -15,10 +16,13 @@ class CooperativeMemberValidationController extends Controller
 {
     public function __construct(
         private readonly MemberValidationService $validation,
+        private readonly OrganizationScopeService $scopeService,
     ) {}
 
     public function approve(ValidateCooperativeMemberRequest $request, CooperativeMember $member): RedirectResponse
     {
+        $this->assertVisible($request, $member);
+
         if (! $this->validation->canBeVerifiedByAdmin($member)) {
             abort(409, 'Anggota tidak dalam status menunggu verifikasi admin.');
         }
@@ -34,6 +38,8 @@ class CooperativeMemberValidationController extends Controller
 
     public function approveFinal(ApproveCooperativeMemberRequest $request, CooperativeMember $member): RedirectResponse
     {
+        $this->assertVisible($request, $member);
+
         if (! $this->validation->canBeApprovedFinal($member)) {
             abort(409, 'Anggota belum siap untuk approval final.');
         }
@@ -49,6 +55,8 @@ class CooperativeMemberValidationController extends Controller
 
     public function requestRevision(RequestCooperativeMemberRevisionRequest $request, CooperativeMember $member): RedirectResponse
     {
+        $this->assertVisible($request, $member);
+
         $this->ensurePending($member);
 
         $this->validation->requestRevision(
@@ -62,6 +70,8 @@ class CooperativeMemberValidationController extends Controller
 
     public function reject(RejectCooperativeMemberRequest $request, CooperativeMember $member): RedirectResponse
     {
+        $this->assertVisible($request, $member);
+
         $this->ensurePending($member);
 
         $this->validation->reject(
@@ -78,5 +88,10 @@ class CooperativeMemberValidationController extends Controller
         if (! $this->validation->isPendingReview($member)) {
             abort(409, 'Anggota tidak dalam status menunggu validasi.');
         }
+    }
+
+    private function assertVisible(\Illuminate\Http\Request $request, CooperativeMember $member): void
+    {
+        $this->scopeService->assertVisible($request->user(), $member);
     }
 }

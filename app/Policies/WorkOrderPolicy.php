@@ -15,9 +15,10 @@ class WorkOrderPolicy extends BasePolicy
 
     public function view(User $user, WorkOrder $workOrder): bool
     {
-        return (string) $workOrder->assigned_to === (string) $user->id
-            || $this->can($user, 'view_work_order_all')
-            || ($this->can($user, 'view_work_order_unit') && $this->sameOrganization($user, $workOrder));
+        return (
+            (string) $workOrder->assigned_to === (string) $user->id
+            || $this->canAny($user, ['view_work_order_all', 'view_work_order_unit'])
+        ) && $this->sameOrganization($user, $workOrder);
     }
 
     public function update(User $user, WorkOrder $workOrder): bool

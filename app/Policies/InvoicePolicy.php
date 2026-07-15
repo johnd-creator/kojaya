@@ -14,8 +14,8 @@ class InvoicePolicy extends BasePolicy
 
     public function view(User $user, Invoice $invoice): bool
     {
-        return $this->can($user, 'view_invoice_all')
-            || ($this->can($user, 'manage_chart_of_accounts') && $this->sameOrganization($user, $invoice));
+        return $this->canAny($user, ['view_invoice_all', 'manage_chart_of_accounts'])
+            && $this->sameOrganization($user, $invoice);
     }
 
     public function update(User $user, Invoice $invoice): bool

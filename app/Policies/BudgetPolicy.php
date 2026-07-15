@@ -14,8 +14,8 @@ class BudgetPolicy extends BasePolicy
 
     public function view(User $user, Budget $budget): bool
     {
-        return $this->can($user, 'view_budget_all')
-            || ($this->can($user, 'manage_budget') && $this->sameOrganization($user, $budget));
+        return $this->canAny($user, ['view_budget_all', 'manage_budget'])
+            && $this->sameOrganization($user, $budget);
     }
 
     public function update(User $user, Budget $budget): bool

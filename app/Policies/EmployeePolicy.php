@@ -15,8 +15,10 @@ class EmployeePolicy extends BasePolicy
 
     public function view(User $user, Employee $employee): bool
     {
-        return $this->can($user, PermissionEnum::EMPLOYEE_VIEW_ALL->value)
-            || ($this->can($user, PermissionEnum::EMPLOYEE_VIEW_UNIT->value) && $this->sameOrganization($user, $employee));
+        return $this->canAny($user, [
+            PermissionEnum::EMPLOYEE_VIEW_ALL->value,
+            PermissionEnum::EMPLOYEE_VIEW_UNIT->value,
+        ]) && $this->sameOrganization($user, $employee);
     }
 
     public function create(User $user): bool
@@ -27,18 +29,18 @@ class EmployeePolicy extends BasePolicy
     public function update(User $user, Employee $employee): bool
     {
         return $this->can($user, PermissionEnum::EMPLOYEE_EDIT->value)
-            && ($this->can($user, PermissionEnum::EMPLOYEE_VIEW_ALL->value) || $this->sameOrganization($user, $employee));
+            && $this->sameOrganization($user, $employee);
     }
 
     public function delete(User $user, Employee $employee): bool
     {
         return $this->can($user, PermissionEnum::EMPLOYEE_DELETE->value)
-            && ($this->can($user, PermissionEnum::EMPLOYEE_VIEW_ALL->value) || $this->sameOrganization($user, $employee));
+            && $this->sameOrganization($user, $employee);
     }
 
     public function manageEssAccess(User $user, Employee $employee): bool
     {
         return $this->can($user, 'manage_departments')
-            && ($this->can($user, 'view_employee_all') || $this->sameOrganization($user, $employee));
+            && $this->sameOrganization($user, $employee);
     }
 }

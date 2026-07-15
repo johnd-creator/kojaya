@@ -995,7 +995,10 @@ config()->set('services.midtrans.server_key', '');
 {$script}
 PHP;
 
-        $scriptPath = $this->workingDirectory.'/'.$action.'.php';
+        // Every worker must read an immutable script. Reusing the same path lets
+        // concurrent file_put_contents() calls truncate a script while another
+        // PHP process is starting, which can leave that worker without a result.
+        $scriptPath = $this->workingDirectory.'/'.$action.'-'.bin2hex(random_bytes(8)).'.php';
         file_put_contents($scriptPath, $fullScript);
 
         return $scriptPath;

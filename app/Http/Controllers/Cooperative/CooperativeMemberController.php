@@ -31,6 +31,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -481,41 +482,101 @@ class CooperativeMemberController extends Controller
                 throw new \RuntimeException('Member export could not be created.');
             }
         } catch (\Throwable $exception) {
-            $audit->log('member.export.failed', 'cooperative.member', null, [
-                'new' => [
-                    ...$auditMetadata,
-                    'masked' => ! $includePii,
-                    'failed_at' => now()->toISOString(),
-                ],
-                'reason' => 'Cooperative member export failed.',
-            ], $auditContext);
+            Storage::disk('local')->delete($path);
+
+            try {
+                $audit->log('member.export.failed', 'cooperative.member', null, [
+                    'new' => [
+                        ...$auditMetadata,
+                        'record_count' => 0,
+                        'masked' => ! $includePii,
+                        'failed_at' => now()->toISOString(),
+                    ],
+                    'reason' => 'Cooperative member export failed.',
+                ], $auditContext);
+            } catch (\Throwable $auditException) {
+                Log::critical('Member export failed and failure audit could not be persisted.', [
+                    'export_id' => $auditMetadata['export_id'],
+                    'exception_class' => $auditException::class,
+                ]);
+            }
 
             throw $exception;
         }
 
         $absolutePath = Storage::disk('local')->path($path);
+        if (! is_file($absolutePath)) {
+            try {
+                $audit->log('member.export.failed', 'cooperative.member', null, [
+                    'new' => [
+                        ...$auditMetadata,
+                        'record_count' => 0,
+                        'masked' => ! $includePii,
+                        'failed_at' => now()->toISOString(),
+                    ],
+                    'reason' => 'Cooperative member export file was not created.',
+                ], $auditContext);
+            } catch (\Throwable $auditException) {
+                Log::critical('Member export file was missing and failure audit could not be persisted.', [
+                    'export_id' => $auditMetadata['export_id'],
+                    'exception_class' => $auditException::class,
+                ]);
+            }
+
+            throw new \RuntimeException('Member export file was not created.');
+        }
+
         $completedMetadata = [
             ...$auditMetadata,
             'masked' => ! $includePii,
+            'file_sha256' => hash_file('sha256', $absolutePath) ?: null,
             'completed_at' => now()->toISOString(),
         ];
-        $audit->log('member.export.completed', 'cooperative.member', null, [
-            'new' => $completedMetadata,
-            'reason' => 'Cooperative member export completed.',
-        ], $auditContext);
+
+        try {
+            $audit->log('member.export.completed', 'cooperative.member', null, [
+                'new' => $completedMetadata,
+                'reason' => 'Cooperative member export completed.',
+            ], $auditContext);
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($path);
+            Log::critical('Member export completed but mandatory completion audit failed.', [
+                'export_id' => $auditMetadata['export_id'],
+                'exception_class' => $exception::class,
+            ]);
+
+            throw $exception;
+        }
 
         // Preserve the historical event for existing consumers; it is
         // emitted only after the file has been created successfully.
-        $audit->log('member.pii.exported', 'cooperative.member', null, [
-            'new' => $completedMetadata,
-        ], $auditContext);
+        try {
+            $audit->log('member.pii.exported', 'cooperative.member', null, [
+                'new' => $completedMetadata,
+            ], $auditContext);
+        } catch (\Throwable $exception) {
+            Log::warning('Member export compatibility audit event could not be persisted.', [
+                'export_id' => $auditMetadata['export_id'],
+                'exception_class' => $exception::class,
+            ]);
+        }
 
-        return response()
-            ->download(
-                Storage::disk('local')->path($path),
-                $includePii ? 'daftar-anggota-sensitive.xlsx' : 'daftar-anggota.xlsx',
-            )
-            ->deleteFileAfterSend(true);
+        try {
+            return response()
+                ->download(
+                    $absolutePath,
+                    $includePii ? 'daftar-anggota-sensitive.xlsx' : 'daftar-anggota.xlsx',
+                )
+                ->deleteFileAfterSend(true);
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($path);
+            Log::critical('Member export response could not be created after completion.', [
+                'export_id' => $auditMetadata['export_id'],
+                'exception_class' => $exception::class,
+            ]);
+
+            throw $exception;
+        }
     }
 
     private function canViewAllMembers(Request $request): bool

@@ -2,22 +2,36 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\AbilityCutoverPhase;
 use App\Services\AuditLogService;
+use App\Services\Auth\AbilityCutoverPolicy;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Exceptions\MissingAbilityException;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureCooperativeAbility
 {
-    public function __construct(private readonly AuditLogService $audit) {}
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly AbilityCutoverPolicy $cutover,
+    ) {}
 
     public function handle(Request $request, Closure $next, string ...$abilities): Response
     {
         if (! $request->user()?->currentAccessToken()) {
             throw new \Illuminate\Auth\AuthenticationException;
+        }
+
+        $phase = $this->cutover->phase();
+        $currentToken = $request->user()->currentAccessToken();
+        $tokenAbilities = is_object($currentToken) && is_array($currentToken->abilities ?? null)
+            ? $currentToken->abilities
+            : [];
+
+        if (in_array('*', $tokenAbilities, true)) {
+            throw new MissingAbilityException($abilities);
         }
 
         foreach ($abilities as $ability) {
@@ -26,45 +40,35 @@ class EnsureCooperativeAbility
             }
 
             if (str_starts_with($ability, 'cooperative:')) {
-                $phase = (string) config('security.ability_cutover_phase', 'instrument');
-                $emergencyEnabled = (bool) config('security.legacy_ability_fallback_enabled', false);
-                $expiry = config('security.legacy_ability_fallback_expires_at');
-                $expiryIsFuture = $this->isFutureExpiry($expiry);
-
-                if ($phase === 'remove' && ! ($emergencyEnabled && $expiryIsFuture)) {
+                if (! $this->cutover->mayAcceptLegacyAbilities()) {
                     continue;
                 }
 
-                $graceUntil = config('security.legacy_token_grace_until');
-                if (in_array($phase, ['rotate', 'deprecate'], true)
-                    && is_string($graceUntil)
-                    && trim($graceUntil) !== ''
-                    && ! $this->isFutureExpiry($graceUntil)) {
-                    continue;
-                }
-
-                $token = $request->user()->currentAccessToken();
-                $app = is_object($token) ? ($token->token_app ?? 'legacy') : 'legacy';
-                $version = is_object($token) ? ($token->token_version ?? 'legacy') : 'legacy';
-                Cache::increment('auth.legacy_ability.'.sha1($request->route()?->getName() ?? $request->path()).'.'.$app.'.'.$version);
+                $app = is_object($currentToken) ? ($currentToken->token_app ?? 'legacy') : 'legacy';
+                $version = is_object($currentToken) ? ($currentToken->token_version ?? 'legacy') : 'legacy';
+                $route = $request->route()?->getName() ?? $request->path();
+                Cache::increment('auth.legacy_ability.'.sha1($route).'.'.$app.'.'.$version.'.'.$phase->value);
                 $this->audit->log('cooperative.legacy_ability.used', 'cooperative.api', null, [
                     'new' => [
                         'ability' => $ability,
                         'token_app' => $app,
                         'token_version' => $version,
-                        'route' => $request->route()?->getName() ?? $request->path(),
+                        'phase' => $phase->value,
+                        'route' => $route,
                     ],
-                    'reason' => $phase === 'remove'
+                    'reason' => $phase === AbilityCutoverPhase::REMOVE
                         ? 'Emergency legacy cooperative ability fallback used before its configured expiry.'
                         : 'Legacy cooperative ability accepted during granular ability migration.',
                 ]);
             }
 
             $response = $next($request);
-            if (str_starts_with($ability, 'cooperative:') && config('security.ability_cutover_phase') === 'deprecate') {
+            if (str_starts_with($ability, 'cooperative:')
+                && $phase === AbilityCutoverPhase::DEPRECATE
+                && $this->cutover->mayAcceptLegacyAbilities()) {
                 $response->headers->set('Deprecation', 'true');
-                if ($expiry = config('security.legacy_ability_fallback_expires_at')) {
-                    $response->headers->set('Sunset', (string) $expiry);
+                if ($deadline = $this->cutover->legacyDeadline()) {
+                    $response->headers->set('Sunset', $deadline);
                 }
             }
 
@@ -72,18 +76,5 @@ class EnsureCooperativeAbility
         }
 
         throw new MissingAbilityException($abilities);
-    }
-
-    private function isFutureExpiry(mixed $expiry): bool
-    {
-        if (! is_string($expiry) || trim($expiry) === '') {
-            return false;
-        }
-
-        try {
-            return Carbon::parse($expiry)->isFuture();
-        } catch (\Throwable) {
-            return false;
-        }
     }
 }

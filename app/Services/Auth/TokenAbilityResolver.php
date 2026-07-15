@@ -7,6 +7,10 @@ use App\Models\User;
 
 class TokenAbilityResolver
 {
+    public function __construct(
+        private readonly AbilityCutoverPolicy $cutover,
+    ) {}
+
     /**
      * Backward-compatible coarse abilities retained during the migration
      * from cooperative:read/write to granular domain abilities.
@@ -45,6 +49,7 @@ class TokenAbilityResolver
      */
     public function for(User $user, ?string $app): array
     {
+        $phase = $this->cutover->phase();
         $abilities = ['profile:read'];
 
         if ($user->cooperativeMember) {
@@ -56,7 +61,7 @@ class TokenAbilityResolver
         $abilities = array_merge($abilities, $this->resolveCooperativeAbilities($user));
 
         // Legacy abilities are issued only during the explicit instrument phase.
-        if (config('security.ability_cutover_phase', 'instrument') === 'instrument') {
+        if ($phase->value === 'instrument') {
             if ($this->canAny($user, self::LEGACY_COOPERATIVE_READ_PERMS)) {
                 $abilities[] = 'cooperative:read';
             }

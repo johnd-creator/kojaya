@@ -5,13 +5,26 @@ namespace App\Services\Cooperative;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\Auth\LegacyTokenClassifier;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class MemberAccessRevocationService
 {
+    /** @var list<string> */
+    private const CONTROLLED_REASONS = [
+        'deactivated',
+        'rejected',
+        'revision_requested',
+        'resigned',
+        'unlinked',
+        'member_lifecycle',
+        'account_security',
+    ];
+
     public function __construct(
         private readonly AuditLogService $audit,
+        private readonly LegacyTokenClassifier $legacyTokenClassifier,
     ) {}
 
     /**
@@ -30,17 +43,7 @@ class MemberAccessRevocationService
             return 0;
         }
 
-        $tokens = $user->tokens()->where('token_app', 'member')->get();
-
-        if ($tokens->isEmpty() && config('security.ability_cutover_phase') === 'instrument') {
-            $tokens = $user->tokens()->get()->filter(
-                fn (PersonalAccessToken $token): bool => $token->token_app === null
-                    && $token->can('member:read')
-                    && collect($token->abilities ?: [])->every(
-                        fn (string $ability): bool => in_array($ability, ['profile:read', 'member:read', 'member:write'], true),
-                    ),
-            );
-        }
+        $tokens = $this->memberProfileTokens($user);
 
         if ($tokens->isEmpty()) {
             return 0;
@@ -56,17 +59,7 @@ class MemberAccessRevocationService
 
     public function revokeMemberAppTokens(User $user, string $reason, ?User $actor = null, ?CooperativeMember $member = null): int
     {
-        $tokens = $user->tokens()->where('token_app', 'member')->get();
-
-        if ($tokens->isEmpty() && config('security.ability_cutover_phase') === 'instrument') {
-            $tokens = $user->tokens()->get()->filter(
-                fn (PersonalAccessToken $token): bool => $token->token_app === null
-                    && $token->can('member:read')
-                    && collect($token->abilities ?: [])->every(
-                        fn (string $ability): bool => in_array($ability, ['profile:read', 'member:read', 'member:write'], true),
-                    ),
-            );
-        }
+        $tokens = $this->memberProfileTokens($user);
 
         $count = $tokens->count();
         if ($count > 0) {
@@ -90,7 +83,7 @@ class MemberAccessRevocationService
                 'affected_user_id' => $user->id,
                 'tokens_revoked' => $count,
             ],
-            'reason' => $reason,
+            'reason' => $this->safeReason($reason),
         ]);
 
         return $count;
@@ -108,21 +101,44 @@ class MemberAccessRevocationService
 
     private function logRevocation(CooperativeMember $member, ?User $actor, string $reason, int $count): void
     {
+        $reasonCode = $this->safeReason($reason);
+
         try {
             $this->audit->log('member.access.revoked', 'cooperative.lifecycle', $member, [
                 'new' => [
-                    'reason' => $reason,
+                    'reason_code' => $reasonCode,
                     'tokens_revoked' => $count,
                     'member_status' => $member->status,
                     'validation_status' => $member->validation_status,
                     'affected_user_id' => $member->user_id,
                 ],
-                'reason' => $reason,
+                'reason' => 'Controlled member access revocation.',
             ]);
         } catch (\Throwable) {
             $this->audit->log('member_access_revocation.audit_failed', 'cooperative.lifecycle', $member, [
-                'new' => ['reason' => $reason, 'error' => 'Failed to write revocation audit log.'],
+                'new' => ['reason_code' => $reasonCode, 'error' => 'Failed to write revocation audit log.'],
             ]);
         }
+    }
+
+    /**
+     * Select both explicit member-app tokens and exact legacy member profiles.
+     *
+     * @return Collection<int, \Laravel\Sanctum\PersonalAccessToken>
+     */
+    private function memberProfileTokens(User $user): Collection
+    {
+        $explicit = $user->tokens()->where('token_app', 'member')->get();
+        $legacy = $user->tokens()
+            ->whereNull('token_app')
+            ->get()
+            ->filter(fn ($token): bool => $this->legacyTokenClassifier->classify($token->abilities) === 'member');
+
+        return $explicit->merge($legacy)->unique('id')->values();
+    }
+
+    private function safeReason(string $reason): string
+    {
+        return in_array($reason, self::CONTROLLED_REASONS, true) ? $reason : 'member_lifecycle';
     }
 }

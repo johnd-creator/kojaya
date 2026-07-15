@@ -3,68 +3,86 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Support\AuditContext;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
 
 class AuditLogService
 {
-    public function log(string $action, string $module, ?Model $subject = null, ?array $changes = []): AuditLog
-    {
-        return AuditLog::create($this->payload($action, $module, $subject, $changes));
+    public function log(
+        string $action,
+        string $module,
+        ?Model $subject = null,
+        ?array $changes = [],
+        ?AuditContext $context = null,
+    ): AuditLog {
+        return AuditLog::create($this->payload($action, $module, $subject, $changes, $context));
     }
 
     /**
      * @param  array<string, mixed>  $changes
      * @return array<string, mixed>
      */
-    private function payload(string $action, string $module, ?Model $subject, array $changes): array
-    {
-        $actor = Auth::user();
-        $organizationId = $subject?->getAttribute('organization_id') ?? $actor?->organization_id;
+    private function payload(
+        string $action,
+        string $module,
+        ?Model $subject,
+        array $changes,
+        ?AuditContext $context = null,
+    ): array {
+        $context ??= AuditContext::fromCurrentRequest();
+        $organizationId = $subject?->getAttribute('organization_id') ?? $context->organizationId;
 
         return [
-            'correlation_id' => $this->correlationId(),
-            'user_id' => $actor?->id,
+            'correlation_id' => $context->correlationId,
+            'user_id' => $context->actorId,
             'organization_id' => $organizationId,
-            'actor_roles' => $actor?->relationLoaded('roles')
-                ? $actor->roles->pluck('name')->values()->all()
-                : $actor?->getRoleNames()->values()->all(),
+            'actor_roles' => $context->actorRoles,
+            'source' => $context->source,
             'action' => $action,
             'module' => $module,
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id' => $subject ? $subject->getKey() : null,
             'old_values' => $this->redact($changes['old'] ?? null),
             'new_values' => $this->redact($changes['new'] ?? null),
-            'reason' => isset($changes['reason']) ? (string) $changes['reason'] : null,
-            'ip_address' => Request::ip(),
-            'user_agent' => Request::userAgent(),
+            'reason' => $this->redactReason($changes['reason'] ?? null),
+            'ip_address' => $context->ip,
+            'user_agent' => $context->userAgent,
             'occurred_at' => now(),
         ];
     }
 
-    public function logAuth(string $action, $userId = null): AuditLog
+    public function logAuth(string $action, string|int|null $userId = null, ?AuditContext $context = null): AuditLog
     {
-        $payload = $this->payload($action, 'auth', null, []);
-        $payload['user_id'] = $userId ?? Auth::id();
+        $context ??= AuditContext::fromCurrentRequest();
+        if ($userId !== null && $userId !== $context->actorId) {
+            $context = new AuditContext(
+                actorId: $userId,
+                actorRoles: $context->actorRoles,
+                organizationId: $context->organizationId,
+                correlationId: $context->correlationId,
+                ip: $context->ip,
+                userAgent: $context->userAgent,
+                source: $context->source,
+            );
+        }
+
+        $payload = $this->payload($action, 'auth', null, [], $context);
 
         return AuditLog::create($payload);
     }
 
-    public function logModelEvent(string $action, Model $model, ?array $oldValues = null, ?array $newValues = null): AuditLog
-    {
+    public function logModelEvent(
+        string $action,
+        Model $model,
+        ?array $oldValues = null,
+        ?array $newValues = null,
+        ?AuditContext $context = null,
+    ): AuditLog {
         return AuditLog::create($this->payload($action, $this->getModuleName($model), $model, [
             'old' => $oldValues,
             'new' => $newValues,
-        ]));
-    }
-
-    private function correlationId(): string
-    {
-        $correlationId = Request::getFacadeRoot()?->attributes->get('correlation_id') ?? Request::header('X-Correlation-ID');
-
-        return is_string($correlationId) && Str::isUuid($correlationId) ? $correlationId : (string) Str::uuid();
+        ], $context));
     }
 
     private function redact(mixed $value): mixed
@@ -76,12 +94,23 @@ class AuditLogService
         $redacted = [];
         foreach ($value as $key => $item) {
             $keyName = strtolower((string) $key);
-            $redacted[$key] = preg_match('/password|secret|token|authorization|qr(_string|_payload)?|identity(_number)?|nik|npwp|bank(_account|_account_number|_account_holder)?|account(_number|_holder)?|card(_number)?/', $keyName) === 1
+            $redacted[$key] = preg_match('/identity(_number)?|nik|npwp|no_rekening|bank(_account|_account_number|_account_holder)?|account(_number|_holder)?|card(_number)?|token|authorization|secret|password|qr(_string|_payload)?|gateway_payload|ciphertext|blind(_index)?|bidx/', $keyName) === 1
                 ? '[REDACTED]'
                 : $this->redact($item);
         }
 
         return $redacted;
+    }
+
+    private function redactReason(mixed $reason): ?string
+    {
+        if (! is_string($reason) || trim($reason) === '') {
+            return null;
+        }
+
+        return preg_match('/identity|nik|npwp|rekening|bank|token|secret|password|\d{6,}/i', $reason) === 1
+            ? '[REDACTED]'
+            : Str::limit(trim($reason), 255, '');
     }
 
     protected function getModuleName(Model $model): string

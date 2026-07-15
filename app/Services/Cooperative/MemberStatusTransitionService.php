@@ -6,6 +6,7 @@ use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -164,7 +165,7 @@ class MemberStatusTransitionService
                 'old' => ['status' => $member->status, 'validation_status' => $member->validation_status],
                 'new' => ['action' => 'delete_access'],
                 'reason' => $reason ?? 'Member access revoked.',
-            ]);
+            ], AuditContext::forActor($actor));
 
             $this->accessRevocation->revokeAfterCommit($member, 'delete_access', $actor);
 
@@ -210,7 +211,7 @@ class MemberStatusTransitionService
                 'old' => $oldState,
                 'new' => ['status' => $status, 'validation_status' => $validationStatus, 'action' => $action],
                 'reason' => $reason ?? $action,
-            ]);
+            ], AuditContext::forActor($actor));
 
             if ($revokeMemberTokens) {
                 $this->accessRevocation->revokeAfterCommit($member, $action, $actor);

@@ -26,6 +26,7 @@ use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use App\Services\Cooperative\SavingsSummaryService;
+use App\Support\AuditContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -446,43 +447,74 @@ class CooperativeMemberController extends Controller
             || CooperativeMember::blindIndexesFor('npwp', $search) !== []
         );
         $auditMetadata = [
+            'export_id' => (string) Str::uuid(),
             'search_used' => filled($search),
             'search_mode' => $sensitiveSearchUsed ? 'exact_sensitive' : 'non_sensitive',
             'scope' => $visibility->global ? 'global' : 'organization',
             'organization_id' => $visibility->organizationId,
             'include_pii' => $includePii,
             'requested_fields' => ['identity_number', 'npwp', 'no_rekening'],
+            'filters' => [
+                'search_used' => filled($search),
+                'status' => $filters['status'] ?? null,
+                'jenis_anggota' => $filters['jenis_anggota'] ?? null,
+                'kategori' => $filters['kategori'] ?? null,
+            ],
             'record_count' => $export->query()->count(),
             'reason_code' => $reasonCode,
             'reason_supplied' => $reasonCode !== null,
         ];
 
-        if (! $includePii) {
-            $audit->log('member.pii.exported', 'cooperative.member', null, [
-                'new' => [
-                    ...$auditMetadata,
-                    'masked' => true,
-                ],
-                'reason' => 'Cooperative member masked export requested.',
-            ]);
-
-            return Excel::download($export, 'daftar-anggota.xlsx');
-        }
-
-        $path = 'tmp/member-exports/'.Str::uuid().'.xlsx';
-        if (! Excel::store($export, $path, 'local')) {
-            throw new \RuntimeException('Sensitive member export could not be created.');
-        }
-
-        $audit->log('member.pii.exported', 'cooperative.member', null, [
+        $auditContext = AuditContext::fromHttp($request);
+        $audit->log('member.export.requested', 'cooperative.member', null, [
             'new' => [
                 ...$auditMetadata,
-                'masked' => false,
+                'masked' => ! $includePii,
             ],
-        ]);
+            'reason' => 'Cooperative member export requested.',
+        ], $auditContext);
+
+        $path = 'tmp/member-exports/'.$auditMetadata['export_id'].'.xlsx';
+
+        try {
+            if (! Excel::store($export, $path, 'local')) {
+                throw new \RuntimeException('Member export could not be created.');
+            }
+        } catch (\Throwable $exception) {
+            $audit->log('member.export.failed', 'cooperative.member', null, [
+                'new' => [
+                    ...$auditMetadata,
+                    'masked' => ! $includePii,
+                    'failed_at' => now()->toISOString(),
+                ],
+                'reason' => 'Cooperative member export failed.',
+            ], $auditContext);
+
+            throw $exception;
+        }
+
+        $absolutePath = Storage::disk('local')->path($path);
+        $completedMetadata = [
+            ...$auditMetadata,
+            'masked' => ! $includePii,
+            'completed_at' => now()->toISOString(),
+        ];
+        $audit->log('member.export.completed', 'cooperative.member', null, [
+            'new' => $completedMetadata,
+            'reason' => 'Cooperative member export completed.',
+        ], $auditContext);
+
+        // Preserve the historical event for existing consumers; it is
+        // emitted only after the file has been created successfully.
+        $audit->log('member.pii.exported', 'cooperative.member', null, [
+            'new' => $completedMetadata,
+        ], $auditContext);
 
         return response()
-            ->download(Storage::disk('local')->path($path), 'daftar-anggota-sensitive.xlsx')
+            ->download(
+                Storage::disk('local')->path($path),
+                $includePii ? 'daftar-anggota-sensitive.xlsx' : 'daftar-anggota.xlsx',
+            )
             ->deleteFileAfterSend(true);
     }
 

@@ -8,6 +8,7 @@ use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativePayment;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -145,7 +146,7 @@ class CooperativePaymentService
                     'amount' => (float) $payment->amount,
                 ],
                 'reason' => 'Cooperative payment approved.',
-            ]);
+            ], AuditContext::forActor($approver));
 
             $this->receiptService->issue($payment, $approver);
             DB::afterCommit(fn () => $this->notificationDispatcher->paymentApproved($payment, $approver));
@@ -182,7 +183,7 @@ class CooperativePaymentService
                     'reconciliation_reference' => $reference,
                 ],
                 'reason' => 'Cooperative payment reconciled.',
-            ]);
+            ], AuditContext::forActor($user));
 
             return $payment->refresh();
         });

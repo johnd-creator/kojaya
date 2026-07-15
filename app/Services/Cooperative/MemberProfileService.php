@@ -6,6 +6,7 @@ use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -70,7 +71,7 @@ class MemberProfileService
                     'fields' => $changedFields,
                 ],
                 'reason' => 'Member updated own profile.',
-            ]);
+            ], AuditContext::forActor($user));
 
             return $member;
         });

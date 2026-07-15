@@ -6,6 +6,7 @@ use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Auth\LegacyTokenClassifier;
+use App\Support\AuditContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -84,7 +85,7 @@ class MemberAccessRevocationService
                 'tokens_revoked' => $count,
             ],
             'reason' => $this->safeReason($reason),
-        ]);
+        ], AuditContext::forActor($actor));
 
         return $count;
     }
@@ -113,7 +114,7 @@ class MemberAccessRevocationService
                     'affected_user_id' => $member->user_id,
                 ],
                 'reason' => 'Controlled member access revocation.',
-            ]);
+            ], AuditContext::forActor($actor));
         } catch (\Throwable) {
             $this->audit->log('member_access_revocation.audit_failed', 'cooperative.lifecycle', $member, [
                 'new' => ['reason_code' => $reasonCode, 'error' => 'Failed to write revocation audit log.'],

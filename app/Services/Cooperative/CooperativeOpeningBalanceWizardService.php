@@ -12,6 +12,7 @@ use App\Models\MemberOnboardingProgress;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -482,7 +483,7 @@ class CooperativeOpeningBalanceWizardService
                 'cooperative_member_id' => $batch->cooperative_member_id,
                 'status' => $batch->status->value,
                 ...$newValues,
-            ]);
+            ], AuditContext::forActor($actor));
         } catch (\Throwable $exception) {
             // Jangan gagalkan transaksi finansial utama, tapi laporkan agar
             // tim operasi punya visibilitas terhadap audit failure.

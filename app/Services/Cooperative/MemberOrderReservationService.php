@@ -6,9 +6,11 @@ use App\Models\MemberPaymentIntent;
 use App\Models\PosInventoryStock;
 use App\Models\PosProduct;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use App\Support\CanonicalOrderItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class MemberOrderReservationService
 {
@@ -76,18 +78,50 @@ class MemberOrderReservationService
 
     public function expire(MemberPaymentIntent $intent): bool
     {
-        return DB::transaction(function () use ($intent): bool {
-            $locked = $this->lockIntent($intent);
+        $context = AuditContext::forActor(null, 'scheduler');
+        $this->auditLogService->log('reservation.expiry.requested', 'member_payment_intent', $intent, [
+            'new' => [
+                'intent_id' => $intent->getKey(),
+                'requested_state' => MemberPaymentIntent::RESERVATION_EXPIRED,
+            ],
+            'reason' => 'Reservation expiry requested.',
+        ], $context);
 
-            if (! $this->isExpirable($locked)) {
-                return false;
-            }
+        try {
+            $expired = DB::transaction(function () use ($intent, $context): bool {
+                $locked = $this->lockIntent($intent);
 
-            $this->releaseReservedStock($locked);
-            $this->markState($locked, MemberPaymentIntent::RESERVATION_EXPIRED, 'reservation_expired_at');
+                if (! $this->isExpirable($locked)) {
+                    return false;
+                }
 
-            return true;
-        });
+                $this->releaseReservedStock($locked);
+                $this->markState($locked, MemberPaymentIntent::RESERVATION_EXPIRED, 'reservation_expired_at', $context);
+
+                return true;
+            });
+        } catch (Throwable $exception) {
+            $this->auditLogService->log('reservation.expiry.failed', 'member_payment_intent', $intent, [
+                'new' => [
+                    'intent_id' => $intent->getKey(),
+                    'requested_state' => MemberPaymentIntent::RESERVATION_EXPIRED,
+                ],
+                'reason' => 'Reservation expiry failed.',
+            ], $context);
+
+            throw $exception;
+        }
+
+        $this->auditLogService->log('reservation.expiry.completed', 'member_payment_intent', $intent, [
+            'new' => [
+                'intent_id' => $intent->getKey(),
+                'expired' => $expired,
+                'requested_state' => MemberPaymentIntent::RESERVATION_EXPIRED,
+            ],
+            'reason' => 'Reservation expiry completed.',
+        ], $context);
+
+        return $expired;
     }
 
     private function adjust(MemberPaymentIntent $intent, string $state, string $stateKey): void
@@ -187,7 +221,7 @@ class MemberOrderReservationService
         }
     }
 
-    private function markState(MemberPaymentIntent $intent, string $state, string $stateKey): void
+    private function markState(MemberPaymentIntent $intent, string $state, string $stateKey, ?AuditContext $context = null): void
     {
         $metadata = $intent->metadata ?? [];
         $metadata[$stateKey] = now()->toISOString();
@@ -208,6 +242,7 @@ class MemberOrderReservationService
             'member_payment_intent',
             $intent,
             ['reason' => 'Member order reservation state transition.'],
+            $context,
         );
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AuditLogService;
 use App\Services\Security\MemberSensitiveDataInspector;
 use App\Services\Security\PiiCryptoService;
+use App\Support\AuditContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +32,7 @@ class BackfillMemberSensitiveData extends Command
     public function handle(
         MemberSensitiveDataInspector $inspector,
         PiiCryptoService $crypto,
+        AuditLogService $audit,
     ): int {
         $chunk = max(1, min((int) $this->option('chunk'), 1000));
         $limit = $this->option('limit') !== null ? max(1, (int) $this->option('limit')) : null;
@@ -37,21 +40,37 @@ class BackfillMemberSensitiveData extends Command
         $retirePlaintext = (bool) $this->option('retire-plaintext');
         $confirmRetirement = (bool) $this->option('confirm-retirement');
         $confirmProduction = (bool) $this->option('confirm-production');
+        $rotateToCurrent = (bool) $this->option('rotate-to-current');
+        $operation = $rotateToCurrent ? 'rotation' : 'backfill';
+        $context = AuditContext::forActor(null, 'cli');
+
+        $audit->log("member.pii.{$operation}.requested", 'cooperative.member', null, [
+            'new' => [
+                'operation' => $operation,
+                'dry_run' => (bool) $this->option('dry-run'),
+                'retire_plaintext' => $retirePlaintext,
+                'repair_missing_index' => (bool) $this->option('repair-missing-index'),
+            ],
+            'reason' => 'PII data operation requested.',
+        ], $context);
 
         if ($retirePlaintext && ! $crypto->allowsPlaintextRetirement()) {
             $this->error('Plaintext retirement requires the plaintext_retired rollout phase.');
+            $this->logFailedLifecycle($audit, $operation, 'invalid_rollout_phase', $context);
 
             return self::FAILURE;
         }
 
         if ($retirePlaintext && ! $confirmRetirement) {
             $this->error('Plaintext retirement requires explicit confirmation.');
+            $this->logFailedLifecycle($audit, $operation, 'missing_retirement_confirmation', $context);
 
             return self::FAILURE;
         }
 
         if ($retirePlaintext && app()->environment('production') && ! $confirmProduction) {
             $this->error('Plaintext retirement in production requires production confirmation.');
+            $this->logFailedLifecycle($audit, $operation, 'missing_production_confirmation', $context);
 
             return self::FAILURE;
         }
@@ -59,7 +78,6 @@ class BackfillMemberSensitiveData extends Command
         $dryRun = (bool) $this->option('dry-run')
             || (app()->environment('production') && ! $confirmProduction);
         $repair = (bool) $this->option('repair-missing-index');
-        $rotateToCurrent = (bool) $this->option('rotate-to-current');
         $report = $this->emptyReport($dryRun, $resumeToken, $crypto);
         $failed = false;
 
@@ -138,10 +156,24 @@ class BackfillMemberSensitiveData extends Command
         $this->line(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         if ($failed) {
+            $this->logFailedLifecycle($audit, $operation, 'row_processing_failed', $context, $report);
+
             return self::FAILURE;
         }
 
         $this->info($dryRun ? 'PII backfill dry-run completed.' : 'PII backfill completed.');
+        $audit->log("member.pii.{$operation}.completed", 'cooperative.member', null, [
+            'new' => [
+                'operation' => $operation,
+                'dry_run' => $dryRun,
+                'processed' => $report['processed'],
+                'updated' => $report['updated'],
+                'would_update' => $report['would_update'],
+                'classifications' => $report['classifications'],
+                'issues' => $report['issues'],
+            ],
+            'reason' => 'PII data operation completed.',
+        ], $context);
 
         return self::SUCCESS;
     }
@@ -399,5 +431,29 @@ class BackfillMemberSensitiveData extends Command
         }
 
         file_put_contents($path, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $report
+     */
+    private function logFailedLifecycle(
+        AuditLogService $audit,
+        string $operation,
+        string $failureCode,
+        AuditContext $context,
+        ?array $report = null,
+    ): void {
+        $audit->log("member.pii.{$operation}.failed", 'cooperative.member', null, [
+            'new' => [
+                'operation' => $operation,
+                'failure_code' => $failureCode,
+                'processed' => $report['processed'] ?? 0,
+                'updated' => $report['updated'] ?? 0,
+                'would_update' => $report['would_update'] ?? 0,
+                'classifications' => $report['classifications'] ?? [],
+                'issues' => $report['issues'] ?? [],
+            ],
+            'reason' => 'PII data operation failed.',
+        ], $context);
     }
 }

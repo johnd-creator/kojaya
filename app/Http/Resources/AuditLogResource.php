@@ -18,6 +18,7 @@ class AuditLogResource extends JsonResource
             ]),
             'action' => $this->action,
             'module' => $this->module,
+            'source' => $this->source,
             'subject_type' => $this->subject_type,
             'subject_id' => $this->subject_id,
             'old_values' => $this->old_values,

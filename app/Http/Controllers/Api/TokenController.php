@@ -23,15 +23,28 @@ class TokenController extends Controller
 
         $validated = $request->validated();
         $deviceName = $validated['device_name'] ?? $currentToken->name;
-        $app = $currentToken->token_app ?: $classifier->classify($currentToken->abilities);
-        if (! TokenApp::tryFrom((string) $app)) {
+        $requestedApp = $validated['app'] ?? null;
+        $classifiedApp = $currentToken->token_app ?: $classifier->classify($currentToken->abilities);
+        $resolvedApp = TokenApp::tryFrom((string) $classifiedApp);
+
+        if ($resolvedApp !== null) {
+            if ($requestedApp !== null && $requestedApp !== $resolvedApp->value) {
+                throw ValidationException::withMessages([
+                    'app' => 'Application rotation must preserve the current token profile.',
+                ]);
+            }
+        } elseif ($requestedApp !== null) {
+            $resolvedApp = TokenApp::tryFrom($requestedApp);
+        }
+
+        if ($resolvedApp === null) {
             throw ValidationException::withMessages([
-                'token' => 'Legacy token requires explicit application rotation.',
+                'app' => 'Unsafe legacy token requires an explicit member, ess, technician, or admin application.',
             ]);
         }
 
-        $newAccessToken = DB::transaction(function () use ($user, $currentToken, $deviceName, $app, $tokenIssuer) {
-            $newAccessToken = $tokenIssuer->issue($user, TokenApp::from((string) $app), $deviceName, $currentToken->device_id);
+        $newAccessToken = DB::transaction(function () use ($user, $currentToken, $deviceName, $resolvedApp, $tokenIssuer) {
+            $newAccessToken = $tokenIssuer->issue($user, $resolvedApp, $deviceName, $currentToken->device_id);
             $currentToken->delete();
 
             return $newAccessToken;
@@ -43,6 +56,8 @@ class TokenController extends Controller
             'token_type' => 'Bearer',
             'token' => $newAccessToken->plainTextToken,
             'abilities' => $newAccessToken->accessToken->abilities,
+            'token_app' => $newAccessToken->accessToken->token_app,
+            'token_version' => $newAccessToken->accessToken->token_version,
             'expires_at' => is_numeric($expirationMinutes)
                 ? now()->addMinutes((int) $expirationMinutes)->toISOString()
                 : null,

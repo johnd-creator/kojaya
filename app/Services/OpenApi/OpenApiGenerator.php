@@ -153,6 +153,18 @@ class OpenApiGenerator
             ];
         }
 
+        if (str_ends_with($uri, '/account-link/candidates')) {
+            $item['parameters'] = [
+                ...($item['parameters'] ?? []),
+                [
+                    'name' => 'email',
+                    'in' => 'query',
+                    'required' => true,
+                    'schema' => ['type' => 'string', 'format' => 'email'],
+                ],
+            ];
+        }
+
         if ($this->isHealthOrWebhook($uri)) {
             $item['security'] = [];
         }
@@ -276,6 +288,17 @@ class OpenApiGenerator
                     'push_token' => ['type' => 'string'],
                 ],
             ],
+            'RotateTokenRequest' => [
+                'type' => 'object',
+                'properties' => [
+                    'app' => [
+                        'type' => 'string',
+                        'enum' => ['member', 'ess', 'technician', 'admin'],
+                        'description' => 'Required when the current legacy token profile is unsafe.',
+                    ],
+                    'device_name' => ['type' => 'string', 'nullable' => true, 'maxLength' => 255],
+                ],
+            ],
             'MobileDeviceToken' => [
                 'type' => 'object',
                 'properties' => [
@@ -378,7 +401,7 @@ class OpenApiGenerator
         return [
             ['name' => 'Auth', 'description' => 'Login, logout, session — tanpa Sanctum token'],
             ['name' => 'Member', 'description' => 'API untuk anggota koperasi (Kojayaku mobile). Ability: member:read, member:write'],
-            ['name' => 'Cooperative', 'description' => 'API untuk pengurus/kasir koperasi. Ability: cooperative:read, cooperative:write'],
+            ['name' => 'Cooperative', 'description' => 'API koperasi dengan granular domain abilities dan organization scope; legacy cooperative abilities hanya compatibility bertahap.'],
             ['name' => 'ESS', 'description' => 'Employee Self Service API. Ability: ess:read, ess:write, attendance:read, attendance:write'],
             ['name' => 'Technician', 'description' => 'API untuk teknisi lapangan. Ability: work-orders:read, work-orders:write, work-orders:review'],
             ['name' => 'Integration', 'description' => 'Webhook, push token, payment charge, health monitoring'],
@@ -474,6 +497,7 @@ class OpenApiGenerator
             str_ends_with($uri, 'api/payments/webhook') => ['$ref' => '#/components/schemas/PaymentGatewayWebhookRequest'],
             str_contains($uri, 'api/v1/member/bills/') && str_ends_with($uri, '/payment-intent') => ['$ref' => '#/components/schemas/CreateMemberBillPaymentIntentRequest'],
             str_ends_with($uri, 'api/devices/push-token') => ['$ref' => '#/components/schemas/RegisterDeviceTokenRequest'],
+            str_ends_with($uri, 'api/token/rotate') => ['$ref' => '#/components/schemas/RotateTokenRequest'],
             str_ends_with($uri, 'api/v1/member/onboarding/steps') => ['$ref' => '#/components/schemas/MemberOnboardingStepRequest'],
             default => null,
         };

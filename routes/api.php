@@ -127,6 +127,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::patch('/members/{member}/sensitive-data', [CooperativeMemberApiController::class, 'updateSensitiveData'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
     Route::patch('/members/{member}/account', [CooperativeMemberApiController::class, 'linkAccount'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
     Route::post('/members/{member}/account-link', [CooperativeMemberApiController::class, 'linkAccount'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
+    Route::get('/members/{member}/account-link/candidates', [CooperativeMemberApiController::class, 'accountLinkCandidates'])->middleware('cooperative.ability:cooperative.member.write,cooperative:write');
     Route::delete('/members/{member}/account-link', [CooperativeMemberApiController::class, 'unlinkAccount'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
     Route::post('/members/{member}/activate', [CooperativeMemberApiController::class, 'activate'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);
     Route::post('/members/{member}/resign', [CooperativeMemberApiController::class, 'resign'])->middleware(['cooperative.ability:cooperative.member.write,cooperative:write', 'throttle:api-write']);

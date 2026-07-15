@@ -6,6 +6,7 @@ use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\PermissionEnum;
 use App\Exports\AnggotaExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\FindCooperativeMemberAccountCandidatesRequest;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\MemberExportRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
@@ -25,6 +26,7 @@ use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use App\Services\Cooperative\SavingsSummaryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -314,6 +316,16 @@ class CooperativeMemberController extends Controller
         $linkService->link($request->user(), $member, User::query()->findOrFail($request->validated('user_id')), $request->validated('reason'));
 
         return back()->with('success', 'Akun anggota berhasil ditautkan.');
+    }
+
+    public function accountLinkCandidates(
+        FindCooperativeMemberAccountCandidatesRequest $request,
+        CooperativeMember $member,
+        MemberAccountLinkService $linkService,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $linkService->candidates($request->user(), $member, $request->validated('email')),
+        ]);
     }
 
     public function unlinkAccount(

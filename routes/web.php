@@ -208,6 +208,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('members/{member}/sensitive-data', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'updateSensitiveData'])->name('members.sensitive-data.update');
             Route::patch('members/{member}/account', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.update');
             Route::post('members/{member}/account-link', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.store');
+            Route::get('members/{member}/account-link/candidates', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'accountLinkCandidates'])->name('members.account-link.candidates');
             Route::delete('members/{member}/account-link', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'unlinkAccount'])->name('members.account-link.destroy');
             Route::post('members/{member}/activate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'activate'])->name('members.activate');
             Route::post('members/{member}/deactivate', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'deactivate'])->name('members.deactivate');

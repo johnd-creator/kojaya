@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Concerns\ResolvesApiPageSize;
 use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\FindCooperativeMemberAccountCandidatesRequest;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\ProcessMemberResignationRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
@@ -192,6 +193,16 @@ class CooperativeMemberApiController extends Controller
         $member = $linkService->link($request->user(), $member, User::query()->findOrFail($request->validated('user_id')), $request->validated('reason'));
 
         return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
+    }
+
+    public function accountLinkCandidates(
+        FindCooperativeMemberAccountCandidatesRequest $request,
+        CooperativeMember $member,
+        MemberAccountLinkService $linkService,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $linkService->candidates($request->user(), $member, $request->validated('email')),
+        ]);
     }
 
     public function unlinkAccount(

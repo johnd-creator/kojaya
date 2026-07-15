@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Authorization\OrganizationScopeService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -103,6 +104,35 @@ class MemberAccountLinkService
 
             return $lockedMember->refresh();
         });
+    }
+
+    /**
+     * Resolve eligible account-link candidates by exact email within the member organization.
+     *
+     * @return Collection<int, array{id: int|string, name: string, email: string}>
+     */
+    public function candidates(User $actor, CooperativeMember $member, string $email): Collection
+    {
+        $this->assertActorCanLink($actor, $member);
+        $normalizedEmail = strtolower(trim($email));
+
+        if ($normalizedEmail === '') {
+            return collect();
+        }
+
+        return User::query()
+            ->where('organization_id', $member->organization_id)
+            ->whereNotNull('email_verified_at')
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->whereDoesntHave('cooperativeMember')
+            ->get(['id', 'name', 'email'])
+            ->reject(fn (User $candidate): bool => $this->isPrivileged($candidate))
+            ->map(fn (User $candidate): array => [
+                'id' => $candidate->id,
+                'name' => $candidate->name,
+                'email' => $candidate->email,
+            ])
+            ->values();
     }
 
     private function assertActorCanLink(User $actor, CooperativeMember $member): void

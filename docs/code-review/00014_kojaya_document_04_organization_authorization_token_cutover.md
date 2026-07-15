@@ -250,3 +250,106 @@ Wayfinder and frontend verification:
    fallback only with a future expiry if necessary, and then move to remove.
 6. Keep old token keys and metadata available until all legacy records have
    been rotated or revoked.
+
+## Independent Review Remediation
+
+Independent review verdict: REQUEST CHANGES. This remediation was limited to
+Document 04. No pull request was created, no merge was performed, and
+Document 05 was not started.
+
+### Remediation identity
+
+- Actual remediation starting SHA: d8692fb843137f7a1811730a1f0102271f684e66
+- Ending implementation SHA before this evidence commit:
+  70c4e3bec0ca6b9c2353bbe13d3b12446d7269b4
+- Branch: remediation/document-04-organization-auth-token-cutover
+
+### Gaps addressed
+
+1. `OrganizationScopeService` now validates the explicit model contract and
+   the complete relationship path before checking global visibility. Unknown
+   models, broken paths, and null model relationships fail closed for scoped
+   and global actors.
+2. Global visibility is mapped explicitly per model. Ordinary `manage_*`
+   permissions no longer create global visibility, and unrelated models do
+   not inherit `view_cooperative_all` implicitly.
+3. `HasOrganizationScope`, legacy session selection, and resignation list
+   scoping delegate to the central service. Guests, null-organization actors,
+   invalid organization IDs, and cross-organization session selections are
+   denied; only an explicit global permission may select another organization.
+4. Web and API member creation use the actor's exact organization. A
+   non-global actor without an organization is rejected before the head-office
+   resolver can run. Client `organization_id` remains prohibited.
+5. Member lifecycle revocation selects the union of explicit `member` tokens
+   and legacy tokens classified exactly as the member profile, independent of
+   cutover phase. ESS, technician, admin, and unsafe legacy profiles remain
+   outside member-only revocation.
+6. Ability cutover phases are validated through `AbilityCutoverPhase` and
+   `AbilityCutoverPolicy`. Invalid phases, missing or invalid deadlines, and
+   expired emergency fallback configuration fail closed. Deprecation headers
+   are emitted only for accepted legacy requests; wildcard abilities are not
+   accepted as an emergency shortcut.
+7. Focused cross-organization tests cover member reads and mutations,
+   validation actions, loan reads/approval, payment approval, mixed payment
+   batches, and legacy fallback organization safety. Batch rejection is
+   atomic and leaves target records unchanged.
+8. Account-link requests use controlled reason codes. The denial matrix
+   covers privileged, finance, HR, payroll, operational, manage, and approve
+   permissions, as well as the corresponding role matrix. Linking remains
+   transactional and unlinking revokes member-profile tokens only.
+9. Generic member create/edit responses no longer query or expose a broad
+   user list. Account linking remains an explicit dedicated flow.
+10. `LoanApiController@index` now uses `LoanResource::collection`, preserving
+    pagination metadata while removing raw Eloquent serialization from the
+    list response.
+11. The exact cooperative global permission matrix is tested: System Admin,
+    Admin Pusat, and Pengurus Koperasi receive `view_cooperative_all` under
+    the current repository contract; branch and operational roles do not.
+    Permission removal immediately removes global visibility, and a role name
+    alone never grants it.
+
+### Focused verification
+
+Final targeted regression command:
+
+    php artisan test --compact \
+      tests/Feature/Authorization/CrossOrganizationMutationTest.php \
+      tests/Feature/LegacyErp/EmployeeScopeTest.php \
+      tests/Feature/OrganizationManagementTest.php \
+      tests/Feature/Cooperative/MemberAccountLinkAuthorizationTest.php \
+      tests/Feature/Security/GranularAbilityCutoverTest.php \
+      tests/Feature/Security/TokenAppMetadataTest.php
+
+Result: 41 passed, 173 assertions.
+
+Additional token classification and migration verification:
+
+    php artisan test --compact \
+      tests/Unit/Security/LegacyTokenClassifierTest.php \
+      tests/Feature/Security/LegacyTokenClassificationCommandTest.php \
+      tests/Feature/Security/TokenMetadataMigrationTest.php
+
+Result: 5 passed, 30 assertions.
+
+The broader Document 04 focused set passed with 74 tests and 264 assertions;
+the directly affected regression set passed with 124 tests and 832 assertions
+before the final session and validation additions. `vendor/bin/pint --dirty
+--format agent` passed, `php artisan wayfinder:generate --no-interaction`
+passed with generated output remaining ignored, and `npm run build` passed.
+
+No new migration was required. The existing additive token metadata migration
+verification remains the disposable-database migration check; no persistent
+development or production database was modified.
+
+### Intentionally skipped and residual risks
+
+- Full PHPUnit and parallel coverage suites were not run.
+- PostgreSQL concurrency, production token classification/revocation, shared
+  database migrations, and shared database seeders were not run.
+- GitHub Actions were not monitored, and no pull request or merge was made.
+- The repository still does not distinguish central and branch Pengurus
+  Koperasi roles; the documented current matrix is preserved.
+- Independent GLM full verification remains pending, including any routes or
+  organization-owned models outside the focused matrix.
+
+Status remains: READY FOR INDEPENDENT REVIEW.

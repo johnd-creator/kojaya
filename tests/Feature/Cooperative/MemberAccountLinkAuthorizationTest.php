@@ -57,6 +57,58 @@ class MemberAccountLinkAuthorizationTest extends TestCase
         $this->assertFalse($target->fresh()->hasRole('Anggota'));
     }
 
+    public function test_account_link_candidates_are_exact_and_organization_scoped(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organizationA = Organization::factory()->create();
+        $organizationB = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organizationA->id]);
+        $actor->assignRole('Admin Koperasi');
+        $candidate = User::factory()->create([
+            'organization_id' => $organizationA->id,
+            'email' => 'candidate@example.com',
+        ]);
+        User::factory()->create([
+            'organization_id' => $organizationB->id,
+            'email' => 'other-organization@example.com',
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organizationA->id,
+            'user_id' => null,
+        ]);
+
+        $this->actingAs($actor)
+            ->getJson(route('cooperative.members.account-link.candidates', $member).'?email='.urlencode($candidate->email))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $candidate->id)
+            ->assertJsonPath('data.0.email', $candidate->email)
+            ->assertJsonCount(1, 'data');
+
+        $this->actingAs($actor)
+            ->getJson(route('cooperative.members.account-link.candidates', $member).'?email=other-organization%40example.com')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_only_one_link_is_retained_when_the_same_member_is_linked_twice(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+        ]);
+
+        $service = app(\App\Services\Cooperative\MemberAccountLinkService::class);
+        $service->link($actor, $member, $target, 'business_verification');
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $service->link($actor, $member->fresh(), $target, 'business_verification');
+    }
+
     public function test_privileged_target_is_rejected_even_with_an_unusual_role_name(): void
     {
         $this->seed(RolePermissionSeeder::class);

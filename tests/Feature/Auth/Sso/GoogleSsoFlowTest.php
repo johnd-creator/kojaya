@@ -120,6 +120,24 @@ class GoogleSsoFlowTest extends TestCase
         $this->assertNotNull($audit);
     }
 
+    public function test_callback_does_not_auto_link_existing_member_without_user_account(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'user_id' => null,
+            'email' => 'unlinked-member@example.com',
+        ]);
+        $this->mockSocialite(googleId: 'unlinked-member', email: 'unlinked-member@example.com', verified: true);
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
+
+        $this->assertDatabaseMissing('users', ['email' => 'unlinked-member@example.com']);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'sso.google.manual_member_link_required',
+        ]);
+    }
+
     public function test_callback_blocks_registration_when_disabled(): void
     {
         config()->set('services.google.allow_new_member_registration', false);

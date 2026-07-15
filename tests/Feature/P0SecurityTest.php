@@ -145,7 +145,10 @@ class P0SecurityTest extends TestCase
         $oldTokenId = (int) explode('|', $plainTextToken, 2)[0];
 
         $response = $this->withHeader('Authorization', 'Bearer '.$plainTextToken)
-            ->postJson('/api/token/rotate', ['device_name' => 'android-phone-refresh'])
+            ->postJson('/api/token/rotate', [
+                'app' => 'member',
+                'device_name' => 'android-phone-refresh',
+            ])
             ->assertOk()
             ->assertJsonPath('token_type', 'Bearer')
             ->assertJsonPath('abilities', ['profile:read'])
@@ -164,5 +167,51 @@ class P0SecurityTest extends TestCase
             ->getJson('/api/user')
             ->assertOk()
             ->assertJsonPath('id', $user->id);
+    }
+
+    public function test_unsafe_legacy_token_requires_an_explicit_application_profile(): void
+    {
+        $user = User::factory()->create();
+        $plainTextToken = $user->createToken('legacy-unknown', ['*'])->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$plainTextToken)
+            ->postJson('/api/token/rotate', ['device_name' => 'android-phone-refresh'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('app');
+
+        $this->assertNotNull(PersonalAccessToken::findToken($plainTextToken));
+    }
+
+    public function test_unsafe_legacy_token_can_rotate_to_a_selected_app_without_expanding_permissions(): void
+    {
+        $user = User::factory()->create();
+        $plainTextToken = $user->createToken('legacy-unknown', ['*'])->plainTextToken;
+        $oldTokenId = (int) explode('|', $plainTextToken, 2)[0];
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$plainTextToken)
+            ->postJson('/api/token/rotate', [
+                'app' => 'member',
+                'device_name' => 'android-phone-refresh',
+            ])
+            ->assertOk()
+            ->assertJsonPath('token_app', 'member')
+            ->assertJsonPath('token_version', 'v1');
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $oldTokenId]);
+        $this->assertNotContains('*', $response->json('abilities'));
+        $this->assertNotContains('cooperative.member.write', $response->json('abilities'));
+    }
+
+    public function test_safe_legacy_token_cannot_switch_to_a_different_application_profile(): void
+    {
+        $user = User::factory()->create();
+        $plainTextToken = $user->createToken('legacy-member', ['profile:read', 'member:read', 'member:write'])->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$plainTextToken)
+            ->postJson('/api/token/rotate', ['app' => 'admin'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('app');
+
+        $this->assertNotNull(PersonalAccessToken::findToken($plainTextToken));
     }
 }

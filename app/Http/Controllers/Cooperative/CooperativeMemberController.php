@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\MemberExportRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
+use App\Http\Requests\Cooperative\UnlinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
 use App\Models\CooperativeMember;
@@ -18,8 +19,8 @@ use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberPageDataService;
 use App\Services\Cooperative\CooperativeMemberService;
-use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use App\Services\Cooperative\SavingsSummaryService;
@@ -309,31 +310,21 @@ class CooperativeMemberController extends Controller
     public function linkAccount(
         LinkCooperativeMemberAccountRequest $request,
         CooperativeMember $member,
-        CooperativeMemberUserProvisioningService $userProvisioningService,
-        AuditLogService $audit,
+        MemberAccountLinkService $linkService,
     ): RedirectResponse {
-        $this->authorize('update', $member);
-        $previousUserId = $member->user_id;
-
-        $member = DB::transaction(function () use ($request, $member, $userProvisioningService): CooperativeMember {
-            $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
-            $member->forceFill(['user_id' => $request->validated('user_id')])->save();
-            $userProvisioningService->provision($member->refresh());
-
-            return $member->refresh();
-        });
-
-        if ($previousUserId !== null && (int) $previousUserId !== (int) $member->user_id) {
-            User::query()->find($previousUserId)?->removeRole('Anggota');
-        }
-
-        $audit->log('member.account.linked', 'cooperative.member', $member, [
-            'old' => ['user_id' => $previousUserId],
-            'new' => ['user_id' => $member->user_id],
-            'reason' => $request->validated('reason'),
-        ]);
+        $linkService->link($request->user(), $member, User::query()->findOrFail($request->validated('user_id')), $request->validated('reason'));
 
         return back()->with('success', 'Akun anggota berhasil ditautkan.');
+    }
+
+    public function unlinkAccount(
+        UnlinkCooperativeMemberAccountRequest $request,
+        CooperativeMember $member,
+        MemberAccountLinkService $linkService,
+    ): RedirectResponse {
+        $linkService->unlink($request->user(), $member, $request->validated('reason'));
+
+        return back()->with('success', 'Akun anggota berhasil dilepas.');
     }
 
     /**

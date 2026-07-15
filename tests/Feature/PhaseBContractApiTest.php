@@ -108,6 +108,33 @@ class PhaseBContractApiTest extends TestCase
         $this->assertContains('Integration', $tagNames);
     }
 
+    public function test_document05_resource_and_pagination_contracts_are_explicit(): void
+    {
+        $spec = (new OpenApiGenerator)->generate();
+
+        $this->assertSame(
+            '#/components/schemas/PaginatedMemberInvoiceResponse',
+            $spec['paths']['/api/v1/dues/invoices']['get']['responses']['200']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(
+            '#/components/schemas/CooperativePaymentResponse',
+            $spec['paths']['/api/v1/dues/payments']['post']['responses']['201']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(
+            '#/components/schemas/BatchCooperativePaymentResponse',
+            $spec['paths']['/api/v1/dues/payments/batch']['post']['responses']['201']['content']['application/json']['schema']['$ref'],
+        );
+        $this->assertSame(
+            '#/components/schemas/PaginatedLoanResponse',
+            $spec['paths']['/api/v1/loans']['get']['responses']['200']['content']['application/json']['schema']['$ref'],
+        );
+        $duesParameters = collect($spec['paths']['/api/v1/dues/invoices']['get']['parameters'])->keyBy('name');
+        $notificationParameters = collect($spec['paths']['/api/notifications/recent']['get']['parameters'])->keyBy('name');
+
+        $this->assertSame(100, $duesParameters['per_page']['schema']['maximum']);
+        $this->assertSame(10, $notificationParameters['limit']['schema']['maximum']);
+    }
+
     public function test_openapi_persona_tagging_separates_route_groups(): void
     {
         $generator = new OpenApiGenerator;

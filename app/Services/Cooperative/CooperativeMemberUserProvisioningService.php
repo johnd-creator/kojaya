@@ -20,9 +20,14 @@ class CooperativeMemberUserProvisioningService
      * Provision (or reconcile) the user account for a cooperative member.
      *
      * User creation, Anggota role assignment, member linking, and the mandatory
-     * account-link-completed audit are executed inside a single transaction with
-     * one shared AuditContext, so a mandatory audit failure rolls back every
-     * partial mutation (no orphaned users, role assignments, or member links).
+     * audit for each mutation are executed inside a single transaction with one
+     * shared AuditContext, so a mandatory audit failure rolls back every partial
+     * mutation (no orphaned users, role assignments, or member links).
+     *
+     * The event name is truthful to the operation that occurred:
+     * - member.account.link.completed when the member link changed;
+     * - member.role.reconciled when an existing linked user gained the Anggota role;
+     * - no audit when nothing changed.
      */
     public function provision(CooperativeMember $member, ?string $plainPassword = null, ?AuditContext $context = null): ?User
     {
@@ -34,6 +39,7 @@ class CooperativeMemberUserProvisioningService
 
         return DB::transaction(function () use ($member, $plainPassword, $context): ?User {
             $user = $member->user;
+            $userCreated = false;
 
             if (! $user && $member->email) {
                 if (User::query()->where('email', $member->email)->exists()) {
@@ -48,6 +54,7 @@ class CooperativeMemberUserProvisioningService
                     'password' => Hash::make($plainPassword ?: Str::password(16)),
                     'organization_id' => $member->organization_id,
                 ]);
+                $userCreated = true;
             }
 
             if (! $user) {
@@ -74,15 +81,37 @@ class CooperativeMemberUserProvisioningService
 
             Role::query()->firstOrCreate(['name' => 'Anggota']);
 
+            $roleAssigned = false;
             if (! $user->hasRole('Anggota')) {
                 $user->assignRole('Anggota');
+                $roleAssigned = true;
             }
 
-            if ((int) $member->user_id !== (int) $user->id) {
+            $linkChanged = (int) $member->user_id !== (int) $user->id;
+
+            if ($linkChanged) {
                 $member->forceFill(['user_id' => $user->id])->save();
+
                 $this->audit->log('member.account.link.completed', 'cooperative.member', $member, [
-                    'new' => ['user_id' => $user->id],
+                    'new' => [
+                        'affected_user_id' => $user->getKey(),
+                        'role_assigned' => $roleAssigned,
+                        'link_changed' => true,
+                        'user_created' => $userCreated,
+                        'operation' => 'link',
+                    ],
                     'reason' => 'Cooperative member user provisioning completed.',
+                ], $context);
+            } elseif ($roleAssigned) {
+                $this->audit->log('member.role.reconciled', 'cooperative.member', $member, [
+                    'new' => [
+                        'affected_user_id' => $user->getKey(),
+                        'role_assigned' => true,
+                        'link_changed' => false,
+                        'user_created' => false,
+                        'operation' => 'reconcile_role',
+                    ],
+                    'reason' => 'Cooperative member Anggota role reconciled for an existing linked user.',
                 ], $context);
             }
 

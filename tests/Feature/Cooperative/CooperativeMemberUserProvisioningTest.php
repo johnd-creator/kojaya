@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
+use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativeMemberUserProvisioningService;
+use App\Support\AuditContext;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -35,11 +38,113 @@ class CooperativeMemberUserProvisioningTest extends TestCase
         $this->assertNotNull($user);
         $this->assertTrue($user->fresh()->hasRole('Anggota'));
         $this->assertSame($user->id, $member->fresh()->user_id);
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'member.account.link.completed',
-            'subject_type' => CooperativeMember::class,
-            'subject_id' => $member->id,
+
+        $audit = AuditLog::query()->where('action', 'member.account.link.completed')->sole();
+        $this->assertSame((string) $member->id, (string) $audit->subject_id);
+        $this->assertSame('link', $audit->new_values['operation']);
+        $this->assertTrue($audit->new_values['link_changed']);
+        $this->assertTrue($audit->new_values['user_created']);
+        $this->assertTrue($audit->new_values['role_assigned']);
+        $this->assertSame((string) $user->id, (string) $audit->new_values['affected_user_id']);
+    }
+
+    public function test_provision_reconciles_anggota_role_for_existing_linked_user_without_writing_false_link_completed(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+            'email' => $user->email,
         ]);
+
+        // User is linked but does not have the Anggota role yet.
+        $this->assertFalse($user->fresh()->hasRole('Anggota'));
+
+        app(CooperativeMemberUserProvisioningService::class)->provision($member);
+
+        $this->assertTrue($user->fresh()->hasRole('Anggota'), 'Anggota role must be assigned by reconciliation.');
+        $this->assertSame($user->id, $member->fresh()->user_id, 'Member link must not change during reconciliation.');
+
+        $audit = AuditLog::query()->where('action', 'member.role.reconciled')->sole();
+        $this->assertSame((string) $member->id, (string) $audit->subject_id);
+        $this->assertSame('reconcile_role', $audit->new_values['operation']);
+        $this->assertTrue($audit->new_values['role_assigned']);
+        $this->assertFalse($audit->new_values['link_changed']);
+        $this->assertFalse($audit->new_values['user_created']);
+        $this->assertSame((string) $user->id, (string) $audit->new_values['affected_user_id']);
+
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.account.link.completed']);
+    }
+
+    public function test_reconciliation_audit_failure_rolls_back_role_assignment(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        $audit = Mockery::mock(AuditLogService::class)->makePartial();
+        $audit->shouldReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'member.role.reconciled')
+            ->andThrow(new \RuntimeException('simulated mandatory reconciliation audit failure'));
+        $this->app->instance(AuditLogService::class, $audit);
+
+        try {
+            app(CooperativeMemberUserProvisioningService::class)->provision($member);
+            $this->fail('Expected mandatory reconciliation audit failure to propagate.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('simulated mandatory reconciliation audit failure', $exception->getMessage());
+        }
+
+        $this->assertFalse($user->fresh()->hasRole('Anggota'), 'Role assignment must roll back on audit failure.');
+        $this->assertSame($user->id, $member->fresh()->user_id, 'Member link must be unchanged.');
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.role.reconciled']);
+    }
+
+    public function test_provision_noop_when_member_already_linked_and_user_already_has_anggota_role(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Anggota');
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+
+        app(CooperativeMemberUserProvisioningService::class)->provision($member);
+
+        $this->assertTrue($user->fresh()->hasRole('Anggota'));
+        $this->assertSame($user->id, $member->fresh()->user_id);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.account.link.completed']);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.role.reconciled']);
+    }
+
+    public function test_provision_persists_audit_context_actor_organization_and_correlation_id(): void
+    {
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $correlationId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        $context = AuditContext::forActor($actor, AuditContext::SOURCE_DOMAIN, correlationId: $correlationId);
+
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+            'email' => 'context@example.com',
+        ]);
+
+        app(CooperativeMemberUserProvisioningService::class)->provision($member, 'secret-password', $context);
+
+        $audit = AuditLog::query()->where('action', 'member.account.link.completed')->sole();
+        $this->assertSame($correlationId, $audit->correlation_id, 'Correlation ID must come from the provided context.');
+        $this->assertSame((string) $actor->id, (string) $audit->user_id, 'Actor must come from the provided context.');
+        $this->assertSame((string) $organization->id, (string) $audit->organization_id, 'Organization must come from the provided context.');
+        $this->assertContains('Admin Koperasi', $audit->actor_roles, 'Actor roles must come from the provided context.');
     }
 
     public function test_mandatory_completed_audit_failure_rolls_back_user_creation_role_assignment_and_member_link(): void
@@ -51,10 +156,6 @@ class CooperativeMemberUserProvisioningTest extends TestCase
             'email' => 'rollback@example.com',
         ]);
 
-        // Narrow fake: only the mandatory member.account.link.completed audit
-        // fails. Everything else runs through the real implementation, so the
-        // rollback proves real user creation, role assignment, and linking are
-        // reversed — not a mocked boundary.
         $audit = Mockery::mock(AuditLogService::class)->makePartial();
         $audit->shouldReceive('log')
             ->withArgs(fn (string $action): bool => $action === 'member.account.link.completed')

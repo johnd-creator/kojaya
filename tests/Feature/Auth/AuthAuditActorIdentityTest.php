@@ -99,17 +99,114 @@ class AuthAuditActorIdentityTest extends TestCase
         $this->assertNull($audit->subject_id);
     }
 
-    public function test_unknown_user_id_from_anonymous_context_records_no_fake_actor(): void
+    public function test_unknown_numeric_user_id_from_anonymous_context_records_no_fake_actor(): void
     {
-        // A userId that resolves to no real account must not fabricate an actor.
-        // audit_logs.user_id is a foreign key, so a nonexistent identity is recorded
-        // with a null actor and no invented roles or organization.
-        app(AuditLogService::class)->logAuth('LOGIN', 'nonexistent-user-id', AuditContext::forSystem());
+        // A valid positive integer that resolves to no real account must not
+        // fabricate an actor. audit_logs.user_id is a foreign key, so a
+        // nonexistent identity is recorded with a null actor and no invented
+        // roles or organization.
+        app(AuditLogService::class)->logAuth('LOGIN', 999999999, AuditContext::forSystem());
 
         $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
 
         $this->assertNull($audit->user_id, 'No fake actor must be fabricated for a user that does not exist.');
         $this->assertSame([], $audit->actor_roles, 'No roles must be invented.');
         $this->assertNull($audit->organization_id);
+    }
+
+    public function test_nonnumeric_string_identifier_from_anonymous_context_records_no_fake_actor_and_never_queries_db(): void
+    {
+        // A nonnumeric string must never be passed as a bigint primary key lookup.
+        // PostgreSQL would throw "invalid input syntax for type bigint"; the
+        // validation must short-circuit before any DB query and produce a null actor.
+        app(AuditLogService::class)->logAuth('LOGIN', 'nonexistent-user-id', AuditContext::forSystem());
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertNull($audit->user_id, 'No fake actor must be fabricated for a nonnumeric identifier.');
+        $this->assertSame([], $audit->actor_roles);
+        $this->assertNull($audit->organization_id);
+    }
+
+    public function test_empty_string_identifier_from_anonymous_context_records_no_fake_actor(): void
+    {
+        app(AuditLogService::class)->logAuth('LOGIN', '', AuditContext::forSystem());
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertNull($audit->user_id, 'Empty string identifier must not produce a fake actor.');
+        $this->assertSame([], $audit->actor_roles);
+        $this->assertNull($audit->organization_id);
+    }
+
+    public function test_negative_integer_identifier_from_anonymous_context_records_no_fake_actor(): void
+    {
+        app(AuditLogService::class)->logAuth('LOGIN', -1, AuditContext::forSystem());
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertNull($audit->user_id, 'Negative integer must not produce a fake actor.');
+        $this->assertSame([], $audit->actor_roles);
+        $this->assertNull($audit->organization_id);
+    }
+
+    public function test_negative_numeric_string_identifier_from_anonymous_context_records_no_fake_actor(): void
+    {
+        app(AuditLogService::class)->logAuth('LOGIN', '-1', AuditContext::forSystem());
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertNull($audit->user_id, 'Negative numeric string must not produce a fake actor.');
+        $this->assertSame([], $audit->actor_roles);
+        $this->assertNull($audit->organization_id);
+    }
+
+    public function test_existing_numeric_string_id_builds_truthful_actor(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Anggota');
+
+        app(AuditLogService::class)->logAuth('LOGIN', (string) $user->id, AuditContext::forSystem());
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertSame((string) $user->id, (string) $audit->user_id, 'Numeric string ID must resolve to the real user.');
+        $this->assertSame(['Anggota'], $audit->actor_roles);
+        $this->assertSame((string) $organization->id, (string) $audit->organization_id);
+    }
+
+    public function test_correlation_id_is_preserved_for_all_identifier_types(): void
+    {
+        $correlationId = '11111111-2222-3333-4444-555555555555';
+        $context = AuditContext::forSystem(correlationId: $correlationId);
+
+        app(AuditLogService::class)->logAuth('LOGIN', 'nonexistent-user-id', $context);
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertSame($correlationId, $audit->correlation_id, 'Correlation ID must be preserved even when the actor resolves to null.');
+    }
+
+    public function test_invalid_identifier_with_existing_actor_does_not_create_subject(): void
+    {
+        $orgA = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $orgA->id]);
+        $actor->assignRole('System Admin');
+
+        // When an actor already exists and the affected user identifier is
+        // nonnumeric, the DB lookup must be skipped; no subject is recorded.
+        app(AuditLogService::class)->logAuth(
+            'LOGIN',
+            'nonexistent-user-id',
+            AuditContext::forActor($actor),
+        );
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertSame((string) $actor->id, (string) $audit->user_id, 'Actor must be preserved.');
+        $this->assertSame(['System Admin'], $audit->actor_roles, 'Actor roles must belong to the actor.');
+        $this->assertNull($audit->subject_id, 'No subject must be recorded for a nonnumeric identifier.');
+        $this->assertNull($audit->subject_type);
     }
 }

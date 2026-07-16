@@ -22,6 +22,7 @@ class MemberAccessRevocationService
         'revision_requested',
         'resigned',
         'unlinked',
+        'delete_access',
         'member_lifecycle',
         'account_security',
     ];
@@ -34,8 +35,19 @@ class MemberAccessRevocationService
     /**
      * Revoke only member-application Sanctum tokens for the member's user account.
      *
-     * Should be called within DB::afterCommit() when invoked from inside a
-     * transaction, so tokens are only removed after the state transition persists.
+     * Two invocation modes:
+     *
+     * 1. Atomic lifecycle operation (preferred for Document 05):
+     *    Call this method directly inside an outer DB::transaction(). The nested
+     *    transaction participates in the outer one via savepoints, so token
+     *    deletion, the mandatory revocation audit, the state transition, role
+     *    removal, and any preceding lifecycle audit are all atomic. A mandatory
+     *    audit failure rolls back the entire outer transaction — no partial state,
+     *    role, token, or audit survives.
+     *
+     * 2. Standalone operation:
+     *    Call this method outside any transaction. The nested transaction commits
+     *    independently and the mandatory revocation audit is guaranteed.
      *
      * Callers that are part of a wider business operation (e.g. member lifecycle)
      * must pass the shared AuditContext so every audit in that operation shares a
@@ -118,7 +130,12 @@ class MemberAccessRevocationService
     /**
      * Schedule token revocation after the current transaction commits.
      *
-     * Use this variant when calling from inside a DB::Transaction() block.
+     * Use this variant ONLY when the business requirement explicitly defers
+     * revocation until after the outer transaction commits. The caller accepts
+     * that revocation is no longer atomic with the preceding state transition:
+     * if the post-commit revocation fails, the state change persists but tokens
+     * remain active until a recovery path runs.
+     *
      * Pass the shared AuditContext so the post-commit audit keeps the same
      * correlation ID as the enclosing operation.
      */

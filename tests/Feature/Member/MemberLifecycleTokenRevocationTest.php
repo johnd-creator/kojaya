@@ -343,6 +343,21 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         $this->assertSame((string) $deleted->organization_id, (string) $revoked->organization_id);
     }
 
+    public function test_delete_access_revocation_audit_records_truthful_delete_access_reason_code(): void
+    {
+        [$user, $member] = $this->activeMemberWithToken();
+        $admin = $this->adminUser($member->organization_id);
+
+        app(MemberStatusTransitionService::class)->deleteAccess($member->refresh(), $admin, 'security review');
+
+        $revoked = \App\Models\AuditLog::query()
+            ->where('action', 'member.access.revoked')
+            ->where('subject_id', $member->id)
+            ->sole();
+
+        $this->assertSame('delete_access', $revoked->new_values['reason_code'], 'Revocation audit must preserve the truthful delete_access reason code, not normalize it to member_lifecycle.');
+    }
+
     /**
      * @return array{0: User, 1: CooperativeMember}
      */

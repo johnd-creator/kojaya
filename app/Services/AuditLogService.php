@@ -111,11 +111,27 @@ class AuditLogService
             return [$this->buildContextFromAffectedUser($userId, $context), null];
         }
 
+        // Actor already exists and differs: record the affected user as the subject.
+        // Guard the DB lookup against identifiers that are not valid bigint candidates
+        // so PostgreSQL never receives an invalid input syntax error.
+        if (! $this->isValidUserIdentifier($userId)) {
+            return [$context, null];
+        }
+
         return [$context, User::query()->find($userId)];
     }
 
     private function buildContextFromAffectedUser(string|int $userId, AuditContext $context): AuditContext
     {
+        // Guard the DB lookup against identifiers that are not valid bigint
+        // candidates. PostgreSQL throws "invalid input syntax for type bigint"
+        // on non-numeric strings; SQLite tolerates them but returns null. We
+        // normalize to a null actor for any invalid identifier without hitting
+        // the database, so behavior is identical across drivers.
+        if (! $this->isValidUserIdentifier($userId)) {
+            return $this->anonymousContext($context);
+        }
+
         $user = User::query()->find($userId);
 
         if ($user === null) {
@@ -124,21 +140,46 @@ class AuditLogService
             // hold a nonexistent identity, and inventing roles/organization would
             // be untruthful. Keep actor null so the failure is recorded without a
             // fake actor identity.
-            return new AuditContext(
-                actorId: null,
-                actorRoles: [],
-                organizationId: null,
-                correlationId: $context->correlationId,
-                ip: $context->ip,
-                userAgent: $context->userAgent,
-                source: $context->source,
-            );
+            return $this->anonymousContext($context);
         }
 
         return new AuditContext(
             actorId: $user->getKey(),
             actorRoles: $user->getRoleNames()->values()->all(),
             organizationId: $user->organization_id,
+            correlationId: $context->correlationId,
+            ip: $context->ip,
+            userAgent: $context->userAgent,
+            source: $context->source,
+        );
+    }
+
+    /**
+     * Determine whether the identifier is a valid candidate for a bigint
+     * primary key lookup. Only positive integers or numeric integer strings
+     * representing positive integers qualify. Negative, decimal, empty,
+     * non-numeric, or array-like values are rejected so the database is never
+     * queried with an invalid bigint input.
+     */
+    private function isValidUserIdentifier(string|int $userId): bool
+    {
+        if (is_int($userId)) {
+            return $userId > 0;
+        }
+
+        if ($userId === '' || ! ctype_digit($userId)) {
+            return false;
+        }
+
+        return $userId !== '0';
+    }
+
+    private function anonymousContext(AuditContext $context): AuditContext
+    {
+        return new AuditContext(
+            actorId: null,
+            actorRoles: [],
+            organizationId: null,
             correlationId: $context->correlationId,
             ip: $context->ip,
             userAgent: $context->userAgent,

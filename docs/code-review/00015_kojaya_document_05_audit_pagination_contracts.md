@@ -194,3 +194,37 @@ The model did not run any automated test, formatter, or validation command. The 
 An initial run surfaced eight failures (foreign-key constraint on unknown user_id, missing RolePermissionSeeder seed, and invalid third-argument messages passed to `assertDatabaseHas`/`assertDatabaseMissing`). These were corrected and the user confirmed all four focused suites above pass after the fixes.
 
 The full compact suite (`php artisan test --compact`) was not re-run by the user for this round; the focused suites above are the verified evidence. Independent PostgreSQL and GitHub Actions verification remains required.
+
+## Document 05 senior review round 2 closure — July 16, 2026 (round 4)
+
+- Starting SHA: `bfbad9eaaaebc07d8cb2b03532abb2f0bfaa559a` (`fix(document-05): close remaining audit and pagination review gaps`).
+- Scope: close four remaining senior review gaps — PostgreSQL-safe auth user lookup in `logAuth()`, truthful `delete_access` reason code, audited role reconciliation in member user provisioning, and correction of transaction documentation on the revocation service.
+- Key changes:
+  - `AuditLogService::logAuth()` / `buildContextFromAffectedUser()` / `resolveAuthActorAndSubject()`: added `isValidUserIdentifier()` guard so nonnumeric, empty, negative, or decimal identifiers never reach the bigint primary-key lookup (PostgreSQL-safe). Invalid identifiers produce a null actor with preserved correlation ID and request metadata. Extracted `anonymousContext()` helper to avoid duplication.
+  - `MemberAccessRevocationService`: added `delete_access` to `CONTROLLED_REASONS` so the revocation audit preserves the truthful reason code instead of normalizing it to `member_lifecycle`.
+  - `CooperativeMemberUserProvisioningService::provision()`: added state-change tracking (`userCreated`, `roleAssigned`, `linkChanged`). Link change writes `member.account.link.completed`; role-only reconciliation writes `member.role.reconciled`; no-op writes no audit. Metadata allowlisted: `affected_user_id`, `role_assigned`, `link_changed`, `user_created`, `operation`.
+  - `MemberAccessRevocationService` docblocks rewritten to document the two invocation modes (atomic nested transaction vs explicit post-commit) and clarify that `revokeAfterCommit()` is not for atomic lifecycle operations.
+
+### Test evidence (executed manually by user; model did not execute these commands)
+
+The model did not run any automated test, formatter, or validation command. The following commands were executed manually by the user and the results reported back:
+
+    php artisan test --compact tests/Feature/Auth/AuthAuditActorIdentityTest.php
+    Result: 12 passed, 40 assertions.
+
+    php artisan test --compact tests/Feature/Member/MemberLifecycleTokenRevocationTest.php
+    Result: 18 passed, 66 assertions.
+
+    php artisan test --compact tests/Feature/ComplianceReportQueryTest.php
+    Result: 4 passed, 19 assertions.
+
+    php artisan test --compact tests/Feature/Security/PrivilegedRoleMutationAuditTest.php
+    Result: 9 passed, 45 assertions.
+
+    php artisan test --compact tests/Feature/Cooperative/CooperativeMemberUserProvisioningTest.php
+    Result: 6 passed, 35 assertions.
+
+    php artisan test --compact
+    Result: 5 skipped, 1264 passed, 6917 assertions.
+
+The full compact suite was run by the user and reported 1264 passed, 5 skipped (pre-existing skips), 6917 assertions, with no failures. PostgreSQL and GitHub Actions verification remains required and was not run.

@@ -10,6 +10,7 @@ use App\Services\Security\UserRoleManagementService;
 use App\Support\AuditContext;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use InvalidArgumentException;
 use Mockery;
 use Tests\TestCase;
 
@@ -50,7 +51,7 @@ class PrivilegedRoleMutationAuditTest extends TestCase
         $this->assertSame((string) $admin->id, (string) $audit->user_id);
         $this->assertSame('create', $audit->new_values['operation']);
         $this->assertSame(['Admin Koperasi'], $audit->new_values['resulting_roles']);
-        $this->assertSame($org->id, $audit->new_values['organization_id']);
+        $this->assertSame($org->id, $audit->new_values['resulting_organization_id']);
         $this->assertSame([], $audit->old_values['previous_roles']);
     }
 
@@ -216,5 +217,58 @@ class PrivilegedRoleMutationAuditTest extends TestCase
 
         $this->assertStringNotContainsString('supersecretpassword123', $encoded);
         $this->assertStringNotContainsString('$2y$', $encoded);
+    }
+
+    public function test_actor_context_mismatch_is_rejected_before_user_creation(): void
+    {
+        $org = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $org->id]);
+        $actor->assignRole('System Admin');
+        $otherActor = User::factory()->create(['organization_id' => $org->id]);
+        $otherActor->assignRole('System Admin');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match the mutation actor');
+
+        app(UserRoleManagementService::class)->createUserWithAudit(
+            [
+                'name' => 'Mismatch User',
+                'email' => 'mismatch@example.com',
+                'password' => 'password123',
+                'role' => 'Anggota',
+                'organization_id' => $org->id,
+            ],
+            $actor,
+            AuditContext::forActor($otherActor, AuditContext::SOURCE_HTTP),
+        );
+    }
+
+    public function test_organization_move_records_previous_and_resulting_organization_truthfully(): void
+    {
+        $oldOrganization = Organization::factory()->create();
+        $newOrganization = Organization::factory()->create();
+        $target = User::factory()->create(['organization_id' => $oldOrganization->id]);
+        $target->assignRole('Anggota');
+        $actor = User::factory()->create(['organization_id' => $oldOrganization->id]);
+        $actor->assignRole('System Admin');
+
+        app(UserRoleManagementService::class)->updateUserWithAudit(
+            $target,
+            [
+                'name' => 'Moved User',
+                'email' => $target->email,
+                'role' => 'Admin Koperasi',
+                'organization_id' => $newOrganization->id,
+            ],
+            $actor,
+            AuditContext::forActor($actor, AuditContext::SOURCE_HTTP),
+        );
+
+        $audit = AuditLog::query()->where('action', 'user.role.mutated')->sole();
+
+        $this->assertSame($oldOrganization->id, $audit->old_values['previous_organization_id']);
+        $this->assertSame($newOrganization->id, $audit->new_values['resulting_organization_id']);
+        $this->assertSame((string) $actor->id, (string) $audit->new_values['actor_id']);
+        $this->assertSame(['System Admin'], $audit->new_values['actor_roles']);
     }
 }

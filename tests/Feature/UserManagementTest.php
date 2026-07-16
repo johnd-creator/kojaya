@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Inertia\Testing\AssertableInertia as Assert;
+use Mockery;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -112,6 +114,47 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseMissing('users', [
             'id' => $managedUser->id,
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'user.deleted',
+            'subject_id' => (string) $managedUser->id,
+            'user_id' => (string) $admin->id,
+        ]);
+    }
+
+    public function test_user_delete_audit_failure_rolls_back_deletion(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = $this->adminUser(['organization_id' => $organization->id]);
+        $managedUser = User::factory()->create(['organization_id' => $organization->id]);
+
+        $audit = Mockery::mock(AuditLogService::class);
+        $audit->shouldReceive('log')->once()->andThrow(new \RuntimeException('simulated user deletion audit failure'));
+        $this->app->instance(AuditLogService::class, $audit);
+
+        $this->expectException(\RuntimeException::class);
+
+        try {
+            $this->withoutExceptionHandling()
+                ->actingAs($admin)
+                ->delete(route('users.destroy', $managedUser));
+        } finally {
+            $this->assertDatabaseHas('users', ['id' => $managedUser->id]);
+            $this->assertDatabaseMissing('audit_logs', ['action' => 'user.deleted']);
+        }
+    }
+
+    public function test_actor_without_manage_users_cannot_delete_and_creates_no_authoritative_audit(): void
+    {
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $managedUser = User::factory()->create(['organization_id' => $organization->id]);
+
+        $this->actingAs($actor)
+            ->delete(route('users.destroy', $managedUser))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('users', ['id' => $managedUser->id]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'user.deleted']);
     }
 
     public function test_user_cannot_delete_self(): void

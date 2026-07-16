@@ -290,6 +290,81 @@ class AuditContextSourceTest extends TestCase
         $this->assertFalse($audit->new_values['manual_resolution']);
     }
 
+    public function test_sensitive_aliases_are_redacted_in_old_new_and_reason_while_safe_siblings_remain(): void
+    {
+        $secret = 'document05-secret-sentinel';
+
+        app(AuditLogService::class)->log('test.redaction.aliases', 'payment', null, [
+            'old' => [
+                'access_token' => $secret,
+                'refreshToken' => $secret,
+                'id_token' => $secret,
+                'api_key' => $secret,
+                'clientSecret' => $secret,
+                'private_key' => $secret,
+                'server_key' => $secret,
+                'signatureKey' => $secret,
+                'webhook_payload' => $secret,
+                'rawPayload' => $secret,
+                'authorization_header' => $secret,
+                'headers' => ['Authorization' => $secret],
+                'credentials' => $secret,
+                'ciphertext' => $secret,
+                'blind_index' => $secret,
+                'gateway_payload' => $secret,
+                'safe_status' => 'SETTLEMENT',
+                'tokens_revoked' => 2,
+                'token_count' => 3,
+                'authorization_result' => 'allowed',
+            ],
+            'new' => [
+                'ACCESS_TOKEN' => $secret,
+                'Refresh_Token' => $secret,
+                'IdToken' => $secret,
+                'apiKey' => $secret,
+                'client_secret' => $secret,
+                'privateKey' => $secret,
+                'serverKey' => $secret,
+                'signature_key' => $secret,
+                'WebhookPayload' => $secret,
+                'raw_payload' => $secret,
+                'Authorization' => $secret,
+                'headers' => ['authorization' => $secret],
+                'credentials' => $secret,
+                'ciphertext' => $secret,
+                'blindIndex' => $secret,
+                'gateway_payload' => $secret,
+                'gateway_status' => 'CONFIRMED',
+            ],
+            'reason' => $secret,
+        ]);
+
+        $audit = AuditLog::query()->where('action', 'test.redaction.aliases')->sole();
+        $encoded = json_encode([
+            'old' => $audit->old_values,
+            'new' => $audit->new_values,
+            'reason' => $audit->reason,
+        ], JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString($secret, $encoded);
+        $this->assertSame('SETTLEMENT', $audit->old_values['safe_status']);
+        $this->assertSame(2, $audit->old_values['tokens_revoked']);
+        $this->assertSame(3, $audit->old_values['token_count']);
+        $this->assertSame('allowed', $audit->old_values['authorization_result']);
+        $this->assertSame('CONFIRMED', $audit->new_values['gateway_status']);
+    }
+
+    public function test_unknown_top_level_audit_change_keys_are_rejected_fail_closed(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('canonical keys');
+
+        app(AuditLogService::class)->log('test.redaction.flat-rejected', 'test', null, [
+            'gateway_status' => 'SETTLEMENT',
+            'access_token' => 'flat-secret-sentinel',
+        ]);
+    }
+
     public function test_valid_sources_list_is_comprehensive(): void
     {
         $this->assertContains('http', AuditContext::VALID_SOURCES);

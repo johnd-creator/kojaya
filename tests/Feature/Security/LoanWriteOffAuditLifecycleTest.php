@@ -143,11 +143,32 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
             'organization_id' => $org->id,
         ]);
 
-        $this->expectException(ValidationException::class);
-        app(LoanService::class)->writeOff($loan, $actor);
+        $originalStatus = $loan->status;
+        $originalNotes = $loan->notes;
+
+        try {
+            app(LoanService::class)->writeOff($loan, $actor);
+            $this->fail('Expected PaidOff loan write-off validation failure.');
+        } catch (ValidationException) {
+            $this->assertSame($originalStatus, $loan->fresh()->status);
+            $this->assertSame($originalNotes, $loan->fresh()->notes);
+        }
 
         $this->assertDatabaseMissing('audit_logs', [
             'action' => 'loan.writeoff.completed',
+            'subject_id' => (string) $loan->id,
+        ]);
+        $this->assertDatabaseMissing('approval_logs', [
+            'subject_type' => Loan::class,
+            'subject_id' => (string) $loan->id,
+            'to_status' => LoanStatus::WrittenOff->value,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'loan.writeoff.requested',
+            'subject_id' => (string) $loan->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'loan.writeoff.failed',
             'subject_id' => (string) $loan->id,
         ]);
     }
@@ -161,8 +182,16 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
             'organization_id' => $org->id,
         ]);
 
-        $this->expectException(ValidationException::class);
-        app(LoanService::class)->writeOff($loan, $actor);
+        $originalStatus = $loan->status;
+        $originalNotes = $loan->notes;
+
+        try {
+            app(LoanService::class)->writeOff($loan, $actor);
+            $this->fail('Expected WrittenOff loan write-off validation failure.');
+        } catch (ValidationException) {
+            $this->assertSame($originalStatus, $loan->fresh()->status);
+            $this->assertSame($originalNotes, $loan->fresh()->notes);
+        }
 
         $completedAudits = AuditLog::query()
             ->where('action', 'loan.writeoff.completed')
@@ -170,6 +199,19 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
             ->count();
 
         $this->assertSame(0, $completedAudits);
+        $this->assertDatabaseMissing('approval_logs', [
+            'subject_type' => Loan::class,
+            'subject_id' => (string) $loan->id,
+            'to_status' => LoanStatus::WrittenOff->value,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'loan.writeoff.requested',
+            'subject_id' => (string) $loan->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'loan.writeoff.failed',
+            'subject_id' => (string) $loan->id,
+        ]);
     }
 
     public function test_invalid_source_state_emits_only_truthful_rejection_event(): void

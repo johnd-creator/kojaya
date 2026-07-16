@@ -150,6 +150,21 @@ class SensitiveDataMaskPreventionTest extends TestCase
         $this->assertSame($accountBefore, $member->getRawOriginal('no_rekening_enc'));
     }
 
+    public function test_explicit_empty_sensitive_value_has_the_same_authorized_clear_contract_as_null(): void
+    {
+        [$admin, $member] = $this->setupMemberWithAdmin();
+        $before = $member->getRawOriginal('no_rekening_enc');
+
+        $this->actingAs($admin)
+            ->patch(route('cooperative.members.sensitive-data.update', $member), [
+                'no_rekening' => '',
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertNotSame($before, $member->refresh()->getRawOriginal('no_rekening_enc'));
+        $this->assertNull($member->getRawOriginal('no_rekening_enc'));
+    }
+
     public function test_api_rejects_masked_values_without_persisting_them(): void
     {
         [$admin, $member] = $this->setupMemberWithAdmin();

@@ -309,7 +309,7 @@ class MemberUpdateCommandSeparationTest extends TestCase
 
         $this->assertSame($newUser->id, $member->refresh()->user_id);
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'member.account.linked',
+            'action' => 'member.account.link.completed',
             'subject_type' => CooperativeMember::class,
             'subject_id' => $member->id,
         ]);

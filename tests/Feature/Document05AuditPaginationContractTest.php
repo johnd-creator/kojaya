@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Tests\TestCase;
@@ -71,6 +72,13 @@ class Document05AuditPaginationContractTest extends TestCase
         $root = app_path();
 
         foreach ($this->phpFiles($root) as $path => $contents) {
+            if (in_array($path, [
+                app_path('Support/PaginationLimitResolver.php'),
+                app_path('Concerns/ResolvesApiPageSize.php'),
+            ], true)) {
+                continue;
+            }
+
             if ($this->containsRawPaginationInput($contents)) {
                 $offending[] = str_replace(base_path().'/', '', $path);
             }
@@ -81,37 +89,53 @@ class Document05AuditPaginationContractTest extends TestCase
 
     private function containsRawPaginationInput(string $contents): bool
     {
-        $pageParameters = 'per_page|page_size|limit';
-        $paginationMethods = 'paginate|simplePaginate|cursorPaginate|limit|take';
+        $parameter = '(?:per_page|page_size|limit)';
+        $rawInput = '(?:'
+            .'\\$request\\s*->\\s*(?:input|query|integer|get|validated)\\s*\\(\\s*[\'"]'.$parameter.'[\'"]'
+            .'|request\\s*\\(\\s*[\'"]'.$parameter.'[\'"]'
+            .'|request\\s*\\(\\s*\\)\\s*->\\s*(?:input|query|integer|get|validated)\\s*\\(\\s*[\'"]'.$parameter.'[\'"]'
+            .'|\\$request\\s*->\\s*'.$parameter.'\\b'
+            .'|request\\s*\\(\\s*\\)\\s*->\\s*'.$parameter.'\\b'
+            .'|data_get\\s*\\(\\s*\\$request\\s*,\\s*[\'"]'.$parameter.'[\'"]'
+            .')';
+        $pagination = '(?:paginate|simplePaginate|cursorPaginate|limit|take)';
 
-        if (preg_match(
-            '/->(?:'.$paginationMethods.')\(\s*(?:\$request|request\(\))->(?:input|query|integer|get|validated)\(\s*[\'\"](?:'.$pageParameters.')[\'\"]/',
-            $contents,
-        ) === 1) {
+        if (preg_match('/->'.$pagination.'\\s*\\(\\s*'.$rawInput.'/s', $contents) === 1) {
             return true;
         }
 
-        preg_match_all(
-            '/\$(?<variable>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<expression>(?:\$request|request\(\))->(?:input|query|integer|get|validated)\(\s*[\'\"](?:'.$pageParameters.')[\'\"][^;]*\);)/',
-            $contents,
-            $matches,
-            PREG_SET_ORDER,
-        );
+        preg_match_all('/\\$(?<variable>[A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*'.$rawInput.'[^;]*;/s', $contents, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
-            if (preg_match('/PaginationLimitResolver|apiPageSize|apiLimit|->resolve\(/', $match['expression']) === 1) {
-                continue;
-            }
-
-            if (preg_match(
-                '/->(?:'.$paginationMethods.')\(\s*\$'.preg_quote($match['variable'], '/').'\b/',
-                $contents,
-            ) === 1) {
+            if (preg_match('/->'.$pagination.'\\s*\\(\\s*\\$'.preg_quote($match['variable'], '/').'\\b/s', $contents) === 1) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    #[DataProvider('rawPaginationInputProvider')]
+    public function test_architecture_detector_catches_common_raw_request_pagination_shapes(string $snippet): void
+    {
+        $this->assertTrue($this->containsRawPaginationInput($snippet));
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function rawPaginationInputProvider(): array
+    {
+        return [
+            'input' => ['$query->paginate($request->input("per_page"));'],
+            'query' => ['$query->simplePaginate($request->query("per_page"));'],
+            'integer' => ['$query->cursorPaginate($request->integer("per_page"));'],
+            'get' => ['$query->limit($request->get("per_page"));'],
+            'validated' => ['$query->take($request->validated("per_page"));'],
+            'property' => ['$query->paginate($request->per_page);'],
+            'request helper' => ['$query->paginate(request("per_page"));'],
+            'request property' => ['$query->limit(request()->per_page);'],
+            'data_get' => ['$query->take(data_get($request, "per_page"));'],
+            'intermediate variable' => ['$limit = $request->query("per_page"); $query->paginate($limit);'],
+        ];
     }
 
     /**

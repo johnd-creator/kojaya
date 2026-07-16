@@ -193,11 +193,11 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         $originalStatus = $member->status;
         $originalValidationStatus = $member->validation_status;
 
-        $revocation = Mockery::mock(MemberAccessRevocationService::class)->makePartial();
-        $revocation->shouldReceive('revokeFor')
-            ->once()
+        $audit = Mockery::mock(AuditLogService::class)->makePartial();
+        $audit->shouldReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'member.access.revoked')
             ->andThrow(new \RuntimeException('simulated mandatory revocation audit failure'));
-        $this->app->instance(MemberAccessRevocationService::class, $revocation);
+        $this->app->instance(AuditLogService::class, $audit);
 
         try {
             app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $admin);

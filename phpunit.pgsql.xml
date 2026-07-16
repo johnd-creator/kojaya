@@ -5,8 +5,16 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="Concurrency">
+        <testsuite name="PostgreSQLConcurrency">
             <file>tests/Feature/PaymentConcurrencyTest.php</file>
+            <file>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</file>
+        </testsuite>
+        <testsuite name="Document05PostgreSQL">
+            <file>tests/Feature/Auth/AuthAuditActorIdentityTest.php</file>
+            <file>tests/Feature/ComplianceReportQueryTest.php</file>
+            <file>tests/Feature/Cooperative/MemberAccountLinkAuthorizationTest.php</file>
+            <file>tests/Feature/Member/MemberLifecycleTokenRevocationTest.php</file>
+            <file>tests/Feature/Security/PrivilegedRoleMutationAuditTest.php</file>
         </testsuite>
     </testsuites>
     <source>
@@ -17,6 +25,13 @@
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_KEY" value="base64:yXZjUpYTnOZAdY8kMRonJfT4KgnYCcuz+Y5N+JsP484=" force="true"/>
+        <env name="PII_ENCRYPTION_KEY_V1" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" force="true"/>
+        <env name="PII_ENCRYPTION_CURRENT_VERSION" value="v1" force="true"/>
+        <env name="PII_BLIND_INDEX_KEY_V1" value="base64:AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=" force="true"/>
+        <env name="PII_BLIND_INDEX_CURRENT_VERSION" value="v1" force="true"/>
+        <env name="PII_BLIND_INDEX_ACTIVE_VERSIONS" value="v1" force="true"/>
+        <env name="PII_ROLLOUT_PHASE" value="dual_write" force="true"/>
+        <env name="PII_ALLOW_SCHEMA_ROLLBACK" value="true" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>

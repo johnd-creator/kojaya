@@ -156,7 +156,7 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env
       - run: php artisan key:generate
-      - run: vendor/bin/phpunit --configuration phpunit.pgsql.xml tests/Feature/PaymentConcurrencyTest.php
+      - run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite PostgreSQLConcurrency
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
@@ -164,7 +164,7 @@ jobs:
           DB_DATABASE: kojaya_test
           DB_USERNAME: kojaya
           DB_PASSWORD: kojaya
-      - run: php artisan test --compact tests/Feature/Cooperative/PosTransactionConcurrencyTest.php tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php
+      - run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite Document05PostgreSQL
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1

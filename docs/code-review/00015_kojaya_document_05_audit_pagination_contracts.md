@@ -253,3 +253,44 @@ The full compact suite was run by the user and reported 1264 passed, 5 skipped (
 - PostgreSQL status: not independently executed for this remediation. The repository PHPUnit configuration uses SQLite `:memory:`; no dedicated PostgreSQL test configuration or credentials were supplied for this run.
 - GitHub Actions status: not observed or executed.
 - Residual risk: the five pre-existing skipped tests and independent PostgreSQL/GitHub Actions verification remain outstanding. No double-role or role-policy expansion was introduced.
+
+## Document 05 CI closure — July 16, 2026 (round 6)
+
+- Starting SHA: `b93fd109973a27e578c1e3a760d32c70fdf75fd8` (`docs(document-05): record final remediation verification`).
+- Scope: enforce PostgreSQL contract coverage in CI so Document 05 fixes can no longer silently fall back to SQLite.
+
+### Root cause
+
+The `postgres-concurrency` CI job ran its second command via `php artisan test --compact`, which reads the default `phpunit.xml`. That file forces `DB_CONNECTION=sqlite` and `DB_DATABASE=:memory:` with `force="true"`, silently overriding the PostgreSQL environment provided by the workflow. As a result, `PosTransactionConcurrencyTest` and `MemberLifecycleConcurrencyTest` actually ran on SQLite, not PostgreSQL. Additionally, the Document 05 PostgreSQL-specific fixes (`AuthAuditActorIdentityTest`, `ComplianceReportQueryTest`, etc.) were never executed against PostgreSQL by CI.
+
+### Changes
+
+- `phpunit.pgsql.xml`:
+  - Renamed `Concurrency` suite to `PostgreSQLConcurrency` containing `PaymentConcurrencyTest` and `MemberLifecycleConcurrencyTest` (both architecturally PostgreSQL-only). `PosTransactionConcurrencyTest` was excluded because it is hardcoded to SQLite subprocess workers.
+  - Added new `Document05PostgreSQL` suite: `AuthAuditActorIdentityTest`, `ComplianceReportQueryTest`, `MemberAccountLinkAuthorizationTest`, `MemberLifecycleTokenRevocationTest`, `PrivilegedRoleMutationAuditTest`.
+  - Added 7 PII encryption env keys that were previously missing (required for tests that create users/members/employees with PII columns).
+- `.github/workflows/ci.yml`:
+  - Both PostgreSQL commands now use `vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite <name>` explicitly — no `php artisan test` that can fall back to SQLite.
+  - Both suites are mandatory (no `continue-on-error`, no `|| true`).
+  - Triggers, PostgreSQL service, and credentials unchanged.
+
+### Test evidence
+
+The implementation model executed the `Document05PostgreSQL` suite against a disposable local PostgreSQL database using environment-specific credentials (credential values are intentionally omitted) at the explicit request of the user:
+
+    vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite Document05PostgreSQL
+    Result: 71 passed, 393 assertions.
+
+The model also attempted the `PostgreSQLConcurrency` suite, but it failed because `phpunit.pgsql.xml` forces a CI-specific database role with `force="true"` that is not available on the local PostgreSQL instance. This is a local environment mismatch, not a code defect; the suite is designed for the CI PostgreSQL service. The `PostgreSQLConcurrency` suite was not validated locally.
+
+The user executed the default SQLite regression suite:
+
+    php artisan test --compact
+    Result: 5 skipped, 1274 passed, 7021 assertions.
+
+GitHub Actions has not been run yet; it will execute both PostgreSQL suites when a PR is created against `main`. GitHub Actions through the Draft PR is the authoritative verification for the `PostgreSQLConcurrency` suite.
+
+### Residual risk
+
+- GitHub Actions verification of both PostgreSQL suites is pending until a PR is created.
+- The `PostgreSQLConcurrency` suite requires a CI-specific PostgreSQL role; it could not be verified locally and awaits GitHub Actions execution.

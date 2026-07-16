@@ -2646,6 +2646,21 @@ API responses include `X-Response-Time-Ms`, and timing metadata is logged with t
 ### **Pagination Response (Laravel Paginator)**
 All list endpoints return Laravel's standard paginator format:
 
+Pagination limits are resolved centrally for API, ESS, technician, notification,
+cooperative, POS, procurement, certificate, MCU, support, audit, and compliance
+list surfaces:
+
+- omitted or empty per_page: 15;
+- values below 1 (including 0 and -1): 1;
+- values 1 through 50: accepted as requested;
+- values above 50: capped at 50;
+- non-numeric, array, or malformed values: default to 15;
+- the documented cooperative dues management screen may use an explicit
+  administrative ceiling of 100.
+
+Controllers must use the shared page-size resolver. They must not parse
+per_page or page_size directly from the request.
+
 ```json
 {
   "current_page": 1,
@@ -2730,6 +2745,37 @@ Business error envelopes may additionally expose `error_code` values such as `PE
 | `view_cooperative_loan` | Admin koperasi & anggota (scoped) |
 
 ---
+
+## 📋 Document 05 Response and Pagination Contracts
+
+The generated contract is the authority in docs/openapi.json; run
+"php artisan openapi:snapshot --check" to detect drift.
+
+Document 05 API responses use the normalizer's "success: true" field.
+Paginated responses contain exactly "data", "links", "meta", and "success".
+"meta.per_page" is bounded to 1–50, except the documented administrative dues
+invoice endpoint, which may use 1–100.
+
+The following resources are explicit allowlists:
+
+- CooperativeMemberResource for member list/detail responses;
+- LoanResource for loan list/detail responses;
+- MemberInvoiceResource for /api/v1/dues/invoices;
+- CooperativePaymentResource for payment store and approve;
+- BatchCooperativePaymentResponse for payment batch results.
+
+Payment resources do not expose "gateway_payload", "proof_path", token data,
+authorization headers, encrypted fields, blind indexes, or unrelated model
+columns. Invoice fields are "id", "period", "amount", "paid_amount",
+"remaining_amount", "due_date", "status", and the nullable
+"contribution_type" object. Payment fields are the documented payment identity,
+amount, method, status, timestamps, receipt/reference values, and nullable
+allowlisted relations.
+
+Standard pagination parameters use "per_page"; /api/notifications/recent
+uses "limit" with default 5 and maximum 10. Both are resolved by the same
+centralized bounded resolver. Omitted or malformed values use the endpoint
+default, values below 1 become 1, and oversized values are clamped.
 
 ## 🧪 Testing API
 

@@ -2,9 +2,13 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\AuditLogService;
+use App\Services\Cooperative\MemberAccountLinkService;
+use App\Support\AuditContext;
 use Database\Seeders\RolePermissionSeeder;
 use Tests\TestCase;
 
@@ -43,6 +47,29 @@ class MemberAccountLinkAuthorizationTest extends TestCase
         $target = User::factory()->create(['organization_id' => $organizationB->id]);
         $member = CooperativeMember::factory()->active()->create([
             'organization_id' => $organizationA->id,
+            'user_id' => null,
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('cooperative.members.account-link.store', $member), [
+                'user_id' => $target->id,
+                'reason' => 'business_verification',
+            ])
+            ->assertSessionHasErrors('user_id');
+
+        $this->assertNull($member->fresh()->user_id);
+        $this->assertFalse($target->fresh()->hasRole('Anggota'));
+    }
+
+    public function test_unverified_target_is_rejected_without_mutation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->unverified()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
             'user_id' => null,
         ]);
 
@@ -219,5 +246,150 @@ class MemberAccountLinkAuthorizationTest extends TestCase
         $this->assertNull($member->fresh()->user_id);
         $this->assertDatabaseMissing('personal_access_tokens', ['id' => $memberToken->accessToken->id]);
         $this->assertDatabaseHas('personal_access_tokens', ['id' => $adminToken->accessToken->id, 'token_app' => 'admin']);
+    }
+
+    public function test_link_writes_requested_and_completed_with_one_http_context(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+        ]);
+        $correlationId = '11112222-3333-4444-5555-666677778888';
+
+        $this->actingAs($actor)
+            ->withHeader('X-Correlation-ID', $correlationId)
+            ->post(route('cooperative.members.account-link.store', $member), [
+                'user_id' => $target->id,
+                'reason' => 'business_verification',
+            ])
+            ->assertRedirect();
+
+        $audits = AuditLog::query()
+            ->whereIn('action', ['member.account.link.requested', 'member.account.link.completed'])
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $audits);
+        $this->assertSame($correlationId, $audits[0]->correlation_id);
+        $this->assertSame($correlationId, $audits[1]->correlation_id);
+        $this->assertSame((string) $actor->id, (string) $audits[0]->user_id);
+        $this->assertSame((string) $actor->id, (string) $audits[1]->user_id);
+        $this->assertSame($organization->id, $audits[1]->organization_id);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.account.linked']);
+    }
+
+    public function test_link_completed_audit_failure_rolls_back_member_and_anggota_role_and_writes_truthful_failure(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+        ]);
+
+        $audit = \Mockery::mock(AuditLogService::class)->makePartial();
+        $audit->shouldReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'member.account.link.completed')
+            ->andThrow(new \RuntimeException('simulated link completion audit failure'));
+        $this->app->instance(AuditLogService::class, $audit);
+
+        try {
+            app(MemberAccountLinkService::class)->link(
+                $actor,
+                $member,
+                $target,
+                'business_verification',
+                AuditContext::forActor($actor),
+            );
+            $this->fail('Expected completion audit failure.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('simulated link completion audit failure', $exception->getMessage());
+        }
+
+        $this->assertNull($member->fresh()->user_id);
+        $this->assertFalse($target->fresh()->hasRole('Anggota'));
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.account.link.completed']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'member.account.link.failed']);
+    }
+
+    public function test_link_rejects_audit_context_actor_mismatch_before_any_mutation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $otherActor = User::factory()->create(['organization_id' => $organization->id]);
+        $otherActor->assignRole('Admin Koperasi');
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+        ]);
+
+        try {
+            app(MemberAccountLinkService::class)->link(
+                $actor,
+                $member,
+                $target,
+                'business_verification',
+                AuditContext::forActor($otherActor),
+            );
+            $this->fail('Expected actor/context mismatch rejection.');
+        } catch (\InvalidArgumentException $exception) {
+            $this->assertStringContainsString('does not match', $exception->getMessage());
+        }
+
+        $this->assertNull($member->fresh()->user_id);
+        $this->assertFalse($target->fresh()->hasRole('Anggota'));
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.account.link.requested']);
+    }
+
+    public function test_unlink_completed_audit_failure_rolls_back_member_role_and_member_token(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->create(['organization_id' => $organization->id]);
+        $target->assignRole('Anggota');
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $target->id,
+        ]);
+        $token = $target->createToken('member', ['member:read']);
+        $tokenId = $token->accessToken->id;
+
+        $audit = \Mockery::mock(AuditLogService::class)->makePartial();
+        $audit->shouldReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'member.account.unlink.completed')
+            ->andThrow(new \RuntimeException('simulated unlink completion audit failure'));
+        $this->app->instance(AuditLogService::class, $audit);
+
+        try {
+            app(MemberAccountLinkService::class)->unlink(
+                $actor,
+                $member,
+                'member_correction',
+                AuditContext::forActor($actor),
+            );
+            $this->fail('Expected completion audit failure.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('simulated unlink completion audit failure', $exception->getMessage());
+        }
+
+        $this->assertSame($target->id, $member->fresh()->user_id);
+        $this->assertTrue($target->fresh()->hasRole('Anggota'));
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $tokenId]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.account.unlink.completed']);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.access.revoked']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'member.account.unlink.failed']);
     }
 }

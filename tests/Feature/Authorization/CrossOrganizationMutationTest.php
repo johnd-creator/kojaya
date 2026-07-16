@@ -177,7 +177,7 @@ class CrossOrganizationMutationTest extends TestCase
     public function test_loan_index_uses_resource_allowlist(): void
     {
         $organization = Organization::factory()->create();
-        $actor = $this->scopedActor($organization->id, ['view_cooperative_loan']);
+        $actor = $this->scopedActor($organization->id, ['view_cooperative_loan', 'manage_cooperative_loan']);
         $member = CooperativeMember::factory()->active()->create(['organization_id' => $organization->id]);
         Loan::factory()->create([
             'organization_id' => $organization->id,
@@ -190,6 +190,148 @@ class CrossOrganizationMutationTest extends TestCase
         $response->assertJsonStructure(['data', 'links', 'meta']);
         $response->assertJsonMissingPath('data.0.organization_id');
         $response->assertJsonMissingPath('data.0.user_id');
+        $loanKeys = array_keys($response->json('data.0'));
+        sort($loanKeys);
+        $expectedLoanKeys = [
+            'admin_fee',
+            'approval_stage',
+            'approved_at',
+            'approved_by',
+            'applied_at',
+            'disbursed_at',
+            'first_due_date',
+            'id',
+            'installment_amount',
+            'installments',
+            'interest_rate',
+            'late_fee_per_day',
+            'loan_type',
+            'loan_type_id',
+            'manager_reviewed_at',
+            'manager_reviewed_by',
+            'member',
+            'member_id',
+            'notes',
+            'outstanding_amount',
+            'principal_amount',
+            'purpose',
+            'reference_no',
+            'rejected_at',
+            'rejection_reason',
+            'status',
+            'term_months',
+            'total_amount',
+            'total_interest_amount',
+        ];
+        sort($expectedLoanKeys);
+        $this->assertSame($expectedLoanKeys, $loanKeys);
+
+        $detailResponse = $this->getJson('/api/v1/loans/'.Loan::query()->firstOrFail()->id)->assertOk();
+        $detailKeys = array_keys($detailResponse->json('data'));
+        sort($detailKeys);
+        $expectedDetailKeys = [...$expectedLoanKeys, 'approval_logs', 'payments'];
+        sort($expectedDetailKeys);
+        $this->assertSame($expectedDetailKeys, $detailKeys);
+    }
+
+    public function test_invoice_and_payment_api_routes_use_exact_resource_contracts(): void
+    {
+        $organization = Organization::factory()->create();
+        $actor = $this->scopedActor($organization->id, [
+            'view_cooperative_member',
+            'manage_cooperative_dues',
+            'manage_cooperative_payment',
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'CONTRACT-'.fake()->unique()->numerify('####'),
+            'name' => 'Contract contribution',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = $this->invoiceForMember($member, $type->id, '2026-07');
+        Sanctum::actingAs($actor, [
+            'cooperative.dues.read',
+            'cooperative.payment.record',
+            'cooperative:write',
+        ]);
+
+        $invoiceResponse = $this->getJson('/api/v1/dues/invoices')->assertOk();
+        $this->assertSame(['data', 'links', 'meta', 'success'], array_keys($invoiceResponse->json()));
+        $invoiceKeys = array_keys($invoiceResponse->json('data.0'));
+        sort($invoiceKeys);
+        $expectedInvoiceKeys = ['amount', 'contribution_type', 'due_date', 'id', 'paid_amount', 'period', 'remaining_amount', 'status'];
+        sort($expectedInvoiceKeys);
+        $this->assertSame($expectedInvoiceKeys, $invoiceKeys);
+        $invoiceResponse->assertJsonMissingPath('data.0.gateway_payload');
+        $invoiceResponse->assertJsonMissingPath('data.0.proof_path');
+
+        $paymentResponse = $this->postJson('/api/v1/dues/payments', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 50000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => '2026-07-15',
+        ])->assertCreated();
+        $this->assertSame(['data', 'success'], array_keys($paymentResponse->json()));
+        $paymentKeys = array_keys($paymentResponse->json('data'));
+        sort($paymentKeys);
+        $expectedPaymentKeys = [
+            'amount',
+            'approved_at',
+            'approved_by',
+            'contribution_type',
+            'id',
+            'invoice',
+            'invoice_id',
+            'member',
+            'member_id',
+            'paid_at',
+            'payment_method',
+            'receipt_issued_at',
+            'receipt_no',
+            'reference_no',
+            'status',
+        ];
+        sort($expectedPaymentKeys);
+        $this->assertSame($expectedPaymentKeys, $paymentKeys);
+        $paymentResponse->assertJsonMissingPath('data.gateway_payload');
+        $paymentResponse->assertJsonMissingPath('data.proof_path');
+
+        $approver = $this->scopedActor($organization->id, [
+            'view_cooperative_member',
+            'manage_cooperative_dues',
+            'manage_cooperative_payment',
+        ]);
+        Sanctum::actingAs($approver, [
+            'cooperative.dues.read',
+            'cooperative.payment.record',
+            'cooperative:write',
+        ]);
+        $approveResponse = $this->postJson('/api/v1/dues/payments/'.$paymentResponse->json('data.id').'/approve')
+            ->assertOk();
+        $this->assertSame(['data', 'success'], array_keys($approveResponse->json()));
+        $approvedKeys = array_keys($approveResponse->json('data'));
+        sort($approvedKeys);
+        $this->assertSame($expectedPaymentKeys, $approvedKeys);
+
+        $secondInvoice = $this->invoiceForMember($member, $type->id, '2026-08');
+        $batchResponse = $this->postJson('/api/v1/dues/payments/batch', [
+            'invoice_ids' => [$secondInvoice->id],
+            'payment_method' => 'TRANSFER',
+            'paid_at' => '2026-07-15',
+        ])->assertCreated();
+        $this->assertSame(['data', 'success'], array_keys($batchResponse->json()));
+        $batchKeys = array_keys($batchResponse->json('data'));
+        sort($batchKeys);
+        $this->assertSame(['payments', 'processed_count', 'total_amount'], $batchKeys);
+        $this->assertNotNull($batchResponse->json('data.payments.0.id'));
+        $batchResponse->assertJsonMissingPath('data.payments.0.gateway_payload');
+        $batchResponse->assertJsonMissingPath('data.payments.0.proof_path');
     }
 
     /** @param list<string> $permissions */
@@ -214,6 +356,18 @@ class CrossOrganizationMutationTest extends TestCase
             'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $typeId,
             'period' => '2026-07',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+    }
+
+    private function invoiceForMember(CooperativeMember $member, int|string $typeId, string $period): CooperativeDuesInvoice
+    {
+        return CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $typeId,
+            'period' => $period,
             'amount' => 50000,
             'paid_amount' => 0,
             'status' => 'UNPAID',

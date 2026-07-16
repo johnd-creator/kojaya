@@ -18,6 +18,7 @@ class AuditLog extends Model
         'correlation_id',
         'organization_id',
         'actor_roles',
+        'source',
         'action',
         'module',
         'subject_type',

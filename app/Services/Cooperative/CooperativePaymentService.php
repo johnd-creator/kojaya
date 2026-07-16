@@ -8,6 +8,7 @@ use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativePayment;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -61,9 +62,11 @@ class CooperativePaymentService
         return $payment;
     }
 
-    public function approve(CooperativePayment $payment, ?User $approver = null): CooperativePayment
+    public function approve(CooperativePayment $payment, ?User $approver = null, ?AuditContext $context = null): CooperativePayment
     {
-        return DB::transaction(function () use ($payment, $approver): CooperativePayment {
+        $context ??= AuditContext::forActor($approver);
+
+        return DB::transaction(function () use ($payment, $approver, $context): CooperativePayment {
             $payment = CooperativePayment::query()
                 ->lockForUpdate()
                 ->with('ledgerEntries')
@@ -145,7 +148,7 @@ class CooperativePaymentService
                     'amount' => (float) $payment->amount,
                 ],
                 'reason' => 'Cooperative payment approved.',
-            ]);
+            ], $context);
 
             $this->receiptService->issue($payment, $approver);
             DB::afterCommit(fn () => $this->notificationDispatcher->paymentApproved($payment, $approver));
@@ -154,9 +157,11 @@ class CooperativePaymentService
         });
     }
 
-    public function reconcile(CooperativePayment $payment, ?User $user, string $reference, bool $approve = true): CooperativePayment
+    public function reconcile(CooperativePayment $payment, ?User $user, string $reference, bool $approve = true, ?AuditContext $context = null): CooperativePayment
     {
-        return DB::transaction(function () use ($payment, $user, $reference, $approve): CooperativePayment {
+        $context ??= AuditContext::forActor($user);
+
+        return DB::transaction(function () use ($payment, $user, $reference, $approve, $context): CooperativePayment {
             $payment = CooperativePayment::query()->lockForUpdate()->findOrFail($payment->id);
 
             if ($payment->reconciled_at) {
@@ -164,7 +169,7 @@ class CooperativePaymentService
             }
 
             if ($approve && $payment->status !== 'APPROVED') {
-                $payment = $this->approve($payment, $user);
+                $payment = $this->approve($payment, $user, $context);
             }
 
             $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
@@ -182,7 +187,7 @@ class CooperativePaymentService
                     'reconciliation_reference' => $reference,
                 ],
                 'reason' => 'Cooperative payment reconciled.',
-            ]);
+            ], $context);
 
             return $payment->refresh();
         });

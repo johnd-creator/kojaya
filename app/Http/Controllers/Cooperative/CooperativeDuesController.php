@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Concerns\ResolvesApiPageSize;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\GenerateDuesRequest;
 use App\Http\Requests\Cooperative\MarkDuesPaidRequest;
@@ -10,6 +11,7 @@ use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativePayment;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Support\PaginationLimitResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +21,8 @@ use Inertia\Response;
 
 class CooperativeDuesController extends Controller
 {
+    use ResolvesApiPageSize;
+
     public function index(Request $request, DuesGenerationService $duesGenerationService): Response
     {
         $period = $this->periodFromRequest($request);
@@ -61,8 +65,7 @@ class CooperativeDuesController extends Controller
             $query->whereHas('contributionType', fn ($typeQuery) => $typeQuery->where('category', $request->input('category')));
         }
 
-        $perPage = (int) $request->input('per_page', 15);
-        $perPage = max(5, min($perPage, 100));
+        $perPage = $this->apiPageSize($request, maximum: PaginationLimitResolver::ADMIN_MAXIMUM);
 
         $aggregate = (clone $query)->selectRaw(
             'COUNT(*) as total_invoices,

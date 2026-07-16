@@ -8,11 +8,15 @@ use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Authorization\OrganizationScopeService;
+use App\Support\AuditContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Role;
+use Throwable;
 
 class MemberAccountLinkService
 {
@@ -22,88 +26,156 @@ class MemberAccountLinkService
         private readonly AuditLogService $audit,
     ) {}
 
-    public function link(User $actor, CooperativeMember $member, User $target, string $reason): CooperativeMember
+    public function link(User $actor, CooperativeMember $member, User $target, string $reason, ?AuditContext $context = null): CooperativeMember
     {
         $this->assertActorCanLink($actor, $member);
         $reasonCode = $this->reasonCode($reason);
+        $context ??= AuditContext::forActor($actor);
+        $this->assertContextActor($actor, $context);
 
-        return DB::transaction(function () use ($member, $target, $reasonCode): CooperativeMember {
-            $lockedMember = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
-            $lockedTarget = User::query()->lockForUpdate()->findOrFail($target->id);
+        $this->audit->log('member.account.link.requested', 'cooperative.member', $member, [
+            'new' => [
+                'target_user_id' => $target->getKey(),
+                'organization_id' => $member->organization_id,
+                'reason_code' => $reasonCode,
+                'reason_supplied' => true,
+            ],
+            'reason' => 'Member account-link request.',
+        ], $context);
 
-            if ($lockedMember->user_id !== null) {
-                throw ValidationException::withMessages([
-                    'member' => 'Anggota sudah memiliki akun tertaut.',
+        try {
+            $linkedMember = DB::transaction(function () use ($member, $target, $reasonCode, $context): CooperativeMember {
+                $lockedMember = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+                $lockedTarget = User::query()->lockForUpdate()->findOrFail($target->id);
+
+                if ($lockedMember->user_id !== null) {
+                    throw ValidationException::withMessages([
+                        'member' => 'Anggota sudah memiliki akun tertaut.',
+                    ]);
+                }
+
+                $this->assertTargetEligible($lockedMember, $lockedTarget);
+
+                $lockedMember->forceFill(['user_id' => $lockedTarget->id])->save();
+
+                Role::query()->firstOrCreate(['name' => 'Anggota']);
+                $lockedTarget->refresh();
+                if (! $lockedTarget->hasRole('Anggota')) {
+                    $lockedTarget->assignRole('Anggota');
+                }
+
+                $this->audit->log('member.account.link.completed', 'cooperative.member', $lockedMember, [
+                    'old' => ['user_id' => null],
+                    'new' => [
+                        'user_id' => $lockedTarget->id,
+                        'organization_id' => $lockedMember->organization_id,
+                        'reason_code' => $reasonCode,
+                        'reason_supplied' => true,
+                    ],
+                    'reason' => 'Controlled member account-link reason code.',
+                ], $context);
+
+                return $lockedMember->refresh();
+            });
+        } catch (Throwable $e) {
+            try {
+                $this->audit->log('member.account.link.failed', 'cooperative.member', $member, [
+                    'new' => [
+                        'target_user_id' => $target->getKey(),
+                        'organization_id' => $member->organization_id,
+                        'reason_code' => $reasonCode,
+                        'reason_supplied' => true,
+                    ],
+                    'reason' => 'Member account-link request failed.',
+                ], $context);
+            } catch (Throwable $auditException) {
+                Log::critical('Member account-link failure audit could not be persisted.', [
+                    'member_id' => $member->getKey(),
+                    'exception_class' => $auditException::class,
                 ]);
             }
 
-            $this->assertTargetEligible($lockedMember, $lockedTarget);
+            throw $e;
+        }
 
-            $lockedMember->forceFill(['user_id' => $lockedTarget->id])->save();
-
-            Role::query()->firstOrCreate(['name' => 'Anggota']);
-            $lockedTarget->refresh();
-            if (! $lockedTarget->hasRole('Anggota')) {
-                $lockedTarget->assignRole('Anggota');
-            }
-
-            $this->audit->log('member.account.linked', 'cooperative.member', $lockedMember, [
-                'old' => ['user_id' => null],
-                'new' => [
-                    'user_id' => $lockedTarget->id,
-                    'organization_id' => $lockedMember->organization_id,
-                    'reason_code' => $reasonCode,
-                    'reason_supplied' => true,
-                ],
-                'reason' => 'Controlled member account-link reason code.',
-            ]);
-
-            return $lockedMember->refresh();
-        });
+        return $linkedMember;
     }
 
-    public function unlink(User $actor, CooperativeMember $member, string $reason): CooperativeMember
+    public function unlink(User $actor, CooperativeMember $member, string $reason, ?AuditContext $context = null): CooperativeMember
     {
         $this->assertActorCanLink($actor, $member);
         $reasonCode = $this->reasonCode($reason);
+        $context ??= AuditContext::forActor($actor);
+        $this->assertContextActor($actor, $context);
 
-        return DB::transaction(function () use ($actor, $member, $reasonCode): CooperativeMember {
-            $lockedMember = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
-            $oldUserId = $lockedMember->user_id;
+        $this->audit->log('member.account.unlink.requested', 'cooperative.member', $member, [
+            'new' => [
+                'organization_id' => $member->organization_id,
+                'reason_code' => $reasonCode,
+                'reason_supplied' => true,
+            ],
+            'reason' => 'Member account-unlink request.',
+        ], $context);
 
-            if ($oldUserId === null) {
-                throw ValidationException::withMessages([
-                    'member' => 'Anggota tidak memiliki akun tertaut.',
+        try {
+            $unlinkedMember = DB::transaction(function () use ($member, $reasonCode, $actor, $context): CooperativeMember {
+                $lockedMember = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+                $oldUserId = $lockedMember->user_id;
+
+                if ($oldUserId === null) {
+                    throw ValidationException::withMessages([
+                        'member' => 'Anggota tidak memiliki akun tertaut.',
+                    ]);
+                }
+
+                $oldUser = User::query()->lockForUpdate()->find($oldUserId);
+                $lockedMember->forceFill(['user_id' => null])->save();
+
+                if ($oldUser && ! $oldUser->cooperativeMember()->whereKeyNot($lockedMember->id)->exists()) {
+                    $oldUser->removeRole('Anggota');
+                }
+
+                if ($oldUser) {
+                    $this->accessRevocation->revokeMemberAppTokens($oldUser, $reasonCode, $actor, $lockedMember, $context);
+                }
+
+                $this->audit->log('member.account.unlink.completed', 'cooperative.member', $lockedMember, [
+                    'old' => [
+                        'user_id' => $oldUserId,
+                        'organization_id' => $lockedMember->organization_id,
+                    ],
+                    'new' => [
+                        'user_id' => null,
+                        'organization_id' => $lockedMember->organization_id,
+                        'reason_code' => $reasonCode,
+                        'reason_supplied' => true,
+                    ],
+                    'reason' => 'Controlled member account-unlink reason code.',
+                ], $context);
+
+                return $lockedMember->refresh();
+            });
+        } catch (Throwable $e) {
+            try {
+                $this->audit->log('member.account.unlink.failed', 'cooperative.member', $member, [
+                    'new' => [
+                        'organization_id' => $member->organization_id,
+                        'reason_code' => $reasonCode,
+                        'reason_supplied' => true,
+                    ],
+                    'reason' => 'Member account-unlink request failed.',
+                ], $context);
+            } catch (Throwable $auditException) {
+                Log::critical('Member account-unlink failure audit could not be persisted.', [
+                    'member_id' => $member->getKey(),
+                    'exception_class' => $auditException::class,
                 ]);
             }
 
-            $oldUser = User::query()->lockForUpdate()->find($oldUserId);
-            $lockedMember->forceFill(['user_id' => null])->save();
+            throw $e;
+        }
 
-            if ($oldUser && ! $oldUser->cooperativeMember()->whereKeyNot($lockedMember->id)->exists()) {
-                $oldUser->removeRole('Anggota');
-            }
-
-            if ($oldUser) {
-                $this->accessRevocation->revokeMemberAppTokens($oldUser, $reasonCode, $actor, $lockedMember);
-            }
-
-            $this->audit->log('member.account.unlinked', 'cooperative.member', $lockedMember, [
-                'old' => [
-                    'user_id' => $oldUserId,
-                    'organization_id' => $lockedMember->organization_id,
-                ],
-                'new' => [
-                    'user_id' => null,
-                    'organization_id' => $lockedMember->organization_id,
-                    'reason_code' => $reasonCode,
-                    'reason_supplied' => true,
-                ],
-                'reason' => 'Controlled member account-unlink reason code.',
-            ]);
-
-            return $lockedMember->refresh();
-        });
+        return $unlinkedMember;
     }
 
     /**
@@ -230,5 +302,20 @@ class MemberAccountLinkService
         }
 
         return $reasonCode->value;
+    }
+
+    private function assertContextActor(User $actor, AuditContext $context): void
+    {
+        if ((string) $context->actorId !== (string) $actor->getKey()) {
+            throw new InvalidArgumentException('Audit context actor does not match the account-link actor.');
+        }
+
+        if ($actor->organization_id !== null && (string) $context->organizationId !== (string) $actor->organization_id) {
+            throw new InvalidArgumentException('Audit context organization does not match the account-link actor.');
+        }
+
+        if ($context->actorRoles !== $actor->getRoleNames()->values()->all()) {
+            throw new InvalidArgumentException('Audit context roles do not match the account-link actor.');
+        }
     }
 }

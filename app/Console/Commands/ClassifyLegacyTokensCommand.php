@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\AuditLogService;
 use App\Services\Auth\LegacyTokenClassifier;
+use App\Support\AuditContext;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -88,7 +89,7 @@ class ClassifyLegacyTokensCommand extends Command
                     'classification_counts' => $counts,
                 ],
                 'reason' => 'Explicit legacy token rotation after the configured grace deadline.',
-            ]);
+            ], AuditContext::forCli());
         }
 
         $this->line(json_encode($report, JSON_THROW_ON_ERROR));

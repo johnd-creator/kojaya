@@ -9,6 +9,7 @@ use App\Models\MemberPaymentIntent;
 use App\Models\PaymentReconciliationIncident;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\MemberOrderReservationService;
+use App\Support\AuditContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -35,8 +36,10 @@ class MemberPaymentIntentStateService
         ?array $rawPayload = null,
         ?int $providerAmountMinor = null,
         ?float $providerAmount = null,
+        ?AuditContext $context = null,
     ): ?MemberPaymentIntent {
         $newStatus = strtoupper($newStatus);
+        $context ??= AuditContext::forActor(null, AuditContext::SOURCE_DOMAIN);
 
         // Backward compat: if float amount provided but no minor, convert
         // using bcmath to avoid float precision loss
@@ -44,7 +47,7 @@ class MemberPaymentIntentStateService
             $providerAmountMinor = (int) bcmul((string) $providerAmount, '100', 0);
         }
 
-        return DB::transaction(function () use ($gatewayReference, $newStatus, $rawPayload, $providerAmountMinor): ?MemberPaymentIntent {
+        return DB::transaction(function () use ($gatewayReference, $newStatus, $rawPayload, $providerAmountMinor, $context): ?MemberPaymentIntent {
             $intent = MemberPaymentIntent::query()
                 ->where('gateway_reference', $gatewayReference)
                 ->lockForUpdate()
@@ -72,7 +75,7 @@ class MemberPaymentIntentStateService
             // PAID is a verified provider fact: always route through applyPaid
             // which handles reconciliation incidents for mismatched states.
             if ($targetStatus === PaymentGatewayStatus::Paid) {
-                return $this->applyPaid($intent, $payload, $currentStatus, $reservation, $providerAmountMinor);
+                return $this->applyPaid($intent, $payload, $currentStatus, $reservation, $providerAmountMinor, $context);
             }
 
             if (! $currentStatus->canTransitionTo($targetStatus) && $currentStatus !== $targetStatus) {
@@ -86,8 +89,8 @@ class MemberPaymentIntentStateService
             }
 
             return match ($targetStatus) {
-                PaymentGatewayStatus::Failed, PaymentGatewayStatus::Cancelled, PaymentGatewayStatus::Denied => $this->applyTerminalFailure($intent, $targetStatus, $payload, $reservation),
-                PaymentGatewayStatus::Expired => $this->applyExpired($intent, $payload, $currentStatus, $reservation),
+                PaymentGatewayStatus::Failed, PaymentGatewayStatus::Cancelled, PaymentGatewayStatus::Denied => $this->applyTerminalFailure($intent, $targetStatus, $payload, $reservation, $context),
+                PaymentGatewayStatus::Expired => $this->applyExpired($intent, $payload, $currentStatus, $reservation, $context),
                 default => $intent,
             };
         });
@@ -108,6 +111,7 @@ class MemberPaymentIntentStateService
         PaymentGatewayStatus $currentGateway,
         PaymentReservationStatus $reservation,
         ?int $providerAmountMinor,
+        AuditContext $context,
     ): MemberPaymentIntent {
         $settlement = $intent->settlementStatus();
 
@@ -125,7 +129,7 @@ class MemberPaymentIntentStateService
                     'actual_amount_minor' => (string) $providerAmountMinor,
                     'provider_status' => 'PAID',
                     'provider_reference' => $payload['order_id'] ?? $payload['reference'] ?? null,
-                ]);
+                ], $context);
 
                 Log::error('PAID webhook amount mismatch, incident created', [
                     'intent_id' => $intent->id,
@@ -151,7 +155,7 @@ class MemberPaymentIntentStateService
                 'provider_reference' => $payload['order_id'] ?? $payload['reference'] ?? null,
                 'gateway_at_incident' => $currentGateway->value,
                 'reservation_at_incident' => $reservation->value,
-            ]);
+            ], $context);
 
             Log::error('PAID webhook for intent with terminal gateway state, incident created (no illegal state persisted)', [
                 'intent_id' => $intent->id,
@@ -175,7 +179,7 @@ class MemberPaymentIntentStateService
                 'provider_status' => 'PAID',
                 'provider_reference' => $payload['order_id'] ?? $payload['reference'] ?? null,
                 'reservation_at_incident' => $reservation->value,
-            ]);
+            ], $context);
 
             Log::error('PAID webhook for intent without active reservation, incident created (no illegal state persisted)', [
                 'intent_id' => $intent->id,
@@ -192,7 +196,7 @@ class MemberPaymentIntentStateService
             'settlement_status' => PaymentSettlementStatus::Settling->value,
         ])->save();
 
-        $this->audit('gateway.paid', $intent);
+        $this->audit('gateway.paid', $intent, $context);
 
         return $intent;
     }
@@ -205,6 +209,7 @@ class MemberPaymentIntentStateService
         PaymentGatewayStatus $target,
         array $payload,
         PaymentReservationStatus $reservation,
+        AuditContext $context,
     ): MemberPaymentIntent {
         $intent->forceFill([
             'gateway_status' => $target->value,
@@ -212,10 +217,10 @@ class MemberPaymentIntentStateService
         ])->save();
 
         if ($intent->isOrderType() && $reservation === PaymentReservationStatus::Reserved) {
-            $this->reservationService->release($intent->refresh());
+            $this->reservationService->release($intent->refresh(), $context);
         }
 
-        $this->audit('gateway.'.$target->value, $intent);
+        $this->audit('gateway.'.$target->value, $intent, $context);
 
         return $intent;
     }
@@ -228,6 +233,7 @@ class MemberPaymentIntentStateService
         array $payload,
         PaymentGatewayStatus $currentStatus,
         PaymentReservationStatus $reservation,
+        AuditContext $context,
     ): MemberPaymentIntent {
         if ($currentStatus === PaymentGatewayStatus::Paid) {
             Log::warning('EXPIRED webhook for already-PAID intent, ignoring', [
@@ -243,10 +249,10 @@ class MemberPaymentIntentStateService
         ])->save();
 
         if ($intent->isOrderType() && $reservation === PaymentReservationStatus::Reserved) {
-            $this->reservationService->release($intent->refresh());
+            $this->reservationService->release($intent->refresh(), $context);
         }
 
-        $this->audit('gateway.expired', $intent);
+        $this->audit('gateway.expired', $intent, $context);
 
         return $intent;
     }
@@ -254,9 +260,11 @@ class MemberPaymentIntentStateService
     /**
      * Expire an intent that has passed its deadline. Called by the expiry worker.
      */
-    public function expireStaleIntent(MemberPaymentIntent $intent): bool
+    public function expireStaleIntent(MemberPaymentIntent $intent, ?AuditContext $context = null): bool
     {
-        return DB::transaction(function () use ($intent): bool {
+        $context ??= AuditContext::forScheduler();
+
+        return DB::transaction(function () use ($intent, $context): bool {
             $locked = MemberPaymentIntent::query()
                 ->lockForUpdate()
                 ->findOrFail($intent->id);
@@ -289,9 +297,9 @@ class MemberPaymentIntentStateService
                 'gateway_status' => PaymentGatewayStatus::Expired->value,
             ])->save();
 
-            $this->reservationService->expire($locked->refresh());
+            $this->reservationService->expire($locked->refresh(), $context);
 
-            $this->audit('gateway.expired', $locked);
+            $this->audit('gateway.expired', $locked, $context);
 
             return true;
         });
@@ -341,7 +349,7 @@ class MemberPaymentIntentStateService
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $extra
      */
-    private function createIncident(MemberPaymentIntent $intent, array $payload, string $type, array $extra): void
+    private function createIncident(MemberPaymentIntent $intent, array $payload, string $type, array $extra, AuditContext $context): void
     {
         $fingerprint = md5(
             $intent->id.'|'.$type.'|'.($extra['provider_reference'] ?? $intent->gateway_reference ?? '').'|'.($extra['actual_amount_minor'] ?? '')
@@ -367,7 +375,8 @@ class MemberPaymentIntentStateService
             'reconciliation.incident_created',
             'member_payment_intent',
             $intent,
-            ['type' => $type, ...$extra],
+            ['new' => ['incident_type' => $type, ...$extra]],
+            $context,
         );
     }
 
@@ -384,12 +393,14 @@ class MemberPaymentIntentStateService
         return $payload;
     }
 
-    private function audit(string $event, MemberPaymentIntent $intent): void
+    private function audit(string $event, MemberPaymentIntent $intent, AuditContext $context): void
     {
         $this->auditLogService->log($event, 'member_payment_intent', $intent, [
-            'gateway_status' => $intent->gateway_status,
-            'reservation_status' => $intent->reservation_status,
-            'settlement_status' => $intent->settlement_status,
-        ]);
+            'new' => [
+                'gateway_status' => $intent->gateway_status,
+                'reservation_status' => $intent->reservation_status,
+                'settlement_status' => $intent->settlement_status,
+            ],
+        ], $context);
     }
 }

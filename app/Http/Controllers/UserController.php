@@ -6,8 +6,9 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Security\UserRoleManagementService;
+use App\Support\AuditContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -41,46 +42,34 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(StoreUserRequest $request)
+    public function store(StoreUserRequest $request, UserRoleManagementService $service)
     {
         $this->authorizePermission('manage_users');
 
-        $validated = $request->validated();
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'organization_id' => $validated['organization_id'],
-        ]);
-
-        $user->assignRole($validated['role']);
+        $service->createUserWithAudit(
+            $request->validated(),
+            $request->user(),
+            AuditContext::fromHttp($request, $request->user()),
+        );
 
         return redirect()->back()->with('success', 'User created successfully.');
     }
 
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request, User $user, UserRoleManagementService $service)
     {
         $this->authorizePermission('manage_users');
 
-        $validated = $request->validated();
-
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'organization_id' => $validated['organization_id'],
-        ]);
-
-        if ($request->filled('password')) {
-            $user->update(['password' => Hash::make($validated['password'])]);
-        }
-
-        $user->syncRoles([$validated['role']]);
+        $service->updateUserWithAudit(
+            $user,
+            $request->validated(),
+            $request->user(),
+            AuditContext::fromHttp($request, $request->user()),
+        );
 
         return redirect()->back()->with('success', 'User updated successfully.');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, UserRoleManagementService $service)
     {
         $this->authorizePermission('manage_users');
 
@@ -88,7 +77,11 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'You cannot delete yourself.');
         }
 
-        $user->delete();
+        $service->deleteUserWithAudit(
+            $user,
+            request()->user(),
+            AuditContext::fromHttp(request(), request()->user()),
+        );
 
         return redirect()->back()->with('success', 'User deleted successfully.');
     }

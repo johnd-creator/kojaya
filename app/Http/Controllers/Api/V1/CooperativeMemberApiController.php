@@ -25,6 +25,7 @@ use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberResignationRequestService;
 use App\Services\Cooperative\MemberStatusTransitionService;
+use App\Support\AuditContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -190,7 +191,13 @@ class CooperativeMemberApiController extends Controller
         CooperativeMember $member,
         MemberAccountLinkService $linkService,
     ): JsonResponse {
-        $member = $linkService->link($request->user(), $member, User::query()->findOrFail($request->validated('user_id')), $request->validated('reason'));
+        $member = $linkService->link(
+            $request->user(),
+            $member,
+            User::query()->findOrFail($request->validated('user_id')),
+            $request->validated('reason'),
+            AuditContext::fromHttp($request, $request->user()),
+        );
 
         return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
     }
@@ -210,7 +217,12 @@ class CooperativeMemberApiController extends Controller
         CooperativeMember $member,
         MemberAccountLinkService $linkService,
     ): JsonResponse {
-        $member = $linkService->unlink($request->user(), $member, $request->validated('reason'));
+        $member = $linkService->unlink(
+            $request->user(),
+            $member,
+            $request->validated('reason'),
+            AuditContext::fromHttp($request, $request->user()),
+        );
 
         return response()->json(['data' => new CooperativeMemberResource($member->load('organization'))]);
     }

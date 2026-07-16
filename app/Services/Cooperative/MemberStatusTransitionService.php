@@ -6,7 +6,9 @@ use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\AuditContext;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -155,7 +157,9 @@ class MemberStatusTransitionService
     {
         $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
 
-        return DB::transaction(function () use ($member, $actor, $reason): CooperativeMember {
+        $context = $this->contextFor($actor);
+
+        return DB::transaction(function () use ($member, $actor, $reason, $context): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
 
             $member->user?->removeRole('Anggota');
@@ -164,9 +168,9 @@ class MemberStatusTransitionService
                 'old' => ['status' => $member->status, 'validation_status' => $member->validation_status],
                 'new' => ['action' => 'delete_access'],
                 'reason' => $reason ?? 'Member access revoked.',
-            ]);
+            ], $context);
 
-            $this->accessRevocation->revokeAfterCommit($member, 'delete_access', $actor);
+            $this->accessRevocation->revokeFor($member->refresh(), 'delete_access', $actor, $context);
 
             return $member->refresh();
         });
@@ -188,7 +192,9 @@ class MemberStatusTransitionService
         bool $assignMemberRole = false,
         bool $revokeMemberTokens = true,
     ): CooperativeMember {
-        return DB::transaction(function () use ($member, $allowedSources, $status, $validationStatus, $actor, $action, $reason, $attributes, $assignMemberRole, $revokeMemberTokens): CooperativeMember {
+        $context = $this->contextFor($actor);
+
+        return DB::transaction(function () use ($member, $allowedSources, $status, $validationStatus, $actor, $action, $reason, $attributes, $assignMemberRole, $revokeMemberTokens, $context): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $this->assertAllowedSource($member, $allowedSources);
             $oldState = ['status' => $member->status, 'validation_status' => $member->validation_status];
@@ -210,10 +216,10 @@ class MemberStatusTransitionService
                 'old' => $oldState,
                 'new' => ['status' => $status, 'validation_status' => $validationStatus, 'action' => $action],
                 'reason' => $reason ?? $action,
-            ]);
+            ], $context);
 
             if ($revokeMemberTokens) {
-                $this->accessRevocation->revokeAfterCommit($member, $action, $actor);
+                $this->accessRevocation->revokeFor($member->refresh(), $action, $actor, $context);
             }
 
             return $member->refresh();
@@ -231,6 +237,15 @@ class MemberStatusTransitionService
                 "Actor lacks required permission [{$permission}] for this lifecycle command."
             );
         }
+    }
+
+    private function contextFor(User $actor): AuditContext
+    {
+        $request = app()->bound('request') ? app('request') : null;
+
+        return $request instanceof Request
+            ? AuditContext::fromHttp($request, $actor)
+            : AuditContext::forActor($actor);
     }
 
     /**

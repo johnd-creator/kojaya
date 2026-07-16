@@ -14,6 +14,20 @@ class MemberResignationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** @var list<string> */
+    private const SHARED_INERTIA_KEYS = [
+        'active_organization',
+        'appearance',
+        'auth',
+        'csrf_token',
+        'errors',
+        'googleSsoEnabled',
+        'name',
+        'notifications',
+        'sidebarOpen',
+        'user_organizations',
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,6 +56,26 @@ class MemberResignationControllerTest extends TestCase
             ->get('/cooperative/members/resignations');
 
         $response->assertOk();
+        $props = $response->inertiaProps();
+        $propKeys = array_keys($props);
+        sort($propKeys);
+        $expectedPropKeys = [...self::SHARED_INERTIA_KEYS, 'filters', 'requests', 'stats'];
+        sort($expectedPropKeys);
+        $this->assertSame($expectedPropKeys, $propKeys);
+        $requestKeys = array_keys($props['requests']['data'][0] ?? []);
+        sort($requestKeys);
+        $this->assertSame([
+            'created_at',
+            'effective_date',
+            'id',
+            'member',
+            'reason',
+            'requested_at',
+            'review_notes',
+            'reviewed_at',
+            'reviewer',
+            'status',
+        ], $requestKeys);
     }
 
     public function test_unauthorized_user_cannot_view_resignation_requests(): void

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\MemberPaymentIntent;
 use App\Services\Integrations\MemberPaymentIntentStateService;
+use App\Support\AuditContext;
 use Illuminate\Console\Command;
 
 class ExpireMemberOrderReservations extends Command
@@ -15,6 +16,7 @@ class ExpireMemberOrderReservations extends Command
     public function handle(MemberPaymentIntentStateService $stateService): int
     {
         $limit = max(1, min((int) $this->option('limit'), 1000));
+        $context = AuditContext::forScheduler();
 
         // Step 1: Get candidate IDs without locking
         $candidateIds = MemberPaymentIntent::query()
@@ -54,7 +56,7 @@ class ExpireMemberOrderReservations extends Command
                     continue;
                 }
 
-                $ok = $stateService->expireStaleIntent($intent);
+                $ok = $stateService->expireStaleIntent($intent, $context);
 
                 if ($ok) {
                     $metrics['expired']++;

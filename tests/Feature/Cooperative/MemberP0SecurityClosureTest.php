@@ -17,6 +17,20 @@ class MemberP0SecurityClosureTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** @var list<string> */
+    private const SHARED_INERTIA_KEYS = [
+        'active_organization',
+        'appearance',
+        'auth',
+        'csrf_token',
+        'errors',
+        'googleSsoEnabled',
+        'name',
+        'notifications',
+        'sidebarOpen',
+        'user_organizations',
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -102,6 +116,50 @@ class MemberP0SecurityClosureTest extends TestCase
             ->assertInertia(fn ($page) => $page->missing('users'));
     }
 
+    public function test_member_inertia_list_detail_and_edit_have_exact_top_level_contracts(): void
+    {
+        [$admin, $member] = $this->memberAndUser();
+
+        $indexProps = $this->actingAs($admin)
+            ->get(route('cooperative.members.index'))
+            ->inertiaProps();
+        $indexKeys = array_keys($indexProps);
+        sort($indexKeys);
+        $expectedIndexKeys = [...self::SHARED_INERTIA_KEYS, 'filters', 'members', 'options'];
+        sort($expectedIndexKeys);
+        $this->assertSame($expectedIndexKeys, $indexKeys);
+
+        $detailProps = $this->actingAs($admin)
+            ->get(route('cooperative.members.show', $member))
+            ->inertiaProps();
+        $detailKeys = array_keys($detailProps);
+        sort($detailKeys);
+        $expectedDetailKeys = [
+            ...self::SHARED_INERTIA_KEYS,
+            'member',
+            'openingSavingBalance',
+            'recentSavingsEntries',
+            'savingsSummary',
+        ];
+        sort($expectedDetailKeys);
+        $this->assertSame($expectedDetailKeys, $detailKeys);
+
+        $editProps = $this->actingAs($admin)
+            ->get(route('cooperative.members.edit', $member))
+            ->inertiaProps();
+        $editKeys = array_keys($editProps);
+        sort($editKeys);
+        $expectedEditKeys = [
+            ...self::SHARED_INERTIA_KEYS,
+            'employees',
+            'member',
+            'openingSavingBalance',
+            'options',
+        ];
+        sort($expectedEditKeys);
+        $this->assertSame($expectedEditKeys, $editKeys);
+    }
+
     public function test_valid_create_starts_pending_without_implicit_account_link(): void
     {
         $admin = User::factory()->create();
@@ -160,6 +218,63 @@ class MemberP0SecurityClosureTest extends TestCase
 
         $this->assertSame('ACTIVE', $member->fresh()->status);
         $this->assertSame('1111111111111111', $member->fresh()->identity_number);
+    }
+
+    public function test_member_api_list_and_detail_use_exact_allowlisted_keys_and_pii_visibility(): void
+    {
+        $organization = Organization::factory()->create();
+        $viewer = User::factory()->create(['organization_id' => $organization->id]);
+        $viewer->givePermissionTo(['view_cooperative_member', 'manage_cooperative_member']);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'identity_number' => '3201234567890001',
+            'npwp' => '123456789012000',
+            'no_rekening' => '1234567890',
+        ]);
+        Sanctum::actingAs($viewer, ['cooperative.member.read']);
+
+        $expectedKeys = [
+            'address',
+            'email',
+            'identity_number',
+            'id',
+            'joined_at',
+            'member_no',
+            'name',
+            'nama_bank',
+            'nama_pemilik_rekening',
+            'no_anggota',
+            'no_rekening',
+            'npwp',
+            'organization',
+            'organization_id',
+            'phone',
+            'status',
+            'validation_status',
+        ];
+        sort($expectedKeys);
+
+        $listResponse = $this->getJson('/api/v1/members')->assertOk();
+        $listKeys = array_keys($listResponse->json('data.0'));
+        sort($listKeys);
+        $this->assertSame($expectedKeys, $listKeys);
+        $maskedIdentity = $listResponse->json('data.0.identity_number');
+        $this->assertNotSame('3201234567890001', $maskedIdentity);
+        $this->assertStringEndsWith('0001', (string) $maskedIdentity);
+        $listResponse->assertJsonMissingPath('data.0.encrypted_identity_number');
+        $listResponse->assertJsonMissingPath('data.0.identity_number_bidx');
+
+        $detailResponse = $this->getJson('/api/v1/members/'.$member->id)->assertOk();
+        $maskedDetailIdentity = $detailResponse->json('data.identity_number');
+        $this->assertNotSame('3201234567890001', $maskedDetailIdentity);
+        $this->assertStringEndsWith('0001', (string) $maskedDetailIdentity);
+
+        $viewer->givePermissionTo('view_cooperative_member_pii');
+        $this->getJson('/api/v1/members/'.$member->id)
+            ->assertOk()
+            ->assertJsonPath('data.identity_number', '3201234567890001')
+            ->assertJsonPath('data.npwp', '123456789012000')
+            ->assertJsonPath('data.no_rekening', '1234567890');
     }
 
     public function test_api_create_starts_pending_and_rejects_lifecycle_and_account_fields(): void

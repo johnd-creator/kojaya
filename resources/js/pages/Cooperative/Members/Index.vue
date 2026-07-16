@@ -11,7 +11,6 @@ import {
   Eye,
   Hash,
   IdCard,
-  KeyRound,
   Mail,
   MapPin,
   MoreHorizontal,
@@ -147,25 +146,15 @@ const reviewProcessing = ref(false);
 const editMemberForm = useForm({
   employee_id: "",
   no_anggota: "",
-  tanggal_aktif: "",
   nama_anggota: "",
   name: "",
   email: "",
-  member_login_password: "",
-  npwp: "",
   no_telp: "",
   phone: "",
-  identity_number: "",
-  address: "",
-  joined_at: "",
-  status: "ACTIVE",
   jenis_anggota: "AB",
   jenis_kelamin: "L",
   kategori: "IP",
   autodebet: "MANUAL",
-  no_rekening: "",
-  opening_saving_balance: 0,
-  notes: "",
 });
 const createMemberForm = useForm({
   employee_id: "",
@@ -256,31 +245,33 @@ const openEditDialog = (row: any): void => {
   editMemberForm.clearErrors();
   editMemberForm.employee_id = row.employee_id ?? "";
   editMemberForm.no_anggota = row.no_anggota ?? row.member_no ?? "";
-  editMemberForm.tanggal_aktif = (row.tanggal_aktif ?? row.joined_at ?? "").slice(0, 10);
   editMemberForm.nama_anggota = row.nama_anggota ?? row.name ?? "";
   editMemberForm.name = row.name ?? "";
   editMemberForm.email = row.email ?? "";
-  editMemberForm.member_login_password = "";
-  editMemberForm.npwp = row.npwp ?? "";
   editMemberForm.no_telp = row.no_telp ?? row.phone ?? "";
   editMemberForm.phone = row.phone ?? "";
-  editMemberForm.identity_number = row.identity_number ?? "";
-  editMemberForm.address = row.address ?? "";
-  editMemberForm.joined_at = (row.joined_at ?? "").slice(0, 10);
-  editMemberForm.status = row.status === "RESIGNED" ? "INACTIVE" : row.status ?? "ACTIVE";
   editMemberForm.jenis_anggota = row.jenis_anggota ?? "AB";
   editMemberForm.jenis_kelamin = row.jenis_kelamin ?? "L";
   editMemberForm.kategori = row.kategori ?? "IP";
   editMemberForm.autodebet = row.autodebet ?? "MANUAL";
-  editMemberForm.no_rekening = row.no_rekening ?? "";
-  editMemberForm.opening_saving_balance = 0;
-  editMemberForm.notes = row.notes ?? "";
   editMemberDialogOpen.value = true;
 };
 
 const submitEditMember = (): void => {
   if (!editMemberId.value) return;
-  editMemberForm.put(update(editMemberId.value).url, {
+  editMemberForm.transform((data) => ({
+    employee_id: data.employee_id || undefined,
+    no_anggota: data.no_anggota || undefined,
+    nama_anggota: data.nama_anggota,
+    name: data.name,
+    email: data.email || undefined,
+    no_telp: data.no_telp || undefined,
+    phone: data.phone || undefined,
+    jenis_anggota: data.jenis_anggota,
+    jenis_kelamin: data.jenis_kelamin,
+    kategori: data.kategori,
+    autodebet: data.autodebet,
+  })).put(update(editMemberId.value).url, {
     preserveScroll: true,
     onSuccess: () => {
       editMemberDialogOpen.value = false;
@@ -1390,27 +1381,6 @@ const kpiCards = computed(() => [
               </div>
 
               <div class="space-y-2">
-                <Label for="edit-member-active-date">Tanggal Aktif</Label>
-                <Input
-                  id="edit-member-active-date"
-                  v-model="editMemberForm.tanggal_aktif"
-                  type="date"
-                  required
-                />
-                <InputError :message="editMemberForm.errors.tanggal_aktif" />
-              </div>
-
-              <div class="space-y-2">
-                <Label for="edit-member-join-date">Tanggal Bergabung</Label>
-                <Input
-                  id="edit-member-join-date"
-                  v-model="editMemberForm.joined_at"
-                  type="date"
-                />
-                <InputError :message="editMemberForm.errors.joined_at" />
-              </div>
-
-              <div class="space-y-2">
                 <Label for="edit-member-email">Email</Label>
                 <Input
                   id="edit-member-email"
@@ -1422,24 +1392,6 @@ const kpiCards = computed(() => [
                 <InputError :message="editMemberForm.errors.email" />
               </div>
 
-              <div class="space-y-2">
-                <Label for="edit-member-status">Status</Label>
-                <select
-                  id="edit-member-status"
-                  v-model="editMemberForm.status"
-                  class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
-                >
-                  <option
-                    v-for="option in props.options.statuses"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-                <InputError :message="editMemberForm.errors.status" />
-              </div>
-
               <div class="space-y-2 md:col-span-2">
                 <Label for="edit-member-name">Nama Anggota</Label>
                 <Input
@@ -1449,16 +1401,6 @@ const kpiCards = computed(() => [
                   required
                 />
                 <InputError :message="editMemberForm.errors.nama_anggota" />
-              </div>
-
-              <div class="space-y-2">
-                <Label for="edit-member-npwp">NPWP</Label>
-                <Input
-                  id="edit-member-npwp"
-                  v-model="editMemberForm.npwp"
-                  maxlength="30"
-                />
-                <InputError :message="editMemberForm.errors.npwp" />
               </div>
 
               <div class="space-y-2">
@@ -1561,57 +1503,6 @@ const kpiCards = computed(() => [
                 <InputError :message="editMemberForm.errors.autodebet" />
               </div>
 
-              <div class="space-y-2">
-                <Label for="edit-member-account">No Rekening</Label>
-                <Input
-                  id="edit-member-account"
-                  v-model="editMemberForm.no_rekening"
-                  maxlength="30"
-                  :disabled="editMemberForm.autodebet === 'MANUAL'"
-                  placeholder="Kosong untuk manual"
-                />
-                <InputError :message="editMemberForm.errors.no_rekening" />
-              </div>
-            </div>
-          </section>
-
-          <!-- Akses -->
-          <section
-            class="space-y-3 rounded-xl border border-zinc-200/70 bg-zinc-50/50 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
-          >
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-              <KeyRound class="size-4 text-amber-600" />
-              Akses Login & Simpanan
-            </header>
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="space-y-2">
-                <Label for="edit-member-password">Password Login Baru</Label>
-                <Input
-                  id="edit-member-password"
-                  v-model="editMemberForm.member_login_password"
-                  type="password"
-                  autocomplete="new-password"
-                  placeholder="Kosongkan jika tidak berubah"
-                />
-                <InputError
-                  :message="editMemberForm.errors.member_login_password"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="edit-member-opening-balance">
-                  Saldo Awal Simpanan
-                </Label>
-                <Input
-                  id="edit-member-opening-balance"
-                  v-model="editMemberForm.opening_saving_balance"
-                  type="number"
-                  min="0"
-                  step="1000"
-                />
-                <InputError
-                  :message="editMemberForm.errors.opening_saving_balance"
-                />
-              </div>
             </div>
           </section>
 

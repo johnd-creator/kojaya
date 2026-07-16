@@ -16,6 +16,7 @@ use App\Services\Cooperative\LoanService;
 use App\Services\Cooperative\MemberCreditService;
 use App\Services\Cooperative\MemberOrderReservationService;
 use App\Services\Cooperative\PosTransactionService;
+use App\Support\AuditContext;
 use App\Support\Money\MinorAmount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,9 +34,11 @@ class MemberPaymentSettlementService
         private readonly AuditLogService $auditLogService,
     ) {}
 
-    public function settle(MemberPaymentIntent $intent): MemberPaymentIntent
+    public function settle(MemberPaymentIntent $intent, ?AuditContext $context = null): MemberPaymentIntent
     {
-        $intent = DB::transaction(function () use ($intent): MemberPaymentIntent {
+        $context ??= AuditContext::forActor(null, AuditContext::SOURCE_DOMAIN);
+
+        $intent = DB::transaction(function () use ($intent, $context): MemberPaymentIntent {
             $intent = MemberPaymentIntent::query()
                 ->lockForUpdate()
                 ->with('member.user')
@@ -54,12 +57,12 @@ class MemberPaymentSettlementService
                 $reservation = $intent->reservationStatus();
 
                 if ($reservation !== PaymentReservationStatus::Reserved) {
-                    $this->handleInvalidReservationForSettlement($intent, $reservation);
+                    $this->handleInvalidReservationForSettlement($intent, $reservation, $context);
 
                     return $intent;
                 }
 
-                $this->reservationService->consume($intent);
+                $this->reservationService->consume($intent, $context);
                 $intent->refresh();
             }
 
@@ -85,7 +88,7 @@ class MemberPaymentSettlementService
         return $intent;
     }
 
-    private function handleInvalidReservationForSettlement(MemberPaymentIntent $intent, PaymentReservationStatus $reservation): void
+    private function handleInvalidReservationForSettlement(MemberPaymentIntent $intent, PaymentReservationStatus $reservation, AuditContext $context): void
     {
         Log::error('Settlement guard: PAID intent has invalid reservation state', [
             'intent_id' => $intent->id,
@@ -98,9 +101,13 @@ class MemberPaymentSettlementService
             'member_payment_intent',
             $intent,
             [
-                'reason' => 'PAID intent reached settlement with reservation state: '.$reservation->value,
-                'requires_manual_resolution' => true,
+                'new' => [
+                    'reservation_status' => $reservation->value,
+                    'requires_manual_resolution' => true,
+                ],
+                'reason' => 'PAID intent reached settlement with an invalid reservation state.',
             ],
+            $context,
         );
 
         $intent->forceFill([

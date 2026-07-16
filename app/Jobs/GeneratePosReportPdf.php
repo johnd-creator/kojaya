@@ -4,7 +4,9 @@ namespace App\Jobs;
 
 use App\Enums\Co\Pos\BackgroundJobStatus;
 use App\Models\BackgroundJob;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\PosSalesReportService;
+use App\Support\AuditContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -44,13 +46,16 @@ class GeneratePosReportPdf implements ShouldQueue
         ];
     }
 
-    public function handle(PosSalesReportService $service): void
+    public function handle(PosSalesReportService $service, ?AuditLogService $audit = null): void
     {
+        $audit ??= app(AuditLogService::class);
         $job = $this->claimJob();
 
         if (! $job) {
             return;
         }
+
+        $relativePath = null;
 
         try {
             $job->updateProgress(10);
@@ -93,13 +98,41 @@ class GeneratePosReportPdf implements ShouldQueue
                 mimeType: 'application/pdf',
                 fileSize: $size,
             );
+
+            $audit->log('pos.report.pdf.completed', 'cooperative.pos', $job, [
+                'new' => [
+                    'job_id' => $job->getKey(),
+                    'status' => BackgroundJobStatus::Completed->value,
+                    'file_size' => $size,
+                ],
+                'reason' => 'POS report PDF queue job completed.',
+            ], AuditContext::forQueue($job->user?->organization_id));
         } catch (Throwable $exception) {
+            if ($relativePath !== null) {
+                Storage::disk($job->disk)->delete($relativePath);
+            }
+
             Log::error('GeneratePosReportPdf failed', [
                 'background_job_id' => $job->id,
                 'uuid' => $job->uuid,
                 'error' => $exception->getMessage(),
             ]);
             $job->markFailed($exception->getMessage());
+
+            try {
+                $audit->log('pos.report.pdf.failed', 'cooperative.pos', $job, [
+                    'new' => [
+                        'job_id' => $job->getKey(),
+                        'status' => BackgroundJobStatus::Failed->value,
+                    ],
+                    'reason' => 'POS report PDF queue job failed.',
+                ], AuditContext::forQueue($job->user?->organization_id));
+            } catch (Throwable $auditException) {
+                Log::critical('POS report queue failure audit could not be persisted.', [
+                    'background_job_id' => $job->getKey(),
+                    'exception_class' => $auditException::class,
+                ]);
+            }
 
             throw $exception;
         }
@@ -122,6 +155,7 @@ class GeneratePosReportPdf implements ShouldQueue
     {
         return DB::transaction(function (): ?BackgroundJob {
             $job = BackgroundJob::query()
+                ->with('user')
                 ->whereKey($this->backgroundJobId)
                 ->lockForUpdate()
                 ->first();

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Cooperative;
 
-use App\Exports\AnggotaExport;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
@@ -11,7 +10,6 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Inertia\Testing\AssertableInertia as Assert;
-use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
 
 class AnggotaMemberStructureTest extends TestCase
@@ -58,8 +56,6 @@ class AnggotaMemberStructureTest extends TestCase
 
     public function test_cooperative_members_index_filters_and_exports_anggota(): void
     {
-        Excel::fake();
-
         $organization = Organization::factory()->create();
         CooperativeMember::factory()->create([
             'organization_id' => $organization->id,
@@ -90,11 +86,14 @@ class AnggotaMemberStructureTest extends TestCase
             ]))
             ->assertOk();
 
-        $this->actingAs($this->admin)
+        $response = $this->actingAs($this->admin)
             ->get(route('cooperative.members.export', ['status' => 'INACTIVE']))
             ->assertOk();
 
-        Excel::assertDownloaded('daftar-anggota.xlsx', fn (AnggotaExport $_export): bool => true);
+        $file = $response->baseResponse->getFile();
+        $this->assertNotNull($file);
+        $this->assertFileExists($file->getPathname());
+        @unlink($file->getPathname());
     }
 
     public function test_cooperative_member_destroy_soft_deletes_member(): void

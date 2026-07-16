@@ -4,15 +4,19 @@ namespace Tests\Feature\Cooperative;
 
 use App\Enums\PermissionEnum;
 use App\Exports\AnggotaExport;
+use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Support\OrganizationVisibility;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
+use Mockery;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
@@ -358,5 +362,127 @@ class MemberExportAuthorizationTest extends TestCase
         $auditContents = DB::table('audit_logs')->pluck('new_values')->implode(' ');
         $this->assertStringNotContainsString($sentinel, $auditContents);
         $this->assertStringContainsString('search_mode', $auditContents);
+    }
+
+    public function test_export_routes_create_masked_and_full_pii_files_with_truthful_audit_events(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'identity_number' => '3201234567890001',
+            'npwp' => '123456789012000',
+            'no_rekening' => '1234567890',
+        ]);
+
+        $maskedResponse = $this->actingAs($admin)
+            ->get(route('cooperative.members.export'));
+        $maskedResponse->assertOk();
+        $maskedFile = $maskedResponse->baseResponse->getFile();
+        $this->assertNotNull($maskedFile);
+        $maskedContent = $this->spreadsheetContent($maskedFile->getPathname());
+        $this->assertStringNotContainsString((string) $member->identity_number, $maskedContent);
+        $this->assertStringNotContainsString((string) $member->npwp, $maskedContent);
+        $this->assertStringNotContainsString((string) $member->no_rekening, $maskedContent);
+
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+        $fullResponse = $this->actingAs($pengurus)
+            ->get(route('cooperative.members.export', [
+                'include_pii' => 1,
+                'reason_code' => 'business_verification',
+            ]));
+        $fullResponse->assertOk();
+        $fullFile = $fullResponse->baseResponse->getFile();
+        $this->assertNotNull($fullFile);
+        $fullContent = $this->spreadsheetContent($fullFile->getPathname());
+        $this->assertStringContainsString((string) $member->identity_number, $fullContent);
+        $this->assertStringContainsString((string) $member->npwp, $fullContent);
+        $this->assertStringContainsString((string) $member->no_rekening, $fullContent);
+
+        $completed = AuditLog::query()
+            ->where('action', 'member.export.completed')
+            ->latest('id')
+            ->firstOrFail();
+        $this->assertNotNull($completed->new_values['file_sha256'] ?? null);
+        $this->assertSame(1, $completed->new_values['record_count']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'member.export.requested']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'member.export.completed']);
+
+        @unlink($maskedFile->getPathname());
+        @unlink($fullFile->getPathname());
+    }
+
+    public function test_export_failure_records_failed_event_and_leaves_no_file(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        Storage::fake('local');
+        Excel::shouldReceive('store')
+            ->once()
+            ->andReturn(false);
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.export'))
+            ->assertStatus(500);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'member.export.requested']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'member.export.failed']);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.export.completed']);
+        Storage::disk('local')->assertDirectoryEmpty('tmp/member-exports');
+    }
+
+    public function test_completion_audit_failure_removes_created_file_without_retrying_same_audit_sink(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        Storage::fake('local');
+        $exportId = null;
+
+        $audit = Mockery::mock(AuditLogService::class);
+        $audit->shouldReceive('log')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $action, string $module, mixed $subject, array $changes) use (&$exportId): AuditLog {
+                if ($action === 'member.export.requested') {
+                    $exportId = $changes['new']['export_id'];
+
+                    return new AuditLog;
+                }
+
+                if ($action === 'member.export.completed') {
+                    throw new \RuntimeException('simulated audit failure');
+                }
+
+                throw new \LogicException('Compatibility event must not run after completion failure.');
+            });
+        $this->app->instance(AuditLogService::class, $audit);
+
+        Excel::shouldReceive('store')
+            ->once()
+            ->andReturnUsing(function (AnggotaExport $export, string $path, string $disk): bool {
+                Storage::disk($disk)->put($path, 'generated-file');
+
+                return true;
+            });
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.export'))
+            ->assertStatus(500);
+
+        $this->assertNotNull($exportId);
+        Storage::disk('local')->assertMissing('tmp/member-exports/'.$exportId.'.xlsx');
+    }
+
+    private function spreadsheetContent(string $path): string
+    {
+        $rows = IOFactory::load($path)->getActiveSheet()->toArray();
+
+        return implode(' ', array_map(
+            static fn (array $row): string => implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row)),
+            $rows,
+        ));
     }
 }

@@ -130,7 +130,21 @@ class MemberLifecycleConcurrencyTest extends TestCase
         $successes = array_filter($results, fn (array $r): bool => $r['ok']);
         $failures = array_filter($results, fn (array $r): bool => ! $r['ok']);
 
-        $this->assertCount(1, $successes, 'Exactly one transition should succeed.');
+        if (count($successes) !== 1) {
+            $messages = array_map(fn (array $r): string => sprintf(
+                '%s: ok=%s class=%s message=%s',
+                $r['action'] ?? 'unknown',
+                json_encode($r['ok'] ?? null),
+                $r['class'] ?? 'none',
+                $r['message'] ?? 'none',
+            ), $results);
+
+            $this->fail(
+                'Expected exactly one successful transition, got '.count($successes)
+                .'. Worker results: '.implode(' | ', $messages)
+            );
+        }
+
         $this->assertCount(1, $failures, 'Exactly one transition should fail due to row lock.');
 
         $member->refresh();
@@ -201,14 +215,28 @@ require \$repoPath.'/vendor/autoload.php';
 \$app->make(Kernel::class)->bootstrap();
 
 config()->set('database.default', 'pgsql');
+config()->set('database.connections.pgsql', [
+    'driver' => 'pgsql',
+    'host' => '{$dbHost}',
+    'port' => '{$dbPort}',
+    'database' => '{$dbDatabase}',
+    'username' => '{$dbUsername}',
+    'password' => '{$dbPassword}',
+    'charset' => 'utf8',
+    'prefix' => '',
+    'search_path' => 'public',
+]);
 
-\$actor = User::query()->findOrFail((int) \$actorId);
-\$member = CooperativeMember::query()->findOrFail((int) \$memberId);
-\$service = app(MemberStatusTransitionService::class);
+\DB::purge('pgsql');
+\DB::reconnect('pgsql');
 
 \$resultFile = \$resultDir.'/'.\$action.'.json';
 
 try {
+    \$actor = User::query()->findOrFail((int) \$actorId);
+    \$member = CooperativeMember::query()->findOrFail((int) \$memberId);
+    \$service = app(MemberStatusTransitionService::class);
+
     if (\$action === 'approve') {
         \$service->approveFinal(\$member, \$actor, 'concurrent approve');
     } else {
@@ -273,8 +301,9 @@ PHP;
      */
     private function finishWorker(array $worker, string $resultDir, string $action): array
     {
+        $stderr = '';
         if (is_resource($worker['pipes'][2] ?? null)) {
-            stream_get_contents($worker['pipes'][2]);
+            $stderr = (string) stream_get_contents($worker['pipes'][2]);
             fclose($worker['pipes'][2]);
         }
 
@@ -282,13 +311,34 @@ PHP;
             fclose($worker['pipes'][1]);
         }
 
+        $exitCode = 0;
         if (is_resource($worker['process'] ?? null)) {
-            proc_close($worker['process']);
+            $exitCode = proc_close($worker['process']);
         }
 
         $resultFile = $resultDir.'/'.$action.'.json';
-        $contents = file_exists($resultFile) ? file_get_contents($resultFile) : '{}';
+        $contents = file_exists($resultFile) ? file_get_contents($resultFile) : '';
 
-        return json_decode($contents ?: '{}', true, 512, JSON_THROW_ON_ERROR);
+        if ($contents === false || $contents === '') {
+            return [
+                'ok' => false,
+                'action' => $action,
+                'class' => 'WorkerCrashed',
+                'message' => "Worker [{$action}] did not write a result file. Exit code: {$exitCode}. Stderr: ".trim($stderr),
+            ];
+        }
+
+        $decoded = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+
+        if (! is_array($decoded) || ! array_key_exists('ok', $decoded)) {
+            return [
+                'ok' => false,
+                'action' => $action,
+                'class' => 'MalformedResult',
+                'message' => "Worker [{$action}] wrote a malformed result. Contents: {$contents}",
+            ];
+        }
+
+        return $decoded;
     }
 }

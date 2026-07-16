@@ -2,122 +2,151 @@
 
 Status: READY FOR INDEPENDENT REVIEW
 
-## Scope
+## Scope and SHA provenance
 
 - Repository: johnd-creator/kojaya
 - Branch: remediation/document-05-audit-pagination-contract-tests
-- Starting SHA after synchronization with the merged Document 04 baseline:
-  30e8ce30abcdfa48acb8b536092e4e606cc2d805
-- Ending implementation SHA before this evidence commit:
-  2bfd8bf4c4e1a462e0563ada95db4fbb0ee1a4d4
+- Remote branch SHA before this remediation: `892b5058a3ddcb1a58f4d1ef792d01bcd73c2442`
+- Local implementation baseline before this remediation: `7e01aee722fb9a86a3fef9d300bcab4644790b3b`
+- Ending implementation SHA before this evidence commit: `9d5a18b4`
+- Evidence/documentation commit SHA: recorded by the final documentation commit and reported separately
 
-Document 04 is the baseline. No Document 06 work was started.
+The implementation baseline includes the earlier Document 05 fixes for
+transactional lifecycle revocation, OpenAPI pagination parity, and runtime
+pagination boundaries. No Document 06 work was started.
 
-## Independent-review gaps addressed
+## Findings resolved
 
-### Runtime contracts
+### D05-AUD-ROLE — Transactional privileged role mutation
 
-The source-string assertions for resources and lifecycle event names were
-removed. Runtime coverage now exercises:
+User creation and role/profile updates continue through
+`UserRoleManagementService`. The authoritative role mutation audit is written
+inside the same transaction as user creation or update, organization and
+password changes, and role replacement. Audit metadata contains actor and
+organization context, affected user ID, previous roles, resulting roles, and a
+controlled operation code. Passwords, hashes, tokens, secrets, and unrestricted
+request payloads are excluded. Audit failure propagates and rolls back the
+mutation; it is not retried through the same sink.
 
-- actual member API and Inertia routes;
-- actual loan list/detail routes;
-- actual resignation Inertia route;
-- actual invoice, payment store, payment approve, and payment batch routes;
-- actual project-finance and notification pagination routes;
-- actual token/access revocation service;
-- actual member export files and audit events;
-- actual OpenAPI generator and snapshot command.
+### D05-AUD-WRITEOFF — Truthful atomic loan write-off
 
-The remaining static architecture test only prohibits direct request-derived
-pagination parsing outside the centralized resolver.
+`LoanService::writeOff()` locks and validates the loan, updates status and
+notes, creates the approval record, and writes `loan.writeoff.completed` in one
+transaction. A mandatory audit failure rolls back the loan and approval record
+and does not dispatch a notification. Invalid source states throw and may emit
+only a truthful failed event; they never emit completed for an unchanged loan.
 
-### Pagination
+### D05-CONTRACT-PII and D05-UI-MEMBER — Mask-safe member updates
 
-PaginationLimitResolver is used for the project-finance limit parameter and
-recent notification limit parameter as well as existing per_page surfaces.
-The standard contract is default 15, minimum 1, maximum 50; documented
-administrative dues pagination may use 100; recent notifications use default 5
-and maximum 10. Empty, malformed, array, negative, zero, and oversized inputs
-are covered.
+Sensitive update requests reject mask-shaped identity, tax, and bank-account
+values. Omitted values preserve the encrypted data; explicit authorized null is
+the dedicated clear contract; generic member update remains unable to mutate
+PII. Web and API tests inspect persisted encrypted columns and cover
+cross-organization denial. The Members index quick-edit now submits only the
+generic profile fields allowed by its request contract. Lifecycle, account
+linking, opening balance, password, and sensitive data remain dedicated flows.
 
-### Mandatory access audit
+### D05-AUD-CONTEXT — Explicit machine-operation audit context
 
-Member token/access deletion and its authoritative audit event execute in one
-database transaction. An injected audit failure rolls back token deletion.
-Failure monitoring uses application logging and does not retry through the same
-audit sink. Member-profile revocation still selects the union of explicit
-member tokens and exact legacy member profiles while preserving other profiles.
+`AuditContext` now validates controlled sources and provides explicit HTTP,
+webhook, queue, CLI, scheduler, and system factories. Correlation IDs are
+accepted only when valid UUIDs and otherwise generated. Production paths now
+thread one context through payment webhook/state/settlement operations,
+reservation expiry, PII commands, account linking, lifecycle revocation, and a
+real POS report queue job. Machine actors remain null and organization context
+is derived from the affected subject when available.
 
-### Sensitive export lifecycle
+Flat metadata from affected callers is normalized into redacted `new_values`
+so gateway status, reservation status, settlement status, incident type, and
+manual-resolution flags are not silently discarded. Sensitive keys are
+redacted recursively, including case and nesting variants of identity number,
+NIK, NPWP, bank account data, token, authorization, secret, password, QR data,
+gateway payload, ciphertext, and blind index. Safe operational sibling fields
+remain available.
 
-Exports record member.export.requested before generation, record
-member.export.completed only after the file exists and its safe checksum is
-available, and record member.export.failed when generation fails. A file is
-removed when mandatory completion audit or response construction fails.
-member.pii.exported remains a compatibility event after authoritative
-completion and is best effort. Audit metadata contains only safe scope, mode,
-field names, counts, reason code, timestamps, and checksum; it does not
-contain PII, ciphertext, blind indexes, tokens, or gateway payloads.
+### D05-PAGINATION-ARCH — Repository-wide pagination guard
 
-### Exact response contracts
+The architecture test now scans PHP application code under `app/`, not only
+controllers. It rejects request-derived `per_page`, `page_size`, and
+pagination-style `limit` values passed directly to `paginate`,
+`simplePaginate`, `cursorPaginate`, `limit`, or `take`, including common request
+access methods and intermediate variables. Centralized resolver usage remains
+allowed. Runtime boundary tests remain in place for normal, malformed,
+negative, zero, oversized, array, notification, and project-finance inputs.
 
-The generated OpenAPI snapshot now describes explicit member, loan, invoice,
-cooperative-payment, and batch-payment response schemas. Runtime tests assert
-exact response keys and absence of gateway/proof/internal fields. Pagination
-metadata and the normalizer success field are documented.
+### D05-TEST-HARDENING — Persisted rollback evidence
 
-Generic member updates continue to preserve omitted sensitive values and reject
-lifecycle/account-link/PII fields. Dedicated actions remain the only paths for
-those changes.
+Lifecycle failure tests now use a partial revocation double so the real
+lifecycle audit is inserted inside the outer transaction before the mandatory
+revocation audit fails. Assertions prove that the member mutation, role/token
+effects, lifecycle audit row, and revocation audit all roll back. Equivalent
+coverage exists for transition/deactivation and `deleteAccess()`.
 
-## Verification
+### D05-REDACTION-TESTS — Complete redaction matrix
 
-Focused runtime verification before the final full-suite run:
+`AuditContextSourceTest` exercises nested and case-variant sensitive keys for
+identity number, NIK, NPWP, bank account/holder, token, authorization, secret,
+password, QR data, gateway payload, ciphertext, and blind index. It verifies
+sentinels are absent from serialized audit values while safe operational
+metadata remains present.
 
-    php artisan test --compact tests/Unit/Support/PaginationLimitResolverTest.php tests/Feature/ApiPaginationHardeningTest.php tests/Feature/Document05AuditPaginationContractTest.php tests/Feature/LegacyErp/ProjectFinanceTest.php tests/Feature/Member/MemberLifecycleTokenRevocationTest.php tests/Feature/Cooperative/MemberExportAuthorizationTest.php tests/Feature/Authorization/CrossOrganizationMutationTest.php tests/Feature/Cooperative/MemberP0SecurityClosureTest.php tests/Feature/PhaseBContractApiTest.php
+## Runtime test coverage
 
-Result: 102 passed, 799 assertions.
+Runtime tests exercise actual routes, services, commands, queue handling, and
+generated artifacts rather than relying on source-string assertions. The
+remaining static guard is intentionally limited to prohibiting raw
+request-derived pagination.
 
-Additional focused regression verification:
+Latest focused remediation run:
 
-    php artisan test --compact tests/Feature/Document05AuditPaginationContractTest.php tests/Unit/Support/PaginationLimitResolverTest.php tests/Feature/ApiPaginationHardeningTest.php tests/Feature/Cooperative/MemberExportAuthorizationTest.php tests/Feature/Member/MemberLifecycleTokenRevocationTest.php tests/Feature/Cooperative/MemberLifecycleStateMachineTest.php tests/Feature/Cooperative/MemberResignationControllerTest.php tests/Feature/Cooperative/CooperativeLoanFeatureTest.php tests/Feature/Cooperative/OrganizationIsolationTest.php tests/Feature/Cooperative/MemberUpdateCommandSeparationTest.php tests/Feature/Authorization/CrossOrganizationMutationTest.php tests/Feature/Cooperative/MemberP0SecurityClosureTest.php tests/Feature/PhaseBContractApiTest.php tests/Feature/P0SecurityTest.php tests/Feature/PhaseDOpenApiSnapshotTest.php
+    php artisan test --compact tests/Feature/Security/AuditContextSourceTest.php tests/Feature/Member/MemberLifecycleTokenRevocationTest.php tests/Feature/Security/LoanWriteOffAuditLifecycleTest.php tests/Feature/Cooperative/SensitiveDataMaskPreventionTest.php tests/Feature/Document05AuditPaginationContractTest.php
 
-Result: 184 passed, 1,282 assertions.
+Result: 51 passed, 191 assertions.
 
-The complete compact suite was then executed:
+Additional focused regression run:
+
+    php artisan test --compact tests/Feature/Member/MemberLifecycleTokenRevocationTest.php tests/Feature/Cooperative/MemberUpdateCommandSeparationTest.php tests/Feature/Document05AuditPaginationContractTest.php tests/Feature/PhaseBContractApiTest.php tests/Feature/Security/AuditContextSourceTest.php tests/Feature/Security/LoanWriteOffAuditLifecycleTest.php tests/Feature/Security/PrivilegedRoleMutationAuditTest.php tests/Feature/Cooperative/SensitiveDataMaskPreventionTest.php tests/Feature/ApiPaginationHardeningTest.php tests/Feature/LegacyErp/ProjectFinanceTest.php
+
+Result: 106 passed, 759 assertions.
+
+Queue compatibility regression run:
+
+    php artisan test --compact tests/Feature/Cooperative/Plan07BackgroundJobExportTest.php tests/Feature/Security/AuditContextSourceTest.php
+
+Result: 28 passed, 105 assertions.
+
+The complete compact suite was executed after the queue compatibility fix. The
+verified result supplied for this handoff was:
 
     php artisan test --compact
 
-Result: 1,159 passed, 5 skipped, 6,516 assertions.
+Result: 1,204 passed, 5 skipped, 6,701 assertions.
 
-Other verification:
+No failures were reported in that final run.
+
+## Other verification
 
 - `./vendor/bin/pint --dirty --format agent`: passed.
 - `php artisan openapi:snapshot --check`: passed; snapshot is up to date.
 - `php artisan wayfinder:generate`: passed; generated output remained ignored.
 - `npm run build`: passed; 3,847 modules transformed.
 - `git diff --check`: passed.
+- PHP syntax checks on every modified PHP file: passed.
 
-Migration safety evidence uses PHPUnit's testing SQLite configuration
-(DB_DATABASE=:memory:). The audit-context runtime test creates an audit row
-through the current migration schema, including its source/context fields.
-No shared or production database migration, reset, or seeder was used.
+Migration safety evidence uses PHPUnit's disposable SQLite configuration
+(`APP_ENV=testing`, `DB_DATABASE=:memory:`). No migration was added or changed
+by this remediation. No shared or production database was migrated, reset, or
+seeded.
 
-No migration was added or changed by this remediation. Migration-related
-verification remained on PHPUnit's disposable SQLite configuration
-(`DB_DATABASE=:memory:`); no shared or production database was migrated,
-reset, or seeded.
+## Residual risks and handoff
 
-## Residual risks
+- Independent PostgreSQL and GitHub Actions verification remains required.
+- The compatibility `member.pii.exported` event remains best effort and is not
+  the authoritative export completion record.
+- Unrelated legacy ERP endpoints remain outside this remediation's response
+  contract scope.
+- The pre-existing untracked Document 04 authority plan was preserved and was
+  not included in this branch's commits.
 
-- Independent PostgreSQL/CI verification remains required.
-- The compatibility export event is intentionally best effort and is not the
-  authoritative completion record.
-- Runtime response contracts cover Document 05 surfaces; unrelated legacy ERP
-  endpoints remain outside this remediation.
-
-## Review position
-
-Document 05 is READY FOR INDEPENDENT REVIEW. CI and independent PostgreSQL
-verification are not claimed here and were not monitored by this task.
+Document 05 is READY FOR INDEPENDENT REVIEW. No PR or merge was created, and CI
+was not monitored by this task.

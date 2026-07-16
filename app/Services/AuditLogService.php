@@ -155,11 +155,27 @@ class AuditLogService
     }
 
     /**
+     * PostgreSQL signed BIGINT maximum value (9223372036854775807).
+     * Identifiers strictly greater than this must be rejected before any
+     * primary-key lookup so PostgreSQL never raises a numeric out-of-range error.
+     */
+    private const BIGINT_MAX = '9223372036854775807';
+
+    /**
      * Determine whether the identifier is a valid candidate for a bigint
      * primary key lookup. Only positive integers or numeric integer strings
-     * representing positive integers qualify. Negative, decimal, empty,
-     * non-numeric, or array-like values are rejected so the database is never
-     * queried with an invalid bigint input.
+     * representing positive integers within the signed BIGINT range qualify.
+     *
+     * Rejected (no database query is ever issued for these):
+     * - empty string;
+     * - negative integer / numeric string;
+     * - decimal, scientific notation, whitespace, leading "+";
+     * - non-numeric strings;
+     * - all-zero variants ("0", "00", "0000");
+     * - numeric strings exceeding the PostgreSQL signed BIGINT maximum.
+     *
+     * Leading zeros on otherwise valid positive values are tolerated
+     * (e.g. "0001" represents the positive integer 1).
      */
     private function isValidUserIdentifier(string|int $userId): bool
     {
@@ -167,11 +183,41 @@ class AuditLogService
             return $userId > 0;
         }
 
-        if ($userId === '' || ! ctype_digit($userId)) {
+        if ($userId === '') {
             return false;
         }
 
-        return $userId !== '0';
+        if (! ctype_digit($userId)) {
+            return false;
+        }
+
+        $normalized = ltrim($userId, '0');
+
+        if ($normalized === '') {
+            return false;
+        }
+
+        return $this->decimalStringWithinBigintRange($normalized);
+    }
+
+    /**
+     * Lexical decimal comparison against the PostgreSQL signed BIGINT maximum.
+     * The normalized input is guaranteed to be a non-empty decimal digit string
+     * with no leading zeros, so a length-then-lexical comparison is sound.
+     */
+    private function decimalStringWithinBigintRange(string $normalized): bool
+    {
+        $maxLength = strlen(self::BIGINT_MAX);
+
+        if (strlen($normalized) < $maxLength) {
+            return true;
+        }
+
+        if (strlen($normalized) > $maxLength) {
+            return false;
+        }
+
+        return strcmp($normalized, self::BIGINT_MAX) <= 0;
     }
 
     private function anonymousContext(AuditContext $context): AuditContext

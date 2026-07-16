@@ -7,8 +7,11 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AuthAuditActorIdentityTest extends TestCase
@@ -99,65 +102,14 @@ class AuthAuditActorIdentityTest extends TestCase
         $this->assertNull($audit->subject_id);
     }
 
-    public function test_unknown_numeric_user_id_from_anonymous_context_records_no_fake_actor(): void
+    public function test_valid_integer_id_that_is_not_found_produces_null_actor_without_exception(): void
     {
-        // A valid positive integer that resolves to no real account must not
-        // fabricate an actor. audit_logs.user_id is a foreign key, so a
-        // nonexistent identity is recorded with a null actor and no invented
-        // roles or organization.
         app(AuditLogService::class)->logAuth('LOGIN', 999999999, AuditContext::forSystem());
 
         $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
 
         $this->assertNull($audit->user_id, 'No fake actor must be fabricated for a user that does not exist.');
         $this->assertSame([], $audit->actor_roles, 'No roles must be invented.');
-        $this->assertNull($audit->organization_id);
-    }
-
-    public function test_nonnumeric_string_identifier_from_anonymous_context_records_no_fake_actor_and_never_queries_db(): void
-    {
-        // A nonnumeric string must never be passed as a bigint primary key lookup.
-        // PostgreSQL would throw "invalid input syntax for type bigint"; the
-        // validation must short-circuit before any DB query and produce a null actor.
-        app(AuditLogService::class)->logAuth('LOGIN', 'nonexistent-user-id', AuditContext::forSystem());
-
-        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
-
-        $this->assertNull($audit->user_id, 'No fake actor must be fabricated for a nonnumeric identifier.');
-        $this->assertSame([], $audit->actor_roles);
-        $this->assertNull($audit->organization_id);
-    }
-
-    public function test_empty_string_identifier_from_anonymous_context_records_no_fake_actor(): void
-    {
-        app(AuditLogService::class)->logAuth('LOGIN', '', AuditContext::forSystem());
-
-        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
-
-        $this->assertNull($audit->user_id, 'Empty string identifier must not produce a fake actor.');
-        $this->assertSame([], $audit->actor_roles);
-        $this->assertNull($audit->organization_id);
-    }
-
-    public function test_negative_integer_identifier_from_anonymous_context_records_no_fake_actor(): void
-    {
-        app(AuditLogService::class)->logAuth('LOGIN', -1, AuditContext::forSystem());
-
-        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
-
-        $this->assertNull($audit->user_id, 'Negative integer must not produce a fake actor.');
-        $this->assertSame([], $audit->actor_roles);
-        $this->assertNull($audit->organization_id);
-    }
-
-    public function test_negative_numeric_string_identifier_from_anonymous_context_records_no_fake_actor(): void
-    {
-        app(AuditLogService::class)->logAuth('LOGIN', '-1', AuditContext::forSystem());
-
-        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
-
-        $this->assertNull($audit->user_id, 'Negative numeric string must not produce a fake actor.');
-        $this->assertSame([], $audit->actor_roles);
         $this->assertNull($audit->organization_id);
     }
 
@@ -176,23 +128,120 @@ class AuthAuditActorIdentityTest extends TestCase
         $this->assertSame((string) $organization->id, (string) $audit->organization_id);
     }
 
-    public function test_correlation_id_is_preserved_for_all_identifier_types(): void
+    public function test_leading_zero_numeric_string_id_resolves_to_real_user(): void
     {
-        $correlationId = '11111111-2222-3333-4444-555555555555';
-        $context = AuditContext::forSystem(correlationId: $correlationId);
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Anggota');
 
-        app(AuditLogService::class)->logAuth('LOGIN', 'nonexistent-user-id', $context);
+        $zeroPadded = '0'.(string) $user->id;
+
+        app(AuditLogService::class)->logAuth('LOGIN', $zeroPadded, AuditContext::forSystem());
 
         $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
 
-        $this->assertSame($correlationId, $audit->correlation_id, 'Correlation ID must be preserved even when the actor resolves to null.');
+        $this->assertSame((string) $user->id, (string) $audit->user_id, 'Numeric string with leading zero must resolve to the real user.');
+        $this->assertSame(['Anggota'], $audit->actor_roles);
     }
 
-    public function test_invalid_identifier_with_existing_actor_does_not_create_subject(): void
+    #[DataProvider('invalidIdentifierProvider')]
+    public function test_invalid_identifier_produces_null_actor_and_preserves_context_without_user_lookup(int|string $identifier): void
+    {
+        $correlationId = '11111111-2222-3333-4444-555555555555';
+        $context = new AuditContext(
+            actorId: null,
+            actorRoles: [],
+            organizationId: null,
+            correlationId: $correlationId,
+            ip: '192.0.2.10',
+            userAgent: 'AuthAuditActorIdentityTest/1.0',
+            source: AuditContext::SOURCE_HTTP,
+        );
+        $userSelects = [];
+
+        DB::listen(function (QueryExecuted $query) use (&$userSelects): void {
+            if ($this->isUsersTableSelect($query->sql)) {
+                $userSelects[] = $query->sql;
+            }
+        });
+
+        app(AuditLogService::class)->logAuth('LOGIN', $identifier, $context);
+
+        $audit = AuditLog::query()->where('action', 'LOGIN')->sole();
+
+        $this->assertNull($audit->user_id, "Identifier [{$identifier}] must not fabricate an actor.");
+        $this->assertSame([], $audit->actor_roles);
+        $this->assertNull($audit->organization_id);
+        $this->assertNull($audit->subject_id);
+        $this->assertNull($audit->subject_type);
+        $this->assertSame($correlationId, $audit->correlation_id, 'Correlation ID must be preserved for any invalid identifier.');
+        $this->assertSame($context->source, $audit->source);
+        $this->assertSame($context->ip, $audit->ip_address);
+        $this->assertSame($context->userAgent, $audit->user_agent);
+        $this->assertSame([], $userSelects, 'No SELECT against the users table is permitted for an invalid identifier.');
+    }
+
+    /** @return array<string, array{0: int|string}> */
+    public static function invalidIdentifierProvider(): array
+    {
+        return [
+            'zero int' => [0],
+            'zero string' => ['0'],
+            'all zero string' => ['00'],
+            'leading zero zero string' => ['0000'],
+            'negative int' => [-1],
+            'negative string' => ['-1'],
+            'decimal string' => ['1.0'],
+            'scientific notation' => ['1e3'],
+            'plus sign' => ['+1'],
+            'whitespace' => [' 1 '],
+            'empty string' => [''],
+            'nonnumeric string' => ['nonexistent-user-id'],
+            'over bigint max' => ['9223372036854775808'],
+            'far overlong digit string' => ['999999999999999999999999999999'],
+        ];
+    }
+
+    #[DataProvider('validIdentifierProvider')]
+    public function test_valid_identifier_executes_select_against_users_table(int|string $identifier): void
+    {
+        $userSelects = [];
+
+        DB::listen(function (QueryExecuted $query) use (&$userSelects): void {
+            if ($this->isUsersTableSelect($query->sql)) {
+                $userSelects[] = $query->sql;
+            }
+        });
+
+        app(AuditLogService::class)->logAuth('LOGIN', $identifier, AuditContext::forSystem());
+
+        $this->assertNotEmpty($userSelects, "Valid identifier [{$identifier}] must execute a SELECT against the users table.");
+    }
+
+    /** @return array<string, array{0: int|string}> */
+    public static function validIdentifierProvider(): array
+    {
+        return [
+            'positive integer' => [1],
+            'positive numeric string' => ['1'],
+            'leading zero numeric string' => ['0001'],
+            'maximum PHP integer' => [PHP_INT_MAX],
+            'maximum PostgreSQL bigint string' => ['9223372036854775807'],
+        ];
+    }
+
+    public function test_invalid_identifier_with_existing_actor_preserves_actor_and_creates_no_subject(): void
     {
         $orgA = Organization::factory()->create();
         $actor = User::factory()->create(['organization_id' => $orgA->id]);
         $actor->assignRole('System Admin');
+        $userSelects = [];
+
+        DB::listen(function (QueryExecuted $query) use (&$userSelects): void {
+            if ($this->isUsersTableSelect($query->sql)) {
+                $userSelects[] = $query->sql;
+            }
+        });
 
         // When an actor already exists and the affected user identifier is
         // nonnumeric, the DB lookup must be skipped; no subject is recorded.
@@ -208,5 +257,17 @@ class AuthAuditActorIdentityTest extends TestCase
         $this->assertSame(['System Admin'], $audit->actor_roles, 'Actor roles must belong to the actor.');
         $this->assertNull($audit->subject_id, 'No subject must be recorded for a nonnumeric identifier.');
         $this->assertNull($audit->subject_type);
+        $this->assertSame([], $userSelects, 'An invalid identifier must not trigger a users lookup even when an actor already exists.');
+    }
+
+    /**
+     * Detect a SELECT against the users table, tolerating different quote styles
+     * and column lists across database drivers.
+     */
+    private function isUsersTableSelect(string $sql): bool
+    {
+        $normalized = strtolower($sql);
+
+        return preg_match('/^\s*select\b.*\bfrom\s+(?:"users"|`users`|users)(?:\s|$)/is', $normalized) === 1;
     }
 }

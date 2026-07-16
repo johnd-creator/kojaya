@@ -61,6 +61,29 @@ class MemberAccountLinkAuthorizationTest extends TestCase
         $this->assertFalse($target->fresh()->hasRole('Anggota'));
     }
 
+    public function test_unverified_target_is_rejected_without_mutation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $organization = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $organization->id]);
+        $actor->assignRole('Admin Koperasi');
+        $target = User::factory()->unverified()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => null,
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('cooperative.members.account-link.store', $member), [
+                'user_id' => $target->id,
+                'reason' => 'business_verification',
+            ])
+            ->assertSessionHasErrors('user_id');
+
+        $this->assertNull($member->fresh()->user_id);
+        $this->assertFalse($target->fresh()->hasRole('Anggota'));
+    }
+
     public function test_account_link_candidates_are_exact_and_organization_scoped(): void
     {
         $this->seed(RolePermissionSeeder::class);

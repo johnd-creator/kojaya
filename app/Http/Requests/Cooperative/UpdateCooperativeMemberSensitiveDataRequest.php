@@ -21,6 +21,21 @@ class UpdateCooperativeMemberSensitiveDataRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        foreach (self::MASKED_FIELDS as $field) {
+            if ($this->exists($field) && $this->input($field) === '') {
+                $normalized[$field] = null;
+            }
+        }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
+    }
+
     /** @return array<string, array<int, string>> */
     public function rules(): array
     {
@@ -44,28 +59,10 @@ class UpdateCooperativeMemberSensitiveDataRequest extends FormRequest
                 if ($value !== null && is_string($value) && preg_match(self::MASK_PATTERN, $value)) {
                     $validator->errors()->add(
                         $field,
-                        'Nilai masked tidak dapat disimpan. Kosongkan field untuk mempertahankan nilai existing atau isi nilai asli.',
+                        'Nilai masked tidak dapat disimpan. Field yang dihilangkan akan mempertahankan nilai existing; kirim null atau string kosong untuk menghapusnya, atau isi nilai asli untuk mengganti.',
                     );
                 }
             }
         });
-    }
-
-    /**
-     * Determine which sensitive fields should be cleared (explicit null).
-     *
-     * @return list<string>
-     */
-    public function fieldsToClear(): array
-    {
-        $clear = [];
-
-        foreach (self::MASKED_FIELDS as $field) {
-            if ($this->input($field) === null && $this->exists($field)) {
-                $clear[] = $field;
-            }
-        }
-
-        return $clear;
     }
 }

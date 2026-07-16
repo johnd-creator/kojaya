@@ -67,7 +67,7 @@ class CooperativeMemberUserProvisioningService
 
         if ((int) $member->user_id !== (int) $user->id) {
             $member->forceFill(['user_id' => $user->id])->save();
-            $this->audit->log('member.account.linked', 'cooperative.member', $member, [
+            $this->audit->log('member.account.link.completed', 'cooperative.member', $member, [
                 'new' => ['user_id' => $user->id],
             ]);
         }

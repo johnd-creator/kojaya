@@ -69,7 +69,7 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'User updated successfully.');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, UserRoleManagementService $service)
     {
         $this->authorizePermission('manage_users');
 
@@ -77,7 +77,11 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'You cannot delete yourself.');
         }
 
-        $user->delete();
+        $service->deleteUserWithAudit(
+            $user,
+            request()->user(),
+            AuditContext::fromHttp(request(), request()->user()),
+        );
 
         return redirect()->back()->with('success', 'User deleted successfully.');
     }

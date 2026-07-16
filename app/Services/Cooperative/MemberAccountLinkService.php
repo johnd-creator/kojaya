@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Role;
 use Throwable;
 
@@ -30,6 +31,7 @@ class MemberAccountLinkService
         $this->assertActorCanLink($actor, $member);
         $reasonCode = $this->reasonCode($reason);
         $context ??= AuditContext::forActor($actor);
+        $this->assertContextActor($actor, $context);
 
         $this->audit->log('member.account.link.requested', 'cooperative.member', $member, [
             'new' => [
@@ -62,7 +64,7 @@ class MemberAccountLinkService
                     $lockedTarget->assignRole('Anggota');
                 }
 
-                $this->audit->log('member.account.linked', 'cooperative.member', $lockedMember, [
+                $this->audit->log('member.account.link.completed', 'cooperative.member', $lockedMember, [
                     'old' => ['user_id' => null],
                     'new' => [
                         'user_id' => $lockedTarget->id,
@@ -96,16 +98,6 @@ class MemberAccountLinkService
             throw $e;
         }
 
-        $this->audit->log('member.account.link.completed', 'cooperative.member', $linkedMember, [
-            'new' => [
-                'user_id' => $linkedMember->user_id,
-                'organization_id' => $linkedMember->organization_id,
-                'reason_code' => $reasonCode,
-                'reason_supplied' => true,
-            ],
-            'reason' => 'Member account-link request completed.',
-        ], $context);
-
         return $linkedMember;
     }
 
@@ -114,6 +106,7 @@ class MemberAccountLinkService
         $this->assertActorCanLink($actor, $member);
         $reasonCode = $this->reasonCode($reason);
         $context ??= AuditContext::forActor($actor);
+        $this->assertContextActor($actor, $context);
 
         $this->audit->log('member.account.unlink.requested', 'cooperative.member', $member, [
             'new' => [
@@ -143,10 +136,10 @@ class MemberAccountLinkService
                 }
 
                 if ($oldUser) {
-                    $this->accessRevocation->revokeMemberAppTokens($oldUser, $reasonCode, $actor, $lockedMember);
+                    $this->accessRevocation->revokeMemberAppTokens($oldUser, $reasonCode, $actor, $lockedMember, $context);
                 }
 
-                $this->audit->log('member.account.unlinked', 'cooperative.member', $lockedMember, [
+                $this->audit->log('member.account.unlink.completed', 'cooperative.member', $lockedMember, [
                     'old' => [
                         'user_id' => $oldUserId,
                         'organization_id' => $lockedMember->organization_id,
@@ -181,16 +174,6 @@ class MemberAccountLinkService
 
             throw $e;
         }
-
-        $this->audit->log('member.account.unlink.completed', 'cooperative.member', $unlinkedMember, [
-            'new' => [
-                'user_id' => null,
-                'organization_id' => $unlinkedMember->organization_id,
-                'reason_code' => $reasonCode,
-                'reason_supplied' => true,
-            ],
-            'reason' => 'Member account-unlink request completed.',
-        ], $context);
 
         return $unlinkedMember;
     }
@@ -319,5 +302,20 @@ class MemberAccountLinkService
         }
 
         return $reasonCode->value;
+    }
+
+    private function assertContextActor(User $actor, AuditContext $context): void
+    {
+        if ((string) $context->actorId !== (string) $actor->getKey()) {
+            throw new InvalidArgumentException('Audit context actor does not match the account-link actor.');
+        }
+
+        if ($actor->organization_id !== null && (string) $context->organizationId !== (string) $actor->organization_id) {
+            throw new InvalidArgumentException('Audit context organization does not match the account-link actor.');
+        }
+
+        if ($context->actorRoles !== $actor->getRoleNames()->values()->all()) {
+            throw new InvalidArgumentException('Audit context roles do not match the account-link actor.');
+        }
     }
 }

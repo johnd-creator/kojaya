@@ -108,7 +108,7 @@ class ComplianceReportController extends Controller
                 DB::raw('MAX(mc.next_checkup_date) as next_mcu_date')
             )
             ->groupBy('e.id', 'e.first_name', 'e.last_name', 'e.employee_code')
-            ->havingRaw('valid_certificates = 0 OR next_mcu_date IS NULL OR next_mcu_date < NOW()');
+            ->havingRaw('valid_certificates = 0 OR next_mcu_date IS NULL OR next_mcu_date < ?', [now()]);
 
         // Filter by organization if not system admin
         if ($request->user()->organization_id) {

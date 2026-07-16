@@ -61,12 +61,17 @@ class MemberAccessRevocationService
         }
     }
 
-    public function revokeMemberAppTokens(User $user, string $reason, ?User $actor = null, ?CooperativeMember $member = null): int
-    {
+    public function revokeMemberAppTokens(
+        User $user,
+        string $reason,
+        ?User $actor = null,
+        ?CooperativeMember $member = null,
+        ?AuditContext $context = null,
+    ): int {
         try {
-            return DB::transaction(function () use ($user, $reason, $actor, $member): int {
+            return DB::transaction(function () use ($user, $reason, $actor, $member, $context): int {
                 $count = $this->revokeSelectedMemberTokens($user);
-                $this->logRevocation($member, $user, $actor, $reason, $count);
+                $this->logRevocation($member, $user, $actor, $reason, $count, $context);
 
                 return $count;
             });
@@ -121,6 +126,7 @@ class MemberAccessRevocationService
         ?User $actor,
         string $reason,
         int $count,
+        ?AuditContext $context = null,
     ): void {
         $reasonCode = $this->safeReason($reason);
 
@@ -138,7 +144,7 @@ class MemberAccessRevocationService
                 ],
                 'reason' => 'Controlled member access revocation.',
             ],
-            $this->contextFor($actor),
+            $context ?? $this->contextFor($actor),
         );
     }
 

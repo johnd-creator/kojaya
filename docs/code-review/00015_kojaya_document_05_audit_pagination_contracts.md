@@ -150,3 +150,16 @@ seeded.
 
 Document 05 is READY FOR INDEPENDENT REVIEW. No PR or merge was created, and CI
 was not monitored by this task.
+
+## Document 05 remediation continuation — July 16, 2026
+
+- Starting SHA: `fd01714f8a3b1b1883536c3a3841c33f4f73565a`.
+- Ending implementation SHA: `6d4b0688` (`test(document-05): harden audit rollback and pagination contracts`).
+- Implementation commits: `01e7efc1` and `6d4b0688`.
+- Main areas changed: `AuditLogService`, privileged user mutation services/controllers, member account link/unlink lifecycle services, sensitive member update request, audit/pagination/security regression tests, and compliance pagination portability.
+- Findings addressed: fail-closed audit change keys and expanded recursive redaction; truthful actor and organization audit context; transactional user deletion and account link/unlink completion events; real rollback-path lifecycle tests; pagination architecture and runtime boundary coverage; and explicit sensitive-data clearing semantics.
+- Focused verification: 166 passed, 1,058 assertions.
+- Full verification: 1,237 passed, 5 skipped, 6,796 assertions.
+- Commands run: focused Document 05 test matrix, `php artisan test --compact`, `./vendor/bin/pint --dirty --format agent`, `php artisan openapi:snapshot --check`, `php artisan wayfinder:generate`, `npm run build`, `git diff --check`, and PHP syntax checks for modified files.
+- Residual risk: the five pre-existing skipped tests and independent PostgreSQL/CI verification remain outside this local run. GitHub Actions status was not observed.
+- The unrelated untracked Document 04 authority plan was preserved and excluded from all commits.

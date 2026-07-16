@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\User;
 use App\Support\AuditContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -73,11 +74,60 @@ class AuditLogService
     public function logAuth(string $action, string|int|null $userId = null, ?AuditContext $context = null): AuditLog
     {
         $context ??= AuditContext::fromCurrentRequest();
-        if ($userId !== null && $userId !== $context->actorId) {
-            $context = new AuditContext(
-                actorId: $userId,
-                actorRoles: $context->actorRoles,
-                organizationId: $context->organizationId,
+
+        [$context, $subject] = $this->resolveAuthActorAndSubject($userId, $context);
+
+        $payload = $this->payload($action, 'auth', $subject, [], $context);
+
+        // Authentication organization always follows the actor context so an
+        // affected user's organization can never bleed into another actor's record.
+        $payload['organization_id'] = $context->organizationId;
+
+        return AuditLog::create($payload);
+    }
+
+    /**
+     * Resolve a truthful actor context and the affected-user subject for an auth event.
+     *
+     * The affected user (userId) is the subject of the authentication. When the
+     * caller has not supplied an authenticated actor, the affected user is also the
+     * actor of their own authentication, so a truthful context is rebuilt from that
+     * user's real roles and organization. A pre-existing, differing actor is kept
+     * and the affected user is recorded as the subject instead of mixing identities.
+     *
+     * @return array{0: AuditContext, 1: ?Model}
+     */
+    private function resolveAuthActorAndSubject(string|int|null $userId, AuditContext $context): array
+    {
+        if ($userId === null) {
+            return [$context, null];
+        }
+
+        if ($context->actorId !== null && (string) $userId === (string) $context->actorId) {
+            return [$context, null];
+        }
+
+        if ($context->actorId === null) {
+            return [$this->buildContextFromAffectedUser($userId, $context), null];
+        }
+
+        return [$context, User::query()->find($userId)];
+    }
+
+    private function buildContextFromAffectedUser(string|int $userId, AuditContext $context): AuditContext
+    {
+        $user = User::query()->find($userId);
+
+        if ($user === null) {
+            // Unknown user id (e.g. a credential that resolved no account). Do not
+            // fabricate an actor: audit_logs.user_id is a foreign key and cannot
+            // hold a nonexistent identity, and inventing roles/organization would
+            // be untruthful. Keep actor null so the failure is recorded without a
+            // fake actor identity.
+            return new AuditContext(
+                actorId: null,
+                actorRoles: [],
+                organizationId: null,
                 correlationId: $context->correlationId,
                 ip: $context->ip,
                 userAgent: $context->userAgent,
@@ -85,9 +135,15 @@ class AuditLogService
             );
         }
 
-        $payload = $this->payload($action, 'auth', null, [], $context);
-
-        return AuditLog::create($payload);
+        return new AuditContext(
+            actorId: $user->getKey(),
+            actorRoles: $user->getRoleNames()->values()->all(),
+            organizationId: $user->organization_id,
+            correlationId: $context->correlationId,
+            ip: $context->ip,
+            userAgent: $context->userAgent,
+            source: $context->source,
+        );
     }
 
     public function logModelEvent(

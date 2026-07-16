@@ -227,20 +227,75 @@ class PrivilegedRoleMutationAuditTest extends TestCase
         $otherActor = User::factory()->create(['organization_id' => $org->id]);
         $otherActor->assignRole('System Admin');
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('does not match the mutation actor');
+        try {
+            app(UserRoleManagementService::class)->createUserWithAudit(
+                [
+                    'name' => 'Mismatch User',
+                    'email' => 'mismatch@example.com',
+                    'password' => 'password123',
+                    'role' => 'Anggota',
+                    'organization_id' => $org->id,
+                ],
+                $actor,
+                AuditContext::forActor($otherActor, AuditContext::SOURCE_HTTP),
+            );
+            $this->fail('Expected actor/context mismatch to be rejected before user creation.');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('does not match the mutation actor', $e->getMessage());
+        }
 
-        app(UserRoleManagementService::class)->createUserWithAudit(
-            [
-                'name' => 'Mismatch User',
-                'email' => 'mismatch@example.com',
-                'password' => 'password123',
-                'role' => 'Anggota',
-                'organization_id' => $org->id,
-            ],
-            $actor,
-            AuditContext::forActor($otherActor, AuditContext::SOURCE_HTTP),
-        );
+        $this->assertDatabaseMissing('users', ['email' => 'mismatch@example.com']);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'user.role.mutated']);
+        $this->assertSame(2, User::query()->where('organization_id', $org->id)->count(), 'No partial state (role or otherwise) must remain.');
+    }
+
+    public function test_organization_move_rolls_back_when_mandatory_audit_fails(): void
+    {
+        $oldOrganization = Organization::factory()->create();
+        $newOrganization = Organization::factory()->create();
+        $target = User::factory()->create([
+            'organization_id' => $oldOrganization->id,
+            'name' => 'Original Move',
+            'email' => 'move-rollback@example.com',
+        ]);
+        $originalPassword = $target->password;
+        $target->assignRole('Anggota');
+        $actor = User::factory()->create(['organization_id' => $oldOrganization->id]);
+        $actor->assignRole('System Admin');
+
+        // Narrow fake: only the mandatory user.role.mutated audit fails.
+        $audit = Mockery::mock(AuditLogService::class)->makePartial();
+        $audit->shouldReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'user.role.mutated')
+            ->andThrow(new \RuntimeException('simulated mandatory mutation audit failure'));
+        $this->app->instance(AuditLogService::class, $audit);
+
+        try {
+            app(UserRoleManagementService::class)->updateUserWithAudit(
+                $target,
+                [
+                    'name' => 'Moved User',
+                    'email' => 'moved@example.com',
+                    'password' => 'newpassword123',
+                    'role' => 'Admin Koperasi',
+                    'organization_id' => $newOrganization->id,
+                ],
+                $actor,
+                AuditContext::forActor($actor, AuditContext::SOURCE_HTTP),
+            );
+            $this->fail('Expected mandatory mutation audit failure to propagate.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('simulated mandatory mutation audit failure', $e->getMessage());
+        }
+
+        $target->refresh();
+        $this->assertSame($oldOrganization->id, $target->organization_id, 'User must remain in the previous organization after rollback.');
+        $this->assertSame('Original Move', $target->name, 'Profile changes must roll back.');
+        $this->assertSame('move-rollback@example.com', $target->email, 'Email changes must roll back.');
+        $this->assertSame($originalPassword, $target->password, 'Credential changes must roll back.');
+        $this->assertTrue($target->hasRole('Anggota'), 'Original role must be restored after rollback.');
+        $this->assertFalse($target->hasRole('Admin Koperasi'), 'Requested role must not persist after rollback.');
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'user.role.mutated']);
     }
 
     public function test_organization_move_records_previous_and_resulting_organization_truthfully(): void
@@ -268,7 +323,11 @@ class PrivilegedRoleMutationAuditTest extends TestCase
 
         $this->assertSame($oldOrganization->id, $audit->old_values['previous_organization_id']);
         $this->assertSame($newOrganization->id, $audit->new_values['resulting_organization_id']);
+        $this->assertSame(['Anggota'], $audit->old_values['previous_roles']);
+        $this->assertSame(['Admin Koperasi'], $audit->new_values['resulting_roles']);
         $this->assertSame((string) $actor->id, (string) $audit->new_values['actor_id']);
         $this->assertSame(['System Admin'], $audit->new_values['actor_roles']);
+        $this->assertSame((string) $actor->id, (string) $audit->user_id);
+        $this->assertContains('System Admin', $audit->actor_roles);
     }
 }

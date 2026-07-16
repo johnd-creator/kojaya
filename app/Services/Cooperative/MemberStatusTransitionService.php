@@ -157,7 +157,9 @@ class MemberStatusTransitionService
     {
         $this->assertActorCan($actor, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
 
-        return DB::transaction(function () use ($member, $actor, $reason): CooperativeMember {
+        $context = $this->contextFor($actor);
+
+        return DB::transaction(function () use ($member, $actor, $reason, $context): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
 
             $member->user?->removeRole('Anggota');
@@ -166,9 +168,9 @@ class MemberStatusTransitionService
                 'old' => ['status' => $member->status, 'validation_status' => $member->validation_status],
                 'new' => ['action' => 'delete_access'],
                 'reason' => $reason ?? 'Member access revoked.',
-            ], $this->contextFor($actor));
+            ], $context);
 
-            $this->accessRevocation->revokeFor($member->refresh(), 'delete_access', $actor);
+            $this->accessRevocation->revokeFor($member->refresh(), 'delete_access', $actor, $context);
 
             return $member->refresh();
         });
@@ -190,7 +192,9 @@ class MemberStatusTransitionService
         bool $assignMemberRole = false,
         bool $revokeMemberTokens = true,
     ): CooperativeMember {
-        return DB::transaction(function () use ($member, $allowedSources, $status, $validationStatus, $actor, $action, $reason, $attributes, $assignMemberRole, $revokeMemberTokens): CooperativeMember {
+        $context = $this->contextFor($actor);
+
+        return DB::transaction(function () use ($member, $allowedSources, $status, $validationStatus, $actor, $action, $reason, $attributes, $assignMemberRole, $revokeMemberTokens, $context): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
             $this->assertAllowedSource($member, $allowedSources);
             $oldState = ['status' => $member->status, 'validation_status' => $member->validation_status];
@@ -212,10 +216,10 @@ class MemberStatusTransitionService
                 'old' => $oldState,
                 'new' => ['status' => $status, 'validation_status' => $validationStatus, 'action' => $action],
                 'reason' => $reason ?? $action,
-            ], $this->contextFor($actor));
+            ], $context);
 
             if ($revokeMemberTokens) {
-                $this->accessRevocation->revokeFor($member->refresh(), $action, $actor);
+                $this->accessRevocation->revokeFor($member->refresh(), $action, $actor, $context);
             }
 
             return $member->refresh();

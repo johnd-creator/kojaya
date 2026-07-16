@@ -163,3 +163,34 @@ was not monitored by this task.
 - Commands run: focused Document 05 test matrix, `php artisan test --compact`, `./vendor/bin/pint --dirty --format agent`, `php artisan openapi:snapshot --check`, `php artisan wayfinder:generate`, `npm run build`, `git diff --check`, and PHP syntax checks for modified files.
 - Residual risk: the five pre-existing skipped tests and independent PostgreSQL/CI verification remain outside this local run. GitHub Actions status was not observed.
 - The unrelated untracked Document 04 authority plan was preserved and excluded from all commits.
+
+## Document 05 senior review round 2 closure — July 16, 2026 (round 3)
+
+- Starting SHA: `4bb2de37` (`docs(audit): record Document 05 remediation continuation`).
+- Scope: close six remaining senior review gaps — PostgreSQL compliance query portability, single AuditContext for member lifecycle, deleteAccess rollback proof, atomic cooperative member user provisioning, truthful actor identity in `logAuth()`, and strengthened role mutation contract tests.
+- Key changes:
+  - `ComplianceReportController`: HAVING now uses real aggregate expressions (`COUNT(DISTINCT ec.id)`, `MAX(mc.next_checkup_date)`) instead of SELECT aliases; removed the unreachable `next_mcu_date < now()` condition that was impossible given the future-only LEFT JOIN.
+  - `MemberStatusTransitionService` / `MemberAccessRevocationService`: one `AuditContext` is created at the operation boundary and threaded through lifecycle audit, `revokeFor()`, and token deletion, so a single operation shares one correlation ID, actor, and organization even without `X-Correlation-ID`.
+  - `CooperativeMemberUserProvisioningService`: user creation, Anggota role assignment, member link, and the mandatory completed audit are now wrapped in a single transaction with one shared context.
+  - `AuditLogService::logAuth()`: actor identity is now truthful — anonymous context rebuilds from the real affected user; a pre-existing differing actor is preserved with the affected user recorded as subject; unknown users produce a null actor with no fabricated roles/organization (foreign-key safe).
+  - Role mutation and lifecycle rollback tests rewritten to integration-style with narrow partial mocks and explicit post-exception assertions.
+
+### Test evidence (executed manually by user; model did not execute these commands)
+
+The model did not run any automated test, formatter, or validation command. The following commands were executed manually by the user and the results reported back:
+
+    php artisan test --compact tests/Feature/ComplianceReportQueryTest.php
+    Result: 4 passed, 19 assertions.
+
+    php artisan test --compact tests/Feature/Cooperative/CooperativeMemberUserProvisioningTest.php
+    Result: 2 passed, 8 assertions.
+
+    php artisan test --compact tests/Feature/Member/MemberLifecycleTokenRevocationTest.php
+    Result: 17 passed, 65 assertions.
+
+    php artisan test --compact tests/Feature/Security/PrivilegedRoleMutationAuditTest.php
+    Result: 9 passed, 45 assertions.
+
+An initial run surfaced eight failures (foreign-key constraint on unknown user_id, missing RolePermissionSeeder seed, and invalid third-argument messages passed to `assertDatabaseHas`/`assertDatabaseMissing`). These were corrected and the user confirmed all four focused suites above pass after the fixes.
+
+The full compact suite (`php artisan test --compact`) was not re-run by the user for this round; the focused suites above are the verified evidence. Independent PostgreSQL and GitHub Actions verification remains required.

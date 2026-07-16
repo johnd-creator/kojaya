@@ -37,9 +37,14 @@ class MemberAccessRevocationService
      * Should be called within DB::afterCommit() when invoked from inside a
      * transaction, so tokens are only removed after the state transition persists.
      *
+     * Callers that are part of a wider business operation (e.g. member lifecycle)
+     * must pass the shared AuditContext so every audit in that operation shares a
+     * single actor, organization, and correlation ID. Standalone callers may omit
+     * it, in which case a context is derived once from the actor/request.
+     *
      * @return int Number of tokens revoked.
      */
-    public function revokeFor(CooperativeMember $member, string $reason, ?User $actor = null): int
+    public function revokeFor(CooperativeMember $member, string $reason, ?User $actor = null, ?AuditContext $context = null): int
     {
         $user = $member->user;
 
@@ -48,9 +53,9 @@ class MemberAccessRevocationService
         }
 
         try {
-            return DB::transaction(function () use ($member, $user, $actor, $reason): int {
+            return DB::transaction(function () use ($member, $user, $actor, $reason, $context): int {
                 $count = $this->revokeSelectedMemberTokens($user);
-                $this->logRevocation($member, $user, $actor, $reason, $count);
+                $this->logRevocation($member, $user, $actor, $reason, $count, $context);
 
                 return $count;
             });
@@ -113,11 +118,13 @@ class MemberAccessRevocationService
     /**
      * Schedule token revocation after the current transaction commits.
      *
-     * Use this variant when calling from inside a DB::transaction() block.
+     * Use this variant when calling from inside a DB::Transaction() block.
+     * Pass the shared AuditContext so the post-commit audit keeps the same
+     * correlation ID as the enclosing operation.
      */
-    public function revokeAfterCommit(CooperativeMember $member, string $reason, ?User $actor = null): void
+    public function revokeAfterCommit(CooperativeMember $member, string $reason, ?User $actor = null, ?AuditContext $context = null): void
     {
-        DB::afterCommit(fn () => $this->revokeFor($member->refresh(), $reason, $actor));
+        DB::afterCommit(fn () => $this->revokeFor($member->refresh(), $reason, $actor, $context));
     }
 
     private function logRevocation(

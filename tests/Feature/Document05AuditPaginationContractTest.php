@@ -68,18 +68,50 @@ class Document05AuditPaginationContractTest extends TestCase
     public function test_request_derived_pagination_uses_the_central_resolver(): void
     {
         $offending = [];
-        $root = app_path('Http/Controllers');
+        $root = app_path();
 
         foreach ($this->phpFiles($root) as $path => $contents) {
-            if (
-                preg_match('/(?:\$request|request\(\))->(?:integer|input|query)\(\s*[\'\"](?:per_page|page_size|limit)\b/', $contents)
-                || preg_match('/\b(?:paginate|simplePaginate|cursorPaginate|limit|take)\(\s*\$request->/', $contents)
-            ) {
+            if ($this->containsRawPaginationInput($contents)) {
                 $offending[] = str_replace(base_path().'/', '', $path);
             }
         }
 
         $this->assertSame([], $offending);
+    }
+
+    private function containsRawPaginationInput(string $contents): bool
+    {
+        $pageParameters = 'per_page|page_size|limit';
+        $paginationMethods = 'paginate|simplePaginate|cursorPaginate|limit|take';
+
+        if (preg_match(
+            '/->(?:'.$paginationMethods.')\(\s*(?:\$request|request\(\))->(?:input|query|integer|get|validated)\(\s*[\'\"](?:'.$pageParameters.')[\'\"]/',
+            $contents,
+        ) === 1) {
+            return true;
+        }
+
+        preg_match_all(
+            '/\$(?<variable>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<expression>(?:\$request|request\(\))->(?:input|query|integer|get|validated)\(\s*[\'\"](?:'.$pageParameters.')[\'\"][^;]*\);)/',
+            $contents,
+            $matches,
+            PREG_SET_ORDER,
+        );
+
+        foreach ($matches as $match) {
+            if (preg_match('/PaginationLimitResolver|apiPageSize|apiLimit|->resolve\(/', $match['expression']) === 1) {
+                continue;
+            }
+
+            if (preg_match(
+                '/->(?:'.$paginationMethods.')\(\s*\$'.preg_quote($match['variable'], '/').'\b/',
+                $contents,
+            ) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

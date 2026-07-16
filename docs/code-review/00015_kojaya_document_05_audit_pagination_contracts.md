@@ -228,3 +228,28 @@ The model did not run any automated test, formatter, or validation command. The 
     Result: 5 skipped, 1264 passed, 6917 assertions.
 
 The full compact suite was run by the user and reported 1264 passed, 5 skipped (pre-existing skips), 6917 assertions, with no failures. PostgreSQL and GitHub Actions verification remains required and was not run.
+
+## Document 05 final remediation verification — July 16, 2026 (round 5)
+
+- Starting SHA: `27c70674396453376c5cd7bedd8cc93337989ad5`.
+- Ending implementation SHA: `db96cb142a3ee65483e52efbe61d27f8c40af11a` (`fix(document-05): bound auth identifiers and canonicalize account linking`).
+- Account-linking decision: `CooperativeMemberUserProvisioningService` and its dedicated test were removed. Exhaustive repository search found no production caller, container binding, queued job, listener, observer, command, seeder, or factory using the service. Cooperative web/API callers and the contract tests use canonical `MemberAccountLinkService`. The separate SSO `MemberAccountLinkingService` remains the OAuth `social_accounts` path and is not a cooperative-member account-linking implementation.
+- PostgreSQL BIGINT remediation: `AuditLogService::logAuth()` now accepts only positive integers or decimal strings that normalize to a positive value within `9223372036854775807`, rejects whitespace and all-zero/oversized forms without casting, and preserves truthful anonymous audit context. Invalid identifiers are proven not to issue a `SELECT` against `users`; valid identifiers are proven to perform the lookup.
+- Test commands executed manually by the user:
+
+      php artisan test --compact tests/Feature/Auth/AuthAuditActorIdentityTest.php
+      Result: 27 passed, 175 assertions.
+
+      php artisan test --compact tests/Feature/Cooperative/MemberAccountLinkAuthorizationTest.php
+      Result: 13 passed, 88 assertions.
+
+      php artisan test --compact tests/Feature/Document05AuditPaginationContractTest.php
+      Result: 13 passed, 22 assertions.
+
+      php artisan test --compact
+      Result: 5 skipped, 1274 passed, 7021 assertions.
+
+- The model did not run automated tests, formatter, build, generator, or other validation; all results above were reported by the user after manual execution.
+- PostgreSQL status: not independently executed for this remediation. The repository PHPUnit configuration uses SQLite `:memory:`; no dedicated PostgreSQL test configuration or credentials were supplied for this run.
+- GitHub Actions status: not observed or executed.
+- Residual risk: the five pre-existing skipped tests and independent PostgreSQL/GitHub Actions verification remain outstanding. No double-role or role-policy expansion was introduced.

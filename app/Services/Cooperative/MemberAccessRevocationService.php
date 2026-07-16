@@ -8,6 +8,7 @@ use App\Services\AuditLogService;
 use App\Services\Auth\LegacyTokenClassifier;
 use App\Support\AuditContext;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -89,7 +90,7 @@ class MemberAccessRevocationService
                         'tokens_revoked' => $count,
                     ],
                     'reason' => $this->safeReason($reason),
-                ], AuditContext::forActor($actor));
+                ], $this->contextFor($actor));
 
                 return $count;
             });
@@ -137,7 +138,7 @@ class MemberAccessRevocationService
                 ],
                 'reason' => 'Controlled member access revocation.',
             ],
-            AuditContext::forActor($actor),
+            $this->contextFor($actor),
         );
     }
 
@@ -186,5 +187,14 @@ class MemberAccessRevocationService
     private function safeReason(string $reason): string
     {
         return in_array($reason, self::CONTROLLED_REASONS, true) ? $reason : 'member_lifecycle';
+    }
+
+    private function contextFor(?User $actor): AuditContext
+    {
+        $request = app()->bound('request') ? app('request') : null;
+
+        return $request instanceof Request
+            ? AuditContext::fromHttp($request, $actor)
+            : AuditContext::forActor($actor);
     }
 }

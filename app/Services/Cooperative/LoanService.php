@@ -17,6 +17,7 @@ use App\Services\AuditLogService;
 use App\Support\AuditContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -383,15 +384,29 @@ class LoanService implements LoanServiceContract
 
                 return $loan->refresh();
             });
-        } catch (Throwable $exception) {
-            $this->audit->log('loan.writeoff.failed', 'cooperative.loan', $loan, [
-                'new' => [
+        } catch (ValidationException $exception) {
+            try {
+                $this->audit->log('loan.writeoff.failed', 'cooperative.loan', $loan, [
+                    'new' => [
+                        'loan_id' => $loan->getKey(),
+                        'requested_status' => LoanStatus::WrittenOff->value,
+                        'note_supplied' => is_string($note) && trim($note) !== '',
+                    ],
+                    'reason' => 'Loan write-off rejected by the current state.',
+                ], $context);
+            } catch (Throwable $auditException) {
+                Log::critical('Unable to persist loan write-off rejection audit.', [
                     'loan_id' => $loan->getKey(),
-                    'requested_status' => LoanStatus::WrittenOff->value,
-                    'note_supplied' => is_string($note) && trim($note) !== '',
-                ],
-                'reason' => 'Loan write-off failed.',
-            ], $context);
+                    'exception_class' => $auditException::class,
+                ]);
+            }
+
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::critical('Mandatory loan write-off audit failed; transaction rolled back.', [
+                'loan_id' => $loan->getKey(),
+                'exception_class' => $exception::class,
+            ]);
 
             throw $exception;
         }

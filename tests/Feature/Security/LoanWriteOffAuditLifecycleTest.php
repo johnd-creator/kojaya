@@ -85,9 +85,8 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
         $audit->shouldReceive('log')
             ->withArgs(fn (string $action): bool => $action === 'loan.writeoff.completed')
             ->andThrow(new \RuntimeException('simulated mandatory audit failure'));
-        $audit->shouldReceive('log')
-            ->withArgs(fn (string $action): bool => $action === 'loan.writeoff.failed')
-            ->andReturn(new AuditLog);
+        $audit->shouldNotReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'loan.writeoff.failed');
         $this->app->instance(AuditLogService::class, $audit);
 
         try {
@@ -124,9 +123,8 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
         $audit->shouldReceive('log')
             ->withArgs(fn (string $action): bool => $action === 'loan.writeoff.completed')
             ->andThrow(new \RuntimeException('audit fail'));
-        $audit->shouldReceive('log')
-            ->withArgs(fn (string $action): bool => $action === 'loan.writeoff.failed')
-            ->andReturn(new AuditLog);
+        $audit->shouldNotReceive('log')
+            ->withArgs(fn (string $action): bool => $action === 'loan.writeoff.failed');
         $this->app->instance(AuditLogService::class, $audit);
 
         try {
@@ -172,6 +170,32 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
             ->count();
 
         $this->assertSame(0, $completedAudits);
+    }
+
+    public function test_invalid_source_state_emits_only_truthful_rejection_event(): void
+    {
+        $org = Organization::factory()->create();
+        $actor = User::factory()->create(['organization_id' => $org->id]);
+        $loan = Loan::factory()->create([
+            'status' => LoanStatus::PaidOff,
+            'organization_id' => $org->id,
+        ]);
+
+        try {
+            app(LoanService::class)->writeOff($loan, $actor);
+            $this->fail('Expected an invalid write-off state to be rejected.');
+        } catch (ValidationException) {
+            // Expected domain validation failure.
+        }
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'loan.writeoff.failed',
+            'subject_id' => (string) $loan->id,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'loan.writeoff.completed',
+            'subject_id' => (string) $loan->id,
+        ]);
     }
 
     public function test_requested_completed_and_failed_events_are_truthful(): void

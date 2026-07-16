@@ -12,6 +12,7 @@ use App\Services\AuditLogService;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\CooperativePeriodLockService;
 use App\Services\Cooperative\OperatorProcedureService;
+use App\Support\AuditContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -106,7 +107,13 @@ class OperatorProcedureController extends Controller
         $validated = $request->validated();
 
         return response()->json([
-            'data' => $service->reconcile($payment, $request->user(), $validated['reference'], (bool) ($validated['approve'] ?? true)),
+            'data' => $service->reconcile(
+                $payment,
+                $request->user(),
+                $validated['reference'],
+                (bool) ($validated['approve'] ?? true),
+                AuditContext::fromHttp($request, $request->user()),
+            ),
         ]);
     }
 

@@ -12,6 +12,7 @@ use App\Support\AuditContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 use Throwable;
@@ -24,11 +25,11 @@ class MemberAccountLinkService
         private readonly AuditLogService $audit,
     ) {}
 
-    public function link(User $actor, CooperativeMember $member, User $target, string $reason): CooperativeMember
+    public function link(User $actor, CooperativeMember $member, User $target, string $reason, ?AuditContext $context = null): CooperativeMember
     {
         $this->assertActorCanLink($actor, $member);
         $reasonCode = $this->reasonCode($reason);
-        $context = AuditContext::forActor($actor);
+        $context ??= AuditContext::forActor($actor);
 
         $this->audit->log('member.account.link.requested', 'cooperative.member', $member, [
             'new' => [
@@ -75,15 +76,22 @@ class MemberAccountLinkService
                 return $lockedMember->refresh();
             });
         } catch (Throwable $e) {
-            $this->audit->log('member.account.link.failed', 'cooperative.member', $member, [
-                'new' => [
-                    'target_user_id' => $target->getKey(),
-                    'organization_id' => $member->organization_id,
-                    'reason_code' => $reasonCode,
-                    'reason_supplied' => true,
-                ],
-                'reason' => 'Member account-link request failed.',
-            ], $context);
+            try {
+                $this->audit->log('member.account.link.failed', 'cooperative.member', $member, [
+                    'new' => [
+                        'target_user_id' => $target->getKey(),
+                        'organization_id' => $member->organization_id,
+                        'reason_code' => $reasonCode,
+                        'reason_supplied' => true,
+                    ],
+                    'reason' => 'Member account-link request failed.',
+                ], $context);
+            } catch (Throwable $auditException) {
+                Log::critical('Member account-link failure audit could not be persisted.', [
+                    'member_id' => $member->getKey(),
+                    'exception_class' => $auditException::class,
+                ]);
+            }
 
             throw $e;
         }
@@ -101,11 +109,11 @@ class MemberAccountLinkService
         return $linkedMember;
     }
 
-    public function unlink(User $actor, CooperativeMember $member, string $reason): CooperativeMember
+    public function unlink(User $actor, CooperativeMember $member, string $reason, ?AuditContext $context = null): CooperativeMember
     {
         $this->assertActorCanLink($actor, $member);
         $reasonCode = $this->reasonCode($reason);
-        $context = AuditContext::forActor($actor);
+        $context ??= AuditContext::forActor($actor);
 
         $this->audit->log('member.account.unlink.requested', 'cooperative.member', $member, [
             'new' => [
@@ -155,14 +163,21 @@ class MemberAccountLinkService
                 return $lockedMember->refresh();
             });
         } catch (Throwable $e) {
-            $this->audit->log('member.account.unlink.failed', 'cooperative.member', $member, [
-                'new' => [
-                    'organization_id' => $member->organization_id,
-                    'reason_code' => $reasonCode,
-                    'reason_supplied' => true,
-                ],
-                'reason' => 'Member account-unlink request failed.',
-            ], $context);
+            try {
+                $this->audit->log('member.account.unlink.failed', 'cooperative.member', $member, [
+                    'new' => [
+                        'organization_id' => $member->organization_id,
+                        'reason_code' => $reasonCode,
+                        'reason_supplied' => true,
+                    ],
+                    'reason' => 'Member account-unlink request failed.',
+                ], $context);
+            } catch (Throwable $auditException) {
+                Log::critical('Member account-unlink failure audit could not be persisted.', [
+                    'member_id' => $member->getKey(),
+                    'exception_class' => $auditException::class,
+                ]);
+            }
 
             throw $e;
         }

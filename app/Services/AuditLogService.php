@@ -32,6 +32,21 @@ class AuditLogService
     ): array {
         $context ??= AuditContext::fromCurrentRequest();
         $organizationId = $subject?->getAttribute('organization_id') ?? $context->organizationId;
+        if ($organizationId === null && $subject && method_exists($subject, 'member')) {
+            $organizationId = $subject->member?->organization_id;
+        }
+        if ($organizationId === null && $subject && method_exists($subject, 'user')) {
+            $organizationId = $subject->user?->organization_id;
+        }
+        $oldValues = $changes['old'] ?? null;
+        $newValues = $changes['new'] ?? null;
+
+        $flatMetadata = array_diff_key($changes, array_flip(['old', 'new', 'reason']));
+        if ($flatMetadata !== []) {
+            $newValues = is_array($newValues)
+                ? [...$newValues, ...$flatMetadata]
+                : $flatMetadata;
+        }
 
         return [
             'correlation_id' => $context->correlationId,
@@ -43,8 +58,8 @@ class AuditLogService
             'module' => $module,
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id' => $subject ? $subject->getKey() : null,
-            'old_values' => $this->redact($changes['old'] ?? null),
-            'new_values' => $this->redact($changes['new'] ?? null),
+            'old_values' => $this->redact($oldValues),
+            'new_values' => $this->redact($newValues),
             'reason' => $this->redactReason($changes['reason'] ?? null),
             'ip_address' => $context->ip,
             'user_agent' => $context->userAgent,
@@ -93,8 +108,7 @@ class AuditLogService
 
         $redacted = [];
         foreach ($value as $key => $item) {
-            $keyName = strtolower((string) $key);
-            $redacted[$key] = preg_match('/identity(_number)?|nik|npwp|no_rekening|bank(_account|_account_number|_account_holder)?|account(_number|_holder)?|card(_number)?|token|authorization|secret|password|qr(_string|_payload)?|gateway_payload|ciphertext|blind(_index)?|bidx/', $keyName) === 1
+            $redacted[$key] = $this->isSensitiveKey((string) $key)
                 ? '[REDACTED]'
                 : $this->redact($item);
         }
@@ -111,6 +125,36 @@ class AuditLogService
         return preg_match('/identity|nik|npwp|rekening|bank|token|secret|password|\d{6,}/i', $reason) === 1
             ? '[REDACTED]'
             : Str::limit(trim($reason), 255, '');
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        $normalized = preg_replace('/[^a-z0-9]/', '', strtolower($key)) ?? strtolower($key);
+
+        return in_array($normalized, [
+            'identity',
+            'identitynumber',
+            'nik',
+            'npwp',
+            'norekening',
+            'bankaccount',
+            'bankaccountnumber',
+            'bankaccountholder',
+            'accountholder',
+            'accountnumber',
+            'cardnumber',
+            'token',
+            'authorization',
+            'secret',
+            'password',
+            'qr',
+            'qrstring',
+            'qrpayload',
+            'gatewaypayload',
+            'ciphertext',
+            'blindindex',
+            'bidx',
+        ], true);
     }
 
     protected function getModuleName(Model $model): string

@@ -7,6 +7,7 @@ use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
 use App\Models\MemberPaymentIntent;
+use App\Support\AuditContext;
 use App\Support\Money\MinorAmount;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
@@ -215,7 +216,7 @@ class PaymentGatewayService
      * @param  array<string, mixed>  $payload
      * @param  array<string, string|array<int, string>>  $headers
      */
-    public function applyWebhookToMemberIntent(array $payload, array $headers = []): ?MemberPaymentIntent
+    public function applyWebhookToMemberIntent(array $payload, array $headers = [], ?AuditContext $context = null): ?MemberPaymentIntent
     {
         if ($this->provider->isConfigured()) {
             if (! $this->provider->verifyWebhook($payload, $headers)) {
@@ -236,6 +237,8 @@ class PaymentGatewayService
                 $event->status,
                 $event->rawPayload,
                 $event->amountMinor,
+                null,
+                $context,
             );
         }
 
@@ -247,7 +250,7 @@ class PaymentGatewayService
 
         $status = strtoupper((string) ($payload['status'] ?? ''));
 
-        return $this->stateService->applyGatewayEvent($reference, $status, $payload);
+        return $this->stateService->applyGatewayEvent($reference, $status, $payload, context: $context);
     }
 
     /**

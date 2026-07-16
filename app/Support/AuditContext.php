@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final readonly class AuditContext
 {
@@ -44,7 +45,11 @@ final readonly class AuditContext
         public ?string $ip,
         public ?string $userAgent,
         public string $source,
-    ) {}
+    ) {
+        if (! in_array($source, self::VALID_SOURCES, true)) {
+            throw new InvalidArgumentException("Unsupported audit source [{$source}].");
+        }
+    }
 
     public static function fromHttp(Request $request, ?User $actor = null): self
     {
@@ -74,7 +79,7 @@ final readonly class AuditContext
             actorId: null,
             actorRoles: [],
             organizationId: $organizationId,
-            correlationId: $correlationId ?? (string) Str::uuid(),
+            correlationId: self::normalizeCorrelationId($correlationId),
             ip: null,
             userAgent: null,
             source: self::SOURCE_QUEUE,
@@ -87,7 +92,7 @@ final readonly class AuditContext
             actorId: null,
             actorRoles: [],
             organizationId: $organizationId,
-            correlationId: $correlationId ?? (string) Str::uuid(),
+            correlationId: self::normalizeCorrelationId($correlationId),
             ip: null,
             userAgent: null,
             source: self::SOURCE_SCHEDULER,
@@ -105,7 +110,7 @@ final readonly class AuditContext
             actorId: null,
             actorRoles: [],
             organizationId: $organizationId,
-            correlationId: $correlationId ?? (string) Str::uuid(),
+            correlationId: self::normalizeCorrelationId($correlationId),
             ip: null,
             userAgent: null,
             source: self::SOURCE_SYSTEM,
@@ -139,6 +144,13 @@ final readonly class AuditContext
 
         return $request instanceof Request
             ? self::fromHttp($request)
-            : self::forActor(auth()->user(), app()->runningInConsole() ? self::SOURCE_CLI : self::SOURCE_SYSTEM);
+            : (app()->runningInConsole() ? self::forCli(auth()->user()) : self::forSystem());
+    }
+
+    private static function normalizeCorrelationId(?string $correlationId): string
+    {
+        return is_string($correlationId) && Str::isUuid($correlationId)
+            ? $correlationId
+            : (string) Str::uuid();
     }
 }

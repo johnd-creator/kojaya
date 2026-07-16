@@ -42,7 +42,7 @@ class BackfillMemberSensitiveData extends Command
         $confirmProduction = (bool) $this->option('confirm-production');
         $rotateToCurrent = (bool) $this->option('rotate-to-current');
         $operation = $rotateToCurrent ? 'rotation' : 'backfill';
-        $context = AuditContext::forActor(null, 'cli');
+        $context = AuditContext::forCli();
 
         $audit->log("member.pii.{$operation}.requested", 'cooperative.member', null, [
             'new' => [

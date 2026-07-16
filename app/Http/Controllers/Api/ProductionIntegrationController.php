@@ -13,6 +13,7 @@ use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Integrations\MemberPaymentSettlementService;
 use App\Services\Integrations\PaymentGatewayService;
 use App\Services\Integrations\PushNotificationService;
+use App\Support\AuditContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,6 +70,8 @@ class ProductionIntegrationController extends Controller
         CooperativePaymentService $paymentService,
         PushNotificationService $pushNotificationService
     ): JsonResponse {
+        $context = AuditContext::fromWebhook($request);
+
         try {
             $payment = $gateway->applyWebhook($request->validated(), $request->headers->all());
         } catch (PaymentGatewayWebhookVerificationException $exception) {
@@ -83,6 +86,8 @@ class ProductionIntegrationController extends Controller
                 $payment,
                 null,
                 (string) ($request->validated('reconciliation_reference') ?? $payment->gateway_reference),
+                true,
+                $context,
             );
 
             if ($payment->member?->user) {
@@ -97,7 +102,7 @@ class ProductionIntegrationController extends Controller
 
         if (! $payment) {
             try {
-                $intent = $gateway->applyWebhookToMemberIntent($request->validated(), $request->headers->all());
+                $intent = $gateway->applyWebhookToMemberIntent($request->validated(), $request->headers->all(), $context);
             } catch (PaymentGatewayWebhookVerificationException $exception) {
                 return response()->json([
                     'message' => $exception->getMessage(),
@@ -105,7 +110,7 @@ class ProductionIntegrationController extends Controller
             }
 
             if ($intent && $intent->gateway_status === 'PAID' && ! $intent->settled_at) {
-                $intent = $memberPaymentSettlementService->settle($intent);
+                $intent = $memberPaymentSettlementService->settle($intent, $context);
             }
         }
 

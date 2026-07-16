@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -165,7 +166,7 @@ class MemberStatusTransitionService
                 'old' => ['status' => $member->status, 'validation_status' => $member->validation_status],
                 'new' => ['action' => 'delete_access'],
                 'reason' => $reason ?? 'Member access revoked.',
-            ], AuditContext::forActor($actor));
+            ], $this->contextFor($actor));
 
             $this->accessRevocation->revokeFor($member->refresh(), 'delete_access', $actor);
 
@@ -211,7 +212,7 @@ class MemberStatusTransitionService
                 'old' => $oldState,
                 'new' => ['status' => $status, 'validation_status' => $validationStatus, 'action' => $action],
                 'reason' => $reason ?? $action,
-            ], AuditContext::forActor($actor));
+            ], $this->contextFor($actor));
 
             if ($revokeMemberTokens) {
                 $this->accessRevocation->revokeFor($member->refresh(), $action, $actor);
@@ -232,6 +233,15 @@ class MemberStatusTransitionService
                 "Actor lacks required permission [{$permission}] for this lifecycle command."
             );
         }
+    }
+
+    private function contextFor(User $actor): AuditContext
+    {
+        $request = app()->bound('request') ? app('request') : null;
+
+        return $request instanceof Request
+            ? AuditContext::fromHttp($request, $actor)
+            : AuditContext::forActor($actor);
     }
 
     /**

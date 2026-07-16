@@ -315,7 +315,13 @@ class CooperativeMemberController extends Controller
         CooperativeMember $member,
         MemberAccountLinkService $linkService,
     ): RedirectResponse {
-        $linkService->link($request->user(), $member, User::query()->findOrFail($request->validated('user_id')), $request->validated('reason'));
+        $linkService->link(
+            $request->user(),
+            $member,
+            User::query()->findOrFail($request->validated('user_id')),
+            $request->validated('reason'),
+            AuditContext::fromHttp($request, $request->user()),
+        );
 
         return back()->with('success', 'Akun anggota berhasil ditautkan.');
     }
@@ -335,7 +341,12 @@ class CooperativeMemberController extends Controller
         CooperativeMember $member,
         MemberAccountLinkService $linkService,
     ): RedirectResponse {
-        $linkService->unlink($request->user(), $member, $request->validated('reason'));
+        $linkService->unlink(
+            $request->user(),
+            $member,
+            $request->validated('reason'),
+            AuditContext::fromHttp($request, $request->user()),
+        );
 
         return back()->with('success', 'Akun anggota berhasil dilepas.');
     }

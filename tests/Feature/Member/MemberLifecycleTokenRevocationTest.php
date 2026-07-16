@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Member;
 
-use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\User;
@@ -188,18 +187,17 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         [$user, $member] = $this->activeMemberWithToken();
         $admin = $this->adminUser($member->organization_id);
         $tokenId = $user->tokens()->firstOrFail()->id;
+        $user->createToken('ess-mobile', ['ess:read']);
+        $user->createToken('technician-mobile', ['work-orders:read']);
 
         $originalStatus = $member->status;
         $originalValidationStatus = $member->validation_status;
 
-        $audit = Mockery::mock(AuditLogService::class);
-        $audit->shouldReceive('log')
-            ->withArgs(fn (string $action): bool => $action === 'member.status.transitioned')
-            ->andReturn(new AuditLog);
-        $audit->shouldReceive('log')
-            ->withArgs(fn (string $action): bool => $action === 'member.access.revoked')
+        $revocation = Mockery::mock(MemberAccessRevocationService::class)->makePartial();
+        $revocation->shouldReceive('revokeFor')
+            ->once()
             ->andThrow(new \RuntimeException('simulated mandatory revocation audit failure'));
-        $this->app->instance(AuditLogService::class, $audit);
+        $this->app->instance(MemberAccessRevocationService::class, $revocation);
 
         try {
             app(MemberStatusTransitionService::class)->deactivate($member->refresh(), $admin);
@@ -212,8 +210,40 @@ class MemberLifecycleTokenRevocationTest extends TestCase
         $this->assertSame($originalStatus, $member->status, 'Member status must roll back on revocation audit failure.');
         $this->assertSame($originalValidationStatus, $member->validation_status, 'Validation status must roll back.');
         $this->assertTrue($user->fresh()->hasRole('Anggota'), 'Anggota role must not be removed on rollback.');
+        $this->assertSame(3, $user->fresh()->tokens()->count());
         $this->assertDatabaseHas('personal_access_tokens', ['id' => $tokenId]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'member.status.transitioned']);
         $this->assertDatabaseMissing('audit_logs', ['action' => 'member.access.revoked']);
+    }
+
+    public function test_delete_access_audit_failure_rolls_back_member_and_persisted_lifecycle_audit(): void
+    {
+        [$user, $member] = $this->activeMemberWithToken();
+        $admin = $this->adminUser($member->organization_id);
+        $tokenId = $user->tokens()->firstOrFail()->id;
+        $originalStatus = $member->status;
+        $originalValidationStatus = $member->validation_status;
+
+        $revocation = Mockery::mock(MemberAccessRevocationService::class)->makePartial();
+        $revocation->shouldReceive('revokeFor')
+            ->once()
+            ->andThrow(new \RuntimeException('simulated delete-access audit failure'));
+        $this->app->instance(MemberAccessRevocationService::class, $revocation);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('simulated delete-access audit failure');
+
+        try {
+            app(MemberStatusTransitionService::class)->deleteAccess($member->refresh(), $admin, 'security review');
+        } finally {
+            $member->refresh();
+            $this->assertSame($originalStatus, $member->status);
+            $this->assertSame($originalValidationStatus, $member->validation_status);
+            $this->assertTrue($user->fresh()->hasRole('Anggota'));
+            $this->assertDatabaseHas('personal_access_tokens', ['id' => $tokenId]);
+            $this->assertDatabaseMissing('audit_logs', ['action' => 'member.access.deleted']);
+            $this->assertDatabaseMissing('audit_logs', ['action' => 'member.access.revoked']);
+        }
     }
 
     public function test_lifecycle_happy_path_revokes_only_member_tokens_preserving_ess_and_technician(): void

@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class ReleasePreflightTest extends TestCase
 {
-    public function testReleasePreflightAcceptsTheValidLocalDevelopmentBaseline(): void
+    public function test_release_preflight_accepts_the_valid_local_development_baseline(): void
     {
         $this->configureBaseline();
 
@@ -19,7 +19,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function testStrictProductionPreflightRejectsANonProductionEnvironment(): void
+    public function test_strict_production_preflight_rejects_a_non_production_environment(): void
     {
         $this->configureBaseline();
         Config::set([
@@ -33,7 +33,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testStrictProductionPreflightSucceedsWithValidProductionConfiguration(): void
+    public function test_strict_production_preflight_succeeds_with_valid_production_configuration(): void
     {
         $this->configureStrictProductionBaseline();
 
@@ -47,7 +47,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function testStrictProductionPreflightRejectsADevelopmentApplicationVersion(): void
+    public function test_strict_production_preflight_rejects_a_development_application_version(): void
     {
         $this->configureStrictProductionBaseline();
         Config::set('app.version', '0.1.0-dev');
@@ -57,7 +57,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testStrictProductionPreflightRejectsAnInvalidApplicationKey(): void
+    public function test_strict_production_preflight_rejects_an_invalid_application_key(): void
     {
         $this->configureStrictProductionBaseline();
         Config::set('app.key', 'invalid-application-key');
@@ -67,7 +67,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testEmptyMidtransCredentialsAreReportedAsDisabled(): void
+    public function test_empty_midtrans_credentials_are_reported_as_disabled(): void
     {
         $this->configureBaseline();
 
@@ -76,7 +76,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function testFullyConfiguredMidtransCredentialsAreReportedAsConfigured(): void
+    public function test_fully_configured_midtrans_credentials_are_reported_as_configured(): void
     {
         $this->configureBaseline();
         Config::set([
@@ -90,7 +90,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function testPartiallyConfiguredMidtransCredentialsFailPreflight(): void
+    public function test_partially_configured_midtrans_credentials_fail_preflight(): void
     {
         $this->configureBaseline();
         Config::set('services.midtrans.merchant_id', 'merchant-test-only');
@@ -100,7 +100,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testPartiallyConfiguredWhatsappCredentialsFailPreflight(): void
+    public function test_partially_configured_whatsapp_credentials_fail_preflight(): void
     {
         $this->configureBaseline();
         Config::set('services.whatsapp.access_token', 'whatsapp-test-only');
@@ -110,10 +110,10 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testEqualEncryptionAndBlindIndexKeysFailPreflight(): void
+    public function test_equal_encryption_and_blind_index_keys_fail_preflight(): void
     {
         $this->configureBaseline();
-        $sharedKey = $this->testKey('Z');
+        $sharedKey = $this->encodedKey('Z');
         Config::set([
             'security.encryption_keys' => ['v1' => $sharedKey],
             'security.blind_index_keys' => ['v1' => $sharedKey],
@@ -126,7 +126,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testExpiredLegacyAbilityFallbackFailsPreflight(): void
+    public function test_expired_legacy_ability_fallback_fails_preflight(): void
     {
         $this->configureBaseline();
         Config::set([
@@ -139,7 +139,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function testFailureOutputDoesNotExposeCredentialsOrKeyValues(): void
+    public function test_failure_output_does_not_expose_credentials_or_key_values(): void
     {
         $this->configureStrictProductionBaseline();
         $applicationKey = 'invalid-application-key-secret';
@@ -157,8 +157,8 @@ class ReleasePreflightTest extends TestCase
             ->doesntExpectOutputToContain($applicationKey)
             ->doesntExpectOutputToContain($merchantId)
             ->doesntExpectOutputToContain($serverKey)
-            ->doesntExpectOutputToContain($this->testKey('B'))
-            ->doesntExpectOutputToContain($this->testKey('C'))
+            ->doesntExpectOutputToContain($this->encodedKey('B'))
+            ->doesntExpectOutputToContain($this->encodedKey('C'))
             ->assertExitCode(1);
     }
 
@@ -167,13 +167,13 @@ class ReleasePreflightTest extends TestCase
         Config::set([
             'app.env' => 'testing',
             'app.debug' => true,
-            'app.key' => $this->testKey('A'),
+            'app.key' => $this->encodedKey('A'),
             'app.version' => '0.1.0-dev',
             'app.api_contract_version' => '1.0.0',
-            'security.encryption_keys' => ['v1' => $this->testKey('B')],
+            'security.encryption_keys' => ['v1' => $this->encodedKey('B')],
             'security.encryption_current_version' => 'v1',
-            'security.legacy_encryption_key' => $this->testKey('D'),
-            'security.blind_index_keys' => ['v1' => $this->testKey('C')],
+            'security.legacy_encryption_key' => $this->encodedKey('D'),
+            'security.blind_index_keys' => ['v1' => $this->encodedKey('C')],
             'security.blind_index_current_version' => 'v1',
             'security.blind_index_active_versions' => ['v1'],
             'security.rollout_phase' => PiiCryptoService::ROLLOUT_DUAL_WRITE,
@@ -201,13 +201,13 @@ class ReleasePreflightTest extends TestCase
         Config::set([
             'app.env' => 'production',
             'app.debug' => false,
-            'app.key' => $this->testKey('A'),
+            'app.key' => $this->encodedKey('A'),
             'app.version' => '0.1.0',
         ]);
         $this->app->forgetInstance(PiiCryptoService::class);
     }
 
-    private function testKey(string $character): string
+    private function encodedKey(string $character): string
     {
         return 'base64:'.base64_encode(str_repeat($character, 32));
     }

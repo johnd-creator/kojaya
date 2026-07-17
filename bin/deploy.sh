@@ -70,8 +70,8 @@ cleanup() {
 
 trap cleanup EXIT
 
-maintenance_active=true
 php artisan down --retry=60
+maintenance_active=true
 
 git checkout --detach "$target_commit"
 

@@ -141,18 +141,20 @@ Required corrections:
 
 ### A2. GitHub Release verification
 
-Verify whether a GitHub Release exists for v0.1.0.
+The GitHub Release for v0.1.0 is already published as a pre-release. Do not
+create a new release or duplicate the existing one.
 
-If absent, create it from the immutable v0.1.0 tag with release notes that state:
+Verify that the existing release satisfies:
 
-- internal alpha;
-- included Documents 01 through 05;
-- test and CI evidence;
-- known exclusions and residual risk;
-- not approved for production payment or broad member rollout.
+- the release points to the immutable tag v0.1.0 (peeled commit
+  ad8bc3afc9b62f549e4f054e181ef9decbecb341);
+- the pre-release classification matches Internal Alpha / Not Production Release;
+- the release notes state the scope (Documents 01 through 05), test and CI
+  evidence, known exclusions, and residual risks;
+- the release is not marked as latest or stable.
 
-Creating or publishing a GitHub Release is a separate external write action and
-requires explicit user authorization at execution time.
+Creating, editing, or publishing a GitHub Release is a separate external write
+action and requires explicit user authorization at execution time.
 
 ### A3. Branch and tag protection
 
@@ -672,6 +674,7 @@ Stop and request senior or business direction when:
 
 ## Completion handoff template
 
+```markdown
 # READY FOR SENIOR REVIEW — DOCUMENT 08
 
 Repository:
@@ -714,3 +717,4 @@ Choose exactly one:
 - accept v0.1.x operational patch;
 - begin limited v0.2.0 internal beta pilot;
 - stop rollout and remediate listed blockers.
+```

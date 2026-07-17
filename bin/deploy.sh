@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-deploy_ref="main"
+deploy_ref=''
 
 while (($# > 0)); do
     case "$1" in
         --ref)
-            if (($# < 2)); then
+            if (($# < 2)) || [[ -n "$deploy_ref" ]]; then
                 printf 'Missing value for --ref.\n' >&2
                 exit 2
             fi
@@ -21,8 +21,8 @@ while (($# > 0)); do
     esac
 done
 
-if [[ ! "$deploy_ref" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] && [[ ! "$deploy_ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
-    printf 'Invalid deployment ref.\n' >&2
+if [[ ! "$deploy_ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    printf 'Deployment requires an exact 40-character commit SHA.\n' >&2
     exit 2
 fi
 
@@ -30,47 +30,39 @@ git fetch --prune origin \
     '+refs/heads/*:refs/remotes/origin/*' \
     '+refs/tags/*:refs/tags/*'
 
-resolve_commit() {
-    local candidate
-    local commit
+if ! target_commit="$(git rev-parse --verify "$deploy_ref^{commit}" 2>/dev/null)"; then
+    printf 'Deployment SHA could not be resolved to a commit.\n' >&2
+    exit 1
+fi
 
-    if [[ "$deploy_ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
-        git rev-parse --verify "$deploy_ref^{commit}"
+if [[ ! "$target_commit" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    printf 'Deployment SHA could not be resolved to a commit.\n' >&2
+    exit 1
+fi
 
-        return 0
-    fi
+if ! previous_commit="$(git rev-parse --verify HEAD^{commit} 2>/dev/null)"; then
+    printf 'Current application revision could not be resolved to a commit.\n' >&2
+    exit 1
+fi
 
-    for candidate in "refs/tags/$deploy_ref" "refs/remotes/origin/$deploy_ref" "$deploy_ref"; do
-        if commit=$(git rev-parse --verify "$candidate^{commit}" 2>/dev/null); then
-            printf '%s\n' "$commit"
+if [[ ! "$previous_commit" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    printf 'Current application revision could not be resolved to a commit.\n' >&2
+    exit 1
+fi
 
-            return 0
-        fi
-    done
-
-    printf 'Deployment ref could not be resolved.\n' >&2
-
-    return 1
-}
-
-commit="$(resolve_commit)"
-short_commit="${commit:0:12}"
-printf 'Deploying ref %s at %s.\n' "$deploy_ref" "$short_commit"
-
-git checkout --detach "$commit"
+target_short_commit="${target_commit:0:12}"
+previous_short_commit="${previous_commit:0:12}"
+printf 'Deployment target %s (previous %s).\n' "$target_short_commit" "$previous_short_commit"
 
 maintenance_active=false
+deployment_succeeded=false
 
 cleanup() {
     local status="$?"
 
-    if [[ "$maintenance_active" == true ]]; then
-        if ! php artisan up; then
-            printf 'Deployment failed and application could not be brought up automatically.\n' >&2
-            status=1
-        else
-            printf 'Application brought up during deployment cleanup.\n' >&2
-        fi
+    if [[ "$maintenance_active" == true && "$deployment_succeeded" != true ]]; then
+        printf 'Deployment failed for target SHA %s (previous %s); application remains in maintenance mode. Manual inspection or rollback is required.\n' \
+            "$target_commit" "$previous_short_commit" >&2
     fi
 
     exit "$status"
@@ -78,12 +70,15 @@ cleanup() {
 
 trap cleanup EXIT
 
-php artisan app:release-preflight --strict-production
-
 maintenance_active=true
 php artisan down --retry=60
 
+git checkout --detach "$target_commit"
+
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+php artisan optimize:clear
+php artisan app:release-preflight --strict-production
+
 npm ci --prefer-offline --no-audit
 npm run build
 
@@ -93,3 +88,4 @@ php artisan queue:restart
 
 php artisan up
 maintenance_active=false
+deployment_succeeded=true

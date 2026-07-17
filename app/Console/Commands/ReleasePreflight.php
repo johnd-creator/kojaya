@@ -23,8 +23,12 @@ class ReleasePreflight extends Command
     {
         $strictProduction = (bool) $this->option('strict-production');
 
-        $this->check('application.release_version', function (): bool {
-            return filled(config('app.version'));
+        $this->check('application.release_version', function () use ($strictProduction): bool {
+            $version = config('app.version');
+
+            return $strictProduction
+                ? is_string($version) && $this->isStableApplicationVersion($version)
+                : filled($version);
         });
         $this->check('api.contract_version', function (): bool {
             return filled(config('app.api_contract_version'));
@@ -118,6 +122,14 @@ class ReleasePreflight extends Command
         $this->line($name.': '.$status);
     }
 
+    private function isStableApplicationVersion(string $version): bool
+    {
+        return preg_match(
+            '/\\A(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\z/',
+            $version,
+        ) === 1;
+    }
+
     private function failCheck(string $name, string $reason): void
     {
         $this->line($name.': FAIL ('.$reason.')');
@@ -129,9 +141,23 @@ class ReleasePreflight extends Command
      */
     private function integrationStatus(string $name, array $values): void
     {
-        $configured = collect($values)->every(static fn (mixed $value): bool => filled($value));
+        $filledCount = collect($values)
+            ->filter(static fn (mixed $value): bool => filled($value))
+            ->count();
 
-        $this->pass($name, $configured ? 'CONFIGURED' : 'DISABLED');
+        if ($filledCount === 0) {
+            $this->pass($name, 'DISABLED');
+
+            return;
+        }
+
+        if ($filledCount === count($values)) {
+            $this->pass($name, 'CONFIGURED');
+
+            return;
+        }
+
+        $this->failCheck($name, 'partial configuration');
     }
 
     private function checkLegacyFallback(): void

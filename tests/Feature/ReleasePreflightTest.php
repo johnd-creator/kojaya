@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class ReleasePreflightTest extends TestCase
 {
-    public function test_release_preflight_accepts_the_valid_local_development_baseline(): void
+    public function testReleasePreflightAcceptsTheValidLocalDevelopmentBaseline(): void
     {
         $this->configureBaseline();
 
@@ -19,7 +19,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function test_strict_production_preflight_rejects_a_non_production_environment(): void
+    public function testStrictProductionPreflightRejectsANonProductionEnvironment(): void
     {
         $this->configureBaseline();
         Config::set([
@@ -33,7 +33,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_strict_production_preflight_succeeds_with_valid_production_configuration(): void
+    public function testStrictProductionPreflightSucceedsWithValidProductionConfiguration(): void
     {
         $this->configureStrictProductionBaseline();
 
@@ -47,7 +47,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function test_strict_production_preflight_rejects_a_development_application_version(): void
+    public function testStrictProductionPreflightRejectsADevelopmentApplicationVersion(): void
     {
         $this->configureStrictProductionBaseline();
         Config::set('app.version', '0.1.0-dev');
@@ -57,7 +57,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_strict_production_preflight_rejects_an_invalid_application_key(): void
+    public function testStrictProductionPreflightRejectsAnInvalidApplicationKey(): void
     {
         $this->configureStrictProductionBaseline();
         Config::set('app.key', 'invalid-application-key');
@@ -67,7 +67,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_empty_midtrans_credentials_are_reported_as_disabled(): void
+    public function testEmptyMidtransCredentialsAreReportedAsDisabled(): void
     {
         $this->configureBaseline();
 
@@ -76,7 +76,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function test_fully_configured_midtrans_credentials_are_reported_as_configured(): void
+    public function testFullyConfiguredMidtransCredentialsAreReportedAsConfigured(): void
     {
         $this->configureBaseline();
         Config::set([
@@ -90,7 +90,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(0);
     }
 
-    public function test_partially_configured_midtrans_credentials_fail_preflight(): void
+    public function testPartiallyConfiguredMidtransCredentialsFailPreflight(): void
     {
         $this->configureBaseline();
         Config::set('services.midtrans.merchant_id', 'merchant-test-only');
@@ -100,7 +100,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_partially_configured_whatsapp_credentials_fail_preflight(): void
+    public function testPartiallyConfiguredWhatsappCredentialsFailPreflight(): void
     {
         $this->configureBaseline();
         Config::set('services.whatsapp.access_token', 'whatsapp-test-only');
@@ -110,7 +110,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_equal_encryption_and_blind_index_keys_fail_preflight(): void
+    public function testEqualEncryptionAndBlindIndexKeysFailPreflight(): void
     {
         $this->configureBaseline();
         $sharedKey = $this->testKey('Z');
@@ -126,7 +126,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_expired_legacy_ability_fallback_fails_preflight(): void
+    public function testExpiredLegacyAbilityFallbackFailsPreflight(): void
     {
         $this->configureBaseline();
         Config::set([
@@ -139,7 +139,7 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_failure_output_does_not_expose_credentials_or_key_values(): void
+    public function testFailureOutputDoesNotExposeCredentialsOrKeyValues(): void
     {
         $this->configureStrictProductionBaseline();
         $applicationKey = 'invalid-application-key-secret';

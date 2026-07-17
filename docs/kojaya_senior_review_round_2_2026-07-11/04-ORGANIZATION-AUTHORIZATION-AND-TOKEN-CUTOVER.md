@@ -212,3 +212,11 @@ Recommended:
 - no branch Admin/Manager/Kasir by default.
 
 Seeder matrix tests must assert exact distribution.
+
+## Append-only closure note — release preparation
+
+The historical authorization and token-cutover plan remains unchanged. Its
+focused implementation was merged through PR #8, and final main CI evidence is
+successful run #101 at `21a45fc17f073b6b10f2a10c13798108110f2433`. Granular
+token cutover remains instrument-phase work and is not represented as final
+production completion.

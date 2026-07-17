@@ -95,3 +95,12 @@ PR tidak boleh menjadi ready atau di-merge sampai:
 5. `05-AUDIT-PAGINATION-AND-CONTRACT-TESTS.md`
 6. `06-CI-PR-AND-JUNIOR-EXECUTION-PROTOCOL.md`
 7. `07-MESSAGE-TO-DEEPSEEK.md`
+
+## Historical closure notice — release preparation
+
+This verdict applies to the historical review SHA and must be retained as review
+evidence. The remediation described in Documents 01–05 was subsequently carried
+through focused branches and merged remediation PRs. Current closure evidence is
+the green main baseline `21a45fc17f073b6b10f2a10c13798108110f2433` and the
+release-preparation branch under senior review. This notice does not erase the
+historical findings and does not represent a production rollout or a released tag.

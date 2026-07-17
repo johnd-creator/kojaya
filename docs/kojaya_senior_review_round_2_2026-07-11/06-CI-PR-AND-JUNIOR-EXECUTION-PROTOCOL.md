@@ -7,6 +7,27 @@ Target: johnd-creator/kojaya
 Forbidden: johnd-creator/KojayaApp
 ```
 
+## Release-prep verification and provenance policy
+
+For release-preparation tasks, the implementation model does not run automated
+tests, formatters, frontend builds, generators, migrations, seeders, or the full
+quality gate by default. The model must provide exact verification commands for
+the user to run manually.
+
+The model may run a test or another prohibited verification command only when the
+user gives explicit authorization in the active conversation. Every reported
+result must identify its provenance:
+
+- executed by user;
+- executed by model with explicit authorization; or
+- executed by GitHub Actions.
+
+The model must not claim a test passed without corresponding user or CI evidence.
+After the user reports manual verification, the model may inspect the final diff,
+commit and push the scoped changes when authorized by the task, then stop for
+senior review. It must not create a PR, merge, tag, or GitHub Release unless the
+senior explicitly requests that separate action.
+
 Sebelum kerja:
 
 ```bash

@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Release Version
+    |--------------------------------------------------------------------------
+    |
+    | This identifies the application baseline. It is intentionally separate
+    | from the version of the public API contract.
+    |
+    */
+
+    'version' => env('APP_VERSION', '0.1.0-dev'),
+
+    'api_contract_version' => env('API_CONTRACT_VERSION', '1.0.0'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

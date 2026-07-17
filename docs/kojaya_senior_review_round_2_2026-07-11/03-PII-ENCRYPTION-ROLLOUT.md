@@ -253,3 +253,12 @@ Never audit/log plaintext, ciphertext, bidx, key, or raw sensitive request.
 ### Deployment rehearsal
 
 Use sanitized production-size copy and record duration, locks, DB load, disk growth, report parity, and backup restore result.
+
+## Append-only closure note — release preparation
+
+The historical independent-review status in this document predates the focused
+implementation merge through PR #5. Main CI after that merge is represented by
+successful run #101 at `21a45fc17f073b6b10f2a10c13798108110f2433`. The code
+implementation is accepted as an internal-alpha baseline for release preparation;
+production rollout responsibilities, key operations, backfill, and rehearsal
+remain outstanding.

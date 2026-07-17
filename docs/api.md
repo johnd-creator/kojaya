@@ -6,9 +6,15 @@ KojayaPro dan Kojayaku menyediakan **RESTful API** yang lengkap untuk integrasi 
 
 **Base URL:** `http://localhost:8000/api` (development)
 **API Version:** v1
+**Application Release:** `v0.1.0` (Internal Alpha; pending release preparation)
+**API Contract Version:** `1.0.0`
 **Authentication:** Laravel Sanctum (Token-based)
 **Content-Type:** `application/json`
 **OpenAPI Spec:** `GET /api/openapi.json`
+
+The application release version and API contract version are intentionally
+separate. `1.0.0` in the OpenAPI metadata identifies the API contract, not a
+production application release.
 
 ---
 
@@ -2909,7 +2915,11 @@ final checkIn = await api.post('/ess/attendance/check-in', {
 
 ## 🔄 API Changelog
 
-### **Version 1.0.0** (Current Release)
+### **API Contract Version 1.0.0**
+
+This is the current API contract metadata version. It does not mean that the
+application has published a `v1.0.0` release.
+
 - Authentication with Sanctum tokens (login, logout, session, rotate)
 - Technician work orders (CRUD, start, complete, sync with idempotency, attachments, parts, escalation, reopen, timeline)
 - Employee Self-Service (dashboard, profile, attendance with geofence, leaves, overtime, reimbursements, payslips, compliance, shift roster, geofence)

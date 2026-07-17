@@ -283,3 +283,12 @@ Output:
 - unknown rows listed;
 - migrated legacy test passes;
 - no PII in output.
+
+## Append-only closure note — release preparation
+
+This document records the historical P0 review and its original evidence. The
+Document 01 remediation was later merged through the focused remediation flow;
+the current main evidence baseline is
+`21a45fc17f073b6b10f2a10c13798108110f2433`. Historical findings remain intact.
+The release-prep branch is an internal-alpha preparation only and is not a claim
+that every production rollout responsibility is complete.

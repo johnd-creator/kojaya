@@ -5,8 +5,7 @@ on:
     inputs:
       ref:
         description: Git ref to deploy
-        required: false
-        default: main
+        required: true
 
 concurrency:
   group: production-deploy
@@ -23,12 +22,33 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: Require deployment secrets
+      - name: Resolve checked-out commit
+        id: resolve-commit
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
         run: |
-          test -n "${{ secrets.DEPLOY_HOST }}"
-          test -n "${{ secrets.DEPLOY_USER }}"
-          test -n "${{ secrets.DEPLOY_PATH }}"
-          test -n "${{ secrets.DEPLOY_SSH_KEY }}"
+          set -euo pipefail
+
+          commit="$(git rev-parse HEAD)"
+          if [[ ! "$commit" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            printf 'Checked-out commit is not a complete SHA.\n' >&2
+            exit 1
+          fi
+
+          printf 'Requested ref %s resolved to %s.\n' "$REQUESTED_REF" "$commit"
+          printf 'commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Require deployment secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_PATH"
+          test -n "$DEPLOY_SSH_KEY"
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -36,6 +56,21 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
 
       - name: Deploy release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SHA: ${{ steps.resolve-commit.outputs.commit }}
         run: |
-          ssh -o StrictHostKeyChecking=accept-new "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "cd '${{ secrets.DEPLOY_PATH }}' && git fetch --all --prune && git checkout '${{ inputs.ref }}' && git pull --ff-only && bash bin/deploy.sh"
+          set -euo pipefail
+
+          if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            printf 'Resolved deployment commit is invalid.\n' >&2
+            exit 1
+          fi
+
+          # The checked-out bash bin/deploy.sh is streamed below, so the
+          # remote worktree's deploy script is never used as the entry point.
+          printf -v remote_command 'cd -- %q && bash -s -- --ref %q' "$DEPLOY_PATH" "$DEPLOY_SHA"
+          ssh -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" \
+            "$remote_command" < bin/deploy.sh

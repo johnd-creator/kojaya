@@ -7,10 +7,15 @@
 - **Kojayaku** - Aplikasi Anggota untuk cek simpanan, pinjaman, poin, transaksi
 
 **Type:** Integrated Cooperative Management System
-**Version:** 1.0.0
-**Status:** Active Development
+**Version:** 0.1.0
+**Status:** Internal Alpha / Active Development
 **Start Date:** February 2026
 **Repository:** https://github.com/johnd-creator/kojaya.git
+
+**Release identity:** `v0.1.0` is the pending internal application baseline. The
+API contract remains `/api/v1` with contract version `1.0.0`; these are separate
+identities. This baseline is not a production-ready claim for the complete
+Legacy ERP or external integrations.
 
 ---
 

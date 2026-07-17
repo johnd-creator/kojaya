@@ -316,3 +316,11 @@ Intent model/migrations, focused services, thin store/coffee controllers, webhoo
 ## Forbidden files
 
 Member PII, role seeder, Inertia screens, Android, loan approval, unrelated refactor.
+
+## Append-only closure note — release preparation
+
+This document remains historical review evidence for the payment and reservation
+state-machine remediation. The focused remediation was merged into the main
+baseline; main CI run #101 succeeded at
+`21a45fc17f073b6b10f2a10c13798108110f2433`. This closure note does not claim
+production payment activation or production release readiness.

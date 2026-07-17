@@ -201,3 +201,11 @@ Tests:
 - exact API/Inertia contracts;
 - no misleading tests;
 - full CI runs everything.
+
+## Append-only closure note — release preparation
+
+The historical audit, pagination, and contract-test plan remains preserved as
+evidence. Its focused implementation was merged through PR #9, with final main
+CI evidence in successful run #101 at
+`21a45fc17f073b6b10f2a10c13798108110f2433`. This note does not alter historical
+test counts or claim that the internal-alpha baseline is a production release.

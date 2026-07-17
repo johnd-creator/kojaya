@@ -30,7 +30,7 @@ class OpenApiGenerator
             'openapi' => '3.0.3',
             'info' => [
                 'title' => 'Kojaya API',
-                'version' => '1.0.0',
+                'version' => (string) config('app.api_contract_version', '1.0.0'),
                 'description' => 'API untuk Kojaya mobile apps: Kojayaku (anggota koperasi), ESS (pegawai), dan Technician (teknisi lapangan).',
             ],
             'servers' => [

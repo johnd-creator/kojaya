@@ -3,8 +3,20 @@
 ## 📅 Project Timeline
 
 **Project Start:** February 26, 2026
-**Current Status:** Active Development
-**Last Updated:** June 24, 2026
+**Current Status:** Internal Alpha / Active Development
+**Last Updated:** July 17, 2026
+
+## 🎯 2026-07-17 - v0.1.0 Release Preparation
+
+- Application release identity is `0.1.0`; API contract metadata remains `1.0.0`.
+- Release-readiness documentation and a read-only production preflight are being
+  prepared on `release/v0.1.0-prep`.
+- Approved stable Composer remediation is now resolved under PHP 8.4.23: zero
+  critical, high, and unknown advisories remain; one moderate and three low
+  advisories are recorded as residual risk.
+- `composer.json` constraints remain unchanged; the resolution updates
+  `composer.lock` only.
+- No Git tag or GitHub Release has been created.
 
 ---
 
@@ -905,7 +917,11 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 
 ---
 
-## 🔄 Release History
+## 🔄 Historical Development Milestones (not published Git releases)
+
+The entries below describe historical development milestones only. They do not
+assert that Git tags or GitHub Releases were published. Application release
+`v0.1.0` is still pending release preparation.
 
 ### **v0.1.0 - Alpha** (February 2026)
 - Initial Laravel setup

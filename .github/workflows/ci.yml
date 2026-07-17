@@ -10,6 +10,23 @@ env:
   APP_ENV: testing
 
 jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci --prefer-offline --no-audit
+      - run: composer audit --locked --ignore-severity=medium --ignore-severity=low --abandoned=report
+      - run: npm audit --omit=dev --audit-level=high
+
   style:
     name: Pint
     runs-on: ubuntu-latest

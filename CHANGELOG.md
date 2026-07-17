@@ -7,13 +7,13 @@ All notable changes to the Kojaya application are documented here.
 - Release-preparation implementation is complete.
 - Manual PHP and shell verification has passed (full default suite, focused
   release-preflight checks, `bash -n bin/deploy.sh`, and `git diff --check`).
-- Senior final review, PR GitHub Actions, merge, green main CI, changelog date
-  finalization, and tag creation remain pending.
+- PR GitHub Actions rerun, merge, green main CI, tag creation, and GitHub
+  Release remain pending.
 - Stable PHP 8.4-compatible Composer remediation is recorded in `composer.lock`;
   critical, high, and unknown advisories are cleared, with medium/low residual
   risk documented in the release-readiness report.
 
-## [0.1.0] - Pending
+## [0.1.0] - 2026-07-17
 
 ### Added
 

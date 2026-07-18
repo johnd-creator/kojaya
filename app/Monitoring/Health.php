@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Health
 {
@@ -81,16 +82,39 @@ class Health
 
     public function checkStorage(): array
     {
+        $disk = null;
+        $probePath = null;
+        $probeAttempted = false;
+
         try {
-            $disk = config('filesystems.default');
-            Storage::disk($disk)->put('health-check-test', 'ok');
-            Storage::disk($disk)->delete('health-check-test');
+            $disk = Storage::disk((string) config('filesystems.default'));
+            $probePath = 'health-checks/'.Str::uuid()->toString().'.tmp';
+            $probeAttempted = true;
+
+            if ($disk->put($probePath, 'ok') !== true || ! $disk->exists($probePath)) {
+                throw new \RuntimeException('Storage health probe write failed.');
+            }
+
+            if (! $disk->delete($probePath)) {
+                throw new \RuntimeException('Storage health probe cleanup failed.');
+            }
+
+            $probeAttempted = false;
 
             $this->checks[] = ['component' => 'storage', 'status' => 'ok'];
 
-            return ['status' => 'ok', 'disk' => $disk];
+            return ['status' => 'ok'];
         } catch (\Throwable) {
             return $this->failedCheck('storage');
+        } finally {
+            if ($probeAttempted && $disk !== null && $probePath !== null) {
+                try {
+                    if ($disk->exists($probePath)) {
+                        $disk->delete($probePath);
+                    }
+                } catch (\Throwable) {
+                }
+            }
         }
     }
 

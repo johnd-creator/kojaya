@@ -9,6 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PhaseD1ObservabilityTest extends TestCase
@@ -109,6 +110,70 @@ class PhaseD1ObservabilityTest extends TestCase
         $this->assertSame('DATABASE_UNAVAILABLE', $result['error_code']);
         $this->assertArrayNotHasKey('message', $result);
         $this->assertStringNotContainsString('synthetic-secret', $encodedResult);
+    }
+
+    public function test_storage_health_probe_preserves_existing_file_and_cleans_temporary_file(): void
+    {
+        Storage::fake('local');
+        config()->set('filesystems.default', 'local');
+
+        $disk = Storage::disk('local');
+        $disk->put('health-check-test', 'sentinel');
+
+        $result = (new Health)->checkStorage();
+
+        $this->assertSame(['status' => 'ok'], $result);
+        $this->assertSame('sentinel', $disk->get('health-check-test'));
+        $this->assertSame([], $disk->allFiles('health-checks'));
+    }
+
+    public function test_concurrent_storage_health_probes_use_distinct_temporary_paths(): void
+    {
+        config()->set('filesystems.default', 'local');
+
+        $paths = [];
+        $disk = \Mockery::mock();
+        $disk->shouldReceive('put')
+            ->twice()
+            ->andReturnUsing(function (string $path, string $contents) use (&$paths): bool {
+                $paths[] = $path;
+
+                return true;
+            });
+        $disk->shouldReceive('exists')->twice()->andReturn(true);
+        $disk->shouldReceive('delete')->twice()->andReturn(true);
+        Storage::shouldReceive('disk')->twice()->with('local')->andReturn($disk);
+
+        $firstResult = (new Health)->checkStorage();
+        $secondResult = (new Health)->checkStorage();
+
+        $this->assertSame(['status' => 'ok'], $firstResult);
+        $this->assertSame(['status' => 'ok'], $secondResult);
+        $this->assertCount(2, $paths);
+        $this->assertNotSame($paths[0], $paths[1]);
+        $this->assertMatchesRegularExpression('/^health-checks\/[0-9a-f-]+\.tmp$/', $paths[0]);
+        $this->assertMatchesRegularExpression('/^health-checks\/[0-9a-f-]+\.tmp$/', $paths[1]);
+    }
+
+    public function test_storage_health_failure_response_is_safe(): void
+    {
+        config()->set('filesystems.default', 'local');
+
+        $disk = \Mockery::mock();
+        $disk->shouldReceive('put')
+            ->once()
+            ->andThrow(new \RuntimeException('synthetic-storage-secret'));
+        $disk->shouldReceive('exists')->once()->andReturn(false);
+        Storage::shouldReceive('disk')->once()->with('local')->andReturn($disk);
+
+        $result = (new Health)->checkStorage();
+        $encodedResult = json_encode($result, JSON_THROW_ON_ERROR);
+
+        $this->assertSame('error', $result['status']);
+        $this->assertSame('STORAGE_UNAVAILABLE', $result['error_code']);
+        $this->assertArrayNotHasKey('message', $result);
+        $this->assertStringNotContainsString('synthetic-storage-secret', $encodedResult);
+        $this->assertStringNotContainsString('local', $encodedResult);
     }
 
     public function test_full_health_status_is_degraded_when_database_check_fails(): void

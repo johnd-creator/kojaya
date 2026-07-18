@@ -62,8 +62,9 @@ ready.
 
 The following remain explicit release risks:
 
-- 42 Legacy ERP test files and approximately 161 test methods are outside the
-  default PHPUnit release gate;
+- 42 Legacy ERP test files and 138 statically discoverable `test_` methods are
+  outside the default PHPUnit release gate; the earlier approximately-161
+  estimate is superseded by the 2026-07-18 inventory;
 - five tests remain skipped;
 - PII remains in staged dual-write mode;
 - encrypted backfill, production verification, key rotation, and plaintext
@@ -75,8 +76,9 @@ The following remain explicit release risks:
 - production deployment, backup restore rehearsal, and rollback rehearsal have
   not been accepted as release evidence;
 - Composer and NPM still have documented moderate or low residual advisories;
-- repository release documentation contains stale statements that merge, tag,
-  and release actions are still pending;
+- historical review documents retain their original statements; current
+  release metadata and GitHub Release evidence are recorded in PR #12 and the
+  2026-07-18 closeout update below;
 - historical remediation and release branches remain visible and require a
   deliberate branch-retention decision.
 
@@ -718,3 +720,74 @@ Choose exactly one:
 - begin limited v0.2.0 internal beta pilot;
 - stop rollout and remediate listed blockers.
 ```
+
+## 2026-07-18 closeout evidence update
+
+This append-only update records the audit performed against backend main
+`9cc26567bbac9f91e6ae5fe791573ea83e166666` on 2026-07-18 (Asia/Jakarta). It
+does not rewrite the checklist above or claim that operational acceptance has
+passed.
+
+### Evidence matrix
+
+| Workstream | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| 08-A Release metadata | PARTIAL | PR #12 is merged; tag `v0.1.0` still peels to `ad8bc3afc9b62f549e4f054e181ef9decbecb341`; GitHub Release is a published prerelease; main CI run #112 for `9cc26567...` passed all eight existing checks | Tag protection and release ownership are reviewed but not applied; no new release action is authorized |
+| 08-B Repository governance | PARTIAL | PR #13 is merged; governance record inventories 17 remote branches and records the current repository state | Main protection is currently not enabled, no tag ruleset is visible, and no GitHub Environment exists; administrative changes require owner approval |
+| 08-C Staging preflight and smoke | PARTIAL | Draft PR #15, commit `3e2f6b0c859bfdf4bfe338c0013f7c83d1979697`, adds exact-SHA preflight, safe output, health/migration/queue/scheduler/storage checks, and a smoke runbook | No staging host, credential, deployment record, smoke result, or failure rehearsal is available |
+| 08-D Backup, restore, rollback | BLOCKED | Draft PR #15 hardens `docs/backup-runbook.md` with checksum, isolated restore, rollback decision tree, and evidence templates | No isolated backup/restore/rollback rehearsal has been authorized or executed; RTO/RPO is not approved |
+| 08-E Observability and reconciliation | PARTIAL | Draft PR #15 adds safe health failure output and a focused regression test; local focused test result was 10 passed, 56 assertions; the observability runbook maps signals, thresholds, roles, and triage | External alert delivery, owner confirmation, provider reconciliation validation, and live staging evidence remain pending |
+| 08-F Android mobile pilot | BLOCKED | Android PR #1 and PR #2 are merged; their descriptions record cart, session, idempotency, pending-payment, and ownership work | No authoritative end-to-end pilot evidence or CI status is available; the local Android checkout is stale and contains the user-owned modification `docs/penawaran.md`, which was not touched |
+| 08-G Legacy ERP recovery wave 1 | PARTIAL | Draft PR #16, commit `1518a12a5c491cb170c60346422fc5b3f01cb08c`, adds a blocking CI step and inventory; local wave result is 26 passed, 59 assertions | 38 Legacy ERP files remain quarantined; later recovery waves and provider-dependent skips remain open |
+
+### CI provenance
+
+The authoritative backend main run is Actions run #112 (`29637252312`) for
+`9cc26567bbac9f91e6ae5fe791573ea83e166666`; all eight existing jobs completed
+successfully: Dependency Audit, Pint, Frontend Build, Generated Drift, PHPUnit
+Parallel, Migration and Seed, OpenAPI Drift, and PostgreSQL Concurrency.
+
+Draft PR verification is separate from main acceptance:
+
+| PR | Commit | Run | Status at audit checkpoint |
+| --- | --- | --- | --- |
+| #14 CI documentation-only optimization | `3b4a008355c3d990411479c44de7dadd713b9347` | #113 (`29640361565`) | In progress while this record was prepared |
+| #15 staging/recovery/observability | `3e2f6b0c859bfdf4bfe338c0013f7c83d1979697` | #114 (`29640635414`) | In progress while this record was prepared |
+| #16 Legacy ERP Wave 1 | `1518a12a5c491cb170c60346422fc5b3f01cb08c` | #115 (`29640782276`) | In progress while this record was prepared |
+
+No PR above is merged. A passing draft-PR run does not move any acceptance
+item to passed until the PR is reviewed and merged into main.
+
+### Approval packets still required
+
+1. **GitHub governance:** apply protection to `main`, require the eight exact
+   CI checks, block force push/deletion, and protect `v*` tags. Required role:
+   repository owner/admin. Rollback: remove the ruleset only after owner access
+   and bypass recovery are verified. Risk: a misconfigured required reviewer or
+   bypass actor can lock out the sole maintainer.
+2. **Staging proof:** provide an isolated staging host, restricted deployment
+   credential, synthetic member fixtures, and approved sandbox integration
+   configuration. Run the exact-SHA preflight and smoke checklist, retain a
+   redacted artifact, and record operator/time/SHA. Rollback: keep maintenance
+   mode and use the approved manual rollback decision tree.
+3. **Recovery rehearsal:** provide an isolated non-production database and
+   encrypted backup destination. Create/checksum/restore a synthetic backup and
+   validate application state. No production restore or destructive rollback is
+   authorized by this record.
+4. **Android pilot:** provide a clean, current checkout of
+   `johnd-creator/KojayaApp`, authoritative CI evidence, approved backend
+   contract SHA, and a synthetic pilot environment. Do not reuse the dirty local
+   checkout or collect real payment.
+5. **Legacy continuation:** assign owners and target milestones for the
+   remaining 38 files and the provider-dependent skipped tests before removing
+   the broad quarantine.
+
+### Current conclusion
+
+The implementation and documentation work has produced reviewable evidence for
+parts of 08-A through 08-G, but deployment, recovery rehearsal, live
+observability, Android pilot, and governance application are not proven. The
+Document 08 checklist therefore remains intentionally unchecked where its
+acceptance criterion requires operational evidence.
+
+**PARTIALLY ACHIEVED — NOT READY FOR DOCUMENT 08 CLOSEOUT**

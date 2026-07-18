@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Listeners\FailedJobListener;
 use App\Models\User;
+use App\Monitoring\Health;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PhaseD1ObservabilityTest extends TestCase
@@ -92,6 +94,21 @@ class PhaseD1ObservabilityTest extends TestCase
 
         $response->assertHeader('X-Response-Time-Ms');
         $this->assertIsNumeric($response->headers->get('X-Response-Time-Ms'));
+    }
+
+    public function test_health_failure_response_does_not_expose_exception_message(): void
+    {
+        DB::shouldReceive('connection')
+            ->once()
+            ->andThrow(new \RuntimeException('password=synthetic-secret'));
+
+        $result = (new Health)->checkDatabase();
+        $encodedResult = json_encode($result, JSON_THROW_ON_ERROR);
+
+        $this->assertSame('error', $result['status']);
+        $this->assertSame('DATABASE_UNAVAILABLE', $result['error_code']);
+        $this->assertArrayNotHasKey('message', $result);
+        $this->assertStringNotContainsString('synthetic-secret', $encodedResult);
     }
 
     public function test_failed_job_listener_sends_notification(): void

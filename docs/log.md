@@ -6,17 +6,29 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-07-17 - v0.1.0 Release Closeout
+
+- `v0.1.0` was tagged (immutable) at `ad8bc3afc9b62f549e4f054e181ef9decbecb341`
+  and published as an internal-alpha GitHub pre-release.
+- PR #10 (release preparation) merged; main CI green at the release/tag SHA.
+- PR #11 (Document 08 release staging, mobile pilot readiness) merged to `main`
+  as post-release roadmap (commit `ed8f2026c35508471385ad49ae23a24189b642b1`).
+- Document 08 is not part of the `v0.1.0` tag; workstreams 08-B through 08-G
+  remain planned, not executed.
+- No production rollout was performed by this closeout.
+
+---
+
 ## 🎯 2026-07-17 - v0.1.0 Release Preparation
 
 - Application release identity is `0.1.0`; API contract metadata remains `1.0.0`.
-- Release-readiness documentation and a read-only production preflight are being
-  prepared on `release/v0.1.0-prep`.
-- Approved stable Composer remediation is now resolved under PHP 8.4.23: zero
+- Release-readiness documentation and a read-only production preflight were
+  prepared on `release/v0.1.0-prep` and merged via PR #10.
+- Approved stable Composer remediation is resolved under PHP 8.4.23: zero
   critical, high, and unknown advisories remain; one moderate and three low
   advisories are recorded as residual risk.
 - `composer.json` constraints remain unchanged; the resolution updates
   `composer.lock` only.
-- No Git tag or GitHub Release has been created.
 
 ---
 
@@ -920,8 +932,9 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 ## 🔄 Historical Development Milestones (not published Git releases)
 
 The entries below describe historical development milestones only. They do not
-assert that Git tags or GitHub Releases were published. Application release
-`v0.1.0` is still pending release preparation.
+assert that Git tags or GitHub Releases were published at those earlier dates.
+Application release `v0.1.0` is now published as an internal-alpha pre-release
+(tagged at `ad8bc3afc9b62f549e4f054e181ef9decbecb341`).
 
 ### **v0.1.0 - Alpha** (February 2026)
 - Initial Laravel setup

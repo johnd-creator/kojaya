@@ -59,14 +59,12 @@ jobs:
 
           docs_only=true
           for file in "${changed_files[@]}"; do
-            case "$file" in
-              docs/**|*.md|*.mdx|*.txt)
-                ;;
-              *)
-                docs_only=false
-                break
-                ;;
-            esac
+            if [[ "$file" == "CHANGELOG.md" || "$file" == "README.md" || "$file" =~ ^docs/.+\.md$ ]]; then
+              continue
+            fi
+
+            docs_only=false
+            break
           done
 
           printf 'Changed paths classified as docs_only=%s.\n' "$docs_only"

@@ -111,6 +111,19 @@ class PhaseD1ObservabilityTest extends TestCase
         $this->assertStringNotContainsString('synthetic-secret', $encodedResult);
     }
 
+    public function test_full_health_status_is_degraded_when_database_check_fails(): void
+    {
+        DB::shouldReceive('connection')
+            ->andThrow(new \RuntimeException('database connection failure'));
+
+        $result = (new Health)->full();
+
+        $this->assertSame('degraded', $result['status']);
+        $this->assertSame('error', $result['components']['database']['status']);
+        $this->assertSame('DATABASE_UNAVAILABLE', $result['components']['database']['error_code']);
+        $this->assertArrayNotHasKey('message', $result['components']['database']);
+    }
+
     public function test_failed_job_listener_sends_notification(): void
     {
         $this->seed(\Database\Seeders\RolePermissionSeeder::class);

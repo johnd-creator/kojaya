@@ -46,7 +46,7 @@ For a strict production-shaped staging configuration, add
 `--strict-production`. The checker reports only check names and `PASS`/`FAIL`;
 it does not print configuration values or health response bodies. It verifies:
 
-- exact checked-out SHA and clean worktree;
+- exact checked-out SHA, clean worktree, clean index, and no untracked files;
 - release preflight configuration;
 - migration status visibility;
 - queue backend command availability;

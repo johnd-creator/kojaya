@@ -15,16 +15,18 @@ class Health
     {
         $this->checks = [];
 
+        $components = [
+            'app' => $this->checkApp(),
+            'database' => $this->checkDatabase(),
+            'queue' => $this->checkQueue(),
+            'storage' => $this->checkStorage(),
+            'vendor_integrations' => $this->checkVendorIntegrations(),
+        ];
+
         return [
             'status' => $this->overallStatus(),
             'timestamp' => now()->toIso8601String(),
-            'components' => [
-                'app' => $this->checkApp(),
-                'database' => $this->checkDatabase(),
-                'queue' => $this->checkQueue(),
-                'storage' => $this->checkStorage(),
-                'vendor_integrations' => $this->checkVendorIntegrations(),
-            ],
+            'components' => $components,
             'counts' => $this->counts(),
         ];
     }

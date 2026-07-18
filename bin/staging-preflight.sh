@@ -89,6 +89,7 @@ run_check() {
 
 run_check 'working_tree' git diff --quiet
 run_check 'index_clean' git diff --cached --quiet
+run_check 'untracked_files' bash -c '[[ -z "$(git ls-files --others --exclude-standard)" ]]'
 
 preflight_command=(php artisan app:release-preflight)
 if [[ "$strict_production" == true ]]; then

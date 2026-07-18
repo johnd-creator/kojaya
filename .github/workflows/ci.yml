@@ -57,15 +57,53 @@ jobs:
             exit 0
           fi
 
-          docs_only=true
-          for file in "${changed_files[@]}"; do
-            if [[ "$file" == "CHANGELOG.md" || "$file" == "README.md" || "$file" =~ ^docs/.+\.md$ ]]; then
-              continue
-            fi
+          is_documentation_path() {
+            [[ "$1" == "CHANGELOG.md" || "$1" == "README.md" || "$1" =~ ^docs/.+\.md$ ]]
+          }
 
-            docs_only=false
-            break
-          done
+          classify_paths() {
+            local result=true
+            local file
+
+            for file in "$@"; do
+              if ! is_documentation_path "$file"; then
+                result=false
+                break
+              fi
+            done
+
+            printf '%s' "$result"
+          }
+
+          assert_classification() {
+            local expected="$1"
+            shift
+            local actual
+
+            actual="$(classify_paths "$@")"
+            if [[ "$actual" != "$expected" ]]; then
+              printf 'Classifier regression for expected=%s actual=%s paths=%s\n' "$expected" "$actual" "$*" >&2
+              return 1
+            fi
+          }
+
+          assert_classification true docs/example.md
+          assert_classification true docs/nested/example.md
+          assert_classification true CHANGELOG.md
+          assert_classification true README.md
+          assert_classification false .github/workflows/ci.yml
+          assert_classification false app/Example.php
+          assert_classification false app/src/Example.kt
+          assert_classification false resources/js/app.js
+          assert_classification false config/app.php
+          assert_classification false database/migrations/example.php
+          assert_classification false composer.lock
+          assert_classification false docs/example.mdx
+          assert_classification false docs/example.txt
+          assert_classification false notes.md
+          assert_classification false docs/example.md app/Example.php
+
+          docs_only="$(classify_paths "${changed_files[@]}")"
 
           printf 'Changed paths classified as docs_only=%s.\n' "$docs_only"
           printf 'docs_only=%s\n' "$docs_only" >> "$GITHUB_OUTPUT"

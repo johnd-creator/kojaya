@@ -380,6 +380,7 @@ KojayaPro → Kojayaku:
 - **[Development Plan](./plan.md)** - Roadmap & sprint planning
 - **[Decisions Log](./decisions.md)** - Architecture decision records
 - **[Development Log](./log.md)** - Chronological development history
+- **[Repository Governance Record](./governance/repository-governance.md)** - Read-only GitHub governance audit and rollout plan
 
 ---
 

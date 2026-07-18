@@ -12,10 +12,13 @@
 **Start Date:** February 2026
 **Repository:** https://github.com/johnd-creator/kojaya.git
 
-**Release identity:** `v0.1.0` is the pending internal application baseline. The
-API contract remains `/api/v1` with contract version `1.0.0`; these are separate
+**Release identity:** `v0.1.0` is published as an internal-alpha GitHub
+pre-release, tagged at `ad8bc3afc9b62f549e4f054e181ef9decbecb341`. The API
+contract remains `/api/v1` with contract version `1.0.0`; these are separate
 identities. This baseline is not a production-ready claim for the complete
-Legacy ERP or external integrations.
+Legacy ERP or external integrations. Document 08 defines the roadmap from this
+internal-alpha baseline toward operationally verified `v0.1.x` and a scoped
+`v0.2.0` internal beta.
 
 ---
 

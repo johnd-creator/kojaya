@@ -303,6 +303,7 @@ jobs:
         env:
           COLLISION_PRINTER_PROFILE: 'true'
       - name: Legacy ERP Recovery Wave 1
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: >-
           php artisan test --compact
           tests/Feature/LegacyErp/EmployeeScopeTest.php

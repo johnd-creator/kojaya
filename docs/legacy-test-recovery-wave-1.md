@@ -13,11 +13,25 @@ Audit date: 2026-07-18 (Asia/Jakarta)
 | Static `test_` methods | 138, counted with `rg -n "function test_" tests/Feature/LegacyErp` |
 | Default-suite state | `phpunit.xml` excludes `tests/Feature/LegacyErp` |
 | Previous full-suite result | User evidence: 1286 passed, 5 skipped, 7058 assertions |
-| Current main baseline | `9cc26567bbac9f91e6ae5fe791573ea83e166666` |
+| Current integrated main baseline | `50835dbfa693f4edc0a7e7a625fe5936dcb6da0a` |
 
 The static method count is a reproducible inventory, not an assertion that all
 methods are independent PHPUnit test cases. Attribute-based tests and helper
 methods require a later source-aware inventory.
+
+The `138` count uses the literal `function test_` search. It differs from the
+release-readiness estimate of approximately 161 total methods because that
+estimate uses a different counting definition and source inventory.
+
+## Provenance
+
+- PR #14 CI classifier hardening is merged into `main`.
+- PR #15 ops/security changes are merged into `main`.
+- Main post-merge CI run #126 (`29677787436`) completed successfully with all
+  nine jobs green.
+- Current integrated main SHA: `50835dbfa693f4edc0a7e7a625fe5936dcb6da0a`.
+- Integration merge commit: `1be9e2c1cefbf896863c280bce3deff84fbdccd7`.
+- Branch head after the integration merge: `1be9e2c1cefbf896863c280bce3deff84fbdccd7`.
 
 ## Selected wave
 

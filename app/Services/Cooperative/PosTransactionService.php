@@ -20,6 +20,7 @@ class PosTransactionService
         private PosClosingGuard $closingGuard,
         private PosJournalPostingService $journal,
         private CooperativeNotificationDispatcher $notificationDispatcher,
+        private MemberStoreCheckoutService $storeCheckout,
     ) {}
 
     /**
@@ -93,6 +94,24 @@ class PosTransactionService
                     throw ValidationException::withMessages([
                         'cooperative_member_id' => 'Limit kredit anggota tidak cukup. Sisa: Rp '.number_format($member->availableCredit(), 0, ',', '.'),
                     ]);
+                }
+
+                $storePurchaseContext = null;
+                $storeAccountAmount = $this->storeCheckout->storeAccountAmount($payments);
+                if ($storeAccountAmount > 0) {
+                    if ($member === null) {
+                        throw ValidationException::withMessages([
+                            'cooperative_member_id' => 'Pembayaran saldo toko anggota membutuhkan anggota aktif.',
+                        ]);
+                    }
+
+                    $storePurchaseContext = $this->storeCheckout->preparePurchase(
+                        member: $member,
+                        amount: $storeAccountAmount,
+                        cashier: $cashier,
+                        delegateId: isset($data['store_delegate_id']) ? (int) $data['store_delegate_id'] : null,
+                        delegatePin: isset($data['store_delegate_pin']) ? (string) $data['store_delegate_pin'] : null,
+                    );
                 }
 
                 $paymentTotal = array_sum(array_map(fn ($p) => (float) $p['amount'], $payments));
@@ -183,6 +202,14 @@ class PosTransactionService
 
                         $member->increment('outstanding_balance', (float) $payment['amount']);
                     }
+                }
+
+                if ($storePurchaseContext !== null) {
+                    $this->storeCheckout->postPurchase(
+                        context: $storePurchaseContext,
+                        transaction: $transaction,
+                        cashier: $cashier,
+                    );
                 }
 
                 $this->memberPointService->postFromTransaction($transaction->refresh());
@@ -298,6 +325,24 @@ class PosTransactionService
                         ->where('id', $member->id)
                         ->update(['outstanding_balance' => $newOutstanding]);
                 }
+
+                $storeAccountPayments = $transaction->payments->where('payment_method', 'MEMBER_STORE_ACCOUNT');
+                if ($member && $storeAccountPayments->isNotEmpty()) {
+                    $storeAccount = \App\Models\MemberStoreAccount::query()
+                        ->where('organization_id', $member->organization_id)
+                        ->where('cooperative_member_id', $member->id)
+                        ->first();
+
+                    if ($storeAccount !== null) {
+                        $refundAmount = (int) round((float) $storeAccountPayments->sum('amount'));
+                        $this->storeCheckout->postRefund(
+                            account: $storeAccount,
+                            transaction: $transaction,
+                            amount: $refundAmount,
+                            cashier: $supervisor,
+                        );
+                    }
+                }
             }
 
             $this->journal->postVoidReversal($transaction->refresh());
@@ -369,6 +414,7 @@ class PosTransactionService
         $amount = match (true) {
             $method === 'CASH' => $total,
             $method === 'MEMBER_CREDIT' => $total,
+            $method === 'MEMBER_STORE_ACCOUNT' => $total,
             isset($data['amount']) => (float) $data['amount'],
             $total > 0 => $total,
             default => 0.0,
@@ -384,7 +430,7 @@ class PosTransactionService
     private function paymentsRequireMember(array $payments): bool
     {
         foreach ($payments as $payment) {
-            if ($payment['payment_method'] === 'MEMBER_CREDIT') {
+            if ($payment['payment_method'] === 'MEMBER_CREDIT' || $payment['payment_method'] === 'MEMBER_STORE_ACCOUNT') {
                 return true;
             }
         }

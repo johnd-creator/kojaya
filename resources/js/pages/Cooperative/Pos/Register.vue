@@ -36,6 +36,8 @@ const paymentMethod = ref("CASH");
 const memberId = ref("");
 const discountAmount = ref(0);
 const cashReceived = ref(0);
+const storeDelegateId = ref("");
+const storeDelegatePin = ref("");
 const stockError = ref<string | null>(null);
 
 const products = computed(() =>
@@ -95,6 +97,8 @@ const form = useForm({
   payment_method: "CASH",
   discount_amount: 0,
   cash_received: 0 as number | null,
+  store_delegate_id: "" as string | number,
+  store_delegate_pin: "",
   items: [] as { pos_product_id: number; quantity: number }[],
 });
 
@@ -146,6 +150,8 @@ const submit = () => {
   form.payment_method = paymentMethod.value;
   form.discount_amount = discountSafe.value;
   form.cash_received = paymentMethod.value === "CASH" ? Number(cashReceived.value) : null;
+  form.store_delegate_id = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegateId.value : "";
+  form.store_delegate_pin = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegatePin.value : "";
   form.items = cart.value.map((item) => ({
     pos_product_id: item.id,
     quantity: item.quantity,
@@ -380,6 +386,7 @@ const submit = () => {
               <option value="TRANSFER">Transfer Bank</option>
               <option value="QRIS">QRIS</option>
               <option value="MEMBER_CREDIT">Kredit Anggota</option>
+              <option value="MEMBER_STORE_ACCOUNT">Saldo Toko Anggota</option>
             </select>
             <select
               v-model="memberId"
@@ -400,6 +407,27 @@ const submit = () => {
                 {{ member.member_no }} - {{ member.name }}
               </option>
             </select>
+            <div
+              v-if="paymentMethod === 'MEMBER_STORE_ACCOUNT' && memberId"
+              class="space-y-1.5"
+            >
+              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                Delegate / Staff (opsional)
+              </label>
+              <Input
+                v-model.number="storeDelegateId"
+                type="number"
+                placeholder="ID Delegate"
+              />
+              <Input
+                v-model="storeDelegatePin"
+                type="password"
+                placeholder="PIN Delegate"
+              />
+              <p class="text-[11px] text-zinc-500">
+                Kosongkan jika pembeli adalah pemilik akun.
+              </p>
+            </div>
             <div class="space-y-1.5">
               <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                 Diskon (Rp)

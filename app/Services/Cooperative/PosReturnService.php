@@ -20,6 +20,7 @@ class PosReturnService
         private readonly PosInventoryService $inventory,
         private readonly PosClosingGuard $closingGuard,
         private readonly PosJournalPostingService $journal,
+        private readonly MemberStoreCheckoutService $storeCheckout,
     ) {}
 
     /**
@@ -118,6 +119,22 @@ class PosReturnService
             ])->save();
 
             $this->journal->postReturn($return->refresh());
+
+            $storeAccountPayment = $transaction->payments->firstWhere('payment_method', 'MEMBER_STORE_ACCOUNT');
+            if ($transaction->cooperative_member_id && $storeAccountPayment !== null && $total > 0) {
+                $storeAccount = \App\Models\MemberStoreAccount::query()
+                    ->where('cooperative_member_id', $transaction->cooperative_member_id)
+                    ->first();
+
+                if ($storeAccount !== null) {
+                    $this->storeCheckout->postReturnRefund(
+                        return: $return->refresh(),
+                        account: $storeAccount,
+                        amount: (int) round((float) $total),
+                        cashier: $cashier,
+                    );
+                }
+            }
 
             return $return->load(['items', 'transaction']);
         });

@@ -24,6 +24,10 @@ use App\Models\LoanInstallment;
 use App\Models\LoanPayment;
 use App\Models\LoanRestructure;
 use App\Models\MemberResignationRequest;
+use App\Models\MemberStoreAccount;
+use App\Models\MemberStoreDelegate;
+use App\Models\MemberStoreFundingRequest;
+use App\Models\MemberStoreLedgerEntry;
 use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PettyCashAccount;
@@ -88,6 +92,10 @@ class OrganizationScopeService
         WorkOrder::class => 'organization_id',
         Employee::class => 'organization_id',
         User::class => 'organization_id',
+        MemberStoreAccount::class => 'organization_id',
+        MemberStoreLedgerEntry::class => 'organization_id',
+        MemberStoreFundingRequest::class => 'organization_id',
+        MemberStoreDelegate::class => 'organization_id',
     ];
 
     /**
@@ -122,6 +130,10 @@ class OrganizationScopeService
         PurchaseRequest::class => 'view_pr_all',
         User::class => 'view_user_all',
         WorkOrder::class => 'view_work_order_all',
+        MemberStoreAccount::class => 'view_store_credit_all',
+        MemberStoreLedgerEntry::class => 'view_store_credit_all',
+        MemberStoreFundingRequest::class => 'view_store_credit_all',
+        MemberStoreDelegate::class => 'view_store_credit_all',
     ];
 
     /**

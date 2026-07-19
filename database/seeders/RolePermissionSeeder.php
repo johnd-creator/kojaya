@@ -233,6 +233,14 @@ class RolePermissionSeeder extends Seeder
             'manage_cooperative_opening_balance',
             'approve_cooperative_opening_balance',
             'void_cooperative_opening_balance',
+            'view_store_credit',
+            'view_store_credit_all',
+            'manage_store_credit',
+            'manage_store_credit_limit',
+            'cashier_store_credit',
+            'approve_store_credit_transfer',
+            'adjust_store_credit',
+            'report_store_credit',
         ]);
 
         // Manajer Koperasi
@@ -259,6 +267,13 @@ class RolePermissionSeeder extends Seeder
             'manage_cooperative_opening_balance',
             'review_cooperative_resignation',
             'approve_pos_void',
+            'view_store_credit',
+            'manage_store_credit',
+            'manage_store_credit_limit',
+            'cashier_store_credit',
+            'approve_store_credit_transfer',
+            'adjust_store_credit',
+            'report_store_credit',
         ]);
 
         // Admin Koperasi
@@ -285,6 +300,10 @@ class RolePermissionSeeder extends Seeder
             'review_cooperative_resignation',
             'approve_pos_void',
             'manage_cooperative_opening_balance',
+            'view_store_credit',
+            'manage_store_credit',
+            'cashier_store_credit',
+            'report_store_credit',
         ]);
 
         // Kasir Koperasi
@@ -295,6 +314,8 @@ class RolePermissionSeeder extends Seeder
             'access_cooperative_pos',
             'view_cooperative_report',
             'view_pos_reports',
+            'view_store_credit',
+            'cashier_store_credit',
         ]);
 
         // Anggota — self-service only; administrative access is enforced

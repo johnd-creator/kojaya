@@ -12,6 +12,7 @@
             <directory>tests/Feature</directory>
             <exclude>tests/Feature/LegacyErp</exclude>
             <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>

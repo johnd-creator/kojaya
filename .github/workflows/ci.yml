@@ -302,6 +302,14 @@ jobs:
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           COLLISION_PRINTER_PROFILE: 'true'
+      - name: Legacy ERP Recovery Wave 1
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: >-
+          php artisan test --compact
+          tests/Feature/LegacyErp/EmployeeScopeTest.php
+          tests/Feature/LegacyErp/BudgetImportTest.php
+          tests/Feature/LegacyErp/BankIntegrationTest.php
+          tests/Feature/LegacyErp/InvoiceFlowTest.php
 
   migration-seed:
     name: Migration and Seed

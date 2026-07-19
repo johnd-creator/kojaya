@@ -1050,4 +1050,47 @@ or oversized values, while selected endpoints returned raw Eloquent models.
 
 ---
 
-*Last Updated: July 15, 2026*
+## 🎯 ADR-028: Member Store Credit Ledger — Signed BIGINT Balance & FIFO Debt-Age
+
+**Status:** ✅ Accepted
+**Date:** July 19, 2026
+**Deciders:** Development Team
+
+### Context
+
+The cooperative needs an account balance members can use to pay for POS
+purchases, including authorized staff (delegate) purchases. The system must
+guarantee money correctness under concurrency, prevent overspend beyond a per
+member credit limit, and keep an immutable audit trail.
+
+### Decision
+
+1. Represent money as a **signed BIGINT whole-Rupiah** balance on
+   `member_store_accounts`, even though the rest of the cooperative/POS domain
+   uses `decimal(15,2)`. Whole-Rupiah avoids float entirely and matches the
+   product requirement; conversion happens only at the POS boundary.
+2. Make the ledger the source of truth. A single service
+   (`StoreCreditLedgerService`) mutates the cached balance inside a DB
+   transaction with `lockForUpdate()`, writes an immutable entry, then asserts
+   the cached balance equals the signed ledger sum.
+3. Integrate as a new payment method (`MEMBER_STORE_ACCOUNT`) on the existing
+   POS checkout — no parallel POS domain.
+4. Enforce idempotency with DB unique constraints
+   (`(account_id, idempotency_key)` and `(reference_type, reference_id,
+   entry_type)`), plus the HTTP `Idempotency-Key` middleware.
+5. Compute debt age with **FIFO allocation** (credits repay oldest purchase
+   lots first) — an exact, traceable algorithm rather than an approximation.
+
+### Consequences
+
+- Money correctness is enforced at the model and service layers; PostgreSQL
+  row-level locking prevents concurrent overspend (proven by a true
+  multi-process concurrency test in the PostgreSQL Concurrency CI job).
+- The ledger is append-only; corrections require new reversal/adjustment
+  entries.
+- Feature is additive; rollback drops four new tables and one payment option
+  without affecting historical POS data.
+
+---
+
+*Last Updated: July 19, 2026*

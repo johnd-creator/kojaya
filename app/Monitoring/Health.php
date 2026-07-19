@@ -3,8 +3,10 @@
 namespace App\Monitoring;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Health
 {
@@ -14,16 +16,18 @@ class Health
     {
         $this->checks = [];
 
+        $components = [
+            'app' => $this->checkApp(),
+            'database' => $this->checkDatabase(),
+            'queue' => $this->checkQueue(),
+            'storage' => $this->checkStorage(),
+            'vendor_integrations' => $this->checkVendorIntegrations(),
+        ];
+
         return [
             'status' => $this->overallStatus(),
             'timestamp' => now()->toIso8601String(),
-            'components' => [
-                'app' => $this->checkApp(),
-                'database' => $this->checkDatabase(),
-                'queue' => $this->checkQueue(),
-                'storage' => $this->checkStorage(),
-                'vendor_integrations' => $this->checkVendorIntegrations(),
-            ],
+            'components' => $components,
             'counts' => $this->counts(),
         ];
     }
@@ -53,10 +57,8 @@ class Health
             $this->checks[] = ['component' => 'database', 'status' => 'ok'];
 
             return ['status' => 'ok', 'connection' => DB::connection()->getName()];
-        } catch (\Throwable $e) {
-            $this->checks[] = ['component' => 'database', 'status' => 'error'];
-
-            return ['status' => 'error', 'message' => $e->getMessage()];
+        } catch (\Throwable) {
+            return $this->failedCheck('database');
         }
     }
 
@@ -73,27 +75,46 @@ class Health
                 'connection' => $connection,
                 'pending_jobs' => $size,
             ];
-        } catch (\Throwable $e) {
-            $this->checks[] = ['component' => 'queue', 'status' => 'error'];
-
-            return ['status' => 'error', 'message' => $e->getMessage()];
+        } catch (\Throwable) {
+            return $this->failedCheck('queue');
         }
     }
 
     public function checkStorage(): array
     {
+        $disk = null;
+        $probePath = null;
+        $probeAttempted = false;
+
         try {
-            $disk = config('filesystems.default');
-            Storage::disk($disk)->put('health-check-test', 'ok');
-            Storage::disk($disk)->delete('health-check-test');
+            $disk = Storage::disk((string) config('filesystems.default'));
+            $probePath = 'health-checks/'.Str::uuid()->toString().'.tmp';
+            $probeAttempted = true;
+
+            if ($disk->put($probePath, 'ok') !== true || ! $disk->exists($probePath)) {
+                throw new \RuntimeException('Storage health probe write failed.');
+            }
+
+            if (! $disk->delete($probePath)) {
+                throw new \RuntimeException('Storage health probe cleanup failed.');
+            }
+
+            $probeAttempted = false;
 
             $this->checks[] = ['component' => 'storage', 'status' => 'ok'];
 
-            return ['status' => 'ok', 'disk' => $disk];
-        } catch (\Throwable $e) {
-            $this->checks[] = ['component' => 'storage', 'status' => 'error'];
-
-            return ['status' => 'error', 'message' => $e->getMessage()];
+            return ['status' => 'ok'];
+        } catch (\Throwable) {
+            return $this->failedCheck('storage');
+        } finally {
+            if ($probeAttempted && $disk !== null && $probePath !== null) {
+                try {
+                    if ($disk->exists($probePath)) {
+                        $disk->delete($probePath);
+                    }
+                } catch (\Throwable) {
+                }
+            }
         }
     }
 
@@ -107,18 +128,36 @@ class Health
                 ? $gateway->getProviderName()
                 : 'unknown';
             $vendors['payment_gateway'] = ['status' => 'ok', 'provider' => $providerName];
-        } catch (\Throwable $e) {
-            $vendors['payment_gateway'] = ['status' => 'error', 'message' => $e->getMessage()];
+            $this->checks[] = ['component' => 'payment_gateway', 'status' => 'ok'];
+        } catch (\Throwable) {
+            $vendors['payment_gateway'] = $this->failedCheck('payment_gateway');
         }
 
         try {
             app(\App\Services\Integrations\PushNotificationService::class);
             $vendors['push_notification'] = ['status' => 'ok'];
-        } catch (\Throwable $e) {
-            $vendors['push_notification'] = ['status' => 'unavailable', 'message' => $e->getMessage()];
+            $this->checks[] = ['component' => 'push_notification', 'status' => 'ok'];
+        } catch (\Throwable) {
+            $this->checks[] = ['component' => 'push_notification', 'status' => 'unavailable'];
+            Log::warning('Operational health check failed.', ['component' => 'push_notification']);
+            $vendors['push_notification'] = [
+                'status' => 'unavailable',
+                'error_code' => 'PUSH_NOTIFICATION_UNAVAILABLE',
+            ];
         }
 
         return $vendors;
+    }
+
+    protected function failedCheck(string $component): array
+    {
+        $this->checks[] = ['component' => $component, 'status' => 'error'];
+        Log::warning('Operational health check failed.', ['component' => $component]);
+
+        return [
+            'status' => 'error',
+            'error_code' => strtoupper($component).'_UNAVAILABLE',
+        ];
     }
 
     public function counts(): array

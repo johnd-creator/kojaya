@@ -2,10 +2,11 @@
 
 ## 1. Document identity
 
-- Audit timestamp: 2026-07-18 14:01:22 WIB (Asia/Jakarta).
+- Audit timestamp: 2026-07-18 17:05:04 WIB (Asia/Jakarta).
 - Repository: `johnd-creator/kojaya`.
 - Audited default branch: `main`.
-- Baseline `main` SHA after PR #12: `564f96095df3f763bdbfc56383457e0508cbf6a4`.
+- Baseline `main` SHA after PR #13: `9cc26567bbac9f91e6ae5fe791573ea83e166666`.
+- PR #12 merge baseline: `564f96095df3f763bdbfc56383457e0508cbf6a4`.
 - Release tag: `v0.1.0`.
 - Release tag peeled commit: `ad8bc3afc9b62f549e4f054e181ef9decbecb341`.
 - Release classification: Internal Alpha / Not Production Release.
@@ -17,8 +18,10 @@
   governance, CI check mapping, environment inventory, release ownership, and
   retention classification for every remote branch.
 - Explicit non-actions: no repository setting, branch protection, ruleset,
-  environment, merge setting, branch, tag, release, workflow, or production
-  code was changed. No deployment or secret inspection was performed.
+  environment, merge setting, branch, tag, release, or production code was
+  changed. The CI workflow change in the reconciliation PR is limited to
+  docs-only classification and lightweight required-check success paths. No
+  deployment or secret inspection was performed.
 
 ## 2. Executive summary
 
@@ -26,7 +29,7 @@ The repository has an active internal-alpha baseline and a visible CI workflow,
 but governance enforcement is still incomplete. The repository is public, the
 default branch is `main`, and the authenticated repository permission available
 to the audit connector is administrator. All eight release-gate CI jobs passed
-on the post-merge `main` run for SHA `564f9609...`.
+on post-merge `main` run #112 for SHA `9cc26567...`.
 
 The public branch metadata reports `main` as not protected, the detailed
 protection endpoint requires authentication unavailable to the REST fallback,
@@ -50,21 +53,23 @@ configure environments, then clean up only an exact reviewed branch list.
 | Merge strategy | Merge commit, rebase, and squash are all allowed; auto-merge is disabled; update-branch is disabled | Repository connector metadata: all three `allow_*_merge=true`, `allow_auto_merge=false`, `allow_update_branch=false` | Medium |
 | Automatic branch deletion | Field was not returned by the repository metadata tool | `delete_branch_on_merge` not observable with current permission/tool | Medium |
 | Main protection | Branch API reports `protected=false`; detailed protection request returned HTTP 401; no visible repository rulesets were returned | GitHub `/branches/main`, `/branches/main/protection`, and `/rulesets` read-only audit | Critical |
-| Required checks | Eight CI jobs exist and all passed on post-merge run #110 for `main` SHA `564f9609...`; whether they are blocking branch rules is not observable | `.github/workflows/ci.yml`; Actions run #110, job inspection; protection policy unavailable | High |
+| Required checks | Eight CI jobs exist and all passed on post-merge run #112 for `main` SHA `9cc26567...`; whether they are blocking branch rules is not observable | `.github/workflows/ci.yml`; Actions run #112, job inspection; protection policy unavailable | High |
 | Force push | No enforced protection rule was observable; branch metadata reports `main` not protected | Branch API `protected=false`; detailed rule fields unavailable | High |
 | Branch deletion | No enforced protection rule was observable; all listed branches report `protected=false` | Branch inventory API; detailed rules unavailable | High |
 | Tag protection | No tag-protection rule was observable; `/tags/protection` returned HTTP 404 and `/rulesets` returned an empty list | Public GitHub REST audit | Critical |
 | Release ownership | The authenticated connector has repository `admin` permission. The existing release was created by the repository owner role; no role-based release runbook was recorded before this document | Repository collaborator permission; release API metadata | High |
 | `v0.1.0` release | Existing release is published, not draft, and marked prerelease. Release metadata reports `immutable=false`; that field is not tag protection. The annotated tag ref peels to the required exact commit. GitHub `latest` endpoint returned 404, so no stable latest release is present | Release API, annotated tag API, `/releases/latest` | Low |
 | Environments | GitHub API returned `total_count=0`; workflow references `production`; no `staging` environment was returned | `/environments` read-only response; `.github/workflows/deploy.yml` | High |
-| Branch hygiene | 16 remote branches, 12 closed PRs, 11 merged PRs, 0 open PRs. Ten remote branches are associated with merged PRs; plan, backup, and historical branches remain | Branch API, PR list, local ahead/behind inspection | High |
+| Branch hygiene | 17 remote branches, 13 closed PRs, 12 merged PRs, 0 open PRs. Merged, plan, backup, and historical branches remain | Branch API, PR list, local ahead/behind inspection at this audit | High |
 
 ### Release and CI evidence
 
-- PR #12 is merged into `main` with merge commit
-  `564f96095df3f763bdbfc56383457e0508cbf6a4`.
-- Post-merge GitHub Actions run #110 (run ID `29633080033`) completed with
-  conclusion `success` for that exact `main` SHA.
+- PR #13 is merged into `main` at
+  `9cc26567bbac9f91e6ae5fe791573ea83e166666`; its parent is the PR #12
+  baseline `564f96095df3f763bdbfc56383457e0508cbf6a4`.
+- Post-merge GitHub Actions run #112 (run ID `29637252312`) completed with
+  conclusion `success` for the current `main` SHA. All eight required job
+  names completed successfully.
 - The existing tag ref `refs/tags/v0.1.0` points to an annotated tag object
   whose peeled object is commit
   `ad8bc3afc9b62f549e4f054e181ef9decbecb341`.
@@ -101,21 +106,22 @@ The target is proportional to a repository with a limited maintainer group:
 | ID | Area | Current | Target | Severity | Recommended action | Authorization required |
 | -- | ---- | ------- | ------ | -------- | ------------------ | ---------------------- |
 | G-01 | Main pull-request gate | `main` reports `protected=false`; detailed rules are not observable | Pull request required; direct push restricted | Critical | Apply a narrowly scoped `main` ruleset after owner-access rehearsal | Repository owner/admin |
-| G-02 | Required CI checks | Eight jobs run and passed, but blocking status-check configuration is not observable | Require all eight exact checks from Section 6 | High | Configure required checks after confirming job names and owner bypass | Repository owner/admin |
+| G-02 | Required CI checks | Eight jobs run and passed, but blocking status-check configuration is not observable; docs-only lightweight paths are pending this PR | Require all eight exact checks from Section 6, with successful lightweight paths for docs-only changes | High | Merge and verify the classifier PR, then configure required checks after confirming job names and owner bypass | Repository owner/admin |
 | G-03 | Force push and deletion | No enforced protection rule was observable | Block force push and branch deletion on `main` | High | Include both restrictions in the `main` ruleset | Repository owner/admin |
 | G-04 | Tag immutability | No tag protection rule was observable; `v0.1.0` currently points to the expected commit | Protect `v*` from update, force update, and deletion | Critical | Add a tag ruleset and test it on a non-release tag or ruleset preview | Repository owner/admin |
 | G-05 | Merge methods | Merge, rebase, and squash are enabled | Squash is the primary routine method | Medium | Decide whether to retain merge/rebase for exceptional history-preserving cases | Repository owner/admin |
 | G-06 | Branch auto-delete | Setting was not returned by the repository tool | Decide whether merged branches are deleted automatically or by reviewed cleanup | Medium | Record the choice, then apply only after retention decisions | Repository owner/admin |
 | G-07 | Environment approval | No GitHub environments were returned; deploy workflow references `production` | Create `production` with approval and branch/ref policy; add `staging` only when needed | High | Configure environments and test approval/recovery before deployment | Repository owner/admin and deployment approver |
 | G-08 | Release ownership | Admin permission exists, but role ownership is not recorded | Role-based ownership and evidence matrix in Section 8 | High | Approve the matrix and add it to the release operating procedure | Senior release approver |
-| G-09 | Branch retention | 16 remote branches remain, including merged and backup branches | Exact classification, owner decision, and expiry for backups | High | Approve the register in Section 7; run a separate cleanup task | Repository owner/admin |
+| G-09 | Branch retention | 17 remote branches remain, including merged, plan, historical, and backup branches | Exact classification, owner decision, and expiry for backups | High | Approve the register in Section 7; run a separate cleanup task | Repository owner/admin |
 | G-10 | Bypass and lockout recovery | Bypass actors and administrator enforcement are not observable | Bypass is limited, documented, audited, and tested without locking out owner | High | Rehearse owner access and emergency recovery before enforcement | Repository owner/admin |
 
 ## 6. Required checks contract
 
 The following names are the exact GitHub Actions job names from `.github/workflows/ci.yml`
-and were observed on successful post-merge run #110. The workflow triggers on
-`push` to `main` and `pull_request` targeting `main`.
+and were observed on successful post-merge run #112. The workflow triggers on
+`push` to `main`, `pull_request` targeting `main`, and manual
+`workflow_dispatch`.
 
 | Exact check name | Workflow source | Event | Purpose | Recommended blocking status | Consequence if failed | Bypass policy |
 | ---------------- | --------------- | ----- | ------- | ------------------------- | -------------------- | ------------- |
@@ -128,9 +134,15 @@ and were observed on successful post-merge run #110. The workflow triggers on
 | OpenAPI Drift | `.github/workflows/ci.yml` (`openapi-drift`) | `push`, `pull_request` | Confirm generated API contract matches the snapshot | Required | API contract drift may reach `main` | No routine bypass; contract review required |
 | PostgreSQL Concurrency | `.github/workflows/ci.yml` (`postgres-concurrency`) | `push`, `pull_request` | Validate PostgreSQL concurrency and Document 05 contracts | Required | database-specific correctness is unproven | No routine bypass; database evidence required |
 
-The CI workflow itself was not changed by this audit. “Observed success” is not
-the same as “configured as a required branch rule”; that configuration remains a
-gap until an authorized settings task verifies it.
+The reconciliation PR adds a `Change Classification` job that marks a change as
+documentation-only only when every changed path is under `docs/` or has a
+documentation extension (`.md`, `.mdx`, or `.txt`). The eight required job names
+remain present: documentation-only changes execute a lightweight success path;
+all other changes execute the existing dependency, build, migration, OpenAPI,
+PHPUnit, and PostgreSQL commands. This workflow change is pending review and
+does not itself configure branch protection. “Observed success” is not the same
+as “configured as a required branch rule”; that configuration remains a gap
+until an authorized settings task verifies it.
 
 ## 7. Branch retention register
 
@@ -142,25 +154,26 @@ GitHub protection rule is currently active.
 
 | Branch | SHA | Relationship to main | Associated PR | Category | Recommendation | Proposed expiry | Owner decision |
 | ------ | --- | -------------------- | ------------- | -------- | -------------- | --------------- | -------------- |
-| `main` | `564f96095df3f763bdbfc56383457e0508cbf6a4` | 0 behind / 0 ahead | PR #12 merged at this SHA | protected | Never delete; apply protection separately | Never | Confirm owner/bypass model |
-| `agent/ai-development-policy` | `5092ea7c432176b4959eaa7cd684dae29d1152b5` | 66 behind / 1 ahead | None found | historical-evidence | Retain until policy decisions are copied to the current plan, then review | Review by 2026-08-17 | Yes |
-| `agent/document-08-release-staging-mobile-pilot` | `80cc39bf5535d1098ed69130d86097ad386fdc70` | 2 behind / 2 ahead | PR #11 merged at `ed8f2026...` | merged-candidate-for-deletion | Delete only after exact merged SHA and any needed evidence are confirmed | Next owner-approved cleanup window | Yes |
-| `agent/08-a-release-metadata` | `3ab52303f3a81858da91a3f9bc62ad48dd4bb398` | 1 behind / 1 ahead | PR #12 merged at `564f960...` | merged-candidate-for-deletion | Safe candidate after PR evidence is retained | Next owner-approved cleanup window | Yes |
-| `audit/member-admin-role-review-2026-07-10` | `e557224dcc107accc9cc6df729f96d1e3f454738` | 72 behind / 0 ahead | PR #2 merged at `a7e8826...` | merged-candidate-for-deletion | Delete after PR #2 evidence is retained | Next owner-approved cleanup window | Yes |
-| `backup/mixed-document-03-ai-workflow-2026-07-14` | `ace85aafd46089b840b57d2a8e5581c85b65eaf7` | 66 behind / 3 ahead | None found | backup-with-expiry | Retain as a named backup only; verify the backup need before expiry | Proposed 2026-08-17 | Yes |
-| `chore/ai-development-workflow` | `642b954bbbe04954c26da9da3fefaf6487121d2a` | 66 behind / 2 ahead | None found | historical-evidence | Retain until its verification guidance is superseded | Review by 2026-08-17 | Yes |
-| `fix/pgsql-concurrency-worker-script-race` | `262977ba4b4fbf7e814ed40b0727ebff36065f0f` | 64 behind / 1 ahead | PR #7 merged at `154bf24...` | merged-candidate-for-deletion | Delete after CI evidence and merge SHA are retained | Next owner-approved cleanup window | Yes |
-| `hotfix/google-sso-timeout` | `62c6ce5685ee71588687ec197b658768f488b6d1` | 70 behind / 3 ahead | PR #4 merged at `b8a0fa3...` | merged-candidate-for-deletion | Delete after PR evidence is retained | Next owner-approved cleanup window | Yes |
-| `plan/member-pos-cart` | `3d40629ec1a8389eec34603e47b737656abc1979` | 95 behind / 1 ahead | PR #1 closed, not merged | historical-evidence | Preserve until useful decisions are moved to the current plan | No expiry until transfer | Yes |
-| `release/v0.1.0-prep` | `a4c37fdb7806d88f523b9dafa2d024b79b4d18bb` | 3 behind / 0 ahead | PR #10 merged at `ad8bc3af...` | merged-candidate-for-deletion | Delete only after tag/release evidence is retained | Next owner-approved cleanup window | Yes |
-| `remediation/document-02-payment-reservation` | `879d649d50b9f807da65e284b6e64d4f7f50b87a` | 71 behind / 23 ahead | PR #3 merged at `5d48749...` | merged-candidate-for-deletion | Delete after PR #3 evidence is retained; do not infer missing fixes from divergence | Next owner-approved cleanup window | Yes |
-| `remediation/document-03-pii-encryption-rollout-2026-07-14` | `ace85aafd46089b840b57d2a8e5581c85b65eaf7` | 66 behind / 3 ahead | None found | historical-evidence | Retain only while its rollback-safe PII evidence is needed; then review with backup branch | Review by 2026-08-17 | Yes |
-| `remediation/document-03-pii-encryption-rollout-clean` | `c02baa003a7a047f284e0755baa524c736cd23b1` | 66 behind / 18 ahead | PR #5 merged at `27a7275...` | merged-candidate-for-deletion | PR merge is verified, but branch-only commit count requires owner review before deletion | Pending owner decision | Yes |
-| `remediation/document-04-organization-auth-token-cutover` | `e5bffaac0a9dbd6947d4568870794b2ab05f5506` | 40 behind / 0 ahead | PR #8 merged at `0684e32...` | merged-candidate-for-deletion | Delete after PR #8 evidence is retained | Next owner-approved cleanup window | Yes |
-| `remediation/document-05-audit-pagination-contract-tests` | `05ea5e36ded1d8b21643c2015e20e162814a8d85` | 10 behind / 0 ahead | PR #9 merged at `21a45fc...` | merged-candidate-for-deletion | Delete after PR #9 and CI evidence are retained | Next owner-approved cleanup window | Yes |
+| `main` | `9cc26567bbac9f91e6ae5fe791573ea83e166666` | 0 behind / 0 ahead | PR #13 merged at this SHA | protected | Never delete; apply protection separately | Never | Confirm owner/bypass model |
+| `agent/08-a-release-metadata` | `3ab52303f3a81858da91a3f9bc62ad48dd4bb398` | 2 behind / 1 ahead | PR #12 merged | merged-candidate-for-deletion | Delete only after PR evidence is retained | Next owner-approved cleanup window | Yes |
+| `agent/08-b-repository-governance-record` | `913507ce868b5ac2c45c49dcf317eed10a91b726` | 1 behind / 1 ahead | PR #13 merged | merged-candidate-for-deletion | Delete only after this reconciled record is retained | Next owner-approved cleanup window | Yes |
+| `agent/ai-development-policy` | `5092ea7c432176b4959eaa7cd684dae29d1152b5` | 67 behind / 1 ahead | None found | plan-requires-refresh | Review and transfer useful policy decisions before any deletion | Review by 2026-08-17 | Yes |
+| `agent/document-08-release-staging-mobile-pilot` | `80cc39bf5535d1098ed69130d86097ad386fdc70` | 3 behind / 2 ahead | PR #11 merged | merged-candidate-for-deletion | Delete only after Document 08 evidence is retained | Next owner-approved cleanup window | Yes |
+| `audit/member-admin-role-review-2026-07-10` | `e557224dcc107accc9cc6df729f96d1e3f454738` | 73 behind / 0 ahead | PR #2 merged | merged-candidate-for-deletion | Delete after PR #2 evidence is retained | Next owner-approved cleanup window | Yes |
+| `backup/mixed-document-03-ai-workflow-2026-07-14` | `ace85aafd46089b840b57d2a8e5581c85b65eaf7` | 67 behind / 3 ahead | None found | backup-with-expiry | Retain as named backup only; verify need before expiry | Proposed 2026-08-17 | Yes |
+| `chore/ai-development-workflow` | `642b954bbbe04954c26da9da3fefaf6487121d2a` | 67 behind / 2 ahead | None found | historical-evidence | Retain until guidance is superseded, then review | Review by 2026-08-17 | Yes |
+| `fix/pgsql-concurrency-worker-script-race` | `262977ba4b4fbf7e814ed40b0727ebff36065f0f` | 65 behind / 1 ahead | PR #7 merged | merged-candidate-for-deletion | Delete after CI evidence is retained | Next owner-approved cleanup window | Yes |
+| `hotfix/google-sso-timeout` | `62c6ce5685ee71588687ec197b658768f488b6d1` | 71 behind / 3 ahead | PR #4 merged | unknown-owner-decision-required | Diverged after merge; inspect branch-only commits before deletion | Pending owner decision | Yes |
+| `plan/member-pos-cart` | `3d40629ec1a8389eec34603e47b737656abc1979` | 96 behind / 1 ahead | PR #1 closed, not merged | historical-evidence | Preserve until useful decisions move to the current plan | No expiry until transfer | Yes |
+| `release/v0.1.0-prep` | `a4c37fdb7806d88f523b9dafa2d024b79b4d18bb` | 4 behind / 0 ahead | PR #10 merged | merged-candidate-for-deletion | Delete only after tag/release evidence is retained | Next owner-approved cleanup window | Yes |
+| `remediation/document-02-payment-reservation` | `879d649d50b9f807da65e284b6e64d4f7f50b87a` | 72 behind / 23 ahead | PR #3 merged | unknown-owner-decision-required | Diverged after merge; inspect branch-only commits before deletion | Pending owner decision | Yes |
+| `remediation/document-03-pii-encryption-rollout-2026-07-14` | `ace85aafd46089b840b57d2a8e5581c85b65eaf7` | 67 behind / 3 ahead | None found | historical-evidence | Retain only while rollback-safe PII evidence is needed | Review by 2026-08-17 | Yes |
+| `remediation/document-03-pii-encryption-rollout-clean` | `c02baa003a7a047f284e0755baa524c736cd23b1` | 67 behind / 18 ahead | PR #5 merged | unknown-owner-decision-required | Diverged after merge; inspect branch-only commits before deletion | Pending owner decision | Yes |
+| `remediation/document-04-organization-auth-token-cutover` | `e5bffaac0a9dbd6947d4568870794b2ab05f5506` | 41 behind / 0 ahead | PR #8 merged | merged-candidate-for-deletion | Delete after PR #8 evidence is retained | Next owner-approved cleanup window | Yes |
+| `remediation/document-05-audit-pagination-contract-tests` | `05ea5e36ded1d8b21643c2015e20e162814a8d85` | 11 behind / 0 ahead | PR #9 merged | merged-candidate-for-deletion | Delete after PR #9 and CI evidence are retained | Next owner-approved cleanup window | Yes |
 
-No branch was deleted. The 16-branch count includes `main`. There are ten
-remote branches associated with merged PRs, but deletion remains a separate
+No branch was deleted. The 17-branch count includes `main`. There are twelve
+merged PRs in the repository, but deletion remains a separate
 authorized action and is not implied by this register.
 
 ## 8. Release ownership matrix

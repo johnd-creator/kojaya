@@ -5,88 +5,259 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   APP_ENV: testing
 
 jobs:
-  dependency-audit:
-    name: Dependency Audit
+  changes:
+    name: Change Classification
     runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          base_sha="$BEFORE_SHA"
+          head_sha="$CURRENT_SHA"
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base_sha="$PR_BASE_SHA"
+            head_sha="$PR_HEAD_SHA"
+          fi
+
+          if [[ ! "$base_sha" =~ ^[0-9a-fA-F]{40}$ ]] || [[ ! "$head_sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            printf 'Unable to resolve a complete comparison range; running full CI.\n'
+            printf 'docs_only=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mapfile -t changed_files < <(git diff --name-only "$base_sha" "$head_sha")
+
+          if ((${#changed_files[@]} == 0)); then
+            printf 'No changed files detected; running full CI.\n'
+            printf 'docs_only=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          is_documentation_path() {
+            [[ "$1" == "CHANGELOG.md" || "$1" == "README.md" || "$1" =~ ^docs/.+\.md$ ]]
+          }
+
+          classify_paths() {
+            local result=true
+            local file
+
+            for file in "$@"; do
+              if ! is_documentation_path "$file"; then
+                result=false
+                break
+              fi
+            done
+
+            printf '%s' "$result"
+          }
+
+          assert_classification() {
+            local expected="$1"
+            shift
+            local actual
+
+            actual="$(classify_paths "$@")"
+            if [[ "$actual" != "$expected" ]]; then
+              printf 'Classifier regression for expected=%s actual=%s paths=%s\n' "$expected" "$actual" "$*" >&2
+              return 1
+            fi
+          }
+
+          assert_classification true docs/example.md
+          assert_classification true docs/nested/example.md
+          assert_classification true CHANGELOG.md
+          assert_classification true README.md
+          assert_classification false .github/workflows/ci.yml
+          assert_classification false app/Example.php
+          assert_classification false app/src/Example.kt
+          assert_classification false resources/js/app.js
+          assert_classification false config/app.php
+          assert_classification false database/migrations/example.php
+          assert_classification false composer.lock
+          assert_classification false docs/example.mdx
+          assert_classification false docs/example.txt
+          assert_classification false notes.md
+          assert_classification false docs/example.md app/Example.php
+
+          docs_only="$(classify_paths "${changed_files[@]}")"
+
+          printf 'Changed paths classified as docs_only=%s.\n' "$docs_only"
+          printf 'docs_only=%s\n' "$docs_only" >> "$GITHUB_OUTPUT"
+
+  dependency-audit:
+    name: Dependency Audit
+    needs: changes
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'Dependency Audit skipped for documentation-only changes.\n'
+
+      - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - uses: actions/setup-node@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           node-version: '22'
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm ci --prefer-offline --no-audit
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: composer audit --locked --ignore-severity=medium --ignore-severity=low --abandoned=report
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm audit --omit=dev --audit-level=high
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
   style:
     name: Pint
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'Pint skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: vendor/bin/pint --test
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
   frontend-build:
     name: Frontend Build
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'Frontend Build skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - uses: actions/setup-node@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           node-version: '22'
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm ci --prefer-offline --no-audit
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan wayfinder:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: local
       - run: npm run build
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
   generated-drift:
     name: Generated Drift
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'Generated Drift skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - uses: actions/setup-node@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           node-version: '22'
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm ci --prefer-offline --no-audit
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: test -z "$(git ls-files resources/js/actions resources/js/routes)"
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan wayfinder:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: local
       - run: |
           test -n "$(find resources/js/actions -type f -print -quit)"
           test -n "$(find resources/js/routes -type f -print -quit)"
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm run build
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
   unit-feature-tests:
     name: PHPUnit Parallel
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     services:
       selenium:
@@ -94,24 +265,41 @@ jobs:
         ports:
           - 4444:4444
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'PHPUnit Parallel skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
           coverage: xdebug
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm ci --prefer-offline --no-audit
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan wayfinder:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: local
       - run: npm run build
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       # Required evidence command (profile is enabled through Collision below because
       # ParaTest 7 does not accept Laravel's --profile option as a CLI argument).
       # php artisan test --compact --parallel --profile --coverage --min=70
       - run: php artisan test --compact --parallel --coverage --min=60
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           COLLISION_PRINTER_PROFILE: 'true'
       - name: Legacy ERP Recovery Wave 1
@@ -124,38 +312,73 @@ jobs:
 
   migration-seed:
     name: Migration and Seed
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'Migration and Seed skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: touch database/database.sqlite
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan migrate:fresh --seed --force
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
 
   openapi-drift:
     name: OpenAPI Drift
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'OpenAPI Drift skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: bin/openapi.sh check
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
   postgres-concurrency:
     name: PostgreSQL Concurrency
+    needs: changes
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -172,15 +395,29 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'PostgreSQL Concurrency skipped for documentation-only changes.\n'
+
       - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_pgsql, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite PostgreSQLConcurrency
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
@@ -189,6 +426,7 @@ jobs:
           DB_USERNAME: kojaya
           DB_PASSWORD: kojaya
       - run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite Document05PostgreSQL
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1

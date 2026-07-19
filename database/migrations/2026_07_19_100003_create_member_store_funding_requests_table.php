@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('member_store_funding_requests', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('account_id')->constrained('member_store_accounts')->cascadeOnDelete();
+            $table->foreignId('account_id')->constrained('member_store_accounts')->restrictOnDelete();
             $table->foreignUuid('organization_id')->constrained('organizations')->cascadeOnDelete();
             $table->string('method', 10);
             $table->bigInteger('amount');

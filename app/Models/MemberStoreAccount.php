@@ -16,7 +16,6 @@ class MemberStoreAccount extends Model
     protected $fillable = [
         'organization_id',
         'cooperative_member_id',
-        'balance',
         'credit_limit',
         'status',
         'opened_at',

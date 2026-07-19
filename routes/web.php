@@ -441,6 +441,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('can:approve_store_credit_transfer')->name('store-credit.transfers.index');
         Route::post('store-credit-transfers/{funding}/process', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'processTransfer'])
             ->middleware('can:approve_store_credit_transfer')->name('store-credit.transfers.process');
+        Route::get('store-credit-transfers/{funding}/proof', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'downloadProof'])
+            ->middleware('can:approve_store_credit_transfer')->name('store-credit.transfers.proof');
         Route::get('store-credit-report', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'report'])
             ->middleware('can:report_store_credit')->name('store-credit.report');
     });

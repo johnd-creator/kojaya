@@ -36,7 +36,7 @@ const paymentMethod = ref("CASH");
 const memberId = ref("");
 const discountAmount = ref(0);
 const cashReceived = ref(0);
-const storeDelegateId = ref("");
+const storeDelegateCode = ref("");
 const storeDelegatePin = ref("");
 const stockError = ref<string | null>(null);
 
@@ -97,7 +97,7 @@ const form = useForm({
   payment_method: "CASH",
   discount_amount: 0,
   cash_received: 0 as number | null,
-  store_delegate_id: "" as string | number,
+  store_delegate_code: "" as string | number,
   store_delegate_pin: "",
   items: [] as { pos_product_id: number; quantity: number }[],
 });
@@ -150,7 +150,7 @@ const submit = () => {
   form.payment_method = paymentMethod.value;
   form.discount_amount = discountSafe.value;
   form.cash_received = paymentMethod.value === "CASH" ? Number(cashReceived.value) : null;
-  form.store_delegate_id = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegateId.value : "";
+  form.store_delegate_code = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegateCode.value : "";
   form.store_delegate_pin = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegatePin.value : "";
   form.items = cart.value.map((item) => ({
     pos_product_id: item.id,
@@ -415,9 +415,8 @@ const submit = () => {
                 Delegate / Staff (opsional)
               </label>
               <Input
-                v-model.number="storeDelegateId"
-                type="number"
-                placeholder="ID Delegate"
+                v-model="storeDelegateCode"
+                placeholder="Kode Delegate"
               />
               <Input
                 v-model="storeDelegatePin"

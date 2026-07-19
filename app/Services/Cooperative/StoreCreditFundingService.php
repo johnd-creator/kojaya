@@ -9,6 +9,7 @@ use App\Models\MemberStoreFundingRequest;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -32,9 +33,22 @@ class StoreCreditFundingService
         User $cashier,
         ?string $referenceNo = null,
         ?string $notes = null,
+        ?string $idempotencyKey = null,
     ): MemberStoreFundingRequest {
-        return DB::transaction(function () use ($account, $amount, $cashier, $referenceNo, $notes): MemberStoreFundingRequest {
-            $funding = $this->createFundingRequest($account, MemberStoreFundingMethod::Cash, $amount, $cashier, $referenceNo, null, $notes);
+        $key = $this->resolveFundingKey($account, $idempotencyKey);
+
+        $replayed = $this->findExistingFunding($key);
+        if ($replayed !== null) {
+            return $replayed;
+        }
+
+        return DB::transaction(function () use ($account, $amount, $cashier, $referenceNo, $notes, $key): MemberStoreFundingRequest {
+            $replayed = $this->findExistingFundingForUpdate($key);
+            if ($replayed !== null) {
+                return $replayed;
+            }
+
+            $funding = $this->createFundingRequest($account, MemberStoreFundingMethod::Cash, $amount, $cashier, $referenceNo, null, $notes, $key);
 
             $entry = $this->ledger->postCashFunding($account, $funding, $cashier);
 
@@ -54,8 +68,21 @@ class StoreCreditFundingService
         User $submitter,
         ?string $bankReference = null,
         ?UploadedFile $proof = null,
+        ?string $idempotencyKey = null,
     ): MemberStoreFundingRequest {
-        return DB::transaction(function () use ($account, $amount, $submitter, $bankReference, $proof): MemberStoreFundingRequest {
+        $key = $this->resolveFundingKey($account, $idempotencyKey);
+
+        $replayed = $this->findExistingFunding($key);
+        if ($replayed !== null) {
+            return $replayed;
+        }
+
+        return DB::transaction(function () use ($account, $amount, $submitter, $bankReference, $proof, $key): MemberStoreFundingRequest {
+            $replayed = $this->findExistingFundingForUpdate($key);
+            if ($replayed !== null) {
+                return $replayed;
+            }
+
             $proofPath = null;
 
             if ($proof !== null) {
@@ -69,6 +96,7 @@ class StoreCreditFundingService
                 submitter: $submitter,
                 bankReference: $bankReference,
                 proofPath: $proofPath,
+                idempotencyKey: $key,
             );
         });
     }
@@ -170,6 +198,33 @@ class StoreCreditFundingService
         return Storage::disk(self::PROOF_DISK)->path($path);
     }
 
+    /**
+     * Stream the transfer proof from the private disk as a download response.
+     * Returns null when no proof is stored, so callers can emit a safe 404.
+     * The storage path is never exposed to the client.
+     */
+    public function downloadProofResponse(MemberStoreFundingRequest $funding): ?\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $path = $funding->getRawOriginal('proof_path');
+
+        if ($path === null || ! Storage::disk(self::PROOF_DISK)->exists($path)) {
+            return null;
+        }
+
+        $filename = 'bukti-setoran-'.$funding->id.'.'.$this->proofExtension($path);
+
+        return Storage::disk(self::PROOF_DISK)->download($path, $filename, [
+            'Cache-Control' => 'private, max-age=0, no-store',
+        ]);
+    }
+
+    private function proofExtension(string $path): string
+    {
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+        return $extension !== '' ? $extension : 'bin';
+    }
+
     private function createFundingRequest(
         MemberStoreAccount $account,
         MemberStoreFundingMethod $method,
@@ -178,19 +233,67 @@ class StoreCreditFundingService
         ?string $bankReference = null,
         ?string $proofPath = null,
         ?string $notes = null,
+        ?string $idempotencyKey = null,
     ): MemberStoreFundingRequest {
-        return MemberStoreFundingRequest::create([
-            'account_id' => $account->id,
-            'organization_id' => $account->organization_id,
-            'method' => $method->value,
-            'amount' => $amount,
-            'status' => MemberStoreFundingStatus::Pending->value,
-            'proof_path' => $proofPath,
-            'bank_reference' => $bankReference,
-            'submitted_by' => $submitter->id,
-            'idempotency_key' => 'funding:'.$account->id.':'.Str::uuid(),
-            'rejection_reason' => null,
-        ]);
+        try {
+            return MemberStoreFundingRequest::create([
+                'account_id' => $account->id,
+                'organization_id' => $account->organization_id,
+                'method' => $method->value,
+                'amount' => $amount,
+                'status' => MemberStoreFundingStatus::Pending->value,
+                'proof_path' => $proofPath,
+                'bank_reference' => $bankReference,
+                'submitted_by' => $submitter->id,
+                'idempotency_key' => $idempotencyKey ?? 'funding:'.$account->id.':'.Str::uuid(),
+                'rejection_reason' => null,
+            ]);
+        } catch (QueryException $exception) {
+            // Concurrent duplicate with the same idempotency key — return the winner.
+            $existing = $this->findExistingFunding($idempotencyKey);
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Build a stable funding idempotency key scoped to the account when the
+     * caller does not supply one, so retries never silently create duplicates.
+     */
+    private function resolveFundingKey(MemberStoreAccount $account, ?string $idempotencyKey): string
+    {
+        if ($idempotencyKey !== null && $idempotencyKey !== '') {
+            return 'funding:'.$account->id.':'.$idempotencyKey;
+        }
+
+        return 'funding:'.$account->id.':'.Str::uuid();
+    }
+
+    private function findExistingFunding(?string $key): ?MemberStoreFundingRequest
+    {
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        return MemberStoreFundingRequest::query()
+            ->where('idempotency_key', $key)
+            ->first();
+    }
+
+    private function findExistingFundingForUpdate(?string $key): ?MemberStoreFundingRequest
+    {
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        return MemberStoreFundingRequest::query()
+            ->where('idempotency_key', $key)
+            ->lockForUpdate()
+            ->first();
     }
 
     private function storeProof(UploadedFile $file): string

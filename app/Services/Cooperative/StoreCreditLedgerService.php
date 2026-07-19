@@ -50,7 +50,6 @@ class StoreCreditLedgerService
             $account = new MemberStoreAccount([
                 'organization_id' => $context->organizationId,
                 'cooperative_member_id' => $context->cooperativeMemberId,
-                'balance' => 0,
                 'credit_limit' => max(0, $context->creditLimit),
                 'status' => MemberStoreAccountStatus::Active->value,
                 'opened_at' => now(),

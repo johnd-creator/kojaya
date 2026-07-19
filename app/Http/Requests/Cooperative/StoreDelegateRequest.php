@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Cooperative;
 
+use App\Models\MemberStoreAccount;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreDelegateRequest extends FormRequest
 {
@@ -22,5 +25,28 @@ class StoreDelegateRequest extends FormRequest
             'valid_from' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:valid_from'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $userId = $this->input('user_id');
+
+            if ($userId === null) {
+                return;
+            }
+
+            $account = $this->route('account');
+
+            if (! $account instanceof MemberStoreAccount) {
+                return;
+            }
+
+            $userOrg = User::query()->whereKey($userId)->value('organization_id');
+
+            if ($userOrg !== null && $userOrg !== $account->organization_id) {
+                $validator->errors()->add('user_id', 'Pengguna delegate harus berada pada organisasi yang sama.');
+            }
+        });
     }
 }

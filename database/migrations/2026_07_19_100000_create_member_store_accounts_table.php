@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('member_store_accounts', function (Blueprint $table): void {
             $table->id();
             $table->foreignUuid('organization_id')->constrained('organizations')->restrictOnDelete();
-            $table->foreignId('cooperative_member_id')->constrained('cooperative_members')->cascadeOnDelete();
+            $table->foreignId('cooperative_member_id')->constrained('cooperative_members')->restrictOnDelete();
             $table->bigInteger('balance')->default(0);
             $table->bigInteger('credit_limit')->default(0);
             $table->string('status', 20)->default('active');

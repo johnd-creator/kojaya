@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosProduct;
 use App\Models\PosStockMovement;
 use App\Models\PosTransaction;
@@ -25,7 +26,9 @@ class PosPhase1FeatureTest extends TestCase
     public function test_split_payment_with_multiple_methods_is_recorded(): void
     {
         $cashier = $this->cashier();
-        $member = CooperativeMember::factory()->create(['status' => 'ACTIVE']);
+        $organization = Organization::factory()->create();
+        $cashier->update(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->create(['status' => 'ACTIVE', 'organization_id' => $organization->id]);
         $product = PosProduct::factory()->create([
             'cost_price' => 1000,
             'sale_price' => 5000,

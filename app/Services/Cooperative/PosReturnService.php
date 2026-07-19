@@ -37,7 +37,7 @@ class PosReturnService
 
         return DB::transaction(function () use ($cashier, $data, $returnDate): PosReturn {
             $transaction = PosTransaction::query()
-                ->with(['items', 'payments'])
+                ->with(['items', 'payments', 'member'])
                 ->lockForUpdate()
                 ->findOrFail($data['pos_transaction_id']);
 
@@ -122,17 +122,25 @@ class PosReturnService
 
             $storeAccountPayment = $transaction->payments->firstWhere('payment_method', 'MEMBER_STORE_ACCOUNT');
             if ($transaction->cooperative_member_id && $storeAccountPayment !== null && $total > 0) {
-                $storeAccount = \App\Models\MemberStoreAccount::query()
-                    ->where('cooperative_member_id', $transaction->cooperative_member_id)
-                    ->first();
+                $member = $transaction->member;
+                $storeAccount = $member !== null
+                    ? \App\Models\MemberStoreAccount::query()
+                        ->where('organization_id', $member->organization_id)
+                        ->where('cooperative_member_id', $member->id)
+                        ->first()
+                    : null;
 
                 if ($storeAccount !== null) {
-                    $this->storeCheckout->postReturnRefund(
-                        return: $return->refresh(),
-                        account: $storeAccount,
-                        amount: (int) round((float) $total),
-                        cashier: $cashier,
-                    );
+                    $refundAmount = $this->storeCheckout->cappedStoreCreditRefund($storeAccount, $transaction, (int) $total);
+
+                    if ($refundAmount > 0) {
+                        $this->storeCheckout->postReturnRefund(
+                            return: $return->refresh(),
+                            account: $storeAccount,
+                            amount: $refundAmount,
+                            cashier: $cashier,
+                        );
+                    }
                 }
             }
 

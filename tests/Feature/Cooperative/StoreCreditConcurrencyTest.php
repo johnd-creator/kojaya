@@ -27,13 +27,23 @@ class StoreCreditConcurrencyTest extends TestCase
     /** @var array<string, string> */
     private array $dbConfig = [];
 
+    /**
+     * Capture the DB connection BEFORE any test's setUp() runs.
+     * Tests\TestCase::setUp() forces putenv('DB_CONNECTION=sqlite') which
+     * would clobber the pgsql value for subsequent tests in this class.
+     */
+    private static string $requiredConnection = '';
+
+    public static function setUpBeforeClass(): void
+    {
+        self::$requiredConnection = getenv('DB_CONNECTION') ?: 'sqlite';
+    }
+
     public function refreshDatabase(): void {}
 
     protected function setUp(): void
     {
-        $originalConnection = getenv('DB_CONNECTION') ?: 'sqlite';
-
-        if ($originalConnection !== 'pgsql') {
+        if (self::$requiredConnection !== 'pgsql') {
             parent::setUp();
             $this->markTestSkipped('StoreCreditConcurrencyTest requires PostgreSQL (DB_CONNECTION=pgsql).');
 
@@ -52,7 +62,17 @@ class StoreCreditConcurrencyTest extends TestCase
             'search_path' => 'public',
         ];
 
-        parent::setUp();
+        // Avoid Tests\TestCase::setUp() which forces putenv('DB_CONNECTION=sqlite')
+        // and clobbers the pgsql env for this process and child worker processes.
+        $this->refreshApplication();
+
+        // Re-assert pgsql env for this process and any child workers.
+        putenv('DB_CONNECTION=pgsql');
+        putenv('DB_DATABASE='.$this->dbConfig['database']);
+        $_ENV['DB_CONNECTION'] = 'pgsql';
+        $_ENV['DB_DATABASE'] = $this->dbConfig['database'];
+        $_SERVER['DB_CONNECTION'] = 'pgsql';
+        $_SERVER['DB_DATABASE'] = $this->dbConfig['database'];
 
         config()->set('database.default', 'pgsql');
         config()->set('database.connections.pgsql', $this->dbConfig);
@@ -148,6 +168,191 @@ class StoreCreditConcurrencyTest extends TestCase
         $this->assertSame(4, count($successes), 'Exactly 4 concurrent purchases should fit within the 100000 credit limit.');
         $this->assertCount(2, $failures, 'Exactly 2 purchases should be rejected over-limit by row locking.');
         $this->assertSame(-100000, $finalBalance);
+    }
+
+    public function test_concurrent_duplicate_funding_does_not_double_credit(): void
+    {
+        $org = Organization::factory()->create();
+        $cashier = User::factory()->create(['organization_id' => $org->id]);
+        $cashier->givePermissionTo('cashier_store_credit');
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ]);
+
+        $ledger = $this->app->make(StoreCreditLedgerService::class);
+        $account = $ledger->openAccount(new MemberStoreAccountContext(
+            organizationId: $org->id,
+            cooperativeMemberId: $member->id,
+            openingBalance: 0,
+            openedBy: $cashier,
+        ));
+
+        $workerFile = $this->workingDirectory.'/funding_worker.php';
+        $startFile = $this->workingDirectory.'/funding_start.signal';
+        $resultDir = $this->workingDirectory.'/funding_results';
+        mkdir($resultDir);
+
+        file_put_contents($workerFile, $this->fundingWorkerScript());
+
+        $workerCount = 5;
+        $fundingAmount = 100000;
+        $idempotencyKey = 'concurrent-funding-key';
+        $processes = [];
+
+        for ($i = 0; $i < $workerCount; $i++) {
+            $processes[] = $this->startFundingWorker($workerFile, $startFile, $resultDir, $i, $account->id, $fundingAmount, $cashier->id, $idempotencyKey);
+        }
+
+        usleep(300000);
+        touch($startFile);
+
+        $results = [];
+        foreach ($processes as $i => $worker) {
+            $results[] = $this->finishWorker($worker, $resultDir, $i);
+        }
+
+        $successes = array_filter($results, fn (array $r): bool => $r['ok']);
+
+        $finalBalance = (int) DB::connection('pgsql')->table('member_store_accounts')->where('id', $account->id)->value('balance');
+        $fundingCount = (int) DB::connection('pgsql')->table('member_store_funding_requests')
+            ->where('account_id', $account->id)
+            ->count();
+        $ledgerCredits = (int) DB::connection('pgsql')->table('member_store_ledger_entries')
+            ->where('account_id', $account->id)
+            ->where('entry_type', 'cash_funding')
+            ->count();
+
+        // Only one funding request and one ledger credit may exist regardless of concurrent workers.
+        $this->assertSame(1, $fundingCount, 'Concurrent duplicate funding must create exactly one funding request.');
+        $this->assertSame(1, $ledgerCredits, 'Concurrent duplicate funding must post exactly one ledger credit.');
+        $this->assertSame($fundingAmount, $finalBalance, 'Balance must reflect a single credit, not multiple.');
+    }
+
+    private function fundingWorkerScript(): string
+    {
+        $dbHost = $this->dbConfig['host'];
+        $dbPort = $this->dbConfig['port'];
+        $dbDatabase = $this->dbConfig['database'];
+        $dbUsername = $this->dbConfig['username'];
+        $dbPassword = $this->dbConfig['password'];
+
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+use App\Models\MemberStoreAccount;
+use App\Models\User;
+use App\Services\Cooperative\StoreCreditFundingService;
+use Illuminate\Contracts\Console\Kernel;
+
+[\$script, \$repoPath, \$startFile, \$resultDir, \$index, \$accountId, \$amount, \$cashierId, \$idempotencyKey] = \$argv;
+
+while (! file_exists(\$startFile)) {
+    usleep(10000);
+}
+
+putenv('APP_ENV=testing');
+putenv('CACHE_STORE=array');
+putenv('SESSION_DRIVER=array');
+putenv('QUEUE_CONNECTION=sync');
+putenv('DB_CONNECTION=pgsql');
+putenv("DB_HOST={$dbHost}");
+putenv("DB_PORT={$dbPort}");
+putenv("DB_DATABASE={$dbDatabase}");
+putenv("DB_USERNAME={$dbUsername}");
+putenv("DB_PASSWORD={$dbPassword}");
+
+\$_ENV['APP_ENV'] = 'testing';
+\$_ENV['DB_CONNECTION'] = 'pgsql';
+
+require \$repoPath.'/vendor/autoload.php';
+
+\$app = require \$repoPath.'/bootstrap/app.php';
+\$app->make(Kernel::class)->bootstrap();
+
+config()->set('database.default', 'pgsql');
+config()->set('database.connections.pgsql', [
+    'driver' => 'pgsql',
+    'host' => '{$dbHost}',
+    'port' => '{$dbPort}',
+    'database' => '{$dbDatabase}',
+    'username' => '{$dbUsername}',
+    'password' => '{$dbPassword}',
+    'charset' => 'utf8',
+    'prefix' => '',
+    'search_path' => 'public',
+]);
+
+\DB::purge('pgsql');
+\DB::reconnect('pgsql');
+
+\$resultFile = \$resultDir.'/'.\$index.'.json';
+
+try {
+    \$account = MemberStoreAccount::query()->findOrFail((int) \$accountId);
+    \$cashier = User::query()->findOrFail((int) \$cashierId);
+
+    app(StoreCreditFundingService::class)->submitCashFunding(
+        account: \$account,
+        amount: (int) \$amount,
+        cashier: \$cashier,
+        referenceNo: 'CONC-FUND-'.\$index,
+        idempotencyKey: \$idempotencyKey,
+    );
+
+    file_put_contents(\$resultFile, json_encode([
+        'ok' => true,
+        'index' => \$index,
+    ], JSON_THROW_ON_ERROR));
+
+    exit(0);
+} catch (Throwable \$throwable) {
+    file_put_contents(\$resultFile, json_encode([
+        'ok' => false,
+        'index' => \$index,
+        'class' => \$throwable::class,
+        'message' => \$throwable->getMessage(),
+    ], JSON_THROW_ON_ERROR));
+
+    exit(1);
+}
+PHP;
+    }
+
+    /**
+     * @return array{process: mixed, pipes: array<int, resource>}
+     */
+    private function startFundingWorker(string $workerFile, string $startFile, string $resultDir, int $index, int $accountId, int $amount, int $cashierId, string $idempotencyKey): array
+    {
+        $pipes = [];
+        $process = proc_open(
+            [
+                PHP_BINARY,
+                $workerFile,
+                base_path(),
+                $startFile,
+                $resultDir,
+                (string) $index,
+                (string) $accountId,
+                (string) $amount,
+                (string) $cashierId,
+                $idempotencyKey,
+            ],
+            [
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes,
+            base_path(),
+        );
+
+        return [
+            'process' => $process,
+            'pipes' => $pipes,
+        ];
     }
 
     private function workerScript(): string

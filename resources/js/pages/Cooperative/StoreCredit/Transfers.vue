@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDateTime } from "@/lib/formatters";
-import { index, process } from "@/routes/cooperative/store-credit/transfers";
+import { index, process, proof } from "@/routes/cooperative/store-credit/transfers";
 
 type Transfer = {
     id: number;
@@ -80,10 +80,18 @@ function reject(id: number): void {
                                 <td class="p-3">{{ formatDateTime(transfer.created_at) }}</td>
                                 <td class="p-3"><Badge :variant="transfer.status === 'pending' ? 'secondary' : 'default'">{{ transfer.status_label }}</Badge></td>
                                 <td class="p-3">
-                                    <div v-if="transfer.status === 'pending'" class="flex gap-1">
+                                    <div v-if="transfer.status === 'pending'" class="flex flex-wrap gap-1">
+                                        <Button v-if="transfer.has_proof" size="sm" variant="outline" as="a" :href="proof({ funding: transfer.id }).url" target="_blank">
+                                            Lihat Bukti
+                                        </Button>
                                         <Button size="sm" @click="approve(transfer.id)">Setujui</Button>
                                         <Button size="sm" variant="outline" @click="reject(transfer.id)">Tolak</Button>
                                     </div>
+                                    <span v-else-if="transfer.has_proof" class="flex gap-1">
+                                        <Button size="sm" variant="ghost" as="a" :href="proof({ funding: transfer.id }).url" target="_blank">
+                                            Lihat Bukti
+                                        </Button>
+                                    </span>
                                     <span v-else class="text-zinc-400">-</span>
                                 </td>
                             </tr>

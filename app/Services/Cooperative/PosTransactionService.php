@@ -99,6 +99,12 @@ class PosTransactionService
                 $storePurchaseContext = null;
                 $storeAccountAmount = $this->storeCheckout->storeAccountAmount($payments);
                 if ($storeAccountAmount > 0) {
+                    if ($cashier === null) {
+                        throw ValidationException::withMessages([
+                            'payment_method' => 'Pembayaran saldo toko anggota membutuhkan kasir terautentikasi.',
+                        ]);
+                    }
+
                     if ($member === null) {
                         throw ValidationException::withMessages([
                             'cooperative_member_id' => 'Pembayaran saldo toko anggota membutuhkan anggota aktif.',
@@ -109,7 +115,7 @@ class PosTransactionService
                         member: $member,
                         amount: $storeAccountAmount,
                         cashier: $cashier,
-                        delegateId: isset($data['store_delegate_id']) ? (int) $data['store_delegate_id'] : null,
+                        delegateCode: isset($data['store_delegate_code']) ? (string) $data['store_delegate_code'] : null,
                         delegatePin: isset($data['store_delegate_pin']) ? (string) $data['store_delegate_pin'] : null,
                     );
                 }
@@ -334,13 +340,17 @@ class PosTransactionService
                         ->first();
 
                     if ($storeAccount !== null) {
-                        $refundAmount = (int) round((float) $storeAccountPayments->sum('amount'));
-                        $this->storeCheckout->postRefund(
-                            account: $storeAccount,
-                            transaction: $transaction,
-                            amount: $refundAmount,
-                            cashier: $supervisor,
-                        );
+                        $originalStorePaid = (int) $storeAccountPayments->sum('amount');
+                        $refundAmount = $this->storeCheckout->cappedStoreCreditRefund($storeAccount, $transaction, $originalStorePaid);
+
+                        if ($refundAmount > 0) {
+                            $this->storeCheckout->postRefund(
+                                account: $storeAccount,
+                                transaction: $transaction,
+                                amount: $refundAmount,
+                                cashier: $supervisor,
+                            );
+                        }
                     }
                 }
             }

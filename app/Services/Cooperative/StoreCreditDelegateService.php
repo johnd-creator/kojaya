@@ -21,6 +21,10 @@ class StoreCreditDelegateService
 {
     private const string PIN_VERIFICATION_KEY = 'delegate-pin:';
 
+    private const int PIN_MAX_ATTEMPTS = 5;
+
+    private const int PIN_DECAY_SECONDS = 60;
+
     public function __construct(private AuditLogService $auditLog) {}
 
     /**
@@ -99,22 +103,21 @@ class StoreCreditDelegateService
     {
         $key = self::PIN_VERIFICATION_KEY.$delegate->id;
 
-        $executed = RateLimiter::attempt(
-            key: $key,
-            maxAttempts: 5,
-            callback: function () use ($delegate, $pin): bool {
-                return $delegate->checkPin($pin);
-            },
-            decaySeconds: 60,
-        );
-
-        if ($executed === false) {
+        if (RateLimiter::tooManyAttempts($key, self::PIN_MAX_ATTEMPTS)) {
             Log::warning('store-credit.delegate.pin_rate_limited', [
                 'delegate_id' => $delegate->id,
             ]);
 
             throw ValidationException::withMessages([
                 'pin' => 'Terlalu banyak percobaan PIN. Coba lagi nanti.',
+            ]);
+        }
+
+        if (! $delegate->checkPin($pin)) {
+            RateLimiter::hit($key, self::PIN_DECAY_SECONDS);
+
+            throw ValidationException::withMessages([
+                'pin' => 'PIN delegate tidak sesuai.',
             ]);
         }
 

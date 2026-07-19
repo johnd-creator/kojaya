@@ -96,7 +96,10 @@ class MemberStoreCreditController extends Controller
     {
         $this->authorize('create', MemberStoreAccount::class);
 
-        $member = CooperativeMember::query()->findOrFail($request->input('cooperative_member_id'));
+        $member = CooperativeMember::query()
+            ->where('id', $request->input('cooperative_member_id'))
+            ->where('organization_id', $request->user()->organization_id)
+            ->firstOrFail();
 
         $account = $this->ledger->openAccount(new MemberStoreAccountContext(
             organizationId: (string) $member->organization_id,
@@ -173,6 +176,7 @@ class MemberStoreCreditController extends Controller
             amount: (int) $request->input('amount'),
             cashier: $request->user(),
             referenceNo: $request->string('reference_no')->toString() ?: null,
+            idempotencyKey: $this->stableIdempotencyKey($request),
         );
 
         return back()->with('success', 'Setoran tunai diposting.');
@@ -216,6 +220,19 @@ class MemberStoreCreditController extends Controller
         return back()->with('success', 'Setoran transfer diproses.');
     }
 
+    public function downloadProof(Request $request, MemberStoreFundingRequest $funding): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->authorize('viewProof', $funding);
+
+        $response = $this->funding->downloadProofResponse($funding);
+
+        if ($response === null) {
+            abort(404, 'Bukti setoran tidak tersedia.');
+        }
+
+        return $response;
+    }
+
     public function submitTransfer(StoreTransferFundingRequest $request, MemberStoreAccount $account): RedirectResponse
     {
         $this->authorize('view', $account);
@@ -225,6 +242,7 @@ class MemberStoreCreditController extends Controller
             submitter: $request->user(),
             bankReference: $request->string('bank_reference')->toString() ?: null,
             proof: $request->file('proof_file'),
+            idempotencyKey: $this->stableIdempotencyKey($request),
         );
 
         return back()->with('success', 'Setoran transfer diajukan, menunggu verifikasi.');
@@ -241,6 +259,7 @@ class MemberStoreCreditController extends Controller
     public function updateDelegate(UpdateDelegateRequest $request, MemberStoreAccount $account, MemberStoreDelegate $delegate): RedirectResponse
     {
         $this->authorize('manage', $account);
+        $this->ensureDelegateBelongsToAccount($delegate, $account);
         $this->delegateService->update($delegate, $request->validated(), $request->user());
 
         return back()->with('success', 'Delegate diperbarui.');
@@ -249,9 +268,31 @@ class MemberStoreCreditController extends Controller
     public function revokeDelegate(Request $request, MemberStoreAccount $account, MemberStoreDelegate $delegate): RedirectResponse
     {
         $this->authorize('manage', $account);
+        $this->ensureDelegateBelongsToAccount($delegate, $account);
         $this->delegateService->revoke($delegate, $request->user());
 
         return back()->with('success', 'Delegate dicabut.');
+    }
+
+    private function ensureDelegateBelongsToAccount(MemberStoreDelegate $delegate, MemberStoreAccount $account): void
+    {
+        abort_if($delegate->account_id !== $account->id, 404, 'Delegate tidak ditemukan pada akun ini.');
+    }
+
+    private function stableIdempotencyKey(Request $request): ?string
+    {
+        $key = $request->headers->get('Idempotency-Key');
+
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        $submitted = $request->input('idempotency_key');
+        if (is_string($submitted) && $submitted !== '') {
+            return $submitted;
+        }
+
+        return $key;
     }
 
     public function report(Request $request): Response

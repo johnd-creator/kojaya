@@ -55,6 +55,18 @@ class MemberStoreFundingRequestPolicy extends BasePolicy
             && $this->sameOrganization($user, $funding);
     }
 
+    public function viewProof(User $user, MemberStoreFundingRequest $funding): bool
+    {
+        if ($this->isOwner($user, $funding) && $this->sameOrganization($user, $funding)) {
+            return true;
+        }
+
+        return $this->canAny($user, [
+            PermissionEnum::STORE_CREDIT_APPROVE_TRANSFER->value,
+            PermissionEnum::STORE_CREDIT_MANAGE->value,
+        ]) && $this->sameOrganization($user, $funding);
+    }
+
     public function isOwner(User $user, MemberStoreFundingRequest $funding): bool
     {
         $account = $funding->account;

@@ -85,8 +85,9 @@ domain. Checkout:
 
 1. Cashier selects the member owner (and optional delegate + PIN).
 2. Inside the POS DB transaction, the account is locked (`lockForUpdate`); the
-   service validates organization scope, account status, delegate
+   service validates cashier/member organization scope, account status, delegate
    status/PIN/expiry, per-transaction and daily limits, and projected balance.
+   The delegate is resolved by its **public `code`** (never a raw numeric id).
 3. If projected balance would breach the credit limit, the **entire** operation
    is rejected atomically — no POS transaction, no stock movement, no ledger
    entry.
@@ -94,6 +95,20 @@ domain. Checkout:
    ledger entry is posted and the signed balance updated.
 5. Void/return posts an idempotent `pos_refund` entry referencing the original
    transaction/return.
+
+**Delegate PIN contract:** a delegate may only be used together with its PIN —
+delegate-without-PIN and PIN-without-delegate are both rejected. Wrong PIN and
+rate-limited produce distinct errors; a correct PIN does not consume an attempt.
+
+**Refund allocation policy (split tender):** store-credit refunds are capped so
+the total credited to a store account can never exceed what was originally paid
+via `MEMBER_STORE_ACCOUNT`:
+
+```
+store_credit_refund = min(return_amount, original_store_paid - prior_refunds)
+```
+
+This is deterministic and safe across multiple partial returns and voids.
 
 Existing payment methods (CASH/TRANSFER/QRIS/MEMBER_CREDIT) are unchanged.
 
@@ -176,7 +191,15 @@ reset, transfer submission, and funding-request history. Writes are
 
 ## Rollback
 
-The feature is additive. Rolling back requires running the four migrations'
-`down()` methods (drop the four new tables) and removing the
-`MEMBER_STORE_ACCOUNT` payment option. No existing POS/member table schema is
-altered, so rollback does not affect historical POS data.
+The feature is additive and the migrations are not yet merged. Rolling back in
+a **fresh, empty** environment runs the four `down()` methods (drop the four new
+tables) and removes the `MEMBER_STORE_ACCOUNT` payment option.
+
+**Data-retention policy (important):** once the ledger holds real financial
+data, the four `member_store_*` tables must **not** be dropped. The foreign keys
+use `restrictOnDelete` so that members, accounts, delegates, ledger entries,
+and funding requests cannot be hard-deleted once financial history exists —
+deletion would lose immutable accounting history. If a rollback is genuinely
+required after go-live, it must be handled as a controlled data-retention /
+archive operation, never a destructive `down()` on populated tables. The `down()`
+methods exist only so fresh environments and CI can reset cleanly.

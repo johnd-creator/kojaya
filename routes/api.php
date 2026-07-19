@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\LoanApiController;
 use App\Http\Controllers\Api\V1\MemberCoffeeOrderController;
 use App\Http\Controllers\Api\V1\MemberSelfServiceController;
 use App\Http\Controllers\Api\V1\MemberStoreController;
+use App\Http\Controllers\Api\V1\MemberStoreCreditApiController;
 use App\Http\Controllers\Api\V1\PointApiController;
 use App\Http\Controllers\Api\V1\PosApiController;
 use App\Http\Controllers\Api\V1\PosSyncApiController;
@@ -116,6 +117,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
             Route::get('/payment-intents/{intent}', [MemberStoreController::class, 'showIntent'])->middleware('ability:member:read');
             Route::get('/support-tickets', [MemberSelfServiceController::class, 'supportTickets'])->middleware('ability:member:read');
             Route::post('/support-tickets', [MemberSelfServiceController::class, 'storeSupportTicket'])->middleware(['ability:member:write', 'throttle:api-write']);
+
+            Route::get('/store-account/summary', [MemberStoreCreditApiController::class, 'summary'])->middleware('ability:member:read');
+            Route::get('/store-account/ledger', [MemberStoreCreditApiController::class, 'ledger'])->middleware('ability:member:read');
+            Route::get('/store-account/funding-requests', [MemberStoreCreditApiController::class, 'fundingRequests'])->middleware('ability:member:read');
+            Route::get('/store-account/delegates', [MemberStoreCreditApiController::class, 'delegates'])->middleware('ability:member:read');
+            Route::post('/store-account/delegates', [MemberStoreCreditApiController::class, 'storeDelegate'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::put('/store-account/delegates/{delegate}', [MemberStoreCreditApiController::class, 'updateDelegate'])->middleware(['ability:member:write', 'throttle:api-write']);
+            Route::post('/store-account/delegates/{delegate}/revoke', [MemberStoreCreditApiController::class, 'revokeDelegate'])->middleware(['ability:member:write', 'throttle:api-write']);
+            Route::post('/store-account/delegates/{delegate}/reset-pin', [MemberStoreCreditApiController::class, 'resetDelegatePin'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
+            Route::post('/store-account/transfers', [MemberStoreCreditApiController::class, 'submitTransfer'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         });
     });
 

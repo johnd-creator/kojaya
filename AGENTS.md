@@ -382,3 +382,17 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 
 </laravel-boost-guidelines>
+
+## GitHub Actions waiting policy
+
+After committing and pushing changes:
+
+1. Do not continuously poll GitHub Actions.
+2. Do not run `gh pr checks --watch`.
+3. Do not wait for CI inside the current Codex session.
+4. Report the branch, commit SHA, PR number, and checks that were triggered.
+5. Stop the task after the push.
+6. CI verification will be performed in a separate invocation after
+   GitHub Actions completes.
+7. Only investigate CI when explicitly invoked again or when a `workflow_run`
+   failure event triggers a dedicated Codex workflow.

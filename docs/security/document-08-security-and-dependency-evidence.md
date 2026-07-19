@@ -12,9 +12,13 @@
 - Main SHA after PR #14 merge: `fc2ea4deb18477cec8ee8205d086d131a0ff3f58`
 - PR #15 head before this evidence commit: `58d61e8edd7e49cfcf91a5699e99c0195e132c36`
 - Release tag `v0.1.0` peeled SHA: `ad8bc3afc9b62f549e4f054e181ef9decbecb341` (unchanged)
-- Owner roles referenced below use the cooperative role hierarchy recorded in
-  `AGENTS.md` (`System Admin`, `Pengurus Koperasi`, `Manajer Koperasi`,
-  `Admin Koperasi`, `Kasir Koperasi`).
+- Application RBAC roles referenced below use the cooperative role hierarchy
+  recorded in `AGENTS.md` (`System Admin`, `Pengurus Koperasi`,
+  `Manajer Koperasi`, `Admin Koperasi`, `Kasir Koperasi`) only where
+  runtime or business authorization is relevant.
+- Operational, security, and engineering ownership is separate from application
+  RBAC. It remains unassigned unless traceable evidence names an accountable
+  owner or custodian.
 
 This file records the repository-side state of Document 08 security and
 dependency workstreams only. It does not assert that any staging deployment,
@@ -68,10 +72,10 @@ lockfile, or upgrade was performed.
 
 | Package | Severity | Advisory ID | CVE | Title (safe summary) | Remediation / risk owner |
 |---|---|---|---|---|---|
-| `phpseclib/phpseclib` | medium | PKSA-432p-hv1d-chf7 | CVE-2026-55599 | X.509 certificate validation can issue attacker-controlled outbound SSRF requests via AIA. | Risk owner: System Admin. Requires coordinated dependency upgrade and regression test; not advanced in this PR per scope. |
-| `symfony/yaml` | low | PKSA-v5yj-8nmz-sk2q | CVE-2026-45304 | YAML parser exponential memory allocation via recursive collection-alias expansion ("Billion Laughs"). | Risk owner: System Admin. Upgrade tracked separately; this PR performs no lockfile change. |
-| `symfony/yaml` | low | PKSA-ft77-7h5f-p3r6 | CVE-2026-45305 | YAML parser ReDoS via catastrophic backtracking in `Parser::cleanup()`. | Risk owner: System Admin. Upgrade tracked separately; this PR performs no lockfile change. |
-| `symfony/yaml` | low | PKSA-b14r-zh1d-vdrc | CVE-2026-45133 | YAML parser stack exhaustion via unbounded recursion in nested blocks, sequences, and mappings. | Risk owner: System Admin. Upgrade tracked separately; this PR performs no lockfile change. |
+| `phpseclib/phpseclib` | medium | PKSA-432p-hv1d-chf7 | CVE-2026-55599 | X.509 certificate validation can issue attacker-controlled outbound SSRF requests via AIA. | Application/Security engineering owner — unassigned. Requires coordinated dependency upgrade and regression test; not advanced in this PR per scope. |
+| `symfony/yaml` | low | PKSA-v5yj-8nmz-sk2q | CVE-2026-45304 | YAML parser exponential memory allocation via recursive collection-alias expansion ("Billion Laughs"). | Application/Security engineering owner — unassigned. Upgrade tracked separately; this PR performs no lockfile change. |
+| `symfony/yaml` | low | PKSA-ft77-7h5f-p3r6 | CVE-2026-45305 | YAML parser ReDoS via catastrophic backtracking in `Parser::cleanup()`. | Application/Security engineering owner — unassigned. Upgrade tracked separately; this PR performs no lockfile change. |
+| `symfony/yaml` | low | PKSA-b14r-zh1d-vdrc | CVE-2026-45133 | YAML parser stack exhaustion via unbounded recursion in nested blocks, sequences, and mappings. | Application/Security engineering owner — unassigned. Upgrade tracked separately; this PR performs no lockfile change. |
 
 No `abandoned` report rows were emitted. No advisory was hidden or downgraded.
 
@@ -84,8 +88,8 @@ No `abandoned` report rows were emitted. No advisory was hidden or downgraded.
 
 | Package | Severity | Advisory | Remediation / risk owner |
 |---|---|---|---|
-| `esbuild` (0.27.3 - 0.28.0) | low | Arbitrary file read when running the development server on Windows (GHSA-g7r4-m6w7-qqqr). Dev-server-only exposure; CI build runs on Linux. | Risk owner: System Admin. `npm audit fix` available but not applied in this PR per scope (no lockfile change). |
-| `qs` (6.11.1 - 6.15.1) | moderate | Remotely triggerable DoS: `qs.stringify` crashes with `TypeError` on null/undefined entries in comma-format arrays when `encodeValuesOnly` is set (GHSA-q8mj-m7cp-5q26). | Risk owner: System Admin. `npm audit fix` available but not applied in this PR per scope (no lockfile change). |
+| `esbuild` (0.27.3 - 0.28.0) | low | Arbitrary file read when running the development server on Windows (GHSA-g7r4-m6w7-qqqr). Dev-server-only exposure; CI build runs on Linux. | Application/Security engineering owner — unassigned. `npm audit fix` available but not applied in this PR per scope (no lockfile change). |
+| `qs` (6.11.1 - 6.15.1) | moderate | Remotely triggerable DoS: `qs.stringify` crashes with `TypeError` on null/undefined entries in comma-format arrays when `encodeValuesOnly` is set (GHSA-q8mj-m7cp-5q26). | Application/Security engineering owner — unassigned. `npm audit fix` available but not applied in this PR per scope (no lockfile change). |
 
 No advisory was hidden or downgraded. `npm audit` did not report any production
 package as abandoned.

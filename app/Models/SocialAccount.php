@@ -2,12 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Log;
 
 class SocialAccount extends Model
 {
@@ -38,15 +36,12 @@ class SocialAccount extends Model
     }
 
     /**
-     * Encrypt sensitive token payloads at rest. The getters gracefully
-     * return null when decryption fails (e.g. after an APP_KEY rotation
-     * or when a token is corrupt) so a stale token never crashes the
-     * request — the member can simply re-link the provider.
+     * Encrypt sensitive token payloads at rest.
      */
     protected function accessToken(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $this->decryptSafely($value, 'access_token'),
+            get: fn ($value) => $value === null ? null : decrypt($value),
             set: fn ($value) => $value === null ? null : encrypt($value),
         );
     }
@@ -54,7 +49,7 @@ class SocialAccount extends Model
     protected function refreshToken(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $this->decryptSafely($value, 'refresh_token'),
+            get: fn ($value) => $value === null ? null : decrypt($value),
             set: fn ($value) => $value === null ? null : encrypt($value),
         );
     }
@@ -62,24 +57,5 @@ class SocialAccount extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    private function decryptSafely(?string $value, string $field): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        try {
-            return decrypt($value);
-        } catch (DecryptException $exception) {
-            Log::warning('social_account.token_decrypt_failed', [
-                'social_account_id' => $this->id,
-                'provider' => $this->provider,
-                'field' => $field,
-            ]);
-
-            return null;
-        }
     }
 }

@@ -11,20 +11,11 @@ use App\Services\AuditLogService;
 use App\Support\AuditContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class StoreCreditDelegateService
 {
-    private const string PIN_VERIFICATION_KEY = 'delegate-pin:';
-
-    private const int PIN_MAX_ATTEMPTS = 5;
-
-    private const int PIN_DECAY_SECONDS = 60;
-
     public function __construct(private AuditLogService $auditLog) {}
 
     /**
@@ -39,7 +30,6 @@ class StoreCreditDelegateService
                 'user_id' => $data['user_id'] ?? null,
                 'display_name' => $data['display_name'],
                 'code' => $this->generateUniqueCode($account),
-                'pin_hash' => Hash::make((string) $data['pin']),
                 'per_transaction_limit' => $data['per_transaction_limit'] ?? null,
                 'daily_limit' => $data['daily_limit'] ?? null,
                 'valid_from' => $data['valid_from'] ?? Carbon::today()->toDateString(),
@@ -84,44 +74,6 @@ class StoreCreditDelegateService
 
             return $locked->refresh();
         });
-    }
-
-    public function resetPin(MemberStoreDelegate $delegate, string $pin, User $actor): MemberStoreDelegate
-    {
-        return DB::transaction(function () use ($delegate, $pin, $actor): MemberStoreDelegate {
-            $locked = MemberStoreDelegate::query()->lockForUpdate()->findOrFail($delegate->id);
-            $locked->pin_hash = Hash::make($pin);
-            $locked->save();
-
-            $this->audit('member_store_credit.delegate.pin_reset', $locked, $actor);
-
-            return $locked->refresh();
-        });
-    }
-
-    public function verifyForCheckout(MemberStoreDelegate $delegate, string $pin): MemberStoreDelegate
-    {
-        $key = self::PIN_VERIFICATION_KEY.$delegate->id;
-
-        if (RateLimiter::tooManyAttempts($key, self::PIN_MAX_ATTEMPTS)) {
-            Log::warning('store-credit.delegate.pin_rate_limited', [
-                'delegate_id' => $delegate->id,
-            ]);
-
-            throw ValidationException::withMessages([
-                'pin' => 'Terlalu banyak percobaan PIN. Coba lagi nanti.',
-            ]);
-        }
-
-        if (! $delegate->checkPin($pin)) {
-            RateLimiter::hit($key, self::PIN_DECAY_SECONDS);
-
-            throw ValidationException::withMessages([
-                'pin' => 'PIN delegate tidak sesuai.',
-            ]);
-        }
-
-        return $delegate;
     }
 
     public function assertUsableForPurchase(MemberStoreDelegate $delegate, int $amount): MemberStoreDelegate

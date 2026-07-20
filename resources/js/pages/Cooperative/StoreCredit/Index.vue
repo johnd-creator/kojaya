@@ -49,7 +49,7 @@ function applyFilter(): void {
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Saldo Toko Anggota</h1>
-                    <p class="text-sm text-zinc-500">Member Store Credit Ledger</p>
+                    <p class="text-sm text-zinc-500">Kelola saldo toko anggota</p>
                 </div>
                 <Wallet class="size-8 text-indigo-600" />
             </div>

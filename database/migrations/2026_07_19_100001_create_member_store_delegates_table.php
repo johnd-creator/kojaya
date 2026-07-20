@@ -15,7 +15,6 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('display_name', 120);
             $table->string('code', 40);
-            $table->string('pin_hash', 255)->nullable();
             $table->bigInteger('per_transaction_limit')->nullable();
             $table->bigInteger('daily_limit')->nullable();
             $table->date('valid_from');

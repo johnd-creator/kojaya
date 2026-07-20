@@ -8,21 +8,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Hash;
 
 class MemberStoreDelegate extends Model
 {
-    protected $hidden = [
-        'pin_hash',
-    ];
-
     protected $fillable = [
         'account_id',
         'organization_id',
         'user_id',
         'display_name',
         'code',
-        'pin_hash',
         'per_transaction_limit',
         'daily_limit',
         'valid_from',
@@ -93,10 +87,5 @@ class MemberStoreDelegate extends Model
         }
 
         return ! ($this->expires_at !== null && $today->gt($this->expires_at));
-    }
-
-    public function checkPin(string $pin): bool
-    {
-        return $this->pin_hash !== null && Hash::check($pin, $this->pin_hash);
     }
 }

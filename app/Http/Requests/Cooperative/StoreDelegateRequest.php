@@ -19,7 +19,6 @@ class StoreDelegateRequest extends FormRequest
         return [
             'display_name' => ['required', 'string', 'min:2', 'max:120'],
             'user_id' => ['nullable', 'exists:users,id'],
-            'pin' => ['required', 'string', 'min:4', 'max:32'],
             'per_transaction_limit' => ['nullable', 'integer', 'min:0', 'max:100000000000'],
             'daily_limit' => ['nullable', 'integer', 'min:0', 'max:100000000000'],
             'valid_from' => ['nullable', 'date'],

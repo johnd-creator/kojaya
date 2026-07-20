@@ -40,11 +40,6 @@ class MemberStoreDelegatePolicy extends BasePolicy
             && $this->sameOrganization($user, $delegate);
     }
 
-    public function resetPin(User $user, MemberStoreDelegate $delegate): bool
-    {
-        return $this->manage($user, $delegate);
-    }
-
     public function isOwner(User $user, MemberStoreDelegate $delegate): bool
     {
         $account = $delegate->account;

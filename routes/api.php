@@ -125,7 +125,6 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
             Route::post('/store-account/delegates', [MemberStoreCreditApiController::class, 'storeDelegate'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
             Route::put('/store-account/delegates/{delegate}', [MemberStoreCreditApiController::class, 'updateDelegate'])->middleware(['ability:member:write', 'throttle:api-write']);
             Route::post('/store-account/delegates/{delegate}/revoke', [MemberStoreCreditApiController::class, 'revokeDelegate'])->middleware(['ability:member:write', 'throttle:api-write']);
-            Route::post('/store-account/delegates/{delegate}/reset-pin', [MemberStoreCreditApiController::class, 'resetDelegatePin'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
             Route::post('/store-account/transfers', [MemberStoreCreditApiController::class, 'submitTransfer'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
         });
     });

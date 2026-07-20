@@ -16,6 +16,8 @@ class MemberStoreAccountResource extends JsonResource
             'balance' => (int) $this->balance,
             'credit_limit' => (int) $this->credit_limit,
             'available_credit' => (int) $this->availableCredit(),
+            'available_spending' => (int) $this->availableCredit(),
+            'balance_label' => (int) $this->balance < 0 ? 'Pemakaian/utang toko' : 'Saldo tersimpan',
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'is_negative' => (int) $this->balance < 0,

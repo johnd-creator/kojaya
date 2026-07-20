@@ -31,6 +31,16 @@ class StoreCreditLedgerService
 {
     public const string MODULE = 'store-credit';
 
+    public const string REFERENCE_ACCOUNT = 'store_account';
+
+    public const string REFERENCE_TRANSACTION = 'pos_transaction';
+
+    public const string REFERENCE_RETURN = 'pos_return';
+
+    public const string REFERENCE_FUNDING = 'funding_request';
+
+    public const string REFERENCE_LEDGER_ENTRY = 'ledger_entry';
+
     public function __construct(private AuditLogService $auditLog) {}
 
     public function openAccount(
@@ -62,7 +72,7 @@ class StoreCreditLedgerService
                     entryType: MemberStoreLedgerEntryType::OpeningBalance,
                     effect: MemberStoreLedgerEffect::Credit,
                     amount: $context->openingBalance,
-                    referenceType: MemberStoreAccount::class,
+                    referenceType: self::REFERENCE_ACCOUNT,
                     referenceId: (string) $account->id,
                     idempotencyKey: $context->idempotencyKey ?? $this->referenceKey('opening', $account, $account->id),
                     actor: $context->openedBy,
@@ -90,6 +100,8 @@ class StoreCreditLedgerService
         ?User $cashier,
         ?MemberStoreDelegate $delegate,
         ?string $idempotencyKey = null,
+        ?string $purchaserName = null,
+        ?string $purchaseNote = null,
     ): MemberStoreLedgerEntry {
         if (! $account->canPurchase()) {
             throw ValidationException::withMessages([
@@ -102,13 +114,16 @@ class StoreCreditLedgerService
             entryType: MemberStoreLedgerEntryType::PosPurchase,
             effect: MemberStoreLedgerEffect::Debit,
             amount: $amount,
-            referenceType: PosTransaction::class,
+            referenceType: self::REFERENCE_TRANSACTION,
             referenceId: (string) $transaction->id,
             idempotencyKey: $idempotencyKey ?? $this->referenceKey('pos-purchase', $account, $transaction->id),
             actor: $cashier,
             delegate: $delegate,
+            purchaserName: trim($purchaserName ?: 'Anggota'),
+            purchaseNote: $purchaseNote !== null ? trim($purchaseNote) : null,
+            transactionNo: (string) $transaction->transaction_no,
             reason: "Pembelian POS {$transaction->transaction_no}",
-            metadata: ['pos_transaction_no' => $transaction->transaction_no],
+            metadata: ['pos_transaction_no' => $transaction->transaction_no, 'status' => 'purchase'],
         );
     }
 
@@ -129,10 +144,22 @@ class StoreCreditLedgerService
         ?User $cashier,
         ?string $idempotencyKey = null,
     ): MemberStoreLedgerEntry {
-        $referenceType = $reference::class;
-        $referenceId = (string) ($reference->id ?? null);
-        $label = property_exists($reference, 'transaction_no') ? $reference->transaction_no
-            : (property_exists($reference, 'return_no') ? $reference->return_no : get_class($reference));
+        $referenceType = $reference instanceof PosTransaction
+            ? self::REFERENCE_TRANSACTION
+            : self::REFERENCE_RETURN;
+        $referenceId = (string) $reference->getAttribute('id');
+        $label = (string) ($reference->getAttribute('transaction_no')
+            ?: $reference->getAttribute('return_no')
+            ?: $referenceId);
+        $transaction = $reference instanceof PosTransaction
+            ? $reference
+            : PosTransaction::query()->find($reference->getAttribute('pos_transaction_id'));
+        $purchase = $transaction === null ? null : MemberStoreLedgerEntry::query()
+            ->where('account_id', $account->id)
+            ->where('reference_type', self::REFERENCE_TRANSACTION)
+            ->where('reference_id', (string) $transaction->id)
+            ->where('entry_type', MemberStoreLedgerEntryType::PosPurchase->value)
+            ->first();
 
         return $this->post(
             account: $account,
@@ -143,8 +170,41 @@ class StoreCreditLedgerService
             referenceId: $referenceId,
             idempotencyKey: $idempotencyKey ?? $this->referenceKey('pos-refund', $account, $referenceId),
             actor: $cashier,
+            purchaserName: $purchase?->purchaser_name,
+            purchaseNote: $purchase?->purchase_note,
+            transactionNo: $purchase?->transaction_no ?: $transaction?->transaction_no,
             reason: "Pengembalian POS {$label}",
-            metadata: ['reference' => $label],
+            metadata: ['reference' => $label, 'status' => 'refund'],
+        );
+    }
+
+    public function postVoidRefund(
+        MemberStoreAccount $account,
+        PosTransaction $transaction,
+        int $amount,
+        ?User $cashier,
+    ): MemberStoreLedgerEntry {
+        $purchase = MemberStoreLedgerEntry::query()
+            ->where('account_id', $account->id)
+            ->where('reference_type', self::REFERENCE_TRANSACTION)
+            ->where('reference_id', (string) $transaction->id)
+            ->where('entry_type', MemberStoreLedgerEntryType::PosPurchase->value)
+            ->first();
+
+        return $this->post(
+            account: $account,
+            entryType: MemberStoreLedgerEntryType::PosRefund,
+            effect: MemberStoreLedgerEffect::Credit,
+            amount: $amount,
+            referenceType: self::REFERENCE_TRANSACTION,
+            referenceId: (string) $transaction->id,
+            idempotencyKey: $this->referenceKey('pos-void-refund', $account, $transaction->id),
+            actor: $cashier,
+            purchaserName: $purchase?->purchaser_name,
+            purchaseNote: $purchase?->purchase_note,
+            transactionNo: $purchase?->transaction_no ?: $transaction->transaction_no,
+            reason: "Void POS {$transaction->transaction_no}",
+            metadata: ['reference' => $transaction->transaction_no, 'status' => 'void'],
         );
     }
 
@@ -161,7 +221,7 @@ class StoreCreditLedgerService
             entryType: MemberStoreLedgerEntryType::CashFunding,
             effect: MemberStoreLedgerEffect::Credit,
             amount: (int) $funding->amount,
-            referenceType: MemberStoreFundingRequest::class,
+            referenceType: self::REFERENCE_FUNDING,
             referenceId: (string) $funding->id,
             idempotencyKey: $idempotencyKey ?? $this->referenceKey('cash-funding', $account, $funding->id),
             actor: $cashier,
@@ -183,7 +243,7 @@ class StoreCreditLedgerService
             entryType: MemberStoreLedgerEntryType::TransferFunding,
             effect: MemberStoreLedgerEffect::Credit,
             amount: (int) $funding->amount,
-            referenceType: MemberStoreFundingRequest::class,
+            referenceType: self::REFERENCE_FUNDING,
             referenceId: (string) $funding->id,
             idempotencyKey: $idempotencyKey ?? $this->referenceKey('transfer-funding', $account, $funding->id),
             actor: $reviewer,
@@ -227,7 +287,7 @@ class StoreCreditLedgerService
                 entryType: MemberStoreLedgerEntryType::Reversal,
                 effect: $oppositeEffect,
                 amount: (int) $locked->amount,
-                referenceType: MemberStoreLedgerEntry::class,
+                referenceType: self::REFERENCE_LEDGER_ENTRY,
                 referenceId: (string) $locked->id,
                 idempotencyKey: $idempotencyKey ?? $this->referenceKey('reversal', $account, $locked->id),
                 actor: $actor,
@@ -360,6 +420,9 @@ class StoreCreditLedgerService
         string $idempotencyKey,
         ?User $actor,
         ?MemberStoreDelegate $delegate = null,
+        ?string $purchaserName = null,
+        ?string $purchaseNote = null,
+        ?string $transactionNo = null,
         ?string $reason = null,
         ?array $metadata = null,
         ?MemberStoreLedgerEntry $reversalOf = null,
@@ -384,7 +447,8 @@ class StoreCreditLedgerService
 
         return DB::transaction(function () use (
             $account, $entryType, $effect, $amount, $referenceType, $referenceId,
-            $idempotencyKey, $actor, $delegate, $reason, $metadata, $reversalOf
+            $idempotencyKey, $actor, $delegate, $purchaserName, $purchaseNote, $transactionNo,
+            $reason, $metadata, $reversalOf
         ): MemberStoreLedgerEntry {
             $locked = MemberStoreAccount::query()->lockForUpdate()->findOrFail($account->id);
 
@@ -438,6 +502,9 @@ class StoreCreditLedgerService
                     'reversal_of_entry_id' => $reversalOf?->id,
                     'actor_user_id' => $actor?->id,
                     'delegate_id' => $delegate?->id,
+                    'purchaser_name' => $purchaserName,
+                    'purchase_note' => $purchaseNote,
+                    'transaction_no' => $transactionNo,
                     'reason' => $reason,
                     'metadata' => $metadata,
                     'occurred_at' => now(),

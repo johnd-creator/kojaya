@@ -38,6 +38,7 @@ class StoreCreditRefundMoneyHardeningTest extends TestCase
             'payments' => [
                 ['payment_method' => 'MEMBER_STORE_ACCOUNT', 'amount' => 100.50],
             ],
+            'purchaser_name' => 'Pembeli',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
         ])->assertStatus(422);
 
@@ -53,6 +54,7 @@ class StoreCreditRefundMoneyHardeningTest extends TestCase
             'client_reference' => 'SC-INTEGER',
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Pembeli',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
         ])->assertSuccessful();
 
@@ -124,6 +126,7 @@ class StoreCreditRefundMoneyHardeningTest extends TestCase
             'client_reference' => 'SC-EXACT',
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Pembeli',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 3]],
         ])->assertSuccessful();
 
@@ -176,6 +179,7 @@ class StoreCreditRefundMoneyHardeningTest extends TestCase
             'client_reference' => 'SALE-'.uniqid(),
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Pembeli',
             'items' => [['pos_product_id' => $product->id, 'quantity' => $quantity]],
         ], $cashier);
 
@@ -195,6 +199,7 @@ class StoreCreditRefundMoneyHardeningTest extends TestCase
                 ['payment_method' => 'MEMBER_STORE_ACCOUNT', 'amount' => $storeAmount],
                 ['payment_method' => 'CASH', 'amount' => $cashAmount],
             ],
+            'purchaser_name' => 'Pembeli',
             'cash_received' => $cashAmount,
             'items' => [['pos_product_id' => $product->id, 'quantity' => $quantity]],
         ], $cashier);

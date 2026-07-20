@@ -24,6 +24,7 @@ import MidtransPaymentDialog from "@/components/Kojayaku/MidtransPaymentDialog.v
 import PageContainer from "@/components/PageContainer.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
+import { storeAccount as storeAccountRoute } from "@/routes/member";
 
 const page = usePage();
 
@@ -84,6 +85,10 @@ const props = defineProps<{
     points_balance: number;
     member_tier: string;
   };
+  store_account: {
+    balance: number;
+    balance_label: string;
+  } | null;
   recentTransactions: Array<{
     id: string;
     type: string;
@@ -264,6 +269,15 @@ const progressColor = (percent: number) => {
 
 const summaryCards = computed(() => [
   {
+    label: "Saldo Toko",
+    value: props.store_account
+      ? formatCurrency(props.store_account.balance)
+      : "Belum tersedia",
+    icon: Wallet,
+    iconClass: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
+    href: storeAccountRoute().url,
+  },
+  {
     label: "Saldo Simpanan",
     value: formatCurrency(props.summary.savings_balance),
     icon: WalletCards,
@@ -314,6 +328,13 @@ const quickLinks = computed(() => [
     icon: ShoppingBag,
     iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     activeOnly: true,
+  },
+  {
+    label: "Saldo Toko",
+    href: storeAccountRoute().url,
+    icon: Wallet,
+    iconClass: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
+    activeOnly: false,
   },
   {
     label: "Profil Saya",

@@ -62,11 +62,13 @@ Accounting examples (whole Rupiah):
   `credit_limit`, `status` (active/suspended/closed).
 - `member_store_ledger_entries` — immutable entries: `entry_type`, `amount`,
   `effect`, `balance_before`, `balance_after`, polymorphic reference,
-  `idempotency_key`, `reversal_of_entry_id`, actor/delegate, `occurred_at`.
+  `idempotency_key`, `reversal_of_entry_id`, actor/delegate, immutable
+  `purchaser_name`/`purchase_note` snapshot, `transaction_no`, and
+  `occurred_at`.
 - `member_store_funding_requests` — cash/transfer deposits. Cash posts
   immediately; transfer requires review.
-- `member_store_delegates` — authorized staff. PIN stored only as a hash,
-  rate-limited verification, per-transaction and daily limits.
+- `member_store_delegates` — optional registered staff reference with
+  per-transaction and daily limits. No checkout password or PIN is stored.
 
 ## Funding
 
@@ -83,10 +85,11 @@ Accounting examples (whole Rupiah):
 flow (`PosTransactionService::create`). It does **not** create a parallel POS
 domain. Checkout:
 
-1. Cashier selects the member owner (and optional delegate + PIN).
+1. Cashier selects the member owner, records the required purchaser name, and may
+   choose an optional registered delegate reference plus a note.
 2. Inside the POS DB transaction, the account is locked (`lockForUpdate`); the
    service validates cashier/member organization scope, account status, delegate
-   status/PIN/expiry, per-transaction and daily limits, and projected balance.
+   status/expiry, per-transaction and daily limits, and projected balance.
    The delegate is resolved by its **public `code`** (never a raw numeric id).
 3. If projected balance would breach the credit limit, the **entire** operation
    is rejected atomically — no POS transaction, no stock movement, no ledger
@@ -96,9 +99,9 @@ domain. Checkout:
 5. Void/return posts an idempotent `pos_refund` entry referencing the original
    transaction/return.
 
-**Delegate PIN contract:** a delegate may only be used together with its PIN —
-delegate-without-PIN and PIN-without-delegate are both rejected. Wrong PIN and
-rate-limited produce distinct errors; a correct PIN does not consume an attempt.
+**Checkout credential decision:** the cashier is the trusted operator. Store-account
+checkout never requests or verifies a password/PIN. The purchaser name is an
+immutable ledger snapshot even if the optional delegate is later renamed or revoked.
 
 **Refund allocation policy (split tender):** store-credit refunds are capped so
 the total credited to a store account can never exceed what was originally paid
@@ -153,7 +156,7 @@ Sensitive actions are recorded via `AuditLogService` under module
 
 - account opened/suspended/reactivated/closed
 - credit limit changed
-- delegate created/revoked/PIN reset
+- delegate created/revoked
 - cash funding posted
 - transfer submitted/approved/rejected
 - POS purchase posted
@@ -161,10 +164,10 @@ Sensitive actions are recorded via `AuditLogService` under module
 - manual adjustment posted
 
 Audit metadata contains only safe fields (entry type, effect, amount, balance
-after, reason). PINs, secrets, proof paths, tokens, and PII are never logged.
+after, reason). Secrets, proof paths, tokens, and unnecessary PII are never logged.
 
 Structured `Log` warnings/criticals cover: over-limit purchase rejection,
-idempotency replay, PIN rate limiting, and cached-balance invariant failure.
+idempotency replay, and cached-balance invariant failure.
 
 ## Reports
 
@@ -178,8 +181,9 @@ is the debt age (an exact, traceable allocation, not an approximation).
 ## API surface (member, additive & backward-compatible)
 
 Under `/api/v1/member/store-account/*` (Sanctum, `ability:member:read|write`,
-`member.api.active`): account summary, paginated ledger, delegates CRUD + PIN
-reset, transfer submission, and funding-request history. Writes are
+`member.api.active`): account summary and paginated owner-scoped ledger,
+optional delegate reference management, transfer submission, and funding-request
+history. There is no delegate PIN reset endpoint. Writes are
 `throttle:api-write` + `idempotent`.
 
 ## Operational limitations & rollout

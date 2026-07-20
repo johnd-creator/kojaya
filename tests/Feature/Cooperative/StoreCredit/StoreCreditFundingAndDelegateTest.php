@@ -114,27 +114,23 @@ class StoreCreditFundingAndDelegateTest extends TestCase
         $this->assertArrayNotHasKey('proof_path', $serialized);
     }
 
-    public function test_delegate_pin_is_hashed_and_not_exposed(): void
+    public function test_delegate_has_no_checkout_credential(): void
     {
         [$account, $creator] = $this->accountAndUser();
         $service = $this->app->make(StoreCreditDelegateService::class);
 
         $delegate = $service->create($account, [
             'display_name' => 'Staff Toko',
-            'pin' => '1234',
         ], $creator);
 
-        $this->assertNotSame('1234', $delegate->getRawOriginal('pin_hash'));
-        $this->assertArrayNotHasKey('pin_hash', $delegate->toArray());
-        $this->assertTrue($delegate->checkPin('1234'));
-        $this->assertFalse($delegate->checkPin('9999'));
+        $this->assertArrayNotHasKey('pin_hash', $delegate->getAttributes());
     }
 
     public function test_revoked_delegate_cannot_pass_usability_check(): void
     {
         [$account, $creator] = $this->accountAndUser();
         $service = $this->app->make(StoreCreditDelegateService::class);
-        $delegate = $service->create($account, ['display_name' => 'Staff', 'pin' => '1234'], $creator);
+        $delegate = $service->create($account, ['display_name' => 'Staff'], $creator);
 
         $service->revoke($delegate, $creator);
 
@@ -148,30 +144,11 @@ class StoreCreditFundingAndDelegateTest extends TestCase
         $service = $this->app->make(StoreCreditDelegateService::class);
         $delegate = $service->create($account, [
             'display_name' => 'Staff',
-            'pin' => '1234',
             'per_transaction_limit' => 50000,
         ], $creator);
 
         $this->expectException(ValidationException::class);
         $service->assertUsableForPurchase($delegate, 60000);
-    }
-
-    public function test_delegate_pin_verification_is_rate_limited(): void
-    {
-        [$account, $creator] = $this->accountAndUser();
-        $service = $this->app->make(StoreCreditDelegateService::class);
-        $delegate = $service->create($account, ['display_name' => 'Staff', 'pin' => '1234'], $creator);
-
-        $rejected = 0;
-        for ($i = 0; $i < 6; $i++) {
-            try {
-                $service->verifyForCheckout($delegate, '0000');
-            } catch (ValidationException) {
-                $rejected++;
-            }
-        }
-
-        $this->assertGreaterThanOrEqual(1, $rejected);
     }
 
     private function accountAndUser(): array

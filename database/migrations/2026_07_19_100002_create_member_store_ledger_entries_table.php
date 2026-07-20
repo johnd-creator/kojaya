@@ -23,6 +23,9 @@ return new class extends Migration
             $table->foreignId('reversal_of_entry_id')->nullable()->constrained('member_store_ledger_entries')->nullOnDelete();
             $table->foreignId('actor_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('delegate_id')->nullable()->constrained('member_store_delegates')->nullOnDelete();
+            $table->string('purchaser_name', 120)->nullable();
+            $table->text('purchase_note')->nullable();
+            $table->string('transaction_no', 80)->nullable();
             $table->text('reason')->nullable();
             $table->json('metadata')->nullable();
             $table->datetime('occurred_at');
@@ -33,6 +36,7 @@ return new class extends Migration
             $table->index(['organization_id', 'occurred_at']);
             $table->index(['account_id', 'occurred_at']);
             $table->index('delegate_id');
+            $table->index(['account_id', 'transaction_no']);
         });
     }
 

@@ -37,7 +37,8 @@ const memberId = ref("");
 const discountAmount = ref(0);
 const cashReceived = ref(0);
 const storeDelegateCode = ref("");
-const storeDelegatePin = ref("");
+const purchaserName = ref("");
+const purchaseNote = ref("");
 const stockError = ref<string | null>(null);
 
 const products = computed(() =>
@@ -74,12 +75,30 @@ const cashChange = computed(() => {
   return Math.max(Number(cashReceived.value) - total.value, 0);
 });
 
+const selectedMember = computed(() =>
+  props.members.find((member) => String(member.id) === String(memberId.value)),
+);
+
+const storeAccount = computed(() => selectedMember.value?.store_account ?? null);
+
+const projectedBalance = computed(() =>
+  storeAccount.value ? Number(storeAccount.value.balance) - total.value : 0,
+);
+
 const canSubmit = computed(() => {
   if (cart.value.length === 0 || form.processing) {
     return false;
   }
   if (paymentMethod.value === "MEMBER_CREDIT" && !memberId.value) {
     return false;
+  }
+  if (paymentMethod.value === "MEMBER_STORE_ACCOUNT") {
+    if (!memberId.value || !storeAccount.value || storeAccount.value.status !== "active") {
+      return false;
+    }
+    if (!purchaserName.value.trim()) {
+      return false;
+    }
   }
   if (paymentMethod.value === "CASH" && Number(cashReceived.value) < total.value) {
     return false;
@@ -98,7 +117,8 @@ const form = useForm({
   discount_amount: 0,
   cash_received: 0 as number | null,
   store_delegate_code: "" as string | number,
-  store_delegate_pin: "",
+  purchaser_name: "",
+  purchase_note: "",
   items: [] as { pos_product_id: number; quantity: number }[],
 });
 
@@ -145,13 +165,18 @@ const submit = () => {
     return;
   }
 
+  if (!window.confirm("Konfirmasi pembelian " + formatCurrency(total.value) + " untuk " + (purchaserName.value || selectedMember.value?.name || "anggota") + "?")) {
+    return;
+  }
+
   form.client_reference = `WEB-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   form.cooperative_member_id = memberId.value || "";
   form.payment_method = paymentMethod.value;
   form.discount_amount = discountSafe.value;
   form.cash_received = paymentMethod.value === "CASH" ? Number(cashReceived.value) : null;
   form.store_delegate_code = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegateCode.value : "";
-  form.store_delegate_pin = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegatePin.value : "";
+  form.purchaser_name = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? purchaserName.value.trim() : "";
+  form.purchase_note = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? purchaseNote.value.trim() : "";
   form.items = cart.value.map((item) => ({
     pos_product_id: item.id,
     quantity: item.quantity,
@@ -163,6 +188,9 @@ const submit = () => {
       memberId.value = "";
       discountAmount.value = 0;
       cashReceived.value = 0;
+      purchaserName.value = "";
+      purchaseNote.value = "";
+      storeDelegateCode.value = "";
       stockError.value = null;
     },
   });
@@ -411,6 +439,52 @@ const submit = () => {
               v-if="paymentMethod === 'MEMBER_STORE_ACCOUNT' && memberId"
               class="space-y-1.5"
             >
+              <div class="grid grid-cols-3 gap-2 rounded-lg bg-sky-50 p-3 text-xs dark:bg-sky-950/30">
+                <div>
+                  <span class="block text-zinc-500">Saldo</span>
+                  <strong>{{ storeAccount ? formatCurrency(storeAccount.balance) : "—" }}</strong>
+                </div>
+                <div>
+                  <span class="block text-zinc-500">Limit</span>
+                  <strong>{{ storeAccount ? formatCurrency(storeAccount.credit_limit) : "—" }}</strong>
+                </div>
+                <div>
+                  <span class="block text-zinc-500">Sisa digunakan</span>
+                  <strong>{{ storeAccount ? formatCurrency(storeAccount.available_spending) : "—" }}</strong>
+                </div>
+              </div>
+              <div
+                v-if="storeAccount"
+                class="rounded-lg border border-zinc-200 px-3 py-2 text-xs dark:border-zinc-800"
+              >
+                <div class="flex justify-between">
+                  <span class="text-zinc-500">Proyeksi saldo</span>
+                  <strong :class="projectedBalance < 0 ? 'text-rose-600' : 'text-emerald-600'">
+                    {{ formatCurrency(projectedBalance) }}
+                  </strong>
+                </div>
+                <p class="mt-1 text-zinc-500">
+                  {{ projectedBalance < 0 ? "Pemakaian/utang toko" : "Saldo tersimpan" }}
+                </p>
+              </div>
+              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                Yang berbelanja <span class="text-rose-600">*</span>
+              </label>
+              <Input
+                v-model="purchaserName"
+                placeholder="Nama yang mengambil barang"
+                required
+              />
+              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                Catatan <span class="font-normal text-zinc-400">(opsional)</span>
+              </label>
+              <textarea
+                v-model="purchaseNote"
+                maxlength="500"
+                rows="2"
+                class="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
+                placeholder="Contoh: diambil oleh staff gudang"
+              />
               <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
                 Delegate / Staff (opsional)
               </label>
@@ -418,13 +492,8 @@ const submit = () => {
                 v-model="storeDelegateCode"
                 placeholder="Kode Delegate"
               />
-              <Input
-                v-model="storeDelegatePin"
-                type="password"
-                placeholder="PIN Delegate"
-              />
               <p class="text-[11px] text-zinc-500">
-                Kosongkan jika pembeli adalah pemilik akun.
+                Delegate hanya menjadi referensi staff terdaftar; kasir tidak memerlukan PIN atau password.
               </p>
             </div>
             <div class="space-y-1.5">

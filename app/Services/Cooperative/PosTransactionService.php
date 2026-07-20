@@ -105,6 +105,12 @@ class PosTransactionService
                         ]);
                     }
 
+                    if (! $cashier->can('cashier_store_credit')) {
+                        throw ValidationException::withMessages([
+                            'payment_method' => 'Kasir tidak memiliki izin mencatat pembelian Saldo Toko.',
+                        ]);
+                    }
+
                     if ($member === null) {
                         throw ValidationException::withMessages([
                             'cooperative_member_id' => 'Pembayaran saldo toko anggota membutuhkan anggota aktif.',
@@ -116,7 +122,8 @@ class PosTransactionService
                         amount: $storeAccountAmount,
                         cashier: $cashier,
                         delegateCode: isset($data['store_delegate_code']) ? (string) $data['store_delegate_code'] : null,
-                        delegatePin: isset($data['store_delegate_pin']) ? (string) $data['store_delegate_pin'] : null,
+                        purchaserName: isset($data['purchaser_name']) ? (string) $data['purchaser_name'] : null,
+                        purchaseNote: isset($data['purchase_note']) ? (string) $data['purchase_note'] : null,
                     );
                 }
 
@@ -344,7 +351,7 @@ class PosTransactionService
                         $refundAmount = $this->storeCheckout->cappedStoreCreditRefund($storeAccount, $transaction, $originalStorePaid);
 
                         if ($refundAmount > 0) {
-                            $this->storeCheckout->postRefund(
+                            $this->storeCheckout->postVoidRefund(
                                 account: $storeAccount,
                                 transaction: $transaction,
                                 amount: $refundAmount,

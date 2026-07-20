@@ -21,7 +21,6 @@ class MemberStoreDelegateResource extends JsonResource
             'status_label' => $this->status->label(),
             'is_currently_active' => $this->isCurrentlyActive(),
             'revoked_at' => $this->revoked_at?->toIso8601String(),
-            'has_pin' => ! empty($this->resource->getRawOriginal('pin_hash')),
         ];
     }
 }

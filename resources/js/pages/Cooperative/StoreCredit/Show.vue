@@ -54,7 +54,7 @@ const balanceTone = (): string =>
 const cashForm = useForm({ amount: 0, reference_no: "" });
 const limitForm = useForm({ credit_limit: props.account.credit_limit, reason: "", override_below_debt: false });
 const adjustForm = useForm({ amount: 0, effect: "credit", reason: "" });
-const delegateForm = useForm({ display_name: "", pin: "", per_transaction_limit: null as number | null, daily_limit: null as number | null });
+const delegateForm = useForm({ display_name: "", per_transaction_limit: null as number | null, daily_limit: null as number | null });
 
 function submitCash(): void {
     cashForm.post(cashFunding({ account: props.account.id }).url, { preserveScroll: true, onSuccess: () => cashForm.reset() });
@@ -86,7 +86,7 @@ function submitDelegate(): void {
             <div class="mt-2 flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">{{ account.member?.full_name ?? 'Anggota' }}</h1>
-                    <p class="text-sm text-zinc-500">Member Store Credit Ledger</p>
+                    <p class="text-sm text-zinc-500">Riwayat Saldo Toko anggota</p>
                 </div>
                 <div class="flex gap-2">
                     <form v-if="account.status === 'active'" :action="suspend({ account: account.id }).url" method="post">
@@ -113,7 +113,7 @@ function submitDelegate(): void {
                 </Card>
                 <Card>
                     <CardContent class="p-4">
-                        <div class="text-xs uppercase text-zinc-500">Kredit Tersedia</div>
+                        <div class="text-xs uppercase text-zinc-500">Sisa yang Dapat Digunakan</div>
                         <div class="text-2xl font-bold font-mono text-indigo-600">{{ formatCurrency(account.available_credit) }}</div>
                     </CardContent>
                 </Card>
@@ -201,7 +201,6 @@ function submitDelegate(): void {
                         </ul>
                         <form class="grid grid-cols-2 gap-2" @submit.prevent="submitDelegate">
                             <Input v-model="delegateForm.display_name" placeholder="Nama delegate" />
-                            <Input v-model="delegateForm.pin" type="password" placeholder="PIN" />
                             <Button type="submit" :disabled="delegateForm.processing">Tambah Delegate</Button>
                         </form>
                     </CardContent>

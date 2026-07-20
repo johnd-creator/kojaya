@@ -44,7 +44,8 @@ class MemberStoreCheckoutService
         int $amount,
         User $cashier,
         ?string $delegateCode = null,
-        ?string $delegatePin = null,
+        ?string $purchaserName = null,
+        ?string $purchaseNote = null,
     ): StoreCreditPurchaseContext {
         if ($amount <= 0) {
             throw ValidationException::withMessages([
@@ -52,14 +53,21 @@ class MemberStoreCheckoutService
             ]);
         }
 
-        // PIN without a delegate (or delegate without PIN) is never a valid state.
-        if (($delegateCode === null) !== ($delegatePin === null)) {
+        $purchaserName = trim((string) $purchaserName);
+
+        if ($purchaserName === '') {
             throw ValidationException::withMessages([
-                'delegate' => 'Delegate dan PIN harus dikirim bersamaan.',
+                'purchaser_name' => 'Nama yang berbelanja wajib diisi untuk pembayaran Saldo Toko.',
             ]);
         }
 
-        return DB::transaction(function () use ($member, $amount, $cashier, $delegateCode, $delegatePin): StoreCreditPurchaseContext {
+        if (! $cashier->can('cashier_store_credit')) {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Kasir tidak memiliki izin mencatat pembelian Saldo Toko.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($member, $amount, $cashier, $delegateCode, $purchaserName, $purchaseNote): StoreCreditPurchaseContext {
             // Defense-in-depth: store-credit checkout requires an authenticated cashier
             // from the same organization as the member being debited.
             if ($cashier->organization_id !== $member->organization_id) {
@@ -115,13 +123,16 @@ class MemberStoreCheckoutService
                     ]);
                 }
 
-                // PIN is mandatory whenever a delegate is used.
-                $this->delegateService->verifyForCheckout($delegate, (string) $delegatePin);
-
                 $this->delegateService->assertUsableForPurchase($delegate, $amount);
             }
 
-            return new StoreCreditPurchaseContext($account, $delegate, $amount);
+            return new StoreCreditPurchaseContext(
+                account: $account,
+                delegate: $delegate,
+                amount: $amount,
+                purchaserName: $purchaserName,
+                purchaseNote: $purchaseNote !== null ? trim($purchaseNote) : null,
+            );
         });
     }
 
@@ -136,6 +147,8 @@ class MemberStoreCheckoutService
             amount: $context->amount,
             cashier: $cashier,
             delegate: $context->delegate,
+            purchaserName: $context->purchaserName,
+            purchaseNote: $context->purchaseNote,
         );
     }
 
@@ -195,13 +208,13 @@ class MemberStoreCheckoutService
             ->where('entry_type', MemberStoreLedgerEntryType::PosRefund->value)
             ->where(static function ($query) use ($transaction, $returnIds): void {
                 $query->where(static function ($void) use ($transaction): void {
-                    $void->where('reference_type', PosTransaction::class)
+                    $void->where('reference_type', StoreCreditLedgerService::REFERENCE_TRANSACTION)
                         ->where('reference_id', $transaction->id);
                 });
 
                 if ($returnIds->isNotEmpty()) {
                     $query->orWhere(static function ($returns) use ($returnIds): void {
-                        $returns->where('reference_type', PosReturn::class)
+                        $returns->where('reference_type', StoreCreditLedgerService::REFERENCE_RETURN)
                             ->whereIn('reference_id', $returnIds->all());
                     });
                 }

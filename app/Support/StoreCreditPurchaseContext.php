@@ -11,5 +11,7 @@ final readonly class StoreCreditPurchaseContext
         public MemberStoreAccount $account,
         public ?MemberStoreDelegate $delegate,
         public int $amount,
+        public string $purchaserName,
+        public ?string $purchaseNote,
     ) {}
 }

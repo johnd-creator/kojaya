@@ -2945,3 +2945,49 @@ application has published a `v1.0.0` release.
 ---
 
 *Last Updated: June 10, 2026*
+## Saldo Toko Anggota
+
+Endpoint member berikut selalu mengambil anggota aktif yang terhubung dengan
+token, lalu membatasi query berdasarkan `organization_id` dan
+`cooperative_member_id`. Anggota tidak dapat memilih account milik anggota
+lain atau organisasi lain.
+
+- `GET /api/v1/member/store-account/summary`
+- `GET /api/v1/member/store-account/ledger?per_page=15&page=1`
+
+Summary mengembalikan `balance` signed dalam Rupiah, `credit_limit`,
+`available_spending`, `status`, `status_label`, dan
+`balance_label`. `balance_label` bernilai `Saldo tersimpan` untuk
+saldo nol/positif dan `Pemakaian/utang toko` untuk saldo negatif.
+
+Setiap item ledger mengembalikan kontrak publik stabil berikut:
+
+```json
+{
+  "id": 42,
+  "entry_type": "pos_purchase",
+  "entry_type_label": "Pembelian POS",
+  "amount": 75000,
+  "effect": "debit",
+  "balance_before": 125000,
+  "balance_after": 50000,
+  "purchaser_name": "Budi Staff",
+  "cashier_name": "Siti Kasir",
+  "purchase_note": "Diambil untuk tim gudang",
+  "transaction_no": "POS-20260720-001",
+  "occurred_at": "2026-07-20T14:30:00+07:00",
+  "reference_type": "pos_transaction",
+  "reference_id": "123",
+  "status": "purchase",
+  "is_reversed": false
+}
+```
+
+`reference_type` hanya memakai nilai publik stabil (`pos_transaction`,
+`pos_return`, `funding_request`, `store_account`, atau
+`ledger_entry`), bukan nama class internal PHP. `occurred_at` selalu
+ISO-8601 dengan timezone. Nama purchaser dan catatan pada entry pembelian/refund
+adalah snapshot immutable; `cashier_name` adalah actor yang mencatat
+transaksi. Checkout POS `MEMBER_STORE_ACCOUNT` tidak meminta password atau
+PIN; field request yang wajib adalah `purchaser_name` dan
+`purchase_note` opsional maksimal 500 karakter.

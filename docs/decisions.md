@@ -1093,4 +1093,36 @@ member credit limit, and keep an immutable audit trail.
 
 ---
 
+## 🎯 ADR-029: Store Account Checkout Attribution Without Member Credentials
+
+**Status:** READY FOR SENIOR REVIEW
+**Date:** July 20, 2026
+**Deciders:** Engineering
+
+### Decision
+
+- Member Store Account checkout is performed by an authorized cooperative
+  cashier and never asks for a member password, delegate PIN, or checkout
+  credential.
+- `purchaser_name` is required for Store Account purchases. An optional
+  `purchase_note` and registered delegate reference may be recorded.
+- Ledger purchase and refund entries keep immutable purchaser and note
+  snapshots, the cashier actor, transaction number, and timezone-aware
+  occurrence time.
+- Member summary and ledger views are owner-scoped by the authenticated active
+  member and organization. The member portal is view-only.
+- Public API `reference_type` values are stable identifiers, not PHP model
+  class names.
+
+### Consequences
+
+- Cashiers receive only `cashier_store_credit`; account, limit, funding, and
+  adjustment management remains with the existing administrative abilities.
+- POS confirmation and failure handling remain atomic, including stock, POS,
+  payment, balance, and ledger state.
+- Android and web member clients can show who made a purchase and which
+  cashier recorded it without exposing internal models or credentials.
+
+---
+
 *Last Updated: July 19, 2026*

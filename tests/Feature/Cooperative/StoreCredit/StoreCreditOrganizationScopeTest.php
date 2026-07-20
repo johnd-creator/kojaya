@@ -84,7 +84,7 @@ class StoreCreditOrganizationScopeTest extends TestCase
 
         $delegateService = $this->app->make(StoreCreditDelegateService::class);
         $creatorB = User::factory()->create(['organization_id' => $accountB->organization_id]);
-        $delegateB = $delegateService->create($accountB, ['display_name' => 'Staff B', 'pin' => '1234'], $creatorB);
+        $delegateB = $delegateService->create($accountB, ['display_name' => 'Staff B'], $creatorB);
 
         $this->actingAs($adminA)
             ->putJson(route('cooperative.store-credit.delegates.update', [$accountA->id, $delegateB->id]), [
@@ -102,7 +102,7 @@ class StoreCreditOrganizationScopeTest extends TestCase
 
         $delegateService = $this->app->make(StoreCreditDelegateService::class);
         $creatorB = User::factory()->create(['organization_id' => $accountB->organization_id]);
-        $delegateB = $delegateService->create($accountB, ['display_name' => 'Staff B', 'pin' => '1234'], $creatorB);
+        $delegateB = $delegateService->create($accountB, ['display_name' => 'Staff B'], $creatorB);
 
         $this->actingAs($adminA)
             ->postJson(route('cooperative.store-credit.delegates.revoke', [$accountA->id, $delegateB->id]))
@@ -121,7 +121,6 @@ class StoreCreditOrganizationScopeTest extends TestCase
         $this->actingAs($adminA)
             ->postJson(route('cooperative.store-credit.delegates.store', $accountA->id), [
                 'display_name' => 'Cross Org',
-                'pin' => '1234',
                 'user_id' => $userB->id,
             ])
             ->assertStatus(422);

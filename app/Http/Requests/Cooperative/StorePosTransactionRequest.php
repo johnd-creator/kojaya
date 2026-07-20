@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Cooperative;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StorePosTransactionRequest extends FormRequest
 {
@@ -21,8 +22,9 @@ class StorePosTransactionRequest extends FormRequest
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'cash_received' => ['nullable', 'numeric', 'min:0'],
             'amount' => ['nullable', 'numeric', 'min:0'],
-            'store_delegate_code' => ['nullable', 'string', 'max:40', 'required_with:store_delegate_pin'],
-            'store_delegate_pin' => ['nullable', 'string', 'max:32', 'required_with:store_delegate_code'],
+            'purchaser_name' => ['nullable', 'string', 'min:2', 'max:120'],
+            'purchase_note' => ['nullable', 'string', 'max:500'],
+            'store_delegate_code' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.pos_product_id' => ['required', 'exists:pos_products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
@@ -37,8 +39,23 @@ class StorePosTransactionRequest extends FormRequest
     {
         return [
             'items.*.quantity.max' => 'Kuantitas per item terlalu besar (maksimal 9999).',
-            'store_delegate_code.required_with' => 'Kode delegate wajib diisi bila PIN delegate dikirim.',
-            'store_delegate_pin.required_with' => 'PIN delegate wajib diisi bila kode delegate dikirim.',
+            'purchaser_name.required' => 'Nama yang berbelanja wajib diisi untuk pembayaran Saldo Toko.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $payments = $this->input('payments');
+            $usesStoreAccount = $this->input('payment_method') === 'MEMBER_STORE_ACCOUNT'
+                || (is_array($payments) && collect($payments)->contains(
+                    fn (mixed $payment): bool => is_array($payment)
+                        && ($payment['payment_method'] ?? null) === 'MEMBER_STORE_ACCOUNT'
+                ));
+
+            if ($usesStoreAccount && trim((string) $this->input('purchaser_name')) === '') {
+                $validator->errors()->add('purchaser_name', 'Nama yang berbelanja wajib diisi untuk pembayaran Saldo Toko.');
+            }
+        });
     }
 }

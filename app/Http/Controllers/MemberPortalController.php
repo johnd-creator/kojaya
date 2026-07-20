@@ -10,12 +10,15 @@ use App\Http\Requests\Cooperative\RedeemRewardRequest;
 use App\Http\Requests\MemberPaymentProofRequest;
 use App\Http\Requests\StoreMemberLoanApplicationRequest;
 use App\Http\Requests\UpdateMemberPortalProfileRequest;
+use App\Http\Resources\MemberStoreAccountResource;
+use App\Http\Resources\MemberStoreLedgerEntryResource;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Loan;
 use App\Models\LoanType;
+use App\Models\MemberStoreAccount;
 use App\Models\PosTransaction;
 use App\Models\Reward;
 use App\Services\Cooperative\DuesGenerationService;
@@ -44,6 +47,10 @@ class MemberPortalController extends Controller
         MemberProfileCompletenessService $completenessService,
     ): Response {
         $member = $this->memberOrAbort($request);
+        $storeAccount = MemberStoreAccount::query()
+            ->where('organization_id', $member->organization_id)
+            ->where('cooperative_member_id', $member->id)
+            ->first();
         $pointSummary = $pointService->balanceSummary($member);
         $savingSummary = $savingsSummary->summary($member);
         $isActive = ($member->validation_status ?: $member->status) === CooperativeMember::VALIDATION_ACTIVE;
@@ -162,6 +169,9 @@ class MemberPortalController extends Controller
                 'pending_invoices' => $member->invoices()->whereIn('status', ['UNPAID', 'PARTIAL'])->count(),
                 'unread_notifications' => $request->user()?->unreadNotifications()->count() ?? 0,
             ],
+            'store_account' => $storeAccount
+                ? (new MemberStoreAccountResource($storeAccount))->resolve()
+                : null,
             'recentTransactions' => ($isActive || $isPendingReview) ? $this->recentMemberActivities($member) : [],
             'recentLoans' => ($isActive || $isPendingReview) ? Loan::query()
                 ->with('loanType')
@@ -169,6 +179,29 @@ class MemberPortalController extends Controller
                 ->latest()
                 ->limit(5)
                 ->get() : [],
+        ]);
+    }
+
+    public function storeAccount(Request $request): Response
+    {
+        $member = $this->memberOrAbort($request);
+        $account = MemberStoreAccount::query()
+            ->where('organization_id', $member->organization_id)
+            ->where('cooperative_member_id', $member->id)
+            ->first();
+
+        $ledger = $account
+            ? $account->ledgerEntries()
+                ->with('actor')
+                ->paginate(20)
+                ->withQueryString()
+            : null;
+
+        return Inertia::render('Kojayaku/StoreAccount', [
+            'account' => $account ? (new MemberStoreAccountResource($account))->resolve() : null,
+            'ledger' => $ledger
+                ? MemberStoreLedgerEntryResource::collection($ledger)->response()->getData(true)
+                : ['data' => [], 'links' => [], 'meta' => []],
         ]);
     }
 

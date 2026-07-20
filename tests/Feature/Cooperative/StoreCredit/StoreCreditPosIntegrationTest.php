@@ -12,6 +12,7 @@ use App\Services\Cooperative\StoreCreditLedgerService;
 use App\Support\MemberStoreAccountContext;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class StoreCreditPosIntegrationTest extends TestCase
@@ -33,6 +34,7 @@ class StoreCreditPosIntegrationTest extends TestCase
             'client_reference' => 'SC-POS-001',
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Anggota Sendiri',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
         ])->assertSuccessful();
 
@@ -49,6 +51,7 @@ class StoreCreditPosIntegrationTest extends TestCase
             'client_reference' => 'SC-POS-OVER-LIMIT',
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Anggota Sendiri',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 2]],
         ]);
 
@@ -67,6 +70,7 @@ class StoreCreditPosIntegrationTest extends TestCase
             'client_reference' => 'SC-POS-DUP',
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Anggota Sendiri',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
         ];
 
@@ -102,6 +106,7 @@ class StoreCreditPosIntegrationTest extends TestCase
             'client_reference' => 'SC-POS-INACTIVE',
             'cooperative_member_id' => $member->id,
             'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Anggota Sendiri',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
         ])->assertStatus(422);
     }
@@ -121,6 +126,47 @@ class StoreCreditPosIntegrationTest extends TestCase
 
         $response->assertSuccessful();
         $response->assertJsonPath('data.balance', 250000);
+    }
+
+    public function test_member_api_ledger_exposes_stable_store_attribution_contract(): void
+    {
+        [$cashier, $member, $product] = $this->checkoutFixture();
+        $account = $this->accountFor($member, openingBalance: 250000);
+        $memberUser = User::factory()->create(['organization_id' => $member->organization_id]);
+        $member->update(['user_id' => $memberUser->id]);
+        $this->assertSame($member->id, $memberUser->fresh()->cooperativeMember?->id);
+        $this->assertSame($member->id, $memberUser->fresh()->cooperativeMember()->active()->first()?->id);
+
+        $this->actingAs($cashier)->postJson(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'SC-POS-CONTRACT',
+            'cooperative_member_id' => $member->id,
+            'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'purchaser_name' => 'Budi sebagai pembeli',
+            'purchase_note' => 'Diambil oleh staff kantor',
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
+        ])->assertSuccessful();
+
+        Auth::logout();
+        $token = $memberUser->createToken('test', ['member:read'])->plainTextToken;
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/member/store-account/ledger');
+
+        $response->assertSuccessful()
+            ->assertJsonPath('data.0.purchaser_name', 'Budi sebagai pembeli')
+            ->assertJsonPath('data.0.purchase_note', 'Diambil oleh staff kantor')
+            ->assertJsonPath('data.0.cashier_name', $cashier->name)
+            ->assertJsonPath('data.0.reference_type', 'pos_transaction')
+            ->assertJsonPath('data.0.status', 'purchase')
+            ->assertJsonPath('data.0.balance_after', 200000);
+
+        $entry = $response->json('data.0');
+        $this->assertIsString($entry['transaction_no']);
+        $this->assertNotSame('', $entry['transaction_no']);
+        $this->assertIsString($entry['occurred_at']);
+        $this->assertStringContainsString('T', $entry['occurred_at']);
+
+        $this->assertStringNotContainsString('App\\Models\\', $response->getContent());
+        $this->assertSame(200000, $account->refresh()->signedBalance());
     }
 
     private function checkoutFixture(): array

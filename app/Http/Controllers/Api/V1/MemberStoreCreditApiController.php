@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Cooperative\ResetDelegatePinRequest;
 use App\Http\Requests\Cooperative\StoreDelegateRequest;
 use App\Http\Requests\Cooperative\StoreTransferFundingRequest;
 use App\Http\Requests\Cooperative\UpdateDelegateRequest;
@@ -79,15 +78,6 @@ class MemberStoreCreditApiController extends Controller
         $account = $this->resolveOwnAccount($request);
         $this->ensureDelegateOwned($delegate, $account);
         $this->delegateService->revoke($delegate, $request->user());
-
-        return response()->noContent();
-    }
-
-    public function resetDelegatePin(ResetDelegatePinRequest $request, MemberStoreDelegate $delegate): Response
-    {
-        $account = $this->resolveOwnAccount($request);
-        $this->ensureDelegateOwned($delegate, $account);
-        $this->delegateService->resetPin($delegate, $request->string('pin')->toString(), $request->user());
 
         return response()->noContent();
     }

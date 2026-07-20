@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/store-account', [\App\Http\Controllers\MemberPortalController::class, 'storeAccount'])->name('store-account');
         Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
         Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');

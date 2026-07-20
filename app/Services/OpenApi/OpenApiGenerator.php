@@ -629,7 +629,7 @@ class OpenApiGenerator
                     'balance_before' => ['type' => 'integer'],
                     'balance_after' => ['type' => 'integer'],
                     'reference_type' => ['type' => 'string', 'enum' => ['pos_transaction', 'pos_return', 'funding_request', 'store_account', 'ledger_entry']],
-                    'reference_id' => ['type' => 'integer', 'nullable' => true],
+                    'reference_id' => ['type' => 'string', 'nullable' => true],
                     'transaction_no' => ['type' => 'string', 'nullable' => true],
                     'purchaser_name' => ['type' => 'string', 'nullable' => true],
                     'cashier_name' => ['type' => 'string', 'nullable' => true],

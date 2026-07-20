@@ -1072,9 +1072,9 @@
                     "status": {
                         "type": "string",
                         "enum": [
-                            "ACTIVE",
-                            "SUSPENDED",
-                            "CLOSED"
+                            "active",
+                            "suspended",
+                            "closed"
                         ]
                     },
                     "status_label": {
@@ -1157,7 +1157,7 @@
                         ]
                     },
                     "reference_id": {
-                        "type": "integer",
+                        "type": "string",
                         "nullable": true
                     },
                     "transaction_no": {

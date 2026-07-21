@@ -11,6 +11,7 @@ use App\Support\MemberStoreAccountContext;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StoreCreditApiContractTest extends TestCase
@@ -47,6 +48,24 @@ class StoreCreditApiContractTest extends TestCase
         $this->assertSame(350000, $data['available_spending']);
         $this->assertSame('active', $data['status']);
         $this->assertSame('Saldo tersimpan', $data['balance_label']);
+
+        unset($memberUser);
+    }
+
+    public function test_summary_contract_exposes_organization_id_as_uuid_string(): void
+    {
+        [$member, $memberUser, $token, $account] = $this->memberWithAccount(openingBalance: 250000, creditLimit: 100000);
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/member/store-account/summary')
+            ->assertSuccessful();
+
+        // The organization is persisted with a UUID primary key, so the public
+        // contract must expose organization_id as a UUID string, never an integer.
+        $response->assertJsonPath('data.organization_id', (string) $member->organization_id);
+
+        $this->assertIsString($response->json('data.organization_id'));
+        $this->assertTrue(Str::isUuid($response->json('data.organization_id')));
 
         unset($memberUser);
     }

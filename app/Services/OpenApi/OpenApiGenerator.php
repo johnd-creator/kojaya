@@ -584,7 +584,10 @@ class OpenApiGenerator
                 ],
                 'properties' => [
                     'id' => ['type' => 'integer'],
-                    'organization_id' => ['type' => 'integer'],
+                    'organization_id' => [
+                        'type' => 'string',
+                        'format' => 'uuid',
+                    ],
                     'cooperative_member_id' => ['type' => 'integer'],
                     'balance' => ['type' => 'integer', 'description' => 'Saldo Rupiah; negatif berarti pemakaian/utang toko.'],
                     'credit_limit' => ['type' => 'integer'],

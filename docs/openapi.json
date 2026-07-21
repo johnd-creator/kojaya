@@ -1044,7 +1044,8 @@
                         "type": "integer"
                     },
                     "organization_id": {
-                        "type": "integer"
+                        "type": "string",
+                        "format": "uuid"
                     },
                     "cooperative_member_id": {
                         "type": "integer"

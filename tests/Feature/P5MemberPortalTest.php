@@ -119,6 +119,19 @@ class P5MemberPortalTest extends TestCase
             );
     }
 
+    public function test_member_portal_has_no_store_account_balance_mutation(): void
+    {
+        MemberStoreAccount::factory()->create([
+            'organization_id' => $this->organization->id,
+            'cooperative_member_id' => $this->member->id,
+            'balance' => 125000,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->post(route('member.store-account'), ['balance' => 999999])
+            ->assertMethodNotAllowed();
+    }
+
     public function test_dashboard_recent_transactions_include_savings_payments(): void
     {
         $type = CooperativeContributionType::query()->create([

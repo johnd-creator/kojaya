@@ -2985,9 +2985,11 @@ Setiap item ledger mengembalikan kontrak publik stabil berikut:
 
 `reference_type` hanya memakai nilai publik stabil (`pos_transaction`,
 `pos_return`, `funding_request`, `store_account`, atau
-`ledger_entry`), bukan nama class internal PHP. `occurred_at` selalu
-ISO-8601 dengan timezone. Nama purchaser dan catatan pada entry pembelian/refund
-adalah snapshot immutable; `cashier_name` adalah actor yang mencatat
+`ledger_entry`), bukan nama class internal PHP. Nilai internal/legacy yang tidak
+dikenal dikembalikan sebagai `null`. `reference_id` selalu string jika tersedia,
+atau `null` jika tidak ada. `occurred_at` selalu ISO-8601 dengan timezone. Nama
+purchaser dan catatan pada entry pembelian/refund adalah snapshot immutable;
+`cashier_name` adalah actor yang mencatat
 transaksi. Checkout POS `MEMBER_STORE_ACCOUNT` tidak meminta password atau
 PIN; field request yang wajib adalah `purchaser_name` dan
 `purchase_note` opsional maksimal 500 karakter.

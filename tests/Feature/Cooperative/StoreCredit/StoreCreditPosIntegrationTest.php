@@ -169,6 +169,52 @@ class StoreCreditPosIntegrationTest extends TestCase
         $this->assertSame(200000, $account->refresh()->signedBalance());
     }
 
+    public function test_unknown_ledger_reference_type_is_not_exposed(): void
+    {
+        [$cashier, $member] = $this->checkoutFixture();
+        $account = $this->accountFor($member, openingBalance: 250000);
+        $entry = MemberStoreLedgerEntry::query()->create([
+            'account_id' => $account->id,
+            'organization_id' => $member->organization_id,
+            'entry_type' => 'opening_balance',
+            'amount' => 250000,
+            'effect' => 'credit',
+            'balance_before' => 0,
+            'balance_after' => 250000,
+            'reference_type' => 'App\\Models\\SecretInternalModel',
+            'reference_id' => 987654321,
+            'idempotency_key' => 'SC-RESOURCE-UNKNOWN',
+            'actor_user_id' => $cashier->id,
+            'purchaser_name' => 'Nama Pembeli',
+            'purchase_note' => 'Catatan transaksi',
+            'transaction_no' => 'SC-UNKNOWN-001',
+            'metadata' => ['status' => 'purchase'],
+            'occurred_at' => now(),
+        ]);
+
+        $memberUser = User::factory()->create(['organization_id' => $member->organization_id]);
+        $member->update(['user_id' => $memberUser->id]);
+        $token = $memberUser->createToken('test', ['member:read'])->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/member/store-account/ledger');
+
+        $response->assertSuccessful();
+        $unknown = collect($response->json('data'))->firstWhere('reference_id', '987654321');
+
+        $this->assertIsArray($unknown);
+        $this->assertNull($unknown['reference_type']);
+        $this->assertSame('987654321', $unknown['reference_id']);
+        $this->assertSame($entry->purchaser_name, $unknown['purchaser_name']);
+        $this->assertSame($cashier->name, $unknown['cashier_name']);
+        $this->assertSame($entry->purchase_note, $unknown['purchase_note']);
+        $this->assertSame($entry->transaction_no, $unknown['transaction_no']);
+        $this->assertSame(250000, $unknown['balance_after']);
+        $this->assertSame('purchase', $unknown['status']);
+        $this->assertIsString($unknown['occurred_at']);
+        $this->assertStringNotContainsString('SecretInternalModel', $response->getContent());
+    }
+
     private function checkoutFixture(): array
     {
         $organization = Organization::factory()->create();

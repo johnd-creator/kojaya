@@ -18,7 +18,7 @@ class MemberStoreLedgerEntryResource extends JsonResource
             'balance_before' => (int) $this->balance_before,
             'balance_after' => (int) $this->balance_after,
             'reference_type' => $this->publicReferenceType(),
-            'reference_id' => $this->reference_id,
+            'reference_id' => $this->reference_id === null ? null : (string) $this->reference_id,
             'transaction_no' => $this->transaction_no,
             'purchaser_name' => $this->purchaser_name,
             'cashier_name' => $this->whenLoaded('actor', fn (): ?string => $this->actor?->name),
@@ -46,7 +46,7 @@ class MemberStoreLedgerEntryResource extends JsonResource
             'funding_request', 'App\\Models\\MemberStoreFundingRequest' => 'funding_request',
             'store_account', 'App\\Models\\MemberStoreAccount' => 'store_account',
             'ledger_entry', 'App\\Models\\MemberStoreLedgerEntry' => 'ledger_entry',
-            default => $this->reference_type,
+            default => null,
         };
     }
 }

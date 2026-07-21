@@ -20,6 +20,7 @@ class PosReturnService
         private readonly PosInventoryService $inventory,
         private readonly PosClosingGuard $closingGuard,
         private readonly PosJournalPostingService $journal,
+        private readonly MemberStoreCheckoutService $storeCheckout,
     ) {}
 
     /**
@@ -36,7 +37,7 @@ class PosReturnService
 
         return DB::transaction(function () use ($cashier, $data, $returnDate): PosReturn {
             $transaction = PosTransaction::query()
-                ->with(['items', 'payments'])
+                ->with(['items', 'payments', 'member'])
                 ->lockForUpdate()
                 ->findOrFail($data['pos_transaction_id']);
 
@@ -118,6 +119,30 @@ class PosReturnService
             ])->save();
 
             $this->journal->postReturn($return->refresh());
+
+            $storeAccountPayment = $transaction->payments->firstWhere('payment_method', 'MEMBER_STORE_ACCOUNT');
+            if ($transaction->cooperative_member_id && $storeAccountPayment !== null && $total > 0) {
+                $member = $transaction->member;
+                $storeAccount = $member !== null
+                    ? \App\Models\MemberStoreAccount::query()
+                        ->where('organization_id', $member->organization_id)
+                        ->where('cooperative_member_id', $member->id)
+                        ->first()
+                    : null;
+
+                if ($storeAccount !== null) {
+                    $refundAmount = $this->storeCheckout->cappedStoreCreditRefund($storeAccount, $transaction, (int) $total);
+
+                    if ($refundAmount > 0) {
+                        $this->storeCheckout->postReturnRefund(
+                            return: $return->refresh(),
+                            account: $storeAccount,
+                            amount: $refundAmount,
+                            cashier: $cashier,
+                        );
+                    }
+                }
+            }
 
             return $return->load(['items', 'transaction']);
         });

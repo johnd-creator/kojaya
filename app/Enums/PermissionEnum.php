@@ -144,6 +144,16 @@ enum PermissionEnum: string
     case COOPERATIVE_OPENING_BALANCE_APPROVE = 'approve_cooperative_opening_balance';
     case COOPERATIVE_OPENING_BALANCE_VOID = 'void_cooperative_opening_balance';
 
+    // --- Member Store Credit Ledger ---
+    case STORE_CREDIT_VIEW = 'view_store_credit';
+    case STORE_CREDIT_VIEW_ALL = 'view_store_credit_all';
+    case STORE_CREDIT_MANAGE = 'manage_store_credit';
+    case STORE_CREDIT_MANAGE_LIMIT = 'manage_store_credit_limit';
+    case STORE_CREDIT_CASHIER = 'cashier_store_credit';
+    case STORE_CREDIT_APPROVE_TRANSFER = 'approve_store_credit_transfer';
+    case STORE_CREDIT_ADJUST = 'adjust_store_credit';
+    case STORE_CREDIT_REPORT = 'report_store_credit';
+
     // --- NEW: System / Admin ---
     case CLIENTS_MANAGE = 'manage_clients';
     case VENDORS_MANAGE = 'manage_vendors';

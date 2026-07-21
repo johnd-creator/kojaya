@@ -249,6 +249,11 @@ class CooperativeMember extends Model
         return $this->belongsTo(Organization::class);
     }
 
+    public function storeAccount(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MemberStoreAccount::class, 'cooperative_member_id');
+    }
+
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);

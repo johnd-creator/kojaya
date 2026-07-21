@@ -1022,6 +1022,226 @@
                     }
                 }
             },
+            "MemberStoreAccountResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "organization_id",
+                    "cooperative_member_id",
+                    "balance",
+                    "credit_limit",
+                    "available_credit",
+                    "available_spending",
+                    "balance_label",
+                    "status",
+                    "status_label",
+                    "is_negative",
+                    "opened_at",
+                    "suspended_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "cooperative_member_id": {
+                        "type": "integer"
+                    },
+                    "balance": {
+                        "type": "integer",
+                        "description": "Saldo Rupiah; negatif berarti pemakaian/utang toko."
+                    },
+                    "credit_limit": {
+                        "type": "integer"
+                    },
+                    "available_credit": {
+                        "type": "integer"
+                    },
+                    "available_spending": {
+                        "type": "integer"
+                    },
+                    "balance_label": {
+                        "type": "string",
+                        "enum": [
+                            "Saldo tersimpan",
+                            "Pemakaian/utang toko"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "suspended",
+                            "closed"
+                        ]
+                    },
+                    "status_label": {
+                        "type": "string"
+                    },
+                    "is_negative": {
+                        "type": "boolean"
+                    },
+                    "opened_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "suspended_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "member": {
+                        "type": "object",
+                        "nullable": true
+                    }
+                }
+            },
+            "MemberStoreLedgerEntryResource": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "entry_type",
+                    "entry_type_label",
+                    "amount",
+                    "effect",
+                    "balance_before",
+                    "balance_after",
+                    "reference_type",
+                    "reference_id",
+                    "transaction_no",
+                    "purchaser_name",
+                    "cashier_name",
+                    "purchase_note",
+                    "reason",
+                    "status",
+                    "is_reversed",
+                    "occurred_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "entry_type": {
+                        "type": "string"
+                    },
+                    "entry_type_label": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "integer"
+                    },
+                    "effect": {
+                        "type": "string",
+                        "enum": [
+                            "credit",
+                            "debit"
+                        ]
+                    },
+                    "balance_before": {
+                        "type": "integer"
+                    },
+                    "balance_after": {
+                        "type": "integer"
+                    },
+                    "reference_type": {
+                        "type": "string",
+                        "enum": [
+                            "pos_transaction",
+                            "pos_return",
+                            "funding_request",
+                            "store_account",
+                            "ledger_entry"
+                        ],
+                        "nullable": true
+                    },
+                    "reference_id": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "transaction_no": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "purchaser_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cashier_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "purchase_note": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 500
+                    },
+                    "reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "purchase",
+                            "refund",
+                            "void"
+                        ],
+                        "nullable": true
+                    },
+                    "is_reversed": {
+                        "type": "boolean"
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "actor": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "delegate": {
+                        "type": "object",
+                        "nullable": true
+                    }
+                }
+            },
+            "MemberStoreAccountSummaryResponse": {
+                "type": "object",
+                "required": [
+                    "data"
+                ],
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/MemberStoreAccountResource"
+                    }
+                }
+            },
+            "PaginatedMemberStoreLedgerResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "links",
+                    "meta"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MemberStoreLedgerEntryResource"
+                        }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ApiPaginationLinks"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/ApiPaginationMeta"
+                    }
+                }
+            },
             "Error": {
                 "type": "object",
                 "properties": {
@@ -4172,6 +4392,372 @@
                         }
                     }
                 ]
+            }
+        },
+        "/api/v1/member/store-account/summary": {
+            "get": {
+                "summary": "Mengambil Member/Store-Account/Summary",
+                "operationId": "get_api_v1_member_store-account_summary",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MemberStoreAccountSummaryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            }
+        },
+        "/api/v1/member/store-account/ledger": {
+            "get": {
+                "summary": "Mengambil Member/Store-Account/Ledger",
+                "operationId": "get_api_v1_member_store-account_ledger",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedMemberStoreLedgerResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    }
+                ]
+            }
+        },
+        "/api/v1/member/store-account/funding-requests": {
+            "get": {
+                "summary": "Mengambil Member/Store-Account/Funding-Requests",
+                "operationId": "get_api_v1_member_store-account_funding-requests",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            }
+        },
+        "/api/v1/member/store-account/delegates": {
+            "get": {
+                "summary": "Mengambil Member/Store-Account/Delegates",
+                "operationId": "get_api_v1_member_store-account_delegates",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            },
+            "post": {
+                "summary": "Membuat Member/Store-Account/Delegates",
+                "operationId": "post_api_v1_member_store-account_delegates",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/member/store-account/delegates/{delegate}": {
+            "put": {
+                "summary": "Mengupdate Member/Store-Account/Delegates/{Delegate}",
+                "operationId": "put_api_v1_member_store-account_delegates__delegate",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "parameters": [
+                    {
+                        "name": "delegate",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/member/store-account/delegates/{delegate}/revoke": {
+            "post": {
+                "summary": "Membuat Member/Store-Account/Delegates/{Delegate}/Revoke",
+                "operationId": "post_api_v1_member_store-account_delegates__delegate__revoke",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "parameters": [
+                    {
+                        "name": "delegate",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/member/store-account/transfers": {
+            "post": {
+                "summary": "Membuat Member/Store-Account/Transfers",
+                "operationId": "post_api_v1_member_store-account_transfers",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/members": {

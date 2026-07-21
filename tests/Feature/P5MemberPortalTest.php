@@ -8,6 +8,7 @@ use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\LoanType;
+use App\Models\MemberStoreAccount;
 use App\Models\Organization;
 use App\Models\PointTransaction;
 use App\Models\Reward;
@@ -66,7 +67,69 @@ class P5MemberPortalTest extends TestCase
             ->has('summary.points_balance')
             ->has('recentTransactions')
             ->has('recentLoans')
+            ->where('store_account', null)
         );
+    }
+
+    public function test_dashboard_exposes_store_account_as_saldo_toko(): void
+    {
+        MemberStoreAccount::factory()->create([
+            'organization_id' => $this->organization->id,
+            'cooperative_member_id' => $this->member->id,
+            'balance' => -75000,
+            'credit_limit' => 300000,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->get(route('member.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kojayaku/Dashboard')
+                ->where('store_account.balance', -75000)
+                ->where('store_account.balance_label', 'Pemakaian/utang toko')
+                ->where('store_account.available_spending', 225000)
+            );
+    }
+
+    public function test_store_account_page_is_owner_scoped_and_view_only(): void
+    {
+        MemberStoreAccount::factory()->create([
+            'organization_id' => $this->organization->id,
+            'cooperative_member_id' => $this->member->id,
+            'balance' => 125000,
+            'credit_limit' => 300000,
+        ]);
+        $otherMember = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+        ]);
+        MemberStoreAccount::factory()->create([
+            'organization_id' => $this->organization->id,
+            'cooperative_member_id' => $otherMember->id,
+            'balance' => 999999,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->get(route('member.store-account'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kojayaku/StoreAccount')
+                ->where('account.balance', 125000)
+                ->where('account.cooperative_member_id', $this->member->id)
+                ->where('ledger.data', [])
+            );
+    }
+
+    public function test_member_portal_has_no_store_account_balance_mutation(): void
+    {
+        MemberStoreAccount::factory()->create([
+            'organization_id' => $this->organization->id,
+            'cooperative_member_id' => $this->member->id,
+            'balance' => 125000,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->post(route('member.store-account'), ['balance' => 999999])
+            ->assertMethodNotAllowed();
     }
 
     public function test_dashboard_recent_transactions_include_savings_payments(): void

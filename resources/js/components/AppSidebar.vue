@@ -63,6 +63,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { dashboard } from "@/routes";
+import { storeAccount as memberStoreAccount } from "@/routes/member";
 import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
 import { index as cooperativeLedgerIndex } from "@/routes/cooperative/ledger";
 import { index as cooperativeLoanTypesIndex } from "@/routes/cooperative/loan-types";
@@ -611,6 +612,7 @@ const allNavItems: NavItem[] = [
     items: [
       { title: "Dashboard", href: "/member" },
       { title: "Simpanan", href: "/member/savings" },
+      { title: "Saldo Toko", href: memberStoreAccount().url },
       { title: "Pinjaman", href: "/member/loans" },
       { title: "Poin Saya", href: "/member/points" },
       { title: "Rewards", href: "/member/rewards" },
@@ -630,6 +632,11 @@ const memberNavItems: NavItem[] = [
   {
     title: "Simpanan",
     href: "/member/savings",
+    icon: WalletCards,
+  },
+  {
+    title: "Saldo Toko",
+    href: memberStoreAccount().url,
     icon: WalletCards,
   },
   {

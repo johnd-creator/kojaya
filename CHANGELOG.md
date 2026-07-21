@@ -4,6 +4,20 @@ All notable changes to the Kojaya application are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Member Store Credit Ledger — signed-balance store-credit account for
+  cooperative members, usable as a `MEMBER_STORE_ACCOUNT` POS payment method.
+  Includes immutable ledger entries, configurable credit limits, cash and
+  verified-transfer funding, staff delegation with rate-limited PIN,
+  organization-scoped authorization, idempotent posting with PostgreSQL
+  row-level locking, FIFO debt-age reporting, member-facing API, and admin
+  management/reporting surfaces. See `docs/member-store-credit-ledger.md`.
+- `view_store_credit`, `view_store_credit_all`, `manage_store_credit`,
+  `manage_store_credit_limit`, `cashier_store_credit`,
+  `approve_store_credit_transfer`, `adjust_store_credit`, and
+  `report_store_credit` permissions.
+
 - `v0.1.0` was tagged and published as an internal-alpha GitHub pre-release at
   `ad8bc3afc9b62f549e4f054e181ef9decbecb341` (PR #10 merged; main CI green).
 - Document 08 (release staging, staging operations, and mobile pilot readiness)

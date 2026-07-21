@@ -8,6 +8,7 @@
         <testsuite name="PostgreSQLConcurrency">
             <file>tests/Feature/PaymentConcurrencyTest.php</file>
             <file>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</file>
+            <file>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</file>
         </testsuite>
         <testsuite name="Document05PostgreSQL">
             <file>tests/Feature/Auth/AuthAuditActorIdentityTest.php</file>

@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/store-account', [\App\Http\Controllers\MemberPortalController::class, 'storeAccount'])->name('store-account');
         Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
         Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
@@ -407,6 +408,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('operator/closing/{period}/unlock', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'unlock'])->name('operator.closing.unlock');
         Route::post('operator/payments/{payment}/reconcile', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'reconcilePayment'])->name('operator.payments.reconcile');
         Route::get('operator/export', [\App\Http\Controllers\Cooperative\OperatorProcedureController::class, 'export'])->name('operator.export');
+
+        Route::prefix('store-credit')->name('store-credit.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'index'])
+                ->middleware('can:view_store_credit')->name('index');
+            Route::post('/', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'store'])
+                ->middleware('can:manage_store_credit')->name('store');
+            Route::get('/{account}', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'show'])
+                ->name('show');
+            Route::post('/{account}/suspend', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'suspend'])
+                ->middleware('can:manage_store_credit')->name('suspend');
+            Route::post('/{account}/reactivate', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'reactivate'])
+                ->middleware('can:manage_store_credit')->name('reactivate');
+            Route::post('/{account}/close', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'close'])
+                ->middleware('can:manage_store_credit')->name('close');
+            Route::post('/{account}/limit', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'changeLimit'])
+                ->middleware('can:manage_store_credit_limit')->name('limit');
+            Route::post('/{account}/adjust', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'adjust'])
+                ->middleware('can:adjust_store_credit')->name('adjust');
+            Route::post('/{account}/cash-funding', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'cashFund'])
+                ->middleware('can:cashier_store_credit')->name('cash-funding');
+            Route::post('/{account}/transfer-funding', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'submitTransfer'])
+                ->name('transfer-funding');
+            Route::post('/{account}/delegates', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'storeDelegate'])
+                ->middleware('can:manage_store_credit')->name('delegates.store');
+            Route::put('/{account}/delegates/{delegate}', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'updateDelegate'])
+                ->middleware('can:manage_store_credit')->name('delegates.update');
+            Route::post('/{account}/delegates/{delegate}/revoke', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'revokeDelegate'])
+                ->middleware('can:manage_store_credit')->name('delegates.revoke');
+        });
+
+        Route::get('store-credit-transfers', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'transferIndex'])
+            ->middleware('can:approve_store_credit_transfer')->name('store-credit.transfers.index');
+        Route::post('store-credit-transfers/{funding}/process', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'processTransfer'])
+            ->middleware('can:approve_store_credit_transfer')->name('store-credit.transfers.process');
+        Route::get('store-credit-transfers/{funding}/proof', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'downloadProof'])
+            ->middleware('can:approve_store_credit_transfer')->name('store-credit.transfers.proof');
+        Route::get('store-credit-report', [\App\Http\Controllers\Cooperative\MemberStoreCreditController::class, 'report'])
+            ->middleware('can:report_store_credit')->name('store-credit.report');
     });
 
     // Finance - Bank Batches

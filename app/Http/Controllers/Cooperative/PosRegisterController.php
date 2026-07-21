@@ -10,17 +10,39 @@ use App\Models\PosProduct;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PosRegisterController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $members = CooperativeMember::query()
+            ->where('organization_id', $request->user()->organization_id)
+            ->active()
+            ->with('storeAccount')
+            ->orderBy('name')
+            ->get(['id', 'member_no', 'name'])
+            ->map(fn (CooperativeMember $member): array => [
+                'id' => $member->id,
+                'member_no' => $member->member_no,
+                'name' => $member->name,
+                'store_account' => $member->storeAccount
+                    ? [
+                        'balance' => (int) $member->storeAccount->balance,
+                        'credit_limit' => (int) $member->storeAccount->credit_limit,
+                        'available_spending' => (int) $member->storeAccount->availableCredit(),
+                        'status' => $member->storeAccount->status->value,
+                        'status_label' => $member->storeAccount->status->label(),
+                    ]
+                    : null,
+            ]);
+
         return Inertia::render('Cooperative/Pos/Register', [
             'products' => PosProduct::query()->with('category')->where('is_active', true)->orderBy('name')->get(),
             'categories' => PosCategory::query()->where('is_active', true)->orderBy('name')->get(),
-            'members' => CooperativeMember::query()->active()->orderBy('name')->get(['id', 'member_no', 'name']),
+            'members' => $members,
         ]);
     }
 

@@ -170,6 +170,20 @@ class MemberStoreCheckoutService
         return $this->ledger->postRefundFor($return, $account, $amount, $cashier);
     }
 
+    public function postVoidRefund(
+        MemberStoreAccount $account,
+        PosTransaction $transaction,
+        int $amount,
+        ?User $cashier,
+    ): MemberStoreLedgerEntry {
+        return $this->ledger->postVoidRefund(
+            account: $account,
+            transaction: $transaction,
+            amount: $amount,
+            cashier: $cashier,
+        );
+    }
+
     /**
      * Deterministic refund-allocation policy for split-tender transactions.
      *

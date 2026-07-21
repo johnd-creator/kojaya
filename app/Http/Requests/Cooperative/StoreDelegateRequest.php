@@ -35,17 +35,31 @@ class StoreDelegateRequest extends FormRequest
                 return;
             }
 
-            $account = $this->route('account');
+            $account = $this->resolveOwnedAccount();
 
-            if (! $account instanceof MemberStoreAccount) {
+            if ($account === null) {
                 return;
             }
 
             $userOrg = User::query()->whereKey($userId)->value('organization_id');
 
-            if ($userOrg !== null && $userOrg !== $account->organization_id) {
+            if ((string) $userOrg !== (string) $account->organization_id) {
                 $validator->errors()->add('user_id', 'Pengguna delegate harus berada pada organisasi yang sama.');
             }
         });
+    }
+
+    private function resolveOwnedAccount(): ?MemberStoreAccount
+    {
+        $member = $this->user()?->cooperativeMember()->active()->first();
+
+        if ($member === null) {
+            return null;
+        }
+
+        return MemberStoreAccount::query()
+            ->where('organization_id', $member->organization_id)
+            ->where('cooperative_member_id', $member->id)
+            ->first();
     }
 }

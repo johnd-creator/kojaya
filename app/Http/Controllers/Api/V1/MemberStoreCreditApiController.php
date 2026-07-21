@@ -39,9 +39,11 @@ class MemberStoreCreditApiController extends Controller
     {
         $account = $this->resolveOwnAccount($request);
 
+        $perPage = $this->resolvePerPage($request);
+
         $entries = $account->ledgerEntries()
             ->with(['actor', 'delegate'])
-            ->paginate(min((int) $request->integer('per_page', 15), 100));
+            ->paginate($perPage);
 
         return MemberStoreLedgerEntryResource::collection($entries);
     }
@@ -104,7 +106,7 @@ class MemberStoreCreditApiController extends Controller
         $account = $this->resolveOwnAccount($request);
 
         return MemberStoreFundingRequestResource::collection(
-            $account->fundingRequests()->latest()->paginate(min((int) $request->integer('per_page', 15), 100))
+            $account->fundingRequests()->latest()->paginate($this->resolvePerPage($request))
         );
     }
 
@@ -126,5 +128,10 @@ class MemberStoreCreditApiController extends Controller
     private function ensureDelegateOwned(MemberStoreDelegate $delegate, MemberStoreAccount $account): void
     {
         abort_if($delegate->account_id !== $account->id, 404, 'Delegate tidak ditemukan pada akun ini.');
+    }
+
+    private function resolvePerPage(Request $request): int
+    {
+        return max(1, min($request->integer('per_page', 15), 100));
     }
 }

@@ -23,6 +23,8 @@ class StoreCreditDelegateService
      */
     public function create(MemberStoreAccount $account, array $data, User $createdBy): MemberStoreDelegate
     {
+        $this->assertDelegateUserSameOrganization($account, $data['user_id'] ?? null);
+
         return DB::transaction(function () use ($account, $data, $createdBy): MemberStoreDelegate {
             $delegate = MemberStoreDelegate::create([
                 'account_id' => $account->id,
@@ -117,6 +119,28 @@ class StoreCreditDelegateService
         } while ($exists);
 
         return $code;
+    }
+
+    /**
+     * A delegate's optional user must belong to the same organization as the
+     * owning account. This is the authoritative domain boundary check — the
+     * member API route has no `{account}` parameter, so route-bound form
+     * validation cannot be relied upon. The check runs before any row is
+     * created and before any audit event is recorded.
+     */
+    private function assertDelegateUserSameOrganization(MemberStoreAccount $account, mixed $userId): void
+    {
+        if ($userId === null || $userId === '') {
+            return;
+        }
+
+        $delegateUser = User::query()->find($userId);
+
+        if ($delegateUser === null || (string) $delegateUser->organization_id !== (string) $account->organization_id) {
+            throw ValidationException::withMessages([
+                'user_id' => 'Pengguna delegate harus berada pada organisasi yang sama.',
+            ]);
+        }
     }
 
     private function audit(string $action, MemberStoreDelegate $delegate, User $actor): void

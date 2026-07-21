@@ -1154,7 +1154,8 @@
                             "funding_request",
                             "store_account",
                             "ledger_entry"
-                        ]
+                        ],
+                        "nullable": true
                     },
                     "reference_id": {
                         "type": "string",

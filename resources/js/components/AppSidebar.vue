@@ -103,7 +103,7 @@ const isMember = computed(() => userRoles.value.includes("Anggota"));
 const hasNonMemberRole = computed(
   () =>
     isMember.value &&
-    userRoles.value.some((r: string) => r !== "Anggota"),
+    userRoles.value.some((r) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
 const isSystemAdmin = computed(() =>

@@ -1,5 +1,25 @@
 # Kojaya ERP - Architecture Decision Records (ADR)
 
+## 🎯 ADR-003: Playwright Chromium sebagai Web UI Audit Foundation
+
+**Status:** ✅ Accepted
+**Date:** July 22, 2026
+**Deciders:** Development Team
+
+### Context
+
+Kojaya membutuhkan pemeriksaan visual full-screen, accessibility, dan runtime pada browser nyata yang dapat direview bersama artifact CI. Unit test dan screenshot comparison saja tidak cukup untuk memvalidasi alur Inertia/Vue yang sudah ter-render.
+
+### Decision
+
+Gunakan Playwright Test dengan Chromium, `@axe-core/playwright`, environment/database terisolasi, seeder deterministik, storage state per role, dan manifest screenshot sebagai fondasi audit web. Storybook dan Chromatic ditunda ke fase terpisah.
+
+### Consequences
+
+- Baseline dibuat dan direview pada Linux CI; CI tidak pernah memperbarui baseline otomatis.
+- Artifact menyatukan screenshot, visual diff, axe JSON, runtime report, dan trace untuk audit UX per-screen.
+- Temuan UX/accessibility dicatat terpisah dan tidak mengubah business logic pada foundation PR.
+
 ## 📋 What is ADR?
 
 Architecture Decision Records (ADR) document important architectural decisions made during the project. Each ADR captures:

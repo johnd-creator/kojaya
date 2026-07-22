@@ -6,6 +6,12 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-07-22 - Web UI Audit Framework Foundation
+
+- Added the Chromium-only Playwright visual/a11y audit harness, isolated Playwright environment example, deterministic `UiAuditSeeder`, role-based storage-state setup, runtime health reports, screenshot manifest, and pilot coverage for Dashboard, Anggota, Saldo Toko, POS, and Profil.
+- Added `Kojaya UI Audit` GitHub Actions workflow with capture, compare, accessibility, and full modes. No application business logic was changed.
+- Added the ChatGPT UX audit handoff documentation and initial-findings register.
+
 ## 🎯 2026-07-17 - v0.1.0 Release Closeout
 
 - `v0.1.0` was tagged (immutable) at `ad8bc3afc9b62f549e4f054e181ef9decbecb341`

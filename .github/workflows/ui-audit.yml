@@ -1,0 +1,121 @@
+name: Kojaya UI Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Audit mode
+        required: true
+        default: full
+        type: choice
+        options:
+          - capture
+          - compare
+          - accessibility
+          - full
+  pull_request:
+    paths:
+      - 'resources/js/**'
+      - 'resources/css/**'
+      - 'routes/**'
+      - 'app/Http/Controllers/**'
+      - 'app/Http/Resources/**'
+      - 'database/seeders/UiAuditSeeder.php'
+      - 'tests/visual/**'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.env.playwright.example'
+      - '.github/workflows/ui-audit.yml'
+
+permissions:
+  contents: read
+
+env:
+  UI_AUDIT_MODE: ${{ github.event_name == 'pull_request' && 'compare' || inputs.mode }}
+
+jobs:
+  ui-audit:
+    name: Kojaya UI Audit (${{ github.event_name == 'pull_request' && 'compare' || inputs.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare isolated Playwright environment
+        run: |
+          cp .env.playwright.example .env
+          php artisan key:generate --force --no-interaction
+          mkdir -p database
+          rm -f database/playwright.sqlite
+          php artisan migrate:fresh --force --no-interaction
+          php artisan db:seed --class=UiAuditSeeder --force --no-interaction
+          php artisan storage:link --force --no-interaction
+          php artisan wayfinder:generate --no-interaction
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Disable Vite development server
+        run: rm -f public/hot
+
+      - name: Start Laravel server
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/kojaya-ui-audit-server.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/login > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/kojaya-ui-audit-server.log
+          exit 1
+
+      - name: Run Playwright audit
+        run: |
+          case "$UI_AUDIT_MODE" in
+            capture) UI_AUDIT_MODE=capture npm run ui:capture -- --project=desktop ;;
+            compare) UI_AUDIT_MODE=compare npm run ui:test -- --grep @visual --project=desktop ;;
+            accessibility) UI_AUDIT_MODE=accessibility npm run ui:a11y -- --project=desktop ;;
+            full) UI_AUDIT_MODE=compare npm run ui:audit -- --project=desktop ;;
+            *) echo "Unsupported UI_AUDIT_MODE=$UI_AUDIT_MODE"; exit 1 ;;
+          esac
+
+      - name: Upload UI audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kojaya-ui-audit-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            ui-audit-output/
+            playwright-report/
+            test-results/
+            !ui-audit-output/.manifest-fragments/
+            !tests/visual/.auth/
+            !.env
+            !database/playwright.sqlite

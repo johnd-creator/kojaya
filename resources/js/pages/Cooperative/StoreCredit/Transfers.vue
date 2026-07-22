@@ -81,14 +81,14 @@ function reject(id: number): void {
                                 <td class="p-3"><Badge :variant="transfer.status === 'pending' ? 'secondary' : 'default'">{{ transfer.status_label }}</Badge></td>
                                 <td class="p-3">
                                     <div v-if="transfer.status === 'pending'" class="flex flex-wrap gap-1">
-                                        <Button v-if="transfer.has_proof" size="sm" variant="outline" as="a" :href="proof({ funding: transfer.id }).url" target="_blank">
+                                        <Button v-if="transfer.has_proof" size="sm" variant="outline" as="a" :href="proof.url({ funding: transfer.id })" target="_blank">
                                             Lihat Bukti
                                         </Button>
                                         <Button size="sm" @click="approve(transfer.id)">Setujui</Button>
                                         <Button size="sm" variant="outline" @click="reject(transfer.id)">Tolak</Button>
                                     </div>
                                     <span v-else-if="transfer.has_proof" class="flex gap-1">
-                                        <Button size="sm" variant="ghost" as="a" :href="proof({ funding: transfer.id }).url" target="_blank">
+                                        <Button size="sm" variant="ghost" as="a" :href="proof.url({ funding: transfer.id })" target="_blank">
                                             Lihat Bukti
                                         </Button>
                                     </span>
@@ -104,9 +104,9 @@ function reject(id: number): void {
                         <Link
                             v-for="(link, i) in transfers.links"
                             :key="i"
-                            :href="link.url || '#'"
-                            :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none opacity-40']"
-                            v-html="link.label"
+                            :href="link?.url || '#'"
+                            :class="['rounded px-3 py-1 text-sm', link?.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link?.url && 'pointer-events-none opacity-40']"
+                            v-html="link?.label"
                         />
                     </div>
                 </CardContent>

@@ -5,6 +5,7 @@ namespace App\Services\Cooperative;
 use App\Enums\MemberStoreAccountStatus;
 use App\Enums\MemberStoreLedgerEffect;
 use App\Models\MemberStoreAccount;
+use App\Support\OrganizationVisibility;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -22,12 +23,11 @@ class StoreCreditReportService
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    public function summary(string $organizationId, array $filters = []): array
+    public function summary(OrganizationVisibility $visibility, array $filters = []): array
     {
         $utilizationThreshold = (float) ($filters['utilization_threshold'] ?? 0.8);
 
-        $baseQuery = MemberStoreAccount::query()
-            ->where('organization_id', $organizationId)
+        $baseQuery = $visibility->applyTo(MemberStoreAccount::query())
             ->where('status', '!=', MemberStoreAccountStatus::Closed);
 
         $positiveDepositLiability = (int) (clone $baseQuery)->where('balance', '>', 0)->sum('balance');
@@ -36,16 +36,15 @@ class StoreCreditReportService
         $positiveCount = (clone $baseQuery)->where('balance', '>', 0)->count();
         $zeroCount = (clone $baseQuery)->where('balance', 0)->count();
         $negativeCount = (clone $baseQuery)->where('balance', '<', 0)->count();
-        $suspendedCount = MemberStoreAccount::query()
-            ->where('organization_id', $organizationId)
+        $suspendedCount = $visibility->applyTo(MemberStoreAccount::query())
             ->where('status', MemberStoreAccountStatus::Suspended->value)
             ->count();
 
-        $highUtilizationAccounts = $this->highUtilizationAccounts($organizationId, $utilizationThreshold);
-        $oldestDebtDate = $this->oldestOrganizationDebtDate($organizationId);
+        $highUtilizationAccounts = $this->highUtilizationAccounts($visibility, $utilizationThreshold);
+        $oldestDebtDate = $this->oldestOrganizationDebtDate($visibility);
 
         return [
-            'organization_id' => $organizationId,
+            'organization_id' => $visibility->organizationId,
             'positive_deposit_liability' => $positiveDepositLiability,
             'negative_receivable' => abs($negativeReceivable),
             'positive_account_count' => $positiveCount,
@@ -61,10 +60,9 @@ class StoreCreditReportService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function highUtilizationAccounts(string $organizationId, float $threshold = 0.8): array
+    public function highUtilizationAccounts(OrganizationVisibility $visibility, float $threshold = 0.8): array
     {
-        return MemberStoreAccount::query()
-            ->where('organization_id', $organizationId)
+        return $visibility->applyTo(MemberStoreAccount::query())
             ->where('balance', '<', 0)
             ->where('credit_limit', '>', 0)
             ->get()
@@ -96,12 +94,11 @@ class StoreCreditReportService
         return $this->allocateFifo($entries);
     }
 
-    public function oldestOrganizationDebtDate(string $organizationId): ?Carbon
+    public function oldestOrganizationDebtDate(OrganizationVisibility $visibility): ?Carbon
     {
         $oldest = null;
 
-        MemberStoreAccount::query()
-            ->where('organization_id', $organizationId)
+        $visibility->applyTo(MemberStoreAccount::query())
             ->where('balance', '<', 0)
             ->chunkById(200, function (Collection $accounts) use (&$oldest): void {
                 foreach ($accounts as $account) {

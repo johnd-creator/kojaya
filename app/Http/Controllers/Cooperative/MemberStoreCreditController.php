@@ -312,10 +312,10 @@ class MemberStoreCreditController extends Controller
     {
         $this->authorize('report', MemberStoreAccount::class);
 
-        $organizationId = $this->scope->visibilityFor($request->user(), 'view_store_credit_all')->organizationId;
+        $visibility = $this->scope->visibilityFor($request->user(), 'view_store_credit_all');
 
         return Inertia::render('Cooperative/StoreCredit/Report', [
-            'summary' => $this->reports->summary((string) $organizationId, $request->only(['utilization_threshold'])),
+            'summary' => $this->reports->summary($visibility, $request->only(['utilization_threshold'])),
         ]);
     }
 }

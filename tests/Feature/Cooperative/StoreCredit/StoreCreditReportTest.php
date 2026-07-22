@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Cooperative\StoreCreditLedgerService;
 use App\Services\Cooperative\StoreCreditReportService;
 use App\Support\MemberStoreAccountContext;
+use App\Support\OrganizationVisibility;
 use Carbon\Carbon;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -46,7 +47,7 @@ class StoreCreditReportTest extends TestCase
         $transaction = $this->makeTransaction();
         $ledger->postPurchase($accountB, $transaction, 75000, $actor, null);
 
-        $summary = $reports->summary($organization->id);
+        $summary = $reports->summary(OrganizationVisibility::organization($organization->id));
 
         $this->assertSame(500000, $summary['positive_deposit_liability']);
         $this->assertSame(75000, $summary['negative_receivable']);
@@ -98,7 +99,7 @@ class StoreCreditReportTest extends TestCase
         $transaction = $this->makeTransaction();
         $ledger->postPurchase($account, $transaction, 90000, $actor, null);
 
-        $summary = $reports->summary($organization->id, ['utilization_threshold' => 0.8]);
+        $summary = $reports->summary(OrganizationVisibility::organization($organization->id), ['utilization_threshold' => 0.8]);
 
         $this->assertCount(1, $summary['high_utilization_accounts']);
         $this->assertSame(0.9, $summary['high_utilization_accounts'][0]['utilization']);
@@ -117,7 +118,7 @@ class StoreCreditReportTest extends TestCase
         $ledger->postPurchase($suspendedAccount, $transaction, 40000, $actor, null);
         $ledger->suspend($suspendedAccount, $actor, 'test');
 
-        $summary = $reports->summary($organization->id);
+        $summary = $reports->summary(OrganizationVisibility::organization($organization->id));
 
         $this->assertSame(1, $summary['zero_account_count']);
         $this->assertSame(1, $summary['suspended_account_count']);

@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { index, show, store } from "@/routes/cooperative/store-credit";
+import type { PaginatedResource } from "@/types";
 
 type Account = {
     id: number;
@@ -30,17 +31,20 @@ type Account = {
     status: string;
     status_label: string;
     is_negative: boolean;
-    member: { id: number; full_name: string | null } | null;
+    member: { id: number; full_name: string | null; name: string | null; member_no: string | null } | null;
 };
 
 type EligibleMember = {
     id: number;
+    organization_id: string;
+    organization_code: string | null;
+    organization_name: string | null;
     member_no: string | null;
     name: string | null;
 };
 
 const props = defineProps<{
-    accounts: { data: Account[]; links: any[]; current_page: number; last_page: number };
+    accounts: PaginatedResource<Account>;
     filters: { q?: string; filter?: string };
     eligibleMembers: EligibleMember[];
     canManage: boolean;
@@ -116,7 +120,8 @@ function submitOpenAccount(): void {
                                             :key="member.id"
                                             :value="member.id"
                                         >
-                                            {{ member.member_no }} - {{ member.name }}
+                                            {{ member.organization_code ?? member.organization_name ?? 'Koperasi' }} —
+                                            {{ member.member_no ?? '-' }} — {{ member.name ?? 'Anggota' }}
                                         </option>
                                     </select>
                                     <p v-if="eligibleMembers.length === 0" class="text-xs text-zinc-500">
@@ -192,7 +197,7 @@ function submitOpenAccount(): void {
                         <tbody>
                             <tr v-for="account in accounts.data" :key="account.id" class="border-b last:border-0">
                                 <td class="p-3 font-medium">
-                                    {{ account.member?.full_name ?? `Anggota #${account.member?.id}` }}
+                                    {{ account.member?.full_name ?? account.member?.name ?? `Anggota #${account.member?.id}` }}
                                 </td>
                                 <td class="p-3 text-right font-mono font-semibold" :class="balanceTone(account)">
                                     {{ formatCurrency(account.balance) }}
@@ -221,7 +226,7 @@ function submitOpenAccount(): void {
 
             <div class="flex items-center justify-center gap-2 py-4">
                 <Link
-                    v-for="(link, i) in (accounts.meta?.links ?? [])"
+                    v-for="(link, i) in accounts.meta.links"
                     :key="i"
                     :href="link.url || '#'"
                     :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none opacity-40']"

@@ -8,6 +8,7 @@
         "dev": "vite",
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
+        "typecheck": "vue-tsc --noEmit",
         "lint": "eslint . --fix"
     },
     "devDependencies": {

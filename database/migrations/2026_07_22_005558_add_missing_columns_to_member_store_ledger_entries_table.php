@@ -11,28 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('member_store_ledger_entries', function (Blueprint $table): void {
-            $addedColumns = false;
+        $tableName = 'member_store_ledger_entries';
 
-            if (! Schema::hasColumn('member_store_ledger_entries', 'purchaser_name')) {
+        if (! Schema::hasColumn($tableName, 'purchaser_name')) {
+            Schema::table($tableName, function (Blueprint $table): void {
                 $table->string('purchaser_name', 120)->nullable()->after('delegate_id');
-                $addedColumns = true;
-            }
+            });
+        }
 
-            if (! Schema::hasColumn('member_store_ledger_entries', 'purchase_note')) {
+        if (! Schema::hasColumn($tableName, 'purchase_note')) {
+            Schema::table($tableName, function (Blueprint $table): void {
                 $table->text('purchase_note')->nullable()->after('purchaser_name');
-            }
+            });
+        }
 
-            if (! Schema::hasColumn('member_store_ledger_entries', 'transaction_no')) {
+        if (! Schema::hasColumn($tableName, 'transaction_no')) {
+            Schema::table($tableName, function (Blueprint $table): void {
                 $table->string('transaction_no', 80)->nullable()->after('purchase_note');
-            }
+            });
+        }
 
-            // Only add the index when the columns were missing (drifted schema).
-            // On fresh installs the create migration already defines it.
-            if ($addedColumns) {
+        if (! Schema::hasIndex($tableName, 'member_store_ledger_entries_account_id_transaction_no_index')) {
+            Schema::table($tableName, function (Blueprint $table): void {
                 $table->index(['account_id', 'transaction_no'], 'member_store_ledger_entries_account_id_transaction_no_index');
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -40,20 +43,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('member_store_ledger_entries', function (Blueprint $table): void {
-            $table->dropIndex('member_store_ledger_entries_account_id_transaction_no_index');
-
-            if (Schema::hasColumn('member_store_ledger_entries', 'transaction_no')) {
-                $table->dropColumn('transaction_no');
-            }
-
-            if (Schema::hasColumn('member_store_ledger_entries', 'purchase_note')) {
-                $table->dropColumn('purchase_note');
-            }
-
-            if (Schema::hasColumn('member_store_ledger_entries', 'purchaser_name')) {
-                $table->dropColumn('purchaser_name');
-            }
-        });
+        // Intentionally no-op.
+        // These columns and the index are part of the canonical table schema.
+        // This migration only repairs databases that ran an older version
+        // of the original create migration.
     }
 };

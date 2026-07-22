@@ -29,6 +29,7 @@ use App\Support\MemberStoreAccountContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,6 +46,7 @@ class MemberStoreCreditController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', MemberStoreAccount::class);
+        $visibility = $this->scope->visibilityFor($request->user(), 'view_store_credit_all');
 
         $query = MemberStoreAccount::query()->with('member');
 
@@ -65,21 +67,32 @@ class MemberStoreCreditController extends Controller
         };
 
         /** @var LengthAwarePaginator<int, MemberStoreAccount> $accounts */
-        $accounts = $this->scope->scopeVisibleTo($query, $request->user())
+        $accounts = $visibility->applyTo($query)
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         $eligibleMembers = collect();
         if ($request->user()->can('manage_store_credit')) {
-            $existingMemberIds = MemberStoreAccount::query()
-                ->where('organization_id', $request->user()->organization_id)
+            $existingMemberIds = $visibility
+                ->applyTo(MemberStoreAccount::query())
                 ->pluck('cooperative_member_id');
 
-            $eligibleMembers = tap(CooperativeMember::query()->active(), fn ($memberQuery) => $this->scope->scopeVisibleTo($memberQuery, $request->user()))
+            $eligibleMembers = $visibility
+                ->applyTo(CooperativeMember::query()->active())
+                ->with('organization:id,code,name')
                 ->whereNotIn('id', $existingMemberIds)
                 ->orderBy('name')
-                ->get(['id', 'member_no', 'name']);
+                ->get(['id', 'organization_id', 'member_no', 'name'])
+                ->map(static fn (CooperativeMember $member): array => [
+                    'id' => $member->id,
+                    'organization_id' => $member->organization_id,
+                    'organization_code' => $member->organization?->code,
+                    'organization_name' => $member->organization?->name,
+                    'member_no' => $member->member_no,
+                    'name' => $member->name,
+                ])
+                ->values();
         }
 
         return Inertia::render('Cooperative/StoreCredit/Index', [
@@ -109,10 +122,22 @@ class MemberStoreCreditController extends Controller
     public function store(StoreStoreCreditAccountRequest $request): RedirectResponse
     {
         $this->authorize('create', MemberStoreAccount::class);
+        $visibility = $this->scope->visibilityFor($request->user(), 'view_store_credit_all');
 
         $memberQuery = CooperativeMember::query()->whereKey($request->input('cooperative_member_id'));
-        $this->scope->scopeVisibleTo($memberQuery, $request->user());
+        $visibility->applyTo($memberQuery);
         $member = $memberQuery->firstOrFail();
+
+        $existingAccountQuery = MemberStoreAccount::query()
+            ->where('organization_id', (string) $member->organization_id)
+            ->where('cooperative_member_id', $member->id);
+        $visibility->applyTo($existingAccountQuery);
+
+        if ($existingAccountQuery->exists()) {
+            throw ValidationException::withMessages([
+                'cooperative_member_id' => 'Anggota tersebut sudah memiliki akun Saldo Toko.',
+            ]);
+        }
 
         $account = $this->ledger->openAccount(new MemberStoreAccountContext(
             organizationId: (string) $member->organization_id,
@@ -121,6 +146,7 @@ class MemberStoreCreditController extends Controller
             openingBalance: (int) ($request->input('opening_balance') ?? 0),
             openedBy: $request->user(),
             reason: $request->string('reason')->toString() ?: null,
+            rejectIfExisting: true,
         ));
 
         return redirect()->route('cooperative.store-credit.show', $account)

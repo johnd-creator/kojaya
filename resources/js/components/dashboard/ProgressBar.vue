@@ -5,7 +5,7 @@ const props = withDefaults(
   defineProps<{
     value: number;
     max?: number;
-    tone?: "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
+    tone?: "emerald" | "amber" | "rose" | "sky" | "violet";
     label?: string;
     showValue?: boolean;
   }>(),

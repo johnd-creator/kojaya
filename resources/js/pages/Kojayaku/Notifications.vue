@@ -72,12 +72,12 @@ const formatTimeAgo = (iso: string): string => {
 
 const markAsRead = (id: string): void => {
     router.patch(`/api/notifications/${id}/read`, {}, { preserveScroll: true, only: [] });
-    router.reload({ preserveUrl: true });
+    router.reload({ preserveScroll: true });
 };
 
 const markAllAsRead = (): void => {
     router.post('/api/notifications/mark-all-read', {}, { preserveScroll: true });
-    router.reload({ preserveUrl: true });
+    router.reload({ preserveScroll: true });
 };
 </script>
 

@@ -2,15 +2,16 @@
 import { Head, Link } from "@inertiajs/vue3";
 import { MapPin, Clock, Calendar, User, LogOut } from "lucide-vue-next";
 import { ref, onMounted } from "vue";
-import AttendanceController from "@/actions/App/Http/Controllers/AttendanceController";
+import {
+  attendancesIndex,
+  selfService as attendancesSelfService,
+} from "@/actions/App/Http/Controllers/AttendanceController";
 import { useToast } from "@/composables/useToast";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { logout } from "@/routes";
 import { selfService as leavesSelfService } from "@/routes/leaves";
 import { index as payrollsIndex } from "@/routes/payrolls";
 import type { BreadcrumbItem } from "@/types";
-
-const attendancesSelfService = AttendanceController.selfService;
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: "Attendance", href: "/attendances" },

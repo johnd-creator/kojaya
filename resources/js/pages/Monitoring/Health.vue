@@ -40,7 +40,7 @@ const checks = [
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="[{ title: 'Monitoring', href: '#' }, { title: 'System Health', href: '#' }]">
+  <AppLayout :breadcrumbs="[{ title: 'Monitoring', href: '#' }, { title: 'System Health' }]">
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>

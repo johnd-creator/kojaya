@@ -188,12 +188,11 @@ async function unlockPeriod() {
           <Label for="period-select">Periode</Label>
           <Input
             id="period-select"
-            :model-value="selectedPeriod ?? ''"
-            @update:model-value="selectedPeriod = String($event)"
+            v-model="selectedPeriod"
             placeholder="YYYY-MM"
             :disabled="loading"
             class="w-32"
-            @keyup.enter="loadClosing(String(selectedPeriod ?? ''))"
+            @keyup.enter="loadClosing(selectedPeriod ?? '')"
           />
           <Button
             variant="outline"

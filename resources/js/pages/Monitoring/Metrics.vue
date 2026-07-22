@@ -77,7 +77,7 @@ const metricsCards = computed(() => [
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="[{ title: 'Monitoring', href: '#' }, { title: 'App Metrics', href: '#' }]">
+  <AppLayout :breadcrumbs="[{ title: 'Monitoring', href: '#' }, { title: 'App Metrics' }]">
     <div class="space-y-6">
       <div>
         <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">App Metrics</h1>

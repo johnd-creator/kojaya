@@ -2,7 +2,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-vue-next";
 import { computed } from "vue";
 
-type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc" | "auto";
+type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "auto";
 
 const props = withDefaults(
   defineProps<{

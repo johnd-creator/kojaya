@@ -11,7 +11,7 @@ import {
   File,
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { fetchCertificates, deleteCertificate } from "@/api/certificates";
+import { fetchCertificates, deleteCertificate } from "@/api/certificates.ts";
 import CertificateBadge from "@/components/Status/CertificateBadge.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { EmployeeCertificate, CertificateStatus } from "@/types";
-import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Props = {
   employeeId: string;
@@ -38,14 +47,6 @@ const deletingId = ref<string | null>(null);
 const currentPage = ref(1);
 const perPage = ref(10);
 const total = ref(0);
-const confirmDeleteId = ref<string | null>(null);
-const deleteDialogOpen = computed({
-  get: () => confirmDeleteId.value !== null,
-  set: (open: boolean) => {
-    if (!open) confirmDeleteId.value = null;
-  },
-});
-const browserWindow = globalThis.window;
 
 const hasCertificates = computed(() => certificates.value.length > 0);
 
@@ -278,31 +279,43 @@ onMounted(() => {
               </DropdownMenuItem>
               <DropdownMenuItem
                 v-if="certificate.document_path"
-                @click="browserWindow.open(getDocumentUrl(certificate.document_path) ?? '', '_blank')"
+                @click="
+                  window.open(
+                    getDocumentUrl(certificate.document_path),
+                    '_blank',
+                  )
+                "
               >
                 <File class="mr-2 h-4 w-4" />
                 View Document
               </DropdownMenuItem>
-              <DropdownMenuItem
-                class="text-red-600 focus:text-red-600"
-                @click="confirmDeleteId = certificate.id"
-              >
-                <Trash2 class="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger :as-child="true">
+                  <DropdownMenuItem class="text-red-600 focus:text-red-600">
+                    <Trash2 class="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Certificate?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this certificate? This
+                      action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction>Cancel</AlertDialogAction>
+                    <AlertDialogAction @click="handleDelete(certificate.id)">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
     </div>
-    <ConfirmDialog
-      v-model:open="deleteDialogOpen"
-      title="Delete Certificate?"
-      message="Are you sure you want to delete this certificate? This action cannot be undone."
-      confirm-label="Delete"
-      variant="danger"
-      @confirm="confirmDeleteId && handleDelete(confirmDeleteId)"
-      @cancel="confirmDeleteId = null"
-    />
   </div>
 </template>

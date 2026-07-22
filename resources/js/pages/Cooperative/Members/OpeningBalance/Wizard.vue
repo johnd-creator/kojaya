@@ -549,7 +549,7 @@ watch(
                 <Checkbox
                   id="include-current"
                   :model-value="form.include_current_month"
-                  @update:model-value="form.include_current_month = $event === true"
+                  @update:model-value="(value: boolean) => (form.include_current_month = !!value)"
                 />
                 <div>
                   <Label for="include-current">
@@ -648,7 +648,7 @@ watch(
                   <Input
                     :id="`reason-${ct.id}`"
                     :model-value="form.overrides[ct.id]?.reason ?? ''"
-                    @update:model-value="(value) => setOverrideReason(ct.id, String(value))"
+                    @update:model-value="(value) => setOverrideReason(ct.id, value)"
                   />
                   <p
                     v-if="form.overrides[ct.id]?.unit_amount !== undefined && form.overrides[ct.id]?.unit_amount !== null && (!form.overrides[ct.id]?.reason || ((form.overrides[ct.id]?.reason?.length ?? 0) < 5))"
@@ -706,7 +706,7 @@ watch(
                 <Textarea
                   id="notes"
                   v-model="form.notes"
-                  :rows="3"
+                  rows="3"
                   placeholder="Catatan audit atau konteks tambahan"
                 />
               </div>
@@ -1052,7 +1052,7 @@ watch(
           <Textarea
             id="post-notes"
             v-model="postNotes"
-            :rows="3"
+            rows="3"
             placeholder="Catatan tambahan untuk audit"
           />
           <DialogFooter>
@@ -1082,7 +1082,7 @@ watch(
           <Textarea
             id="void-reason"
             v-model="voidReason"
-            :rows="3"
+            rows="3"
             placeholder="Mis. Salah periode awal, koreksi nominal, dsb."
           />
           <p

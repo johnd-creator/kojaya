@@ -39,13 +39,13 @@ const closeForm = useForm({
 
 function startClose(id: number, expected: number): void {
     closingShiftId.value = id;
-    closeForm.closing_cash = Number(expected);
+    closeForm.closing_cash = expected;
     closeForm.notes = "";
 }
 
 function submitClose(): void {
     if (!closingShiftId.value) return;
-    closeForm.post(`/cooperative/pos/shifts/${closingShiftId.value}/close`);
+    router.post(`/cooperative/pos/shifts/${closingShiftId.value}/close`, closeForm);
 }
 </script>
 
@@ -81,7 +81,7 @@ function submitClose(): void {
                                 Dibuka: {{ formatDate(openShift.opened_at) }} · Kas awal: {{ formatCurrency(openShift.opening_cash) }}
                             </p>
                         </div>
-                        <Button class="rounded-xl" @click="startClose(openShift.id, Number(openShift.opening_cash))">
+                        <Button class="rounded-xl" @click="startClose(openShift.id, openShift.opening_cash)">
                             <XCircle class="mr-2 h-4 w-4" />
                             Tutup Shift
                         </Button>

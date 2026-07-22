@@ -11,14 +11,7 @@ const props = defineProps<{ vendors: any[] }>();
 
 const search = ref("");
 
-const columns: Array<{
-  header: string;
-  key?: string;
-  slot?: string;
-  class?: string;
-  align?: "left" | "center" | "right";
-  format?: (value: any) => string;
-}> = [
+const columns = [
   { header: "Vendor Name", key: "name", class: "font-medium" },
   { header: "Code", key: "code", class: "font-mono text-xs" },
   { header: "Email", key: "email", slot: "email" },

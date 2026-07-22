@@ -2,7 +2,7 @@
 import { router, useForm } from "@inertiajs/vue3";
 import { Calendar, Save, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { createMcu, updateMcu } from "@/api/medicalCheckups";
+import { createMcu, updateMcu } from "@/api/medicalCheckups.ts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -263,7 +263,7 @@ const clearFile = () => {
             id="notes"
             v-model="form.notes"
             placeholder="Doctor's notes, recommendations, restrictions..."
-            :rows="4"
+            rows="4"
             :disabled="submitting"
           />
         </div>

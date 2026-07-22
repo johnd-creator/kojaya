@@ -14,5 +14,6 @@ final readonly class MemberStoreAccountContext
         public ?User $openedBy = null,
         public ?string $reason = null,
         public ?string $idempotencyKey = null,
+        public bool $rejectIfExisting = false,
     ) {}
 }

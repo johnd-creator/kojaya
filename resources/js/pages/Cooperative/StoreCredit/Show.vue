@@ -19,6 +19,7 @@ import {
     suspend,
 } from "@/routes/cooperative/store-credit";
 import { store as storeDelegate } from "@/routes/cooperative/store-credit/delegates";
+import type { PaginatedResource } from "@/types";
 
 type LedgerEntry = {
     id: number;
@@ -42,10 +43,16 @@ const props = defineProps<{
         status: string;
         status_label: string;
         is_negative: boolean;
-        member: { id: number; full_name: string | null } | null;
+        member: { id: number; full_name: string | null; name: string | null; member_no: string | null } | null;
     };
-    ledger: { data: LedgerEntry[]; links: any[] };
-    delegates: any[];
+    ledger: PaginatedResource<LedgerEntry>;
+    delegates: Array<{
+        id: number;
+        display_name: string;
+        code: string;
+        status_label: string;
+        is_currently_active: boolean;
+    }>;
 }>();
 
 const balanceTone = (): string =>
@@ -85,7 +92,9 @@ function submitDelegate(): void {
 
             <div class="mt-2 flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">{{ account.member?.full_name ?? 'Anggota' }}</h1>
+                    <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
+                        {{ account.member?.full_name ?? account.member?.name ?? 'Anggota' }}
+                    </h1>
                     <p class="text-sm text-zinc-500">Riwayat Saldo Toko anggota</p>
                 </div>
                 <div class="flex gap-2">
@@ -240,7 +249,7 @@ function submitDelegate(): void {
                     </table>
                     <div class="flex items-center justify-center gap-2 p-3">
                         <Link
-                            v-for="(link, i) in ledger.links"
+                            v-for="(link, i) in ledger.meta.links"
                             :key="i"
                             :href="link.url || '#'"
                             :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none opacity-40']"

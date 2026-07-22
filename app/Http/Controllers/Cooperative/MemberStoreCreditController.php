@@ -29,6 +29,7 @@ use App\Support\MemberStoreAccountContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,6 +46,7 @@ class MemberStoreCreditController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', MemberStoreAccount::class);
+        $visibility = $this->scope->visibilityFor($request->user(), 'view_store_credit_all');
 
         $query = MemberStoreAccount::query()->with('member');
 
@@ -65,14 +67,39 @@ class MemberStoreCreditController extends Controller
         };
 
         /** @var LengthAwarePaginator<int, MemberStoreAccount> $accounts */
-        $accounts = $this->scope->scopeVisibleTo($query, $request->user())
+        $accounts = $visibility->applyTo($query)
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
+        $eligibleMembers = collect();
+        if ($request->user()->can('manage_store_credit')) {
+            $existingMemberIds = $visibility
+                ->applyTo(MemberStoreAccount::query())
+                ->pluck('cooperative_member_id');
+
+            $eligibleMembers = $visibility
+                ->applyTo(CooperativeMember::query()->active())
+                ->with('organization:id,code,name')
+                ->whereNotIn('id', $existingMemberIds)
+                ->orderBy('name')
+                ->get(['id', 'organization_id', 'member_no', 'name'])
+                ->map(static fn (CooperativeMember $member): array => [
+                    'id' => $member->id,
+                    'organization_id' => $member->organization_id,
+                    'organization_code' => $member->organization?->code,
+                    'organization_name' => $member->organization?->name,
+                    'member_no' => $member->member_no,
+                    'name' => $member->name,
+                ])
+                ->values();
+        }
+
         return Inertia::render('Cooperative/StoreCredit/Index', [
             'accounts' => MemberStoreAccountResource::collection($accounts)->response()->getData(true),
             'filters' => $request->only(['q', 'filter']),
+            'eligibleMembers' => $eligibleMembers,
+            'canManage' => $request->user()->can('manage_store_credit'),
         ]);
     }
 
@@ -88,18 +115,29 @@ class MemberStoreCreditController extends Controller
         return Inertia::render('Cooperative/StoreCredit/Show', [
             'account' => (new MemberStoreAccountResource($account->loadMissing('member')))->resolve(),
             'ledger' => MemberStoreLedgerEntryResource::collection($entries)->response()->getData(true),
-            'delegates' => MemberStoreDelegateResource::collection($account->delegates()->get()),
+            'delegates' => MemberStoreDelegateResource::collection($account->delegates()->get())->resolve(),
         ]);
     }
 
     public function store(StoreStoreCreditAccountRequest $request): RedirectResponse
     {
         $this->authorize('create', MemberStoreAccount::class);
+        $visibility = $this->scope->visibilityFor($request->user(), 'view_store_credit_all');
 
-        $member = CooperativeMember::query()
-            ->where('id', $request->input('cooperative_member_id'))
-            ->where('organization_id', $request->user()->organization_id)
-            ->firstOrFail();
+        $memberQuery = CooperativeMember::query()->whereKey($request->input('cooperative_member_id'));
+        $visibility->applyTo($memberQuery);
+        $member = $memberQuery->firstOrFail();
+
+        $existingAccountQuery = MemberStoreAccount::query()
+            ->where('organization_id', (string) $member->organization_id)
+            ->where('cooperative_member_id', $member->id);
+        $visibility->applyTo($existingAccountQuery);
+
+        if ($existingAccountQuery->exists()) {
+            throw ValidationException::withMessages([
+                'cooperative_member_id' => 'Anggota tersebut sudah memiliki akun Saldo Toko.',
+            ]);
+        }
 
         $account = $this->ledger->openAccount(new MemberStoreAccountContext(
             organizationId: (string) $member->organization_id,
@@ -108,6 +146,7 @@ class MemberStoreCreditController extends Controller
             openingBalance: (int) ($request->input('opening_balance') ?? 0),
             openedBy: $request->user(),
             reason: $request->string('reason')->toString() ?: null,
+            rejectIfExisting: true,
         ));
 
         return redirect()->route('cooperative.store-credit.show', $account)
@@ -299,10 +338,10 @@ class MemberStoreCreditController extends Controller
     {
         $this->authorize('report', MemberStoreAccount::class);
 
-        $organizationId = $this->scope->visibilityFor($request->user(), 'view_store_credit_all')->organizationId;
+        $visibility = $this->scope->visibilityFor($request->user(), 'view_store_credit_all');
 
         return Inertia::render('Cooperative/StoreCredit/Report', [
-            'summary' => $this->reports->summary((string) $organizationId, $request->only(['utilization_threshold'])),
+            'summary' => $this->reports->summary($visibility, $request->only(['utilization_threshold'])),
         ]);
     }
 }

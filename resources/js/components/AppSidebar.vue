@@ -15,6 +15,7 @@ import {
   Warehouse,
   ShoppingCart,
   Users,
+  Wallet,
   WalletCards,
   Store,
   Boxes,
@@ -63,7 +64,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { dashboard } from "@/routes";
-import { storeAccount as memberStoreAccount } from "@/routes/member";
 import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
 import { index as cooperativeLedgerIndex } from "@/routes/cooperative/ledger";
 import { index as cooperativeLoanTypesIndex } from "@/routes/cooperative/loan-types";
@@ -76,7 +76,6 @@ import { index as cooperativeMembersResignationsIndex } from "@/routes/cooperati
 import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
-import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativePosCoffeeOrdersIndex } from "@/routes/cooperative/pos/coffee-orders";
 import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
 import { index as cooperativePosShuIndex } from "@/routes/cooperative/pos/shu";
@@ -84,7 +83,14 @@ import { index as cooperativePosTransactionsIndex } from "@/routes/cooperative/p
 import { index as cooperativePosCategoriesIndex } from "@/routes/cooperative/pos-categories";
 import { index as cooperativePosProductsIndex } from "@/routes/cooperative/pos-products";
 import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
+import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
+import {
+    index as cooperativeStoreCreditIndex,
+    report as cooperativeStoreCreditReport,
+} from "@/routes/cooperative/store-credit";
+import { index as cooperativeStoreCreditTransfersIndex } from "@/routes/cooperative/store-credit/transfers";
+import { storeAccount as memberStoreAccount } from "@/routes/member";
 import type { NavItem } from "@/types";
 import AppLogo from "./AppLogo.vue";
 
@@ -237,6 +243,28 @@ const allNavItems: NavItem[] = [
         title: "Tipe Pinjaman",
         href: cooperativeLoanTypesIndex().url,
         permissions: "manage_cooperative_loan_types",
+      },
+    ],
+  },
+  {
+    title: "Saldo Toko",
+    href: "#",
+    icon: Wallet,
+    items: [
+      {
+        title: "Akun Saldo Toko",
+        href: cooperativeStoreCreditIndex().url,
+        permissions: "view_store_credit",
+      },
+      {
+        title: "Verifikasi Transfer",
+        href: cooperativeStoreCreditTransfersIndex().url,
+        permissions: "approve_store_credit_transfer",
+      },
+      {
+        title: "Laporan Saldo Toko",
+        href: cooperativeStoreCreditReport().url,
+        permissions: "report_store_credit",
       },
     ],
   },

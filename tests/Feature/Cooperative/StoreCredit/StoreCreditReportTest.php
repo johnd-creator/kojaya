@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Cooperative\StoreCreditLedgerService;
 use App\Services\Cooperative\StoreCreditReportService;
 use App\Support\MemberStoreAccountContext;
+use App\Support\OrganizationVisibility;
 use Carbon\Carbon;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -46,7 +47,7 @@ class StoreCreditReportTest extends TestCase
         $transaction = $this->makeTransaction();
         $ledger->postPurchase($accountB, $transaction, 75000, $actor, null);
 
-        $summary = $reports->summary($organization->id);
+        $summary = $reports->summary(OrganizationVisibility::organization($organization->id));
 
         $this->assertSame(500000, $summary['positive_deposit_liability']);
         $this->assertSame(75000, $summary['negative_receivable']);
@@ -98,7 +99,7 @@ class StoreCreditReportTest extends TestCase
         $transaction = $this->makeTransaction();
         $ledger->postPurchase($account, $transaction, 90000, $actor, null);
 
-        $summary = $reports->summary($organization->id, ['utilization_threshold' => 0.8]);
+        $summary = $reports->summary(OrganizationVisibility::organization($organization->id), ['utilization_threshold' => 0.8]);
 
         $this->assertCount(1, $summary['high_utilization_accounts']);
         $this->assertSame(0.9, $summary['high_utilization_accounts'][0]['utilization']);
@@ -117,10 +118,73 @@ class StoreCreditReportTest extends TestCase
         $ledger->postPurchase($suspendedAccount, $transaction, 40000, $actor, null);
         $ledger->suspend($suspendedAccount, $actor, 'test');
 
-        $summary = $reports->summary($organization->id);
+        $summary = $reports->summary(OrganizationVisibility::organization($organization->id));
 
         $this->assertSame(1, $summary['zero_account_count']);
         $this->assertSame(1, $summary['suspended_account_count']);
+    }
+
+    public function test_global_summary_aggregates_accounts_and_debt_age_across_organizations(): void
+    {
+        $organizationA = Organization::factory()->create();
+        $organizationB = Organization::factory()->create();
+        $reports = $this->app->make(StoreCreditReportService::class);
+        $ledger = $this->app->make(StoreCreditLedgerService::class);
+        $actor = User::factory()->create();
+
+        $positiveAccount = $this->account($organizationA, $ledger, 500000);
+        $debtAccount = $this->account($organizationB, $ledger, 0, 100000);
+        $suspendedAccount = $this->account($organizationB, $ledger);
+
+        Carbon::setTestNow('2026-06-01 10:00:00');
+        $purchase = $this->makeTransaction();
+        $ledger->postPurchase($debtAccount, $purchase, 90000, $actor, null);
+        $ledger->suspend($suspendedAccount, $actor, 'test');
+
+        $global = $reports->summary(OrganizationVisibility::global());
+        $scoped = $reports->summary(OrganizationVisibility::organization($organizationA->id));
+
+        $this->assertNull($global['organization_id']);
+        $this->assertSame(500000, $global['positive_deposit_liability']);
+        $this->assertSame(90000, $global['negative_receivable']);
+        $this->assertSame(1, $global['positive_account_count']);
+        $this->assertSame(1, $global['negative_account_count']);
+        $this->assertSame(1, $global['suspended_account_count']);
+        $this->assertCount(1, $global['high_utilization_accounts']);
+        $this->assertSame('2026-06-01', $global['oldest_uncovered_debt_date']);
+
+        $this->assertSame($organizationA->id, $scoped['organization_id']);
+        $this->assertSame(1, $scoped['positive_account_count']);
+        $this->assertSame(0, $scoped['negative_account_count']);
+        $this->assertSame(0, $scoped['suspended_account_count']);
+        $this->assertCount(0, $scoped['high_utilization_accounts']);
+        $this->assertNull($scoped['oldest_uncovered_debt_date']);
+    }
+
+    public function test_global_report_route_returns_summary_for_multiple_organizations(): void
+    {
+        $organizationA = Organization::factory()->create();
+        $organizationB = Organization::factory()->create();
+        $ledger = $this->app->make(StoreCreditLedgerService::class);
+        $admin = User::factory()->create(['organization_id' => $organizationA->id]);
+        $admin->givePermissionTo(['report_store_credit', 'view_store_credit_all']);
+        $actor = User::factory()->create();
+
+        $this->account($organizationA, $ledger, 250000);
+        $debtAccount = $this->account($organizationB, $ledger, 0, 100000);
+        Carbon::setTestNow('2026-06-15 10:00:00');
+        $ledger->postPurchase($debtAccount, $this->makeTransaction(), 90000, $actor, null);
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.store-credit.report'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cooperative/StoreCredit/Report')
+                ->where('summary.organization_id', null)
+                ->where('summary.positive_account_count', 1)
+                ->where('summary.negative_account_count', 1)
+                ->where('summary.high_utilization_accounts.0.cooperative_member_id', $debtAccount->cooperative_member_id)
+            );
     }
 
     private function account(Organization $organization, StoreCreditLedgerService $ledger, int $opening = 0, int $limit = 0): MemberStoreAccount

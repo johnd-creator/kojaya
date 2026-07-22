@@ -54,6 +54,12 @@ class StoreCreditLedgerService
                 ->first();
 
             if ($existing !== null) {
+                if ($context->rejectIfExisting) {
+                    throw ValidationException::withMessages([
+                        'cooperative_member_id' => 'Anggota tersebut sudah memiliki akun Saldo Toko.',
+                    ]);
+                }
+
                 return $existing;
             }
 

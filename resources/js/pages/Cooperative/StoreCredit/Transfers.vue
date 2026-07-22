@@ -27,20 +27,21 @@ defineProps<{
     filters: { status?: string };
 }>();
 
-const approveForm = useForm({});
-const rejectForm = useForm<{ rejection_reason: string }>({ rejection_reason: "" });
+const approveForm = useForm<{ decision: "approve" }>({ decision: "approve" });
+const rejectForm = useForm<{ decision: "reject"; rejection_reason: string }>({
+    decision: "reject",
+    rejection_reason: "",
+});
 
 function approve(id: number): void {
     approveForm.post(process({ funding: id }).url, {
         preserveScroll: true,
-        data: { decision: "approve" },
     });
 }
 
 function reject(id: number): void {
     rejectForm.post(process({ funding: id }).url, {
         preserveScroll: true,
-        data: { decision: "reject", rejection_reason: rejectForm.rejection_reason },
     });
 }
 </script>

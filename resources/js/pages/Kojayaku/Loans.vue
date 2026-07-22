@@ -140,7 +140,7 @@ const totalOutstanding = computed(() => activeLoans.value.reduce((sum, l) => sum
 const totalMonthlyObligation = computed(() => activeLoans.value.reduce((sum, l) => sum + Number(l.installment_amount), 0));
 const paidOffCount = computed(() => props.loans.data.filter(l => l.status === 'PAID_OFF').length);
 
-const nextPayment = computed(() => {
+const nextPayment = computed<Installment | null>(() => {
     let earliestInstallment: Installment | null = null;
     let earliestDate = '';
     
@@ -809,7 +809,7 @@ function getInstallmentStatusClasses(status: string): string {
                                                 <td class="px-4 py-3 font-medium text-zinc-500">{{ formatDate(inst.due_date) }}</td>
                                                 <td class="px-4 py-3 text-right font-extrabold text-zinc-800 dark:text-zinc-200">{{ formatCurrency(inst.amount_due) }}</td>
                                                 <td class="px-4 py-3 text-right font-semibold text-emerald-800 dark:text-emerald-400">
-                                                    {{ inst.amount_paid > 0 ? formatCurrency(inst.amount_paid) : '-' }}
+                                                    {{ Number(inst.amount_paid) > 0 ? formatCurrency(inst.amount_paid) : '-' }}
                                                 </td>
                                                 <td class="px-4 py-3">
                                                     <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"

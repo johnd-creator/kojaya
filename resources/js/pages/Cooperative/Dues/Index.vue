@@ -771,7 +771,8 @@ const kpiCards = computed(() => [
               </Label>
               <Input
                 id="batch-amount"
-                v-model="markPaidForm.amount"
+                :model-value="markPaidForm.amount ?? ''"
+                @update:model-value="markPaidForm.amount = $event === '' ? null : Number($event)"
                 type="number"
                 min="1"
                 step="1000"

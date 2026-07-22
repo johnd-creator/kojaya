@@ -37,7 +37,7 @@ const form = useForm({
 });
 
 const submit = () => {
-  form.post(store.url, {
+  form.post(store.url(), {
     onFinish: () => {
       form.reset("password", "password_confirmation");
     },

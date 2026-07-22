@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 
+const browserWindow = globalThis.window;
+
 const props = defineProps<{
   member: any;
   outstanding_balance: number;
@@ -34,7 +36,7 @@ const submit = () => {
     );
     return;
   }
-  form.post(window.location.pathname, { preserveScroll: true });
+  form.post(browserWindow.location.pathname, { preserveScroll: true });
 };
 
 const totalAfter = computed(() =>
@@ -54,7 +56,7 @@ const totalAfter = computed(() =>
       <div>
         <a
           href="#"
-          @click.prevent="window.history.back()"
+          @click.prevent="browserWindow.history.back()"
           class="inline-flex items-center text-sm text-indigo-600 hover:underline"
         >
           <ArrowLeft class="mr-1 size-4" /> Kembali

@@ -28,6 +28,7 @@ export interface Report {
   filters: (
     | "period"
     | "date_from"
+    | "date_to"
     | "employee_id"
     | "organization_id"
     | "unit_id"

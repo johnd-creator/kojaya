@@ -12,7 +12,7 @@ import {
   File as FileIcon,
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { fetchMcuRecords, deleteMcu } from "@/api/medicalCheckups.ts";
+import { fetchMcuRecords, deleteMcu } from "@/api/medicalCheckups";
 import McuBadge from "@/components/Status/McuBadge.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,16 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { MedicalCheckup, McuResult } from "@/types";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 type Props = {
   employeeId: string;
@@ -45,6 +36,14 @@ const props = withDefaults(defineProps<Props>(), {
 const mcuRecords = ref<MedicalCheckup[]>([]);
 const loading = ref(false);
 const deletingId = ref<string | null>(null);
+const confirmDeleteId = ref<string | null>(null);
+const deleteDialogOpen = computed({
+  get: () => confirmDeleteId.value !== null,
+  set: (open: boolean) => {
+    if (!open) confirmDeleteId.value = null;
+  },
+});
+const browserWindow = globalThis.window;
 
 const hasRecords = computed(() => mcuRecords.value.length > 0);
 
@@ -54,7 +53,7 @@ const groupedRecords = computed(() => {
     fitWithRestriction: mcuRecords.value.filter(
       (m) => m.result === "FIT_WITH_RESTRICTION",
     ),
-    unfit: mcu.value.filter((m) => m.result === "UNFIT"),
+    unfit: mcuRecords.value.filter((m) => m.result === "UNFIT"),
   };
 });
 
@@ -271,40 +270,31 @@ onMounted(() => {
               </DropdownMenuItem>
               <DropdownMenuItem
                 v-if="mcu.document_path"
-                @click="
-                  window.open(getDocumentUrl(mcu.document_path), '_blank')
-                "
+                @click="browserWindow.open(getDocumentUrl(mcu.document_path) ?? '', '_blank')"
               >
                 <FileIcon class="mr-2 h-4 w-4" />
                 View Document
               </DropdownMenuItem>
-              <AlertDialog>
-                <AlertDialogTrigger :as-child="true">
-                  <DropdownMenuItem class="text-red-600 focus:text-red-600">
-                    <Trash2 class="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete MCU Record?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this MCU record? This
-                      action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogAction>Cancel</AlertDialogAction>
-                    <AlertDialogAction @click="handleDelete(mcu.id)">
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DropdownMenuItem
+                class="text-red-600 focus:text-red-600"
+                @click="confirmDeleteId = mcu.id"
+              >
+                <Trash2 class="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
     </div>
+    <ConfirmDialog
+      v-model:open="deleteDialogOpen"
+      title="Delete MCU Record?"
+      message="Are you sure you want to delete this MCU record? This action cannot be undone."
+      confirm-label="Delete"
+      variant="danger"
+      @confirm="confirmDeleteId && handleDelete(confirmDeleteId)"
+      @cancel="confirmDeleteId = null"
+    />
   </div>
 </template>

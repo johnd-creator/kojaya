@@ -6,7 +6,7 @@ import {
   markAllAsRead,
   fetchNotificationSummary,
   fetchRecentNotifications,
-} from "@/api/notifications.ts";
+} from "@/api/notifications";
 import NotificationItem from "@/components/Notification/NotificationItem.vue";
 import { Button } from "@/components/ui/button";
 import {

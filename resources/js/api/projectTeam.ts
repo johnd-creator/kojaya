@@ -2,6 +2,7 @@ import axios from "axios";
 import { availability } from "@/actions/App/Http/Controllers/ProjectTeamController";
 
 export interface ProjectTeamAvailabilityParams {
+  [key: string]: string | number | undefined;
   employee_id: string | number;
   start_date: string;
   end_date?: string;

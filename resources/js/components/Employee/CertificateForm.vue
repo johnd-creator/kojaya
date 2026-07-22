@@ -2,7 +2,7 @@
 import { router, useForm } from "@inertiajs/vue3";
 import { FileText, Calendar, Save, X } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { createCertificate, updateCertificate } from "@/api/certificates.ts";
+import { createCertificate, updateCertificate } from "@/api/certificates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ const form = useForm<CertificateFormData>({
   certificate_type: "SIO_K3",
   certificate_number: "",
   issue_date: "",
-  expiry_date: null,
+  expiry_date: "",
   issuing_authority: "",
   notes: "",
 });
@@ -178,7 +178,8 @@ const clearFile = () => {
           <Label for="expiry_date">Expiry Date</Label>
           <Input
             id="expiry_date"
-            v-model="form.expiry_date"
+            :model-value="form.expiry_date ?? ''"
+            @update:model-value="form.expiry_date = String($event) || null"
             type="date"
             :disabled="submitting"
           />
@@ -191,7 +192,8 @@ const clearFile = () => {
           <Label for="issuing_authority">Issuing Authority</Label>
           <Input
             id="issuing_authority"
-            v-model="form.issuing_authority"
+            :model-value="form.issuing_authority ?? ''"
+            @update:model-value="form.issuing_authority = String($event)"
             placeholder="e.g., Ministry of Manpower"
             :disabled="submitting"
           />
@@ -244,7 +246,7 @@ const clearFile = () => {
             id="notes"
             v-model="form.notes"
             placeholder="Additional notes..."
-            rows="3"
+            :rows="3"
             :disabled="submitting"
           />
         </div>

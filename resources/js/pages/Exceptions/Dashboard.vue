@@ -81,6 +81,10 @@ function totalExceptions(module: string): number {
   if (!s) return 0;
   return Object.values(s).reduce((a, b) => a + (b as number), 0);
 }
+
+function formatSummaryKey(key: PropertyKey): string {
+  return String(key).replace(/_/g, " ");
+}
 </script>
 
 <template>
@@ -118,7 +122,7 @@ function totalExceptions(module: string): number {
         <CardContent>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div v-for="(v, k) in currentSummary" :key="k" class="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
-              <span class="text-sm text-zinc-600 dark:text-zinc-400 capitalize">{{ k.replace(/_/g, " ") }}</span>
+              <span class="text-sm text-zinc-600 dark:text-zinc-400 capitalize">{{ formatSummaryKey(k) }}</span>
               <Badge :variant="v > 0 ? 'destructive' : 'secondary'">{{ v }}</Badge>
             </div>
           </div>

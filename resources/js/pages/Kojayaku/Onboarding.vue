@@ -198,7 +198,9 @@ const reviewItems = computed(() => [
   { label: "Nomor Rekening", value: form.no_rekening || "-" },
 ]);
 
-const formError = computed<string>(() => String(form.errors.form ?? ""));
+const formError = computed<string>(() =>
+  String((form.errors as unknown as Record<string, string | undefined>).form ?? ""),
+);
 
 const reviewStateMeta = computed<{
   tone: "warning" | "success" | "destructive" | "secondary";

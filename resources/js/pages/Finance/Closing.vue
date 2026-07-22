@@ -192,7 +192,7 @@ const progressPct = computed(() => {
           <p class="text-sm text-zinc-500 mt-1">Semua langkah checklist sudah selesai. Masukkan alasan untuk mengunci periode.</p>
           <div class="mt-4">
             <Label for="lock-reason">Alasan</Label>
-            <Textarea id="lock-reason" v-model="lockReason" placeholder="Masukkan alasan kunci periode..." class="mt-1" rows="3" />
+            <Textarea id="lock-reason" v-model="lockReason" placeholder="Masukkan alasan kunci periode..." class="mt-1" :rows="3" />
           </div>
           <div class="flex gap-3 mt-6 justify-end">
             <Button variant="outline" @click="showLockSheet = false">Batal</Button>

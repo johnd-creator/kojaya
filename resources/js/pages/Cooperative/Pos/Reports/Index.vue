@@ -42,7 +42,7 @@ interface FilterValues {
 const props = defineProps<{
     from: string;
     to: string;
-    analytics?: AnalyticsData;
+    analytics: AnalyticsData;
     filters: FilterValues;
     products: Array<{ id: number; name: string }>;
     categories: Array<{ id: number; name: string }>;

@@ -9,7 +9,14 @@ const props = defineProps<{ receipts: any[] }>();
 
 const search = ref("");
 
-const columns = [
+const columns: Array<{
+  header: string;
+  key?: string;
+  slot?: string;
+  class?: string;
+  align?: "left" | "center" | "right";
+  format?: (value: any) => string;
+}> = [
   {
     header: "GRN Number",
     key: "grn_no",

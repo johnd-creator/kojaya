@@ -7,7 +7,10 @@ import {
   Bell as BellIcon,
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { getPreferences, updatePreferences } from "@/api/notifications.ts";
+import {
+  fetchNotificationPreferences as getPreferences,
+  updateNotificationPreferences as updatePreferences,
+} from "@/api/notifications";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -35,7 +38,7 @@ const fetchPreferencesData = async () => {
   loading.value = true;
   try {
     const response = await getPreferences();
-    preferences.value = response.data;
+    preferences.value = response;
   } catch (error) {
     console.error("Failed to fetch preferences:", error);
     saveError.value = true;

@@ -12,7 +12,7 @@ import { computed, onMounted, ref } from "vue";
 import {
   fetchNonCompliantEmployees,
   exportComplianceReport,
-} from "@/api/compliance.ts";
+} from "@/api/compliance";
 import CertificateBadge from "@/components/Status/CertificateBadge.vue";
 import McuBadge from "@/components/Status/McuBadge.vue";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +79,14 @@ const fetchEmployees = async () => {
     const response = await fetchNonCompliantEmployees({
       type: filters.value.type === "all" ? undefined : filters.value.type,
     });
-    employees.value = response.data;
+    employees.value = response.data.map((employee) => ({
+      id: String(employee.id),
+      name: `${employee.first_name} ${employee.last_name}`.trim(),
+      department: employee.employee_code,
+      certificate_issues:
+        employee.valid_certificates === 0 ? ["No valid certificate"] : [],
+      mcu_issues: employee.next_mcu_date ? [] : ["MCU needs attention"],
+    }));
     total.value = response.total;
   } catch (error) {
     console.error("Failed to fetch non-compliant employees:", error);
@@ -115,7 +122,7 @@ const hasIssues = (employee: NonCompliantEmployee): boolean => {
   const certIssues =
     employee.certificate_issues && employee.certificate_issues.length > 0;
   const mcuIssues = employee.mcu_issues && employee.mcu_issues.length > 0;
-  return certIssues || mcuIssues;
+  return Boolean(certIssues || mcuIssues);
 };
 
 onMounted(() => {

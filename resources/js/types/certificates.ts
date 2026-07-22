@@ -1,5 +1,5 @@
 export type CertificateType = "SIO_K3" | "TRAINING" | "OTHER";
-export type CertificateStatus = "VALID" | "EXPIRED" | "REVOKED";
+export type CertificateStatus = "VALID" | "EXPIRING" | "EXPIRED" | "REVOKED";
 
 export interface EmployeeCertificate {
   id: string;
@@ -8,7 +8,7 @@ export interface EmployeeCertificate {
   certificate_number: string;
   issue_date: string;
   expiry_date: string | null;
-  issuing_authority: string | null;
+  issuing_authority: string;
   document_path: string | null;
   status: CertificateStatus;
   notes: string | null;

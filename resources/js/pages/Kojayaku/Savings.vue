@@ -515,10 +515,10 @@ const statusClass = (status: string): string => {
                         }}
                       </td>
                       <td class="px-4 py-3 sm:px-6 sm:py-4 text-right text-zinc-500 dark:text-zinc-400">
-                        {{ entry.debit > 0 ? formatCurrency(entry.debit) : '-' }}
+                        {{ Number(entry.debit) > 0 ? formatCurrency(entry.debit) : '-' }}
                       </td>
                       <td class="px-4 py-3 sm:px-6 sm:py-4 text-right font-extrabold text-emerald-800 dark:text-emerald-400">
-                        {{ entry.credit > 0 ? formatCurrency(entry.credit) : '-' }}
+                        {{ Number(entry.credit) > 0 ? formatCurrency(entry.credit) : '-' }}
                       </td>
                     </tr>
                     <tr v-if="latestLedger.length === 0">

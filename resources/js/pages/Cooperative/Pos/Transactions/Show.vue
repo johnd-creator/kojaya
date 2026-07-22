@@ -17,6 +17,8 @@ import {
   show as showTransaction,
 } from "@/routes/cooperative/pos/transactions";
 
+const browserWindow = globalThis.window;
+
 const props = defineProps<{ transaction: any }>();
 
 const voidForm = useForm({ reason: "" });
@@ -68,7 +70,7 @@ const isVoided = computed(
           <Button
             variant="outline"
             @click="
-              window.open(showTransaction(transaction.id, { query: {} }).url, '_blank')
+              browserWindow.open(showTransaction(transaction.id, { query: {} }).url, '_blank')
             "
           >
             <Printer class="mr-1.5 size-4" /> Cetak
@@ -76,7 +78,7 @@ const isVoided = computed(
           <Button
             variant="outline"
             @click="
-              window.open(
+              browserWindow.open(
                 showTransaction(transaction.id, { query: { autoprint: 1 } }).url,
                 '_blank',
               )

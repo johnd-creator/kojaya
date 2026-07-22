@@ -11,7 +11,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import {
   fetchCertificateCompliance,
   fetchMcuCompliance,
-} from "@/api/compliance.ts";
+} from "@/api/compliance";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CertificateComplianceReport, McuComplianceReport } from "@/types";
@@ -101,6 +101,7 @@ const initCharts = () => {
   // Initialize Certificate Compliance Chart
   if (certificatesChartRef.value) {
     const ctx = certificatesChartRef.value.getContext("2d");
+    if (!ctx) return;
     certificatesChart = new ChartJS(ctx, {
       type: "doughnut",
       data: {
@@ -131,6 +132,7 @@ const initCharts = () => {
   // Initialize MCU Compliance Chart
   if (mcuChartRef.value) {
     const ctx = mcuChartRef.value.getContext("2d");
+    if (!ctx) return;
     mcuChart = new ChartJS(ctx, {
       type: "doughnut",
       data: {

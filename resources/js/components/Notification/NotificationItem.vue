@@ -15,7 +15,7 @@ import {
   Info,
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { markAsRead } from "@/api/notifications.ts";
+import { markAsRead } from "@/api/notifications";
 import type { Notification } from "@/types";
 
 type Props = {

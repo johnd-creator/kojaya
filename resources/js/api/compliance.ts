@@ -1,4 +1,10 @@
 import axios from "axios";
+import type {
+  CertificateComplianceReport,
+  EmployeeCertificate,
+  McuComplianceReport,
+  MedicalCheckup,
+} from "@/types";
 
 export interface ComplianceSummary {
   total_employees: number;
@@ -20,15 +26,12 @@ export interface ComplianceSummary {
 }
 
 export interface NonCompliantEmployee {
-  employee_id: number;
-  employee_name: string;
-  department: string;
-  position: string;
-  issues: {
-    type: "certificate" | "mcu";
-    description: string;
-    severity: "high" | "medium" | "low";
-  }[];
+  id: number;
+  first_name: string;
+  last_name: string;
+  employee_code: string;
+  valid_certificates: number;
+  next_mcu_date: string | null;
 }
 
 export async function fetchComplianceSummary(): Promise<ComplianceSummary> {
@@ -40,15 +43,20 @@ export async function fetchNonCompliantEmployees(params?: {
   department?: string;
   severity?: string;
   type?: string;
-}): Promise<NonCompliantEmployee[]> {
-  const response = await axios.get("/api/compliance/non-compliant", { params });
-  return response.data;
+}): Promise<{ data: NonCompliantEmployee[]; total: number }> {
+  const response = await axios.get("/api/reports/non-compliant-employees", { params });
+  const page = response.data.data ?? response.data;
+  return { data: page.data ?? [], total: page.total ?? page.data?.length ?? 0 };
 }
 
-export async function exportComplianceReport(params?: {
-  department?: string;
-  format?: "pdf" | "excel";
-}): Promise<Blob> {
+export async function exportComplianceReport(
+  typeOrParams:
+    | "certificate"
+    | "mcu"
+    | { department?: string; format?: "pdf" | "excel" } = {},
+): Promise<Blob> {
+  const params =
+    typeof typeOrParams === "string" ? { type: typeOrParams } : typeOrParams;
   const response = await axios.get("/api/compliance/export", {
     params,
     responseType: "blob",
@@ -58,36 +66,32 @@ export async function exportComplianceReport(params?: {
 
 export async function fetchCertificateCompliance(params?: {
   department?: string;
-}): Promise<{
-  compliant: number;
-  non_compliant: number;
-  details: {
-    employee_id: number;
-    employee_name: string;
-    certificates: {
-      type: string;
-      status: string;
-      expiry_date: string;
-    }[];
-  }[];
-}> {
-  const response = await axios.get("/api/compliance/certificates", { params });
-  return response.data;
+  organization_id?: string;
+}): Promise<CertificateComplianceReport> {
+  const response = await axios.get("/api/reports/certificate-compliance", { params });
+  const summary = response.data.summary;
+  return {
+    total_employees: summary.total,
+    compliant_employees: summary.valid,
+    non_compliant_employees: summary.total - summary.valid,
+    compliance_rate: summary.compliance_rate,
+    certificates: (response.data.expiring_soon?.data ??
+      response.data.expiring_soon ?? []) as EmployeeCertificate[],
+  };
 }
 
 export async function fetchMcuCompliance(params?: {
   department?: string;
-}): Promise<{
-  compliant: number;
-  non_compliant: number;
-  details: {
-    employee_id: number;
-    employee_name: string;
-    last_checkup: string;
-    next_checkup: string;
-    status: string;
-  }[];
-}> {
-  const response = await axios.get("/api/compliance/mcu", { params });
-  return response.data;
+  organization_id?: string;
+}): Promise<McuComplianceReport> {
+  const response = await axios.get("/api/reports/mcu-compliance", { params });
+  const summary = response.data.summary;
+  return {
+    total_employees: summary.total,
+    compliant_employees: summary.up_to_date,
+    non_compliant_employees: summary.total - summary.up_to_date,
+    compliance_rate: summary.compliance_rate,
+    medical_checkups: (response.data.due_soon?.data ??
+      response.data.due_soon ?? []) as MedicalCheckup[],
+  };
 }

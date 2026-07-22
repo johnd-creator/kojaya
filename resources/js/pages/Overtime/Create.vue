@@ -150,7 +150,7 @@ const submit = () => {
           >
           <span
             class="text-lg font-bold text-indigo-600 dark:text-indigo-400"
-            >{{ formatDurasi(parseFloat(calculatedHours)) }}</span
+            >{{ formatDurasi(Number(calculatedHours)) }}</span
           >
         </div>
 

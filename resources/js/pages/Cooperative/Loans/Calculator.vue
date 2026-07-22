@@ -81,7 +81,7 @@ const submit = () => {
       >
         <SectionHeader
           title="Parameter Simulasi"
-          icon="Calculator"
+          :icon="Calculator"
           tone="sky"
         />
         <CardContent class="p-5">

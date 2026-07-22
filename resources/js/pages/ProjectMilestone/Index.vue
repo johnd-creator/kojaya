@@ -181,7 +181,7 @@ const getStatusColor = (status: string) => {
             >
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 class="flex-1 text-xs h-7"
                 @click="updateProgress(milestone, 0)"
                 :disabled="milestone.progress_percentage === 0"
@@ -189,14 +189,14 @@ const getStatusColor = (status: string) => {
               >
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 class="flex-1 text-xs h-7"
                 @click="updateProgress(milestone, 50)"
                 >50%</Button
               >
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 class="flex-1 text-xs h-7"
                 @click="updateProgress(milestone, 100)"
                 :disabled="milestone.progress_percentage === 100"

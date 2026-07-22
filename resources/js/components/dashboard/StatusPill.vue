@@ -2,7 +2,7 @@
 import type { Component } from "vue";
 import { computed } from "vue";
 
-type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
+type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc" | "auto";
 
 const props = withDefaults(
   defineProps<{

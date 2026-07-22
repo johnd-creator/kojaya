@@ -27,14 +27,14 @@ interface PaginationLink {
 }
 
 interface PaginationData {
-  current_page: number;
-  from: number;
-  last_page: number;
-  links: PaginationLink[];
-  path: string;
-  per_page: number;
-  to: number;
-  total: number;
+  current_page?: number;
+  from?: number | null;
+  last_page?: number;
+  links?: PaginationLink[];
+  path?: string;
+  per_page?: number;
+  to?: number | null;
+  total?: number;
 }
 
 type Paginated<T = any> = PaginationData & { data: T[] };
@@ -312,7 +312,7 @@ const sortIcon = (col: Column) => {
       </div>
 
       <div
-        v-if="paginationData && paginationData.last_page > 1"
+        v-if="paginationData && (paginationData.last_page ?? 1) > 1"
         class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 px-6 py-4 flex items-center justify-between"
       >
         <p class="text-sm text-zinc-500">
@@ -321,7 +321,7 @@ const sortIcon = (col: Column) => {
           <span class="font-medium">{{ paginationData.total }}</span> data
         </p>
         <div class="flex items-center gap-1">
-          <template v-for="(link, i) in paginationData.links" :key="i">
+          <template v-for="(link, i) in paginationData.links ?? []" :key="i">
             <Button
               v-if="link.url"
               :variant="link.active ? 'default' : 'outline'"

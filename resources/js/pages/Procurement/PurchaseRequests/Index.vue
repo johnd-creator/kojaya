@@ -16,7 +16,14 @@ const props = defineProps<{
 
 const search = ref("");
 
-const columns = [
+const columns: Array<{
+  header: string;
+  key?: string;
+  slot?: string;
+  class?: string;
+  align?: "left" | "center" | "right";
+  format?: (value: any) => string;
+}> = [
   { header: "Title", key: "title", class: "font-medium" },
   { header: "Status", key: "status", slot: "status" },
   { header: "Items", key: "items_count", align: "center" },

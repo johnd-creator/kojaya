@@ -240,7 +240,7 @@ function submitDelegate(): void {
                     </table>
                     <div class="flex items-center justify-center gap-2 p-3">
                         <Link
-                            v-for="(link, i) in ledger.links"
+                            v-for="(link, i) in (ledger.meta?.links ?? [])"
                             :key="i"
                             :href="link.url || '#'"
                             :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none opacity-40']"

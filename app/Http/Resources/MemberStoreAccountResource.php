@@ -25,7 +25,9 @@ class MemberStoreAccountResource extends JsonResource
             'suspended_at' => $this->suspended_at?->toIso8601String(),
             'member' => $this->whenLoaded('member', fn () => [
                 'id' => $this->member->id,
-                'full_name' => $this->member->full_name ?? null,
+                'full_name' => $this->member->full_name ?? $this->member->name ?? null,
+                'name' => $this->member->name ?? null,
+                'member_no' => $this->member->member_no ?? null,
             ]),
         ];
     }

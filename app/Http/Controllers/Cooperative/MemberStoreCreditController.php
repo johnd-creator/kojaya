@@ -70,9 +70,23 @@ class MemberStoreCreditController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $eligibleMembers = collect();
+        if ($request->user()->can('manage_store_credit')) {
+            $existingMemberIds = MemberStoreAccount::query()
+                ->where('organization_id', $request->user()->organization_id)
+                ->pluck('cooperative_member_id');
+
+            $eligibleMembers = tap(CooperativeMember::query()->active(), fn ($memberQuery) => $this->scope->scopeVisibleTo($memberQuery, $request->user()))
+                ->whereNotIn('id', $existingMemberIds)
+                ->orderBy('name')
+                ->get(['id', 'member_no', 'name']);
+        }
+
         return Inertia::render('Cooperative/StoreCredit/Index', [
             'accounts' => MemberStoreAccountResource::collection($accounts)->response()->getData(true),
             'filters' => $request->only(['q', 'filter']),
+            'eligibleMembers' => $eligibleMembers,
+            'canManage' => $request->user()->can('manage_store_credit'),
         ]);
     }
 
@@ -88,7 +102,7 @@ class MemberStoreCreditController extends Controller
         return Inertia::render('Cooperative/StoreCredit/Show', [
             'account' => (new MemberStoreAccountResource($account->loadMissing('member')))->resolve(),
             'ledger' => MemberStoreLedgerEntryResource::collection($entries)->response()->getData(true),
-            'delegates' => MemberStoreDelegateResource::collection($account->delegates()->get()),
+            'delegates' => MemberStoreDelegateResource::collection($account->delegates()->get())->resolve(),
         ]);
     }
 
@@ -96,10 +110,9 @@ class MemberStoreCreditController extends Controller
     {
         $this->authorize('create', MemberStoreAccount::class);
 
-        $member = CooperativeMember::query()
-            ->where('id', $request->input('cooperative_member_id'))
-            ->where('organization_id', $request->user()->organization_id)
-            ->firstOrFail();
+        $memberQuery = CooperativeMember::query()->whereKey($request->input('cooperative_member_id'));
+        $this->scope->scopeVisibleTo($memberQuery, $request->user());
+        $member = $memberQuery->firstOrFail();
 
         $account = $this->ledger->openAccount(new MemberStoreAccountContext(
             organizationId: (string) $member->organization_id,

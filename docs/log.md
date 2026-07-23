@@ -1073,5 +1073,6 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 
 * Jul 23, 2026 | PR #21 UI Audit Correction Pass | Engineering | Reconciled all named cooperative/member GET routes through one registry and explicit exclusions, expanded desktop coverage to 61 renderable routes/72 scenarios, added deterministic fixtures and fixed browser/backend time, failure-complete manifests/runtime reports, Linux repeatability checks, responsive policies, and isolated Actions execution. Existing UX/accessibility debt remains a separate review task. |
 * Jul 23, 2026 | PR #21 UI Audit Stabilization Follow-up | Engineering | Removed the screenshot dependency on Bunny Fonts by routing committed Instrument Sans audit assets, and limited known accessibility-debt fingerprint evaluation to the mandatory desktop surface so full responsive runs do not misclassify desktop-only selectors as new debt. |
+* Jul 23, 2026 | PR #21 Canonical Baseline Correction | Engineering | Reviewed 72 clean Ubuntu 24.04 desktop capture candidates at the exact PR head, confirmed 72 clean runtime reports and correct seeded page states, and adopted the reviewed candidates as the desktop visual baseline source. Host-local rasterization remains advisory. |
 
 *This log is maintained throughout the project lifecycle. Last updated: July 23, 2026*

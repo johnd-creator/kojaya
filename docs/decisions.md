@@ -1170,4 +1170,32 @@ member credit limit, and keep an immutable audit trail.
 
 ---
 
+## 🎯 ADR-030: Ubuntu Canonical Visual Baselines for UI Audit
+
+**Status:** READY FOR SENIOR REVIEW
+**Date:** July 23, 2026
+**Deciders:** Engineering
+
+### Decision
+
+- Desktop screenshot baselines for the Playwright UI audit are canonical only
+  when captured on the GitHub Actions Ubuntu 24.04 environment with the locked
+  PHP, Node, Playwright, Chromium, locale, timezone, fixed clock, committed
+  audit fonts, and isolated database.
+- Host-local screenshots are advisory evidence for functional verification and
+  must not replace the Linux baseline because text rasterization varies by OS.
+- A baseline candidate must be reviewed for runtime health and page state, and
+  two clean Ubuntu captures must have identical screenshot hashes before it is
+  committed.
+- CI compares against committed baselines and never updates them
+  automatically.
+
+### Consequences
+
+- A visual mismatch caused only by a noncanonical local renderer cannot be
+  resolved by increasing tolerance or masking text globally.
+- Baseline changes remain visible in the pull request and require human review.
+- The PR gate remains responsible for proving that the exact checked-out head
+  compares successfully against the reviewed Linux baselines.
+
 *Last Updated: July 19, 2026*

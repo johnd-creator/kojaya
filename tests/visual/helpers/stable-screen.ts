@@ -97,7 +97,19 @@ async function waitForExpectedContent(page: Page, screenId: string): Promise<voi
     }
 
     await page.evaluate(() => new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        let frames = 0;
+        const waitForNextFrame = (): void => {
+            frames += 1;
+
+            if (frames >= 4) {
+                resolve();
+                return;
+            }
+
+            requestAnimationFrame(waitForNextFrame);
+        };
+
+        requestAnimationFrame(waitForNextFrame);
     }));
 }
 
@@ -154,6 +166,11 @@ export async function waitForStableScreen(
     await page.waitForLoadState("domcontentloaded");
     await page.evaluate(async () => {
         await document.fonts.ready;
+        await Promise.all([
+            document.fonts.load('400 16px "Instrument Sans"'),
+            document.fonts.load('500 16px "Instrument Sans"'),
+            document.fonts.load('600 16px "Instrument Sans"'),
+        ]);
     });
 
     const loading = page.locator('[aria-busy="true"], [data-loading="true"], [data-inertia-loading="true"]');
@@ -164,6 +181,20 @@ export async function waitForStableScreen(
         polling: 100,
     }).catch(() => {
         throw new Error(`Images did not settle for ${screenId}.`);
+    });
+
+    await page.evaluate(async () => {
+        await Promise.all(Array.from(document.images).map(async (image) => {
+            if (typeof image.decode !== "function") {
+                return;
+            }
+
+            try {
+                await image.decode();
+            } catch {
+                // Broken images are reported by runtime health; do not hide them here.
+            }
+        }));
     });
 
     if (options.readyLocator) {

@@ -83,6 +83,14 @@ baselines be generated with `npm run ui:update`. `ui:verify-baselines` checks
 missing, orphan, duplicate-name, and dimension errors. Never update a
 baseline merely to hide a regression, and never run `ui:update` in CI.
 
+For PR #21, the reviewed desktop candidates were captured by the Ubuntu 24.04
+GitHub Actions environment at the exact tested head. The capture produced 72
+desktop candidates and 72 clean runtime reports; these candidates are the
+canonical source for the committed desktop baselines. A successful capture is
+not a visual comparison result: the pull-request `compare` run must still pass
+against the reviewed files. Local screenshots from another operating system
+remain advisory and must not replace these baselines.
+
 The manifest is generated from expected registry entries, not only successful
 tests. Each entry has status (`passed`, `failed`, `captured`, `skipped`, or
 `not-run`), route/role/viewport/state, screenshot paths, runtime and

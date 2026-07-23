@@ -64,6 +64,11 @@ issues, failed requests, unexpected HTTP responses, and hydration failures.
 The application font is served from committed audit assets through Playwright
 routing, so screenshots do not depend on a CDN response or a runner's font
 cache. The production font family and weights remain unchanged.
+The canonical comparison environment is the GitHub Actions Ubuntu 24.04
+runner with PHP 8.4, Node 22, locked Playwright/Chromium, locale `id-ID`,
+timezone `Asia/Jakarta`, the fixed backend/browser clock, and a clean
+`database/playwright.sqlite`. Host-local screenshots are advisory; they must
+not replace the Ubuntu baseline without runner evidence.
 
 Run capture twice against clean audit databases and compare screenshot hashes:
 
@@ -117,7 +122,9 @@ Audit accessibility pilot:
 npm run ui:a11y -- --project=desktop
 ```
 
-Mode workflow: `capture`, `compare`, `accessibility`, dan `full`.
+Mode workflow: `capture`, `compare`, `accessibility`, dan `full`. Capture mode
+also publishes `tests/visual/baseline-candidates/`; candidates must be
+reviewed before copying them into `tests/visual/baselines/`.
 
 ## Baseline dan visual diff
 

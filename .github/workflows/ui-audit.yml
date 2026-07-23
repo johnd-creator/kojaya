@@ -36,18 +36,22 @@ on:
           - all
   pull_request:
     paths:
+      - '.github/workflows/ui-audit.yml'
+      - '.env.playwright.example'
+      - 'app/**'
+      - 'config/**'
+      - 'database/migrations/**'
+      - 'database/seeders/**'
       - 'resources/js/**'
       - 'resources/css/**'
       - 'routes/**'
-      - 'app/Http/Controllers/**'
-      - 'app/Http/Resources/**'
-      - 'database/seeders/UiAuditSeeder.php'
       - 'tests/visual/**'
+      - 'tests/Feature/UiAudit*.php'
       - 'playwright.config.ts'
       - 'package.json'
       - 'package-lock.json'
-      - '.env.playwright.example'
-      - '.github/workflows/ui-audit.yml'
+      - 'composer.json'
+      - 'composer.lock'
 
 permissions:
   contents: read
@@ -130,6 +134,12 @@ jobs:
       - name: Verify baselines
         if: always() && (env.UI_AUDIT_MODE == 'compare' || env.UI_AUDIT_MODE == 'full')
         run: npm run ui:verify-baselines
+
+      - name: Prepare baseline candidates
+        if: always() && env.UI_AUDIT_MODE == 'capture'
+        run: |
+          mkdir -p tests/visual/baseline-candidates
+          cp -R ui-audit-output/screenshots/. tests/visual/baseline-candidates/ 2>/dev/null || true
 
       - name: Upload UI audit artifact
         if: always()

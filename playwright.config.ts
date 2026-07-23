@@ -37,7 +37,7 @@ export default defineConfig({
     },
     reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
     use: {
-        baseURL: "http://127.0.0.1:8000",
+        baseURL: "http://127.0.0.1:18080",
         locale: "id-ID",
         timezoneId: "Asia/Jakarta",
         colorScheme: "light",
@@ -50,9 +50,9 @@ export default defineConfig({
         navigationTimeout: 30_000,
     },
     webServer: {
-        command: "php artisan serve --host=127.0.0.1 --port=8000",
-        url: "http://127.0.0.1:8000/login",
-        reuseExistingServer: true,
+        command: "php artisan serve --env=playwright --host=127.0.0.1 --port=18080",
+        url: "http://127.0.0.1:18080/login",
+        reuseExistingServer: false,
         timeout: 120_000,
         stdout: "pipe",
         stderr: "pipe",

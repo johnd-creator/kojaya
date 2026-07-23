@@ -1,0 +1,1763 @@
+{
+  "version": 1,
+  "application": "Kojaya",
+  "description": "Single source of truth for renderable cooperative and member portal UI audit scenarios.",
+  "entries": [
+    {
+      "id": "dues-index-default",
+      "module": "dues-payments-ledger",
+      "screen": "index",
+      "route_name": "cooperative.dues.index",
+      "path_template": "/cooperative/dues",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "ledger-index-default",
+      "module": "dues-payments-ledger",
+      "screen": "ledger",
+      "route_name": "cooperative.ledger.index",
+      "path_template": "/cooperative/ledger",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "loan-types-index-default",
+      "module": "loans",
+      "screen": "index",
+      "route_name": "cooperative.loan-types.index",
+      "path_template": "/cooperative/loan-types",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "loans-index-default",
+      "module": "loans",
+      "screen": "loans",
+      "route_name": "cooperative.loans.index",
+      "path_template": "/cooperative/loans",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "loans-calculator-default",
+      "module": "loans",
+      "screen": "calculator",
+      "route_name": "cooperative.loans.calculator",
+      "path_template": "/cooperative/loans/calculator",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman calculator",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "loans-create-default",
+      "module": "loans",
+      "screen": "create",
+      "route_name": "cooperative.loans.create",
+      "path_template": "/cooperative/loans/create",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "loans-show-default",
+      "module": "loans",
+      "screen": "show",
+      "route_name": "cooperative.loans.show",
+      "path_template": "/cooperative/loans/{loan}",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "loan-applied",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman show",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "members-index-default",
+      "module": "members",
+      "screen": "index",
+      "route_name": "cooperative.members.index",
+      "path_template": "/cooperative/members",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "members-create-default",
+      "module": "members",
+      "screen": "create",
+      "route_name": "cooperative.members.create",
+      "path_template": "/cooperative/members/create",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "members-resignations-index-default",
+      "module": "members",
+      "screen": "members-resignations",
+      "route_name": "cooperative.members.resignations.index",
+      "path_template": "/cooperative/members/resignations",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "members-show-default",
+      "module": "members",
+      "screen": "show",
+      "route_name": "cooperative.members.show",
+      "path_template": "/cooperative/members/{member}",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "member-positive",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman show",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "members-edit-default",
+      "module": "members",
+      "screen": "edit",
+      "route_name": "cooperative.members.edit",
+      "path_template": "/cooperative/members/{member}/edit",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "member-positive",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman edit",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "members-opening-balance-show-default",
+      "module": "members",
+      "screen": "members-opening-balance-show",
+      "route_name": "cooperative.members.opening-balance.show",
+      "path_template": "/cooperative/members/{member}/opening-balance",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "member-positive",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman show",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "operator-closing-default",
+      "module": "operator",
+      "screen": "closing",
+      "route_name": "cooperative.operator.closing",
+      "path_template": "/cooperative/operator/closing",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman closing",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "operator-dashboard-default",
+      "module": "operator",
+      "screen": "dashboard",
+      "route_name": "cooperative.operator.dashboard",
+      "path_template": "/cooperative/operator/dashboard",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman dashboard",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "payments-index-default",
+      "module": "dues-payments-ledger",
+      "screen": "payments",
+      "route_name": "cooperative.payments.index",
+      "path_template": "/cooperative/payments",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "points-index-default",
+      "module": "rewards-shu",
+      "screen": "index",
+      "route_name": "cooperative.points.index",
+      "path_template": "/cooperative/points",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-register-default",
+      "module": "pos",
+      "screen": "register",
+      "route_name": "cooperative.pos.index",
+      "path_template": "/cooperative/pos",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-categories-index-default",
+      "module": "pos-inventory",
+      "screen": "index",
+      "route_name": "cooperative.pos-categories.index",
+      "path_template": "/cooperative/pos-categories",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-products-index-default",
+      "module": "pos-inventory",
+      "screen": "pos-products",
+      "route_name": "cooperative.pos-products.index",
+      "path_template": "/cooperative/pos-products",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-products-show-default",
+      "module": "pos-inventory",
+      "screen": "show",
+      "route_name": "cooperative.pos-products.show",
+      "path_template": "/cooperative/pos-products/{product}",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "product-primary",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman show",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-closings-index-default",
+      "module": "pos",
+      "screen": "index",
+      "route_name": "cooperative.pos.closings.index",
+      "path_template": "/cooperative/pos/closings",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-coffee-orders-index-default",
+      "module": "pos",
+      "screen": "pos-coffee-orders",
+      "route_name": "cooperative.pos.coffee-orders.index",
+      "path_template": "/cooperative/pos/coffee-orders",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-counts-index-default",
+      "module": "pos-inventory",
+      "screen": "pos-inventory-counts",
+      "route_name": "cooperative.pos.inventory.counts.index",
+      "path_template": "/cooperative/pos/inventory/counts",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-counts-create-default",
+      "module": "pos-inventory",
+      "screen": "create",
+      "route_name": "cooperative.pos.inventory.counts.create",
+      "path_template": "/cooperative/pos/inventory/counts/create",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-counts-show-default",
+      "module": "pos-inventory",
+      "screen": "pos-inventory-counts-show",
+      "route_name": "cooperative.pos.inventory.counts.show",
+      "path_template": "/cooperative/pos/inventory/counts/{count}",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "stock-count-draft",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman show",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-receipts-index-default",
+      "module": "pos-inventory",
+      "screen": "pos-inventory-receipts",
+      "route_name": "cooperative.pos.inventory.receipts.index",
+      "path_template": "/cooperative/pos/inventory/receipts",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "inventory-location",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-receipts-create-default",
+      "module": "pos-inventory",
+      "screen": "pos-inventory-receipts-create",
+      "route_name": "cooperative.pos.inventory.receipts.create",
+      "path_template": "/cooperative/pos/inventory/receipts/create",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "inventory-location",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-transfers-index-default",
+      "module": "pos-inventory",
+      "screen": "pos-inventory-transfers",
+      "route_name": "cooperative.pos.inventory.transfers.index",
+      "path_template": "/cooperative/pos/inventory/transfers",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "inventory-location",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-inventory-transfers-create-default",
+      "module": "pos-inventory",
+      "screen": "pos-inventory-transfers-create",
+      "route_name": "cooperative.pos.inventory.transfers.create",
+      "path_template": "/cooperative/pos/inventory/transfers/create",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "inventory-location",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-credit-create-default",
+      "module": "pos",
+      "screen": "create",
+      "route_name": "cooperative.pos.credit.create",
+      "path_template": "/cooperative/pos/members/{member}/credit/pay",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "member-positive",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-reports-index-default",
+      "module": "pos",
+      "screen": "pos-reports",
+      "route_name": "cooperative.pos.reports.index",
+      "path_template": "/cooperative/pos/reports",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-shifts-index-default",
+      "module": "pos",
+      "screen": "pos-shifts",
+      "route_name": "cooperative.pos.shifts.index",
+      "path_template": "/cooperative/pos/shifts",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-shu-index-default",
+      "module": "rewards-shu",
+      "screen": "pos-shu",
+      "route_name": "cooperative.pos.shu.index",
+      "path_template": "/cooperative/pos/shu",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-transactions-index-default",
+      "module": "pos",
+      "screen": "pos-transactions",
+      "route_name": "cooperative.pos.transactions.index",
+      "path_template": "/cooperative/pos/transactions",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-transactions-show-default",
+      "module": "pos",
+      "screen": "show",
+      "route_name": "cooperative.pos.transactions.show",
+      "path_template": "/cooperative/pos/transactions/{transaction}",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "pos-transaction-completed",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman show",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-transactions-receipt-default",
+      "module": "pos",
+      "screen": "receipt",
+      "route_name": "cooperative.pos.transactions.receipt",
+      "path_template": "/cooperative/pos/transactions/{transaction}/receipt",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "pos-transaction-completed",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman receipt",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "dashboard-default",
+      "module": "dashboard",
+      "screen": "dashboard",
+      "route_name": "dashboard",
+      "path_template": "/dashboard",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman default",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-dashboard-default",
+      "module": "member-portal",
+      "screen": "member",
+      "route_name": "member.dashboard",
+      "path_template": "/member",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman member",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-store-account-default",
+      "module": "member-portal",
+      "screen": "store-account",
+      "route_name": "member.store-account",
+      "path_template": "/member/store-account",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman store-account",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-onboarding-default",
+      "module": "member-portal",
+      "screen": "onboarding",
+      "route_name": "member.onboarding",
+      "path_template": "/member/onboarding",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman onboarding",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-profile-default",
+      "module": "member-portal",
+      "screen": "profile",
+      "route_name": "member.profile",
+      "path_template": "/member/profile",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman profile",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-notifications-default",
+      "module": "member-portal",
+      "screen": "notifications",
+      "route_name": "member.notifications",
+      "path_template": "/member/notifications",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman notifications",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-savings-default",
+      "module": "member-portal",
+      "screen": "savings",
+      "route_name": "member.savings",
+      "path_template": "/member/savings",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman savings",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-loans-default",
+      "module": "member-portal",
+      "screen": "loans",
+      "route_name": "member.loans",
+      "path_template": "/member/loans",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman loans",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-points-default",
+      "module": "member-portal",
+      "screen": "points",
+      "route_name": "member.points",
+      "path_template": "/member/points",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman points",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-rewards-default",
+      "module": "member-portal",
+      "screen": "rewards",
+      "route_name": "member.rewards",
+      "path_template": "/member/rewards",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman rewards",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "member-transactions-default",
+      "module": "member-portal",
+      "screen": "transactions",
+      "route_name": "member.transactions",
+      "path_template": "/member/transactions",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman transactions",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "savings-withdrawals-index-default",
+      "module": "dues-payments-ledger",
+      "screen": "withdrawals",
+      "route_name": "cooperative.savings.withdrawals.index",
+      "path_template": "/cooperative/savings/withdrawals",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman withdrawals",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "rewards-index-default",
+      "module": "rewards-shu",
+      "screen": "rewards",
+      "route_name": "cooperative.rewards.index",
+      "path_template": "/cooperative/rewards",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman rewards",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "redemptions-index-default",
+      "module": "rewards-shu",
+      "screen": "redemptions",
+      "route_name": "cooperative.redemptions.index",
+      "path_template": "/cooperative/redemptions",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman redemptions",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "redemptions-show-default",
+      "module": "rewards-shu",
+      "screen": "redemptions-show",
+      "route_name": "cooperative.redemptions.show",
+      "path_template": "/cooperative/redemptions/{redemption}",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "redemption-pending",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman redemptions",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "shu-index-default",
+      "module": "rewards-shu",
+      "screen": "shu",
+      "route_name": "cooperative.shu.index",
+      "path_template": "/cooperative/shu",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman shu",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-void-requests-index-default",
+      "module": "pos",
+      "screen": "void-requests",
+      "route_name": "cooperative.pos.void-requests.index",
+      "path_template": "/cooperative/pos/void-requests",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman void-requests",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "pos-returns-create-default",
+      "module": "pos",
+      "screen": "pos-returns-create",
+      "route_name": "cooperative.pos.returns.create",
+      "path_template": "/cooperative/pos/transactions/{transaction}/returns/create",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "pos-transaction-completed",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman create",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "reports-index-default",
+      "module": "reports",
+      "screen": "reports",
+      "route_name": "cooperative.reports.index",
+      "path_template": "/cooperative/reports",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman reports",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-index-default",
+      "module": "store-credit",
+      "screen": "index",
+      "route_name": "cooperative.store-credit.index",
+      "path_template": "/cooperative/store-credit",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "profile-default",
+      "module": "profile",
+      "screen": "profile",
+      "route_name": "profile.edit",
+      "path_template": "/settings/profile",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman default",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-index-empty",
+      "module": "store-credit",
+      "screen": "index",
+      "route_name": "cooperative.store-credit.index",
+      "path_template": "/cooperative/store-credit",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "empty",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-index-search-results",
+      "module": "store-credit",
+      "screen": "index",
+      "route_name": "cooperative.store-credit.index",
+      "path_template": "/cooperative/store-credit",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "search-results",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-index-no-results",
+      "module": "store-credit",
+      "screen": "index",
+      "route_name": "cooperative.store-credit.index",
+      "path_template": "/cooperative/store-credit",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "no-results",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-index-open-account-dialog",
+      "module": "store-credit",
+      "screen": "index",
+      "route_name": "cooperative.store-credit.index",
+      "path_template": "/cooperative/store-credit",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "open-account-dialog",
+      "viewport_policy": [
+        "desktop",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-index-validation-error",
+      "module": "store-credit",
+      "screen": "index",
+      "route_name": "cooperative.store-credit.index",
+      "path_template": "/cooperative/store-credit",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "validation-error",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-show-positive-balance",
+      "module": "store-credit",
+      "screen": "show",
+      "route_name": "cooperative.store-credit.show",
+      "path_template": "/cooperative/store-credit/{account}",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "positive-balance",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "store-credit-positive",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-show-negative-balance",
+      "module": "store-credit",
+      "screen": "show",
+      "route_name": "cooperative.store-credit.show",
+      "path_template": "/cooperative/store-credit/{account}",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "negative-balance",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "store-credit-negative",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-show-suspended",
+      "module": "store-credit",
+      "screen": "show",
+      "route_name": "cooperative.store-credit.show",
+      "path_template": "/cooperative/store-credit/{account}",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "suspended",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "store-credit-suspended",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-show-empty-ledger",
+      "module": "store-credit",
+      "screen": "show",
+      "route_name": "cooperative.store-credit.show",
+      "path_template": "/cooperative/store-credit/{account}",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "empty-ledger",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "store-credit-empty-ledger",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-show-with-ledger",
+      "module": "store-credit",
+      "screen": "show",
+      "route_name": "cooperative.store-credit.show",
+      "path_template": "/cooperative/store-credit/{account}",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "with-ledger",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "store-credit-positive",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-report-local",
+      "module": "store-credit",
+      "screen": "report",
+      "route_name": "cooperative.store-credit.report",
+      "path_template": "/cooperative/store-credit-report",
+      "role": "Manajer Koperasi",
+      "auth_state": "manajer",
+      "state": "local",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-report-global",
+      "module": "store-credit",
+      "screen": "report",
+      "route_name": "cooperative.store-credit.report",
+      "path_template": "/cooperative/store-credit-report",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "global",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-transfers-pending",
+      "module": "store-credit",
+      "screen": "transfers",
+      "route_name": "cooperative.store-credit.transfers.index",
+      "path_template": "/cooperative/store-credit-transfers",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "pending",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "store-credit-transfers-empty",
+      "module": "store-credit",
+      "screen": "transfers",
+      "route_name": "cooperative.store-credit.transfers.index",
+      "path_template": "/cooperative/store-credit-transfers",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus",
+      "state": "empty",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Mengelola dan meninjau Saldo Toko",
+      "primary_actions": [
+        "Meninjau saldo",
+        "Membuka detail akun"
+      ],
+      "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    }
+  ]
+}

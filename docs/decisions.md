@@ -20,6 +20,19 @@ Gunakan Playwright Test dengan Chromium, `@axe-core/playwright`, environment/dat
 - Artifact menyatukan screenshot, visual diff, axe JSON, runtime report, dan trace untuk audit UX per-screen.
 - Temuan UX/accessibility dicatat terpisah dan tidak mengubah business logic pada foundation PR.
 
+## ADR-UI-001: Inventory-driven web visual audit
+
+**Status:** Accepted
+**Date:** July 23, 2026
+
+The Playwright audit uses one machine-readable registry for route ownership,
+fixtures, role/auth state, viewport policy, accessibility, manifest, and
+baseline validation. Every renderable cooperative/member GET route must be
+audited or have a specific non-visual exclusion. Chromium on Ubuntu 24.04,
+fixed Laravel/JavaScript time, deterministic seeded data, and no server reuse
+are the rendering contract. This prevents a new page from silently bypassing
+visual review while keeping UX findings separate from business logic changes.
+
 ## 📋 What is ADR?
 
 Architecture Decision Records (ADR) document important architectural decisions made during the project. Each ADR captures:

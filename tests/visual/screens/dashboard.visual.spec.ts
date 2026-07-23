@@ -2,10 +2,11 @@ import { test } from "@playwright/test";
 import { captureScreen } from "../helpers/audit-manifest";
 import { attachRuntimeHealth, writeRuntimeReport } from "../helpers/runtime-health";
 import { prepareStableScreen, assertNoHorizontalOverflow } from "../helpers/stable-screen";
-import { screen } from "../helpers/screen-registry";
+import { isAuditScopeIncluded, screen } from "../helpers/screen-registry";
 import { DashboardPage } from "../pages/DashboardPage";
 
 test("Dashboard default @visual", async ({ page }, testInfo) => {
+    test.skip(!isAuditScopeIncluded(screen("dashboard-default")));
     const runtime = attachRuntimeHealth(page, "dashboard-default");
     try {
         await prepareStableScreen(page);

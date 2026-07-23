@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "entries": [
+  {
+    "route_name": "cooperative.members.export",
+    "reason": "File download endpoint; no HTML/Inertia surface",
+    "category": "download"
+  },
+  {
+    "route_name": "cooperative.members.account-link.candidates",
+    "reason": "JSON candidate lookup endpoint used by account-link UI; no HTML/Inertia surface",
+    "category": "api-json"
+  },
+    {
+      "route_name": "cooperative.operator.approval-inbox",
+      "reason": "JSON data endpoint consumed by the operator dashboard",
+      "category": "api-json"
+    },
+    {
+      "route_name": "cooperative.operator.exceptions",
+      "reason": "JSON data endpoint consumed by the operator dashboard",
+      "category": "api-json"
+    },
+    {
+      "route_name": "cooperative.operator.analytics",
+      "reason": "JSON data endpoint consumed by the operator dashboard",
+      "category": "api-json"
+    },
+    {
+      "route_name": "cooperative.operator.closing.show",
+      "reason": "JSON closing status endpoint; no standalone UI surface",
+      "category": "api-json"
+    },
+    {
+      "route_name": "cooperative.operator.export",
+      "reason": "CSV export endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
+      "route_name": "cooperative.pos.reports.export.csv",
+      "reason": "CSV export endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
+      "route_name": "cooperative.pos.reports.export.pdf.download",
+      "reason": "Generated PDF download endpoint; no HTML/Inertia surface",
+      "category": "pdf"
+    },
+    {
+      "route_name": "cooperative.pos.reports.export.pdf.status",
+      "reason": "JSON PDF job status endpoint; no HTML/Inertia surface",
+      "category": "api-json"
+    },
+    {
+      "route_name": "cooperative.pos.transactions.receipt.pdf",
+      "reason": "Receipt PDF/download endpoint; no audited HTML page",
+      "category": "pdf"
+    },
+    {
+      "route_name": "cooperative.store-credit.transfers.proof",
+      "reason": "Funding proof download endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
+      "route_name": "member.payments.status",
+      "reason": "JSON payment status endpoint; no HTML/Inertia surface",
+      "category": "api-json"
+    }
+  ]
+}

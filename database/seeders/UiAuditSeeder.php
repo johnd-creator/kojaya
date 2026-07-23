@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\LoanStatus;
 use App\Enums\MemberStoreAccountStatus;
 use App\Enums\MemberStoreDelegateStatus;
 use App\Enums\MemberStoreFundingMethod;
@@ -9,13 +10,24 @@ use App\Enums\MemberStoreFundingStatus;
 use App\Enums\MemberStoreLedgerEffect;
 use App\Enums\MemberStoreLedgerEntryType;
 use App\Models\CooperativeMember;
+use App\Models\Loan;
+use App\Models\LoanType;
 use App\Models\MemberStoreAccount;
 use App\Models\MemberStoreDelegate;
 use App\Models\MemberStoreFundingRequest;
 use App\Models\MemberStoreLedgerEntry;
 use App\Models\Organization;
+use App\Models\PointTransaction;
 use App\Models\PosCategory;
+use App\Models\PosInventoryLocation;
+use App\Models\PosPayment;
 use App\Models\PosProduct;
+use App\Models\PosStockCount;
+use App\Models\PosStockCountItem;
+use App\Models\PosTransaction;
+use App\Models\PosTransactionItem;
+use App\Models\Reward;
+use App\Models\RewardRedemption;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
@@ -29,7 +41,7 @@ class UiAuditSeeder extends Seeder
 
     public function run(): void
     {
-        if (in_array((string) config('app.env'), ['production', 'staging'], true)) {
+        if (! in_array((string) config('app.env'), ['testing', 'playwright'], true)) {
             throw new \LogicException('UiAuditSeeder is only available in testing or playwright environments.');
         }
 
@@ -39,6 +51,7 @@ class UiAuditSeeder extends Seeder
         $members = $this->seedMembers($organizations, $users);
         $this->seedStoreCredit($organizations, $users, $members);
         $this->seedPos();
+        $this->seedAdditionalFixtures($organizations, $users, $members);
     }
 
     /** @return array<string, Organization> */
@@ -206,5 +219,59 @@ class UiAuditSeeder extends Seeder
         if (is_file($source)) {
             Storage::disk('public')->put('ui-audit-product.png', file_get_contents($source));
         }
+    }
+
+    /** @param array<string, Organization> $organizations @param array<string, User> $users @param array<string, CooperativeMember> $members */
+    private function seedAdditionalFixtures(array $organizations, array $users, array $members): void
+    {
+        $loanType = LoanType::query()->updateOrCreate(
+            ['code' => 'AUD-LOAN-TYPE'],
+            ['name' => 'Pinjaman Audit UI', 'description' => 'Fixture pinjaman deterministik untuk audit visual.', 'interest_rate' => 1.5, 'admin_fee' => 25000, 'late_fee_per_day' => 2500, 'min_amount' => 500000, 'max_amount' => 25000000, 'min_term_months' => 3, 'max_term_months' => 24, 'is_active' => true],
+        );
+
+        Loan::query()->updateOrCreate(
+            ['reference_no' => 'UI-AUDIT-LOAN-001'],
+            ['cooperative_member_id' => $members['positive']->id, 'organization_id' => $organizations['pusat']->id, 'loan_type_id' => $loanType->id, 'user_id' => $users['anggota']->id, 'principal_amount' => 3000000, 'interest_rate' => 1.5, 'admin_fee' => 25000, 'late_fee_per_day' => 2500, 'term_months' => 6, 'installment_amount' => 537500, 'total_interest_amount' => 270000, 'total_amount' => 3295000, 'outstanding_amount' => 3295000, 'applied_at' => self::FIXED_DATE, 'first_due_date' => '2026-02-15', 'status' => LoanStatus::Applied, 'purpose' => 'Fixture pinjaman untuk audit visual.', 'notes' => 'Data deterministik.'],
+        );
+
+        $product = PosProduct::query()->where('sku', 'UI-AUD-001')->firstOrFail();
+        $transaction = PosTransaction::query()->updateOrCreate(
+            ['transaction_no' => 'UI-AUDIT-POS-001'],
+            ['cooperative_member_id' => $members['positive']->id, 'cashier_id' => $users['kasir']->id, 'subtotal' => 78000, 'discount_amount' => 0, 'total_amount' => 78000, 'gross_profit' => 10000, 'cash_received' => 100000, 'cash_change' => 22000, 'status' => 'COMPLETED', 'sold_at' => self::FIXED_DATE.' 10:00:00'],
+        );
+        PosTransactionItem::query()->updateOrCreate(
+            ['pos_transaction_id' => $transaction->id, 'pos_product_id' => $product->id],
+            ['quantity' => 1, 'unit_price' => 78000, 'cost_price' => 68000, 'unit_profit' => 10000, 'line_total' => 78000, 'line_profit' => 10000],
+        );
+        PosPayment::query()->updateOrCreate(
+            ['pos_transaction_id' => $transaction->id, 'payment_method' => 'CASH'],
+            ['amount' => 78000, 'reference_no' => 'UI-AUDIT-CASH-001'],
+        );
+
+        $location = PosInventoryLocation::query()->updateOrCreate(
+            ['code' => 'AUD-MAIN'],
+            ['name' => 'Gudang Audit UI', 'location_type' => 'STORE', 'address' => 'Unit audit', 'is_active' => true, 'is_default' => true],
+        );
+        $count = PosStockCount::query()->updateOrCreate(
+            ['count_no' => 'UI-AUDIT-COUNT-001'],
+            ['pos_inventory_location_id' => $location->id, 'requested_by' => $users['admin']->id, 'counted_at' => self::FIXED_DATE, 'notes' => 'Stock opname fixture deterministik.', 'status' => PosStockCount::STATUS_DRAFT],
+        );
+        PosStockCountItem::query()->updateOrCreate(
+            ['pos_stock_count_id' => $count->id, 'pos_product_id' => $product->id],
+            ['system_qty' => 24, 'counted_qty' => 23, 'difference' => -1, 'notes' => 'Selisih fixture audit.'],
+        );
+
+        $reward = Reward::query()->updateOrCreate(
+            ['id' => '00000000-0000-0000-0000-000000000021'],
+            ['organization_id' => $organizations['pusat']->id, 'name' => 'Voucher Audit UI', 'category' => 'DISKON', 'description' => 'Reward deterministik untuk audit visual.', 'points_required' => 100, 'stock' => 10, 'valid_until' => '2026-12-31', 'is_active' => true],
+        );
+        $pointTransaction = PointTransaction::query()->updateOrCreate(
+            ['id' => '00000000-0000-0000-0000-000000000022'],
+            ['cooperative_member_id' => $members['positive']->id, 'transaction_type' => 'EARNED', 'points' => 250, 'balance_before' => 0, 'balance_after' => 250, 'reference_number' => 'UI-AUDIT-POINT-001', 'description' => 'Poin fixture audit.', 'posted_at' => self::FIXED_DATE, 'expires_at' => '2026-12-31'],
+        );
+        RewardRedemption::query()->updateOrCreate(
+            ['id' => '00000000-0000-0000-0000-000000000023'],
+            ['reward_id' => $reward->id, 'cooperative_member_id' => $members['positive']->id, 'point_transaction_id' => $pointTransaction->id, 'quantity' => 1, 'points_used' => 100, 'delivery_address' => 'Alamat audit UI', 'status' => 'PENDING', 'redeemed_at' => self::FIXED_DATE.' 11:00:00'],
+        );
     }
 }

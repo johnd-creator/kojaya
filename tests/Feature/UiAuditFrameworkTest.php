@@ -2,20 +2,32 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\UiAuditFixtureController;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Date;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class UiAuditFrameworkTest extends TestCase
 {
     public function test_visual_registry_has_unique_screen_ids(): void
     {
-        $contents = file_get_contents(base_path('tests/visual/helpers/screen-registry.ts'));
-
-        preg_match_all('/id: "([^"]+)"/', (string) $contents, $matches);
-
-        $ids = $matches[1];
+        $registry = json_decode((string) file_get_contents(base_path('tests/visual/coverage/cooperative-pages.json')), true, 512, JSON_THROW_ON_ERROR);
+        $ids = array_column($registry['entries'], 'id');
 
         $this->assertNotEmpty($ids);
         $this->assertCount(count($ids), array_unique($ids));
+    }
+
+    public function test_visual_registry_has_unique_screenshot_names(): void
+    {
+        $registry = json_decode((string) file_get_contents(base_path('tests/visual/coverage/cooperative-pages.json')), true, 512, JSON_THROW_ON_ERROR);
+        $names = array_map(
+            static fn (array $entry): string => implode('--', [$entry['module'], $entry['screen'], $entry['state']]),
+            array_filter($registry['entries'], static fn (array $entry): bool => (bool) ($entry['visual'] ?? false)),
+        );
+
+        $this->assertCount(count($names), array_unique($names), 'Duplicate screenshot name in UI audit registry.');
     }
 
     public function test_manifest_and_runtime_outputs_are_generated_by_the_harness(): void
@@ -36,5 +48,33 @@ class UiAuditFrameworkTest extends TestCase
         $this->assertStringContainsString('/tests/visual/.auth/', (string) $gitignore);
         $this->assertStringContainsString('/ui-audit-output/', (string) $gitignore);
         $this->assertStringContainsString('/.env.playwright', (string) $gitignore);
+    }
+
+    public function test_playwright_environment_uses_only_the_audit_fixed_clock(): void
+    {
+        config(['app.env' => 'playwright']);
+        config(['app.timezone' => 'Asia/Jakarta']);
+        Date::setTestNow(CarbonImmutable::parse((string) config('ui-audit.fixed_now'))->setTimezone('Asia/Jakarta'));
+
+        $this->assertSame('2026-01-15 09:30:00', now('Asia/Jakarta')->format('Y-m-d H:i:s'));
+
+        Date::setTestNow(null);
+        config(['app.env' => 'testing']);
+        config(['app.timezone' => 'UTC']);
+        $this->assertNotSame('2026-01-15 09:30:00', now()->format('Y-m-d H:i:s'));
+    }
+
+    public function test_fixture_endpoint_controller_rejects_production_like_environment(): void
+    {
+        config(['app.env' => 'production']);
+
+        try {
+            (new UiAuditFixtureController)();
+            $this->fail('The UI audit fixture endpoint must reject production-like environments.');
+        } catch (HttpException $exception) {
+            $this->assertSame(404, $exception->getStatusCode());
+        } finally {
+            config(['app.env' => 'testing']);
+        }
     }
 }

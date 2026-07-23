@@ -1,70 +1,127 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page, type TestInfo } from "@playwright/test";
+import { waitForStableScreen } from "./stable-screen";
 
 export type AuditScreenDefinition = {
     id: string;
     module: string;
     screen: string;
-    route: string;
+    route_name: string;
+    path_template: string;
+    route?: string;
     role: string;
+    auth_state: string;
     state: string;
+    fixture: string;
+    ready_locator: string;
     goal: string;
     primary_actions: string[];
     risk_level: "informational" | "operational" | "transactional";
+    viewport_policy: string[];
+    visual: boolean;
+    accessibility: boolean;
     accessibility_report?: string;
 };
 
+type ComparisonStatus = "passed" | "failed" | "captured" | "skipped" | "not-run";
+
 const safe = (value: string): string => value.replace(/[^a-zA-Z0-9._-]+/g, "-");
+
+function viewportFor(testInfo: TestInfo): { name: string; width: number; height: number } {
+    const viewport = testInfo.project.use.viewport;
+
+    if (!viewport) {
+        throw new Error("Viewport is required for a UI audit screen.");
+    }
+
+    return {
+        name: testInfo.project.name,
+        width: viewport.width,
+        height: viewport.height,
+    };
+}
+
+async function writeFragment(
+    fragmentPath: string,
+    fragment: Record<string, unknown>,
+): Promise<void> {
+    await fs.mkdir(path.dirname(fragmentPath), { recursive: true });
+    await fs.writeFile(fragmentPath, `${JSON.stringify(fragment, null, 2)}\n`);
+}
 
 export async function captureScreen(
     page: Page,
     testInfo: TestInfo,
     definition: AuditScreenDefinition,
 ): Promise<void> {
-    const viewport = testInfo.project.use.viewport;
-    if (!viewport) {
-        throw new Error(`Viewport is required for ${definition.id}.`);
-    }
-
-    const viewportName = testInfo.project.name;
+    const viewport = viewportFor(testInfo);
     const screenshotName = `${definition.module}--${definition.screen}--${definition.state}.png`;
     const screenshotPath = path.resolve(
         "ui-audit-output/screenshots",
-        viewportName,
+        viewport.name,
         screenshotName,
     );
-
-    await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
-    await page.screenshot({ path: screenshotPath, fullPage: true, animations: "disabled" });
-
-    const isCapture = process.env.UI_AUDIT_MODE === "capture";
-    if (!isCapture) {
-        await expect(page).toHaveScreenshot(screenshotName, {
-            fullPage: true,
-            animations: "disabled",
-        });
-    }
-
-    const fragmentDir = path.resolve("ui-audit-output/.manifest-fragments");
-    await fs.mkdir(fragmentDir, { recursive: true });
-    const fragment = {
-        ...definition,
-        route: new URL(page.url()).pathname + new URL(page.url()).search,
-        viewport: {
-            name: viewportName,
-            width: viewport.width,
-            height: viewport.height,
-        },
-        screenshot: `screenshots/${viewportName}/${screenshotName}`,
-        accessibility_report:
-            definition.accessibility_report ?? `accessibility/${definition.id}--${viewportName}.json`,
-    };
-
-    await fs.writeFile(
-        path.join(fragmentDir, `${safe(definition.id)}--${safe(viewportName)}.json`),
-        JSON.stringify(fragment, null, 2) + "\n",
+    const fragmentPath = path.resolve(
+        "ui-audit-output/.manifest-fragments",
+        `${safe(definition.id)}--${safe(viewport.name)}.json`,
     );
+    const expectedPath = path.relative(
+        process.cwd(),
+        testInfo.snapshotPath(screenshotName),
+    );
+    const actualPath = path.relative(process.cwd(), screenshotPath);
+    const runtimePath = `runtime/${definition.id}--${viewport.name}.json`;
+    const accessibilityPath = definition.accessibility_report
+        ?? `accessibility/${definition.id}--${viewport.name}.json`;
+    const fragment = {
+        id: definition.id,
+        module: definition.module,
+        screen: definition.screen,
+        route_name: definition.route_name,
+        route: new URL(page.url()).pathname + new URL(page.url()).search,
+        role: definition.role,
+        auth_state: definition.auth_state,
+        viewport,
+        state: definition.state,
+        fixture: definition.fixture,
+        goal: definition.goal,
+        primary_actions: definition.primary_actions,
+        risk_level: definition.risk_level,
+        comparison_status: "not-run" as ComparisonStatus,
+        screenshot: `screenshots/${viewport.name}/${screenshotName}`,
+        expected_screenshot: expectedPath,
+        actual_screenshot: actualPath,
+        diff_screenshot: null,
+        runtime_report: runtimePath,
+        accessibility_report: accessibilityPath,
+        trace: null,
+        error: null,
+    } satisfies Record<string, unknown>;
+
+    await writeFragment(fragmentPath, fragment);
+
+    try {
+        await waitForStableScreen(page, { screenId: definition.id });
+        await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+        await page.screenshot({ path: screenshotPath, fullPage: true, animations: "disabled" });
+
+        if (process.env.UI_AUDIT_MODE === "capture") {
+            fragment.comparison_status = "captured";
+        } else {
+            await expect(page).toHaveScreenshot(screenshotName, {
+                fullPage: true,
+                animations: "disabled",
+            });
+            fragment.comparison_status = "passed";
+        }
+    } catch (error) {
+        fragment.comparison_status = "failed";
+        fragment.error = error instanceof Error ? error.message : String(error);
+        throw error;
+    } finally {
+        await writeFragment(fragmentPath, fragment);
+    }
 }
 
 export async function overrideInertiaProps(

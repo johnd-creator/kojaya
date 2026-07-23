@@ -3,8 +3,14 @@ import { auditAccessibility } from "../helpers/accessibility";
 import { attachRuntimeHealth, writeRuntimeReport } from "../helpers/runtime-health";
 import { prepareStableScreen } from "../helpers/stable-screen";
 import { StoreCreditPage } from "../pages/StoreCreditPage";
+import { isAuditScopeIncluded, screen } from "../helpers/screen-registry";
+
+function skipIfOutOfScope(id: string): void {
+    test.skip(!isAuditScopeIncluded(screen(id)));
+}
 
 test("Saldo Toko index accessibility @accessibility", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-default");
     const runtime = attachRuntimeHealth(page, "store-credit-index-default");
     try {
         await prepareStableScreen(page);
@@ -16,6 +22,7 @@ test("Saldo Toko index accessibility @accessibility", async ({ page }, testInfo)
 });
 
 test("Saldo Toko show accessibility @accessibility", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-show-positive-balance");
     const runtime = attachRuntimeHealth(page, "store-credit-show-positive-balance");
     try {
         await prepareStableScreen(page);
@@ -29,6 +36,7 @@ test("Saldo Toko show accessibility @accessibility", async ({ page }, testInfo) 
 });
 
 test("Saldo Toko open account dialog accessibility @accessibility", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-open-account-dialog");
     const runtime = attachRuntimeHealth(page, "store-credit-index-open-account-dialog");
     try {
         await prepareStableScreen(page);
@@ -42,6 +50,7 @@ test("Saldo Toko open account dialog accessibility @accessibility", async ({ pag
 });
 
 test("POS register accessibility @accessibility", async ({ page }, testInfo) => {
+    skipIfOutOfScope("pos-register-default");
     const runtime = attachRuntimeHealth(page, "pos-register-default");
     try {
         await prepareStableScreen(page);

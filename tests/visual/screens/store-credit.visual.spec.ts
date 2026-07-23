@@ -2,7 +2,11 @@ import { test } from "@playwright/test";
 import { captureScreen, overrideInertiaProps } from "../helpers/audit-manifest";
 import { attachRuntimeHealth, writeRuntimeReport } from "../helpers/runtime-health";
 import { assertNoHorizontalOverflow, prepareStableScreen } from "../helpers/stable-screen";
-import { screen } from "../helpers/screen-registry";
+import { isAuditScopeIncluded, screen } from "../helpers/screen-registry";
+
+function skipIfOutOfScope(id: string): void {
+    test.skip(!isAuditScopeIncluded(screen(id)));
+}
 import { StoreCreditPage } from "../pages/StoreCreditPage";
 
 const desktopOnly = (testInfo: { project: { name: string } }): void => {
@@ -18,6 +22,7 @@ async function finish(runtime: ReturnType<typeof attachRuntimeHealth>, testInfo:
 }
 
 test("Saldo Toko index default @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-default");
     importantResponsive(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-index-default");
     try {
@@ -29,6 +34,7 @@ test("Saldo Toko index default @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko index empty @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-empty");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-index-empty");
     try {
@@ -44,6 +50,7 @@ test("Saldo Toko index empty @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko index search results @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-search-results");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-index-search-results");
     try {
@@ -54,6 +61,7 @@ test("Saldo Toko index search results @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko index no results @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-no-results");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-index-no-results");
     try {
@@ -64,6 +72,7 @@ test("Saldo Toko index no results @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko open account dialog @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-open-account-dialog");
     test.skip(!["desktop", "mobile"].includes(testInfo.project.name));
     const runtime = attachRuntimeHealth(page, "store-credit-index-open-account-dialog");
     try {
@@ -76,6 +85,7 @@ test("Saldo Toko open account dialog @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko validation error @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-index-validation-error");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-index-validation-error");
     try {
@@ -92,6 +102,7 @@ test("Saldo Toko validation error @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko show positive balance @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-show-positive-balance");
     test.skip(!["desktop", "tablet", "mobile"].includes(testInfo.project.name));
     const runtime = attachRuntimeHealth(page, "store-credit-show-positive-balance");
     try {
@@ -105,6 +116,7 @@ test("Saldo Toko show positive balance @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko show negative balance @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-show-negative-balance");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-show-negative-balance");
     try {
@@ -117,6 +129,7 @@ test("Saldo Toko show negative balance @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko show suspended @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-show-suspended");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-show-suspended");
     try {
@@ -129,6 +142,7 @@ test("Saldo Toko show suspended @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko show empty ledger @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-show-empty-ledger");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-show-empty-ledger");
     try {
@@ -141,6 +155,7 @@ test("Saldo Toko show empty ledger @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko show with ledger @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-show-with-ledger");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-show-with-ledger");
     try {
@@ -152,19 +167,25 @@ test("Saldo Toko show with ledger @visual", async ({ page }, testInfo) => {
     } finally { await finish(runtime, testInfo); }
 });
 
-test("Saldo Toko report local @visual", async ({ page }, testInfo) => {
-    desktopOnly(testInfo);
-    const runtime = attachRuntimeHealth(page, "store-credit-report-local");
-    try {
-        await prepareStableScreen(page);
-        await new StoreCreditPage(page).gotoReport();
-        await captureScreen(page, testInfo, screen("store-credit-report-local"));
-    } finally { await finish(runtime, testInfo); }
+test.describe("Saldo Toko local report", () => {
+    test.use({ storageState: "tests/visual/.auth/manajer.json" });
+
+    test("local @visual", async ({ page }, testInfo) => {
+        skipIfOutOfScope("store-credit-report-local");
+        desktopOnly(testInfo);
+        const runtime = attachRuntimeHealth(page, "store-credit-report-local");
+        try {
+            await prepareStableScreen(page);
+            await new StoreCreditPage(page).gotoReport();
+            await captureScreen(page, testInfo, screen("store-credit-report-local"));
+        } finally { await finish(runtime, testInfo); }
+    });
 });
 
 test.describe("Saldo Toko global report", () => {
     test.use({ storageState: "tests/visual/.auth/system-admin.json" });
     test("global @visual", async ({ page }, testInfo) => {
+        skipIfOutOfScope("store-credit-report-global");
         desktopOnly(testInfo);
         const runtime = attachRuntimeHealth(page, "store-credit-report-global");
         try {
@@ -176,6 +197,7 @@ test.describe("Saldo Toko global report", () => {
 });
 
 test("Saldo Toko transfers pending @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-transfers-pending");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-transfers-pending");
     try {
@@ -190,6 +212,7 @@ test("Saldo Toko transfers pending @visual", async ({ page }, testInfo) => {
 });
 
 test("Saldo Toko transfers empty @visual", async ({ page }, testInfo) => {
+    skipIfOutOfScope("store-credit-transfers-empty");
     desktopOnly(testInfo);
     const runtime = attachRuntimeHealth(page, "store-credit-transfers-empty");
     try {

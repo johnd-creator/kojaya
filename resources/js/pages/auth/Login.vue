@@ -238,6 +238,8 @@ const modules = [
             v-slot="{ errors, processing }"
             class="mt-6 flex flex-col gap-4"
           >
+            <input type="hidden" name="_token" :value="page.props.csrf_token" />
+
             <div class="grid gap-2">
               <Label for="email" class="text-sm font-bold text-slate-950">
                 Email / Username

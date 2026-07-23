@@ -9,6 +9,7 @@ use App\Models\User;
 use Database\Seeders\UiAuditSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class UiAuditSeederTest extends TestCase
@@ -50,14 +51,31 @@ class UiAuditSeederTest extends TestCase
         $this->assertTrue(User::query()->where('email', 'ui.system@kojaya.test')->firstOrFail()->hasRole('System Admin'));
     }
 
-    public function test_ui_audit_seeder_is_blocked_in_production(): void
+    public function test_ui_audit_seeder_is_fail_closed_outside_test_environments(): void
     {
-        config(['app.env' => 'production']);
+        foreach (['production', 'staging', 'local', 'development', 'qa'] as $environment) {
+            config(['app.env' => $environment]);
+            $thrown = false;
 
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('UiAuditSeeder is only available');
+            try {
+                $this->seed(UiAuditSeeder::class);
+            } catch (\LogicException $exception) {
+                $thrown = true;
+                $this->assertStringContainsString('UiAuditSeeder is only available', $exception->getMessage());
+            }
 
+            $this->assertTrue($thrown, "UiAuditSeeder unexpectedly ran in {$environment}.");
+            $this->assertDatabaseMissing('users', ['email' => 'ui.system@kojaya.test']);
+        }
+
+        config(['app.env' => 'testing']);
         $this->seed(UiAuditSeeder::class);
+        $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
+
+        config(['app.env' => 'playwright']);
+        $this->seed(UiAuditSeeder::class);
+        $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
+        config(['app.env' => 'testing']);
     }
 
     public function test_playwright_environment_example_has_no_provider_secrets(): void
@@ -69,5 +87,31 @@ class UiAuditSeederTest extends TestCase
         $this->assertStringContainsString('DB_DATABASE=database/playwright.sqlite', $contents);
         $this->assertStringContainsString('MIDTRANS_SERVER_KEY=', $contents);
         $this->assertStringNotContainsString('TdE4', $contents);
+    }
+
+    public function test_seeded_store_credit_local_and_global_reports_have_different_scope(): void
+    {
+        $this->seed(UiAuditSeeder::class);
+
+        $manager = User::query()->where('email', 'ui.manajer@kojaya.test')->firstOrFail();
+        $systemAdmin = User::query()->where('email', 'ui.system@kojaya.test')->firstOrFail();
+
+        $this->actingAs($manager)
+            ->get(route('cooperative.store-credit.report'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('summary.organization_id', $manager->organization_id)
+                ->where('summary.positive_account_count', 2)
+                ->where('summary.negative_account_count', 1)
+            );
+
+        $this->actingAs($systemAdmin)
+            ->get(route('cooperative.store-credit.report'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('summary.organization_id', null)
+                ->where('summary.positive_account_count', 4)
+                ->where('summary.negative_account_count', 1)
+            );
     }
 }

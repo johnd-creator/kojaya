@@ -85,6 +85,8 @@ const props = defineProps<{
   recentSavingsEntries: any[];
 }>();
 
+const memberInvoices = computed(() => props.member.invoices ?? []);
+
 const { can } = useCan();
 const canManageMember = computed(() => can("manage_cooperative_member"));
 const canVerifyMember = computed(() =>
@@ -1021,7 +1023,7 @@ const showJenis = computed(
               </thead>
               <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
                 <tr
-                  v-for="invoice in member.invoices"
+                  v-for="invoice in memberInvoices"
                   :key="invoice.id"
                   class="transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40"
                 >
@@ -1054,7 +1056,7 @@ const showJenis = computed(
             </table>
           </div>
           <EmptyState
-            v-if="member.invoices.length === 0"
+            v-if="memberInvoices.length === 0"
             :icon="Receipt"
             title="Belum ada tagihan simpanan"
             description="Tagihan akan muncul setelah dibuat oleh sistem."

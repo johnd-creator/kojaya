@@ -16,8 +16,13 @@ export class StoreCreditPage {
     public async openDetailFor(memberName: string): Promise<void> {
         const row = this.page.getByRole("row").filter({ hasText: memberName });
         await expect(row).toBeVisible();
+        const navigation = this.page.waitForURL(
+            (url) => /\/cooperative\/store-credit\/[^/]+$/.test(url.pathname),
+            { waitUntil: "domcontentloaded" },
+        );
         await row.getByRole("link", { name: /detail/i }).click();
-        await expect(this.page.getByRole("heading")).toBeVisible();
+        await navigation;
+        await expect(this.page.getByRole("heading", { name: memberName })).toBeVisible();
     }
 
     public async gotoReport(query = ""): Promise<void> {

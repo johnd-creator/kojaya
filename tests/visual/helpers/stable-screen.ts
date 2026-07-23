@@ -142,6 +142,10 @@ export async function waitForStableScreen(
         });
     }
 
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {
+        throw new Error(`Network requests did not settle for ${screenId}.`);
+    });
+
     await page.waitForFunction(() => {
         const currentHeight = document.documentElement.scrollHeight;
         const previousHeight = Number(document.body.dataset.uiAuditHeight ?? "-1");

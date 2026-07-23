@@ -80,12 +80,25 @@ async function waitForExpectedContent(page: Page, screenId: string): Promise<voi
         ["store-credit-index-default", page.getByText("UI Audit Positif", { exact: true })],
         ["store-credit-index-empty", page.getByText("Belum ada akun saldo toko.", { exact: true })],
         ["store-credit-index-search-results", page.getByText("UI Audit Positif", { exact: true })],
+        ["store-credit-index-open-account-dialog", page.getByRole("dialog")],
+        [
+            "store-credit-index-validation-error",
+            page.getByRole("dialog").locator("p.text-xs.text-red-500").first(),
+        ],
     ]);
     const locator = expectedContent.get(screenId);
 
     if (locator) {
         await locator.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {
             throw new Error(`Expected content did not become visible for ${screenId}.`);
+        });
+    }
+
+    if (screenId.includes("store-credit-index-open-account-dialog") || screenId.includes("store-credit-index-validation-error")) {
+        await page.waitForFunction(() => {
+            return document.querySelector('[data-slot="dialog-overlay"]')?.getAttribute("data-state") === "open";
+        }, null, { timeout: 15_000, polling: 100 }).catch(() => {
+            throw new Error(`Dialog overlay did not reach the open state for ${screenId}.`);
         });
     }
 

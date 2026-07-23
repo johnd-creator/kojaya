@@ -137,8 +137,8 @@ export async function waitForStableScreen(
             throw new Error(`Ready locator did not become visible for ${screenId}.`);
         });
     } else {
-        await page.locator("h1").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {
-            throw new Error(`No primary h1 became visible for ${screenId}.`);
+        await page.locator("#main-content").getByRole("heading").first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {
+            throw new Error(`No main-content heading became visible for ${screenId}.`);
         });
     }
 

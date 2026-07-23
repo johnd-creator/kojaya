@@ -102,7 +102,12 @@ export async function captureScreen(
     await writeFragment(fragmentPath, fragment);
 
     try {
-        await waitForStableScreen(page, { screenId: definition.id });
+        await waitForStableScreen(page, {
+            screenId: definition.id,
+            readyLocator: definition.route_name === "cooperative.pos.transactions.receipt"
+                ? page.locator("body")
+                : undefined,
+        });
         await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
         await page.screenshot({ path: screenshotPath, fullPage: true, animations: "disabled" });
 

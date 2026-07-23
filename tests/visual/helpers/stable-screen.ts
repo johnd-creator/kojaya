@@ -67,6 +67,38 @@ export type StableScreenOptions = {
     screenId?: string;
 };
 
+async function waitForExpectedContent(page: Page, screenId: string): Promise<void> {
+    const expectedContent = new Map<string, Locator>([
+        ["loans-create-default", page.getByRole("button", { name: "Simpan Pengajuan" })],
+        ["operator-dashboard-default", page.getByText("Pengecualian & Anomali", { exact: true })],
+        ["pos-register-default", page.getByText("Beras Audit 5kg", { exact: true })],
+        ["pos-inventory-transfers-index-default", page.getByText("Belum ada transfer", { exact: true })],
+        ["points-index-default", page.getByText("Daftar Poin Anggota", { exact: true })],
+        ["store-credit-index-default", page.getByText("UI Audit Positif", { exact: true })],
+        ["store-credit-index-empty", page.getByText("Belum ada akun saldo toko.", { exact: true })],
+        ["store-credit-index-search-results", page.getByText("UI Audit Positif", { exact: true })],
+    ]);
+    const locator = expectedContent.get(screenId);
+
+    if (locator) {
+        await locator.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {
+            throw new Error(`Expected content did not become visible for ${screenId}.`);
+        });
+    }
+
+    await page.waitForFunction(() => {
+        const mainContent = document.querySelector("#main-content");
+
+        return Boolean(mainContent && (mainContent.textContent?.trim().length ?? 0) > 20);
+    }, null, { timeout: 15_000, polling: 100 }).catch(() => {
+        throw new Error(`Main content did not render for ${screenId}.`);
+    });
+
+    await page.evaluate(() => new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    }));
+}
+
 export async function installStableEnvironment(page: Page): Promise<void> {
     await installDeterministicFonts(page);
 
@@ -162,6 +194,10 @@ export async function waitForStableScreen(
     }, null, { timeout: 15_000, polling: 100 }).catch(() => {
         throw new Error(`Document layout did not stabilize for ${screenId}.`);
     });
+
+    const skeletons = await page.locator('[data-slot="skeleton"]').all();
+    await Promise.all(skeletons.map((skeleton) => skeleton.waitFor({ state: "hidden", timeout: 15_000 })));
+    await waitForExpectedContent(page, screenId);
 }
 
 /** @deprecated Use installStableEnvironment before navigation and waitForStableScreen after it. */

@@ -15,7 +15,6 @@
         "ui:update": "UI_AUDIT_MODE=compare playwright test --grep @visual --update-snapshots",
         "ui:report": "playwright show-report",
         "ui:audit": "playwright test",
-        "typecheck": "vue-tsc --noEmit",
         "ui:coverage": "php artisan ui-audit:coverage --no-interaction",
         "ui:verify-baselines": "node tests/visual/scripts/verify-baselines.mjs",
         "ui:repeatability": "node tests/visual/scripts/repeatability.mjs"

@@ -1,7 +1,7 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expect, type Page, type TestInfo } from "@playwright/test";
+import { expect, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { waitForStableScreen } from "./stable-screen";
 
 type KnownFinding = {
@@ -37,8 +37,9 @@ export async function auditAccessibility(
     page: Page,
     testInfo: TestInfo,
     screen: string,
+    readyLocator?: Locator,
 ): Promise<void> {
-    await waitForStableScreen(page, { screenId: screen });
+    await waitForStableScreen(page, { screenId: screen, readyLocator });
     const result = await new AxeBuilder({ page }).analyze();
     const knownFindings = await readKnownFindings();
     const blockingViolations = result.violations.filter((violation) =>

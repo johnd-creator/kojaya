@@ -61,6 +61,9 @@ provider is called. The stabilizer is installed before navigation and waits
 after navigation for fonts, images, loading markers, Inertia content, and
 stable layout measurements. Runtime reports capture page errors, console
 issues, failed requests, unexpected HTTP responses, and hydration failures.
+The application font is served from committed audit assets through Playwright
+routing, so screenshots do not depend on a CDN response or a runner's font
+cache. The production font family and weights remain unchanged.
 
 Run capture twice against clean audit databases and compare screenshot hashes:
 
@@ -85,12 +88,16 @@ and secrets are excluded.
 
 ## Accessibility debt and UX handoff
 
-Default desktop pages and important dialogs/forms run axe. New critical or
+Default desktop pages and important dialogs/forms run axe on desktop. New critical or
 serious violations fail; moderate/minor findings are reported. The current
 Linux audit records 210 exact existing critical/serious node fingerprints in
 `tests/visual/accessibility-known-findings.json`, each with screen, rule,
 impact, selector, tracking ID, reason, and expiry. Waivers never suppress new
 nodes or broad selectors.
+Responsive visual projects still run their declared viewport policy, but
+accessibility debt fingerprints are evaluated on the mandatory desktop
+surface. Responsive accessibility is a separate follow-up when a screen has
+viewport-specific markup changes.
 
 ChatGPT reviews the downloaded artifact; it does not modify code. Give it the
 manifest and all screenshots/reports, then classify P1 blocker/P2 major/P3

@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { Locator, Page } from "@playwright/test";
 
 const fixedNow = process.env.UI_AUDIT_FIXED_NOW ?? "2026-01-15T09:30:00+07:00";
@@ -13,12 +15,61 @@ const stabilityStyles = `
     html { scroll-behavior: auto !important; }
 `;
 
+const deterministicFontWeights = ["400", "500", "600"] as const;
+const deterministicFontCss = deterministicFontWeights.map((weight) => `
+    @font-face {
+        font-family: "Instrument Sans";
+        font-style: normal;
+        font-weight: ${weight};
+        font-display: block;
+        src: url(https://fonts.bunny.net/instrument-sans/files/instrument-sans-latin-${weight}-normal.woff2) format("woff2");
+    }
+`).join("\n");
+
+async function installDeterministicFonts(page: Page): Promise<void> {
+    const fontAssets = new Map(
+        await Promise.all(deterministicFontWeights.map(async (weight) => [
+            weight,
+            await fs.readFile(path.resolve(
+                "tests/visual/assets",
+                `instrument-sans-latin-${weight}-normal.woff2`,
+            )),
+        ] as const)),
+    );
+
+    await page.route(/^https:\/\/fonts\.bunny\.net\/css\?family=instrument-sans:400,500,600(?:&.*)?$/, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: "text/css",
+            body: deterministicFontCss,
+        });
+    });
+
+    await page.route(/^https:\/\/fonts\.bunny\.net\/instrument-sans\/files\/instrument-sans-latin-(400|500|600)-normal\.woff2$/, async (route) => {
+        const match = route.request().url().match(/latin-(400|500|600)-normal\.woff2$/);
+        const body = match ? fontAssets.get(match[1] as typeof deterministicFontWeights[number]) : undefined;
+
+        if (!body) {
+            await route.abort("failed");
+            return;
+        }
+
+        await route.fulfill({
+            status: 200,
+            contentType: "font/woff2",
+            body,
+        });
+    });
+}
+
 export type StableScreenOptions = {
     readyLocator?: Locator;
     screenId?: string;
 };
 
 export async function installStableEnvironment(page: Page): Promise<void> {
+    await installDeterministicFonts(page);
+
     await page.addInitScript(({ now, css }: { now: string; css: string }) => {
         const RealDate = Date;
         const fixedTimestamp = new RealDate(now).getTime();

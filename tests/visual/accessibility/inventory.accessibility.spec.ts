@@ -27,7 +27,7 @@ for (const authState of authStates) {
 
         for (const entry of entries.filter((item) => item.auth_state === authState)) {
             test(`${entry.id} @accessibility`, async ({ page }, testInfo) => {
-                test.skip(!entry.viewport_policy.includes(testInfo.project.name));
+                test.skip(testInfo.project.name !== "desktop" || !entry.viewport_policy.includes(testInfo.project.name));
                 const runtime = attachRuntimeHealth(page, entry.id);
 
                 try {

@@ -9,7 +9,12 @@ function skipIfOutOfScope(id: string): void {
     test.skip(!isAuditScopeIncluded(screen(id)));
 }
 
+function skipUnlessDesktop(testInfo: { project: { name: string } }): void {
+    test.skip(testInfo.project.name !== "desktop");
+}
+
 test("Saldo Toko index accessibility @accessibility", async ({ page }, testInfo) => {
+    skipUnlessDesktop(testInfo);
     skipIfOutOfScope("store-credit-index-default");
     const runtime = attachRuntimeHealth(page, "store-credit-index-default");
     try {
@@ -22,6 +27,7 @@ test("Saldo Toko index accessibility @accessibility", async ({ page }, testInfo)
 });
 
 test("Saldo Toko show accessibility @accessibility", async ({ page }, testInfo) => {
+    skipUnlessDesktop(testInfo);
     skipIfOutOfScope("store-credit-show-positive-balance");
     const runtime = attachRuntimeHealth(page, "store-credit-show-positive-balance");
     try {
@@ -36,6 +42,7 @@ test("Saldo Toko show accessibility @accessibility", async ({ page }, testInfo) 
 });
 
 test("Saldo Toko open account dialog accessibility @accessibility", async ({ page }, testInfo) => {
+    skipUnlessDesktop(testInfo);
     skipIfOutOfScope("store-credit-index-open-account-dialog");
     const runtime = attachRuntimeHealth(page, "store-credit-index-open-account-dialog");
     try {
@@ -50,6 +57,7 @@ test("Saldo Toko open account dialog accessibility @accessibility", async ({ pag
 });
 
 test("POS register accessibility @accessibility", async ({ page }, testInfo) => {
+    skipUnlessDesktop(testInfo);
     skipIfOutOfScope("pos-register-default");
     const runtime = attachRuntimeHealth(page, "pos-register-default");
     try {

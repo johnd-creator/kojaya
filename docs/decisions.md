@@ -33,6 +33,18 @@ fixed Laravel/JavaScript time, deterministic seeded data, and no server reuse
 are the rendering contract. This prevents a new page from silently bypassing
 visual review while keeping UX findings separate from business logic changes.
 
+## ADR-UI-002: Reproducible audit font loading and accessibility scope
+
+**Status:** Accepted
+**Date:** July 23, 2026
+
+The audit intercepts the application's Instrument Sans stylesheet and serves
+the reviewed weights from committed test assets. This keeps the production
+font unchanged while removing CDN availability and font-cache differences from
+visual comparison. Accessibility debt fingerprints are enforced on the
+mandatory desktop surface; responsive projects remain visual-policy checks
+until viewport-specific accessibility fingerprints are intentionally reviewed.
+
 ## 📋 What is ADR?
 
 Architecture Decision Records (ADR) document important architectural decisions made during the project. Each ADR captures:

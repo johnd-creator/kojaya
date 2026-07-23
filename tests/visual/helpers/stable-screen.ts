@@ -12,7 +12,6 @@ const stabilityStyles = `
         transition-delay: 0s !important;
         caret-color: transparent !important;
     }
-    body { text-rendering: geometricPrecision !important; }
     html { scroll-behavior: auto !important; }
     img[alt="KojayaPro"] + div > span:first-child {
         text-rendering: geometricPrecision !important;

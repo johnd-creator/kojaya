@@ -13,6 +13,9 @@ const stabilityStyles = `
         caret-color: transparent !important;
     }
     html { scroll-behavior: auto !important; }
+    img[alt="KojayaPro"] + div > span:first-child {
+        text-rendering: geometricPrecision !important;
+    }
 `;
 
 const deterministicFontWeights = ["400", "500", "600"] as const;

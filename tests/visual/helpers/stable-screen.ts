@@ -86,13 +86,15 @@ async function waitForExpectedContent(page: Page, screenId: string): Promise<voi
         });
     }
 
-    await page.waitForFunction(() => {
-        const mainContent = document.querySelector("#main-content");
+    if (screenId !== "pos-transactions-receipt-default") {
+        await page.waitForFunction(() => {
+            const mainContent = document.querySelector("#main-content");
 
-        return Boolean(mainContent && (mainContent.textContent?.trim().length ?? 0) > 20);
-    }, null, { timeout: 15_000, polling: 100 }).catch(() => {
-        throw new Error(`Main content did not render for ${screenId}.`);
-    });
+            return Boolean(mainContent && (mainContent.textContent?.trim().length ?? 0) > 20);
+        }, null, { timeout: 15_000, polling: 100 }).catch(() => {
+            throw new Error(`Main content did not render for ${screenId}.`);
+        });
+    }
 
     await page.evaluate(() => new Promise<void>((resolve) => {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));

@@ -10,13 +10,11 @@ use App\Http\Requests\Cooperative\FindCooperativeMemberAccountCandidatesRequest;
 use App\Http\Requests\Cooperative\LinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\MemberExportRequest;
 use App\Http\Requests\Cooperative\StoreCooperativeMemberRequest;
-use App\Http\Requests\Cooperative\TransferCooperativeMemberOrganizationRequest;
 use App\Http\Requests\Cooperative\UnlinkCooperativeMemberAccountRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberRequest;
 use App\Http\Requests\Cooperative\UpdateCooperativeMemberSensitiveDataRequest;
 use App\Models\CooperativeMember;
 use App\Models\Employee;
-use App\Models\Organization;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Authorization\OrganizationScopeService;
@@ -26,7 +24,6 @@ use App\Services\Cooperative\CooperativeMemberService;
 use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
-use App\Services\Cooperative\MemberOrganizationTransferService;
 use App\Services\Cooperative\MemberStatusTransitionService;
 use App\Services\Cooperative\SavingsSummaryService;
 use App\Support\AuditContext;
@@ -221,9 +218,6 @@ class CooperativeMemberController extends Controller
             $audit->log('member.pii.viewed', 'cooperative.member', $member);
         }
 
-        $canTransferOrganization = $request->user()?->can(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)
-            && $request->user()?->can(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
-
         return Inertia::render('Cooperative/Members/Show', [
             'member' => $memberPageData->detail($member, $request->user()),
             'openingSavingBalance' => $member->ledgerEntries->firstWhere('entry_type', 'OPENING_BALANCE')?->credit,
@@ -235,36 +229,7 @@ class CooperativeMemberController extends Controller
                 ->get()
                 ->map(fn ($entry): array => $memberPageData->ledgerEntry($entry))
                 ->all(),
-            'organizationTransferOrganizations' => $canTransferOrganization
-                ? Organization::query()
-                    ->where('is_active', true)
-                    ->where('id', '!=', $member->organization_id)
-                    ->orderBy('name')
-                    ->get(['id', 'name', 'code'])
-                : [],
         ]);
-    }
-
-    public function transferOrganization(
-        TransferCooperativeMemberOrganizationRequest $request,
-        CooperativeMember $member,
-        MemberOrganizationTransferService $transferService,
-    ): RedirectResponse {
-        $this->authorize('update', $member);
-
-        $targetOrganization = Organization::query()
-            ->where('is_active', true)
-            ->findOrFail($request->validated('target_organization_id'));
-
-        $transferService->transfer(
-            $request->user(),
-            $member,
-            $targetOrganization,
-            $request->validated('reason'),
-            AuditContext::fromHttp($request, $request->user()),
-        );
-
-        return back()->with('success', 'Anggota dan akun tertaut berhasil dipindahkan ke organisasi baru.');
     }
 
     public function edit(

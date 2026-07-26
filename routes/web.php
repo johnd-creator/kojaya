@@ -132,7 +132,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
-        Route::get('/store-account', [\App\Http\Controllers\MemberPortalController::class, 'storeAccount'])->name('store-account');
+        Route::get('/store-account', [\App\Http\Controllers\MemberPortalController::class, 'storeAccount'])
+            ->middleware('member.active')
+            ->name('store-account');
         Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
         Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
@@ -214,7 +216,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('can:view_cooperative_member')->group(function () {
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
-            Route::post('members/{member}/organization-transfer', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'transferOrganization'])->name('members.organization-transfer');
             Route::patch('members/{member}/sensitive-data', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'updateSensitiveData'])->name('members.sensitive-data.update');
             Route::patch('members/{member}/account', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.update');
             Route::post('members/{member}/account-link', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.store');

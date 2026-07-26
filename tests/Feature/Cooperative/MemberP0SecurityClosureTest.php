@@ -137,7 +137,6 @@ class MemberP0SecurityClosureTest extends TestCase
         $expectedDetailKeys = [
             ...self::SHARED_INERTIA_KEYS,
             'member',
-            'organizationTransferOrganizations',
             'openingSavingBalance',
             'recentSavingsEntries',
             'savingsSummary',

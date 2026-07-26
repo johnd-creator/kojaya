@@ -213,8 +213,10 @@ class MemberDashboardConditionalTest extends TestCase
             ->get(route('member.dashboard'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('is_active_member', true)
+                ->where('is_active_member', false)
                 ->where('is_pending_review', true)
+                ->where('can_access_financial_features', false)
+                ->where('can_preview_financial_summary', true)
             );
     }
 

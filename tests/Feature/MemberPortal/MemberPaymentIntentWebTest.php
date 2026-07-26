@@ -2,10 +2,14 @@
 
 namespace Tests\Feature\MemberPortal;
 
+use App\Enums\InstallmentStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
+use App\Models\Loan;
+use App\Models\LoanInstallment;
+use App\Models\MemberPaymentIntent;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -374,6 +378,86 @@ class MemberPaymentIntentWebTest extends TestCase
 
         $this->actingAs($this->memberUser)
             ->getJson(route('member.payments.status', $payment))
+            ->assertForbidden();
+    }
+
+    public function test_member_cannot_create_loan_payment_intent_for_another_member_installment(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('Anggota');
+        $otherMember = CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $otherMember->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_fully_paid_loan_installment_is_rejected(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 100000,
+            'status' => InstallmentStatus::Paid,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_pending_loan_payment_intent_is_reused_safely(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        $first = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertCreated();
+        $second = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertCreated();
+
+        $this->assertSame(
+            $first->json('data.payment_intent.id'),
+            $second->json('data.payment_intent.id'),
+        );
+        $this->assertSame(1, MemberPaymentIntent::query()->count());
+    }
+
+    public function test_loan_payment_intent_status_blocks_another_member(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('Anggota');
+        $otherMember = CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+        $intent = MemberPaymentIntent::factory()->create([
+            'user_id' => $otherUser->id,
+            'cooperative_member_id' => $otherMember->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'gateway_status' => 'PENDING',
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->getJson(route('member.loans.payment-intents.status', $intent))
             ->assertForbidden();
     }
 

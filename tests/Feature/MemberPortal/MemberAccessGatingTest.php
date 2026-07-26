@@ -62,6 +62,27 @@ class MemberAccessGatingTest extends TestCase
             ->assertOk();
     }
 
+    public function test_shared_member_access_contract_matches_financial_middleware(): void
+    {
+        [$activeUser] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
+        $this->actingAs($activeUser)
+            ->get(route('member.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('auth.member_access.is_active', true)
+                ->where('auth.member_access.can_access_financial_features', true)
+                ->where('auth.member_access.can_preview_financial_summary', true)
+            );
+
+        [$pendingUser] = $this->makeMember(CooperativeMember::VALIDATION_PENDING);
+        $this->actingAs($pendingUser)
+            ->get(route('member.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->where('auth.member_access.is_active', false)
+                ->where('auth.member_access.can_access_financial_features', false)
+                ->where('auth.member_access.can_access_onboarding', true)
+            );
+    }
+
     public function test_existing_member_session_loses_all_financial_web_access_after_deactivation(): void
     {
         [$user, $member] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
@@ -82,7 +103,7 @@ class MemberAccessGatingTest extends TestCase
         ] as $route) {
             $this->actingAs($user)
                 ->get(route($route))
-                ->assertRedirect(route('member.onboarding'));
+                ->assertRedirect(route('member.dashboard'));
         }
     }
 
@@ -99,11 +120,11 @@ class MemberAccessGatingTest extends TestCase
         foreach (['member.savings', 'member.loans', 'member.points', 'member.rewards', 'member.transactions'] as $route) {
             $this->actingAs($user)
                 ->get(route($route))
-                ->assertRedirect(route('member.onboarding'));
+                ->assertRedirect(route('member.dashboard'));
         }
     }
 
-    public function test_pending_member_can_access_dashboard_and_onboarding(): void
+    public function test_pending_member_can_access_dashboard_onboarding_and_profile(): void
     {
         [$user] = $this->makeMember(CooperativeMember::VALIDATION_PENDING);
 
@@ -117,8 +138,7 @@ class MemberAccessGatingTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.profile'))
-            ->assertRedirect(route('member.onboarding'))
-            ->assertSessionHas('warning');
+            ->assertOk();
     }
 
     public function test_rejected_member_is_blocked_from_loans_and_savings(): void
@@ -127,11 +147,11 @@ class MemberAccessGatingTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.loans'))
-            ->assertRedirect(route('member.onboarding'));
+            ->assertRedirect(route('member.dashboard'));
 
         $this->actingAs($user)
             ->get(route('member.savings'))
-            ->assertRedirect(route('member.onboarding'));
+            ->assertRedirect(route('member.dashboard'));
     }
 
     public function test_active_member_is_redirected_from_erp_dashboard_to_kojayaku(): void

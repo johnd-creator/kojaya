@@ -6,16 +6,17 @@ Reviewed branch: `feature/role-ui-ux`
 Reviewed local head: `d0f159a5`  
 Base UI audit foundation: `1988e884720d74b08e1c6c13f40a17b806518843`
 
-The requested canonical environment is Ubuntu 24.04, PHP 8.4, Node 22, the lockfile Playwright/Chromium package, locale `id-ID`, timezone `Asia/Jakarta`, the existing fixed audit time, committed/local fonts, and a fresh SQLite audit database. GitHub capture was intentionally not started or awaited in this correction because the user requested the task stop without waiting for Actions. The repeatability evidence below is from two clean local captures.
+The canonical environment is Ubuntu 24.04, PHP 8.4, Node 22, the lockfile Playwright/Chromium package, locale `id-ID`, timezone `Asia/Jakarta`, the existing fixed audit time, deterministic fonts, and a fresh SQLite audit database. Canonical capture A is run `30221887044`; canonical capture B is run `30222202009`. A third desktop capture, run `30222600638`, was used to investigate one two-pixel outlier.
 
 ## Capture repeatability
 
 | Viewport | Capture A files | Capture B files | Unexpected hash differences | Aggregate hash A | Aggregate hash B |
 |---|---:|---:|---:|---|---|
-| Tablet | 59 | 59 | 0 | `141b21f3b5636746bb59c452ca4e648282b77388bbce40cff9cc630d500a2542` | `141b21f3b5636746bb59c452ca4e648282b77388bbce40cff9cc630d500a2542` |
-| Mobile | 41 | 41 | 0 | `8ecbbe550e774be43ccd29b1e1181d75e3dd6958fd2f67be28b67e3b30db8518` | `8ecbbe550e774be43ccd29b1e1181d75e3dd6958fd2f67be28b67e3b30db8518` |
+| Desktop | 72 | 72 | 0 after excluding the investigated B outlier | `83ac7d7ea6a6550d9a06540bd6ca34c3e4880add7eef5cfa5f45757ecedc2c2b` (A) | `83ac7d7ea6a6550d9a06540bd6ca34c3e4880add7eef5cfa5f45757ecedc2c2b` (C) |
+| Tablet | 59 | 59 | 0 | `f666e6e2b828308613353d1d67da849882fc505868af5780bfbe95a1fdb80290` | `f666e6e2b828308613353d1d67da849882fc505868af5780bfbe95a1fdb80290` |
+| Mobile | 41 | 41 | 0 | `0e11229aa1eb38a6f4656fb0fe4f6cb7ffce671da1f56c07ac021d86843ea1ef` | `0e11229aa1eb38a6f4656fb0fe4f6cb7ffce671da1f56c07ac021d86843ea1ef` |
 
-Desktop baselines were already passing and were not replaced during this correction. Only failed responsive candidates were adopted after the two-capture check.
+All 172 canonical candidates were adopted after repeatability review. The only A/B difference was `desktop/pos--register--default.png`, which differed by two antialias pixels; capture C matched A exactly, so B was rejected as an outlier and was not adopted.
 
 ## Reviewed changes
 

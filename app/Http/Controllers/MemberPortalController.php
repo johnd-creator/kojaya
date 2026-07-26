@@ -489,10 +489,9 @@ class MemberPortalController extends Controller
         };
     }
 
-    public function loans(Request $request, MemberOnboardingService $onboardingService, MemberStatusJourneyService $journeyService): Response
+    public function loans(Request $request, MemberStatusJourneyService $journeyService): Response
     {
         $member = $this->memberOrAbort($request);
-        $onboardingService->markStep($member, 'loans');
 
         return Inertia::render('Kojayaku/Loans', [
             'loans' => $member->loans()->with(['loanType', 'installments'])->latest()->paginate(12)->withQueryString(),
@@ -537,11 +536,9 @@ class MemberPortalController extends Controller
     public function rewards(
         Request $request,
         PointService $pointService,
-        MemberOnboardingService $onboardingService,
         MemberStatusJourneyService $journeyService,
     ): Response {
         $member = $this->memberOrAbort($request);
-        $onboardingService->markStep($member, 'rewards');
 
         return Inertia::render('Kojayaku/Rewards', [
             'summary' => $pointService->balanceSummary($member),

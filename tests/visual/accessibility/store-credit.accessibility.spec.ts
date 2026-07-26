@@ -13,19 +13,6 @@ function skipUnlessDesktop(testInfo: { project: { name: string } }): void {
     test.skip(testInfo.project.name !== "desktop");
 }
 
-test("Saldo Toko index accessibility @accessibility", async ({ page }, testInfo) => {
-    skipUnlessDesktop(testInfo);
-    skipIfOutOfScope("store-credit-index-default");
-    const runtime = attachRuntimeHealth(page, "store-credit-index-default");
-    try {
-        await prepareStableScreen(page);
-        await new StoreCreditPage(page).gotoIndex();
-        await auditAccessibility(page, testInfo, "store-credit-index-default");
-    } finally {
-        await writeRuntimeReport(runtime, testInfo);
-    }
-});
-
 test("Saldo Toko show accessibility @accessibility", async ({ page }, testInfo) => {
     skipUnlessDesktop(testInfo);
     skipIfOutOfScope("store-credit-show-positive-balance");
@@ -51,20 +38,6 @@ test("Saldo Toko open account dialog accessibility @accessibility", async ({ pag
         await storeCredit.gotoIndex();
         await storeCredit.openAccountDialog();
         await auditAccessibility(page, testInfo, "store-credit-index-open-account-dialog");
-    } finally {
-        await writeRuntimeReport(runtime, testInfo);
-    }
-});
-
-test("POS register accessibility @accessibility", async ({ page }, testInfo) => {
-    skipUnlessDesktop(testInfo);
-    skipIfOutOfScope("pos-register-default");
-    const runtime = attachRuntimeHealth(page, "pos-register-default");
-    try {
-        await prepareStableScreen(page);
-        await page.goto("/cooperative/pos");
-        await page.getByRole("heading").first().waitFor({ state: "visible" });
-        await auditAccessibility(page, testInfo, "pos-register-default");
     } finally {
         await writeRuntimeReport(runtime, testInfo);
     }

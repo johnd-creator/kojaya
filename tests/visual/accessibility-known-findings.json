@@ -155,39 +155,12 @@
       "expires_on": "2026-09-30"
     },
     {
-      "screen_id": "member-rewards-default",
-      "rule": "select-name",
-      "impact": "critical",
-      "selector": "select",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-073",
-      "expires_on": "2026-09-30"
-    },
-    {
       "screen_id": "member-savings-default",
       "rule": "color-contrast",
       "impact": "serious",
       "selector": ".text-emerald-600",
       "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
       "tracking_id": "UI-A11Y-082",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "member-transactions-default",
-      "rule": "label",
-      "impact": "critical",
-      "selector": "input:nth-child(1)",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-118",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "member-transactions-default",
-      "rule": "label",
-      "impact": "critical",
-      "selector": "input:nth-child(3)",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-119",
       "expires_on": "2026-09-30"
     },
     {

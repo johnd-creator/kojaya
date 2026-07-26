@@ -409,10 +409,12 @@ const hasRedemptionJourney = computed<boolean>(
               <div class="mt-6 space-y-4">
                 <div class="space-y-1.5">
                   <label
+                    for="member-reward-id"
                     class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                     >Pilih Reward</label
                   >
                   <select
+                    id="member-reward-id"
                     v-model="form.reward_id"
                     class="h-10 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-background px-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:text-white"
                   >

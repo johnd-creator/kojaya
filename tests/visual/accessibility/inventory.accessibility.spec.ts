@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import { auditAccessibility } from "../helpers/accessibility";
 import { attachRuntimeHealth, writeRuntimeReport } from "../helpers/runtime-health";
 import { installStableEnvironment, waitForStableScreen } from "../helpers/stable-screen";
-import { isAuditScopeIncluded, screenRegistry } from "../helpers/screen-registry";
+import { assertUniqueAccessibilityOwners, isAuditScopeIncluded, screenRegistry } from "../helpers/screen-registry";
+
+assertUniqueAccessibilityOwners();
 
 const entries = screenRegistry.filter((entry) => isAuditScopeIncluded(entry) && entry.accessibility && entry.state === "default");
 const authStates = [...new Set(entries.map((entry) => entry.auth_state))];

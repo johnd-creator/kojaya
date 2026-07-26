@@ -186,7 +186,11 @@ const statusBadge = (status: string) => {
             <span>Filter tanggal:</span>
           </div>
           <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <label for="member-transactions-date-from" class="sr-only"
+              >Vanaf tanggal</label
+            >
             <Input
+              id="member-transactions-date-from"
               v-model="dateFrom"
               type="date"
               class="sm:w-44 rounded-xl dark:bg-zinc-900 dark:border-zinc-800"
@@ -194,7 +198,11 @@ const statusBadge = (status: string) => {
             <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
               >sampai</span
             >
+            <label for="member-transactions-date-to" class="sr-only"
+              >Sampai tanggal</label
+            >
             <Input
+              id="member-transactions-date-to"
               v-model="dateTo"
               type="date"
               class="sm:w-44 rounded-xl dark:bg-zinc-900 dark:border-zinc-800"

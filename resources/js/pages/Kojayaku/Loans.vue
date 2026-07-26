@@ -576,10 +576,12 @@ function getInstallmentStatusClasses(status: string): string {
                 <!-- Choose Loan Type -->
                 <div class="space-y-2">
                   <label
+                    for="member-loan-type"
                     class="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-500"
                     >Pilih Jenis Pinjaman</label
                   >
                   <select
+                    id="member-loan-type"
                     v-model="form.loan_type_id"
                     class="h-11 w-full rounded-xl border border-zinc-200 bg-background px-3 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all dark:border-zinc-800 dark:text-white"
                   >

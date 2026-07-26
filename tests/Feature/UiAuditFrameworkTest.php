@@ -30,6 +30,34 @@ class UiAuditFrameworkTest extends TestCase
         $this->assertCount(count($names), array_unique($names), 'Duplicate screenshot name in UI audit registry.');
     }
 
+    public function test_registered_desktop_accessibility_screens_have_one_owner(): void
+    {
+        $registry = json_decode((string) file_get_contents(base_path('tests/visual/coverage/cooperative-pages.json')), true, 512, JSON_THROW_ON_ERROR);
+        $inventoryOwned = collect($registry['entries'])
+            ->filter(static fn (array $entry): bool => (bool) ($entry['accessibility'] ?? false)
+                && ($entry['state'] ?? null) === 'default'
+                && in_array('desktop', $entry['viewport_policy'] ?? [], true))
+            ->pluck('id')
+            ->all();
+
+        $duplicates = [];
+        foreach (glob(base_path('tests/visual/accessibility/*.spec.ts')) ?: [] as $path) {
+            if (basename($path) === 'inventory.accessibility.spec.ts') {
+                continue;
+            }
+
+            preg_match_all('/screen\("([^"]+)"\)/', (string) file_get_contents($path), $matches);
+            foreach ($matches[1] ?? [] as $screenId) {
+                if (in_array($screenId, $inventoryOwned, true)) {
+                    $duplicates[] = $screenId.' ('.basename($path).')';
+                }
+            }
+        }
+
+        $this->assertSame([], $duplicates, 'A registered desktop accessibility screen has duplicate owners.');
+        $this->assertStringContainsString('assertUniqueAccessibilityOwners()', (string) file_get_contents(base_path('tests/visual/accessibility/inventory.accessibility.spec.ts')));
+    }
+
     public function test_manifest_and_runtime_outputs_are_generated_by_the_harness(): void
     {
         $teardown = file_get_contents(base_path('tests/visual/global-teardown.ts'));
@@ -39,6 +67,24 @@ class UiAuditFrameworkTest extends TestCase
         $this->assertStringContainsString('JSON.stringify(', (string) $teardown);
         $this->assertStringContainsString('ui-audit-output/runtime', (string) file_get_contents(base_path('tests/visual/helpers/runtime-health.ts')));
         $this->assertStringContainsString('screenshot:', (string) $manifestHelper);
+    }
+
+    public function test_accessibility_metrics_are_node_based_and_non_negative(): void
+    {
+        $helper = (string) file_get_contents(base_path('tests/visual/helpers/accessibility.ts'));
+
+        foreach ([
+            'blocking_rule_count',
+            'blocking_node_count',
+            'known_node_count',
+            'new_node_count',
+            'stale_finding_count',
+        ] as $metric) {
+            $this->assertStringContainsString($metric, $helper);
+        }
+
+        $this->assertStringContainsString('Math.max(0', $helper);
+        $this->assertStringNotContainsString('blockingViolations.length - newViolations.length', $helper);
     }
 
     public function test_playwright_auth_state_and_sensitive_outputs_are_ignored(): void

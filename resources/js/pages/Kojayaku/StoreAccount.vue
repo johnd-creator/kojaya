@@ -55,18 +55,15 @@ const entryLabel = (entry: LedgerEntry): string => {
   <AppLayout :breadcrumbs="[{ title: 'Kojayaku', href: '/member' }, { title: 'Saldo Toko', href: storeAccountRoute().url }]">
     <PageContainer>
       <div class="flex flex-col gap-6">
-        <section class="rounded-3xl border border-sky-200/70 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-5 shadow-sm dark:border-sky-900/40 dark:from-sky-950/30 dark:via-zinc-900 dark:to-emerald-950/20 sm:p-7">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">Akun belanja anggota</p>
-              <h1 class="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-white">Saldo Toko</h1>
-              <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                Pantau setiap pembelian yang dicatat kasir atas nama Anda. Halaman ini hanya dapat melihat akun Saldo Toko milik Anda.
-              </p>
-            </div>
-            <Wallet class="size-9 shrink-0 text-sky-600 dark:text-sky-300" />
+        <header class="flex items-center gap-3 sm:gap-5">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-lg shadow-emerald-600/20 sm:h-16 sm:w-16">
+            <Wallet class="h-6 w-6 sm:h-8 sm:w-8" />
           </div>
-        </section>
+          <div class="flex-1">
+            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Saldo Toko</h1>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Pantau saldo, limit, dan riwayat transaksi belanja Anda.</p>
+          </div>
+        </header>
 
         <section v-if="account" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

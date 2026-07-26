@@ -14,6 +14,7 @@ import {
     BookOpen
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+import MidtransPaymentDialog from '@/components/Kojayaku/MidtransPaymentDialog.vue';
 import StatusJourney from '@/components/Kojayaku/StatusJourney.vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Button } from '@/components/ui/button';
@@ -57,10 +58,22 @@ interface Loan {
     installments: Installment[];
 }
 
+interface PaymentHistoryItem {
+    id: string;
+    loanType: string;
+    loanReference: string | null;
+    installmentNo: number;
+    paidAmount: number | string;
+    paidAt: string | null;
+    dueDate: string;
+    status: string;
+}
+
 const props = defineProps<{
     loans: { 
         data: Loan[];
         links: Array<{ url: string | null; label: string; active: boolean }>;
+        total?: number;
     };
     loanTypes: Array<{ 
         id: number; 
@@ -159,14 +172,56 @@ const nextPayment = computed(() => {
     return earliestInstallment;
 });
 
+const paymentHistory = computed<PaymentHistoryItem[]>(() => props.loans.data
+    .flatMap((loan) => (loan.installments ?? [])
+        .filter((installment) => Number(installment.amount_paid) > 0 || ['PAID', 'PARTIAL'].includes(installment.status))
+        .map((installment) => ({
+            id: `${loan.id}-${installment.id}`,
+            loanType: loan.loan_type?.name || 'Pinjaman',
+            loanReference: loan.reference_no,
+            installmentNo: installment.installment_no,
+            paidAmount: installment.amount_paid,
+            paidAt: installment.paid_at,
+            dueDate: installment.due_date,
+            status: installment.status,
+        })))
+    .sort((first, second) => new Date(second.paidAt ?? second.dueDate).getTime() - new Date(first.paidAt ?? first.dueDate).getTime())
+    .slice(0, 6));
+
+const applicationHistory = computed(() => props.loans.data.filter((loan) => loan.status?.toUpperCase() !== 'ACTIVE'));
+
 // UI Controls
-const activeTab = ref('simulasi');
+const hasLoanHistory = computed(() => (props.loans.total ?? props.loans.data.length) > 0);
+const activeTab = ref<'simulasi' | 'riwayat'>(hasLoanHistory.value ? 'riwayat' : 'simulasi');
 const selectedLoan = ref<Loan | null>(null);
 const isDetailOpen = ref(false);
+const selectedInstallment = ref<Installment | null>(null);
 
 function openLoanDetails(loan: Loan) {
     selectedLoan.value = loan;
     isDetailOpen.value = true;
+}
+
+function openInstallmentPayment(installment: Installment): void {
+    selectedInstallment.value = installment;
+    isDetailOpen.value = false;
+}
+
+function closeInstallmentPayment(): void {
+    selectedInstallment.value = null;
+}
+
+function nextUnpaidInstallment(loan: Loan): Installment | null {
+    return loan.installments?.find((installment) =>
+        ['PENDING', 'PARTIAL', 'OVERDUE'].includes(installment.status),
+    ) ?? null;
+}
+
+function openNextInstallmentPayment(loan: Loan): void {
+    const installment = nextUnpaidInstallment(loan);
+    if (installment) {
+        openInstallmentPayment(installment);
+    }
 }
 
 function selectQuickAmount(amount: number) {
@@ -564,164 +619,179 @@ function getInstallmentStatusClasses(status: string): string {
 
                 <!-- Tab: Daftar Pinjaman & Riwayat -->
                 <TabsContent value="riwayat" class="mt-0 outline-none space-y-6">
-                    <!-- Repayment Progress Cards for Active Loans -->
-                    <div v-if="activeLoans.length > 0" class="space-y-3">
-                        <h2 class="text-sm font-black text-zinc-900 dark:text-white tracking-wider uppercase">Pinjaman Aktif Anda</h2>
-                        <div class="grid gap-4 sm:grid-cols-2 sm:gap-6">
-                            <div 
-                                v-for="loan in activeLoans" 
-                                :key="loan.id" 
-                                class="rounded-3xl border border-zinc-100 bg-white p-4 shadow-sm dark:bg-zinc-900 dark:border-zinc-800 hover:shadow-md transition-shadow sm:p-6"
-                            >
-                                <div class="flex items-start justify-between">
-                                    <div>
-                                        <span class="text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">
-                                            {{ loan.loan_type?.name || 'Pinjaman Aktif' }}
-                                        </span>
-                                        <p class="text-xs text-zinc-400 mt-2 font-medium">Ref No: {{ loan.reference_no }}</p>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        class="rounded-xl text-xs font-bold" 
-                                        @click="openLoanDetails(loan)"
-                                    >
-                                        Jadwal Cicilan
-                                    </Button>
+                    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.85fr)]">
+                        <!-- Primary Loan Panel -->
+                        <section class="overflow-hidden rounded-3xl border border-zinc-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div class="flex items-start gap-3 border-b border-zinc-50 p-4 dark:border-zinc-800 sm:p-6">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    <TrendingUp class="h-5 w-5" />
                                 </div>
-
-                                <div class="mt-5 grid grid-cols-2 gap-4 border-t border-zinc-50 dark:border-zinc-800 pt-4 text-xs text-zinc-500">
-                                    <div>
-                                        <span class="block text-[10px] text-zinc-500">Pokok Pinjaman</span>
-                                        <span class="font-extrabold text-zinc-800 dark:text-zinc-200 text-sm">{{ formatCurrency(loan.principal_amount) }}</span>
-                                    </div>
-                                    <div>
-                                        <span class="block text-[10px] text-zinc-500">Sisa Pinjaman</span>
-                                        <span class="font-extrabold text-emerald-800 dark:text-emerald-400 text-sm">{{ formatCurrency(loan.outstanding_amount) }}</span>
-                                    </div>
+                                <div>
+                                    <h2 class="text-lg font-black tracking-tight text-zinc-900 dark:text-white">Pinjaman & Pengajuan</h2>
+                                    <p class="mt-1 text-xs text-zinc-400">Pantau pinjaman aktif dan pengajuan Anda dalam satu tempat.</p>
                                 </div>
+                            </div>
 
-                                <!-- Repayment Progress Bar -->
-                                <div class="mt-4 space-y-1.5">
-                                    <div class="flex justify-between items-center text-xs">
-                                        <span class="font-bold text-zinc-600 dark:text-zinc-300">Progres Repayment</span>
-                                        <span class="font-extrabold text-emerald-800 dark:text-emerald-400">
-                                            {{ Math.round(((Number(loan.principal_amount) - Number(loan.outstanding_amount)) / Number(loan.principal_amount)) * 100) }}%
-                                        </span>
-                                    </div>
-                                    <div class="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                                        <div 
-                                            class="h-full rounded-full bg-emerald-600 transition-all duration-500" 
-                                            :style="{ width: `${((Number(loan.principal_amount) - Number(loan.outstanding_amount)) / Number(loan.principal_amount)) * 100}%` }"
-                                        />
-                                    </div>
-                                    <span class="block text-[10px] text-zinc-400 text-right mt-1 font-medium">
-                                        {{ loan.installments?.filter(i => i.status === 'PAID').length || 0 }} dari {{ loan.term_months }} bulan lunas
+                            <!-- Active Loans -->
+                            <div class="border-b border-zinc-100 dark:border-zinc-800">
+                                <div class="flex items-center justify-between gap-3 px-4 pb-3 pt-5 sm:px-6">
+                                    <h3 class="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Pinjaman Aktif</h3>
+                                    <span v-if="activeLoans.length" class="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        {{ activeLoans.length }} aktif
                                     </span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Repayment History Table Card -->
-                    <div class="rounded-3xl border border-zinc-100 bg-white shadow-sm overflow-hidden dark:bg-zinc-900 dark:border-zinc-800">
-                        <div class="flex items-center gap-3 border-b border-zinc-50 dark:border-zinc-800 p-4 sm:p-6">
-                            <div class="h-10 w-10 rounded-xl bg-zinc-50 dark:bg-zinc-950 text-zinc-700 dark:text-zinc-400 flex items-center justify-center">
-                                <History class="h-5 w-5" />
+                                <div v-if="activeLoans.length" class="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                    <div v-for="loan in activeLoans" :key="loan.id" class="px-4 py-4 sm:px-6 sm:py-5">
+                                        <div class="flex flex-wrap items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <p class="truncate text-sm font-extrabold text-zinc-900 dark:text-white">
+                                                        {{ loan.loan_type?.name || 'Pinjaman Aktif' }}
+                                                    </p>
+                                                    <StatusBadge :status="loan.status" :label="formatLoanStatus(loan.status)" />
+                                                </div>
+                                                <p class="mt-1 text-xs text-zinc-400">Ref No: {{ loan.reference_no || 'Menunggu nomor referensi' }}</p>
+                                            </div>
+                                            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    class="rounded-xl text-xs font-bold"
+                                                    @click="openLoanDetails(loan)"
+                                                >
+                                                    Jadwal
+                                                </Button>
+                                                <Button
+                                                    v-if="nextUnpaidInstallment(loan)"
+                                                    type="button"
+                                                    size="sm"
+                                                    class="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
+                                                    @click="openNextInstallmentPayment(loan)"
+                                                >
+                                                    Bayar
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 sm:gap-4">
+                                            <div class="rounded-2xl bg-zinc-50 px-3 py-2.5 dark:bg-zinc-950/50">
+                                                <span class="block text-[10px] font-bold uppercase tracking-wide text-zinc-400">Sisa pinjaman</span>
+                                                <span class="mt-1 block text-sm font-black text-zinc-900 dark:text-white">{{ formatCurrency(loan.outstanding_amount) }}</span>
+                                            </div>
+                                            <div class="rounded-2xl bg-zinc-50 px-3 py-2.5 dark:bg-zinc-950/50">
+                                                <span class="block text-[10px] font-bold uppercase tracking-wide text-zinc-400">Tagihan berikutnya</span>
+                                                <span class="mt-1 block text-sm font-black text-amber-700 dark:text-amber-400">
+                                                    {{ nextUnpaidInstallment(loan) ? formatCurrency(Number(nextUnpaidInstallment(loan)?.amount_due) - Number(nextUnpaidInstallment(loan)?.amount_paid)) : 'Rp 0' }}
+                                                </span>
+                                            </div>
+                                            <div class="col-span-2 rounded-2xl bg-zinc-50 px-3 py-2.5 dark:bg-zinc-950/50 sm:col-span-1">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="text-[10px] font-bold uppercase tracking-wide text-zinc-400">Progres</span>
+                                                    <span class="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                                                        {{ Math.round(((Number(loan.principal_amount) - Number(loan.outstanding_amount)) / Number(loan.principal_amount)) * 100) }}%
+                                                    </span>
+                                                </div>
+                                                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                                                    <div
+                                                        class="h-full rounded-full bg-emerald-600 transition-all duration-500"
+                                                        :style="{ width: `${((Number(loan.principal_amount) - Number(loan.outstanding_amount)) / Number(loan.principal_amount)) * 100}%` }"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-else class="px-6 pb-6 pt-2 text-sm text-zinc-400">
+                                    Belum ada pinjaman aktif saat ini.
+                                </div>
                             </div>
+
+                            <!-- Application History -->
                             <div>
-                                <h2 class="text-lg font-black text-zinc-900 dark:text-white tracking-tight">Riwayat Pengajuan & Pembayaran</h2>
-                                <p class="text-xs text-zinc-400">Daftar seluruh riwayat pengajuan pinjaman Anda beserta status saat ini.</p>
+                                <div class="px-4 pb-3 pt-5 sm:px-6">
+                                    <h3 class="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Riwayat Pengajuan</h3>
+                                </div>
+                                <div v-if="applicationHistory.length" class="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                    <div v-for="loan in applicationHistory" :key="loan.id" class="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-950/20 sm:px-6">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <p class="truncate text-sm font-extrabold text-zinc-900 dark:text-white">{{ loan.loan_type?.name || 'Pinjaman' }}</p>
+                                                <StatusBadge :status="loan.status" :label="formatLoanStatus(loan.status)" />
+                                            </div>
+                                            <p class="mt-1 truncate text-xs text-zinc-400">
+                                                {{ loan.reference_no || 'Menunggu nomor referensi' }} · Diajukan {{ formatDate(loan.applied_at) }}
+                                            </p>
+                                            <p class="mt-1 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                                                {{ formatCurrency(loan.principal_amount) }} · {{ loan.term_months }} bulan
+                                            </p>
+                                        </div>
+                                        <Button variant="secondary" size="sm" class="shrink-0 rounded-xl text-xs font-bold" @click="openLoanDetails(loan)">
+                                            Detail
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div v-else class="px-6 pb-6 pt-2 text-sm text-zinc-400">
+                                    {{ activeLoans.length ? 'Belum ada pengajuan lain di luar pinjaman aktif.' : 'Belum ada riwayat pengajuan pinjaman.' }}
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-zinc-50/50 dark:bg-zinc-950/40 text-[10px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-50 dark:border-zinc-800">
-                                    <tr>
-                                        <th class="px-4 py-3 sm:px-6 sm:py-4">Ref No / Tanggal</th>
-                                        <th class="px-4 py-3 sm:px-6 sm:py-4">Tipe Pinjaman</th>
-                                        <th class="px-4 py-3 sm:px-6 sm:py-4">Status</th>
-                                        <th class="px-4 py-3 sm:px-6 sm:py-4 text-right">Pokok</th>
-                                        <th class="px-4 py-3 sm:px-6 sm:py-4 text-right">Sisa Pinjaman</th>
-                                        <th class="px-4 py-3 sm:px-6 sm:py-4 text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr 
-                                        v-for="loan in loans.data" 
-                                        :key="loan.id" 
-                                        class="border-t border-zinc-50 dark:border-zinc-800 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-950/20"
-                                    >
-                                        <td class="px-4 py-3 sm:px-6 sm:py-4">
-                                            <div class="font-extrabold text-zinc-800 dark:text-zinc-200">
-                                                {{ loan.reference_no || 'Menunggu Review' }}
-                                            </div>
-                                            <div class="text-[10px] text-zinc-400 mt-1 font-medium">
-                                                Diajukan: {{ formatDate(loan.applied_at) }}
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 sm:px-6 sm:py-4">
-                                            <div class="font-bold text-zinc-900 dark:text-white">
-                                                {{ loan.loan_type?.name || 'Pinjaman' }}
-                                            </div>
-                                            <div class="text-xs text-zinc-400 mt-0.5">
-                                                {{ loan.term_months }} bulan · {{ formatCurrency(loan.installment_amount) }}/bulan
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 sm:px-6 sm:py-4">
-                                            <StatusBadge :status="loan.status" :label="formatLoanStatus(loan.status)" />
-                                        </td>
-                                        <td class="px-4 py-3 sm:px-6 sm:py-4 text-right font-medium text-zinc-600 dark:text-zinc-400">
-                                            {{ formatCurrency(loan.principal_amount) }}
-                                        </td>
-                                        <td class="px-4 py-3 sm:px-6 sm:py-4 text-right font-extrabold text-zinc-900 dark:text-white">
-                                            {{ formatCurrency(loan.outstanding_amount) }}
-                                        </td>
-                                        <td class="px-4 py-3 sm:px-6 sm:py-4 text-center">
-                                            <Button 
-                                                variant="secondary" 
-                                                size="sm" 
-                                                class="rounded-xl text-xs font-bold" 
-                                                @click="openLoanDetails(loan)"
-                                            >
-                                                Detail
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="loans.data.length === 0">
-                                        <td colspan="6" class="px-6 py-12 text-center text-zinc-400">
-                                            Belum ada riwayat pengajuan pinjaman.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                            <!-- Pagination Links -->
+                            <div v-if="loans.links && loans.links.length > 3" class="flex flex-wrap justify-center gap-1.5 border-t border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-6">
+                                <template v-for="(link, key) in loans.links" :key="key">
+                                    <div v-if="link.url === null" class="rounded-lg border border-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-400 dark:border-zinc-800" v-html="link.label" />
+                                    <Link
+                                        v-else
+                                        class="rounded-lg border border-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                        :class="{ 'border-emerald-600 bg-emerald-600 text-white hover:border-emerald-700 hover:bg-emerald-700 dark:border-emerald-700 dark:bg-emerald-700': link.active }"
+                                        :href="link.url"
+                                        v-html="link.label"
+                                    />
+                                </template>
+                            </div>
+                        </section>
 
-                        <!-- Pagination Links -->
-                        <div v-if="loans.links && loans.links.length > 3" class="px-4 py-3 sm:px-6 sm:py-4 border-t border-zinc-50 dark:border-zinc-800 flex justify-center gap-1.5 flex-wrap">
-                            <template v-for="(link, key) in loans.links" :key="key">
-                                <div 
-                                    v-if="link.url === null" 
-                                    class="px-3 py-1.5 text-xs font-bold text-zinc-400 border border-zinc-100 rounded-lg dark:border-zinc-800" 
-                                    v-html="link.label" 
-                                />
-                                <Link 
-                                    v-else 
-                                    class="px-3 py-1.5 text-xs font-bold border border-zinc-100 rounded-lg transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800 text-zinc-755 dark:text-zinc-300" 
-                                    :class="{ 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 hover:border-emerald-700 dark:bg-emerald-700 dark:border-emerald-700': link.active }"
-                                    :href="link.url" 
-                                    v-html="link.label" 
-                                />
-                            </template>
-                        </div>
+                        <!-- Payment History Card -->
+                        <section class="overflow-hidden rounded-3xl border border-zinc-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div class="flex items-start gap-3 border-b border-zinc-50 p-4 dark:border-zinc-800 sm:p-6">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    <CheckCircle2 class="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-black tracking-tight text-zinc-900 dark:text-white">Pembayaran Terbaru</h2>
+                                    <p class="mt-1 text-xs text-zinc-400">Cicilan yang sudah tercatat pada pinjaman Anda.</p>
+                                </div>
+                            </div>
+
+                            <div v-if="paymentHistory.length" class="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                <div v-for="payment in paymentHistory" :key="payment.id" class="flex items-center gap-3 px-4 py-4 sm:px-6">
+                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        <CheckCircle2 class="h-4 w-4" />
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-extrabold text-zinc-900 dark:text-white">Cicilan ke-{{ payment.installmentNo }}</p>
+                                        <p class="mt-1 truncate text-xs text-zinc-400">
+                                            {{ payment.loanType }}<span v-if="payment.loanReference"> · {{ payment.loanReference }}</span>
+                                        </p>
+                                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ formatDate(payment.paidAt ?? payment.dueDate) }}</p>
+                                    </div>
+                                    <div class="shrink-0 text-right">
+                                        <p class="text-sm font-black text-emerald-700 dark:text-emerald-400">{{ formatCurrency(payment.paidAmount) }}</p>
+                                        <span :class="['mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold', getInstallmentStatusClasses(payment.status)]">
+                                            {{ formatInstallmentStatus(payment.status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else class="px-6 py-12 text-center text-sm text-zinc-400">Belum ada pembayaran cicilan.</div>
+                        </section>
                     </div>
                 </TabsContent>
             </Tabs>
 
             <!-- Detailed Loan Modal -->
             <Dialog :open="isDetailOpen" @update:open="isDetailOpen = $event">
-                <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-4 dark:bg-zinc-900 dark:border-zinc-800 sm:p-6">
+                <DialogContent class="w-[calc(100vw-2rem)] max-w-5xl max-h-[90vh] overflow-x-hidden overflow-y-auto rounded-3xl p-4 dark:bg-zinc-900 dark:border-zinc-800 sm:p-6">
                     <DialogHeader v-if="selectedLoan">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <DialogTitle class="text-xl font-black text-zinc-900 dark:text-white">
@@ -793,7 +863,7 @@ function getInstallmentStatusClasses(status: string): string {
                             <h3 class="font-black text-sm text-zinc-950 dark:text-white tracking-tight mb-3">Jadwal Angsuran Cicilan</h3>
                             <div class="overflow-hidden rounded-2xl border border-zinc-100 bg-white dark:bg-zinc-950 dark:border-zinc-800">
                                 <div class="max-h-60 overflow-y-auto">
-                                    <table class="w-full text-left text-xs">
+                                    <table class="w-full table-fixed text-left text-xs">
                                         <thead class="bg-zinc-50 dark:bg-zinc-900 text-[10px] font-bold uppercase tracking-wider text-zinc-500 sticky top-0 border-b border-zinc-100 dark:border-zinc-800">
                                             <tr>
                                                 <th class="px-4 py-3">No.</th>
@@ -801,6 +871,7 @@ function getInstallmentStatusClasses(status: string): string {
                                                 <th class="px-4 py-3 text-right">Tagihan</th>
                                                 <th class="px-4 py-3 text-right">Jumlah Dibayar</th>
                                                 <th class="px-4 py-3">Status</th>
+                                                <th class="px-4 py-3 text-right">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-zinc-50 dark:divide-zinc-800">
@@ -817,6 +888,17 @@ function getInstallmentStatusClasses(status: string): string {
                                                         {{ formatInstallmentStatus(inst.status) }}
                                                     </span>
                                                 </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <Button
+                                                        v-if="['PENDING', 'PARTIAL', 'OVERDUE'].includes(inst.status)"
+                                                        type="button"
+                                                        size="sm"
+                                                        class="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
+                                                        @click="openInstallmentPayment(inst)"
+                                                    >
+                                                        Bayar
+                                                    </Button>
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -832,6 +914,13 @@ function getInstallmentStatusClasses(status: string): string {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <MidtransPaymentDialog
+                :open="selectedInstallment !== null"
+                :installment="selectedInstallment"
+                kind="loan"
+                @update:open="closeInstallmentPayment"
+            />
         </PageContainer>
     </AppLayout>
 </template>

@@ -10,6 +10,7 @@ import {
     Clock,
     IdCard,
     Mail,
+    Pencil,
     Phone,
     RotateCcw,
     Save,
@@ -17,7 +18,7 @@ import {
     UserRound,
 } from 'lucide-vue-next';
 import type { LucideIcon } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import PageContainer from '@/components/PageContainer.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,12 +75,25 @@ const form = useForm({
     address: props.member.address ?? '',
 });
 
-const submit = (): void => {
-    form.put('/member/profile');
-};
+const isEditing = ref(false);
 
 const resetForm = (): void => {
     form.reset();
+    form.clearErrors();
+    isEditing.value = false;
+};
+
+const startEditing = (): void => {
+    form.clearErrors();
+    isEditing.value = true;
+};
+
+const submitProfile = (): void => {
+    form.put('/member/profile', {
+        onSuccess: () => {
+            isEditing.value = false;
+        },
+    });
 };
 
 const goToOnboarding = (): void => {
@@ -242,17 +256,58 @@ const identityItems = computed<Array<{ icon: LucideIcon; label: string; value: s
 
                 <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                     <section class="flex flex-col rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
-                        <div class="flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-800 p-4 sm:p-6">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-400">
-                                <UserRound class="h-5 w-5" />
+                        <div class="flex items-center justify-between gap-4 border-b border-zinc-100 p-4 dark:border-zinc-800 sm:p-6">
+                            <div class="flex min-w-0 items-center gap-4">
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    <UserRound class="h-5 w-5" />
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="font-bold tracking-tight text-zinc-900 dark:text-white">Data Diri</h2>
+                                    <p class="mt-0.5 truncate text-xs text-zinc-400 dark:text-zinc-500">
+                                        {{ isEditing ? 'Perubahan akan dikirim ke pengurus untuk divalidasi.' : 'Informasi profil anggota yang tersimpan.' }}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 class="font-bold tracking-tight text-zinc-900 dark:text-white">Data Diri</h2>
-                                <p class="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">Perbarui data anggota. Perubahan akan dikirim ke pengurus untuk divalidasi.</p>
+                            <Button
+                                v-if="!isEditing"
+                                variant="outline"
+                                class="shrink-0 rounded-xl text-xs font-bold"
+                                @click="startEditing"
+                            >
+                                <Pencil class="h-3.5 w-3.5" />
+                                Edit Profil
+                            </Button>
+                            <Button
+                                v-else
+                                variant="ghost"
+                                class="shrink-0 rounded-xl text-xs font-semibold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
+                                :disabled="form.processing"
+                                @click="resetForm"
+                            >
+                                Batal
+                            </Button>
+                        </div>
+
+                        <div v-if="!isEditing" class="grid flex-1 gap-3 p-4 sm:grid-cols-2 sm:gap-4 sm:p-6">
+                            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Nama Lengkap</p>
+                                <p class="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{{ displayName }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email</p>
+                                <p class="mt-1.5 break-all text-sm font-bold text-zinc-900 dark:text-white">{{ user.email }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">No. Telepon</p>
+                                <p class="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{{ member.phone || 'Belum diisi' }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Alamat</p>
+                                <p class="mt-1.5 text-sm font-bold text-zinc-900 dark:text-white">{{ member.address || 'Belum diisi' }}</p>
                             </div>
                         </div>
 
-                        <div class="flex flex-1 flex-col gap-5 p-4 sm:p-6">
+                        <div v-else class="flex flex-1 flex-col gap-5 p-4 sm:p-6">
                             <div class="grid gap-5 md:grid-cols-2">
                                 <div class="space-y-1.5">
                                     <Label for="member-name" class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Nama Lengkap</Label>
@@ -296,7 +351,7 @@ const identityItems = computed<Array<{ icon: LucideIcon; label: string; value: s
                                     <Button
                                         class="rounded-xl px-6 text-sm font-bold"
                                         :disabled="form.processing || !form.isDirty"
-                                        @click="submit"
+                                        @click="submitProfile"
                                     >
                                         <Save class="h-4 w-4" />
                                         {{ form.processing ? 'Menyimpan...' : 'Simpan Perubahan' }}
@@ -307,7 +362,7 @@ const identityItems = computed<Array<{ icon: LucideIcon; label: string; value: s
                     </section>
 
                     <div class="flex flex-col gap-6">
-                        <section class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-6">
+                        <section v-if="!completeness.is_complete" class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <h2 class="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-white">

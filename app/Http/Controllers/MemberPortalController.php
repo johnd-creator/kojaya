@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\Cooperative\LoanServiceContract;
+use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
 use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\CompleteMemberOnboardingRequest;
@@ -17,7 +18,9 @@ use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Loan;
+use App\Models\LoanInstallment;
 use App\Models\LoanType;
+use App\Models\MemberPaymentIntent;
 use App\Models\MemberStoreAccount;
 use App\Models\PosTransaction;
 use App\Models\Reward;
@@ -33,6 +36,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -150,8 +154,13 @@ class MemberPortalController extends Controller
             }
         }
 
+        $member->load(['organization', 'user.organization']);
+        if ($member->user?->organization && $member->organization_id !== $member->user->organization_id) {
+            $member->setRelation('organization', $member->user->organization);
+        }
+
         return Inertia::render('Kojayaku/Dashboard', [
-            'member' => $member->load(['organization', 'user']),
+            'member' => $member,
             'is_active_member' => $isActive || $isPendingReview,
             'is_pending_review' => $isPendingReview,
             'onboarding_completeness' => $onboardingCompleteness,
@@ -174,12 +183,89 @@ class MemberPortalController extends Controller
                 : null,
             'recentTransactions' => ($isActive || $isPendingReview) ? $this->recentMemberActivities($member) : [],
             'recentLoans' => ($isActive || $isPendingReview) ? Loan::query()
-                ->with('loanType')
+                ->with([
+                    'loanType',
+                    'installments' => fn ($query) => $query
+                        ->whereIn('status', [
+                            InstallmentStatus::Pending->value,
+                            InstallmentStatus::Partial->value,
+                            InstallmentStatus::Overdue->value,
+                        ])
+                        ->orderBy('due_date'),
+                ])
                 ->where('cooperative_member_id', $member->id)
                 ->latest()
                 ->limit(5)
-                ->get() : [],
+                ->get()
+                ->map(fn (Loan $loan): array => [
+                    'id' => $loan->id,
+                    'status' => $loan->status?->value ?? (string) $loan->status,
+                    'outstanding_amount' => (float) $loan->outstanding_amount,
+                    'loan_type' => $loan->loanType?->only('name'),
+                    'next_installment' => ($installment = $loan->installments->first()) ? [
+                        'id' => $installment->id,
+                        'installment_no' => $installment->installment_no,
+                        'due_date' => $installment->due_date?->toDateString(),
+                        'amount_due' => (float) $installment->amount_due,
+                        'amount_paid' => (float) $installment->amount_paid,
+                        'remaining_amount' => max((float) $installment->amount_due - (float) $installment->amount_paid, 0),
+                        'status' => $installment->status?->value ?? (string) $installment->status,
+                    ] : null,
+                ])
+                ->values()
+                ->all() : [],
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function recentMemberActivities(CooperativeMember $member): array
+    {
+        $posTransactions = PosTransaction::query()
+            ->where('cooperative_member_id', $member->id)
+            ->latest('sold_at')
+            ->limit(5)
+            ->get()
+            ->map(fn (PosTransaction $transaction): array => [
+                'id' => 'pos-'.$transaction->id,
+                'type' => 'POS',
+                'title' => $transaction->transaction_no,
+                'subtitle' => 'Transaksi POS',
+                'amount' => (float) $transaction->total_amount,
+                'occurred_at' => $transaction->sold_at?->toIso8601String(),
+            ]);
+
+        $savingPayments = CooperativePayment::query()
+            ->with(['invoice.contributionType', 'contributionType'])
+            ->where('cooperative_member_id', $member->id)
+            ->latest('paid_at')
+            ->latest('created_at')
+            ->limit(5)
+            ->get()
+            ->map(function (CooperativePayment $payment): array {
+                $typeName = $payment->invoice?->contributionType?->name
+                    ?: $payment->contributionType?->name
+                    ?: 'Simpanan';
+                $period = $payment->invoice?->period;
+
+                return [
+                    'id' => 'saving-'.$payment->id,
+                    'type' => 'SAVINGS_PAYMENT',
+                    'title' => 'Pembayaran '.$typeName,
+                    'subtitle' => $period ? 'Iuran periode '.$period : 'Pembayaran simpanan',
+                    'amount' => (float) $payment->amount,
+                    'status' => $payment->status,
+                    'occurred_at' => ($payment->paid_at ?: $payment->created_at)?->toIso8601String(),
+                ];
+            });
+
+        return $posTransactions
+            ->concat($savingPayments)
+            ->sortByDesc('occurred_at')
+            ->take(5)
+            ->values()
+            ->all();
     }
 
     public function storeAccount(Request $request): Response
@@ -295,57 +381,6 @@ class MemberPortalController extends Controller
     }
 
     /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function recentMemberActivities(CooperativeMember $member): array
-    {
-        $posTransactions = PosTransaction::query()
-            ->where('cooperative_member_id', $member->id)
-            ->latest('sold_at')
-            ->limit(5)
-            ->get()
-            ->map(fn (PosTransaction $transaction): array => [
-                'id' => 'pos-'.$transaction->id,
-                'type' => 'POS',
-                'title' => $transaction->transaction_no,
-                'subtitle' => 'Transaksi POS',
-                'amount' => (float) $transaction->total_amount,
-                'occurred_at' => $transaction->sold_at?->toIso8601String(),
-            ]);
-
-        $savingPayments = CooperativePayment::query()
-            ->with(['invoice.contributionType', 'contributionType'])
-            ->where('cooperative_member_id', $member->id)
-            ->latest('paid_at')
-            ->latest('created_at')
-            ->limit(5)
-            ->get()
-            ->map(function (CooperativePayment $payment): array {
-                $typeName = $payment->invoice?->contributionType?->name
-                    ?: $payment->contributionType?->name
-                    ?: 'Simpanan';
-                $period = $payment->invoice?->period;
-
-                return [
-                    'id' => 'saving-'.$payment->id,
-                    'type' => 'SAVINGS_PAYMENT',
-                    'title' => 'Pembayaran '.$typeName,
-                    'subtitle' => $period ? 'Iuran periode '.$period : 'Pembayaran simpanan',
-                    'amount' => (float) $payment->amount,
-                    'status' => $payment->status,
-                    'occurred_at' => ($payment->paid_at ?: $payment->created_at)?->toIso8601String(),
-                ];
-            });
-
-        return $posTransactions
-            ->concat($savingPayments)
-            ->sortByDesc('occurred_at')
-            ->take(5)
-            ->values()
-            ->all();
-    }
-
-    /**
      * @return array{summary: array<string, mixed>, invoices: array<int, array<string, mixed>>}
      */
     private function wajibSavingsInvoiceData(CooperativeMember $member): array
@@ -454,7 +489,11 @@ class MemberPortalController extends Controller
         return Inertia::render('Kojayaku/Loans', [
             'loans' => $member->loans()->with(['loanType', 'installments'])->latest()->paginate(12)->withQueryString(),
             'loanTypes' => LoanType::query()->where('is_active', true)->orderBy('name')->get(),
-            'journey' => $journeyService->loanJourney($member),
+            'journey' => $journeyService->loanJourney(
+                $member,
+                hideAfterDisbursement: true,
+                includeCompletionStep: false,
+            ),
         ]);
     }
 
@@ -529,38 +568,90 @@ class MemberPortalController extends Controller
     {
         $member = $this->memberOrAbort($request);
 
-        $query = PosTransaction::query()
+        $posQuery = PosTransaction::query()
             ->with(['items.product', 'payments'])
             ->where('cooperative_member_id', $member->id);
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('sold_at', '>=', $request->input('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('sold_at', '<=', $request->input('date_to'));
-        }
-
-        $summaryBase = PosTransaction::query()
+        $paymentQuery = CooperativePayment::query()
+            ->with(['invoice.contributionType', 'contributionType'])
             ->where('cooperative_member_id', $member->id);
 
         if ($request->filled('date_from')) {
-            $summaryBase->whereDate('sold_at', '>=', $request->input('date_from'));
+            $posQuery->whereDate('sold_at', '>=', $request->input('date_from'));
+            $paymentQuery->whereDate('paid_at', '>=', $request->input('date_from'));
         }
 
         if ($request->filled('date_to')) {
-            $summaryBase->whereDate('sold_at', '<=', $request->input('date_to'));
+            $posQuery->whereDate('sold_at', '<=', $request->input('date_to'));
+            $paymentQuery->whereDate('paid_at', '<=', $request->input('date_to'));
         }
 
-        $summaryQuery = clone $summaryBase;
+        $posActivities = $posQuery->latest('sold_at')->limit(100)->get()->map(
+            fn (PosTransaction $transaction): array => [
+                'id' => 'pos:'.$transaction->id,
+                'source' => 'pos',
+                'title' => 'Belanja di Toko Koperasi',
+                'subtitle' => $transaction->transaction_no,
+                'amount' => (float) $transaction->total_amount,
+                'occurred_at' => $transaction->sold_at?->toIso8601String(),
+                'status' => $transaction->status,
+                'line_items' => $transaction->items->map(fn ($item): array => [
+                    'name' => $item->product?->name ?? 'Produk',
+                    'quantity' => $item->quantity,
+                    'amount' => (float) $item->line_total,
+                ])->values()->all(),
+                'payment_methods' => $transaction->payments->pluck('payment_method')->values()->all(),
+            ],
+        );
+
+        $paymentActivities = $paymentQuery->latest('paid_at')->latest('created_at')->limit(100)->get()->map(
+            function (CooperativePayment $payment): array {
+                $typeName = $payment->invoice?->contributionType?->name
+                    ?: $payment->contributionType?->name
+                    ?: 'Simpanan';
+
+                return [
+                    'id' => 'payment:'.$payment->id,
+                    'source' => 'payment',
+                    'title' => 'Pembayaran '.$typeName,
+                    'subtitle' => $payment->invoice?->period
+                        ? 'Periode '.$payment->invoice->period
+                        : 'Pembayaran simpanan',
+                    'amount' => (float) $payment->amount,
+                    'occurred_at' => ($payment->paid_at ?: $payment->created_at)?->toIso8601String(),
+                    'status' => $payment->status,
+                    'line_items' => [],
+                    'payment_methods' => [$payment->payment_method],
+                ];
+            },
+        );
+
+        $activities = $posActivities->concat($paymentActivities)->sortByDesc('occurred_at')->values();
+        $perPage = 12;
+        $currentPage = max($request->integer('page', 1), 1);
+        $transactions = new LengthAwarePaginator(
+            $activities->forPage($currentPage, $perPage)->values(),
+            $activities->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ],
+        );
 
         return Inertia::render('Kojayaku/Transactions', [
-            'transactions' => $query->latest('sold_at')->paginate(12)->withQueryString(),
+            'transactions' => $transactions,
             'summary' => [
-                'total_transactions' => $summaryQuery->count(),
-                'total_amount' => (float) $summaryBase->clone()->sum('total_amount'),
-                'total_items' => (int) $summaryBase->clone()->join('pos_transaction_items', 'pos_transactions.id', '=', 'pos_transaction_items.pos_transaction_id')->sum('quantity'),
-                'last_transaction_at' => $summaryBase->clone()->latest('sold_at')->value('sold_at'),
+                'total_activities' => $activities->count(),
+                'pos_count' => $posActivities->count(),
+                'payment_count' => $paymentActivities->count(),
+                'total_amount' => (float) $activities->sum('amount'),
+                'last_activity_at' => $activities->first()['occurred_at'] ?? null,
+                'total_transactions' => $posActivities->count(),
+                'total_items' => (int) $posActivities->sum(
+                    fn (array $activity): int => collect($activity['line_items'])->sum('quantity'),
+                ),
+                'last_transaction_at' => $posActivities->first()['occurred_at'] ?? null,
             ],
             'filters' => $request->only(['date_from', 'date_to']),
         ]);
@@ -703,6 +794,96 @@ class MemberPortalController extends Controller
         }
 
         return $this->paymentIntentResponse($payment, $invoice, $charge);
+    }
+
+    public function createLoanPaymentIntent(Request $request, PaymentGatewayService $gateway): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        $data = $request->validate([
+            'loan_installment_id' => ['required', 'integer'],
+            'channel' => ['nullable', 'in:QRIS,VA,E_WALLET'],
+        ]);
+
+        $installment = LoanInstallment::query()
+            ->with('loan.loanType')
+            ->whereKey($data['loan_installment_id'])
+            ->whereHas('loan', fn ($query) => $query
+                ->where('cooperative_member_id', $member->id)
+                ->whereIn('status', [LoanStatus::Active->value, LoanStatus::Defaulted->value]))
+            ->whereIn('status', [
+                InstallmentStatus::Pending->value,
+                InstallmentStatus::Partial->value,
+                InstallmentStatus::Overdue->value,
+            ])
+            ->firstOrFail();
+
+        $remaining = round((float) $installment->amount_due - (float) $installment->amount_paid, 2);
+        abort_if($remaining <= 0, 422, 'Cicilan pinjaman ini sudah lunas.');
+
+        $channel = strtoupper((string) ($data['channel'] ?? 'QRIS'));
+        $intent = MemberPaymentIntent::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
+            ->where('payable_id', $installment->id)
+            ->where('gateway_status', 'PENDING')
+            ->latest()
+            ->first();
+
+        if (! $intent) {
+            $intent = MemberPaymentIntent::query()->create([
+                'user_id' => $request->user()?->id,
+                'cooperative_member_id' => $member->id,
+                'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+                'payable_id' => $installment->id,
+                'amount' => $remaining,
+                'channel' => $channel,
+                'gateway_status' => 'PENDING',
+                'metadata' => [
+                    'description' => "Angsuran {$installment->loan?->loanType?->name} #{$installment->installment_no}",
+                    'loan_id' => $installment->loan_id,
+                    'installment_no' => $installment->installment_no,
+                ],
+                'expires_at' => now()->addDay(),
+            ]);
+        }
+
+        $charge = $gateway->createIntentCharge($intent);
+
+        return response()->json([
+            'data' => [
+                'payment_intent' => [
+                    'id' => $intent->id,
+                    'amount' => (float) $intent->amount,
+                    'channel' => $intent->channel,
+                    'expires_at' => $intent->expires_at?->toISOString(),
+                ],
+                'charge' => $charge,
+            ],
+        ], 201);
+    }
+
+    public function loanPaymentIntentStatus(Request $request, MemberPaymentIntent $intent): JsonResponse
+    {
+        $member = $this->memberOrAbort($request);
+        abort_unless(
+            $intent->cooperative_member_id === $member->id
+                && $intent->payable_type === MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            403,
+        );
+
+        $isPaid = $intent->gateway_status === 'PAID' || $intent->settled_at !== null;
+        $isFailed = in_array($intent->gateway_status, ['FAILED', 'EXPIRED', 'CANCELLED', 'DENIED'], true);
+
+        return response()->json([
+            'data' => [
+                'status' => $intent->gateway_status,
+                'is_paid' => $isPaid,
+                'is_failed' => $isFailed,
+                'is_terminal' => $isPaid || $isFailed,
+                'gateway_expires_at' => $intent->expires_at?->toISOString(),
+            ],
+        ]);
     }
 
     /**

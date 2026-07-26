@@ -117,6 +117,8 @@ const statusMeta: Record<string, { label: string; classes: string }> = {
 };
 
 const statusBadge = (status: string): { label: string; classes: string } => statusMeta[status] ?? { label: status, classes: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300' };
+
+const hasRedemptionJourney = computed<boolean>(() => props.journey.current_status !== 'BELUM_ADA_PENUKARAN');
 </script>
 
 <template>
@@ -170,7 +172,14 @@ const statusBadge = (status: string): { label: string; classes: string } => stat
                     </div>
                 </div>
 
-                <StatusJourney :title="journey.title" :current-status="journey.current_status" :reference="journey.reference" :amount="journey.amount" :steps="journey.steps" />
+                <StatusJourney
+                    v-if="hasRedemptionJourney"
+                    :title="journey.title"
+                    :current-status="journey.current_status"
+                    :reference="journey.reference"
+                    :amount="journey.amount"
+                    :steps="journey.steps"
+                />
 
                 <div class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
                     <section class="overflow-hidden rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">

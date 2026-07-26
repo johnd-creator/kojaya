@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Deferred, Head, Link } from "@inertiajs/vue3";
+import { Deferred, Head, Link, usePage } from "@inertiajs/vue3";
 import {
   AlertTriangle,
   ArrowRight,
@@ -49,12 +49,14 @@ import { formatCurrency, formatNumber } from "@/lib/formatters";
 import { dashboard as dashboardRoute } from "@/routes";
 import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
 import { index as cooperativeLedgerIndex } from "@/routes/cooperative/ledger";
+import { index as cooperativeLoansIndex } from "@/routes/cooperative/loans";
 import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
 import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
 import { index as cooperativePosProductsIndex } from "@/routes/cooperative/pos-products";
 import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
+import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
 import type { BreadcrumbItem } from "@/types";
 
@@ -131,6 +133,67 @@ interface DashboardPayload {
 const props = defineProps<{
   dashboard?: DashboardPayload;
 }>();
+
+const page = usePage();
+const userRoles = computed(() =>
+  ((page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined)?.roles ?? []).map(
+    (role) => (typeof role === "string" ? role : role.name ?? ""),
+  ),
+);
+
+type RoleExperience = {
+  badge: string;
+  title: string;
+  description: string;
+  ctaLabel: string;
+  ctaHref: string;
+  actions: Array<{ label: string; description: string; href: string; icon: Component }>;
+};
+
+const roleExperience = computed<RoleExperience>(() => {
+  if (userRoles.value.includes("Pengurus Koperasi")) {
+    return {
+      badge: "Pengurus Koperasi",
+      title: "Pusat keputusan koperasi",
+      description: "Tinjau approval final dan risiko operasional yang memerlukan keputusan Pengurus.",
+      ctaLabel: "Buka antrian pinjaman",
+      ctaHref: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } }).url,
+      actions: [
+        { label: "Approval pinjaman", description: "Final approval setelah review Manajer.", href: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } }).url, icon: HandCoins },
+        { label: "Validasi anggota", description: "Finalisasi calon anggota yang sudah diverifikasi.", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: ShieldCheck },
+        { label: "Penarikan simpanan", description: "Tinjau pengajuan penarikan yang menunggu keputusan.", href: cooperativeSavingsWithdrawalsIndex().url, icon: WalletCards },
+      ],
+    };
+  }
+
+  if (userRoles.value.includes("Manajer Koperasi")) {
+    return {
+      badge: "Manajer Koperasi",
+      title: "Review pinjaman dengan konteks",
+      description: "Mulai dari pengajuan pinjaman yang perlu review awal sebelum diteruskan ke Pengurus.",
+      ctaLabel: "Review pinjaman",
+      ctaHref: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url,
+      actions: [
+        { label: "Pengajuan baru", description: "Telaah kelayakan dan kelengkapan pinjaman.", href: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url, icon: HandCoins },
+        { label: "Angsuran tertunda", description: "Tindak lanjuti risiko pembayaran anggota.", href: cooperativeLoansIndex().url, icon: AlertTriangle },
+        { label: "Laporan koperasi", description: "Lihat ringkasan untuk keputusan operasional.", href: cooperativeReportsIndex().url, icon: BarChart3 },
+      ],
+    };
+  }
+
+  return {
+    badge: "Admin Koperasi",
+    title: "Operasional koperasi, lebih terarah",
+    description: "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
+    ctaLabel: "Buka pembayaran",
+    ctaHref: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+    actions: [
+      { label: "Verifikasi anggota", description: "Periksa data calon anggota yang masuk.", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: UserPlus },
+      { label: "Verifikasi pembayaran", description: "Jaga pencatatan simpanan tetap akurat.", href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url, icon: CreditCard },
+      { label: "Tindak lanjut iuran", description: "Kelola tagihan unpaid atau partial.", href: cooperativeDuesIndex({ query: { period_scope: "all", status: "OPEN" } }).url, icon: ReceiptText },
+    ],
+  };
+});
 
 const emptyDashboard: DashboardPayload = {
   summary: {
@@ -559,16 +622,15 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                 class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
               >
                 <Sparkles class="size-3.5" />
-                Operasional Harian
+                {{ roleExperience.badge }}
               </span>
               <h1
                 class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
               >
-                Dashboard Koperasi
+                {{ roleExperience.title }}
               </h1>
               <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-                Prioritas kerja hari ini, kas iuran, POS toko, stok, dan
-                ringkasan keputusan manajemen — semua di satu tempat.
+                {{ roleExperience.description }}
               </p>
             </div>
             <div
@@ -589,14 +651,32 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                 <span>Update {{ formatDateTime(dashboard.generatedAt) }}</span>
               </div>
               <Link
-                :href="cooperativeReportsIndex().url"
+                :href="roleExperience.ctaHref"
                 class="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800"
               >
                 <Download class="size-3.5" />
-                Laporan
+                {{ roleExperience.ctaLabel }}
               </Link>
             </div>
           </div>
+        </section>
+
+        <section class="grid gap-3 sm:grid-cols-3" aria-label="Aksi utama berdasarkan peran">
+          <Link
+            v-for="action in roleExperience.actions"
+            :key="action.label"
+            :href="action.href"
+            prefetch
+            class="group flex min-h-28 items-start gap-3 rounded-2xl border border-zinc-200/80 bg-white/90 p-4 shadow-sm shadow-zinc-950/5 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-emerald-700 dark:focus-visible:ring-offset-zinc-950"
+          >
+            <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <component :is="action.icon" class="size-5" aria-hidden="true" />
+            </span>
+            <span class="min-w-0">
+              <span class="flex items-center gap-1 text-sm font-semibold text-zinc-950 dark:text-white">{{ action.label }} <ArrowRight class="size-3.5 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-600" aria-hidden="true" /></span>
+              <span class="mt-1 block text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{{ action.description }}</span>
+            </span>
+          </Link>
         </section>
 
         <!-- KPI BAND -->

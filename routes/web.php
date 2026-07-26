@@ -148,6 +148,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
             Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
             Route::post('/loans', [\App\Http\Controllers\MemberPortalController::class, 'applyLoan'])->name('loans.store');
+            Route::post('/loans/installments/payment-intent', [\App\Http\Controllers\MemberPortalController::class, 'createLoanPaymentIntent'])->name('loans.installments.payment-intent');
+            Route::get('/loans/payment-intents/{intent}/status', [\App\Http\Controllers\MemberPortalController::class, 'loanPaymentIntentStatus'])->name('loans.payment-intents.status');
             Route::get('/points', [\App\Http\Controllers\MemberPortalController::class, 'points'])->name('points');
             Route::get('/rewards', [\App\Http\Controllers\MemberPortalController::class, 'rewards'])->name('rewards');
             Route::post('/rewards/{reward}/redeem', [\App\Http\Controllers\MemberPortalController::class, 'redeemReward'])->name('rewards.redeem');
@@ -212,6 +214,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('can:view_cooperative_member')->group(function () {
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
+            Route::post('members/{member}/organization-transfer', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'transferOrganization'])->name('members.organization-transfer');
             Route::patch('members/{member}/sensitive-data', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'updateSensitiveData'])->name('members.sensitive-data.update');
             Route::patch('members/{member}/account', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.update');
             Route::post('members/{member}/account-link', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'linkAccount'])->name('members.account-link.store');

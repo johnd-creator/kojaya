@@ -65,6 +65,11 @@
       "route_name": "member.payments.status",
       "reason": "JSON payment status endpoint; no HTML/Inertia surface",
       "category": "api-json"
+    },
+    {
+      "route_name": "member.loans.payment-intents.status",
+      "reason": "JSON loan payment intent status endpoint; no HTML/Inertia surface",
+      "category": "api-json"
     }
   ]
 }

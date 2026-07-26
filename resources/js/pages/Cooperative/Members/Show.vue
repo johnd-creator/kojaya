@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Head, Link, router, useForm } from "@inertiajs/vue3";
 import {
   ArrowLeft,
+  ArrowRightLeft,
+  AlertTriangle,
   Banknote,
   Building2,
   Calendar,
@@ -70,6 +72,7 @@ import {
   reject,
   requestRevision,
   show as showRoute,
+  organizationTransfer,
   validate as validateMember,
   approveFinal as approveFinalRoute,
 } from "@/routes/cooperative/members";
@@ -83,6 +86,11 @@ const props = defineProps<{
     by_category: Record<string, number>;
   };
   recentSavingsEntries: any[];
+  organizationTransferOrganizations?: Array<{
+    id: string;
+    name: string;
+    code: string;
+  }>;
 }>();
 
 const memberInvoices = computed(() => props.member.invoices ?? []);
@@ -102,6 +110,15 @@ const reviewAction = ref<"revision" | "reject" | null>(null);
 const reviewNotes = ref("");
 const reviewProcessing = ref(false);
 const deleteDialogOpen = ref(false);
+const transferDialogOpen = ref(false);
+const transferForm = useForm({
+  target_organization_id: "",
+  reason: "",
+});
+
+const transferOrganizations = computed(
+  () => props.organizationTransferOrganizations ?? [],
+);
 
 const savingCategories = [
   { key: "POKOK", label: "Simpanan Pokok", icon: WalletCards, tone: "emerald" as Tone },
@@ -366,6 +383,25 @@ const showKategori = computed(() => formatKategori(props.member.kategori));
 const showJenis = computed(
   () => props.member.jenis_anggota_label || "—",
 );
+
+const openTransferDialog = (): void => {
+  transferForm.reset();
+  transferForm.clearErrors();
+  transferDialogOpen.value = true;
+};
+
+const submitOrganizationTransfer = (): void => {
+  transferForm.post(
+    organizationTransfer(props.member.id).url,
+    {
+      preserveScroll: true,
+      onSuccess: () => {
+        transferDialogOpen.value = false;
+        transferForm.reset();
+      },
+    },
+  );
+};
 </script>
 
 <template>
@@ -499,6 +535,13 @@ const showJenis = computed(
                       <Pencil class="mr-2 size-4" />
                       Edit anggota
                     </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="transferOrganizations.length > 0"
+                    @click="openTransferDialog"
+                  >
+                    <ArrowRightLeft class="mr-2 size-4" />
+                    Pindahkan organisasi
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     v-if="props.member.status === 'ACTIVE'"
@@ -1065,6 +1108,104 @@ const showJenis = computed(
         </CardContent>
       </Card>
     </PageContainer>
+
+    <!-- Organization transfer -->
+    <Dialog v-model:open="transferDialogOpen">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <div class="flex items-start gap-3">
+            <span
+              class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-200/70 dark:bg-amber-900/40 dark:text-amber-300 dark:ring-amber-900/60"
+            >
+              <ArrowRightLeft class="size-4" />
+            </span>
+            <div>
+              <DialogTitle>Pindahkan organisasi anggota</DialogTitle>
+              <DialogDescription>
+                Pindahkan {{ memberName }} beserta akun tertaut dan data yang
+                memiliki scope organisasi ke koperasi tujuan.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <form class="space-y-4" @submit.prevent="submitOrganizationTransfer">
+          <div
+            class="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            <AlertTriangle class="mt-0.5 size-4 shrink-0" />
+            <p>
+              Tindakan ini memindahkan scope anggota, saldo/ledger, pinjaman,
+              akun toko, dan organisasi akun login. Pastikan koperasi tujuan
+              sudah benar.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="member-transfer-organization">Organisasi tujuan</Label>
+            <select
+              id="member-transfer-organization"
+              v-model="transferForm.target_organization_id"
+              class="flex h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              required
+            >
+              <option value="" disabled>Pilih organisasi tujuan</option>
+              <option
+                v-for="organization in transferOrganizations"
+                :key="organization.id"
+                :value="organization.id"
+              >
+                {{ organization.name }} ({{ organization.code }})
+              </option>
+            </select>
+            <p
+              v-if="transferForm.errors.target_organization_id"
+              class="text-xs font-medium text-rose-600"
+            >
+              {{ transferForm.errors.target_organization_id }}
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="member-transfer-reason">Alasan pemindahan</Label>
+            <textarea
+              id="member-transfer-reason"
+              v-model="transferForm.reason"
+              rows="4"
+              minlength="10"
+              maxlength="1000"
+              required
+              placeholder="Contoh: Koreksi organisasi anggota sesuai dokumen pendaftaran."
+              class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+            <p
+              v-if="transferForm.errors.reason"
+              class="text-xs font-medium text-rose-600"
+            >
+              {{ transferForm.errors.reason }}
+            </p>
+          </div>
+
+          <DialogFooter class="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              @click="transferDialogOpen = false"
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              :disabled="transferForm.processing"
+              class="bg-emerald-700 hover:bg-emerald-800"
+            >
+              <ArrowRightLeft class="mr-2 size-4" />
+              {{ transferForm.processing ? "Memindahkan..." : "Pindahkan anggota" }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
 
     <!-- Review dialog (replaces window.prompt) -->
     <Dialog v-model:open="reviewDialogOpen">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Deferred, Head, Link, router } from "@inertiajs/vue3";
+import { Deferred, Head, Link, router, usePage } from "@inertiajs/vue3";
 import {
   AlertTriangle,
   ArrowDownNarrowWide,
@@ -29,7 +29,10 @@ import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
+import { index as cooperativeLoansIndex } from "@/routes/cooperative/loans";
+import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
 import { approvalInbox, exceptions, exportMethod } from "@/routes/cooperative/operator";
+import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 
 const props = defineProps<{
   analytics?: {
@@ -41,13 +44,20 @@ const props = defineProps<{
   };
 }>();
 
+const page = usePage();
+const userRoles = computed(() =>
+  ((page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined)?.roles ?? []).map(
+    (role) => (typeof role === "string" ? role : role.name ?? ""),
+  ),
+);
+
 const breadcrumbs = [{ title: "Operator Koperasi", href: "#" }, { title: "Dashboard", href: "#" }];
 
 const loadingInbox = ref(true);
 const inbox = ref<any>(null);
 const exceptionData = ref<any>(null);
 
-const quickActions = [
+const defaultQuickActions = [
   { label: "Pembayaran", href: "/cooperative/payments", icon: WalletCards },
   { label: "Pinjaman", href: "/cooperative/loans", icon: HandCoins },
   { label: "Tutup Periode", href: "/cooperative/operator/closing", icon: ClipboardCheck },
@@ -55,6 +65,41 @@ const quickActions = [
   { label: "Produk POS", href: "/cooperative/pos-products", icon: ShoppingBag },
   { label: "Laporan", href: "/cooperative/reports", icon: FileText },
 ];
+
+const roleMeta = computed(() => {
+  if (userRoles.value.includes("Pengurus Koperasi")) {
+    return {
+      eyebrow: "Pengurus Koperasi",
+      title: "Cockpit keputusan final",
+      description: "Prioritaskan approval final, penarikan simpanan, dan risiko yang memerlukan keputusan Pengurus.",
+      actions: [
+        { label: "Approval Pinjaman", href: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } }).url, icon: HandCoins },
+        { label: "Validasi Anggota", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: Users },
+        { label: "Penarikan", href: cooperativeSavingsWithdrawalsIndex().url, icon: WalletCards },
+      ],
+    };
+  }
+
+  if (userRoles.value.includes("Manajer Koperasi")) {
+    return {
+      eyebrow: "Manajer Koperasi",
+      title: "Cockpit review pinjaman",
+      description: "Telaah pengajuan pinjaman, tandai risiko, lalu teruskan keputusan yang siap ke Pengurus.",
+      actions: [
+        { label: "Review Pinjaman", href: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url, icon: HandCoins },
+        { label: "Pinjaman Aktif", href: cooperativeLoansIndex({ query: { status: "ACTIVE" } }).url, icon: WalletCards },
+        { label: "Laporan", href: "/cooperative/reports", icon: FileText },
+      ],
+    };
+  }
+
+  return {
+    eyebrow: "Admin Koperasi",
+    title: "Cockpit operasional harian",
+    description: "Selesaikan verifikasi, tindak lanjut anomali, dan pekerjaan administrasi koperasi dari satu tempat.",
+    actions: defaultQuickActions,
+  };
+});
 
 const analyticsCards = computed(() => {
   const a = props.analytics;
@@ -102,12 +147,14 @@ const handleExport = (type: string) => {
   <Head title="Operator Dashboard" />
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex flex-col gap-6 p-6">
-      <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <div class="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-5 shadow-sm shadow-emerald-950/5 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900 sm:p-6">
+        <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight">Cockpit Operator Koperasi</h1>
-          <p class="mt-1 text-sm text-zinc-500">Approval, pengecekan anomali, dan overview operasional koperasi harian.</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">{{ roleMeta.eyebrow }}</p>
+          <h1 class="mt-1 text-3xl font-bold tracking-tight text-zinc-950 dark:text-white">{{ roleMeta.title }}</h1>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{{ roleMeta.description }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" @click="handleExport('members')">
             <FileDown class="mr-2 h-4 w-4" />Export Anggota
           </Button>
@@ -115,16 +162,17 @@ const handleExport = (type: string) => {
             <FileDown class="mr-2 h-4 w-4" />Export Pembayaran
           </Button>
         </div>
+        </div>
       </div>
 
       <!-- Quick Actions -->
       <div class="grid grid-cols-3 gap-3 md:grid-cols-6">
         <Link
-          v-for="action in quickActions"
+          v-for="action in roleMeta.actions"
           :key="action.label"
           :href="action.href"
           prefetch
-          class="flex flex-col items-center gap-1.5 rounded-xl border border-zinc-100 bg-white p-4 shadow-sm transition hover:border-zinc-200 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-zinc-700"
+          class="flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-emerald-700 dark:focus-visible:ring-offset-zinc-950"
         >
           <component :is="action.icon" class="size-5 text-zinc-600 dark:text-zinc-400" />
           <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ action.label }}</span>

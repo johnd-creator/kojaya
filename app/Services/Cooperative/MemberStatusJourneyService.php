@@ -79,22 +79,48 @@ class MemberStatusJourneyService
     /**
      * @return array<string, mixed>
      */
-    public function loanJourney(CooperativeMember $member): array
-    {
+    public function loanJourney(
+        CooperativeMember $member,
+        bool $hideAfterDisbursement = false,
+        bool $includeCompletionStep = true,
+    ): array {
         $loan = $member->loans()->with('loanType')->latest('created_at')->first();
+
+        $hasBeenDisbursed = $loan?->disbursed_at !== null
+            || in_array($loan?->status, [
+                LoanStatus::Active,
+                LoanStatus::PaidOff,
+                LoanStatus::Defaulted,
+                LoanStatus::WrittenOff,
+            ], true);
+
+        if ($hideAfterDisbursement && $hasBeenDisbursed) {
+            return [
+                'title' => 'Pengajuan pinjaman',
+                'current_status' => 'BELUM_ADA_PENGAJUAN',
+                'reference' => null,
+                'amount' => 0,
+                'steps' => [],
+            ];
+        }
+
+        $steps = [
+            $this->step('Pengajuan dikirim', $loan !== null, $loan?->applied_at?->toDateString()),
+            $this->step('Direview manajer koperasi', $loan !== null && ! in_array($loan->status, [LoanStatus::Applied], true), $loan?->manager_reviewed_at?->toIso8601String()),
+            $this->step('Disetujui pengurus', $loan !== null && in_array($loan->status, [LoanStatus::Approved, LoanStatus::Active, LoanStatus::PaidOff], true), $loan?->approved_at?->toIso8601String()),
+            $this->step('Dana dicairkan', $loan !== null && in_array($loan->status, [LoanStatus::Active, LoanStatus::PaidOff], true), $loan?->disbursed_at?->toIso8601String()),
+        ];
+
+        if ($includeCompletionStep) {
+            $steps[] = $this->step('Lunas', $loan?->status === LoanStatus::PaidOff);
+        }
 
         return [
             'title' => 'Pengajuan pinjaman',
             'current_status' => $loan?->status?->value ?? 'BELUM_ADA_PENGAJUAN',
             'reference' => $loan?->reference_no,
             'amount' => $loan ? (float) $loan->principal_amount : 0,
-            'steps' => [
-                $this->step('Pengajuan dikirim', $loan !== null, $loan?->applied_at?->toDateString()),
-                $this->step('Direview manajer koperasi', $loan !== null && ! in_array($loan->status, [LoanStatus::Applied], true), $loan?->manager_reviewed_at?->toIso8601String()),
-                $this->step('Disetujui', $loan !== null && in_array($loan->status, [LoanStatus::Approved, LoanStatus::Active, LoanStatus::PaidOff], true), $loan?->approved_at?->toIso8601String()),
-                $this->step('Dana dicairkan', $loan !== null && in_array($loan->status, [LoanStatus::Active, LoanStatus::PaidOff], true), $loan?->disbursed_at?->toIso8601String()),
-                $this->step('Lunas', $loan?->status === LoanStatus::PaidOff),
-            ],
+            'steps' => $steps,
         ];
     }
 

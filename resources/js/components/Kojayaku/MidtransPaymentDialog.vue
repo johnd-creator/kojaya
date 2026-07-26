@@ -26,6 +26,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/formatters";
+import memberLoans from "@/routes/member/loans";
+import memberPayments from "@/routes/member/payments";
 
 type Channel = "QRIS" | "VA" | "E_WALLET";
 
@@ -33,6 +35,13 @@ type InvoiceForDialog = {
   id: number;
   amount: number;
   paid_amount: number;
+  due_date: string | null;
+};
+
+type LoanInstallmentForDialog = {
+  id: number;
+  amount_due: number | string;
+  amount_paid: number | string;
   due_date: string | null;
 };
 
@@ -58,7 +67,9 @@ type Charge = {
 
 const props = defineProps<{
   open: boolean;
-  invoice: InvoiceForDialog | null;
+  invoice?: InvoiceForDialog | null;
+  installment?: LoanInstallmentForDialog | null;
+  kind?: "dues" | "loan";
 }>();
 
 const emit = defineEmits<{
@@ -89,9 +100,24 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let pollDeadline = 0;
 const nowTick = ref(Date.now());
 
+const isLoanPayment = computed(() => props.kind === "loan");
+const paymentTarget = computed(() =>
+  isLoanPayment.value ? props.installment : props.invoice,
+);
+
 const remainingAmount = computed(() => {
-  if (!props.invoice) return 0;
-  return Math.max(props.invoice.amount - props.invoice.paid_amount, 0);
+  if (!paymentTarget.value) return 0;
+
+  const amount =
+    "amount" in paymentTarget.value
+      ? paymentTarget.value.amount
+      : paymentTarget.value.amount_due;
+  const paidAmount =
+    "paid_amount" in paymentTarget.value
+      ? paymentTarget.value.paid_amount
+      : paymentTarget.value.amount_paid;
+
+  return Math.max(Number(amount) - Number(paidAmount), 0);
 });
 
 const expiryTimestamp = computed(() => {
@@ -170,17 +196,29 @@ const channels: Array<{
 ];
 
 async function startPayment(): Promise<void> {
-  if (!props.invoice) return;
+  if (!paymentTarget.value) return;
   phase.value = "creating";
   errorMessage.value = "";
 
   try {
-    const { data } = await axios.post("/member/payments/intent", {
-      cooperative_dues_invoice_id: props.invoice.id,
-      channel: channel.value,
-    });
+    const { data } = await axios.post(
+      isLoanPayment.value
+        ? memberLoans.installments.paymentIntent.url()
+        : memberPayments.intent.url(),
+      isLoanPayment.value
+        ? {
+            loan_installment_id: paymentTarget.value.id,
+            channel: channel.value,
+          }
+        : {
+            cooperative_dues_invoice_id: paymentTarget.value.id,
+            channel: channel.value,
+          },
+    );
 
-    const created: Charge = data.data;
+    const created: Charge = isLoanPayment.value
+      ? { ...data.data.charge, payment_id: data.data.payment_intent.id }
+      : data.data;
     charge.value = created;
     channel.value = created.channel;
     phase.value = "show_payment";
@@ -219,7 +257,11 @@ function startPolling(paymentId: number): void {
       return;
     }
     try {
-      const { data } = await axios.get(`/member/payments/${paymentId}/status`);
+      const { data } = await axios.get(
+        isLoanPayment.value
+          ? memberLoans.paymentIntents.status(paymentId).url()
+          : memberPayments.status(paymentId).url(),
+      );
       const status = data.data as PaymentStatus;
       if (status.is_paid) {
         stopPolling();
@@ -315,10 +357,21 @@ watch(
 onBeforeUnmount(() => stopPolling());
 
 const summary = computed(() => [
-  { label: "Total Tagihan", value: formatCurrency(props.invoice?.amount ?? 0) },
+  {
+    label: isLoanPayment.value ? "Total Cicilan" : "Total Tagihan",
+    value: formatCurrency(
+      paymentTarget.value && "amount" in paymentTarget.value
+        ? paymentTarget.value.amount
+        : (paymentTarget.value?.amount_due ?? 0),
+    ),
+  },
   {
     label: "Sudah Dibayar",
-    value: formatCurrency(props.invoice?.paid_amount ?? 0),
+    value: formatCurrency(
+      paymentTarget.value && "paid_amount" in paymentTarget.value
+        ? paymentTarget.value.paid_amount
+        : (paymentTarget.value?.amount_paid ?? 0),
+    ),
   },
   {
     label: "Sisa Tagihan",
@@ -334,14 +387,14 @@ const summary = computed(() => [
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Wallet class="h-5 w-5 text-emerald-600" />
-          Bayar Tagihan
+          {{ isLoanPayment ? "Bayar Cicilan Pinjaman" : "Bayar Tagihan" }}
         </DialogTitle>
         <DialogDescription>
           Bayar aman secara realtime melalui Midtrans.
         </DialogDescription>
       </DialogHeader>
 
-      <div v-if="invoice" class="space-y-4">
+      <div v-if="paymentTarget" class="space-y-4">
         <!-- Summary -->
         <div class="rounded-xl border bg-muted/40 p-4 space-y-2">
           <div

@@ -1,29 +1,23 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from "@inertiajs/vue3";
 import {
-  Banknote,
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
   CreditCard,
   Headphones,
-  History,
-  ReceiptText,
+  ListChecks,
   ShieldCheck,
-  ShoppingBag,
   Star,
-  UserRound,
   Wallet,
   WalletCards,
-  X
-  
 } from "lucide-vue-next";
-import type {LucideIcon} from "lucide-vue-next";
+import type { LucideIcon } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import MidtransPaymentDialog from "@/components/Kojayaku/MidtransPaymentDialog.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import { storeAccount as storeAccountRoute } from "@/routes/member";
 
 const page = usePage();
@@ -85,10 +79,6 @@ const props = defineProps<{
     points_balance: number;
     member_tier: string;
   };
-  store_account: {
-    balance: number;
-    balance_label: string;
-  } | null;
   recentTransactions: Array<{
     id: string;
     type: string;
@@ -99,11 +89,24 @@ const props = defineProps<{
     status?: string | null;
     occurred_at: string | null;
   }>;
+  store_account: {
+    balance: number;
+    balance_label: string;
+  } | null;
   recentLoans: Array<{
     id: number;
     status: string;
     outstanding_amount: number | string;
     loan_type?: { name: string } | null;
+    next_installment?: {
+      id: number;
+      installment_no: number;
+      due_date: string | null;
+      amount_due: number | string;
+      amount_paid: number | string;
+      remaining_amount: number | string;
+      status: string;
+    } | null;
   }>;
 }>();
 
@@ -119,7 +122,6 @@ type InvoiceForDialog = {
 };
 
 const selectedInvoice = ref<InvoiceForDialog | null>(null);
-const dismissedAlerts = ref<Set<string>>(new Set());
 
 function openPaymentDialog(invoice: InvoiceForDialog) {
   selectedInvoice.value = invoice;
@@ -127,10 +129,6 @@ function openPaymentDialog(invoice: InvoiceForDialog) {
 
 function closePaymentDialog() {
   selectedInvoice.value = null;
-}
-
-function dismiss(key: string) {
-  dismissedAlerts.value.add(key);
 }
 
 const validationStatus = computed<string>(
@@ -218,8 +216,10 @@ const accessBanner = computed<{
 
 const bannerClass = computed(() => {
   const tone = accessBanner.value?.tone;
-  if (tone === "destructive") return "border-red-200 dark:border-rose-900/50 bg-red-50 dark:bg-rose-950/20 text-red-900 dark:text-rose-300";
-  if (tone === "warning") return "border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300";
+  if (tone === "destructive")
+    return "border-red-200 dark:border-rose-900/50 bg-red-50 dark:bg-rose-950/20 text-red-900 dark:text-rose-300";
+  if (tone === "warning")
+    return "border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300";
 
   return "border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300";
 });
@@ -234,9 +234,7 @@ const pokokRemaining = computed(() => {
 });
 
 const showOnboardingAlert = computed(() => {
-  if (props.onboarding_completeness.is_complete) return false;
-
-  return !dismissedAlerts.value.has("onboarding");
+  return !props.onboarding_completeness.is_complete;
 });
 
 const showPokokAlert = computed(() => {
@@ -244,7 +242,7 @@ const showPokokAlert = computed(() => {
     return false;
   }
 
-  return !dismissedAlerts.value.has("pokok");
+  return true;
 });
 
 const showWajibAlert = computed(() => {
@@ -257,15 +255,86 @@ const showWajibAlert = computed(() => {
 
   if (!props.simpanan_wajib_pending) return false;
 
-  return !dismissedAlerts.value.has("wajib");
+  return true;
 });
 
-const progressColor = (percent: number) => {
-  if (percent >= 100) return "bg-emerald-500";
-  if (percent >= 50) return "bg-amber-500";
-
-  return "bg-rose-500";
+type MemberTask = {
+  key: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  action: "pay-pokok" | "pay-wajib" | "pay-installment" | "onboarding";
+  label: string;
+  icon: LucideIcon;
+  tone: "amber" | "emerald";
+  invoice?: InvoiceForDialog;
 };
+
+const memberTasks = computed<MemberTask[]>(() => {
+  const tasks: MemberTask[] = [];
+
+  if (showPokokAlert.value && props.simpanan_pokok_invoice) {
+    tasks.push({
+      key: "simpanan-pokok",
+      eyebrow: "Iuran awal",
+      title: "Selesaikan Simpanan Pokok",
+      description: `Sisa pembayaran ${formatCurrency(pokokRemaining.value)} sebelum layanan anggota aktif sepenuhnya.`,
+      action: "pay-pokok",
+      label: "Bayar sekarang",
+      icon: WalletCards,
+      tone: "amber",
+      invoice: props.simpanan_pokok_invoice,
+    });
+  }
+
+  if (showWajibAlert.value && props.simpanan_wajib_pending) {
+    tasks.push({
+      key: "simpanan-wajib",
+      eyebrow: "Iuran berkala",
+      title: "Bayar Simpanan Wajib",
+      description: `${props.simpanan_wajib_pending.count} tagihan tertunda dengan total ${formatCurrency(props.simpanan_wajib_pending.total_amount)}.`,
+      action: "pay-wajib",
+      label: "Lihat tagihan",
+      icon: WalletCards,
+      tone: "amber",
+      invoice: props.simpanan_wajib_invoice ?? undefined,
+    });
+  }
+
+  props.recentLoans.forEach((loan) => {
+    const installment = loan.next_installment;
+
+    if (!installment || installment.remaining_amount <= 0) {
+      return;
+    }
+
+    tasks.push({
+      key: `loan-installment-${loan.id}-${installment.id}`,
+      eyebrow: `Cicilan ke-${installment.installment_no}`,
+      title: `Bayar cicilan ${loan.loan_type?.name ?? "pinjaman"}`,
+      description: `${formatCurrency(installment.remaining_amount)} jatuh tempo ${formatDate(installment.due_date)}.`,
+      action: "pay-installment",
+      label: "Lihat cicilan",
+      icon: CreditCard,
+      tone: "amber",
+    });
+  });
+
+  if (showOnboardingAlert.value) {
+    tasks.push({
+      key: "onboarding",
+      eyebrow: "Profil anggota",
+      title: "Lengkapi data anggota",
+      description: `${props.onboarding_completeness.completed_fields} dari ${props.onboarding_completeness.total_fields} data wajib sudah terisi.`,
+      action: "onboarding",
+      label: "Lanjutkan",
+      icon: ClipboardCheck,
+      tone: "emerald",
+    });
+  }
+
+  return tasks;
+});
 
 const summaryCards = computed(() => [
   {
@@ -281,101 +350,43 @@ const summaryCards = computed(() => [
     label: "Saldo Simpanan",
     value: formatCurrency(props.summary.savings_balance),
     icon: WalletCards,
-    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+    iconClass:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     href: "/member/savings",
   },
   {
     label: "Pinjaman Aktif",
     value: formatCurrency(props.summary.loan_outstanding),
     icon: CreditCard,
-    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
+    iconClass:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
     href: "/member/loans",
   },
   {
     label: "Poin Saya",
     value: props.summary.points_balance,
     icon: Star,
-    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
+    iconClass:
+      "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
     href: "/member/points",
   },
 ]);
 
-const quickLinks = computed(() => [
-  {
-    label: "Simpanan & Tagihan",
-    href: "/member/savings",
-    icon: WalletCards,
-    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    activeOnly: true,
-  },
-  {
-    label: "Pinjaman",
-    href: "/member/loans",
-    icon: CreditCard,
-    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    activeOnly: true,
-  },
-  {
-    label: "Poin",
-    href: "/member/points",
-    icon: Star,
-    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-    activeOnly: true,
-  },
-  {
-    label: "Transaksi POS",
-    href: "/member/transactions",
-    icon: ShoppingBag,
-    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    activeOnly: true,
-  },
-  {
-    label: "Saldo Toko",
-    href: storeAccountRoute().url,
-    icon: Wallet,
-    iconClass: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
-    activeOnly: false,
-  },
-  {
-    label: "Profil Saya",
-    href: "/member/profile",
-    icon: UserRound,
-    iconClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    activeOnly: false,
-  },
-  {
-    label: "Onboarding",
-    href: "/member/onboarding",
-    icon: ClipboardCheck,
-    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-    activeOnly: false,
-  },
-]);
+function taskToneClass(tone: MemberTask["tone"]): string {
+  return tone === "amber"
+    ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+    : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300";
+}
 
-const visibleQuickLinks = computed(() =>
-  quickLinks.value.filter((item) => props.is_active_member || !item.activeOnly),
-);
+function taskHref(task: MemberTask): string {
+  if (task.action === "onboarding") {
+    return "/member/onboarding";
+  }
 
-const transactionRows = computed(() =>
-  props.recentTransactions.slice(0, 3).map((transaction) => ({
-    id: transaction.id,
-    title: transaction.title,
-    subtitle:
-      transaction.type === "SAVINGS_PAYMENT" && transaction.status
-        ? `${transaction.subtitle} · ${transaction.status}`
-        : transaction.subtitle,
-    amount: formatCurrency(transaction.amount ?? transaction.total_amount),
-    date: transaction.occurred_at
-      ? new Intl.DateTimeFormat("id-ID", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date(transaction.occurred_at))
-      : "-",
-  })),
-);
+  return task.action === "pay-installment"
+    ? "/member/loans"
+    : "/member/savings";
+}
 </script>
 
 <template>
@@ -387,25 +398,36 @@ const transactionRows = computed(() =>
           v-if="flash.success"
           class="rounded-2xl border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50 dark:bg-emerald-950/20 p-4 text-sm font-semibold text-emerald-900 dark:text-emerald-300 shadow-sm flex items-center gap-3 animate-fade-in"
         >
-          <span class="flex h-2 w-2 rounded-full bg-emerald-600 animate-ping"></span>
+          <span
+            class="flex h-2 w-2 rounded-full bg-emerald-600 animate-ping"
+          ></span>
           {{ flash.success }}
         </div>
 
         <section
-          class="grid gap-6 rounded-3xl border border-emerald-800/10 bg-gradient-to-br from-emerald-800 to-emerald-950 p-4 text-white shadow-xl shadow-emerald-950/20 sm:p-6 lg:grid-cols-[1.1fr_0.9fr] lg:p-8 relative overflow-hidden"
+          class="relative overflow-hidden rounded-3xl border border-emerald-800/10 bg-gradient-to-br from-emerald-800 to-emerald-950 p-5 text-white shadow-xl shadow-emerald-950/20 sm:p-6 lg:p-7"
         >
-          <!-- Decorative background glow -->
-          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div class="absolute -left-10 -top-10 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div
+            class="pointer-events-none absolute -right-10 -bottom-10 size-44 rounded-full bg-emerald-400/10 blur-3xl"
+            aria-hidden="true"
+          />
+          <div
+            class="pointer-events-none absolute -left-10 -top-10 size-44 rounded-full bg-emerald-300/10 blur-3xl"
+            aria-hidden="true"
+          />
 
-          <div class="flex flex-col gap-6 sm:flex-row sm:items-center relative z-10">
+          <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center">
             <div
               class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 border-white/20 bg-white/10 text-xl font-bold text-white shadow-inner backdrop-blur-md sm:h-24 sm:w-24 sm:rounded-full sm:text-3xl"
             >
               {{ memberInitials }}
             </div>
             <div class="min-w-0">
-              <p class="text-xs font-medium uppercase tracking-wider text-emerald-300">Selamat datang kembali,</p>
+              <p
+                class="text-xs font-medium uppercase tracking-wider text-emerald-300"
+              >
+                Selamat datang kembali,
+              </p>
               <div class="mt-1 flex flex-wrap items-center gap-3">
                 <h2 class="text-2xl font-extrabold tracking-tight sm:text-3xl">
                   {{ member.name }}
@@ -416,36 +438,19 @@ const transactionRows = computed(() =>
                   {{ memberStatusLabel }}
                 </span>
               </div>
-              <p class="mt-3 max-w-2xl text-sm text-emerald-100/90 leading-relaxed">
-                Terima kasih telah menjadi bagian dari
-                <span class="font-semibold text-emerald-300">{{ member.organization?.name || "Koperasi Kajaya Bersama" }}</span>.
-                <br />No. Anggota: <span class="font-mono bg-white/10 px-1.5 py-0.5 rounded text-xs">{{ member.member_no }}</span>
-              </p>
-            </div>
-          </div>
-
-          <div
-            class="flex items-center gap-6 border-t border-white/10 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0 relative z-10"
-          >
-            <div class="min-w-0 flex-1">
-              <p class="font-bold text-lg text-white">
-                Ajukan pinjaman dengan mudah
-              </p>
-              <p class="mt-1 text-sm text-emerald-200/90">
-                Proses cepat dan transparan untuk kebutuhan finansial Anda.
-              </p>
-              <Link
-                href="/member/loans"
-                class="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-emerald-950 transition hover:bg-emerald-50 hover:scale-105 active:scale-95 shadow-lg shadow-emerald-950/35"
+              <p
+                class="mt-3 max-w-2xl text-sm leading-relaxed text-emerald-100/90"
               >
-                Ajukan Sekarang
-                <ChevronRight class="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
-            <div
-              class="hidden h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/10 text-white sm:flex shadow-inner backdrop-blur-sm"
-            >
-              <Wallet class="h-12 w-12 text-emerald-300" />
+                Terima kasih telah menjadi bagian dari
+                <span class="font-semibold text-emerald-300">{{
+                  member.organization?.name || "Koperasi Jaya Bersama"
+                }}</span
+                >. <br />No. Anggota:
+                <span
+                  class="font-mono bg-white/10 px-1.5 py-0.5 rounded text-xs"
+                  >{{ member.member_no }}</span
+                >
+              </p>
             </div>
           </div>
         </section>
@@ -458,14 +463,15 @@ const transactionRows = computed(() =>
         >
           <div class="flex items-start gap-3.5">
             <div class="p-2 bg-current/10 rounded-xl">
-              <component
-                :is="accessBanner.icon"
-                class="h-5 w-5 shrink-0"
-              />
+              <component :is="accessBanner.icon" class="h-5 w-5 shrink-0" />
             </div>
             <div>
-              <p class="font-bold text-sm sm:text-base">{{ accessBanner.title }}</p>
-              <p class="text-xs sm:text-sm mt-0.5 opacity-90">{{ accessBanner.description }}</p>
+              <p class="font-bold text-sm sm:text-base">
+                {{ accessBanner.title }}
+              </p>
+              <p class="text-xs sm:text-sm mt-0.5 opacity-90">
+                {{ accessBanner.description }}
+              </p>
             </div>
           </div>
           <Link
@@ -477,243 +483,146 @@ const transactionRows = computed(() =>
           </Link>
         </div>
 
-        <!-- Onboarding Progress Alert -->
-        <div
-          v-if="showOnboardingAlert"
-          class="relative rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 backdrop-blur-sm p-4 shadow-sm sm:p-6"
+        <section
+          class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+          aria-label="Ringkasan keuangan anggota"
         >
-          <button
-            type="button"
-            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-amber-500 hover:bg-amber-100/50 hover:text-amber-800 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 transition"
-            @click="dismiss('onboarding')"
-          >
-            <X class="h-4 w-4" />
-          </button>
-          <div class="flex items-start gap-4 pr-8">
-            <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 shadow-inner"
-            >
-              <ClipboardCheck class="h-6 w-6" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-4">
-                <h3 class="font-bold text-amber-900 dark:text-amber-400 text-base">
-                  Lengkapi Profil Onboarding Anda
-                </h3>
-                <span class="text-sm font-extrabold text-amber-800 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/20 px-2.5 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-900/30">
-                  {{ onboarding_completeness.progress_percent }}%
-                </span>
-              </div>
-              <p class="mt-1 text-sm text-amber-800/90 dark:text-amber-300 leading-relaxed">
-                {{ onboarding_completeness.completed_fields }} dari
-                {{ onboarding_completeness.total_fields }} data wajib telah diisi. Silakan lengkapi sisa kolom untuk mengaktifkan seluruh fitur.
-              </p>
-              <Link
-                href="/member/onboarding"
-                class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-700 px-4 py-2 text-sm font-bold text-white shadow-sm shadow-amber-900/10 transition hover:bg-amber-800"
-              >
-                Lanjutkan Onboarding
-                <ChevronRight class="h-4 w-4" />
-              </Link>
-              <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100 dark:bg-zinc-800 border border-amber-200/30 dark:border-zinc-700/50">
-                <div
-                  class="h-full rounded-full transition-all duration-500 shadow-sm"
-                  :class="
-                    progressColor(onboarding_completeness.progress_percent)
-                  "
-                  :style="{
-                    width: onboarding_completeness.progress_percent + '%',
-                  }"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Simpanan Pokok Alert -->
-        <div
-          v-if="showPokokAlert && simpanan_pokok_invoice"
-          class="relative rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 backdrop-blur-sm p-4 shadow-sm animate-fade-in sm:p-6"
-        >
-          <button
-            type="button"
-            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-amber-500 hover:bg-amber-100/50 hover:text-amber-800 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 transition"
-            @click="dismiss('pokok')"
-          >
-            <X class="h-4 w-4" />
-          </button>
-          <div class="flex items-start gap-4 pr-8">
-            <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 shadow-inner"
-            >
-              <Banknote class="h-6 w-6" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <h3 class="font-bold text-amber-900 dark:text-amber-400 text-base">Pembayaran Simpanan Pokok</h3>
-              <p class="mt-1 text-sm text-amber-800/90 dark:text-amber-300 leading-relaxed">
-                Harap lunasi Simpanan Pokok Anda. Sisa pembayaran: <span class="font-bold text-amber-950 dark:text-white">{{ formatCurrency(pokokRemaining) }}</span>.
-              </p>
-              <button
-                type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-800 dark:bg-amber-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-amber-800/20 dark:shadow-amber-950/20 transition hover:bg-amber-950 dark:hover:bg-amber-600 hover:scale-105 active:scale-95"
-                @click="openPaymentDialog(simpanan_pokok_invoice!)"
-              >
-                Bayar Sekarang
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Simpanan Wajib Alert (Emerald-themed to match Savings color) -->
-        <div
-          v-if="
-            showWajibAlert && simpanan_wajib_pending && simpanan_wajib_progress
-          "
-          class="relative rounded-2xl border border-emerald-200 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/10 backdrop-blur-sm p-4 shadow-sm animate-fade-in sm:p-6"
-        >
-          <button
-            type="button"
-            class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-emerald-500 hover:bg-emerald-100/50 hover:text-emerald-700 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400 transition"
-            @click="dismiss('wajib')"
-          >
-            <X class="h-4 w-4" />
-          </button>
-          <div class="flex items-start gap-4 pr-8">
-            <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 shadow-inner"
-            >
-              <WalletCards class="h-6 w-6" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <h3 class="font-bold text-emerald-900 dark:text-emerald-400 text-base">Pembayaran Simpanan Wajib</h3>
-              <p class="mt-1 text-sm text-emerald-800/90 dark:text-emerald-300 leading-relaxed">
-                Terdapat <span class="font-bold">{{ simpanan_wajib_pending.count }} tagihan</span> simpanan wajib belum terbayar, total tagihan sebesar <span class="font-bold text-emerald-950 dark:text-white">{{ formatCurrency(simpanan_wajib_pending.total_amount) }}</span>.
-              </p>
-              <button
-                v-if="simpanan_wajib_invoice"
-                type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-800/20 dark:shadow-emerald-950/20 transition hover:bg-emerald-950 dark:hover:bg-emerald-600 hover:scale-105 active:scale-95"
-                @click="openPaymentDialog(simpanan_wajib_invoice)"
-              >
-                Bayar Sekarang
-              </button>
-              <Link
-                v-else
-                href="/member/savings"
-                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-800 dark:bg-emerald-700 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-800/20 dark:shadow-emerald-950/20 transition hover:bg-emerald-950 dark:hover:bg-emerald-600 hover:scale-105 active:scale-95"
-              >
-                Lihat Semua Tagihan
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <!-- Summary Cards Section -->
-        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           <Link
             v-for="card in summaryCards"
             :key="card.label"
             :href="card.href"
-            class="group overflow-hidden rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300"
+            class="group rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-700 dark:focus-visible:ring-offset-zinc-950 sm:p-5"
           >
-            <div class="flex items-center gap-4 p-4 sm:gap-5 sm:p-6">
+            <div class="flex flex-col gap-3 sm:gap-4">
               <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm group-hover:scale-110 transition-transform duration-300 sm:h-16 sm:w-16"
+                class="flex size-10 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-105 sm:size-11"
                 :class="card.iconClass"
               >
-                <component :is="card.icon" class="h-8 w-8" />
+                <component :is="card.icon" class="size-5" aria-hidden="true" />
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">{{ card.label }}</p>
-                <p class="mt-1.5 text-xl font-extrabold text-zinc-900 dark:text-white tracking-tight sm:text-2xl">
+              <div class="min-w-0">
+                <p
+                  class="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400"
+                >
+                  {{ card.label }}
+                </p>
+                <p
+                  class="mt-1 text-lg font-extrabold tracking-tight text-zinc-950 dark:text-white sm:text-xl"
+                >
                   {{ card.value }}
                 </p>
               </div>
             </div>
-            <div
-              class="flex items-center justify-between border-t border-zinc-50 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 group-hover:bg-emerald-50/30 dark:group-hover:bg-emerald-950/20 px-4 py-3 sm:px-6 sm:py-3.5 text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 transition-colors"
-            >
-              Lihat Detail
+            <span
+              class="mt-4 flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300"
+              >Lihat detail
               <ChevronRight
-                class="h-4 w-4 transition-transform group-hover:translate-x-1"
-              />
-            </div>
+                class="size-3.5 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+            /></span>
           </Link>
         </section>
 
-        <!-- Quick Links Section -->
-        <section
-          class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 p-4 shadow-sm sm:p-6"
-        >
-          <h2 class="text-base font-bold text-zinc-900 dark:text-white tracking-tight">Akses Cepat</h2>
-          <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-6">
-            <Link
-              v-for="item in visibleQuickLinks"
-              :key="item.label"
-              :href="item.href"
-              class="group flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200 shadow-sm transition-all duration-300 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 hover:-translate-y-1 hover:shadow-md"
-            >
-              <span
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110 shadow-sm"
-                :class="item.iconClass"
-              >
-                <component :is="item.icon" class="h-5 w-5" />
-              </span>
-              <span class="min-w-0 leading-tight group-hover:text-emerald-900 dark:group-hover:text-emerald-400 transition-colors">{{ item.label }}</span>
-            </Link>
-          </div>
-        </section>
-
-        <!-- Two Column Content Grid -->
-        <section class="grid gap-6 xl:grid-cols-[0.95fr_1fr]">
-          <!-- Transaksi Terbaru Card -->
+        <!-- Member Tasks and Loan Status -->
+        <section class="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+          <!-- Member Tasks Card -->
           <div
-            class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col justify-between sm:p-6"
+            class="flex flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-5"
           >
             <div>
               <div class="flex items-center justify-between gap-4">
-                <h2 class="font-bold text-zinc-900 dark:text-white tracking-tight">Transaksi Terbaru</h2>
+                <h2
+                  class="font-bold text-zinc-900 dark:text-white tracking-tight"
+                >
+                  Tugas Anggota
+                </h2>
                 <Link
-                  href="/member/transactions"
+                  href="/member/savings"
                   class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline"
                 >
-                  Lihat semua
+                  Kelola simpanan
                 </Link>
               </div>
-              <div class="mt-5 space-y-3">
+              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Hal yang perlu Anda selesaikan untuk menjaga layanan anggota
+                tetap aktif.
+              </p>
+              <div v-if="memberTasks.length > 0" class="mt-5 space-y-3">
                 <div
-                  v-for="transaction in transactionRows"
-                  :key="transaction.id"
-                  class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-50 dark:border-zinc-800 p-4 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
+                  v-for="task in memberTasks"
+                  :key="task.key"
+                  class="flex flex-col gap-4 rounded-2xl border border-zinc-100 p-4 transition-colors hover:bg-zinc-50/60 dark:border-zinc-800 dark:hover:bg-zinc-800/30 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div class="flex min-w-0 items-center gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
                     <div
-                      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/35 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm"
+                      :class="taskToneClass(task.tone)"
                     >
-                      <ReceiptText class="h-5 w-5" />
+                      <component :is="task.icon" class="h-5 w-5" />
                     </div>
                     <div class="min-w-0">
-                      <p class="truncate font-bold text-zinc-800 dark:text-zinc-200 text-sm">
-                        {{ transaction.title }}
+                      <p
+                        class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500"
+                      >
+                        {{ task.eyebrow }}
                       </p>
-                      <p class="text-xs text-zinc-400 dark:text-zinc-500">
-                        {{ transaction.subtitle }}
+                      <p
+                        class="mt-1 font-bold text-zinc-800 dark:text-zinc-200 text-sm"
+                      >
+                        {{ task.title }}
+                      </p>
+                      <p
+                        class="mt-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400"
+                      >
+                        {{ task.description }}
                       </p>
                     </div>
                   </div>
-                  <div class="text-right">
-                    <p class="font-extrabold text-emerald-800 dark:text-emerald-400 text-sm">
-                      {{ transaction.amount }}
-                    </p>
-                    <p class="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 mt-0.5">{{ transaction.date }}</p>
-                  </div>
+                  <button
+                    v-if="task.action === 'pay-pokok' && task.invoice"
+                    type="button"
+                    class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:bg-emerald-700 dark:hover:bg-emerald-600 dark:focus-visible:ring-offset-zinc-900"
+                    @click="openPaymentDialog(task.invoice)"
+                  >
+                    {{ task.label }} <ChevronRight class="size-4" />
+                  </button>
+                  <button
+                    v-else-if="task.action === 'pay-wajib' && task.invoice"
+                    type="button"
+                    class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:bg-emerald-700 dark:hover:bg-emerald-600 dark:focus-visible:ring-offset-zinc-900"
+                    @click="openPaymentDialog(task.invoice)"
+                  >
+                    {{ task.label }} <ChevronRight class="size-4" />
+                  </button>
+                  <Link
+                    v-else
+                    :href="taskHref(task)"
+                    class="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 px-4 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/30 dark:focus-visible:ring-offset-zinc-900"
+                  >
+                    {{ task.label }} <ChevronRight class="size-4" />
+                  </Link>
                 </div>
+              </div>
+              <div
+                v-else
+                class="mt-5 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+              >
                 <div
-                  v-if="transactionRows.length === 0"
-                  class="flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-zinc-400 dark:text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/30 dark:bg-zinc-900/50"
+                  class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
                 >
-                  <History class="h-8 w-8 text-zinc-300 dark:text-zinc-700" />
-                  <span>Belum ada transaksi terbaru.</span>
+                  <ListChecks class="size-5" />
+                </div>
+                <div>
+                  <p
+                    class="text-sm font-bold text-emerald-900 dark:text-emerald-300"
+                  >
+                    Semua tugas sudah selesai
+                  </p>
+                  <p
+                    class="mt-0.5 text-xs text-emerald-800/70 dark:text-emerald-200/70"
+                  >
+                    Terima kasih sudah menjaga data dan kewajiban anggota Anda.
+                  </p>
                 </div>
               </div>
             </div>
@@ -721,18 +630,22 @@ const transactionRows = computed(() =>
               href="/member/transactions"
               class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
-              Lihat Semua Transaksi
+              Buka Riwayat Transaksi
               <ChevronRight class="h-4 w-4" />
             </Link>
           </div>
 
           <!-- Status Pinjaman Card -->
           <div
-            class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col justify-between sm:p-6"
+            class="flex flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-5"
           >
             <div>
               <div class="flex items-center justify-between gap-4">
-                <h2 class="font-bold text-zinc-900 dark:text-white tracking-tight">Status Pinjaman</h2>
+                <h2
+                  class="font-bold text-zinc-900 dark:text-white tracking-tight"
+                >
+                  Status Pinjaman
+                </h2>
                 <Link
                   href="/member/loans"
                   class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline"
@@ -743,18 +656,23 @@ const transactionRows = computed(() =>
 
               <div
                 v-if="recentLoans.length === 0"
-                class="mt-5 flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-900/30 bg-emerald-50/20 dark:bg-emerald-950/10 p-6 text-center"
+                class="mt-5 flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/20 p-5 text-center dark:border-emerald-900/30 dark:bg-emerald-950/10"
               >
                 <div
                   class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-800 dark:bg-emerald-700 text-white shadow-lg shadow-emerald-800/20 dark:shadow-emerald-950/30"
                 >
                   <CheckCircle2 class="h-7 w-7" />
                 </div>
-                <p class="mt-4 font-bold text-emerald-950 dark:text-emerald-400">
+                <p
+                  class="mt-4 font-bold text-emerald-950 dark:text-emerald-400"
+                >
                   Belum ada pinjaman aktif
                 </p>
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
-                  Anda tidak memiliki pengajuan pinjaman aktif saat ini. Ajukan sekarang jika Anda butuh modal usaha atau dana darurat.
+                <p
+                  class="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed"
+                >
+                  Anda tidak memiliki pengajuan pinjaman aktif saat ini. Ajukan
+                  sekarang jika Anda butuh modal usaha atau dana darurat.
                 </p>
                 <Link
                   href="/member/loans"
@@ -772,14 +690,22 @@ const transactionRows = computed(() =>
                   class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-50 dark:border-zinc-800 p-4 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
                 >
                   <div class="min-w-0">
-                    <p class="font-bold text-zinc-800 dark:text-zinc-200 text-sm">
+                    <p
+                      class="font-bold text-zinc-800 dark:text-zinc-200 text-sm"
+                    >
                       {{ loan.loan_type?.name || "Pinjaman" }}
                     </p>
                     <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-                      Status: <span class="font-semibold text-emerald-800 dark:text-emerald-400">{{ loan.status }}</span>
+                      Status:
+                      <span
+                        class="font-semibold text-emerald-800 dark:text-emerald-400"
+                        >{{ loan.status }}</span
+                      >
                     </p>
                   </div>
-                  <p class="font-extrabold text-zinc-900 dark:text-white text-sm">
+                  <p
+                    class="font-extrabold text-zinc-900 dark:text-white text-sm"
+                  >
                     {{ formatCurrency(loan.outstanding_amount) }}
                   </p>
                 </div>
@@ -806,9 +732,14 @@ const transactionRows = computed(() =>
               <Headphones class="h-7 w-7" />
             </div>
             <div>
-              <p class="font-bold text-emerald-900 dark:text-emerald-300">Butuh bantuan atau informasi tambahan?</p>
-              <p class="text-sm text-emerald-900/70 dark:text-zinc-400 mt-1 max-w-xl">
-                Kami siap membantu Anda. Hubungi tim layanan anggota kami untuk bantuan cepat mengenai keanggotaan, simpanan, atau pinjaman.
+              <p class="font-bold text-emerald-900 dark:text-emerald-300">
+                Butuh bantuan atau informasi tambahan?
+              </p>
+              <p
+                class="text-sm text-emerald-900/70 dark:text-zinc-400 mt-1 max-w-xl"
+              >
+                Kami siap membantu Anda. Hubungi tim layanan anggota kami untuk
+                bantuan cepat mengenai keanggotaan, simpanan, atau pinjaman.
               </p>
             </div>
           </div>
@@ -829,4 +760,5 @@ const transactionRows = computed(() =>
       />
     </PageContainer>
   </AppLayout>
-</template>>
+</template>
+>

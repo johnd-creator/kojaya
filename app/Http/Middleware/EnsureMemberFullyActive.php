@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\CooperativeMember;
 use App\Services\AuditLogService;
+use App\Services\Cooperative\MemberAccessService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,6 +13,7 @@ class EnsureMemberFullyActive
 {
     public function __construct(
         private readonly AuditLogService $audit,
+        private readonly MemberAccessService $memberAccessService,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -28,8 +30,13 @@ class EnsureMemberFullyActive
 
         $this->logAccessDenied($request, $member);
 
+        $memberAccess = $this->memberAccessService->for($member);
+        $targetRoute = $memberAccess['can_access_onboarding']
+            ? 'member.onboarding'
+            : 'member.dashboard';
+
         return redirect()
-            ->route('member.onboarding')
+            ->route($targetRoute)
             ->with('warning', $this->messageFor($member->validation_status));
     }
 

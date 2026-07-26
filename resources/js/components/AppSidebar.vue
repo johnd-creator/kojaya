@@ -102,7 +102,7 @@ const userRoles = computed(() => {
 });
 const isMember = computed(() => userRoles.value.includes("Anggota"));
 const hasNonMemberRole = computed(
-  () => isMember.value && userRoles.value.some((r) => r !== "Anggota"),
+  () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
 const isSystemAdmin = computed(
@@ -114,6 +114,17 @@ const userPermissions = computed<string[]>(() => {
   const permissions = page.props.auth?.permissions as string[] | undefined;
 
   return permissions ?? [];
+});
+type MemberAccess = {
+  is_active: boolean;
+  is_pending_review: boolean;
+  can_access_financial_features: boolean;
+  can_access_onboarding: boolean;
+};
+const memberAccess = computed<MemberAccess | null>(() => {
+  const auth = page.props.auth as any;
+
+  return (auth?.member_access ?? null) as MemberAccess | null;
 });
 const canAccess = (permissions?: string | string[]): boolean => {
   // System Admin and Admin Pusat have access to everything
@@ -652,9 +663,36 @@ const allNavItems: NavItem[] = [
 ] as any[];
 
 const footerNavItems: NavItem[] = [];
-const memberNavItems: NavItem[] = [
+const memberNavItems = computed<NavItem[]>(() => {
+  if (!memberAccess.value?.can_access_financial_features) {
+    return [
+      {
+        title: "Beranda",
+        href: "/member",
+        icon: LayoutGrid,
+      },
+      ...(memberAccess.value?.can_access_onboarding
+        ? [
+            {
+              title: memberAccess.value.is_pending_review
+                ? "Status Pengajuan"
+                : "Onboarding",
+              href: "/member/onboarding",
+              icon: ClipboardCheck,
+            } as NavItem,
+          ]
+        : []),
+      {
+        title: "Profil",
+        href: "/member/profile",
+        icon: UserRound,
+      },
+    ];
+  }
+
+  return [
   {
-    title: "Kojayaku",
+    title: "Beranda",
     href: "/member",
     icon: LayoutGrid,
   },
@@ -692,9 +730,10 @@ const memberNavItems: NavItem[] = [
     href: "/member/profile",
     icon: UserRound,
   },
-];
+  ];
+});
 const mainNavItems = computed(() =>
-  isMemberOnly.value ? memberNavItems : filterNavByPermission(allNavItems),
+  isMemberOnly.value ? memberNavItems.value : filterNavByPermission(allNavItems),
 );
 const logoHref = computed(() => (isMemberOnly.value ? "/member" : dashboard()));
 const navigationLabel = computed(() => {

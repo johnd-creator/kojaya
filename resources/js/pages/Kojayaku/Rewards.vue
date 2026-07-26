@@ -274,7 +274,7 @@ const hasRedemptionJourney = computed<boolean>(() => props.journey.current_statu
                                         <MapPin class="h-3.5 w-3.5" />
                                         Alamat Pengiriman
                                     </label>
-                                    <Textarea v-model="form.delivery_address" rows="3" placeholder="Tuliskan alamat pengiriman lengkap Anda..." class="rounded-xl dark:border-zinc-800" />
+                                    <Textarea v-model="form.delivery_address" :rows="3" placeholder="Tuliskan alamat pengiriman lengkap Anda..." class="rounded-xl dark:border-zinc-800" />
                                 </div>
 
                                 <div v-if="selectedReward" class="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-800/35 p-4">

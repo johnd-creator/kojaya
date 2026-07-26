@@ -140,6 +140,12 @@ const userRoles = computed(() =>
     (role) => (typeof role === "string" ? role : role.name ?? ""),
   ),
 );
+const userPermissions = computed<string[]>(() => {
+  const permissions = (page.props.auth as { permissions?: string[] } | undefined)
+    ?.permissions;
+
+  return permissions ?? [];
+});
 
 type RoleExperience = {
   badge: string;
@@ -181,17 +187,59 @@ const roleExperience = computed<RoleExperience>(() => {
     };
   }
 
+  if (userRoles.value.includes("Admin Koperasi")) {
+    return {
+      badge: "Admin Koperasi",
+      title: "Operasional koperasi, lebih terarah",
+      description: "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
+      ctaLabel: "Buka pembayaran",
+      ctaHref: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+      actions: [
+        { label: "Verifikasi anggota", description: "Periksa data calon anggota yang masuk.", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: UserPlus },
+        { label: "Verifikasi pembayaran", description: "Jaga pencatatan simpanan tetap akurat.", href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url, icon: CreditCard },
+        { label: "Tindak lanjut iuran", description: "Kelola tagihan unpaid atau partial.", href: cooperativeDuesIndex({ query: { period_scope: "all", status: "OPEN" } }).url, icon: ReceiptText },
+      ],
+    };
+  }
+
+  if (
+    userRoles.value.includes("Kasir Koperasi") ||
+    userPermissions.value.includes("access_cooperative_pos")
+  ) {
+    return {
+      badge: "Kasir Koperasi",
+      title: "Operasional POS koperasi",
+      description: "Kelola transaksi kasir dan pantau aktivitas penjualan sesuai akses Anda.",
+      ctaLabel: "Buka kasir POS",
+      ctaHref: cooperativePosIndex().url,
+      actions: [
+        { label: "Kasir POS", description: "Mulai atau lanjutkan transaksi penjualan.", href: cooperativePosIndex().url, icon: ShoppingCart },
+        { label: "Riwayat transaksi", description: "Tinjau transaksi POS yang sudah tercatat.", href: cooperativePosReportsIndex().url, icon: ReceiptText },
+      ],
+    };
+  }
+
+  if (
+    userRoles.value.includes("System Admin") ||
+    userRoles.value.includes("Admin Pusat")
+  ) {
+    return {
+      badge: userRoles.value.includes("System Admin") ? "System Admin" : "Admin Pusat",
+      title: "Ringkasan platform",
+      description: "Pantau sistem dan pilih ruang kerja dari modul yang tersedia untuk akun Anda.",
+      ctaLabel: "Buka dashboard",
+      ctaHref: dashboardRoute().url,
+      actions: [],
+    };
+  }
+
   return {
-    badge: "Admin Koperasi",
-    title: "Operasional koperasi, lebih terarah",
-    description: "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
-    ctaLabel: "Buka pembayaran",
-    ctaHref: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
-    actions: [
-      { label: "Verifikasi anggota", description: "Periksa data calon anggota yang masuk.", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: UserPlus },
-      { label: "Verifikasi pembayaran", description: "Jaga pencatatan simpanan tetap akurat.", href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url, icon: CreditCard },
-      { label: "Tindak lanjut iuran", description: "Kelola tagihan unpaid atau partial.", href: cooperativeDuesIndex({ query: { period_scope: "all", status: "OPEN" } }).url, icon: ReceiptText },
-    ],
+    badge: "Dashboard",
+    title: "Ruang kerja Anda",
+    description: "Pilih modul yang sesuai dengan akses akun Anda.",
+    ctaLabel: "Buka dashboard",
+    ctaHref: dashboardRoute().url,
+    actions: [],
   };
 });
 
@@ -461,7 +509,7 @@ const collectionStats = [
   },
 ];
 
-const collectionTone = computed<Tone>(() => {
+const collectionTone = computed<"emerald" | "amber" | "rose">(() => {
   const rate = dashboard.value.collections.collection_rate;
   if (rate >= 80) {
     return "emerald";

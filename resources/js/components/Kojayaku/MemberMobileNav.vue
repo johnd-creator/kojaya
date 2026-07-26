@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link, usePage } from "@inertiajs/vue3";
 import {
   Gift,
   House,
@@ -9,16 +9,52 @@ import {
 } from "lucide-vue-next";
 import { useCurrentUrl } from "@/composables/useCurrentUrl";
 import { dashboard as memberDashboard } from "@/routes/member";
+import { computed } from "vue";
 
 const { isCurrentUrl } = useCurrentUrl();
+const page = usePage();
 
-const items = [
-  { label: "Beranda", href: memberDashboard().url, icon: House },
-  { label: "Simpanan", href: "/member/savings", icon: WalletCards },
-  { label: "Pinjaman", href: "/member/loans", icon: WalletMinimal },
-  { label: "Reward", href: "/member/rewards", icon: Gift },
-  { label: "Profil", href: "/member/profile", icon: UserRound },
-];
+type MemberAccess = {
+  can_access_financial_features: boolean;
+  can_access_onboarding: boolean;
+  is_pending_review: boolean;
+};
+
+const memberAccess = computed<MemberAccess | null>(() => {
+  const auth = page.props.auth as any;
+
+  return (auth?.member_access ?? null) as MemberAccess | null;
+});
+
+const items = computed(() => {
+  const base = [{ label: "Beranda", href: memberDashboard().url, icon: House }];
+
+  if (!memberAccess.value?.can_access_financial_features) {
+    return [
+      ...base,
+      ...(memberAccess.value?.can_access_onboarding
+        ? [
+            {
+              label: memberAccess.value.is_pending_review
+                ? "Status"
+                : "Onboarding",
+              href: "/member/onboarding",
+              icon: WalletCards,
+            },
+          ]
+        : []),
+      { label: "Profil", href: "/member/profile", icon: UserRound },
+    ];
+  }
+
+  return [
+    ...base,
+    { label: "Simpanan", href: "/member/savings", icon: WalletCards },
+    { label: "Pinjaman", href: "/member/loans", icon: WalletMinimal },
+    { label: "Reward", href: "/member/rewards", icon: Gift },
+    { label: "Profil", href: "/member/profile", icon: UserRound },
+  ];
+});
 
 const isActive = (href: string): boolean => isCurrentUrl(href);
 </script>

@@ -25,6 +25,8 @@ use App\Models\MemberStoreAccount;
 use App\Models\PosTransaction;
 use App\Models\Reward;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Services\Cooperative\MemberAccessService;
+use App\Services\Cooperative\MemberFinancialActivityService;
 use App\Services\Cooperative\MemberOnboardingService;
 use App\Services\Cooperative\MemberOnboardingSubmitService;
 use App\Services\Cooperative\MemberProfileCompletenessService;
@@ -36,7 +38,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,6 +50,7 @@ class MemberPortalController extends Controller
         SavingsSummaryService $savingsSummary,
         DuesGenerationService $duesGenerationService,
         MemberProfileCompletenessService $completenessService,
+        MemberAccessService $memberAccessService,
     ): Response {
         $member = $this->memberOrAbort($request);
         $storeAccount = MemberStoreAccount::query()
@@ -57,9 +59,10 @@ class MemberPortalController extends Controller
             ->first();
         $pointSummary = $pointService->balanceSummary($member);
         $savingSummary = $savingsSummary->summary($member);
-        $isActive = ($member->validation_status ?: $member->status) === CooperativeMember::VALIDATION_ACTIVE;
-        $isPendingReview = $member->validation_status === CooperativeMember::VALIDATION_PENDING_REVIEW
-            && $member->onboarding_submitted_at !== null;
+        $memberAccess = $memberAccessService->for($member);
+        $isActive = (bool) $memberAccess['is_active'];
+        $isPendingReview = (bool) $memberAccess['is_pending_review'];
+        $canPreviewFinancialSummary = (bool) $memberAccess['can_preview_financial_summary'];
 
         $onboardingCompleteness = $completenessService->summarize($member);
 
@@ -113,7 +116,7 @@ class MemberPortalController extends Controller
         $simpananWajibPending = null;
         $simpananWajibProgress = null;
         $simpananWajibInvoice = null;
-        if ($isActive || $isPendingReview) {
+        if ($canPreviewFinancialSummary) {
             $wajibType = CooperativeContributionType::query()
                 ->where('code', 'WAJIB')
                 ->where('is_active', true)
@@ -161,8 +164,11 @@ class MemberPortalController extends Controller
 
         return Inertia::render('Kojayaku/Dashboard', [
             'member' => $member,
-            'is_active_member' => $isActive || $isPendingReview,
+            'is_active_member' => $isActive,
             'is_pending_review' => $isPendingReview,
+            'can_access_financial_features' => $isActive,
+            'can_preview_financial_summary' => $canPreviewFinancialSummary,
+            'can_access_onboarding' => (bool) $memberAccess['can_access_onboarding'],
             'onboarding_completeness' => $onboardingCompleteness,
             'simpanan_pokok_invoice' => $simpananPokokInvoice,
             'simpanan_pokok_progress' => $simpananPokokProgress,
@@ -181,8 +187,8 @@ class MemberPortalController extends Controller
             'store_account' => $storeAccount
                 ? (new MemberStoreAccountResource($storeAccount))->resolve()
                 : null,
-            'recentTransactions' => ($isActive || $isPendingReview) ? $this->recentMemberActivities($member) : [],
-            'recentLoans' => ($isActive || $isPendingReview) ? Loan::query()
+            'recentTransactions' => $canPreviewFinancialSummary ? $this->recentMemberActivities($member) : [],
+            'recentLoans' => $canPreviewFinancialSummary ? Loan::query()
                 ->with([
                     'loanType',
                     'installments' => fn ($query) => $query
@@ -333,7 +339,9 @@ class MemberPortalController extends Controller
 
         $service->submit($member, $request->validated(), $request->user());
 
-        return back()->with('success', 'Onboarding terkirim. Pengurus akan memvalidasi data Anda.');
+        return redirect()
+            ->route('member.onboarding')
+            ->with('success', 'Onboarding terkirim. Pengurus akan memvalidasi data Anda.');
     }
 
     public function markOnboardingStep(
@@ -564,95 +572,14 @@ class MemberPortalController extends Controller
         return back()->with('success', 'Reward berhasil ditukarkan.');
     }
 
-    public function transactions(Request $request): Response
+    public function transactions(Request $request, MemberFinancialActivityService $activityService): Response
     {
         $member = $this->memberOrAbort($request);
-
-        $posQuery = PosTransaction::query()
-            ->with(['items.product', 'payments'])
-            ->where('cooperative_member_id', $member->id);
-        $paymentQuery = CooperativePayment::query()
-            ->with(['invoice.contributionType', 'contributionType'])
-            ->where('cooperative_member_id', $member->id);
-
-        if ($request->filled('date_from')) {
-            $posQuery->whereDate('sold_at', '>=', $request->input('date_from'));
-            $paymentQuery->whereDate('paid_at', '>=', $request->input('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $posQuery->whereDate('sold_at', '<=', $request->input('date_to'));
-            $paymentQuery->whereDate('paid_at', '<=', $request->input('date_to'));
-        }
-
-        $posActivities = $posQuery->latest('sold_at')->limit(100)->get()->map(
-            fn (PosTransaction $transaction): array => [
-                'id' => 'pos:'.$transaction->id,
-                'source' => 'pos',
-                'title' => 'Belanja di Toko Koperasi',
-                'subtitle' => $transaction->transaction_no,
-                'amount' => (float) $transaction->total_amount,
-                'occurred_at' => $transaction->sold_at?->toIso8601String(),
-                'status' => $transaction->status,
-                'line_items' => $transaction->items->map(fn ($item): array => [
-                    'name' => $item->product?->name ?? 'Produk',
-                    'quantity' => $item->quantity,
-                    'amount' => (float) $item->line_total,
-                ])->values()->all(),
-                'payment_methods' => $transaction->payments->pluck('payment_method')->values()->all(),
-            ],
-        );
-
-        $paymentActivities = $paymentQuery->latest('paid_at')->latest('created_at')->limit(100)->get()->map(
-            function (CooperativePayment $payment): array {
-                $typeName = $payment->invoice?->contributionType?->name
-                    ?: $payment->contributionType?->name
-                    ?: 'Simpanan';
-
-                return [
-                    'id' => 'payment:'.$payment->id,
-                    'source' => 'payment',
-                    'title' => 'Pembayaran '.$typeName,
-                    'subtitle' => $payment->invoice?->period
-                        ? 'Periode '.$payment->invoice->period
-                        : 'Pembayaran simpanan',
-                    'amount' => (float) $payment->amount,
-                    'occurred_at' => ($payment->paid_at ?: $payment->created_at)?->toIso8601String(),
-                    'status' => $payment->status,
-                    'line_items' => [],
-                    'payment_methods' => [$payment->payment_method],
-                ];
-            },
-        );
-
-        $activities = $posActivities->concat($paymentActivities)->sortByDesc('occurred_at')->values();
-        $perPage = 12;
-        $currentPage = max($request->integer('page', 1), 1);
-        $transactions = new LengthAwarePaginator(
-            $activities->forPage($currentPage, $perPage)->values(),
-            $activities->count(),
-            $perPage,
-            $currentPage,
-            [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ],
-        );
+        $activityData = $activityService->paginate($member, $request);
 
         return Inertia::render('Kojayaku/Transactions', [
-            'transactions' => $transactions,
-            'summary' => [
-                'total_activities' => $activities->count(),
-                'pos_count' => $posActivities->count(),
-                'payment_count' => $paymentActivities->count(),
-                'total_amount' => (float) $activities->sum('amount'),
-                'last_activity_at' => $activities->first()['occurred_at'] ?? null,
-                'total_transactions' => $posActivities->count(),
-                'total_items' => (int) $posActivities->sum(
-                    fn (array $activity): int => collect($activity['line_items'])->sum('quantity'),
-                ),
-                'last_transaction_at' => $posActivities->first()['occurred_at'] ?? null,
-            ],
+            'transactions' => $activityData['transactions'],
+            'summary' => $activityData['summary'],
             'filters' => $request->only(['date_from', 'date_to']),
         ]);
     }

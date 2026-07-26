@@ -56,15 +56,18 @@ const props = defineProps<{
 
 const dateFrom = ref(props.filters.date_from ?? "");
 const dateTo = ref(props.filters.date_to ?? "");
-const expandedIds = ref<Set<number>>(new Set());
+const expandedIds = ref<Set<string>>(new Set());
 
-function toggleExpand(id: number): void {
+function toggleExpand(id: string): void {
   if (expandedIds.value.has(id)) {
     expandedIds.value.delete(id);
   } else {
     expandedIds.value.add(id);
   }
 }
+
+const panelId = (id: string): string => `activity-panel-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+const headerId = (id: string): string => `activity-header-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
 function applyFilters(): void {
   router.get(
@@ -237,9 +240,13 @@ const statusBadge = (status: string) => {
             :key="transaction.id"
             class="overflow-hidden rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 transition-all duration-300 hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-700"
           >
-            <div
-              class="flex cursor-pointer items-center gap-3 p-4 sm:gap-4 sm:p-5"
+            <button
+              type="button"
+              class="flex w-full cursor-pointer items-center gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 sm:gap-4 sm:p-5"
               @click="toggleExpand(transaction.id)"
+              :id="headerId(transaction.id)"
+              :aria-expanded="expandedIds.has(transaction.id)"
+              :aria-controls="panelId(transaction.id)"
             >
               <div
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-400"
@@ -247,6 +254,7 @@ const statusBadge = (status: string) => {
                 <component
                   :is="transaction.source === 'pos' ? ShoppingBag : WalletCards"
                   class="h-5 w-5"
+                  aria-hidden="true"
                 />
               </div>
               <div class="min-w-0 flex-1">
@@ -289,12 +297,16 @@ const statusBadge = (status: string) => {
               <component
                 :is="expandedIds.has(transaction.id) ? ChevronUp : ChevronDown"
                 class="h-5 w-5 shrink-0 text-zinc-400 dark:text-zinc-500"
+                aria-hidden="true"
               />
-            </div>
+            </button>
 
             <div
               v-if="expandedIds.has(transaction.id)"
               class="border-t border-zinc-50 dark:border-zinc-800 bg-zinc-50/20 dark:bg-zinc-950/20 px-4 py-4 sm:px-6 sm:py-4"
+              role="region"
+              :id="panelId(transaction.id)"
+              :aria-labelledby="headerId(transaction.id)"
             >
               <div class="mb-4 grid gap-4 text-xs sm:grid-cols-3">
                 <div>

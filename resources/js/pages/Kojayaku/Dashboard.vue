@@ -11,6 +11,7 @@ import {
   Star,
   Wallet,
   WalletCards,
+  LockKeyhole,
 } from "lucide-vue-next";
 import type { LucideIcon } from "lucide-vue-next";
 import { computed, ref } from "vue";
@@ -32,6 +33,9 @@ const props = defineProps<{
   };
   is_active_member: boolean;
   is_pending_review?: boolean;
+  can_access_financial_features: boolean;
+  can_preview_financial_summary: boolean;
+  can_access_onboarding: boolean;
   onboarding_completeness: {
     progress_percent: number;
     completed_fields: number;
@@ -234,10 +238,18 @@ const pokokRemaining = computed(() => {
 });
 
 const showOnboardingAlert = computed(() => {
-  return !props.onboarding_completeness.is_complete;
+  return (
+    props.can_access_onboarding &&
+    !props.is_pending_review &&
+    !props.onboarding_completeness.is_complete
+  );
 });
 
 const showPokokAlert = computed(() => {
+  if (!props.can_access_financial_features && !props.can_access_onboarding) {
+    return false;
+  }
+
   if (!props.simpanan_pokok_progress || props.simpanan_pokok_progress.is_paid) {
     return false;
   }
@@ -287,7 +299,11 @@ const memberTasks = computed<MemberTask[]>(() => {
     });
   }
 
-  if (showWajibAlert.value && props.simpanan_wajib_pending) {
+  if (
+    props.can_access_financial_features &&
+    showWajibAlert.value &&
+    props.simpanan_wajib_pending
+  ) {
     tasks.push({
       key: "simpanan-wajib",
       eyebrow: "Iuran berkala",
@@ -301,10 +317,11 @@ const memberTasks = computed<MemberTask[]>(() => {
     });
   }
 
-  props.recentLoans.forEach((loan) => {
+  if (props.can_access_financial_features) {
+    props.recentLoans.forEach((loan) => {
     const installment = loan.next_installment;
 
-    if (!installment || installment.remaining_amount <= 0) {
+    if (!installment || Number(installment.remaining_amount) <= 0) {
       return;
     }
 
@@ -318,7 +335,8 @@ const memberTasks = computed<MemberTask[]>(() => {
       icon: CreditCard,
       tone: "amber",
     });
-  });
+    });
+  }
 
   if (showOnboardingAlert.value) {
     tasks.push({
@@ -339,36 +357,52 @@ const memberTasks = computed<MemberTask[]>(() => {
 const summaryCards = computed(() => [
   {
     label: "Saldo Toko",
-    value: props.store_account
+    value: props.can_preview_financial_summary && props.store_account
       ? formatCurrency(props.store_account.balance)
-      : "Belum tersedia",
+      : props.can_preview_financial_summary
+        ? "Belum tersedia"
+        : "Terkunci",
     icon: Wallet,
     iconClass: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
-    href: storeAccountRoute().url,
+    href: props.can_access_financial_features ? storeAccountRoute().url : null,
+    locked: !props.can_access_financial_features,
+    lockedMessage: "Aktif setelah verifikasi",
   },
   {
     label: "Saldo Simpanan",
-    value: formatCurrency(props.summary.savings_balance),
+    value: props.can_preview_financial_summary
+      ? formatCurrency(props.summary.savings_balance)
+      : "Terkunci",
     icon: WalletCards,
     iconClass:
       "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    href: "/member/savings",
+    href: props.can_access_financial_features ? "/member/savings" : null,
+    locked: !props.can_access_financial_features,
+    lockedMessage: "Aktif setelah verifikasi",
   },
   {
     label: "Pinjaman Aktif",
-    value: formatCurrency(props.summary.loan_outstanding),
+    value: props.can_preview_financial_summary
+      ? formatCurrency(props.summary.loan_outstanding)
+      : "Terkunci",
     icon: CreditCard,
     iconClass:
       "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    href: "/member/loans",
+    href: props.can_access_financial_features ? "/member/loans" : null,
+    locked: !props.can_access_financial_features,
+    lockedMessage: "Aktif setelah verifikasi",
   },
   {
     label: "Poin Saya",
-    value: props.summary.points_balance,
+    value: props.can_preview_financial_summary
+      ? props.summary.points_balance
+      : "Terkunci",
     icon: Star,
     iconClass:
       "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-    href: "/member/points",
+    href: props.can_access_financial_features ? "/member/points" : null,
+    locked: !props.can_access_financial_features,
+    lockedMessage: "Aktif setelah verifikasi",
   },
 ]);
 
@@ -487,11 +521,18 @@ function taskHref(task: MemberTask): string {
           class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
           aria-label="Ringkasan keuangan anggota"
         >
-          <Link
+          <component
+            :is="card.href ? Link : 'div'"
             v-for="card in summaryCards"
             :key="card.label"
-            :href="card.href"
-            class="group rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-700 dark:focus-visible:ring-offset-zinc-950 sm:p-5"
+            :href="card.href ?? undefined"
+            :aria-disabled="card.href ? undefined : 'true'"
+            :class="[
+              'group rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-900 sm:p-5',
+              card.href
+                ? 'hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:hover:border-emerald-700 dark:focus-visible:ring-offset-zinc-950'
+                : 'cursor-not-allowed opacity-80',
+            ]"
           >
             <div class="flex flex-col gap-3 sm:gap-4">
               <div
@@ -515,12 +556,20 @@ function taskHref(task: MemberTask): string {
             </div>
             <span
               class="mt-4 flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300"
-              >Lihat detail
+              :class="{ 'text-zinc-500 dark:text-zinc-400': card.locked }"
+              >{{ card.href ? "Lihat detail" : card.lockedMessage }}
+              <LockKeyhole
+                v-if="card.locked"
+                class="size-3.5"
+                aria-hidden="true"
+              />
               <ChevronRight
+                v-else
                 class="size-3.5 transition-transform group-hover:translate-x-0.5"
                 aria-hidden="true"
-            /></span>
-          </Link>
+              />
+            </span>
+          </component>
         </section>
 
         <!-- Member Tasks and Loan Status -->
@@ -537,6 +586,7 @@ function taskHref(task: MemberTask): string {
                   Tugas Anggota
                 </h2>
                 <Link
+                  v-if="can_access_financial_features"
                   href="/member/savings"
                   class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline"
                 >
@@ -627,6 +677,7 @@ function taskHref(task: MemberTask): string {
               </div>
             </div>
             <Link
+              v-if="can_access_financial_features"
               href="/member/transactions"
               class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
@@ -647,6 +698,7 @@ function taskHref(task: MemberTask): string {
                   Status Pinjaman
                 </h2>
                 <Link
+                  v-if="can_access_financial_features"
                   href="/member/loans"
                   class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:underline"
                 >
@@ -712,6 +764,7 @@ function taskHref(task: MemberTask): string {
               </div>
             </div>
             <Link
+              v-if="can_access_financial_features"
               href="/member/loans"
               class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 py-3 text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >

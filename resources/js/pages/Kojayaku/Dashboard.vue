@@ -319,22 +319,22 @@ const memberTasks = computed<MemberTask[]>(() => {
 
   if (props.can_access_financial_features) {
     props.recentLoans.forEach((loan) => {
-    const installment = loan.next_installment;
+      const installment = loan.next_installment;
 
-    if (!installment || Number(installment.remaining_amount) <= 0) {
-      return;
-    }
+      if (!installment || Number(installment.remaining_amount) <= 0) {
+        return;
+      }
 
-    tasks.push({
-      key: `loan-installment-${loan.id}-${installment.id}`,
-      eyebrow: `Cicilan ke-${installment.installment_no}`,
-      title: `Bayar cicilan ${loan.loan_type?.name ?? "pinjaman"}`,
-      description: `${formatCurrency(installment.remaining_amount)} jatuh tempo ${formatDate(installment.due_date)}.`,
-      action: "pay-installment",
-      label: "Lihat cicilan",
-      icon: CreditCard,
-      tone: "amber",
-    });
+      tasks.push({
+        key: `loan-installment-${loan.id}-${installment.id}`,
+        eyebrow: `Cicilan ke-${installment.installment_no}`,
+        title: `Bayar cicilan ${loan.loan_type?.name ?? "pinjaman"}`,
+        description: `${formatCurrency(installment.remaining_amount)} jatuh tempo ${formatDate(installment.due_date)}.`,
+        action: "pay-installment",
+        label: "Lihat cicilan",
+        icon: CreditCard,
+        tone: "amber",
+      });
     });
   }
 
@@ -357,11 +357,12 @@ const memberTasks = computed<MemberTask[]>(() => {
 const summaryCards = computed(() => [
   {
     label: "Saldo Toko",
-    value: props.can_preview_financial_summary && props.store_account
-      ? formatCurrency(props.store_account.balance)
-      : props.can_preview_financial_summary
-        ? "Belum tersedia"
-        : "Terkunci",
+    value:
+      props.can_preview_financial_summary && props.store_account
+        ? formatCurrency(props.store_account.balance)
+        : props.can_preview_financial_summary
+          ? "Belum tersedia"
+          : "Terkunci",
     icon: Wallet,
     iconClass: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400",
     href: props.can_access_financial_features ? storeAccountRoute().url : null,
@@ -612,7 +613,7 @@ function taskHref(task: MemberTask): string {
                     </div>
                     <div class="min-w-0">
                       <p
-                        class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500"
+                        class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                       >
                         {{ task.eyebrow }}
                       </p>
@@ -669,7 +670,7 @@ function taskHref(task: MemberTask): string {
                     Semua tugas sudah selesai
                   </p>
                   <p
-                    class="mt-0.5 text-xs text-emerald-800/70 dark:text-emerald-200/70"
+                    class="mt-0.5 text-xs text-emerald-800 dark:text-emerald-200/70"
                   >
                     Terima kasih sudah menjaga data dan kewajiban anggota Anda.
                   </p>
@@ -747,7 +748,7 @@ function taskHref(task: MemberTask): string {
                     >
                       {{ loan.loan_type?.name || "Pinjaman" }}
                     </p>
-                    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                       Status:
                       <span
                         class="font-semibold text-emerald-800 dark:text-emerald-400"
@@ -789,7 +790,7 @@ function taskHref(task: MemberTask): string {
                 Butuh bantuan atau informasi tambahan?
               </p>
               <p
-                class="text-sm text-emerald-900/70 dark:text-zinc-400 mt-1 max-w-xl"
+                class="text-sm text-emerald-800 dark:text-zinc-400 mt-1 max-w-xl"
               >
                 Kami siap membantu Anda. Hubungi tim layanan anggota kami untuk
                 bantuan cepat mengenai keanggotaan, simpanan, atau pinjaman.

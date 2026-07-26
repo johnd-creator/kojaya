@@ -39,10 +39,7 @@ import StatusPill from "@/components/dashboard/StatusPill.vue";
 import TopProductsBar from "@/components/dashboard/TopProductsBar.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import PageContainer from "@/components/PageContainer.vue";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
@@ -136,13 +133,18 @@ const props = defineProps<{
 
 const page = usePage();
 const userRoles = computed(() =>
-  ((page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined)?.roles ?? []).map(
-    (role) => (typeof role === "string" ? role : role.name ?? ""),
-  ),
+  (
+    (
+      page.props.auth as
+        | { roles?: Array<{ name?: string } | string> }
+        | undefined
+    )?.roles ?? []
+  ).map((role) => (typeof role === "string" ? role : (role.name ?? ""))),
 );
 const userPermissions = computed<string[]>(() => {
-  const permissions = (page.props.auth as { permissions?: string[] } | undefined)
-    ?.permissions;
+  const permissions = (
+    page.props.auth as { permissions?: string[] } | undefined
+  )?.permissions;
 
   return permissions ?? [];
 });
@@ -153,7 +155,12 @@ type RoleExperience = {
   description: string;
   ctaLabel: string;
   ctaHref: string;
-  actions: Array<{ label: string; description: string; href: string; icon: Component }>;
+  actions: Array<{
+    label: string;
+    description: string;
+    href: string;
+    icon: Component;
+  }>;
 };
 
 const roleExperience = computed<RoleExperience>(() => {
@@ -161,13 +168,31 @@ const roleExperience = computed<RoleExperience>(() => {
     return {
       badge: "Pengurus Koperasi",
       title: "Pusat keputusan koperasi",
-      description: "Tinjau approval final dan risiko operasional yang memerlukan keputusan Pengurus.",
+      description:
+        "Tinjau approval final dan risiko operasional yang memerlukan keputusan Pengurus.",
       ctaLabel: "Buka antrian pinjaman",
-      ctaHref: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } }).url,
+      ctaHref: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } })
+        .url,
       actions: [
-        { label: "Approval pinjaman", description: "Final approval setelah review Manajer.", href: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } }).url, icon: HandCoins },
-        { label: "Validasi anggota", description: "Finalisasi calon anggota yang sudah diverifikasi.", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: ShieldCheck },
-        { label: "Penarikan simpanan", description: "Tinjau pengajuan penarikan yang menunggu keputusan.", href: cooperativeSavingsWithdrawalsIndex().url, icon: WalletCards },
+        {
+          label: "Approval pinjaman",
+          description: "Final approval setelah review Manajer.",
+          href: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } })
+            .url,
+          icon: HandCoins,
+        },
+        {
+          label: "Validasi anggota",
+          description: "Finalisasi calon anggota yang sudah diverifikasi.",
+          href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
+          icon: ShieldCheck,
+        },
+        {
+          label: "Penarikan simpanan",
+          description: "Tinjau pengajuan penarikan yang menunggu keputusan.",
+          href: cooperativeSavingsWithdrawalsIndex().url,
+          icon: WalletCards,
+        },
       ],
     };
   }
@@ -176,13 +201,29 @@ const roleExperience = computed<RoleExperience>(() => {
     return {
       badge: "Manajer Koperasi",
       title: "Review pinjaman dengan konteks",
-      description: "Mulai dari pengajuan pinjaman yang perlu review awal sebelum diteruskan ke Pengurus.",
+      description:
+        "Mulai dari pengajuan pinjaman yang perlu review awal sebelum diteruskan ke Pengurus.",
       ctaLabel: "Review pinjaman",
       ctaHref: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url,
       actions: [
-        { label: "Pengajuan baru", description: "Telaah kelayakan dan kelengkapan pinjaman.", href: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url, icon: HandCoins },
-        { label: "Angsuran tertunda", description: "Tindak lanjuti risiko pembayaran anggota.", href: cooperativeLoansIndex().url, icon: AlertTriangle },
-        { label: "Laporan koperasi", description: "Lihat ringkasan untuk keputusan operasional.", href: cooperativeReportsIndex().url, icon: BarChart3 },
+        {
+          label: "Pengajuan baru",
+          description: "Telaah kelayakan dan kelengkapan pinjaman.",
+          href: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url,
+          icon: HandCoins,
+        },
+        {
+          label: "Angsuran tertunda",
+          description: "Tindak lanjuti risiko pembayaran anggota.",
+          href: cooperativeLoansIndex().url,
+          icon: AlertTriangle,
+        },
+        {
+          label: "Laporan koperasi",
+          description: "Lihat ringkasan untuk keputusan operasional.",
+          href: cooperativeReportsIndex().url,
+          icon: BarChart3,
+        },
       ],
     };
   }
@@ -191,13 +232,31 @@ const roleExperience = computed<RoleExperience>(() => {
     return {
       badge: "Admin Koperasi",
       title: "Operasional koperasi, lebih terarah",
-      description: "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
+      description:
+        "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
       ctaLabel: "Buka pembayaran",
       ctaHref: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
       actions: [
-        { label: "Verifikasi anggota", description: "Periksa data calon anggota yang masuk.", href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url, icon: UserPlus },
-        { label: "Verifikasi pembayaran", description: "Jaga pencatatan simpanan tetap akurat.", href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url, icon: CreditCard },
-        { label: "Tindak lanjut iuran", description: "Kelola tagihan unpaid atau partial.", href: cooperativeDuesIndex({ query: { period_scope: "all", status: "OPEN" } }).url, icon: ReceiptText },
+        {
+          label: "Verifikasi anggota",
+          description: "Periksa data calon anggota yang masuk.",
+          href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
+          icon: UserPlus,
+        },
+        {
+          label: "Verifikasi pembayaran",
+          description: "Jaga pencatatan simpanan tetap akurat.",
+          href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+          icon: CreditCard,
+        },
+        {
+          label: "Tindak lanjut iuran",
+          description: "Kelola tagihan unpaid atau partial.",
+          href: cooperativeDuesIndex({
+            query: { period_scope: "all", status: "OPEN" },
+          }).url,
+          icon: ReceiptText,
+        },
       ],
     };
   }
@@ -209,12 +268,23 @@ const roleExperience = computed<RoleExperience>(() => {
     return {
       badge: "Kasir Koperasi",
       title: "Operasional POS koperasi",
-      description: "Kelola transaksi kasir dan pantau aktivitas penjualan sesuai akses Anda.",
+      description:
+        "Kelola transaksi kasir dan pantau aktivitas penjualan sesuai akses Anda.",
       ctaLabel: "Buka kasir POS",
       ctaHref: cooperativePosIndex().url,
       actions: [
-        { label: "Kasir POS", description: "Mulai atau lanjutkan transaksi penjualan.", href: cooperativePosIndex().url, icon: ShoppingCart },
-        { label: "Riwayat transaksi", description: "Tinjau transaksi POS yang sudah tercatat.", href: cooperativePosReportsIndex().url, icon: ReceiptText },
+        {
+          label: "Kasir POS",
+          description: "Mulai atau lanjutkan transaksi penjualan.",
+          href: cooperativePosIndex().url,
+          icon: ShoppingCart,
+        },
+        {
+          label: "Riwayat transaksi",
+          description: "Tinjau transaksi POS yang sudah tercatat.",
+          href: cooperativePosReportsIndex().url,
+          icon: ReceiptText,
+        },
       ],
     };
   }
@@ -224,9 +294,12 @@ const roleExperience = computed<RoleExperience>(() => {
     userRoles.value.includes("Admin Pusat")
   ) {
     return {
-      badge: userRoles.value.includes("System Admin") ? "System Admin" : "Admin Pusat",
+      badge: userRoles.value.includes("System Admin")
+        ? "System Admin"
+        : "Admin Pusat",
       title: "Ringkasan platform",
-      description: "Pantau sistem dan pilih ruang kerja dari modul yang tersedia untuk akun Anda.",
+      description:
+        "Pantau sistem dan pilih ruang kerja dari modul yang tersedia untuk akun Anda.",
       ctaLabel: "Buka dashboard",
       ctaHref: dashboardRoute().url,
       actions: [],
@@ -432,8 +505,7 @@ const workItems = computed<WorkItem[]>(() => [
     tone: () =>
       dashboard.value.workQueue.pending_members > 0 ? "sky" : "emerald",
     pill: () => ({
-      tone:
-        dashboard.value.workQueue.pending_members > 0 ? "sky" : "emerald",
+      tone: dashboard.value.workQueue.pending_members > 0 ? "sky" : "emerald",
       text:
         dashboard.value.workQueue.pending_members > 0
           ? "Menunggu"
@@ -451,14 +523,13 @@ const workItems = computed<WorkItem[]>(() => [
       tone:
         dashboard.value.workQueue.pending_payments > 0 ? "amber" : "emerald",
       text:
-        dashboard.value.workQueue.pending_payments > 0
-          ? "Prioritas"
-          : "Aman",
+        dashboard.value.workQueue.pending_payments > 0 ? "Prioritas" : "Aman",
     }),
   },
   {
     label: "Tindak lanjut tagihan",
-    description: "Tagihan unpaid atau partial lintas periode yang perlu ditagih.",
+    description:
+      "Tagihan unpaid atau partial lintas periode yang perlu ditagih.",
     href: cooperativeDuesIndex({
       query: { period_scope: "all", status: "OPEN" },
     }).url,
@@ -467,10 +538,7 @@ const workItems = computed<WorkItem[]>(() => [
       dashboard.value.workQueue.unpaid_dues > 0 ? "rose" : "emerald",
     pill: () => ({
       tone: dashboard.value.workQueue.unpaid_dues > 0 ? "rose" : "emerald",
-      text:
-        dashboard.value.workQueue.unpaid_dues > 0
-          ? "Tinggi"
-          : "Terkendali",
+      text: dashboard.value.workQueue.unpaid_dues > 0 ? "Tinggi" : "Terkendali",
     }),
   },
   {
@@ -484,9 +552,7 @@ const workItems = computed<WorkItem[]>(() => [
       tone:
         dashboard.value.workQueue.low_stock_products > 0 ? "amber" : "emerald",
       text:
-        dashboard.value.workQueue.low_stock_products > 0
-          ? "Restock"
-          : "Aman",
+        dashboard.value.workQueue.low_stock_products > 0 ? "Restock" : "Aman",
     }),
   },
 ]);
@@ -637,7 +703,11 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
           </div>
           <Skeleton class="h-32 rounded-2xl" />
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Skeleton v-for="index in 4" :key="index" class="h-44 rounded-2xl" />
+            <Skeleton
+              v-for="index in 4"
+              :key="index"
+              class="h-44 rounded-2xl"
+            />
           </div>
           <div class="grid gap-6 xl:grid-cols-3">
             <Skeleton class="h-[28rem] rounded-xl xl:col-span-2" />
@@ -664,7 +734,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
             class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
             aria-hidden="true"
           />
-          <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div
+            class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+          >
             <div class="space-y-3">
               <span
                 class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
@@ -684,7 +756,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
             <div
               class="flex w-full flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white/70 p-3 text-sm shadow-sm shadow-zinc-950/5 backdrop-blur sm:flex-row sm:items-center sm:gap-4 sm:p-4 dark:border-zinc-800/80 dark:bg-zinc-950/40"
             >
-              <div class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+              <div
+                class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300"
+              >
                 <Calendar class="size-4 text-emerald-600" />
                 <span class="font-medium">{{
                   formatLongDate(dashboard.generatedAt)
@@ -694,7 +768,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                 class="hidden h-5 w-px bg-zinc-200 sm:block dark:bg-zinc-800"
                 aria-hidden="true"
               />
-              <div class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+              <div
+                class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300"
+              >
                 <Clock class="size-4 text-emerald-600" />
                 <span>Update {{ formatDateTime(dashboard.generatedAt) }}</span>
               </div>
@@ -709,7 +785,10 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
           </div>
         </section>
 
-        <section class="grid gap-3 sm:grid-cols-3" aria-label="Aksi utama berdasarkan peran">
+        <section
+          class="grid gap-3 sm:grid-cols-3"
+          aria-label="Aksi utama berdasarkan peran"
+        >
           <Link
             v-for="action in roleExperience.actions"
             :key="action.label"
@@ -717,12 +796,23 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
             prefetch
             class="group flex min-h-28 items-start gap-3 rounded-2xl border border-zinc-200/80 bg-white/90 p-4 shadow-sm shadow-zinc-950/5 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:border-emerald-700 dark:focus-visible:ring-offset-zinc-950"
           >
-            <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+            <span
+              class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            >
               <component :is="action.icon" class="size-5" aria-hidden="true" />
             </span>
             <span class="min-w-0">
-              <span class="flex items-center gap-1 text-sm font-semibold text-zinc-950 dark:text-white">{{ action.label }} <ArrowRight class="size-3.5 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-600" aria-hidden="true" /></span>
-              <span class="mt-1 block text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{{ action.description }}</span>
+              <span
+                class="flex items-center gap-1 text-sm font-semibold text-zinc-950 dark:text-white"
+                >{{ action.label }}
+                <ArrowRight
+                  class="size-3.5 text-zinc-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-600"
+                  aria-hidden="true"
+              /></span>
+              <span
+                class="mt-1 block text-xs leading-relaxed text-zinc-500 dark:text-zinc-400"
+                >{{ action.description }}</span
+              >
             </span>
           </Link>
         </section>
@@ -770,9 +860,7 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                   class="group relative flex flex-col gap-3 rounded-xl border border-zinc-200/70 bg-white/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300/80 hover:bg-white hover:shadow-md hover:shadow-zinc-950/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:border-zinc-800/70 dark:bg-zinc-950/40 dark:hover:border-zinc-700/80 dark:hover:bg-zinc-900"
                 >
                   <div class="flex items-start justify-between gap-3">
-                    <component
-                      :is="renderToneIcon(item.icon, item.tone())"
-                    />
+                    <component :is="renderToneIcon(item.icon, item.tone())" />
                     <StatusPill
                       :tone="item.pill().tone"
                       :label="item.pill().text"
@@ -780,14 +868,14 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                     />
                   </div>
                   <div class="space-y-1">
-                    <p class="text-2xl font-bold tabular-nums text-zinc-950 dark:text-white">
+                    <p
+                      class="text-2xl font-bold tabular-nums text-zinc-950 dark:text-white"
+                    >
                       {{
                         item.label === "Verifikasi anggota baru"
                           ? formatNumber(dashboard.workQueue.pending_members)
                           : item.label === "Approve pembayaran"
-                            ? formatNumber(
-                                dashboard.workQueue.pending_payments,
-                              )
+                            ? formatNumber(dashboard.workQueue.pending_payments)
                             : item.label === "Tindak lanjut tagihan"
                               ? formatNumber(dashboard.workQueue.unpaid_dues)
                               : formatNumber(
@@ -795,16 +883,24 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                                 )
                       }}
                     </p>
-                    <p class="text-sm font-semibold text-zinc-950 dark:text-white">
+                    <p
+                      class="text-sm font-semibold text-zinc-950 dark:text-white"
+                    >
                       {{ item.label }}
                     </p>
-                    <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                    <p
+                      class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400"
+                    >
                       {{ item.description }}
                     </p>
                   </div>
-                  <div class="flex items-center justify-end text-xs font-semibold text-zinc-400 transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-300">
+                  <div
+                    class="flex items-center justify-end text-xs font-semibold text-zinc-500 transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-300"
+                  >
                     Buka
-                    <ArrowRight class="ml-1 size-3.5 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight
+                      class="ml-1 size-3.5 transition-transform group-hover:translate-x-0.5"
+                    />
                   </div>
                 </Link>
               </div>
@@ -928,11 +1024,15 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                       />
                     </svg>
                   </div>
-                  <div class="relative flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  <div
+                    class="relative flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+                  >
                     <TrendingUp class="size-3.5" />
                     Omzet bulan ini
                   </div>
-                  <p class="relative mt-1.5 text-xl font-bold tabular-nums text-zinc-950 dark:text-white">
+                  <p
+                    class="relative mt-1.5 text-xl font-bold tabular-nums text-zinc-950 dark:text-white"
+                  >
                     {{ formatCurrency(dashboard.pos.monthly_sales) }}
                   </p>
                 </div>
@@ -958,11 +1058,15 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                       />
                     </svg>
                   </div>
-                  <div class="relative flex items-center gap-2 text-xs font-medium text-sky-700 dark:text-sky-300">
+                  <div
+                    class="relative flex items-center gap-2 text-xs font-medium text-sky-700 dark:text-sky-300"
+                  >
                     <BarChart3 class="size-3.5" />
                     Transaksi bulan ini
                   </div>
-                  <p class="relative mt-1.5 text-xl font-bold tabular-nums text-zinc-950 dark:text-white">
+                  <p
+                    class="relative mt-1.5 text-xl font-bold tabular-nums text-zinc-950 dark:text-white"
+                  >
                     {{ formatNumber(dashboard.pos.monthly_transactions) }}
                   </p>
                 </div>
@@ -988,11 +1092,15 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                       />
                     </svg>
                   </div>
-                  <div class="relative flex items-center gap-2 text-xs font-medium text-violet-700 dark:text-violet-300">
+                  <div
+                    class="relative flex items-center gap-2 text-xs font-medium text-violet-700 dark:text-violet-300"
+                  >
                     <BadgeDollarSign class="size-3.5" />
                     Transaksi anggota
                   </div>
-                  <p class="relative mt-1.5 text-xl font-bold tabular-nums text-zinc-950 dark:text-white">
+                  <p
+                    class="relative mt-1.5 text-xl font-bold tabular-nums text-zinc-950 dark:text-white"
+                  >
                     {{ formatNumber(dashboard.pos.member_transactions) }}
                   </p>
                 </div>
@@ -1003,7 +1111,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                 class="rounded-xl border border-zinc-200/70 bg-zinc-50/40 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/30"
               >
                 <div class="mb-3 flex items-center justify-between">
-                  <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                  <h3
+                    class="text-sm font-semibold text-zinc-700 dark:text-zinc-200"
+                  >
                     Top 5 produk tahun ini
                   </h3>
                   <span class="text-xs text-zinc-500 dark:text-zinc-400">
@@ -1037,7 +1147,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                       <th class="px-4 py-2.5 text-right font-medium">Omzet</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+                  <tbody
+                    class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+                  >
                     <tr
                       v-for="product in dashboard.pos.top_products"
                       :key="product.id"
@@ -1054,7 +1166,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                       <td class="px-4 py-3 text-right tabular-nums">
                         {{ formatNumber(product.quantity) }}
                       </td>
-                      <td class="px-4 py-3 text-right font-semibold tabular-nums">
+                      <td
+                        class="px-4 py-3 text-right font-semibold tabular-nums"
+                      >
                         {{ formatCurrency(product.revenue) }}
                       </td>
                     </tr>
@@ -1121,11 +1235,15 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                     >
                       {{ product.name }}
                     </p>
-                    <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                    <p
+                      class="truncate text-xs text-zinc-500 dark:text-zinc-400"
+                    >
                       {{ product.sku }} ·
                       {{ product.category ?? "Tanpa kategori" }}
                     </p>
-                    <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div
+                      class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
+                    >
                       <div
                         :class="[
                           'h-full rounded-full transition-all duration-500',
@@ -1165,7 +1283,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                 description="Semua produk aktif berada di atas stok minimum."
                 class="py-8"
               />
-              <div class="border-t border-zinc-200/70 p-3 dark:border-zinc-800/70">
+              <div
+                class="border-t border-zinc-200/70 p-3 dark:border-zinc-800/70"
+              >
                 <Link
                   :href="
                     cooperativePosProductsIndex({
@@ -1212,7 +1332,9 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
               class="group inline-flex items-center gap-1 self-start text-sm font-semibold text-emerald-700 transition-colors hover:text-emerald-800 sm:self-auto dark:text-emerald-300 dark:hover:text-emerald-200"
             >
               Laporan koperasi
-              <ArrowRight class="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight
+                class="size-3.5 transition-transform group-hover:translate-x-0.5"
+              />
             </Link>
           </div>
 

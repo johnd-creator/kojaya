@@ -66,8 +66,10 @@ function toggleExpand(id: string): void {
   }
 }
 
-const panelId = (id: string): string => `activity-panel-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-const headerId = (id: string): string => `activity-header-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+const panelId = (id: string): string =>
+  `activity-panel-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+const headerId = (id: string): string =>
+  `activity-header-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
 function applyFilters(): void {
   router.get(
@@ -178,9 +180,9 @@ const statusBadge = (status: string) => {
           class="flex flex-col gap-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:flex-row sm:items-center shadow-sm sm:p-5"
         >
           <div
-            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400"
+            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500"
           >
-            <CalendarDays class="h-4.5 w-4.5 text-zinc-400" />
+            <CalendarDays class="h-4.5 w-4.5 text-zinc-500" />
             <span>Filter tanggal:</span>
           </div>
           <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -189,7 +191,7 @@ const statusBadge = (status: string) => {
               type="date"
               class="sm:w-44 rounded-xl dark:bg-zinc-900 dark:border-zinc-800"
             />
-            <span class="text-xs font-semibold text-zinc-400 dark:text-zinc-500"
+            <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400"
               >sampai</span
             >
             <Input
@@ -269,7 +271,7 @@ const statusBadge = (status: string) => {
                     {{ statusBadge(transaction.status).label }}
                   </Badge>
                 </div>
-                <div class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   {{ transaction.subtitle }} ·
                   {{
                     transaction.occurred_at
@@ -285,7 +287,7 @@ const statusBadge = (status: string) => {
                   {{ formatCurrency(transaction.amount) }}
                 </div>
                 <div
-                  class="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5"
+                  class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 mt-0.5"
                 >
                   {{
                     transaction.source === "pos"
@@ -296,7 +298,7 @@ const statusBadge = (status: string) => {
               </div>
               <component
                 :is="expandedIds.has(transaction.id) ? ChevronUp : ChevronDown"
-                class="h-5 w-5 shrink-0 text-zinc-400 dark:text-zinc-500"
+                class="h-5 w-5 shrink-0 text-zinc-500 dark:text-zinc-400"
                 aria-hidden="true"
               />
             </button>
@@ -311,7 +313,7 @@ const statusBadge = (status: string) => {
               <div class="mb-4 grid gap-4 text-xs sm:grid-cols-3">
                 <div>
                   <span
-                    class="text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider"
+                    class="text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider"
                     >Jenis aktivitas</span
                   >
                   <div
@@ -326,7 +328,7 @@ const statusBadge = (status: string) => {
                 </div>
                 <div>
                   <span
-                    class="text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider"
+                    class="text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider"
                     >Total</span
                   >
                   <div
@@ -337,7 +339,7 @@ const statusBadge = (status: string) => {
                 </div>
                 <div>
                   <span
-                    class="text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider"
+                    class="text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider"
                     >Metode Pembayaran</span
                   >
                   <div
@@ -357,7 +359,7 @@ const statusBadge = (status: string) => {
                 class="w-full text-left text-xs"
               >
                 <thead
-                  class="text-[9px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500"
+                  class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                 >
                   <tr>
                     <th class="pb-3 pr-4">Produk</th>

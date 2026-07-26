@@ -70,7 +70,11 @@ const currentStep = computed(() => {
       </div>
       <div
         class="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
+        role="progressbar"
         aria-label="Progress pengajuan"
+        :aria-valuenow="Math.round(parseFloat(progressWidth))"
+        aria-valuemin="0"
+        aria-valuemax="100"
       >
         <div
           class="h-full rounded-full bg-emerald-600 transition-all"

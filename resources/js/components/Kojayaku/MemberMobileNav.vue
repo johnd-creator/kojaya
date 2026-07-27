@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
-import {
-  Gift,
-  House,
-  UserRound,
-  WalletCards,
-  WalletMinimal,
-} from "lucide-vue-next";
 import { useCurrentUrl } from "@/composables/useCurrentUrl";
-import { dashboard as memberDashboard } from "@/routes/member";
+import {
+  mobileNavGridClass,
+  resolveMemberMobileNavItems,
+  type MemberAccess,
+} from "@/lib/member-mobile-nav";
 import { computed } from "vue";
 
 const { isCurrentUrl } = useCurrentUrl();
 const page = usePage();
-
-type MemberAccess = {
-  can_access_financial_features: boolean;
-  can_access_onboarding: boolean;
-  is_pending_review: boolean;
-};
 
 const memberAccess = computed<MemberAccess | null>(() => {
   const auth = page.props.auth as any;
@@ -26,42 +17,18 @@ const memberAccess = computed<MemberAccess | null>(() => {
   return (auth?.member_access ?? null) as MemberAccess | null;
 });
 
-const items = computed(() => {
-  const base = [{ label: "Beranda", href: memberDashboard().url, icon: House }];
-
-  if (!memberAccess.value?.can_access_financial_features) {
-    return [
-      ...base,
-      ...(memberAccess.value?.can_access_onboarding
-        ? [
-            {
-              label: memberAccess.value.is_pending_review
-                ? "Status"
-                : "Onboarding",
-              href: "/member/onboarding",
-              icon: WalletCards,
-            },
-          ]
-        : []),
-      { label: "Profil", href: "/member/profile", icon: UserRound },
-    ];
-  }
-
-  return [
-    ...base,
-    { label: "Simpanan", href: "/member/savings", icon: WalletCards },
-    { label: "Pinjaman", href: "/member/loans", icon: WalletMinimal },
-    { label: "Reward", href: "/member/rewards", icon: Gift },
-    { label: "Profil", href: "/member/profile", icon: UserRound },
-  ];
-});
+const items = computed(() => resolveMemberMobileNavItems(memberAccess.value));
+const gridClass = computed(() => mobileNavGridClass(items.value.length));
 
 const isActive = (href: string): boolean => isCurrentUrl(href);
 </script>
 
 <template>
   <nav
-    class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-2xl border border-emerald-950/10 bg-white/95 p-1.5 shadow-xl shadow-emerald-950/15 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95 md:hidden"
+    :class="[
+      'fixed inset-x-3 bottom-3 z-40 grid rounded-2xl border border-emerald-950/10 bg-white/95 px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-xl shadow-emerald-950/15 backdrop-blur dark:border-white/10 dark:bg-zinc-950/95 md:hidden',
+      gridClass,
+    ]"
     aria-label="Navigasi utama Kojayaku"
   >
     <Link

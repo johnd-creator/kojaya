@@ -43,6 +43,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
+import {
+  hasAnyPermission,
+  isPlatformExperience,
+  resolveRoleExperience,
+  type ResolvedRoleExperience,
+  type RoleExperienceDefinition,
+} from "@/lib/role-experience";
 import { dashboard as dashboardRoute } from "@/routes";
 import { index as cooperativeDuesIndex } from "@/routes/cooperative/dues";
 import { index as cooperativeLedgerIndex } from "@/routes/cooperative/ledger";
@@ -149,172 +156,178 @@ const userPermissions = computed<string[]>(() => {
   return permissions ?? [];
 });
 
-type RoleExperience = {
-  badge: string;
-  title: string;
-  description: string;
-  ctaLabel: string;
-  ctaHref: string;
-  actions: Array<{
-    label: string;
-    description: string;
-    href: string;
-    icon: Component;
-  }>;
-};
-
-const roleExperience = computed<RoleExperience>(() => {
-  if (userRoles.value.includes("Pengurus Koperasi")) {
-    return {
-      badge: "Pengurus Koperasi",
-      title: "Pusat keputusan koperasi",
-      description:
-        "Tinjau approval final dan risiko operasional yang memerlukan keputusan Pengurus.",
-      ctaLabel: "Buka antrian pinjaman",
-      ctaHref: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } })
-        .url,
-      actions: [
-        {
-          label: "Approval pinjaman",
-          description: "Final approval setelah review Manajer.",
-          href: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } })
-            .url,
-          icon: HandCoins,
-        },
-        {
-          label: "Validasi anggota",
-          description: "Finalisasi calon anggota yang sudah diverifikasi.",
-          href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
-          icon: ShieldCheck,
-        },
-        {
-          label: "Penarikan simpanan",
-          description: "Tinjau pengajuan penarikan yang menunggu keputusan.",
-          href: cooperativeSavingsWithdrawalsIndex().url,
-          icon: WalletCards,
-        },
-      ],
-    };
-  }
-
-  if (userRoles.value.includes("Manajer Koperasi")) {
-    return {
-      badge: "Manajer Koperasi",
-      title: "Review pinjaman dengan konteks",
-      description:
-        "Mulai dari pengajuan pinjaman yang perlu review awal sebelum diteruskan ke Pengurus.",
-      ctaLabel: "Review pinjaman",
-      ctaHref: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url,
-      actions: [
-        {
-          label: "Pengajuan baru",
-          description: "Telaah kelayakan dan kelengkapan pinjaman.",
-          href: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url,
-          icon: HandCoins,
-        },
-        {
-          label: "Angsuran tertunda",
-          description: "Tindak lanjuti risiko pembayaran anggota.",
-          href: cooperativeLoansIndex().url,
-          icon: AlertTriangle,
-        },
-        {
-          label: "Laporan koperasi",
-          description: "Lihat ringkasan untuk keputusan operasional.",
-          href: cooperativeReportsIndex().url,
-          icon: BarChart3,
-        },
-      ],
-    };
-  }
-
-  if (userRoles.value.includes("Admin Koperasi")) {
-    return {
-      badge: "Admin Koperasi",
-      title: "Operasional koperasi, lebih terarah",
-      description:
-        "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
-      ctaLabel: "Buka pembayaran",
-      ctaHref: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
-      actions: [
-        {
-          label: "Verifikasi anggota",
-          description: "Periksa data calon anggota yang masuk.",
-          href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
-          icon: UserPlus,
-        },
-        {
-          label: "Verifikasi pembayaran",
-          description: "Jaga pencatatan simpanan tetap akurat.",
-          href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
-          icon: CreditCard,
-        },
-        {
-          label: "Tindak lanjut iuran",
-          description: "Kelola tagihan unpaid atau partial.",
-          href: cooperativeDuesIndex({
-            query: { period_scope: "all", status: "OPEN" },
-          }).url,
-          icon: ReceiptText,
-        },
-      ],
-    };
-  }
-
-  if (
-    userRoles.value.includes("Kasir Koperasi") ||
-    userPermissions.value.includes("access_cooperative_pos")
-  ) {
-    return {
-      badge: "Kasir Koperasi",
-      title: "Operasional POS koperasi",
-      description:
-        "Kelola transaksi kasir dan pantau aktivitas penjualan sesuai akses Anda.",
-      ctaLabel: "Buka kasir POS",
-      ctaHref: cooperativePosIndex().url,
-      actions: [
-        {
-          label: "Kasir POS",
-          description: "Mulai atau lanjutkan transaksi penjualan.",
-          href: cooperativePosIndex().url,
-          icon: ShoppingCart,
-        },
-        {
-          label: "Riwayat transaksi",
-          description: "Tinjau transaksi POS yang sudah tercatat.",
-          href: cooperativePosReportsIndex().url,
-          icon: ReceiptText,
-        },
-      ],
-    };
-  }
-
-  if (
-    userRoles.value.includes("System Admin") ||
-    userRoles.value.includes("Admin Pusat")
-  ) {
-    return {
-      badge: userRoles.value.includes("System Admin")
-        ? "System Admin"
-        : "Admin Pusat",
-      title: "Ringkasan platform",
-      description:
-        "Pantau sistem dan pilih ruang kerja dari modul yang tersedia untuk akun Anda.",
-      ctaLabel: "Buka dashboard",
-      ctaHref: dashboardRoute().url,
-      actions: [],
-    };
-  }
-
-  return {
+const roleExperienceDefinitions: Record<
+  ResolvedRoleExperience["key"],
+  RoleExperienceDefinition
+> = {
+  "system-admin": {
+    badge: "System Admin",
+    title: "Ringkasan platform",
+    description:
+      "Pantau sistem dan pilih ruang kerja dari modul yang tersedia untuk akun Anda.",
+    actions: [],
+  },
+  "admin-pusat": {
+    badge: "Admin Pusat",
+    title: "Ringkasan platform",
+    description:
+      "Pantau sistem dan pilih ruang kerja dari modul yang tersedia untuk akun Anda.",
+    actions: [],
+  },
+  pengurus: {
+    badge: "Pengurus Koperasi",
+    title: "Pusat keputusan koperasi",
+    description:
+      "Tinjau approval final dan risiko operasional yang memerlukan keputusan Pengurus.",
+    actions: [
+      {
+        label: "Approval pinjaman",
+        description: "Final approval setelah review Manajer.",
+        href: cooperativeLoansIndex({ query: { status: "MANAGER_APPROVED" } })
+          .url,
+        icon: HandCoins,
+        permissions: ["approve_cooperative_loan"],
+      },
+      {
+        label: "Validasi anggota",
+        description: "Finalisasi calon anggota yang sudah diverifikasi.",
+        href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
+        icon: ShieldCheck,
+        permissions: ["approve_cooperative_member"],
+      },
+      {
+        label: "Penarikan simpanan",
+        description: "Tinjau pengajuan penarikan yang menunggu keputusan.",
+        href: cooperativeSavingsWithdrawalsIndex().url,
+        icon: WalletCards,
+        permissions: ["view_cooperative_ledger"],
+      },
+    ],
+  },
+  manajer: {
+    badge: "Manajer Koperasi",
+    title: "Review pinjaman dengan konteks",
+    description:
+      "Mulai dari pengajuan pinjaman yang perlu review awal sebelum diteruskan ke Pengurus.",
+    actions: [
+      {
+        label: "Pengajuan baru",
+        description: "Telaah kelayakan dan kelengkapan pinjaman.",
+        href: cooperativeLoansIndex({ query: { status: "APPLIED" } }).url,
+        icon: HandCoins,
+        permissions: ["review_cooperative_loan"],
+      },
+      {
+        label: "Angsuran tertunda",
+        description: "Tindak lanjuti risiko pembayaran anggota.",
+        href: cooperativeLoansIndex().url,
+        icon: AlertTriangle,
+        permissions: ["view_cooperative_loan"],
+      },
+      {
+        label: "Laporan koperasi",
+        description: "Lihat ringkasan untuk keputusan operasional.",
+        href: cooperativeReportsIndex().url,
+        icon: BarChart3,
+        permissions: ["view_cooperative_report"],
+      },
+    ],
+  },
+  "admin-koperasi": {
+    badge: "Admin Koperasi",
+    title: "Operasional koperasi, lebih terarah",
+    description:
+      "Selesaikan verifikasi, pembayaran, tagihan, dan pengecualian harian dari satu ruang kerja.",
+    actions: [
+      {
+        label: "Verifikasi anggota",
+        description: "Periksa data calon anggota yang masuk.",
+        href: cooperativeMembersIndex({ query: { status: "PENDING" } }).url,
+        icon: UserPlus,
+        permissions: ["validate_cooperative_member"],
+      },
+      {
+        label: "Verifikasi pembayaran",
+        description: "Jaga pencatatan simpanan tetap akurat.",
+        href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+        icon: CreditCard,
+        permissions: ["manage_cooperative_payment"],
+      },
+      {
+        label: "Tindak lanjut iuran",
+        description: "Kelola tagihan unpaid atau partial.",
+        href: cooperativeDuesIndex({
+          query: { period_scope: "all", status: "OPEN" },
+        }).url,
+        icon: ReceiptText,
+        permissions: ["manage_cooperative_dues"],
+      },
+    ],
+  },
+  kasir: {
+    badge: "Kasir Koperasi",
+    title: "Operasional POS koperasi",
+    description:
+      "Kelola transaksi kasir dan pantau aktivitas penjualan sesuai akses Anda.",
+    actions: [
+      {
+        label: "Kasir POS",
+        description: "Mulai atau lanjutkan transaksi penjualan.",
+        href: cooperativePosIndex().url,
+        icon: ShoppingCart,
+        permissions: ["access_cooperative_pos"],
+      },
+      {
+        label: "Riwayat transaksi",
+        description: "Tinjau transaksi POS yang sudah tercatat.",
+        href: cooperativePosReportsIndex().url,
+        icon: ReceiptText,
+        permissions: ["view_pos_reports"],
+      },
+    ],
+  },
+  "pos-operator": {
+    badge: "Operator POS",
+    title: "Akses POS koperasi",
+    description:
+      "Gunakan akses POS yang tersedia tanpa mengubah identitas role utama akun Anda.",
+    actions: [
+      {
+        label: "Kasir POS",
+        description: "Mulai atau lanjutkan transaksi penjualan.",
+        href: cooperativePosIndex().url,
+        icon: ShoppingCart,
+        permissions: ["access_cooperative_pos"],
+      },
+      {
+        label: "Riwayat transaksi",
+        description: "Tinjau transaksi POS yang sudah tercatat.",
+        href: cooperativePosReportsIndex().url,
+        icon: ReceiptText,
+        permissions: ["view_pos_reports"],
+      },
+    ],
+  },
+  generic: {
     badge: "Dashboard",
     title: "Ruang kerja Anda",
     description: "Pilih modul yang sesuai dengan akses akun Anda.",
-    ctaLabel: "Buka dashboard",
-    ctaHref: dashboardRoute().url,
     actions: [],
-  };
-});
+  },
+};
+
+const roleExperience = computed<ResolvedRoleExperience>(() =>
+  resolveRoleExperience(
+    userRoles.value,
+    userPermissions.value,
+    roleExperienceDefinitions,
+    { label: "Buka dashboard", href: dashboardRoute().url },
+  ),
+);
+
+const canShowCooperativeActions = computed(
+  () => !isPlatformExperience(roleExperience.value.key),
+);
 
 const emptyDashboard: DashboardPayload = {
   summary: {
@@ -427,6 +440,7 @@ interface KpiCard {
   sparkline: () => number[];
   trend: () => number | null;
   trendLabel: string;
+  permissions: string[];
 }
 
 const kpiCards = computed<KpiCard[]>(() => [
@@ -447,6 +461,7 @@ const kpiCards = computed<KpiCard[]>(() => [
           100
         : null,
     trendLabel: "vs bulan lalu",
+    permissions: ["access_cooperative_pos"],
   },
   {
     label: "Pembayaran Pending",
@@ -459,6 +474,7 @@ const kpiCards = computed<KpiCard[]>(() => [
     sparkline: () => sparklineFor(dashboard.value.summary.pending_payments),
     trend: () => null,
     trendLabel: "butuh review",
+    permissions: ["manage_cooperative_payment"],
   },
   {
     label: "Tunggakan Iuran Semua Periode",
@@ -473,6 +489,7 @@ const kpiCards = computed<KpiCard[]>(() => [
     sparkline: () => sparklineFor(dashboard.value.workQueue.unpaid_dues),
     trend: () => null,
     trendLabel: "perlu ditagih",
+    permissions: ["manage_cooperative_dues"],
   },
   {
     label: "Produk Stok Kritis",
@@ -484,8 +501,17 @@ const kpiCards = computed<KpiCard[]>(() => [
     sparkline: () => sparklineFor(dashboard.value.summary.low_stock_products),
     trend: () => null,
     trendLabel: "perlu restock",
+    permissions: ["manage_pos_products"],
   },
 ]);
+
+const availableKpiCards = computed(() =>
+  canShowCooperativeActions.value
+    ? kpiCards.value.filter((card) =>
+        hasAnyPermission(userPermissions.value, card.permissions),
+      )
+    : [],
+);
 
 interface WorkItem {
   label: string;
@@ -494,6 +520,7 @@ interface WorkItem {
   icon: Component;
   tone: () => Tone;
   pill: () => { tone: Tone; text: string };
+  permissions: string[];
 }
 
 const workItems = computed<WorkItem[]>(() => [
@@ -511,6 +538,7 @@ const workItems = computed<WorkItem[]>(() => [
           ? "Menunggu"
           : "Terkendali",
     }),
+    permissions: ["validate_cooperative_member"],
   },
   {
     label: "Approve pembayaran",
@@ -525,6 +553,7 @@ const workItems = computed<WorkItem[]>(() => [
       text:
         dashboard.value.workQueue.pending_payments > 0 ? "Prioritas" : "Aman",
     }),
+    permissions: ["manage_cooperative_payment"],
   },
   {
     label: "Tindak lanjut tagihan",
@@ -540,6 +569,7 @@ const workItems = computed<WorkItem[]>(() => [
       tone: dashboard.value.workQueue.unpaid_dues > 0 ? "rose" : "emerald",
       text: dashboard.value.workQueue.unpaid_dues > 0 ? "Tinggi" : "Terkendali",
     }),
+    permissions: ["manage_cooperative_dues"],
   },
   {
     label: "Restock produk",
@@ -554,8 +584,18 @@ const workItems = computed<WorkItem[]>(() => [
       text:
         dashboard.value.workQueue.low_stock_products > 0 ? "Restock" : "Aman",
     }),
+    permissions: ["manage_pos_products"],
   },
 ]);
+
+const availableWorkItems = computed(() =>
+  canShowCooperativeActions.value
+    ? workItems.value.filter((item) =>
+        hasAnyPermission(userPermissions.value, item.permissions),
+      )
+    : [],
+);
+const priorityQueueHref = computed(() => availableWorkItems.value[0]?.href);
 
 const collectionStats = [
   {
@@ -597,6 +637,7 @@ interface ManagementStat {
   icon: Component;
   tone: Tone;
   description: string;
+  permissions: string[];
 }
 
 const managementStats: ManagementStat[] = [
@@ -607,6 +648,7 @@ const managementStats: ManagementStat[] = [
     icon: PiggyBank,
     tone: "emerald",
     description: "Akumulasi simpanan seluruh anggota",
+    permissions: ["view_cooperative_ledger"],
   },
   {
     label: "Kredit Anggota",
@@ -616,6 +658,7 @@ const managementStats: ManagementStat[] = [
     icon: HandCoins,
     tone: "sky",
     description: "Sisa piutang anggota berjalan",
+    permissions: ["view_cooperative_ledger"],
   },
   {
     label: "Profit POS Tahun Ini",
@@ -624,6 +667,7 @@ const managementStats: ManagementStat[] = [
     icon: TrendingUp,
     tone: "violet",
     description: "Laba kotor POS berjalan",
+    permissions: ["view_pos_reports"],
   },
   {
     label: "Poin POS Tahun Ini",
@@ -632,8 +676,23 @@ const managementStats: ManagementStat[] = [
     icon: Award,
     tone: "amber",
     description: "Total poin transaksi anggota",
+    permissions: ["manage_cooperative_shu"],
   },
 ];
+
+const availableManagementStats = computed(() =>
+  canShowCooperativeActions.value
+    ? managementStats.filter((stat) =>
+        hasAnyPermission(userPermissions.value, stat.permissions),
+      )
+    : [],
+);
+const managementReportHref = computed(() =>
+  canShowCooperativeActions.value &&
+  hasAnyPermission(userPermissions.value, ["view_cooperative_report"])
+    ? cooperativeReportsIndex().url
+    : undefined,
+);
 
 const memberPulse = [
   {
@@ -776,6 +835,7 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
               </div>
               <Link
                 :href="roleExperience.ctaHref"
+                :aria-label="roleExperience.ctaLabel"
                 class="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800"
               >
                 <Download class="size-3.5" />
@@ -823,7 +883,7 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
           aria-label="Ringkasan KPI"
         >
           <GradientKpiCard
-            v-for="card in kpiCards"
+            v-for="card in availableKpiCards"
             :key="card.label"
             :label="card.label"
             :value="card.value()"
@@ -847,13 +907,13 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
               description="Antrian kerja yang paling memengaruhi operasional koperasi."
               :icon="CalendarClock"
               tone="amber"
-              :href="cooperativePaymentsIndex().url"
-              href-label="Buka pembayaran"
+              :href="priorityQueueHref"
+              href-label="Buka prioritas"
             />
             <CardContent class="px-3 pb-3 sm:px-4 sm:pb-4">
               <div class="grid gap-2 sm:grid-cols-2">
                 <Link
-                  v-for="item in workItems"
+                  v-for="item in availableWorkItems"
                   :key="item.label"
                   :href="item.href"
                   prefetch
@@ -970,6 +1030,12 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
 
               <div class="flex flex-wrap gap-2 pt-1">
                 <Link
+                  v-if="
+                    canShowCooperativeActions &&
+                    hasAnyPermission(userPermissions, [
+                      'manage_cooperative_payment',
+                    ])
+                  "
                   :href="cooperativePaymentsIndex().url"
                   class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800"
                 >
@@ -977,6 +1043,12 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                   <ArrowRight class="size-4" />
                 </Link>
                 <Link
+                  v-if="
+                    canShowCooperativeActions &&
+                    hasAnyPermission(userPermissions, [
+                      'manage_cooperative_dues',
+                    ])
+                  "
                   :href="cooperativeDuesIndex().url"
                   class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
@@ -997,7 +1069,12 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
               description="Performa transaksi dan produk teratas tahun berjalan."
               :icon="ShoppingCart"
               tone="emerald"
-              :href="cooperativePosReportsIndex().url"
+              :href="
+                canShowCooperativeActions &&
+                hasAnyPermission(userPermissions, ['view_pos_reports'])
+                  ? cooperativePosReportsIndex().url
+                  : undefined
+              "
               href-label="Laporan POS"
             />
             <CardContent class="space-y-5 px-6 py-5">
@@ -1178,6 +1255,12 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
 
               <div class="flex flex-wrap gap-2 pt-1">
                 <Link
+                  v-if="
+                    canShowCooperativeActions &&
+                    hasAnyPermission(userPermissions, [
+                      'access_cooperative_pos',
+                    ])
+                  "
                   :href="cooperativePosIndex().url"
                   class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800"
                 >
@@ -1185,6 +1268,10 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                   <ArrowRight class="size-4" />
                 </Link>
                 <Link
+                  v-if="
+                    canShowCooperativeActions &&
+                    hasAnyPermission(userPermissions, ['view_pos_reports'])
+                  "
                   :href="cooperativePosReportsIndex().url"
                   class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
@@ -1203,7 +1290,10 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
               :icon="AlertTriangle"
               :tone="inventoryTone"
               :href="
-                cooperativePosProductsIndex({ query: { low_stock: 1 } }).url
+                canShowCooperativeActions &&
+                hasAnyPermission(userPermissions, ['manage_pos_products'])
+                  ? cooperativePosProductsIndex({ query: { low_stock: 1 } }).url
+                  : undefined
               "
               href-label="Kelola stok"
             />
@@ -1287,6 +1377,10 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
                 class="border-t border-zinc-200/70 p-3 dark:border-zinc-800/70"
               >
                 <Link
+                  v-if="
+                    canShowCooperativeActions &&
+                    hasAnyPermission(userPermissions, ['manage_pos_products'])
+                  "
                   :href="
                     cooperativePosProductsIndex({
                       query: { low_stock: 1 },
@@ -1327,7 +1421,8 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
               </div>
             </div>
             <Link
-              :href="cooperativeReportsIndex().url"
+              v-if="managementReportHref"
+              :href="managementReportHref"
               prefetch
               class="group inline-flex items-center gap-1 self-start text-sm font-semibold text-emerald-700 transition-colors hover:text-emerald-800 sm:self-auto dark:text-emerald-300 dark:hover:text-emerald-200"
             >
@@ -1341,7 +1436,7 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
           <div class="grid gap-4 p-5 sm:p-6">
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Link
-                v-for="stat in managementStats"
+                v-for="stat in availableManagementStats"
                 :key="stat.label"
                 :href="stat.href"
                 prefetch

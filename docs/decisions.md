@@ -1198,4 +1198,31 @@ member credit limit, and keep an immutable audit trail.
 - The PR gate remains responsible for proving that the exact checked-out head
   compares successfully against the reviewed Linux baselines.
 
+---
+
+## 🎯 ADR-031: Admin Koperasi Phase 1 Operational Workspace
+
+**Status:** READY FOR SENIOR REVIEW
+**Date:** July 28, 2026
+**Deciders:** Engineering
+
+### Decision
+
+- Admin Koperasi receives a role-specific, permission-filtered workspace for
+  daily member, payment, and dues administration.
+- Dashboard data uses organization-scoped, read-only queries and omits
+  platform-wide ERP/POS/SHU aggregates from the Admin payload.
+- Dues generation remains an explicit POST workflow; the dues index and
+  dashboard remain read-only.
+- Existing role experiences and domain workflows remain unchanged outside the
+  touched Admin operational surfaces.
+
+### Consequences
+
+- Admin users see actionable work queues without links to unauthorized pages.
+- Legacy tests and fixtures must provide an organization for non-global
+  cooperative operators.
+- Administrative activity history remains deferred until a lightweight,
+  permission-safe read model is available.
+
 *Last Updated: July 19, 2026*

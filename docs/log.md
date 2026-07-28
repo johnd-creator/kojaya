@@ -6,6 +6,20 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-07-28 - Admin Koperasi UI/UX Phase 1
+
+- Created feature/admin-koperasi-ui-ux from the reviewed
+  feature/role-ui-ux checkpoint 88d8be1ce28dbc6cfef350ebdf9b3766d779c509.
+- Added an Admin Koperasi workspace/navigation path, organization-scoped
+  operational dashboard payload, daily work queue, KPI summary, and
+  permission-filtered CTAs.
+- Made the dues index read-only on GET; generation remains explicit through the
+  existing POST workflow.
+- Added focused dashboard, organization-scope, dues read-only, and final
+  approval authorization coverage.
+- Removed synthetic dues KPI sparklines and documented canonical visual
+  baseline follow-up for Ubuntu CI.
+
 ## 🎯 2026-07-22 - Web UI Audit Framework Foundation
 
 - Added the Chromium-only Playwright visual/a11y audit harness, isolated Playwright environment example, deterministic `UiAuditSeeder`, role-based storage-state setup, runtime health reports, screenshot manifest, and pilot coverage for Dashboard, Anggota, Saldo Toko, POS, and Profil.

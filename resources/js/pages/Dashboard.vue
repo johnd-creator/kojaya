@@ -32,6 +32,7 @@ import {
 import { computed, h } from "vue";
 import type { Component } from "vue";
 import CollectionDonut from "@/components/dashboard/CollectionDonut.vue";
+import AdminCooperativeDashboard from "@/components/dashboard/admin-koperasi/AdminCooperativeDashboard.vue";
 import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
 import ProgressBar from "@/components/dashboard/ProgressBar.vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
@@ -780,6 +781,12 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
         </PageContainer>
       </template>
 
+      <AdminCooperativeDashboard
+        v-if="roleExperience.key === 'admin-koperasi'"
+        :dashboard="dashboard as any"
+      />
+
+      <template v-else>
       <PageContainer class="max-w-none">
         <!-- HERO -->
         <section
@@ -1529,6 +1536,7 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
           </div>
         </section>
       </PageContainer>
+      </template>
     </Deferred>
   </AppLayout>
 </template>

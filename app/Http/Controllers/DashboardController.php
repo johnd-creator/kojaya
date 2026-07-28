@@ -14,7 +14,7 @@ use Inertia\Response as InertiaResponse;
 
 class DashboardController extends Controller
 {
-    public function show(CooperativeDashboardService $dashboard): InertiaResponse|RedirectResponse
+    public function show(Request $request, CooperativeDashboardService $dashboard): InertiaResponse|RedirectResponse
     {
         $user = request()->user();
 
@@ -30,7 +30,7 @@ class DashboardController extends Controller
         }
 
         return Inertia::render('Dashboard', [
-            'dashboard' => Inertia::defer(fn () => $dashboard->data(), 'dashboard'),
+            'dashboard' => Inertia::defer(fn () => $dashboard->data($request->user()), 'dashboard'),
         ]);
     }
 

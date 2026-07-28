@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\Authorization\OrganizationScopeService;
 use App\Support\OrganizationVisibility;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Provides consistent organization-level data isolation for cooperative queries.
@@ -54,5 +55,10 @@ class OrganizationScopedQueryService
     public function visibilityFor(User $user): OrganizationVisibility
     {
         return $this->scopeService->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+    }
+
+    public function assertVisible(User $user, Model $model): void
+    {
+        $this->scopeService->assertVisible($user, $model);
     }
 }

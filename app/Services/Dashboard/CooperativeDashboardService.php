@@ -2,24 +2,45 @@
 
 namespace App\Services\Dashboard;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
+use App\Models\MemberResignationRequest;
 use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 
 class CooperativeDashboardService
 {
+    public function __construct(
+        private readonly OrganizationScopedQueryService $scopeService,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
-    public function data(): array
+    public function data(?User $user = null): array
+    {
+        $user ??= request()->user();
+
+        if ($user?->hasRole('Admin Koperasi')) {
+            return $this->adminCooperativeData($user);
+        }
+
+        return $this->platformData();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function platformData(): array
     {
         $today = CarbonImmutable::today();
         $now = CarbonImmutable::now();
@@ -120,6 +141,88 @@ class CooperativeDashboardService
                     : 0,
             ],
             'generatedAt' => $now->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminCooperativeData(User $user): array
+    {
+        $now = CarbonImmutable::now();
+        $currentPeriod = $now->format('Y-m');
+
+        $members = CooperativeMember::query();
+        $this->scopeService->scopeVisibleTo($members, $user);
+
+        $pendingMembers = (clone $members)
+            ->where('validation_status', CooperativeMember::VALIDATION_PENDING);
+        $revisionMembers = (clone $members)
+            ->where('validation_status', CooperativeMember::VALIDATION_REVISION);
+        $activeMembers = (clone $members)
+            ->where('status', CooperativeMember::VALIDATION_ACTIVE);
+
+        $payments = CooperativePayment::query();
+        $this->scopeService->scopeVisibleTo($payments, $user);
+        $pendingPayments = (clone $payments)->where('status', 'PENDING');
+
+        $dues = CooperativeDuesInvoice::query()
+            ->forSavingsDues()
+            ->forActiveMembers();
+        $this->scopeService->scopeVisibleTo($dues, $user);
+        $openDues = (clone $dues)->whereIn('status', ['UNPAID', 'PARTIAL']);
+        $periodDues = (clone $dues)->where('period', $currentPeriod);
+
+        $pendingResignations = null;
+
+        if ($user->can('review_cooperative_resignation')) {
+            $resignations = MemberResignationRequest::query();
+            $this->scopeService->scopeVisibleTo($resignations, $user);
+            $pendingResignations = (clone $resignations)
+                ->where('status', MemberResignationRequest::STATUS_PENDING)
+                ->count();
+        }
+
+        $totalDue = (float) (clone $periodDues)->sum('amount');
+        $paid = (float) (clone $periodDues)->sum('paid_amount');
+        $outstanding = max($totalDue - $paid, 0);
+        $organization = $user->organization;
+        $generatedAt = $now->toIso8601String();
+
+        return [
+            'workspace' => 'admin-koperasi',
+            'organization' => $organization ? [
+                'id' => $organization->id,
+                'name' => $organization->name,
+                'code' => $organization->code,
+            ] : null,
+            'summary' => [
+                'pending_members' => $pendingMembers->count(),
+                'revision_members' => $revisionMembers->count(),
+                'pending_payments' => $pendingPayments->count(),
+                'unpaid_dues_count' => $openDues->count(),
+                'unpaid_dues_amount' => (float) $openDues
+                    ->selectRaw('coalesce(sum(amount - paid_amount), 0) as outstanding_amount')
+                    ->value('outstanding_amount'),
+                'active_members' => $activeMembers->count(),
+            ],
+            'work_queue' => [
+                'pending_payments' => $pendingPayments->count(),
+                'pending_members' => $pendingMembers->count(),
+                'revision_members' => $revisionMembers->count(),
+                'unpaid_dues' => $openDues->count(),
+                'pending_resignations' => $pendingResignations,
+            ],
+            'collections' => [
+                'period' => $currentPeriod,
+                'total_due' => $totalDue,
+                'paid' => $paid,
+                'outstanding' => $outstanding,
+                'collection_rate' => $totalDue > 0 ? round(($paid / $totalDue) * 100, 1) : 0,
+                'pending_payment_amount' => (float) $pendingPayments->sum('amount'),
+            ],
+            'generated_at' => $generatedAt,
+            'generatedAt' => $generatedAt,
         ];
     }
 

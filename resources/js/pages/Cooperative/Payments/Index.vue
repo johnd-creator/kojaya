@@ -222,6 +222,32 @@ const filterStatus = ref<string>(props.filters?.status ?? "");
 const filterPeriod = ref<string>(props.filters?.period ?? "");
 const filterPaymentMethod = ref<string>(props.filters?.payment_method ?? "");
 
+const paymentRows = computed<any[]>(() =>
+  Array.isArray(props.payments) ? props.payments : (props.payments?.data ?? []),
+);
+
+const isPaymentSelected = (payment: any): boolean =>
+  selectedPayments.value.some((selected) => selected.id === payment.id);
+
+const togglePaymentSelection = (payment: any): void => {
+  if (isPaymentSelected(payment)) {
+    selectedPayments.value = selectedPayments.value.filter(
+      (selected) => selected.id !== payment.id,
+    );
+
+    return;
+  }
+
+  selectedPayments.value = [...selectedPayments.value, payment];
+};
+
+const paymentStatusClass = (status: string): string =>
+  status === "APPROVED"
+    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+    : status === "PENDING"
+      ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+      : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
+
 const applyFilters = () => {
   router.get(
     index().url,
@@ -385,7 +411,7 @@ const columns = computed(() => [
               <div
                 class="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
               >
-                Total Pembayaran
+                Total sesuai filter
               </div>
               <div
                 class="mt-1 text-lg font-bold tabular-nums text-zinc-950 dark:text-white"
@@ -393,7 +419,7 @@ const columns = computed(() => [
                 {{ payments.total ?? 0 }}
               </div>
               <div class="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Seluruh transaksi
+                Transaksi yang ditemukan
               </div>
             </div>
             <div
@@ -402,7 +428,7 @@ const columns = computed(() => [
               <div
                 class="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
               >
-                Hari Ini
+                Data ditampilkan
               </div>
               <div
                 class="mt-1 text-lg font-bold tabular-nums text-zinc-950 dark:text-white"
@@ -410,14 +436,16 @@ const columns = computed(() => [
                 {{ payments.data?.length ?? 0 }}
               </div>
               <div class="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Data ditampilkan
+                Pada halaman ini
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div class="grid gap-6 xl:grid-cols-[420px_1fr]">
+      <div
+        class="grid min-w-0 gap-6 xl:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]"
+      >
         <Card
           class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
         >
@@ -621,10 +649,10 @@ const columns = computed(() => [
           </CardContent>
         </Card>
 
-        <div class="space-y-6">
-          <div class="grid gap-4 sm:grid-cols-3">
+        <div class="min-w-0 space-y-6">
+          <div class="grid min-w-0 gap-4 sm:grid-cols-3">
             <div
-              class="rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
+              class="min-w-0 rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
             >
               <div
                 class="text-xs font-medium uppercase tracking-wide text-zinc-500"
@@ -641,7 +669,7 @@ const columns = computed(() => [
               </div>
             </div>
             <div
-              class="rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
+              class="min-w-0 rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
             >
               <div
                 class="text-xs font-medium uppercase tracking-wide text-zinc-500"
@@ -655,7 +683,7 @@ const columns = computed(() => [
               </div>
             </div>
             <div
-              class="rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
+              class="min-w-0 rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
             >
               <div
                 class="text-xs font-medium uppercase tracking-wide text-zinc-500"
@@ -671,7 +699,8 @@ const columns = computed(() => [
           </div>
 
           <Card
-            class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+            data-testid="payment-history-card"
+            class="min-w-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
           >
             <SectionHeader
               title="Riwayat Pembayaran"
@@ -681,7 +710,7 @@ const columns = computed(() => [
             />
             <CardContent class="px-0 pb-0">
               <form
-                class="grid gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800/70"
+                class="grid min-w-0 gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800/70"
                 @submit.prevent="applyFilters"
               >
                 <div class="space-y-1.5 sm:col-span-2 xl:col-span-1">
@@ -751,8 +780,10 @@ const columns = computed(() => [
                 @clear="selectedPayments = []"
               />
               <DataTable
+                class="hidden sm:block"
                 :columns="columns"
                 :data="payments"
+                table-class="min-w-[760px]"
                 :searchable="false"
                 :empty-icon="ReceiptText"
                 empty-message="Belum ada pembayaran yang tercatat."
@@ -848,6 +879,119 @@ const columns = computed(() => [
                   <span v-else class="text-xs text-zinc-400">-</span>
                 </template>
               </DataTable>
+
+              <div
+                class="space-y-3 p-4 sm:hidden"
+                aria-label="Daftar pembayaran dalam tampilan kartu"
+              >
+                <p
+                  v-if="paymentRows.length === 0"
+                  class="py-8 text-center text-sm text-zinc-500"
+                >
+                  Belum ada pembayaran yang tercatat.
+                </p>
+
+                <article
+                  v-for="payment in paymentRows"
+                  :key="payment.id"
+                  data-testid="payment-card"
+                  class="rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950/40"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p
+                        class="truncate font-semibold text-zinc-950 dark:text-white"
+                      >
+                        {{ payment.member?.name || "Anggota tidak diketahui" }}
+                      </p>
+                      <p class="mt-0.5 text-xs text-zinc-500">
+                        {{ payment.member?.member_no || "-" }}
+                      </p>
+                    </div>
+                    <input
+                      v-if="canApprovePayments"
+                      type="checkbox"
+                      :aria-label="`Pilih pembayaran ${payment.member?.name || payment.id}`"
+                      class="mt-1 size-4 shrink-0 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
+                      :checked="isPaymentSelected(payment)"
+                      @change="togglePaymentSelection(payment)"
+                    />
+                  </div>
+
+                  <div class="mt-4 flex items-end justify-between gap-3">
+                    <div>
+                      <p
+                        class="text-xs font-medium uppercase tracking-wide text-zinc-500"
+                      >
+                        Nominal
+                      </p>
+                      <p
+                        class="mt-1 text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
+                      >
+                        {{ formatCurrency(payment.amount) }}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      :class="paymentStatusClass(payment.status)"
+                    >
+                      {{ paymentStatusLabel(payment.status) }}
+                    </Badge>
+                  </div>
+
+                  <dl
+                    class="mt-4 grid grid-cols-2 gap-3 border-t border-zinc-200/70 pt-3 text-sm dark:border-zinc-800/70"
+                  >
+                    <div>
+                      <dt class="text-xs text-zinc-500">Tanggal</dt>
+                      <dd
+                        class="mt-1 font-medium text-zinc-800 dark:text-zinc-200"
+                      >
+                        {{ formatDate(payment.paid_at) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt class="text-xs text-zinc-500">Metode</dt>
+                      <dd
+                        class="mt-1 font-medium text-zinc-800 dark:text-zinc-200"
+                      >
+                        {{ paymentMethodLabel(payment.payment_method) }}
+                      </dd>
+                    </div>
+                    <div class="col-span-2">
+                      <dt class="text-xs text-zinc-500">Jenis simpanan</dt>
+                      <dd
+                        class="mt-1 font-medium text-zinc-800 dark:text-zinc-200"
+                      >
+                        {{
+                          payment.contribution_type?.name ||
+                          payment.invoice?.contribution_type?.name ||
+                          "-"
+                        }}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div
+                    v-if="canApprovePayments && payment.status === 'PENDING'"
+                    class="mt-4 border-t border-zinc-200/70 pt-3 dark:border-zinc-800/70"
+                  >
+                    <Button
+                      class="w-full"
+                      size="sm"
+                      :disabled="approvingPaymentId === payment.id"
+                      @click="approvePayment(payment)"
+                    >
+                      <CheckCircle2 class="size-4" />
+                      {{
+                        approvingPaymentId === payment.id
+                          ? "Memproses"
+                          : "Approve pembayaran"
+                      }}
+                    </Button>
+                  </div>
+                </article>
+              </div>
             </CardContent>
           </Card>
         </div>

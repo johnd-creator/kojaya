@@ -52,6 +52,7 @@ interface Props {
   selected?: any[];
   sortField?: string;
   sortDirection?: "asc" | "desc";
+  tableClass?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -64,6 +65,7 @@ const props = withDefaults(defineProps<Props>(), {
   selected: () => [],
   sortField: "",
   sortDirection: "asc",
+  tableClass: "",
 });
 
 const emit = defineEmits<{
@@ -163,7 +165,7 @@ const sortIcon = (col: Column) => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="min-w-0 space-y-4">
     <div v-if="searchable" class="flex items-center justify-between">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
@@ -180,12 +182,17 @@ const sortIcon = (col: Column) => {
     </div>
 
     <div
-      class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden"
+      class="min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
     >
-      <div class="overflow-x-auto">
+      <div
+        class="min-w-0 max-w-full overflow-x-auto overscroll-x-contain"
+        role="region"
+        :aria-label="`${tableLabel}, geser untuk melihat kolom lainnya`"
+        tabindex="0"
+      >
         <table
           :aria-label="tableLabel"
-          class="w-full text-left border-collapse"
+          :class="['w-full border-collapse text-left', tableClass]"
           role="table"
         >
           <thead class="sticky top-0 z-10">

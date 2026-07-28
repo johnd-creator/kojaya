@@ -167,3 +167,33 @@ test("admin-payments-index-selected @visual", async ({ page }, testInfo) => {
     await writeRuntimeReport(runtime, testInfo);
   }
 });
+
+test("admin-sidebar-keuangan-active-with-query @sidebar", async ({ page }) => {
+  const openSidebarForSmallViewport = async (): Promise<void> => {
+    if ((page.viewportSize()?.width ?? 0) <= 768) {
+      await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+    }
+  };
+
+  const keuanganMenu = page
+    .locator('[data-sidebar="menu-button"]')
+    .filter({ hasText: "Keuangan Anggota" });
+  const activeSubmenu = (label: string) =>
+    page
+      .locator('[data-sidebar="menu-sub-button"][data-active="true"]')
+      .filter({ hasText: label });
+
+  await page.goto("/cooperative/payments?status=PENDING", {
+    waitUntil: "domcontentloaded",
+  });
+  await openSidebarForSmallViewport();
+  await expect(keuanganMenu).toHaveAttribute("data-state", "open");
+  await expect(activeSubmenu("Pembayaran")).toHaveCount(1);
+
+  await page.goto("/cooperative/dues?period_scope=all&status=OPEN", {
+    waitUntil: "domcontentloaded",
+  });
+  await openSidebarForSmallViewport();
+  await expect(keuanganMenu).toHaveAttribute("data-state", "open");
+  await expect(activeSubmenu("Iuran dan Tagihan")).toHaveCount(1);
+});

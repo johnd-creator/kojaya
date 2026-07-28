@@ -22,25 +22,27 @@ const currentUrlReactive = computed(
   () => new URL(page.url, window?.location.origin).pathname,
 );
 
+function pathnameOf(url: string): string {
+  try {
+    return new URL(url, window.location.origin).pathname;
+  } catch {
+    return url.split("?")[0].split("#")[0];
+  }
+}
+
 export function useCurrentUrl(): UseCurrentUrlReturn {
   function isCurrentUrl(
     urlToCheck: NonNullable<InertiaLinkProps["href"]>,
     currentUrl?: string,
   ) {
     const urlToCompare = currentUrl ?? currentUrlReactive.value;
-    const urlString = toUrl(urlToCheck);
+    const urlString = toUrl(urlToCheck) ?? "";
 
-    if (!urlString.startsWith("http")) {
-      return urlString === urlToCompare;
-    }
-
-    try {
-      const absoluteUrl = new URL(urlString);
-
-      return absoluteUrl.pathname === urlToCompare;
-    } catch {
+    if (!urlString || urlString.startsWith("#")) {
       return false;
     }
+
+    return pathnameOf(urlString) === urlToCompare;
   }
 
   function whenCurrentUrl(

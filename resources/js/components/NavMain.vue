@@ -16,6 +16,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { ref } from "vue";
 import { useCurrentUrl } from "@/composables/useCurrentUrl";
 import type { NavItem } from "@/types";
 
@@ -25,6 +26,21 @@ defineProps<{
 }>();
 
 const { isCurrentUrl } = useCurrentUrl();
+const openItems = ref<Record<string, boolean>>({});
+
+const hasActiveChild = (item: NavItem): boolean =>
+  item.items?.some((subItem) => isCurrentUrl(subItem.href)) ?? false;
+
+const isItemOpen = (item: NavItem): boolean =>
+  hasActiveChild(item) || openItems.value[item.title] === true;
+
+const updateItemOpenState = (item: NavItem, open: boolean): void => {
+  if (hasActiveChild(item)) {
+    return;
+  }
+
+  openItems.value[item.title] = open;
+};
 </script>
 
 <template>
@@ -35,9 +51,8 @@ const { isCurrentUrl } = useCurrentUrl();
         <Collapsible
           v-if="item.items && item.items.length > 0"
           as-child
-          :default-open="
-            item.items.some((subItem) => isCurrentUrl(subItem.href))
-          "
+          :open="isItemOpen(item)"
+          @update:open="updateItemOpenState(item, $event)"
           class="group/collapsible"
         >
           <SidebarMenuItem>

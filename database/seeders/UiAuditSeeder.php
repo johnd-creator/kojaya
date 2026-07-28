@@ -9,7 +9,10 @@ use App\Enums\MemberStoreFundingMethod;
 use App\Enums\MemberStoreFundingStatus;
 use App\Enums\MemberStoreLedgerEffect;
 use App\Enums\MemberStoreLedgerEntryType;
+use App\Models\CooperativeContributionType;
+use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePayment;
 use App\Models\Loan;
 use App\Models\LoanType;
 use App\Models\MemberStoreAccount;
@@ -120,10 +123,21 @@ class UiAuditSeeder extends Seeder
             'long-name' => ['AUD-006', 'UI Audit Anggota dengan Nama Sangat Panjang untuk Pengujian Responsif dan Wrapping', $organizations['suralaya']],
             'no-account' => ['AUD-007', 'UI Audit Belum Memiliki Akun', $organizations['jakarta']],
             'other-org' => ['AUD-008', 'UI Audit Organisasi Lain', $organizations['jakarta']],
+            'pending-review' => ['AUD-009', 'UI Audit Calon Anggota Pending', $organizations['pusat']],
+            'revision' => ['AUD-010', 'UI Audit Anggota Perlu Revisi', $organizations['pusat']],
         ];
         $members = [];
 
         foreach ($definitions as $key => [$memberNo, $name, $organization]) {
+            $status = match ($key) {
+                'pending-review', 'revision' => CooperativeMember::VALIDATION_PENDING,
+                default => CooperativeMember::VALIDATION_ACTIVE,
+            };
+            $validationStatus = match ($key) {
+                'pending-review' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+                'revision' => CooperativeMember::VALIDATION_REVISION,
+                default => CooperativeMember::VALIDATION_ACTIVE,
+            };
             $member = CooperativeMember::withTrashed()->updateOrCreate(
                 ['member_no' => $memberNo],
                 [
@@ -136,10 +150,10 @@ class UiAuditSeeder extends Seeder
                     'address' => 'Alamat anggota audit UI',
                     'joined_at' => self::FIXED_DATE,
                     'tanggal_aktif' => self::FIXED_DATE,
-                    'status' => CooperativeMember::VALIDATION_ACTIVE,
-                    'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
-                    'validated_at' => self::FIXED_DATE.' 09:00:00',
-                    'validated_by' => $users['pengurus']->id,
+                    'status' => $status,
+                    'validation_status' => $validationStatus,
+                    'validated_at' => $validationStatus === CooperativeMember::VALIDATION_ACTIVE ? self::FIXED_DATE.' 09:00:00' : null,
+                    'validated_by' => $validationStatus === CooperativeMember::VALIDATION_ACTIVE ? $users['pengurus']->id : null,
                     'profile_completed_at' => self::FIXED_DATE.' 09:00:00',
                     'onboarding_submitted_at' => self::FIXED_DATE.' 09:00:00',
                     'credit_limit' => 500000,
@@ -272,6 +286,31 @@ class UiAuditSeeder extends Seeder
         RewardRedemption::query()->updateOrCreate(
             ['id' => '00000000-0000-0000-0000-000000000023'],
             ['reward_id' => $reward->id, 'cooperative_member_id' => $members['positive']->id, 'point_transaction_id' => $pointTransaction->id, 'quantity' => 1, 'points_used' => 100, 'delivery_address' => 'Alamat audit UI', 'status' => 'PENDING', 'redeemed_at' => self::FIXED_DATE.' 11:00:00'],
+        );
+
+        $wajib = CooperativeContributionType::query()->updateOrCreate(
+            ['code' => 'WAJIB'],
+            ['name' => 'Simpanan Wajib', 'category' => 'WAJIB', 'default_amount' => 100000, 'frequency' => 'MONTHLY', 'is_active' => true],
+        );
+        $pokok = CooperativeContributionType::query()->updateOrCreate(
+            ['code' => 'POKOK'],
+            ['name' => 'Simpanan Pokok', 'category' => 'POKOK', 'default_amount' => 200000, 'frequency' => 'ONCE', 'is_active' => true],
+        );
+        CooperativeDuesInvoice::query()->updateOrCreate(
+            ['cooperative_member_id' => $members['positive']->id, 'cooperative_contribution_type_id' => $wajib->id, 'period' => '2026-01'],
+            ['amount' => 100000, 'paid_amount' => 0, 'due_date' => '2026-01-10', 'status' => 'UNPAID'],
+        );
+        CooperativeDuesInvoice::query()->updateOrCreate(
+            ['cooperative_member_id' => $members['zero']->id, 'cooperative_contribution_type_id' => $wajib->id, 'period' => '2026-01'],
+            ['amount' => 100000, 'paid_amount' => 25000, 'due_date' => '2026-01-10', 'status' => 'PARTIAL'],
+        );
+        CooperativePayment::query()->updateOrCreate(
+            ['cooperative_member_id' => $members['positive']->id, 'reference_no' => 'UI-AUDIT-PAYMENT-001'],
+            ['cooperative_contribution_type_id' => $pokok->id, 'amount' => 200000, 'payment_method' => 'TRANSFER', 'paid_at' => self::FIXED_DATE, 'status' => 'PENDING', 'notes' => 'Bukti pembayaran audit UI menunggu verifikasi.'],
+        );
+        CooperativePayment::query()->updateOrCreate(
+            ['cooperative_member_id' => $members['zero']->id, 'reference_no' => 'UI-AUDIT-PAYMENT-002'],
+            ['cooperative_contribution_type_id' => $wajib->id, 'amount' => 100000, 'payment_method' => 'QRIS', 'paid_at' => self::FIXED_DATE, 'status' => 'PENDING', 'notes' => 'Pembayaran QRIS audit UI menunggu verifikasi.'],
         );
     }
 }

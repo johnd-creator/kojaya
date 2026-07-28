@@ -427,13 +427,14 @@ class CooperativeFeatureTest extends TestCase
         ]);
     }
 
-    public function test_dues_page_auto_generates_current_period_invoices(): void
+    public function test_dues_page_lists_invoices_after_explicit_generation(): void
     {
         Carbon::setTestNow('2026-05-15 09:00:00');
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -442,6 +443,10 @@ class CooperativeFeatureTest extends TestCase
             'frequency' => 'MONTHLY',
             'is_active' => true,
         ]);
+
+        $this->actingAs($user)->post(route('cooperative.dues.generate'), [
+            'period' => '2026-05',
+        ])->assertRedirect();
 
         $this->actingAs($user)
             ->get(route('cooperative.dues.index'))
@@ -475,6 +480,7 @@ class CooperativeFeatureTest extends TestCase
             'tanggal_aktif' => '2026-06-01',
             'joined_at' => '2026-06-01',
         ]);
+        $user->update(['organization_id' => $member->organization_id]);
         CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -483,6 +489,10 @@ class CooperativeFeatureTest extends TestCase
             'frequency' => 'MONTHLY',
             'is_active' => true,
         ]);
+
+        $this->actingAs($user)->post(route('cooperative.dues.generate'), [
+            'period' => '2026-05',
+        ])->assertRedirect();
 
         $this->actingAs($user)
             ->get(route('cooperative.dues.index', ['period' => '2026-05']))
@@ -505,7 +515,8 @@ class CooperativeFeatureTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
-        $this->member(['status' => 'ACTIVE']);
+        $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -514,6 +525,10 @@ class CooperativeFeatureTest extends TestCase
             'frequency' => 'MONTHLY',
             'is_active' => true,
         ]);
+
+        $this->actingAs($user)->post(route('cooperative.dues.generate'), [
+            'period' => '2026-06',
+        ])->assertRedirect();
 
         $this->actingAs($user)
             ->get(route('cooperative.dues.index', ['period' => '2026-06']))
@@ -537,6 +552,7 @@ class CooperativeFeatureTest extends TestCase
         $paidMember = $this->member(['status' => 'ACTIVE']);
         $unpaidMember = $this->member(['status' => 'ACTIVE']);
         $partialMember = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $paidMember->organization_id]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -590,6 +606,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -651,6 +668,7 @@ class CooperativeFeatureTest extends TestCase
         $user->assignRole('Admin Koperasi');
         $activeMember = $this->member(['status' => 'ACTIVE']);
         $deletedMember = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $activeMember->organization_id]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -708,6 +726,7 @@ class CooperativeFeatureTest extends TestCase
             'name' => 'Siti Aminah',
             'nama_anggota' => 'Siti Aminah',
         ]);
+        $user->update(['organization_id' => $matchingMember->organization_id]);
 
         CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
@@ -717,6 +736,10 @@ class CooperativeFeatureTest extends TestCase
             'frequency' => 'MONTHLY',
             'is_active' => true,
         ]);
+
+        $this->actingAs($user)->post(route('cooperative.dues.generate'), [
+            'period' => '2026-05',
+        ])->assertRedirect();
 
         $this->actingAs($user)
             ->get(route('cooperative.dues.index', ['member_search' => 'sAnT']))
@@ -1295,6 +1318,7 @@ class CooperativeFeatureTest extends TestCase
         $user->assignRole('Admin Koperasi');
         $firstMember = $this->member(['status' => 'ACTIVE']);
         $secondMember = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $firstMember->organization_id]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',
@@ -1358,6 +1382,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Admin Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $type = CooperativeContributionType::query()->create([
             'code' => 'WAJIB',
             'name' => 'Simpanan Wajib',

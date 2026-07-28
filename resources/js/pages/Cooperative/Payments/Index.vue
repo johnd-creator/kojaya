@@ -27,7 +27,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
-import { approve, bulkApprove, index, store } from "@/routes/cooperative/payments";
+import {
+  approve,
+  bulkApprove,
+  index,
+  store,
+} from "@/routes/cooperative/payments";
 
 type MemberOption = {
   id: number;
@@ -111,6 +116,34 @@ const amountHelper = computed(() => {
 
 const proofFileName = computed(() => form.proof?.name ?? "");
 
+const paymentStatusLabel = (status: string): string => {
+  switch (status) {
+    case "PENDING":
+      return "Menunggu verifikasi";
+    case "APPROVED":
+      return "Terverifikasi";
+    case "REJECTED":
+      return "Ditolak";
+    case "VOID":
+      return "Dibatalkan";
+    default:
+      return status || "Tidak diketahui";
+  }
+};
+
+const paymentMethodLabel = (method: string): string => {
+  switch (method) {
+    case "CASH":
+      return "Tunai";
+    case "TRANSFER":
+      return "Transfer";
+    case "QRIS":
+      return "QRIS";
+    default:
+      return method || "Tidak diketahui";
+  }
+};
+
 watch(selectedMember, (member) => {
   if (member) {
     memberSearch.value = `${member.name} (${member.member_no})`;
@@ -181,12 +214,45 @@ const showBulkConfirm = ref(false);
 const pendingBulkAction = ref<{ action: string; selected: any[] } | null>(null);
 
 const sortField = ref<string>(props.filters?.sort_field ?? "");
-const sortDirection = ref<"asc" | "desc">(props.filters?.sort_direction ?? "asc");
+const sortDirection = ref<"asc" | "desc">(
+  props.filters?.sort_direction ?? "asc",
+);
+const filterSearch = ref<string>(props.filters?.search ?? "");
+const filterStatus = ref<string>(props.filters?.status ?? "");
+const filterPeriod = ref<string>(props.filters?.period ?? "");
+const filterPaymentMethod = ref<string>(props.filters?.payment_method ?? "");
+
+const applyFilters = () => {
+  router.get(
+    index().url,
+    {
+      ...props.filters,
+      search: filterSearch.value || null,
+      status: filterStatus.value || null,
+      period: filterPeriod.value || null,
+      payment_method: filterPaymentMethod.value || null,
+      page: null,
+    },
+    { preserveState: true, preserveScroll: true },
+  );
+};
+
+const resetFilters = () => {
+  filterSearch.value = "";
+  filterStatus.value = props.canApprovePayments ? "PENDING" : "";
+  filterPeriod.value = "";
+  filterPaymentMethod.value = "";
+  applyFilters();
+};
 
 const handleSort = (field: string, dir: "asc" | "desc") => {
   sortField.value = field;
   sortDirection.value = dir;
-  router.get(index().url, { ...props.filters, sort_field: field, sort_direction: dir }, { preserveState: true, preserveScroll: true });
+  router.get(
+    index().url,
+    { ...props.filters, sort_field: field, sort_direction: dir },
+    { preserveState: true, preserveScroll: true },
+  );
 };
 
 const handleBulkAction = (action: string, selected: any[]) => {
@@ -231,15 +297,41 @@ const approvePayment = (payment: { id: number }) => {
 };
 
 const columns = computed(() => [
-  { header: "Tanggal", key: "paid_at", slot: "paid_at", sortable: true, sortKey: "paid_at" },
+  {
+    header: "Tanggal",
+    key: "paid_at",
+    slot: "paid_at",
+    sortable: true,
+    sortKey: "paid_at",
+  },
   { header: "Anggota", key: "member.name", slot: "member" },
   { header: "Jenis Simpanan", key: "contribution_type.name", slot: "type" },
   { header: "Metode", key: "payment_method", slot: "method" },
-  { header: "Status", key: "status", slot: "status", sortable: true, sortKey: "status" },
-  { header: "Nominal", key: "amount", slot: "amount", align: "right" as const, sortable: true, sortKey: "amount" },
+  {
+    header: "Status",
+    key: "status",
+    slot: "status",
+    sortable: true,
+    sortKey: "status",
+  },
+  {
+    header: "Nominal",
+    key: "amount",
+    slot: "amount",
+    align: "right" as const,
+    sortable: true,
+    sortKey: "amount",
+  },
   { header: "Keterangan", key: "notes", slot: "notes" },
   ...(props.canApprovePayments
-    ? [{ header: "Aksi", key: "actions", slot: "actions", align: "right" as const }]
+    ? [
+        {
+          header: "Aksi",
+          key: "actions",
+          slot: "actions",
+          align: "right" as const,
+        },
+      ]
     : []),
 ]);
 </script>
@@ -588,9 +680,73 @@ const columns = computed(() => [
               tone="emerald"
             />
             <CardContent class="px-0 pb-0">
+              <form
+                class="grid gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800/70"
+                @submit.prevent="applyFilters"
+              >
+                <div class="space-y-1.5 sm:col-span-2 xl:col-span-1">
+                  <Label for="payment-filter-search">Cari pembayaran</Label>
+                  <Input
+                    id="payment-filter-search"
+                    v-model="filterSearch"
+                    placeholder="Nama atau nomor anggota"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label for="payment-filter-status">Status</Label>
+                  <select
+                    id="payment-filter-status"
+                    v-model="filterStatus"
+                    class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-800 dark:bg-zinc-950"
+                  >
+                    <option value="">Semua status</option>
+                    <option value="PENDING">Menunggu verifikasi</option>
+                    <option value="APPROVED">Terverifikasi</option>
+                    <option value="REJECTED">Ditolak</option>
+                    <option value="VOID">Dibatalkan</option>
+                  </select>
+                </div>
+                <div class="space-y-1.5">
+                  <Label for="payment-filter-period">Periode pembayaran</Label>
+                  <Input
+                    id="payment-filter-period"
+                    v-model="filterPeriod"
+                    type="month"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label for="payment-filter-method">Metode pembayaran</Label>
+                  <select
+                    id="payment-filter-method"
+                    v-model="filterPaymentMethod"
+                    class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-800 dark:bg-zinc-950"
+                  >
+                    <option value="">Semua metode</option>
+                    <option value="CASH">Tunai</option>
+                    <option value="TRANSFER">Transfer</option>
+                    <option value="QRIS">QRIS</option>
+                  </select>
+                </div>
+                <div class="flex items-end gap-2 sm:col-span-2 xl:col-span-4">
+                  <Button type="submit">Terapkan filter</Button>
+                  <Button type="button" variant="outline" @click="resetFilters">
+                    Reset
+                  </Button>
+                </div>
+              </form>
               <BulkActionBar
                 :selected="selectedPayments"
-                :actions="canApprovePayments ? [{ label: 'Approve Semua', action: 'approve', variant: 'default' as const }] : []"
+                :actions="
+                  canApprovePayments
+                    ? [
+                        {
+                          label: 'Approve Semua',
+                          action: 'approve',
+                          variant: 'default' as const,
+                        },
+                      ]
+                    : []
+                "
                 @action="handleBulkAction"
                 @clear="selectedPayments = []"
               />
@@ -640,7 +796,7 @@ const columns = computed(() => [
                     variant="outline"
                     class="bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   >
-                    {{ row.payment_method }}
+                    {{ paymentMethodLabel(row.payment_method) }}
                   </Badge>
                 </template>
 
@@ -655,7 +811,7 @@ const columns = computed(() => [
                           : 'bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                     "
                   >
-                    {{ row.status }}
+                    {{ paymentStatusLabel(row.status) }}
                   </Badge>
                 </template>
 
@@ -685,7 +841,9 @@ const columns = computed(() => [
                     @click="approvePayment(row)"
                   >
                     <CheckCircle2 class="size-4" />
-                    {{ approvingPaymentId === row.id ? "Memproses" : "Approve" }}
+                    {{
+                      approvingPaymentId === row.id ? "Memproses" : "Approve"
+                    }}
                   </Button>
                   <span v-else class="text-xs text-zinc-400">-</span>
                 </template>

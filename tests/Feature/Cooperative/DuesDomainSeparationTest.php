@@ -23,13 +23,14 @@ class DuesDomainSeparationTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    public function test_dues_page_generates_and_lists_only_pokok_and_wajib_invoices(): void
+    public function test_dues_generation_is_explicit_and_page_lists_only_pokok_and_wajib_invoices(): void
     {
         Carbon::setTestNow('2026-07-02 09:00:00');
 
         $admin = User::factory()->create();
         $admin->assignRole('Admin Koperasi');
         $member = CooperativeMember::factory()->active()->create();
+        $admin->update(['organization_id' => $member->organization_id]);
 
         $wajib = $this->contributionType('WAJIB', 'Simpanan Wajib', 'WAJIB', 'MONTHLY');
         $pokok = $this->contributionType('POKOK', 'Simpanan Pokok', 'POKOK', 'ONCE');
@@ -52,6 +53,10 @@ class DuesDomainSeparationTest extends TestCase
             'paid_amount' => 0,
             'status' => 'UNPAID',
         ]);
+
+        $this->actingAs($admin)->post(route('cooperative.dues.generate'), [
+            'period' => '2026-07',
+        ])->assertRedirect();
 
         $this->actingAs($admin)
             ->get(route('cooperative.dues.index', ['period' => '2026-07']))

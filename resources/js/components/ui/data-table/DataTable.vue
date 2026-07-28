@@ -132,7 +132,10 @@ const toggleAll = () => {
 };
 
 const allSelected = computed(() => {
-  return tableData.value.length > 0 && tableData.value.every((row) => isSelected(row));
+  return (
+    tableData.value.length > 0 &&
+    tableData.value.every((row) => isSelected(row))
+  );
 });
 
 const someSelected = computed(() => {
@@ -144,7 +147,10 @@ const rowId = (row: any) => row.id ?? JSON.stringify(row);
 const handleSort = (col: Column) => {
   if (!col.sortable) return;
   const sortKey = col.sortKey ?? col.key ?? "";
-  const newDir = props.sortField === sortKey && props.sortDirection === "asc" ? "desc" : "asc";
+  const newDir =
+    props.sortField === sortKey && props.sortDirection === "asc"
+      ? "desc"
+      : "asc";
   emit("sort", sortKey, newDir);
 };
 
@@ -186,12 +192,10 @@ const sortIcon = (col: Column) => {
             <tr
               class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
             >
-              <th
-                v-if="selectable"
-                class="w-10 py-4 px-4"
-              >
+              <th v-if="selectable" class="w-10 py-4 px-4">
                 <input
                   type="checkbox"
+                  aria-label="Pilih semua baris"
                   class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
                   :checked="allSelected"
                   :indeterminate="someSelected"
@@ -205,7 +209,10 @@ const sortIcon = (col: Column) => {
                 :class="[
                   getAlignmentClass(col.align),
                   col.headerClass,
-                  { 'cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300': col.sortable },
+                  {
+                    'cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300':
+                      col.sortable,
+                  },
                 ]"
                 :style="col.sortable ? { cursor: 'pointer' } : {}"
                 @click="handleSort(col)"
@@ -264,13 +271,13 @@ const sortIcon = (col: Column) => {
               }"
               @click="rowClickable && emit('row-click', row)"
             >
-              <td
-                v-if="selectable"
-                class="py-4 px-4"
-                @click.stop
-              >
+              <td v-if="selectable" class="py-4 px-4" @click.stop>
                 <input
                   type="checkbox"
+                  :aria-label="
+                    'Pilih baris ' +
+                    (row.member?.name || row.name || row.id || rowIndex + 1)
+                  "
                   class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
                   :checked="isSelected(row)"
                   @change="toggleRow(row)"
@@ -316,7 +323,8 @@ const sortIcon = (col: Column) => {
         class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 px-6 py-4 flex items-center justify-between"
       >
         <p class="text-sm text-zinc-500">
-          Menampilkan <span class="font-medium">{{ paginationData.from }}</span> hingga
+          Menampilkan
+          <span class="font-medium">{{ paginationData.from }}</span> hingga
           <span class="font-medium">{{ paginationData.to }}</span> dari
           <span class="font-medium">{{ paginationData.total }}</span> data
         </p>

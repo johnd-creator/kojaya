@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { auditAccessibility } from "../helpers/accessibility";
-import { attachRuntimeHealth, writeRuntimeReport } from "../helpers/runtime-health";
-import { installStableEnvironment, waitForStableScreen } from "../helpers/stable-screen";
+import {
+  attachRuntimeHealth,
+  writeRuntimeReport,
+} from "../helpers/runtime-health";
+import {
+  installStableEnvironment,
+  waitForStableScreen,
+} from "../helpers/stable-screen";
 
 test.use({ storageState: "tests/visual/.auth/admin.json" });
 
@@ -19,8 +25,12 @@ for (const [id, route] of scenarios) {
 
     try {
       await installStableEnvironment(page);
-      const response = await page.goto(route, { waitUntil: "domcontentloaded" });
-      expect(response?.status(), id + " did not return an HTML page.").toBe(200);
+      const response = await page.goto(route, {
+        waitUntil: "domcontentloaded",
+      });
+      expect(response?.status(), id + " did not return an HTML page.").toBe(
+        200,
+      );
       await waitForStableScreen(page, { screenId: id });
       await auditAccessibility(page, testInfo, id);
     } finally {
@@ -28,3 +38,23 @@ for (const [id, route] of scenarios) {
     }
   });
 }
+
+test("admin-payments-mobile @accessibility", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile");
+  const runtime = attachRuntimeHealth(page, "admin-payments-mobile");
+
+  try {
+    await installStableEnvironment(page);
+    const response = await page.goto("/cooperative/payments", {
+      waitUntil: "domcontentloaded",
+    });
+    expect(
+      response?.status(),
+      "admin-payments-mobile did not return an HTML page.",
+    ).toBe(200);
+    await waitForStableScreen(page, { screenId: "admin-payments-mobile" });
+    await auditAccessibility(page, testInfo, "admin-payments-mobile");
+  } finally {
+    await writeRuntimeReport(runtime, testInfo);
+  }
+});

@@ -17,13 +17,15 @@ The local candidate capture ran against the isolated Playwright SQLite database 
 
 The local host is Fedora Linux 44, so these local PNGs are development candidates only. They are not treated as canonical baselines: canonical adoption requires the repository UI Audit workflow on Ubuntu 24.04, followed by two clean captures with identical hashes.
 
+The payment workflow was reviewed after the responsive correction: the desktop/tablet payment history is contained by its grid column and exposes horizontal table scrolling without document-level overflow; mobile switches to readable payment cards with selection and approval actions. Only the nine payment baselines (three states across three viewports) changed in this review.
+
 ## Safety checks
 
 - Visual comparison tolerance: unchanged.
 - Global screenshot masks: none added.
 - Text or state masks: none added.
 - Loading, error, 403, and invalid-fixture screens: not accepted as baselines.
-- Runtime and accessibility review: performed through the Admin Koperasi Playwright scenarios; the final focused accessibility run passed 10 cases with no new waiver.
+- Runtime and accessibility review: performed through the Admin Koperasi Playwright scenarios; the final focused accessibility run passed 11 cases with no new waiver.
 - Canonical Ubuntu capture: pending exact-final-SHA GitHub evidence.
 
 Canonical adoption remains a release gate. Until the Ubuntu workflow completes and the candidate is reviewed twice, this branch must not be represented as having a final green visual baseline.

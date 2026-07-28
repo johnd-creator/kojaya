@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { captureScreen } from "../helpers/audit-manifest";
 import {
   attachRuntimeHealth,
@@ -33,6 +33,44 @@ const scenarios = [
   ],
 ] as const;
 
+async function assertPaymentLayout(page: Page): Promise<void> {
+  const viewport = page.viewportSize();
+  const metrics = await page.evaluate(() => {
+    const historyCard = document.querySelector<HTMLElement>(
+      '[data-testid="payment-history-card"]',
+    );
+    const tableRegion =
+      historyCard?.querySelector<HTMLElement>('[role="region"]');
+
+    return {
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+      historyRight: historyCard?.getBoundingClientRect().right ?? 0,
+      regionRight: tableRegion?.getBoundingClientRect().right ?? 0,
+    };
+  });
+
+  expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+  expect(metrics.historyRight).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+  expect(metrics.regionRight).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+
+  if ((viewport?.width ?? 0) < 640) {
+    await expect(
+      page.locator('[data-testid="payment-history-card"] table'),
+    ).toBeHidden();
+    await expect(
+      page.locator('[aria-label="Daftar pembayaran dalam tampilan kartu"]'),
+    ).toBeVisible();
+  } else {
+    await expect(
+      page.locator('[data-testid="payment-history-card"] table'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[aria-label="Daftar pembayaran dalam tampilan kartu"]'),
+    ).toBeHidden();
+  }
+}
+
 for (const [id, route] of scenarios) {
   test(id + " @visual", async ({ page }, testInfo) => {
     const definition = screen(id);
@@ -49,6 +87,9 @@ for (const [id, route] of scenarios) {
       );
       if (["tablet", "mobile"].includes(testInfo.project.name)) {
         await assertNoHorizontalOverflow(page);
+      }
+      if (id.startsWith("admin-payments")) {
+        await assertPaymentLayout(page);
       }
       await captureScreen(page, testInfo, definition);
     } finally {
@@ -113,7 +154,14 @@ test("admin-payments-index-selected @visual", async ({ page }, testInfo) => {
       waitUntil: "domcontentloaded",
     });
     expect(response?.status(), id + " did not return an HTML page.").toBe(200);
-    await page.locator("table tbody input[type=checkbox]").first().check();
+    await assertPaymentLayout(page);
+    const paymentCheckbox =
+      testInfo.project.name === "mobile"
+        ? page
+            .locator('[data-testid="payment-card"] input[type="checkbox"]')
+            .first()
+        : page.locator("table tbody input[type=checkbox]").first();
+    await paymentCheckbox.check();
     await captureScreen(page, testInfo, definition);
   } finally {
     await writeRuntimeReport(runtime, testInfo);

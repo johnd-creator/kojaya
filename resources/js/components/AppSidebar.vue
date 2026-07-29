@@ -96,33 +96,30 @@ import { storeAccount as memberStoreAccount } from "@/routes/member";
 import {
   isAdminNavigationExperience,
   isPlatformExperience,
-  resolvePrimaryRole,
+  resolveEffectiveExperience,
   roleExperienceNavigationLabel,
 } from "@/lib/role-experience";
 import type { NavItem } from "@/types";
 import AppLogo from "./AppLogo.vue";
 
 const page = usePage();
-const userRoles = computed(() => {
-  const auth = page.props.auth as any;
-  return (auth?.roles ?? []).map((r: any) =>
-    typeof r === "string" ? r : (r.name ?? ""),
-  );
-});
+const userRoles = computed(() => page.props.auth.roles ?? []);
+const userPermissions = computed(() => page.props.auth.permissions ?? []);
+const effectiveExperience = computed(() =>
+  resolveEffectiveExperience(
+    page.props.auth.primary_role,
+    userRoles.value,
+    userPermissions.value,
+  ),
+);
 const isMember = computed(() => userRoles.value.includes("Anggota"));
-const primaryRole = computed(() => resolvePrimaryRole(userRoles.value));
 const hasNonMemberRole = computed(
   () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
 const isSystemAdmin = computed(
-  () => primaryRole.value !== null && isPlatformExperience(primaryRole.value),
+  () => isPlatformExperience(effectiveExperience.value),
 );
-const userPermissions = computed<string[]>(() => {
-  const permissions = page.props.auth?.permissions as string[] | undefined;
-
-  return permissions ?? [];
-});
 type MemberAccess = {
   is_active: boolean;
   is_pending_review: boolean;
@@ -130,9 +127,7 @@ type MemberAccess = {
   can_access_onboarding: boolean;
 };
 const memberAccess = computed<MemberAccess | null>(() => {
-  const auth = page.props.auth as any;
-
-  return (auth?.member_access ?? null) as MemberAccess | null;
+  return (page.props.auth.member_access ?? null) as MemberAccess | null;
 });
 const canAccess = (permissions?: string | string[]): boolean => {
   // System Admin and Admin Pusat have access to everything
@@ -898,7 +893,7 @@ const mainNavItems = computed(() => {
     return memberNavItems.value;
   }
 
-  if (isAdminNavigationExperience(primaryRole.value)) {
+  if (isAdminNavigationExperience(effectiveExperience.value)) {
     return adminNavItems.value;
   }
 
@@ -910,7 +905,7 @@ const navigationLabel = computed(() => {
     return "Kojayaku";
   }
 
-  return roleExperienceNavigationLabel(primaryRole.value);
+  return roleExperienceNavigationLabel(effectiveExperience.value);
 });
 </script>
 

@@ -47,6 +47,7 @@ import { formatCurrency, formatNumber } from "@/lib/formatters";
 import {
   hasAnyPermission,
   isPlatformExperience,
+  resolveEffectiveExperience,
   resolveRoleExperience,
   type ResolvedRoleExperience,
   type RoleExperienceDefinition,
@@ -78,22 +79,8 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const userRoles = computed(() =>
-  (
-    (
-      page.props.auth as
-        | { roles?: Array<{ name?: string } | string> }
-        | undefined
-    )?.roles ?? []
-  ).map((role) => (typeof role === "string" ? role : (role.name ?? ""))),
-);
-const userPermissions = computed<string[]>(() => {
-  const permissions = (
-    page.props.auth as { permissions?: string[] } | undefined
-  )?.permissions;
-
-  return permissions ?? [];
-});
+const userRoles = computed(() => page.props.auth.roles ?? []);
+const userPermissions = computed(() => page.props.auth.permissions ?? []);
 
 const roleExperienceDefinitions: Record<
   ResolvedRoleExperience["key"],
@@ -255,9 +242,17 @@ const roleExperienceDefinitions: Record<
   },
 };
 
+const effectiveExperience = computed(() =>
+  resolveEffectiveExperience(
+    page.props.auth.primary_role,
+    userRoles.value,
+    userPermissions.value,
+  ),
+);
+
 const roleExperience = computed<ResolvedRoleExperience>(() =>
   resolveRoleExperience(
-    userRoles.value,
+    effectiveExperience.value,
     userPermissions.value,
     roleExperienceDefinitions,
     { label: "Buka dashboard", href: dashboardRoute().url },

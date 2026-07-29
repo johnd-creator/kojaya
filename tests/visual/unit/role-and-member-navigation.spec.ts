@@ -3,6 +3,7 @@ import type { Component } from "vue";
 import {
   isAdminNavigationExperience,
   isPlatformExperience,
+  resolveEffectiveExperience,
   resolvePrimaryRole,
   resolveRoleExperience,
   roleExperienceNavigationLabel,
@@ -89,10 +90,21 @@ const definitions: Record<string, RoleExperienceDefinition> = {
 const fallback = { label: "Buka dashboard", href: "/dashboard" };
 
 test.describe("role experience resolver", () => {
-  test("keeps platform roles ahead of cooperative roles and permissions", () => {
+  test("uses the server primary role ahead of role-array order", () => {
+    const systemAdmin = resolveEffectiveExperience(
+      "system-admin",
+      ["Admin Koperasi", "System Admin"],
+      ["access_cooperative_pos"],
+    );
+    const adminPusat = resolveEffectiveExperience(
+      "admin-pusat",
+      ["Admin Koperasi", "Admin Pusat"],
+      ["access_cooperative_pos"],
+    );
+
     expect(
       resolveRoleExperience(
-        ["System Admin", "Kasir Koperasi"],
+        systemAdmin,
         ["access_cooperative_pos"],
         definitions,
         fallback,
@@ -100,7 +112,7 @@ test.describe("role experience resolver", () => {
     ).toMatchObject({ key: "system-admin", badge: "System Admin" });
     expect(
       resolveRoleExperience(
-        ["Admin Pusat", "Kasir Koperasi"],
+        adminPusat,
         ["access_cooperative_pos"],
         definitions,
         fallback,
@@ -109,48 +121,50 @@ test.describe("role experience resolver", () => {
     expect(resolvePrimaryRole(["Pengurus Koperasi", "Admin Koperasi"])).toBe(
       "pengurus",
     );
-    expect(resolvePrimaryRole(["Manajer Koperasi", "Admin Koperasi"])).toBe(
-      "manajer",
-    );
-    expect(resolvePrimaryRole(["Admin Koperasi", "Kasir Koperasi"])).toBe(
-      "admin-koperasi",
-    );
   });
 
-  test("resolves explicit roles before permission-derived POS access", () => {
+  test("keeps mixed-role workspaces consistent with the backend authority", () => {
     expect(
-      resolveRoleExperience(["Pengurus Koperasi"], [], definitions, fallback)
-        .key,
+      resolveEffectiveExperience(
+        "pengurus",
+        ["Admin Koperasi", "Pengurus Koperasi"],
+        [],
+      ),
     ).toBe("pengurus");
     expect(
-      resolveRoleExperience(["Manajer Koperasi"], [], definitions, fallback)
-        .key,
+      resolveEffectiveExperience(
+        "manajer",
+        ["Admin Koperasi", "Manajer Koperasi"],
+        [],
+      ),
     ).toBe("manajer");
     expect(
-      resolveRoleExperience(["Admin Koperasi"], [], definitions, fallback).key,
+      resolveEffectiveExperience(
+        "admin-koperasi",
+        ["Kasir Koperasi", "Admin Koperasi"],
+        ["access_cooperative_pos"],
+      ),
     ).toBe("admin-koperasi");
     expect(
-      resolveRoleExperience(["Kasir Koperasi"], [], definitions, fallback).key,
+      resolveEffectiveExperience("kasir", ["Kasir Koperasi"], []),
     ).toBe("kasir");
+  });
+
+  test("uses permission-derived POS only for generic or null server roles", () => {
     expect(
-      resolveRoleExperience(
-        [],
-        ["access_cooperative_pos"],
-        definitions,
-        fallback,
-      ),
-    ).toMatchObject({
-      key: "pos-operator",
-      badge: "Operator POS",
-    });
+      resolveEffectiveExperience("generic", [], ["access_cooperative_pos"]),
+    ).toBe("pos-operator");
     expect(
-      resolveRoleExperience(["Unknown"], [], definitions, fallback).key,
+      resolveEffectiveExperience(null, ["Pengurus Koperasi"], []),
     ).toBe("generic");
+    expect(
+      resolveEffectiveExperience(undefined, ["Pengurus Koperasi"], []),
+    ).toBe("pengurus");
   });
 
   test("filters actions and falls back to the dashboard CTA", () => {
     const withoutPermission = resolveRoleExperience(
-      ["Admin Koperasi"],
+      "admin-koperasi",
       [],
       definitions,
       fallback,
@@ -159,7 +173,7 @@ test.describe("role experience resolver", () => {
     expect(withoutPermission.ctaHref).toBe("/dashboard");
 
     const withPermission = resolveRoleExperience(
-      ["Admin Koperasi"],
+      "admin-koperasi",
       ["validate_cooperative_member"],
       definitions,
       fallback,
@@ -172,7 +186,7 @@ test.describe("role experience resolver", () => {
   test("does not grant cross-role approval or validation actions", () => {
     expect(
       resolveRoleExperience(
-        ["Kasir Koperasi"],
+        "kasir",
         ["access_cooperative_pos", "cashier_store_credit"],
         definitions,
         fallback,
@@ -180,7 +194,7 @@ test.describe("role experience resolver", () => {
     ).not.toContain("Validate member");
     expect(
       resolveRoleExperience(
-        ["Admin Koperasi"],
+        "admin-koperasi",
         ["validate_cooperative_member"],
         definitions,
         fallback,
@@ -190,20 +204,53 @@ test.describe("role experience resolver", () => {
     expect(isPlatformExperience("admin-pusat")).toBe(true);
   });
 
-  test("uses the primary role for sidebar navigation and labels", () => {
-    expect(isAdminNavigationExperience("system-admin")).toBe(false);
+  test("uses the effective experience for sidebar navigation and labels", () => {
+    const platform = resolveEffectiveExperience(
+      "system-admin",
+      ["Admin Koperasi"],
+      [],
+    );
+    const admin = resolveEffectiveExperience(
+      "admin-koperasi",
+      ["Kasir Koperasi"],
+      ["access_cooperative_pos"],
+    );
+    const pos = resolveEffectiveExperience("generic", [], ["access_cooperative_pos"]);
+
+    expect(isAdminNavigationExperience(platform)).toBe(false);
     expect(isAdminNavigationExperience("pengurus")).toBe(false);
     expect(isAdminNavigationExperience("manajer")).toBe(false);
-    expect(isAdminNavigationExperience("admin-koperasi")).toBe(true);
-    expect(roleExperienceNavigationLabel("system-admin")).toBe("Platform");
+    expect(isAdminNavigationExperience(admin)).toBe(true);
+    expect(roleExperienceNavigationLabel(platform)).toBe("Platform");
     expect(roleExperienceNavigationLabel("pengurus")).toBe(
       "Ruang kerja Pengurus",
     );
     expect(roleExperienceNavigationLabel("manajer")).toBe(
       "Ruang kerja Manajer",
     );
-    expect(roleExperienceNavigationLabel("admin-koperasi")).toBe(
+    expect(roleExperienceNavigationLabel(admin)).toBe(
       "Ruang kerja Admin Koperasi",
+    );
+    expect(roleExperienceNavigationLabel(pos)).toBe("Ruang kerja Operator POS");
+    expect(isPlatformExperience(pos)).toBe(false);
+  });
+
+  test("gives Dashboard and sidebar the identical effective experience", () => {
+    const effectiveExperience = resolveEffectiveExperience(
+      "generic",
+      [],
+      ["access_cooperative_pos"],
+    );
+    const dashboardExperience = resolveRoleExperience(
+      effectiveExperience,
+      ["access_cooperative_pos"],
+      definitions,
+      fallback,
+    );
+
+    expect(dashboardExperience.key).toBe(effectiveExperience);
+    expect(roleExperienceNavigationLabel(effectiveExperience)).not.toBe(
+      "Platform",
     );
   });
 });

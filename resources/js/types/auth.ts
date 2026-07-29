@@ -1,3 +1,5 @@
+import type { ServerPrimaryRole } from "@/lib/role-experience";
+
 export type User = {
   id: number;
   name: string;
@@ -10,9 +12,16 @@ export type User = {
 };
 
 export type Auth = {
-  user: User;
+  user: User | null;
   roles?: string[];
   permissions?: string[];
+  primary_role?: ServerPrimaryRole | null;
+  member_access?: {
+    is_active: boolean;
+    is_pending_review: boolean;
+    can_access_financial_features: boolean;
+    can_access_onboarding: boolean;
+  } | null;
 };
 
 export type TwoFactorConfigContent = {

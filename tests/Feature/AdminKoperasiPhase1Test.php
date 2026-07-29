@@ -37,7 +37,7 @@ class AdminKoperasiPhase1Test extends TestCase
     }
 
     #[DataProvider('primaryRoleDashboardProvider')]
-    public function test_dashboard_payload_follows_primary_role_precedence(array $roles, string $workspace, string $primaryRole, bool $isAdminPayload): void
+    public function test_shared_primary_role_and_dashboard_workspace_follow_the_same_contract(array $roles, string $workspace, string $primaryRole, bool $isAdminPayload): void
     {
         $organization = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $organization->id]);

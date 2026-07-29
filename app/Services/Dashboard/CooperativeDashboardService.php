@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\CooperativeShuPeriodStatus;
+use App\Enums\RoleExperience;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
@@ -15,12 +16,14 @@ use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
+use App\Services\Authorization\PrimaryRoleResolver;
 use Carbon\CarbonImmutable;
 
 class CooperativeDashboardService
 {
     public function __construct(
         private readonly OrganizationScopedQueryService $scopeService,
+        private readonly PrimaryRoleResolver $primaryRoleResolver,
     ) {}
 
     /**
@@ -30,7 +33,7 @@ class CooperativeDashboardService
     {
         $user ??= request()->user();
 
-        if ($user?->hasRole('Admin Koperasi')) {
+        if ($this->primaryRoleResolver->resolve($user) === RoleExperience::AdminKoperasi) {
             return $this->adminCooperativeData($user);
         }
 
@@ -80,6 +83,7 @@ class CooperativeDashboardService
             ->value('outstanding_amount');
 
         return [
+            'workspace' => 'platform',
             'summary' => [
                 'today_sales' => (float) (clone $todayTransactions)->sum('total_amount'),
                 'today_transactions' => (clone $todayTransactions)->count(),

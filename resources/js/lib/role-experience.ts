@@ -74,6 +74,28 @@ export function isPlatformExperience(key: RoleExperienceKey): boolean {
   return key === "system-admin" || key === "admin-pusat";
 }
 
+export function isAdminNavigationExperience(
+  key: RoleExperienceKey | null,
+): boolean {
+  return key === "admin-koperasi";
+}
+
+export function roleExperienceNavigationLabel(
+  key: RoleExperienceKey | null,
+): string {
+  return (
+    {
+      "system-admin": "Platform",
+      "admin-pusat": "Platform",
+      pengurus: "Ruang kerja Pengurus",
+      manajer: "Ruang kerja Manajer",
+      "admin-koperasi": "Ruang kerja Admin Koperasi",
+      kasir: "Ruang kerja Kasir",
+      generic: "Platform",
+    }[key ?? "generic"] ?? "Platform"
+  );
+}
+
 export function resolveRoleExperience(
   roles: string[],
   permissions: string[],

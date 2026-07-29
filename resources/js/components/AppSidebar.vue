@@ -93,6 +93,12 @@ import {
 } from "@/routes/cooperative/store-credit";
 import { index as cooperativeStoreCreditTransfersIndex } from "@/routes/cooperative/store-credit/transfers";
 import { storeAccount as memberStoreAccount } from "@/routes/member";
+import {
+  isAdminNavigationExperience,
+  isPlatformExperience,
+  resolvePrimaryRole,
+  roleExperienceNavigationLabel,
+} from "@/lib/role-experience";
 import type { NavItem } from "@/types";
 import AppLogo from "./AppLogo.vue";
 
@@ -104,14 +110,13 @@ const userRoles = computed(() => {
   );
 });
 const isMember = computed(() => userRoles.value.includes("Anggota"));
+const primaryRole = computed(() => resolvePrimaryRole(userRoles.value));
 const hasNonMemberRole = computed(
   () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
 const isSystemAdmin = computed(
-  () =>
-    userRoles.value.includes("System Admin") ||
-    userRoles.value.includes("Admin Pusat"),
+  () => primaryRole.value !== null && isPlatformExperience(primaryRole.value),
 );
 const userPermissions = computed<string[]>(() => {
   const permissions = page.props.auth?.permissions as string[] | undefined;
@@ -847,45 +852,45 @@ const memberNavItems = computed<NavItem[]>(() => {
   }
 
   return [
-  {
-    title: "Beranda",
-    href: "/member",
-    icon: LayoutGrid,
-  },
-  {
-    title: "Simpanan",
-    href: "/member/savings",
-    icon: WalletCards,
-  },
-  {
-    title: "Saldo Toko",
-    href: memberStoreAccount().url,
-    icon: WalletCards,
-  },
-  {
-    title: "Pinjaman",
-    href: "/member/loans",
-    icon: CreditCard,
-  },
-  {
-    title: "Poin & Reward",
-    href: "#",
-    icon: Gift,
-    items: [
-      { title: "Poin Saya", href: "/member/points" },
-      { title: "Rewards", href: "/member/rewards" },
-    ],
-  },
-  {
-    title: "Aktivitas Keuangan",
-    href: "/member/transactions",
-    icon: ReceiptText,
-  },
-  {
-    title: "Profil",
-    href: "/member/profile",
-    icon: UserRound,
-  },
+    {
+      title: "Beranda",
+      href: "/member",
+      icon: LayoutGrid,
+    },
+    {
+      title: "Simpanan",
+      href: "/member/savings",
+      icon: WalletCards,
+    },
+    {
+      title: "Saldo Toko",
+      href: memberStoreAccount().url,
+      icon: WalletCards,
+    },
+    {
+      title: "Pinjaman",
+      href: "/member/loans",
+      icon: CreditCard,
+    },
+    {
+      title: "Poin & Reward",
+      href: "#",
+      icon: Gift,
+      items: [
+        { title: "Poin Saya", href: "/member/points" },
+        { title: "Rewards", href: "/member/rewards" },
+      ],
+    },
+    {
+      title: "Aktivitas Keuangan",
+      href: "/member/transactions",
+      icon: ReceiptText,
+    },
+    {
+      title: "Profil",
+      href: "/member/profile",
+      icon: UserRound,
+    },
   ];
 });
 const mainNavItems = computed(() => {
@@ -893,7 +898,7 @@ const mainNavItems = computed(() => {
     return memberNavItems.value;
   }
 
-  if (userRoles.value.includes("Admin Koperasi")) {
+  if (isAdminNavigationExperience(primaryRole.value)) {
     return adminNavItems.value;
   }
 
@@ -905,19 +910,7 @@ const navigationLabel = computed(() => {
     return "Kojayaku";
   }
 
-  if (userRoles.value.includes("Pengurus Koperasi")) {
-    return "Ruang kerja Pengurus";
-  }
-
-  if (userRoles.value.includes("Manajer Koperasi")) {
-    return "Ruang kerja Manajer";
-  }
-
-  if (userRoles.value.includes("Admin Koperasi")) {
-    return "Ruang kerja Admin Koperasi";
-  }
-
-  return "Platform";
+  return roleExperienceNavigationLabel(primaryRole.value);
 });
 </script>
 

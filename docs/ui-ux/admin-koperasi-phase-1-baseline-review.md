@@ -1,16 +1,33 @@
 # Admin Koperasi Phase 1 — Baseline Review
 
-## Final evidence
+## Gate status
 
-- Implementation evidence head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`
-- CI run: `30447412317` — success
-- PR UI compare run: `30447394702` — success
-- Full UI Audit run: `30447414712` — completed with scoped legacy visual debt
-- Full-audit manifest head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`
+- Scoped Admin evidence: **PASS**.
+- Repository full audit: **FAIL**.
+- Phase 1 final gate: **NOT PASSED**.
+- Implementation evidence head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`.
+- CI run: `30447412317` — success.
+- PR UI compare run: `30447394702` — success.
+- Full UI Audit run: `30447414712` — failure.
+- Full-audit manifest head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`.
 
-## Visual coverage
+The failed full audit is not final success evidence. This document will be updated with the exact final head, run IDs, and artifact metrics only after a new full audit succeeds.
 
-The final full audit generated 219 visual entries:
+## Failed-audit review
+
+The failed artifact contains 18 responsive visual failures. Every expected, actual, and diff image was reviewed. None showed a loading page, application error, 403 response, or incorrect authenticated role.
+
+| Screens | Viewport | Classification | Decision |
+| --- | --- | --- | --- |
+| Dues, Ledger, Loans, Members, Payments | Mobile and tablet | Intentional shared responsive UI change | Capture and adopt only repeatable canonical candidates. |
+| Member dashboard, Savings, Transactions | Mobile and tablet | Intentional deterministic member operational presentation | Capture and adopt only repeatable canonical candidates. |
+| Operator dashboard | Tablet | Intentional dashboard/responsive change | Capture and adopt only repeatable canonical candidate. |
+| Loans | Mobile and tablet | Prior CI deterministic rendering drift | Local clean candidate matched the existing baseline; retain baseline and revalidate in the final audit. |
+| Points | Tablet | Prior CI deterministic rendering drift | Local clean candidate matched the existing baseline; retain baseline and revalidate in the final audit. |
+
+The 18 candidates were captured twice on the canonical local Ubuntu environment. All paired captures had identical hashes. No tolerance, global mask, text/state mask, loading state, error state, 403 state, or wrong-role screenshot was accepted.
+
+## Failed-audit metrics
 
 | Viewport | Expected | Passed | Failed | Skipped |
 | --- | ---: | ---: | ---: | ---: |
@@ -18,23 +35,10 @@ The final full audit generated 219 visual entries:
 | Tablet | 73 | 63 | 10 | 0 |
 | Mobile | 57 | 49 | 8 | 0 |
 
-All Admin Koperasi dashboard, members, payments, dues, ledger, loans, loan types, and points states pass across their covered viewports. The remaining 18 failures are existing non-Admin responsive baselines: System Admin cooperative pages, member portal pages, and operator/payment/points pages. They are outside this Admin correction pass and were not hidden with masks, waivers, or tolerance changes.
-
-## Accessibility and runtime
-
-- Admin accessibility scenarios: 0 new critical/serious findings and 0 stale findings, including Loan Types create, edit, and delete dialogs.
-- Full artifact runtime reports: 227.
-- Console errors: 0.
-- Page errors: 0.
-- Failed important requests: 0.
-- Unexpected responses: 0.
-- Full-artifact accessibility debt outside Admin scope: 4 new serious findings and 18 stale legacy findings; no new waiver was added.
+The same failed artifact reported four new serious accessibility findings and 18 stale known findings. They are correction work, not accepted debt. Runtime reports in that artifact had zero console errors, page errors, failed important requests, and unexpected responses.
 
 ## Baseline policy
 
-- Canonical captures were reviewed from the Ubuntu GitHub workflow artifact.
-- Responsive Admin captures were repeatable across clean retries; each adopted state had identical retry hashes.
-- Desktop Admin and shared Loan Types captures were adopted from repeatable CI actuals.
 - Missing baselines: 0.
 - Orphan baselines: 0.
 - Duplicate baselines: 0.
@@ -42,16 +46,7 @@ All Admin Koperasi dashboard, members, payments, dues, ledger, loans, loan types
 - Visual tolerance: unchanged.
 - Global screenshot masks: none.
 - Text/state masks: none.
-- Loading, error, 403, and wrong-role captures: not accepted.
 
-## Local verification
+## Pending final evidence
 
-- Focused PHPUnit: 90 passed, 2,309 assertions.
-- Full PHPUnit: 1,441 passed, 5 skipped, 9,458 assertions.
-- Frontend role/queue/payment/contribution tests: 16 passed.
-- Admin accessibility scenarios: 9 passed.
-- Frontend build: passed.
-- Pint: 1,261 files passed.
-- UI route coverage: 0 uncovered routes.
-
-The final documentation commit follows the implementation evidence head above and does not change application behavior or visual output.
+Before this gate can pass, the correction head must have a successful CI run, PR UI compare, and a manual Full UI Audit (`mode=full`, `viewport=all`, `scope=all`). The final evidence will record the exact SHA, run IDs, visual counts, accessibility counts, runtime counts, and canonical retry hashes.

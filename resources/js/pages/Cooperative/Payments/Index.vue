@@ -131,6 +131,24 @@ const paymentStatusLabel = (status: string): string => {
   }
 };
 
+const paymentStatusTableLabel = (status: string): string => {
+  switch (status) {
+    case "PENDING":
+      return "Pending";
+    case "APPROVED":
+      return "Disetujui";
+    case "REJECTED":
+      return "Ditolak";
+    case "VOID":
+      return "Dibatalkan";
+    default:
+      return status || "-";
+  }
+};
+
+const contributionTypeTableLabel = (name?: string): string =>
+  name?.replace(/^Simpanan\s+/i, "") || "-";
+
 const paymentMethodLabel = (method: string): string => {
   switch (method) {
     case "CASH":
@@ -327,28 +345,51 @@ const columns = computed(() => [
     header: "Tanggal",
     key: "paid_at",
     slot: "paid_at",
+    width: props.canApprovePayments ? "13%" : "14%",
     sortable: true,
     sortKey: "paid_at",
   },
-  { header: "Anggota", key: "member.name", slot: "member" },
-  { header: "Jenis Simpanan", key: "contribution_type.name", slot: "type" },
-  { header: "Metode", key: "payment_method", slot: "method" },
+  {
+    header: "Anggota",
+    key: "member.name",
+    slot: "member",
+    width: props.canApprovePayments ? "13%" : "17%",
+  },
+  {
+    header: "Jenis Simpanan",
+    key: "contribution_type.name",
+    slot: "type",
+    width: props.canApprovePayments ? "14%" : "17%",
+  },
+  {
+    header: "Metode",
+    key: "payment_method",
+    slot: "method",
+    width: props.canApprovePayments ? "9%" : "12%",
+  },
   {
     header: "Status",
     key: "status",
     slot: "status",
+    width: props.canApprovePayments ? "12%" : "14%",
     sortable: true,
     sortKey: "status",
+  },
+  {
+    header: "Keterangan",
+    key: "notes",
+    slot: "notes",
+    width: props.canApprovePayments ? "12%" : "19%",
   },
   {
     header: "Nominal",
     key: "amount",
     slot: "amount",
     align: "right" as const,
+    width: props.canApprovePayments ? "12%" : "9%",
     sortable: true,
     sortKey: "amount",
   },
-  { header: "Keterangan", key: "notes", slot: "notes" },
   ...(props.canApprovePayments
     ? [
         {
@@ -356,6 +397,7 @@ const columns = computed(() => [
           key: "actions",
           slot: "actions",
           align: "right" as const,
+          width: "9%",
         },
       ]
     : []),
@@ -444,7 +486,7 @@ const columns = computed(() => [
       </section>
 
       <div
-        class="grid min-w-0 gap-6 xl:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]"
+        class="grid min-w-0 gap-6 xl:grid-cols-[minmax(20rem,22rem)_minmax(0,1fr)]"
       >
         <Card
           class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
@@ -783,7 +825,8 @@ const columns = computed(() => [
                 class="hidden sm:block"
                 :columns="columns"
                 :data="payments"
-                table-class="min-w-[760px]"
+                table-class="min-w-0 table-fixed"
+                compact
                 :searchable="false"
                 :empty-icon="ReceiptText"
                 empty-message="Belum ada pembayaran yang tercatat."
@@ -801,7 +844,9 @@ const columns = computed(() => [
                 </template>
 
                 <template #member="{ row }">
-                  <div class="font-semibold text-zinc-950 dark:text-white">
+                  <div
+                    class="truncate font-semibold text-zinc-950 dark:text-white"
+                  >
                     {{ row.member?.name || "-" }}
                   </div>
                   <div class="text-xs text-zinc-500">
@@ -812,12 +857,13 @@ const columns = computed(() => [
                 <template #type="{ row }">
                   <Badge
                     variant="outline"
-                    class="bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
+                    class="inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
                   >
                     {{
-                      row.contribution_type?.name ||
-                      row.invoice?.contribution_type?.name ||
-                      "-"
+                      contributionTypeTableLabel(
+                        row.contribution_type?.name ||
+                          row.invoice?.contribution_type?.name,
+                      )
                     }}
                   </Badge>
                 </template>
@@ -825,7 +871,7 @@ const columns = computed(() => [
                 <template #method="{ row }">
                   <Badge
                     variant="outline"
-                    class="bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    class="inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   >
                     {{ paymentMethodLabel(row.payment_method) }}
                   </Badge>
@@ -836,45 +882,52 @@ const columns = computed(() => [
                     variant="outline"
                     :class="
                       row.status === 'APPROVED'
-                        ? 'bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                        ? 'inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                         : row.status === 'PENDING'
-                          ? 'bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-                          : 'bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                          ? 'inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                          : 'inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                     "
                   >
-                    {{ paymentStatusLabel(row.status) }}
+                    {{ paymentStatusTableLabel(row.status) }}
                   </Badge>
+                </template>
+
+                <template #notes="{ value }">
+                  <span
+                    class="block max-w-[10rem] truncate text-xs text-zinc-600 dark:text-zinc-400"
+                    :title="value || ''"
+                  >
+                    {{ value || "-" }}
+                  </span>
                 </template>
 
                 <template #amount="{ value }">
                   <span
-                    class="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300"
+                    class="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-300"
                   >
                     {{ formatCurrency(value) }}
-                  </span>
-                </template>
-
-                <template #notes="{ row }">
-                  <span
-                    class="block max-w-[220px] truncate text-zinc-600 dark:text-zinc-400"
-                    :title="row.notes || ''"
-                  >
-                    {{ row.notes || "-" }}
                   </span>
                 </template>
 
                 <template v-if="canApprovePayments" #actions="{ row }">
                   <Button
                     v-if="row.status === 'PENDING'"
-                    size="sm"
-                    class="h-8"
+                    size="icon"
+                    class="size-8"
+                    :aria-label="
+                      approvingPaymentId === row.id
+                        ? 'Memproses pembayaran'
+                        : 'Approve pembayaran'
+                    "
+                    :title="
+                      approvingPaymentId === row.id
+                        ? 'Memproses pembayaran'
+                        : 'Approve pembayaran'
+                    "
                     :disabled="approvingPaymentId === row.id"
                     @click="approvePayment(row)"
                   >
                     <CheckCircle2 class="size-4" />
-                    {{
-                      approvingPaymentId === row.id ? "Memproses" : "Approve"
-                    }}
                   </Button>
                   <span v-else class="text-xs text-zinc-400">-</span>
                 </template>
@@ -968,6 +1021,15 @@ const columns = computed(() => [
                           payment.invoice?.contribution_type?.name ||
                           "-"
                         }}
+                      </dd>
+                    </div>
+                    <div v-if="payment.notes" class="col-span-2 min-w-0">
+                      <dt class="text-xs text-zinc-500">Keterangan</dt>
+                      <dd
+                        class="mt-1 truncate font-medium text-zinc-800 dark:text-zinc-200"
+                        :title="payment.notes"
+                      >
+                        {{ payment.notes }}
                       </dd>
                     </div>
                   </dl>

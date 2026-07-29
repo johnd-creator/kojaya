@@ -28,9 +28,10 @@ class CooperativePaymentController extends Controller
         $query = CooperativePayment::query()->with(['member', 'invoice.contributionType', 'contributionType']);
         $scopeService->scopeVisibleTo($query, $request->user());
 
+        $canApprovePayments = $this->canApprovePaymentsFromUi($request);
         $status = $request->input(
             'status',
-            $request->user()->hasRole('Admin Koperasi') ? 'PENDING' : null,
+            $canApprovePayments ? 'PENDING' : null,
         );
 
         if (is_string($status) && $status !== '') {
@@ -84,7 +85,7 @@ class CooperativePaymentController extends Controller
                 ],
                 ['sort_field' => $sortField, 'sort_direction' => $sortDirection],
             ),
-            'canApprovePayments' => $this->canApprovePaymentsFromUi($request),
+            'canApprovePayments' => $canApprovePayments,
         ]);
     }
 

@@ -781,7 +781,7 @@ class PhaseBContractApiTest extends TestCase
                 'cooperative_member_id' => $member->id,
                 'cooperative_contribution_type_id' => $type->id,
                 'organization_id' => $member->organization_id,
-                'period' => now()->subMonths($i)->format('Y-m'),
+                'period' => now()->subMonthsNoOverflow($i)->format('Y-m'),
                 'amount' => 100000,
                 'paid_amount' => 0,
                 'due_date' => now()->addWeek()->toDateString(),

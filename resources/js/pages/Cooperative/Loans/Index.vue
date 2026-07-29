@@ -28,7 +28,12 @@ const props = defineProps<{
   members: Array<{ id: number; member_no: string; name: string }>;
   loanTypes: Array<{ id: number; name: string }>;
   filters: { status?: string; cooperative_member_id?: string | number };
-  stats: { applied: number; manager_approved: number; active: number; paid_off: number };
+  stats: {
+    applied: number;
+    manager_approved: number;
+    active: number;
+    paid_off: number;
+  };
 }>();
 
 const filters = ref({
@@ -89,7 +94,7 @@ const breadcrumbs = [
   <Head title="Pinjaman Koperasi" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <PageContainer class="max-w-none">
+    <PageContainer class="max-w-7xl">
       <section
         class="relative overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-white via-sky-50/60 to-emerald-50/40 p-6 shadow-sm shadow-sky-950/5 sm:p-7 dark:border-sky-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
       >
@@ -155,7 +160,11 @@ const breadcrumbs = [
         <StatsCard label="Lunas" :value="stats.paid_off" :icon="Calculator" />
       </div>
 
-      <FilterBar :show-search="false" @reset="resetFilters">
+      <FilterBar
+        class="w-full lg:max-w-3xl"
+        :show-search="false"
+        @reset="resetFilters"
+      >
         <SelectFilter
           v-model="filters.status"
           :options="statusOptions"
@@ -171,6 +180,7 @@ const breadcrumbs = [
       </FilterBar>
 
       <Card
+        data-testid="loans-list-card"
         class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
         <SectionHeader

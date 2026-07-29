@@ -14,6 +14,7 @@ interface Column {
   slot?: string;
   class?: string;
   headerClass?: string;
+  width?: string;
   align?: "left" | "center" | "right";
   format?: (value: any) => string;
   sortable?: boolean;
@@ -53,6 +54,7 @@ interface Props {
   sortField?: string;
   sortDirection?: "asc" | "desc";
   tableClass?: string;
+  compact?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,6 +68,7 @@ const props = withDefaults(defineProps<Props>(), {
   sortField: "",
   sortDirection: "asc",
   tableClass: "",
+  compact: false,
 });
 
 const emit = defineEmits<{
@@ -195,11 +198,22 @@ const sortIcon = (col: Column) => {
           :class="['w-full border-collapse text-left', tableClass]"
           role="table"
         >
+          <colgroup>
+            <col v-if="selectable" style="width: 2.5rem" />
+            <col
+              v-for="(col, index) in columns"
+              :key="index"
+              :style="col.width ? { width: col.width } : undefined"
+            />
+          </colgroup>
           <thead class="sticky top-0 z-10">
             <tr
               class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
             >
-              <th v-if="selectable" class="w-10 py-4 px-4">
+              <th
+                v-if="selectable"
+                :class="compact ? 'w-10 px-3 py-3' : 'w-10 px-4 py-4'"
+              >
                 <input
                   type="checkbox"
                   aria-label="Pilih semua baris"
@@ -212,8 +226,10 @@ const sortIcon = (col: Column) => {
               <th
                 v-for="(col, index) in columns"
                 :key="index"
-                class="py-4 px-6 font-medium text-sm text-zinc-500 uppercase tracking-wider"
                 :class="[
+                  compact ? 'px-3 py-3 text-xs' : 'px-6 py-4 text-sm',
+                  compact ? 'min-w-0 max-w-0 overflow-hidden' : '',
+                  'font-medium uppercase tracking-wider text-zinc-500',
                   getAlignmentClass(col.align),
                   col.headerClass,
                   {
@@ -278,7 +294,11 @@ const sortIcon = (col: Column) => {
               }"
               @click="rowClickable && emit('row-click', row)"
             >
-              <td v-if="selectable" class="py-4 px-4" @click.stop>
+              <td
+                v-if="selectable"
+                :class="compact ? 'px-3 py-3' : 'px-4 py-4'"
+                @click.stop
+              >
                 <input
                   type="checkbox"
                   :aria-label="
@@ -293,8 +313,15 @@ const sortIcon = (col: Column) => {
               <td
                 v-for="(col, colIndex) in columns"
                 :key="colIndex"
-                class="py-4 px-6 text-sm text-zinc-600 dark:text-zinc-400"
-                :class="[getAlignmentClass(col.align), col.class]"
+                :class="[
+                  compact ? 'px-3 py-3' : 'px-6 py-4',
+                  compact ? 'min-w-0 max-w-0 overflow-hidden' : '',
+                  compact
+                    ? 'text-xs text-zinc-600 dark:text-zinc-400'
+                    : 'text-sm text-zinc-600 dark:text-zinc-400',
+                  getAlignmentClass(col.align),
+                  col.class,
+                ]"
               >
                 <slot
                   v-if="col.slot"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3";
-import { Settings, Sparkles } from "lucide-vue-next";
+import { Plus, Settings, Sparkles } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
@@ -8,6 +8,15 @@ import PageContainer from "@/components/PageContainer.vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
@@ -30,6 +39,8 @@ const createForm = useForm({
 });
 
 const editId = ref<number | null>(null);
+const createDialogOpen = ref(false);
+const editDialogOpen = ref(false);
 const deleteId = ref<number | null>(null);
 const deleteDialogOpen = computed({
   get: () => deleteId.value !== null,
@@ -51,6 +62,12 @@ const editForm = useForm({
   is_active: true,
 });
 
+const openCreateDialog = () => {
+  createForm.reset();
+  createForm.clearErrors();
+  createDialogOpen.value = true;
+};
+
 const startEdit = (loanType: any) => {
   editId.value = loanType.id;
   editForm.code = loanType.code;
@@ -64,13 +81,23 @@ const startEdit = (loanType: any) => {
   editForm.min_term_months = Number(loanType.min_term_months);
   editForm.max_term_months = Number(loanType.max_term_months);
   editForm.is_active = Boolean(loanType.is_active);
+  editForm.clearErrors();
+  editDialogOpen.value = true;
 };
 
-const submitCreate = () => createForm.post(store().url);
+const submitCreate = () =>
+  createForm.post(store().url, {
+    preserveScroll: true,
+    onSuccess: () => {
+      createDialogOpen.value = false;
+      createForm.reset();
+    },
+  });
 const submitEdit = () => {
   if (!editId.value) return;
   editForm.put(update(editId.value).url, {
     onSuccess: () => {
+      editDialogOpen.value = false;
       editId.value = null;
     },
   });
@@ -83,6 +110,32 @@ const submitDelete = () => {
     },
   });
 };
+
+const columns = [
+  { header: "Tipe Pinjaman", key: "name", slot: "loan_type" },
+  {
+    header: "Bunga",
+    key: "interest_rate",
+    slot: "interest",
+    align: "right" as const,
+  },
+  {
+    header: "Biaya Admin",
+    key: "admin_fee",
+    slot: "admin_fee",
+    align: "right" as const,
+  },
+  {
+    header: "Denda / Hari",
+    key: "late_fee_per_day",
+    slot: "late_fee",
+    align: "right" as const,
+  },
+  { header: "Plafon", key: "min_amount", slot: "amount" },
+  { header: "Tenor", key: "min_term_months", slot: "term" },
+  { header: "Status", key: "is_active", slot: "status" },
+  { header: "Aksi", key: "id", slot: "actions", align: "right" as const },
+];
 </script>
 
 <template>
@@ -94,7 +147,7 @@ const submitDelete = () => {
       { title: 'Tipe Pinjaman', href: index().url },
     ]"
   >
-    <PageContainer class="max-w-none">
+    <PageContainer class="max-w-6xl">
       <section
         class="relative overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-white via-sky-50/60 to-emerald-50/40 p-6 shadow-sm shadow-sky-950/5 sm:p-7 dark:border-sky-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
       >
@@ -120,208 +173,218 @@ const submitDelete = () => {
         </div>
       </section>
 
+      <div class="flex justify-end">
+        <Dialog v-model:open="createDialogOpen">
+          <Button type="button" @click="openCreateDialog">
+            <Plus class="mr-2 size-4" /> Tambah Tipe Pinjaman
+          </Button>
+          <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Tambah Tipe Pinjaman</DialogTitle>
+              <DialogDescription>
+                Tentukan bunga, biaya, plafon, dan tenor untuk produk pinjaman
+                baru.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              class="grid gap-4 sm:grid-cols-2"
+              @submit.prevent="submitCreate"
+            >
+              <Input v-model="createForm.code" placeholder="Kode" required />
+              <Input
+                v-model="createForm.name"
+                placeholder="Nama tipe pinjaman"
+                required
+              />
+              <Input
+                v-model="createForm.interest_rate"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Bunga %"
+                required
+              />
+              <Input
+                v-model="createForm.admin_fee"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="Biaya admin"
+                required
+              />
+              <Input
+                v-model="createForm.late_fee_per_day"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="Denda / hari"
+                required
+              />
+              <Input
+                v-model="createForm.min_amount"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="Minimum pinjaman"
+                required
+              />
+              <Input
+                v-model="createForm.max_amount"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="Maksimum pinjaman"
+                required
+              />
+              <Input
+                v-model="createForm.min_term_months"
+                type="number"
+                min="1"
+                placeholder="Tenor minimum"
+                required
+              />
+              <Input
+                v-model="createForm.max_term_months"
+                type="number"
+                min="1"
+                placeholder="Tenor maksimum"
+                required
+              />
+              <textarea
+                v-model="createForm.description"
+                class="min-h-20 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950 sm:col-span-2"
+                placeholder="Deskripsi"
+              />
+              <label class="flex items-center gap-2 text-sm">
+                <input
+                  v-model="createForm.is_active"
+                  type="checkbox"
+                  class="rounded border"
+                />
+                Aktif
+              </label>
+              <DialogFooter class="sm:col-span-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  @click="createDialogOpen = false"
+                >
+                  Batal
+                </Button>
+                <Button type="submit" :disabled="createForm.processing">
+                  Simpan Tipe
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <Card
+        data-testid="loan-types-list-card"
         class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <SectionHeader title="Tipe Baru" :icon="Settings" tone="sky" />
-        <CardContent class="p-5">
-          <form
-            class="grid gap-4 md:grid-cols-3"
-            @submit.prevent="submitCreate"
+        <SectionHeader
+          title="Daftar Tipe Pinjaman"
+          :description="`${loanTypes.length} tipe pinjaman tersedia`"
+          :icon="Settings"
+          tone="sky"
+        />
+        <CardContent class="px-0 pb-0">
+          <DataTable
+            :columns="columns"
+            :data="loanTypes"
+            table-class="min-w-[900px]"
+            compact
+            :searchable="false"
+            :empty-icon="Settings"
+            empty-message="Belum ada tipe pinjaman yang tersedia."
           >
-            <Input v-model="createForm.code" placeholder="Kode" required />
-            <Input
-              v-model="createForm.name"
-              placeholder="Nama tipe pinjaman"
-              required
-            />
-            <Input
-              v-model="createForm.interest_rate"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="Bunga %"
-              required
-            />
-            <Input
-              v-model="createForm.admin_fee"
-              type="number"
-              min="0"
-              step="1000"
-              placeholder="Biaya admin"
-              required
-            />
-            <Input
-              v-model="createForm.late_fee_per_day"
-              type="number"
-              min="0"
-              step="1000"
-              placeholder="Denda / hari"
-              required
-            />
-            <Input
-              v-model="createForm.min_amount"
-              type="number"
-              min="0"
-              step="1000"
-              placeholder="Minimum pinjaman"
-              required
-            />
-            <Input
-              v-model="createForm.max_amount"
-              type="number"
-              min="0"
-              step="1000"
-              placeholder="Maksimum pinjaman"
-              required
-            />
-            <Input
-              v-model="createForm.min_term_months"
-              type="number"
-              min="1"
-              placeholder="Tenor minimum"
-              required
-            />
-            <Input
-              v-model="createForm.max_term_months"
-              type="number"
-              min="1"
-              placeholder="Tenor maksimum"
-              required
-            />
-            <textarea
-              v-model="createForm.description"
-              class="min-h-20 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950 md:col-span-2"
-              placeholder="Deskripsi"
-            />
-            <label class="flex items-center gap-2 text-sm"
-              ><input
-                v-model="createForm.is_active"
-                type="checkbox"
-                class="rounded border"
-              />
-              Aktif</label
-            >
-            <div class="md:col-span-3 flex justify-end">
-              <Button
-                type="submit"
-                :disabled="createForm.processing"
-                class="shadow-sm"
-                >Simpan Tipe</Button
+            <template #loan_type="{ row }">
+              <div class="font-semibold text-zinc-950 dark:text-white">
+                {{ row.name }}
+              </div>
+              <div class="mt-1 flex min-w-0 items-center gap-2">
+                <Badge
+                  variant="outline"
+                  class="shrink-0 bg-zinc-100 px-1.5 py-0 text-[10px] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                >
+                  {{ row.code }}
+                </Badge>
+                <span
+                  class="block max-w-[18rem] truncate text-xs text-zinc-500"
+                  :title="row.description || ''"
+                >
+                  {{ row.description || "Tanpa keterangan" }}
+                </span>
+              </div>
+            </template>
+            <template #interest="{ value }">
+              <span class="tabular-nums">{{ value }}%</span>
+            </template>
+            <template #admin_fee="{ value }">
+              <span class="tabular-nums">{{ formatCurrency(value) }}</span>
+            </template>
+            <template #late_fee="{ value }">
+              <span class="tabular-nums">{{ formatCurrency(value) }}</span>
+            </template>
+            <template #amount="{ row }">
+              <span class="whitespace-nowrap tabular-nums">
+                {{ formatCurrency(row.min_amount) }} –
+                {{ formatCurrency(row.max_amount) }}
+              </span>
+            </template>
+            <template #term="{ row }">
+              <span class="whitespace-nowrap tabular-nums">
+                {{ row.min_term_months }}–{{ row.max_term_months }} bln
+              </span>
+            </template>
+            <template #status="{ value }">
+              <Badge
+                variant="outline"
+                :class="
+                  value
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                    : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
+                "
               >
-            </div>
-          </form>
+                {{ value ? "AKTIF" : "NONAKTIF" }}
+              </Badge>
+            </template>
+            <template #actions="{ row }">
+              <div class="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  @click="startEdit(row)"
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  @click="deleteId = row.id"
+                >
+                  Hapus
+                </Button>
+              </div>
+            </template>
+          </DataTable>
         </CardContent>
       </Card>
 
-      <div class="space-y-4">
-        <Card
-          v-for="loanType in loanTypes"
-          :key="loanType.id"
-          class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
-        >
-          <div
-            v-if="editId !== loanType.id"
-            class="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between"
-          >
-            <div class="min-w-0 flex-1 space-y-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
-                  {{ loanType.name }}
-                </h2>
-                <Badge
-                  variant="outline"
-                  class="bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                  >{{ loanType.code }}</Badge
-                >
-                <Badge
-                  variant="outline"
-                  :class="
-                    loanType.is_active
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                      : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
-                  "
-                  >{{ loanType.is_active ? "AKTIF" : "NONAKTIF" }}</Badge
-                >
-              </div>
-              <p class="text-sm text-zinc-500">
-                {{ loanType.description || "-" }}
-              </p>
-              <div class="grid gap-2 text-sm md:grid-cols-3">
-                <div
-                  class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-2.5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
-                >
-                  <span class="text-zinc-500">Bunga</span>
-                  <span class="ml-1 font-semibold"
-                    >{{ loanType.interest_rate }}%</span
-                  >
-                </div>
-                <div
-                  class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-2.5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
-                >
-                  <span class="text-zinc-500">Admin</span>
-                  <span class="ml-1 font-semibold">{{
-                    formatCurrency(loanType.admin_fee)
-                  }}</span>
-                </div>
-                <div
-                  class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-2.5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
-                >
-                  <span class="text-zinc-500">Denda</span>
-                  <span class="ml-1 font-semibold"
-                    >{{ formatCurrency(loanType.late_fee_per_day) }}/hari</span
-                  >
-                </div>
-                <div
-                  class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-2.5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
-                >
-                  <span class="text-zinc-500">Min</span>
-                  <span class="ml-1 font-semibold">{{
-                    formatCurrency(loanType.min_amount)
-                  }}</span>
-                </div>
-                <div
-                  class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-2.5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
-                >
-                  <span class="text-zinc-500">Max</span>
-                  <span class="ml-1 font-semibold">{{
-                    formatCurrency(loanType.max_amount)
-                  }}</span>
-                </div>
-                <div
-                  class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-2.5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
-                >
-                  <span class="text-zinc-500">Tenor</span>
-                  <span class="ml-1 font-semibold"
-                    >{{ loanType.min_term_months }}-{{
-                      loanType.max_term_months
-                    }}
-                    bln</span
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="flex gap-2 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                @click="startEdit(loanType)"
-                >Edit</Button
-              >
-              <Button
-                type="button"
-                variant="destructive"
-                @click="deleteId = loanType.id"
-                >Hapus</Button
-              >
-            </div>
-          </div>
-
-          <form
-            v-else
-            class="grid gap-4 p-5 md:grid-cols-3"
-            @submit.prevent="submitEdit"
-          >
+      <Dialog v-model:open="editDialogOpen">
+        <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Tipe Pinjaman</DialogTitle>
+            <DialogDescription>
+              Perbarui parameter produk pinjaman tanpa mengubah riwayat
+              transaksi.
+            </DialogDescription>
+          </DialogHeader>
+          <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="submitEdit">
             <Input v-model="editForm.code" required />
             <Input v-model="editForm.name" required />
             <Input
@@ -373,27 +436,31 @@ const submitDelete = () => {
             />
             <textarea
               v-model="editForm.description"
-              class="min-h-20 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950 md:col-span-2"
+              class="min-h-20 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950 sm:col-span-2"
             />
-            <label class="flex items-center gap-2 text-sm"
-              ><input
+            <label class="flex items-center gap-2 text-sm">
+              <input
                 v-model="editForm.is_active"
                 type="checkbox"
                 class="rounded border"
               />
-              Aktif</label
-            >
-            <div class="md:col-span-3 flex justify-end gap-2">
-              <Button type="button" variant="outline" @click="editId = null"
-                >Batal</Button
+              Aktif
+            </label>
+            <DialogFooter class="sm:col-span-2">
+              <Button
+                type="button"
+                variant="outline"
+                @click="editDialogOpen = false"
               >
-              <Button type="submit" :disabled="editForm.processing"
-                >Simpan Perubahan</Button
-              >
-            </div>
+                Batal
+              </Button>
+              <Button type="submit" :disabled="editForm.processing">
+                Simpan Perubahan
+              </Button>
+            </DialogFooter>
           </form>
-        </Card>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         v-model:open="deleteDialogOpen"

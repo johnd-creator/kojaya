@@ -438,6 +438,7 @@ const memberNo = (entry: any) =>
       </section>
 
       <Card
+        data-testid="ledger-filter-card"
         class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
         <div
@@ -472,57 +473,56 @@ const memberNo = (entry: any) =>
           </Button>
         </div>
         <CardContent class="p-5">
-          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <div class="relative sm:col-span-2 lg:col-span-1 xl:col-span-1">
+          <div
+            data-testid="ledger-filter-grid"
+            class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6"
+          >
+            <div class="relative sm:col-span-2 lg:col-span-1">
               <Search
-                class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
+                class="pointer-events-none absolute inset-y-0 left-3 my-auto size-4 text-zinc-400"
                 aria-hidden="true"
               />
               <Input
                 v-model="filters.member_search"
                 type="search"
                 placeholder="Cari nama / no anggota"
-                class="pl-9"
+                class="h-9 pl-9"
               />
             </div>
             <SelectFilter
               v-model="filters.ledger_scope"
               :options="scopeOptions"
               placeholder="Pilih scope"
-              class="w-full"
+              class="w-full lg:col-span-1"
             />
             <SelectFilter
               v-model="filters.contribution_type_id"
               :options="contributionTypeOptions"
               placeholder="Pilih jenis simpanan"
-              class="w-full"
+              class="w-full lg:col-span-1"
             />
             <SelectFilter
               v-model="filters.entry_type"
               :options="entryTypeOptions"
               placeholder="Pilih tipe mutasi"
-              class="w-full"
+              class="w-full lg:col-span-1"
             />
-            <div
-              class="flex items-end gap-3 sm:col-span-2 lg:col-span-2 xl:col-span-2"
-            >
-              <div class="min-w-0 flex-1 space-y-1">
-                <Label class="text-xs text-zinc-500" for="start_date">
-                  Tanggal Mulai
-                </Label>
-                <Input
-                  id="start_date"
-                  v-model="filters.start_date"
-                  type="date"
-                />
-              </div>
-              <div class="min-w-0 flex-1 space-y-1">
-                <Label class="text-xs text-zinc-500" for="end_date">
-                  Tanggal Sampai
-                </Label>
-                <Input id="end_date" v-model="filters.end_date" type="date" />
-              </div>
-            </div>
+            <Input
+              id="start_date"
+              v-model="filters.start_date"
+              type="date"
+              aria-label="Tanggal mulai"
+              title="Tanggal mulai"
+              class="w-full lg:col-span-1"
+            />
+            <Input
+              id="end_date"
+              v-model="filters.end_date"
+              type="date"
+              aria-label="Tanggal sampai"
+              title="Tanggal sampai"
+              class="w-full lg:col-span-1"
+            />
           </div>
         </CardContent>
       </Card>

@@ -31,7 +31,68 @@ const scenarios = [
     "admin-dues-index-no-results",
     "/cooperative/dues?member_search=UI-NO-RESULT-999",
   ],
+  ["ledger-index-default", "/cooperative/ledger"],
+  ["loans-index-default", "/cooperative/loans"],
+  ["loan-types-index-default", "/cooperative/loan-types"],
+  ["points-index-default", "/cooperative/points"],
 ] as const;
+
+const layoutCardSelectors = {
+  "ledger-index-default": '[data-testid="ledger-filter-card"]',
+  "loans-index-default": '[data-testid="loans-list-card"]',
+  "loan-types-index-default": '[data-testid="loan-types-list-card"]',
+  "points-index-default": '[data-testid="points-table-card"]',
+} as const;
+
+async function assertCooperativeResponsiveLayout(
+  page: Page,
+  id: string,
+): Promise<void> {
+  const metrics = await page.evaluate(() => ({
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+
+  expect(
+    metrics.documentWidth,
+    `${id} overflows the viewport.`,
+  ).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+
+  const cardSelector =
+    layoutCardSelectors[id as keyof typeof layoutCardSelectors];
+  const card = page.locator(cardSelector);
+  const cardMetrics = await card.evaluate((element) => {
+    const region = element.querySelector<HTMLElement>('[role="region"]');
+    const table = region?.querySelector<HTMLTableElement>("table");
+
+    return {
+      cardRight: element.getBoundingClientRect().right,
+      regionRight: region?.getBoundingClientRect().right ?? 0,
+      regionWidth: region?.clientWidth ?? 0,
+      tableWidth: table?.scrollWidth ?? 0,
+    };
+  });
+
+  expect(cardMetrics.cardRight).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+
+  if (cardMetrics.regionWidth > 0) {
+    expect(cardMetrics.regionRight).toBeLessThanOrEqual(
+      metrics.viewportWidth + 1,
+    );
+    expect(cardMetrics.tableWidth).toBeGreaterThan(0);
+  }
+
+  if (id === "ledger-index-default" && metrics.viewportWidth >= 1024) {
+    const filterItems = page.locator('[data-testid="ledger-filter-grid"] > *');
+    const tops = await filterItems.evaluateAll((items) =>
+      items.map((item) => Math.round(item.getBoundingClientRect().top)),
+    );
+
+    expect(new Set(tops).size, "Ledger filters should stay on one row.").toBe(
+      1,
+    );
+  }
+}
 
 async function assertPaymentLayout(page: Page): Promise<void> {
   const viewport = page.viewportSize();
@@ -41,12 +102,15 @@ async function assertPaymentLayout(page: Page): Promise<void> {
     );
     const tableRegion =
       historyCard?.querySelector<HTMLElement>('[role="region"]');
+    const table = tableRegion?.querySelector<HTMLTableElement>("table");
 
     return {
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
       historyRight: historyCard?.getBoundingClientRect().right ?? 0,
       regionRight: tableRegion?.getBoundingClientRect().right ?? 0,
+      tableWidth: table?.scrollWidth ?? 0,
+      regionWidth: tableRegion?.clientWidth ?? 0,
     };
   });
 
@@ -61,10 +125,24 @@ async function assertPaymentLayout(page: Page): Promise<void> {
     await expect(
       page.locator('[aria-label="Daftar pembayaran dalam tampilan kartu"]'),
     ).toBeVisible();
+    const paymentCards = page.locator('[data-testid="payment-card"]');
+    if ((await paymentCards.count()) > 0) {
+      await expect(
+        paymentCards.first().getByText("Keterangan", {
+          exact: true,
+        }),
+      ).toBeVisible();
+    }
   } else {
+    expect(metrics.tableWidth).toBeLessThanOrEqual(metrics.regionWidth + 1);
     await expect(
       page.locator('[data-testid="payment-history-card"] table'),
     ).toBeVisible();
+    await expect(
+      page.locator('[data-testid="payment-history-card"] th', {
+        hasText: "Keterangan",
+      }),
+    ).toHaveCount(1);
     await expect(
       page.locator('[aria-label="Daftar pembayaran dalam tampilan kartu"]'),
     ).toBeHidden();
@@ -87,6 +165,21 @@ for (const [id, route] of scenarios) {
       );
       if (["tablet", "mobile"].includes(testInfo.project.name)) {
         await assertNoHorizontalOverflow(page);
+      }
+      if (id in layoutCardSelectors) {
+        await assertCooperativeResponsiveLayout(page, id);
+      }
+      if (id === "loan-types-index-default") {
+        await page
+          .getByRole("button", { name: "Tambah Tipe Pinjaman" })
+          .click();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await expect(
+          page.getByRole("dialog").getByText("Tambah Tipe Pinjaman", {
+            exact: true,
+          }),
+        ).toBeVisible();
+        await page.getByRole("button", { name: "Batal" }).click();
       }
       if (id.startsWith("admin-payments")) {
         await assertPaymentLayout(page);

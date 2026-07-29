@@ -31,14 +31,14 @@ const scenarios = [
     "admin-dues-index-no-results",
     "/cooperative/dues?member_search=UI-NO-RESULT-999",
   ],
-  ["ledger-index-default", "/cooperative/ledger"],
+  ["admin-ledger-index-default", "/cooperative/ledger"],
   ["admin-loans-index-default", "/cooperative/loans"],
   ["admin-loan-types-index-default", "/cooperative/loan-types"],
   ["admin-points-index-default", "/cooperative/points"],
 ] as const;
 
 const layoutCardSelectors = {
-  "ledger-index-default": '[data-testid="ledger-filter-card"]',
+  "admin-ledger-index-default": '[data-testid="ledger-filter-card"]',
   "admin-loans-index-default": '[data-testid="loans-list-card"]',
   "admin-loan-types-index-default": '[data-testid="loan-types-list-card"]',
   "admin-points-index-default": '[data-testid="points-table-card"]',
@@ -82,7 +82,7 @@ async function assertCooperativeResponsiveLayout(
     expect(cardMetrics.tableWidth).toBeGreaterThan(0);
   }
 
-  if (id === "ledger-index-default" && metrics.viewportWidth >= 1024) {
+  if (id === "admin-ledger-index-default" && metrics.viewportWidth >= 1024) {
     const filterItems = page.locator('[data-testid="ledger-filter-grid"] > *');
     const tops = await filterItems.evaluateAll((items) =>
       items.map((item) => Math.round(item.getBoundingClientRect().top)),

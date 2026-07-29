@@ -54,6 +54,31 @@
       "accessibility": true
     },
     {
+      "id": "admin-ledger-index-default",
+      "module": "dues-payments-ledger",
+      "screen": "ledger",
+      "route_name": "cooperative.ledger.index",
+      "path_template": "/cooperative/ledger",
+      "role": "Admin Koperasi",
+      "auth_state": "admin",
+      "state": "admin-default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau ledger sebagai Admin Koperasi",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
       "id": "loan-types-index-default",
       "module": "loans",
       "screen": "index",

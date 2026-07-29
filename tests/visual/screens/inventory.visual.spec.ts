@@ -37,6 +37,7 @@ const manualScenarioIds = new Set([
     "admin-dues-index-open",
     "admin-dues-index-partial",
     "admin-dues-index-no-results",
+    "admin-ledger-index-default",
     "admin-loans-index-default",
     "admin-loan-types-index-default",
     "admin-points-index-default",

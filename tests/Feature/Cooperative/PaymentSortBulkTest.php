@@ -241,4 +241,89 @@ class PaymentSortBulkTest extends TestCase
                 ->component('Cooperative/Payments/Index')
             );
     }
+
+    public function test_admin_payment_list_excludes_another_organization(): void
+    {
+        $organization = Organization::factory()->create();
+        $otherOrganization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $organization->id]);
+        $otherMember = CooperativeMember::factory()->active()->create(['organization_id' => $otherOrganization->id]);
+        $visiblePayment = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 100,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $member->id,
+        ]);
+        CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 200,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $otherMember->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('cooperative.payments.index', ['status' => 'PENDING']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('payments.total', 1)
+                ->where('payments.data.0.id', $visiblePayment->id)
+            );
+    }
+
+    public function test_admin_cannot_approve_payment_from_another_organization(): void
+    {
+        $organization = Organization::factory()->create();
+        $otherOrganization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+        $otherMember = CooperativeMember::factory()->active()->create(['organization_id' => $otherOrganization->id]);
+        $payment = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 200,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $otherMember->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('cooperative.payments.approve', $payment))
+            ->assertForbidden();
+
+        $this->assertSame('PENDING', $payment->fresh()->status);
+    }
+
+    public function test_bulk_approve_rejects_mixed_organization_ids(): void
+    {
+        $organization = Organization::factory()->create();
+        $otherOrganization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $organization->id]);
+        $otherMember = CooperativeMember::factory()->active()->create(['organization_id' => $otherOrganization->id]);
+        $payment = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 100,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $member->id,
+        ]);
+        $otherPayment = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 200,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $otherMember->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('cooperative.payments.bulk-approve'), ['ids' => [$payment->id, $otherPayment->id]])
+            ->assertForbidden();
+
+        $this->assertSame('PENDING', $payment->fresh()->status);
+        $this->assertSame('PENDING', $otherPayment->fresh()->status);
+    }
 }

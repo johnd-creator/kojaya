@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AdminKoperasiPhase1Test extends TestCase
@@ -21,6 +22,44 @@ class AdminKoperasiPhase1Test extends TestCase
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
+    }
+
+    public static function primaryRoleDashboardProvider(): array
+    {
+        return [
+            'system admin wins over admin koperasi' => [['System Admin', 'Admin Koperasi'], 'platform', 'system-admin', false],
+            'admin pusat wins over admin koperasi' => [['Admin Pusat', 'Admin Koperasi'], 'platform', 'admin-pusat', false],
+            'pengurus wins over admin koperasi' => [['Pengurus Koperasi', 'Admin Koperasi'], 'platform', 'pengurus', false],
+            'manajer wins over admin koperasi' => [['Manajer Koperasi', 'Admin Koperasi'], 'platform', 'manajer', false],
+            'admin koperasi wins over kasir' => [['Admin Koperasi', 'Kasir Koperasi'], 'admin-koperasi', 'admin-koperasi', true],
+            'admin koperasi receives admin payload' => [['Admin Koperasi'], 'admin-koperasi', 'admin-koperasi', true],
+        ];
+    }
+
+    #[DataProvider('primaryRoleDashboardProvider')]
+    public function test_dashboard_payload_follows_primary_role_precedence(array $roles, string $workspace, string $primaryRole, bool $isAdminPayload): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole($roles);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.primary_role', $primaryRole)
+                ->loadDeferredProps('dashboard', function (Assert $page) use ($workspace, $isAdminPayload): void {
+                    $page->where('dashboard.workspace', $workspace);
+
+                    if ($isAdminPayload) {
+                        $page->has('dashboard.work_queue')
+                            ->missing('dashboard.pos');
+                    } else {
+                        $page->missing('dashboard.work_queue')
+                            ->missing('dashboard.organization');
+                    }
+                }),
+            );
     }
 
     public function test_admin_dashboard_is_scoped_and_uses_operational_payload(): void
@@ -52,6 +91,16 @@ class AdminKoperasiPhase1Test extends TestCase
             'paid_at' => now()->toDateString(),
             'status' => 'PENDING',
         ]);
+        $otherMember = CooperativeMember::factory()->active()->create([
+            'organization_id' => $otherOrganization->id,
+        ]);
+        CooperativePayment::query()->create([
+            'cooperative_member_id' => $otherMember->id,
+            'amount' => 2000000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => now()->toDateString(),
+            'status' => 'PENDING',
+        ]);
         CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $activeMember->id,
             'cooperative_contribution_type_id' => $type->id,
@@ -73,6 +122,7 @@ class AdminKoperasiPhase1Test extends TestCase
                     ->where('dashboard.summary.pending_members', 1)
                     ->where('dashboard.summary.revision_members', 1)
                     ->where('dashboard.summary.pending_payments', 2)
+                    ->where('dashboard.collections.pending_payment_amount', 1000000)
                     ->where('dashboard.summary.unpaid_dues_count', 1)
                     ->where('dashboard.summary.unpaid_dues_amount', 75000)
                     ->where('dashboard.summary.active_members', 1)

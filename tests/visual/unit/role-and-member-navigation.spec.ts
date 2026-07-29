@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 import type { Component } from "vue";
 import {
+  isAdminNavigationExperience,
   isPlatformExperience,
+  resolvePrimaryRole,
   resolveRoleExperience,
+  roleExperienceNavigationLabel,
   type DashboardAction,
   type RoleExperienceDefinition,
 } from "../../../resources/js/lib/role-experience";
@@ -10,6 +13,19 @@ import {
   mobileNavGridClass,
   resolveMemberMobileNavItems,
 } from "../../../resources/js/lib/member-mobile-nav";
+import {
+  actionableQueueItems,
+  primaryQueueItem,
+} from "../../../resources/js/lib/admin-work-queue";
+import {
+  isPendingPayment,
+  reconcilePaymentSelection,
+  selectablePayments,
+} from "../../../resources/js/lib/payment-selection";
+import {
+  contributionAmountHelper,
+  isFixedContributionCode,
+} from "../../../resources/js/lib/contribution-payment";
 
 const action = (label: string, permission?: string): DashboardAction => ({
   label,
@@ -90,6 +106,15 @@ test.describe("role experience resolver", () => {
         fallback,
       ),
     ).toMatchObject({ key: "admin-pusat", badge: "Admin Pusat" });
+    expect(resolvePrimaryRole(["Pengurus Koperasi", "Admin Koperasi"])).toBe(
+      "pengurus",
+    );
+    expect(resolvePrimaryRole(["Manajer Koperasi", "Admin Koperasi"])).toBe(
+      "manajer",
+    );
+    expect(resolvePrimaryRole(["Admin Koperasi", "Kasir Koperasi"])).toBe(
+      "admin-koperasi",
+    );
   });
 
   test("resolves explicit roles before permission-derived POS access", () => {
@@ -164,6 +189,23 @@ test.describe("role experience resolver", () => {
     expect(isPlatformExperience("system-admin")).toBe(true);
     expect(isPlatformExperience("admin-pusat")).toBe(true);
   });
+
+  test("uses the primary role for sidebar navigation and labels", () => {
+    expect(isAdminNavigationExperience("system-admin")).toBe(false);
+    expect(isAdminNavigationExperience("pengurus")).toBe(false);
+    expect(isAdminNavigationExperience("manajer")).toBe(false);
+    expect(isAdminNavigationExperience("admin-koperasi")).toBe(true);
+    expect(roleExperienceNavigationLabel("system-admin")).toBe("Platform");
+    expect(roleExperienceNavigationLabel("pengurus")).toBe(
+      "Ruang kerja Pengurus",
+    );
+    expect(roleExperienceNavigationLabel("manajer")).toBe(
+      "Ruang kerja Manajer",
+    );
+    expect(roleExperienceNavigationLabel("admin-koperasi")).toBe(
+      "Ruang kerja Admin Koperasi",
+    );
+  });
 });
 
 test.describe("member mobile navigation resolver", () => {
@@ -213,5 +255,53 @@ test.describe("member mobile navigation resolver", () => {
     );
     expect(hrefs).toContain("/member/onboarding");
     expect(hrefs).toContain("/member/profile");
+  });
+});
+
+test.describe("Admin operational selection helpers", () => {
+  test("hides zero-count queue items and falls back when all counts are zero", () => {
+    const permitted = [
+      { label: "Pembayaran", count: 2 },
+      { label: "Anggota", count: 0 },
+      { label: "Revisi", count: 1 },
+    ];
+
+    expect(actionableQueueItems(permitted).map(({ label }) => label)).toEqual([
+      "Pembayaran",
+      "Revisi",
+    ]);
+    expect(primaryQueueItem(permitted)?.label).toBe("Pembayaran");
+    expect(
+      primaryQueueItem(permitted.map((item) => ({ ...item, count: 0 }))),
+    ).toBe(undefined);
+  });
+
+  test("only permits pending payments and reconciles stale selection", () => {
+    const payments = [
+      { id: 1, status: "PENDING" },
+      { id: 2, status: "APPROVED" },
+      { id: 3, status: "REJECTED" },
+      { id: 4, status: "VOID" },
+    ];
+
+    expect(isPendingPayment(payments[0])).toBe(true);
+    expect(selectablePayments(payments, true).map(({ id }) => id)).toEqual([1]);
+    expect(selectablePayments(payments, false)).toEqual([]);
+    expect(
+      reconcilePaymentSelection(payments, payments, true).map(({ id }) => id),
+    ).toEqual([1]);
+    expect(reconcilePaymentSelection(payments, payments, false)).toEqual([]);
+  });
+
+  test("uses the backend default amount for every fixed contribution type", () => {
+    expect(isFixedContributionCode("POKOK")).toBe(true);
+    expect(isFixedContributionCode("WAJIB")).toBe(true);
+    expect(
+      contributionAmountHelper({
+        code: "WAJIB",
+        name: "Simpanan Wajib",
+        default_amount: 75000,
+      }),
+    ).toContain("75.000");
   });
 });

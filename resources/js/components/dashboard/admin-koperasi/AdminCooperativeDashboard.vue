@@ -24,35 +24,11 @@ import { index as duesIndex } from "@/routes/cooperative/dues";
 import { index as membersIndex } from "@/routes/cooperative/members";
 import { index as resignationsIndex } from "@/routes/cooperative/members/resignations";
 import { index as paymentsIndex } from "@/routes/cooperative/payments";
-
-type AdminDashboardPayload = {
-  organization?: { name?: string; code?: string } | null;
-  summary: {
-    pending_members: number;
-    revision_members: number;
-    pending_payments: number;
-    unpaid_dues_count: number;
-    unpaid_dues_amount: number;
-    active_members: number;
-  };
-  work_queue: {
-    pending_payments: number;
-    pending_members: number;
-    revision_members: number;
-    unpaid_dues: number;
-    pending_resignations?: number | null;
-  };
-  collections: {
-    period: string;
-    total_due: number;
-    paid: number;
-    outstanding: number;
-    collection_rate: number;
-    pending_payment_amount: number;
-  };
-  generated_at?: string;
-  generatedAt?: string;
-};
+import {
+  actionableQueueItems as filterActionableQueueItems,
+  primaryQueueItem as resolvePrimaryQueueItem,
+} from "@/lib/admin-work-queue";
+import type { AdminCooperativeDashboardPayload } from "@/types/dashboard";
 
 type QueueItem = {
   label: string;
@@ -64,12 +40,12 @@ type QueueItem = {
   tone: "amber" | "sky" | "rose" | "violet";
 };
 
-const props = defineProps<{ dashboard?: AdminDashboardPayload }>();
+const props = defineProps<{ dashboard?: AdminCooperativeDashboardPayload }>();
 const page = usePage();
 const permissions = computed<string[]>(
   () => (page.props.auth?.permissions as string[] | undefined) ?? [],
 );
-const dashboard = computed<AdminDashboardPayload | null>(
+const dashboard = computed<AdminCooperativeDashboardPayload | null>(
   () => props.dashboard ?? null,
 );
 const organizationLabel = computed(
@@ -79,7 +55,7 @@ const generatedAt = computed(
   () => dashboard.value?.generated_at ?? dashboard.value?.generatedAt ?? "",
 );
 
-const queueItems = computed<QueueItem[]>(() => {
+const permittedQueueItems = computed<QueueItem[]>(() => {
   const data = dashboard.value;
   if (!data) return [];
 
@@ -139,8 +115,16 @@ const queueItems = computed<QueueItem[]>(() => {
   );
 });
 
+const actionableQueueItems = computed(() =>
+  filterActionableQueueItems(permittedQueueItems.value),
+);
+
 const primaryAction = computed(
-  () => queueItems.value.find((item) => item.count > 0) ?? queueItems.value[0],
+  () =>
+    resolvePrimaryQueueItem(permittedQueueItems.value) ?? {
+      label: "Buka dashboard",
+      href: dashboardRoute().url,
+    },
 );
 
 const kpis = computed(() => {
@@ -161,10 +145,8 @@ const kpis = computed(() => {
     },
     {
       label: "Calon anggota pending",
-      value: formatNumber(
-        data.summary.pending_members + data.summary.revision_members,
-      ),
-      detail: String(data.summary.revision_members) + " perlu revisi",
+      value: formatNumber(data.summary.pending_members),
+      detail: `${data.summary.revision_members} data perlu revisi`,
       href: membersIndex({ query: { validation_status: "PENDING" } }).url,
       permission: ["validate_cooperative_member"],
       icon: Users,
@@ -311,9 +293,12 @@ const formatGeneratedAt = (value: string): string => {
           </p>
         </div>
         <CardContent class="p-4 sm:p-5">
-          <div v-if="queueItems.length > 0" class="grid gap-3 sm:grid-cols-2">
+          <div
+            v-if="actionableQueueItems.length > 0"
+            class="grid gap-3 sm:grid-cols-2"
+          >
             <Link
-              v-for="item in queueItems"
+              v-for="item in actionableQueueItems"
               :key="item.label"
               :href="item.href"
               class="group flex min-h-32 flex-col justify-between rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"

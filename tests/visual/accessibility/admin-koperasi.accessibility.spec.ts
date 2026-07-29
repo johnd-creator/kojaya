@@ -85,6 +85,42 @@ test("admin-loan-types-create-dialog @accessibility", async ({
   }
 });
 
+test("admin-loan-types-validation-errors @accessibility", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop");
+  const runtime = attachRuntimeHealth(page, "admin-loan-types-validation-errors");
+
+  try {
+    await installStableEnvironment(page);
+    const response = await page.goto("/cooperative/loan-types", {
+      waitUntil: "domcontentloaded",
+    });
+    expect(response?.status()).toBe(200);
+    await waitForStableScreen(page, {
+      screenId: "admin-loan-types-index-default",
+    });
+    await page.getByRole("button", { name: "Tambah Tipe Pinjaman" }).click();
+    const dialog = page.getByRole("dialog");
+
+    await dialog.getByLabel("Kode").fill("VALIDATION-AUDIT");
+    await dialog.getByLabel("Nama tipe").fill("Validasi tipe pinjaman");
+    await dialog.getByLabel("Maksimum pinjaman").fill("1000");
+    await dialog.getByRole("button", { name: "Simpan Tipe" }).click();
+
+    const error = dialog.locator("#create-loan-type-max-amount-error");
+    await expect(error).toBeVisible();
+    await expect(error).toHaveAttribute("role", "alert");
+    await expect(dialog.getByLabel("Maksimum pinjaman")).toHaveAttribute(
+      "aria-describedby",
+      "create-loan-type-max-amount-error",
+    );
+    await auditAccessibility(page, testInfo, "admin-loan-types-validation-errors");
+  } finally {
+    await writeRuntimeReport(runtime, testInfo);
+  }
+});
+
 test("admin-loan-types-edit-dialog @accessibility", async ({
   page,
 }, testInfo) => {
@@ -106,6 +142,29 @@ test("admin-loan-types-edit-dialog @accessibility", async ({
     expect(describedBy).toBeTruthy();
     await expect(page.locator(`#${describedBy}`)).toBeVisible();
     await auditAccessibility(page, testInfo, "admin-loan-types-edit-dialog");
+  } finally {
+    await writeRuntimeReport(runtime, testInfo);
+  }
+});
+
+test("admin-loan-types-create-dialog-dark @accessibility", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop");
+  const runtime = attachRuntimeHealth(page, "admin-loan-types-create-dialog-dark");
+
+  try {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await installStableEnvironment(page);
+    const response = await page.goto("/cooperative/loan-types", {
+      waitUntil: "domcontentloaded",
+    });
+    expect(response?.status()).toBe(200);
+    await waitForStableScreen(page, {
+      screenId: "admin-loan-types-index-default",
+    });
+    await page.getByRole("button", { name: "Tambah Tipe Pinjaman" }).click();
+    await auditAccessibility(page, testInfo, "admin-loan-types-create-dialog-dark");
   } finally {
     await writeRuntimeReport(runtime, testInfo);
   }
@@ -140,6 +199,7 @@ test("admin-loan-types-delete-confirmation @accessibility", async ({
       "admin-loan-types-delete-confirmation",
     );
     await page.getByRole("button", { name: "Batal" }).click();
+    await expect(page.getByRole("button", { name: "Hapus" }).first()).toBeFocused();
   } finally {
     await writeRuntimeReport(runtime, testInfo);
   }

@@ -285,7 +285,7 @@ const columns = [
                   v-model="createForm.late_fee_per_day"
                   type="number"
                   min="0"
-                  step="1000"
+                  step="500"
                   required
                   aria-describedby="create-loan-type-late-fee-error"
                   :aria-invalid="Boolean(createForm.errors.late_fee_per_day)"
@@ -443,7 +443,7 @@ const columns = [
                   {{ row.code }}
                 </Badge>
                 <span
-                  class="block max-w-[18rem] truncate text-xs text-zinc-500"
+                  class="block max-w-[18rem] truncate text-xs text-zinc-500 dark:text-zinc-400"
                   :title="row.description || ''"
                 >
                   {{ row.description || "Tanpa keterangan" }}
@@ -596,7 +596,7 @@ const columns = [
                 v-model="editForm.late_fee_per_day"
                 type="number"
                 min="0"
-                step="1000"
+                step="500"
                 required
                 aria-describedby="edit-loan-type-late-fee-error"
                 :aria-invalid="Boolean(editForm.errors.late_fee_per_day)"

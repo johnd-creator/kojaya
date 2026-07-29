@@ -242,7 +242,7 @@ const sortIcon = (col: Column) => {
                 :class="[
                   compact ? 'px-3 py-3 text-xs' : 'px-6 py-4 text-sm',
                   compact ? 'min-w-0 max-w-0 overflow-hidden' : '',
-                  'font-medium uppercase tracking-wider text-zinc-500',
+                  'font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-300',
                   getAlignmentClass(col.align),
                   col.headerClass,
                   {

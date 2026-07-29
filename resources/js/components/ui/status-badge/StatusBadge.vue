@@ -120,7 +120,7 @@ const variantClasses = computed(() => {
     case "info":
       return "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border-blue-200 dark:border-blue-500/30";
     case "destructive":
-      return "";
+      return "!border-red-800 !bg-red-700 !text-white dark:!border-red-700 dark:!bg-red-700";
     default:
       return "";
   }

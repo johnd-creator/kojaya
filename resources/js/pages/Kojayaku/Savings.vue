@@ -470,7 +470,7 @@ const statusClass = (status: string): string => {
                         v-if="invoice.remaining_amount > 0"
                         type="button"
                         size="sm"
-                        class="bg-emerald-600 hover:bg-emerald-700"
+                        class="bg-emerald-700 hover:bg-emerald-800"
                         @click="
                           openPaymentDialog({
                             id: invoice.id,
@@ -484,7 +484,7 @@ const statusClass = (status: string): string => {
                       </Button>
                       <span
                         v-else
-                        class="text-xs text-emerald-600 dark:text-emerald-400"
+                        class="text-xs text-emerald-700 dark:text-emerald-400"
                         >Lunas</span
                       >
                     </td>

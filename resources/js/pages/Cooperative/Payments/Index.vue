@@ -28,6 +28,14 @@ import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import {
+  contributionAmountHelper,
+  isFixedContributionCode,
+} from "@/lib/contribution-payment";
+import {
+  isPendingPayment,
+  reconcilePaymentSelection,
+} from "@/lib/payment-selection";
+import {
   approve,
   bulkApprove,
   index,
@@ -46,6 +54,18 @@ type ContributionTypeOption = {
   name: string;
   category: string;
   default_amount: number | string;
+};
+
+type PaymentRow = {
+  id: number;
+  status: string;
+  paid_at: string;
+  payment_method: string;
+  amount: number | string;
+  notes?: string | null;
+  member?: { name?: string; member_no?: string } | null;
+  contribution_type?: { name?: string } | null;
+  invoice?: { contribution_type?: { name?: string } | null } | null;
 };
 
 const props = defineProps<{
@@ -100,18 +120,15 @@ const selectedContributionType = computed(() =>
   ),
 );
 
-const isFixedAmount = computed(
-  () => selectedContributionType.value?.code === "POKOK",
+const isFixedContributionType = (type?: ContributionTypeOption): boolean =>
+  isFixedContributionCode(type?.code);
+
+const isFixedAmount = computed(() =>
+  isFixedContributionType(selectedContributionType.value),
 );
 
 const amountHelper = computed(() => {
-  if (!selectedContributionType.value) {
-    return "Pilih jenis simpanan untuk melihat aturan nominal.";
-  }
-  if (selectedContributionType.value.code === "POKOK") {
-    return "Simpanan Pokok ditetapkan Rp 200.000 per anggota.";
-  }
-  return "Simpanan Sukarela bebas diisi sesuai nominal setoran anggota.";
+  return contributionAmountHelper(selectedContributionType.value);
 });
 
 const proofFileName = computed(() => form.proof?.name ?? "");
@@ -176,8 +193,8 @@ watch(
       return;
     }
     const defaultAmount = String(Number(type.default_amount ?? 0));
-    if (type.code === "SUKARELA") {
-      if (previousType?.code === "POKOK") {
+    if (!isFixedContributionType(type)) {
+      if (isFixedContributionType(previousType)) {
         form.amount = "";
       }
       return;
@@ -227,7 +244,7 @@ const submit = () =>
   });
 
 const approvingPaymentId = ref<number | null>(null);
-const selectedPayments = ref<any[]>([]);
+const selectedPayments = ref<PaymentRow[]>([]);
 const showBulkConfirm = ref(false);
 const pendingBulkAction = ref<{ action: string; selected: any[] } | null>(null);
 
@@ -240,14 +257,19 @@ const filterStatus = ref<string>(props.filters?.status ?? "");
 const filterPeriod = ref<string>(props.filters?.period ?? "");
 const filterPaymentMethod = ref<string>(props.filters?.payment_method ?? "");
 
-const paymentRows = computed<any[]>(() =>
+const paymentRows = computed<PaymentRow[]>(() =>
   Array.isArray(props.payments) ? props.payments : (props.payments?.data ?? []),
 );
 
-const isPaymentSelected = (payment: any): boolean =>
+const isPaymentSelectable = (payment: PaymentRow): boolean =>
+  props.canApprovePayments && isPendingPayment(payment);
+
+const isPaymentSelected = (payment: PaymentRow): boolean =>
   selectedPayments.value.some((selected) => selected.id === payment.id);
 
-const togglePaymentSelection = (payment: any): void => {
+const togglePaymentSelection = (payment: PaymentRow): void => {
+  if (!isPaymentSelectable(payment)) return;
+
   if (isPaymentSelected(payment)) {
     selectedPayments.value = selectedPayments.value.filter(
       (selected) => selected.id !== payment.id,
@@ -259,6 +281,14 @@ const togglePaymentSelection = (payment: any): void => {
   selectedPayments.value = [...selectedPayments.value, payment];
 };
 
+watch(paymentRows, () => {
+  selectedPayments.value = reconcilePaymentSelection(
+    selectedPayments.value,
+    paymentRows.value,
+    props.canApprovePayments,
+  );
+});
+
 const paymentStatusClass = (status: string): string =>
   status === "APPROVED"
     ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
@@ -267,6 +297,7 @@ const paymentStatusClass = (status: string): string =>
       : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
 
 const applyFilters = () => {
+  selectedPayments.value = [];
   router.get(
     index().url,
     {
@@ -290,6 +321,7 @@ const resetFilters = () => {
 };
 
 const handleSort = (field: string, dir: "asc" | "desc") => {
+  selectedPayments.value = [];
   sortField.value = field;
   sortDirection.value = dir;
   router.get(
@@ -300,7 +332,10 @@ const handleSort = (field: string, dir: "asc" | "desc") => {
 };
 
 const handleBulkAction = (action: string, selected: any[]) => {
-  pendingBulkAction.value = { action, selected };
+  const eligiblePayments = selected.filter(isPaymentSelectable);
+  if (eligiblePayments.length === 0) return;
+
+  pendingBulkAction.value = { action, selected: eligiblePayments };
   showBulkConfirm.value = true;
 };
 
@@ -309,7 +344,7 @@ const confirmBulkAction = () => {
   const { action, selected } = pendingBulkAction.value;
 
   if (action === "approve") {
-    const ids = selected.map((p: any) => p.id);
+    const ids = selected.filter(isPaymentSelectable).map((p) => p.id);
     router.post(
       bulkApprove().url,
       { ids },
@@ -333,6 +368,9 @@ const approvePayment = (payment: { id: number }) => {
     {},
     {
       preserveScroll: true,
+      onSuccess: () => {
+        selectedPayments.value = [];
+      },
       onFinish: () => {
         approvingPaymentId.value = null;
       },
@@ -834,7 +872,9 @@ const columns = computed(() => [
                 :selected="selectedPayments"
                 :sort-field="sortField"
                 :sort-direction="sortDirection"
+                :is-row-selectable="isPaymentSelectable"
                 @selection-change="selectedPayments = $event"
+                @page-change="selectedPayments = []"
                 @sort="handleSort"
               >
                 <template #paid_at="{ row }">
@@ -962,7 +1002,7 @@ const columns = computed(() => [
                       </p>
                     </div>
                     <input
-                      v-if="canApprovePayments"
+                      v-if="isPaymentSelectable(payment)"
                       type="checkbox"
                       :aria-label="`Pilih pembayaran ${payment.member?.name || payment.id}`"
                       class="mt-1 size-4 shrink-0 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"

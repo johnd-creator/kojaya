@@ -50,6 +50,7 @@ interface Props {
   emptyIcon?: any;
   rowClickable?: boolean;
   selectable?: boolean;
+  isRowSelectable?: (row: any) => boolean;
   selected?: any[];
   sortField?: string;
   sortDirection?: "asc" | "desc";
@@ -64,6 +65,7 @@ const props = withDefaults(defineProps<Props>(), {
   emptyMessage: "Tidak ada data yang ditemukan.",
   rowClickable: false,
   selectable: false,
+  isRowSelectable: () => true,
   selected: () => [],
   sortField: "",
   sortDirection: "asc",
@@ -117,7 +119,12 @@ const isSelected = (row: any) => {
   return props.selected.some((s) => s.id === row.id);
 };
 
+const isRowSelectable = (row: any): boolean =>
+  props.isRowSelectable?.(row) ?? true;
+
 const toggleRow = (row: any) => {
+  if (!isRowSelectable(row)) return;
+
   const current = [...props.selected];
   const idx = current.findIndex((s) => s.id === row.id);
   if (idx >= 0) {
@@ -129,17 +136,22 @@ const toggleRow = (row: any) => {
 };
 
 const toggleAll = () => {
+  const selectableRows = tableData.value.filter(isRowSelectable);
+
+  if (selectableRows.length === 0) return;
+
   if (allSelected.value) {
     emit("selection-change", []);
   } else {
-    emit("selection-change", [...tableData.value]);
+    emit("selection-change", selectableRows);
   }
 };
 
 const allSelected = computed(() => {
+  const selectableRows = tableData.value.filter(isRowSelectable);
+
   return (
-    tableData.value.length > 0 &&
-    tableData.value.every((row) => isSelected(row))
+    selectableRows.length > 0 && selectableRows.every((row) => isSelected(row))
   );
 });
 
@@ -220,6 +232,7 @@ const sortIcon = (col: Column) => {
                   class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
                   :checked="allSelected"
                   :indeterminate="someSelected"
+                  :disabled="tableData.every((row) => !isRowSelectable(row))"
                   @change="toggleAll"
                 />
               </th>
@@ -291,6 +304,7 @@ const sortIcon = (col: Column) => {
               :class="{
                 'cursor-pointer': rowClickable,
                 'bg-sky-50/50 dark:bg-sky-950/20': isSelected(row),
+                'opacity-60': selectable && !isRowSelectable(row),
               }"
               @click="rowClickable && emit('row-click', row)"
             >
@@ -307,6 +321,13 @@ const sortIcon = (col: Column) => {
                   "
                   class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
                   :checked="isSelected(row)"
+                  :disabled="!isRowSelectable(row)"
+                  :aria-disabled="!isRowSelectable(row)"
+                  :title="
+                    isRowSelectable(row)
+                      ? 'Pilih baris'
+                      : 'Baris ini tidak dapat dipilih'
+                  "
                   @change="toggleRow(row)"
                 />
               </td>
@@ -372,7 +393,11 @@ const sortIcon = (col: Column) => {
               :class="{ 'pointer-events-none opacity-50': !link.url }"
               as-child
             >
-              <Link :href="link.url" preserve-scroll>
+              <Link
+                :href="link.url"
+                preserve-scroll
+                @click="emit('page-change', link.url ?? '')"
+              >
                 <span v-html="link.label"></span>
               </Link>
             </Button>

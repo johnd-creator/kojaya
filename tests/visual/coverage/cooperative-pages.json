@@ -104,6 +104,56 @@
       "accessibility": true
     },
     {
+      "id": "admin-loans-index-default",
+      "module": "loans",
+      "screen": "loans",
+      "route_name": "cooperative.loans.index",
+      "path_template": "/cooperative/loans",
+      "role": "Admin Koperasi",
+      "auth_state": "admin",
+      "state": "admin-default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman pinjaman sebagai Admin Koperasi",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "admin-loan-types-index-default",
+      "module": "loans",
+      "screen": "index",
+      "route_name": "cooperative.loan-types.index",
+      "path_template": "/cooperative/loan-types",
+      "role": "Admin Koperasi",
+      "auth_state": "admin",
+      "state": "admin-default",
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau tipe pinjaman sebagai Admin Koperasi",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
       "id": "loans-calculator-default",
       "module": "loans",
       "screen": "calculator",
@@ -417,6 +467,30 @@
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
+      "primary_actions": [
+        "Meninjau data",
+        "Menggunakan aksi utama"
+      ],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "admin-points-index-default",
+      "module": "rewards-shu",
+      "screen": "index",
+      "route_name": "cooperative.points.index",
+      "path_template": "/cooperative/points",
+      "role": "Admin Koperasi",
+      "auth_state": "admin",
+      "state": "admin-default",
+      "viewport_policy": [
+        "desktop",
+        "tablet"
+      ],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau poin anggota sebagai Admin Koperasi",
       "primary_actions": [
         "Meninjau data",
         "Menggunakan aksi utama"

@@ -37,6 +37,9 @@ const manualScenarioIds = new Set([
     "admin-dues-index-open",
     "admin-dues-index-partial",
     "admin-dues-index-no-results",
+    "admin-loans-index-default",
+    "admin-loan-types-index-default",
+    "admin-points-index-default",
 ]);
 
 const inventoryScenarios = screenRegistry.filter((definition) => isAuditScopeIncluded(definition) && !manualScenarioIds.has(definition.id));

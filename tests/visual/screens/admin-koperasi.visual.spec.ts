@@ -32,16 +32,16 @@ const scenarios = [
     "/cooperative/dues?member_search=UI-NO-RESULT-999",
   ],
   ["ledger-index-default", "/cooperative/ledger"],
-  ["loans-index-default", "/cooperative/loans"],
-  ["loan-types-index-default", "/cooperative/loan-types"],
-  ["points-index-default", "/cooperative/points"],
+  ["admin-loans-index-default", "/cooperative/loans"],
+  ["admin-loan-types-index-default", "/cooperative/loan-types"],
+  ["admin-points-index-default", "/cooperative/points"],
 ] as const;
 
 const layoutCardSelectors = {
   "ledger-index-default": '[data-testid="ledger-filter-card"]',
-  "loans-index-default": '[data-testid="loans-list-card"]',
-  "loan-types-index-default": '[data-testid="loan-types-list-card"]',
-  "points-index-default": '[data-testid="points-table-card"]',
+  "admin-loans-index-default": '[data-testid="loans-list-card"]',
+  "admin-loan-types-index-default": '[data-testid="loan-types-list-card"]',
+  "admin-points-index-default": '[data-testid="points-table-card"]',
 } as const;
 
 async function assertCooperativeResponsiveLayout(
@@ -169,7 +169,7 @@ for (const [id, route] of scenarios) {
       if (id in layoutCardSelectors) {
         await assertCooperativeResponsiveLayout(page, id);
       }
-      if (id === "loan-types-index-default") {
+      if (id === "admin-loan-types-index-default") {
         await page
           .getByRole("button", { name: "Tambah Tipe Pinjaman" })
           .click();

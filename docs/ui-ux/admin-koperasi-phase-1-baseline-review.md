@@ -1,31 +1,57 @@
 # Admin Koperasi Phase 1 — Baseline Review
 
-## Scope
+## Final evidence
 
-The Phase 1 registry covers the Admin Koperasi dashboard, member list and detail states, payment states, and dues states. Each state uses the existing cooperative visual-audit fixture and the `admin-koperasi` auth state. Member detail tablet captures remain intentionally skipped because the current cooperative viewport policy requires detail coverage on desktop and mobile only.
+- Implementation evidence head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`
+- CI run: `30447412317` — success
+- PR UI compare run: `30447394702` — success
+- Full UI Audit run: `30447414712` — completed with scoped legacy visual debt
+- Full-audit manifest head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`
 
-Registered states:
+## Visual coverage
 
-- Dashboard: `dashboard--dashboard--admin-koperasi`
-- Members: `members--index--admin-default`, `members--index--pending-filter`, `members--index--no-results`, and pending-review, revision, and active detail states
-- Payments: pending, empty, and selected
-- Dues: open, partial, and no-results
+The final full audit generated 219 visual entries:
 
-## Review evidence
+| Viewport | Expected | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: | ---: |
+| Desktop | 89 | 89 | 0 | 0 |
+| Tablet | 73 | 63 | 10 | 0 |
+| Mobile | 57 | 49 | 8 | 0 |
 
-The local candidate capture ran against the isolated Playwright SQLite database with fixed audit data. It produced 42 passing visual cases and 3 policy skips across desktop, tablet, and mobile. A clean repeat compare produced the same result, and the Admin candidate hash check found 36 expected viewport/state matches with no mismatches.
+All Admin Koperasi dashboard, members, payments, dues, ledger, loans, loan types, and points states pass across their covered viewports. The remaining 18 failures are existing non-Admin responsive baselines: System Admin cooperative pages, member portal pages, and operator/payment/points pages. They are outside this Admin correction pass and were not hidden with masks, waivers, or tolerance changes.
 
-The local host is Fedora Linux 44, so these local PNGs are development candidates only. They are not treated as canonical baselines: canonical adoption requires the repository UI Audit workflow on Ubuntu 24.04, followed by two clean captures with identical hashes.
+## Accessibility and runtime
 
-The payment workflow was reviewed after the responsive correction: the desktop/tablet payment history is contained by its grid column and exposes horizontal table scrolling without document-level overflow; mobile switches to readable payment cards with selection and approval actions. Only the nine payment baselines (three states across three viewports) changed in this review.
+- Admin accessibility scenarios: 0 new critical/serious findings and 0 stale findings, including Loan Types create, edit, and delete dialogs.
+- Full artifact runtime reports: 227.
+- Console errors: 0.
+- Page errors: 0.
+- Failed important requests: 0.
+- Unexpected responses: 0.
+- Full-artifact accessibility debt outside Admin scope: 4 new serious findings and 18 stale legacy findings; no new waiver was added.
 
-## Safety checks
+## Baseline policy
 
-- Visual comparison tolerance: unchanged.
-- Global screenshot masks: none added.
-- Text or state masks: none added.
-- Loading, error, 403, and invalid-fixture screens: not accepted as baselines.
-- Runtime and accessibility review: performed through the Admin Koperasi Playwright scenarios; the final focused accessibility run passed 11 cases with no new waiver.
-- Canonical Ubuntu capture: pending exact-final-SHA GitHub evidence.
+- Canonical captures were reviewed from the Ubuntu GitHub workflow artifact.
+- Responsive Admin captures were repeatable across clean retries; each adopted state had identical retry hashes.
+- Desktop Admin and shared Loan Types captures were adopted from repeatable CI actuals.
+- Missing baselines: 0.
+- Orphan baselines: 0.
+- Duplicate baselines: 0.
+- Invalid dimensions: 0.
+- Visual tolerance: unchanged.
+- Global screenshot masks: none.
+- Text/state masks: none.
+- Loading, error, 403, and wrong-role captures: not accepted.
 
-Canonical adoption remains a release gate. Until the Ubuntu workflow completes and the candidate is reviewed twice, this branch must not be represented as having a final green visual baseline.
+## Local verification
+
+- Focused PHPUnit: 90 passed, 2,309 assertions.
+- Full PHPUnit: 1,441 passed, 5 skipped, 9,458 assertions.
+- Frontend role/queue/payment/contribution tests: 16 passed.
+- Admin accessibility scenarios: 9 passed.
+- Frontend build: passed.
+- Pint: 1,261 files passed.
+- UI route coverage: 0 uncovered routes.
+
+The final documentation commit follows the implementation evidence head above and does not change application behavior or visual output.

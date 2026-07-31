@@ -1,4 +1,3 @@
-import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { auditAccessibility } from "../helpers/accessibility";
 import {
@@ -31,18 +30,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       expect(response?.status(), `${screenId} did not return an HTML page.`).toBe(200);
       await waitForStableScreen(page, { screenId: "member-savings-default" });
-      if (colorScheme === "light") {
-        await auditAccessibility(page, testInfo, screenId);
-      } else {
-        const result = await new AxeBuilder({ page })
-          .include(".text-emerald-700")
-          .analyze();
-        const blockingViolations = result.violations.filter((violation) =>
-          ["critical", "serious"].includes(violation.impact ?? ""),
-        );
-
-        expect(blockingViolations).toEqual([]);
-      }
+      await auditAccessibility(page, testInfo, screenId);
     } finally {
       await writeRuntimeReport(runtime, testInfo);
     }

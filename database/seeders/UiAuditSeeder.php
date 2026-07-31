@@ -55,6 +55,7 @@ class UiAuditSeeder extends Seeder
         $this->seedStoreCredit($organizations, $users, $members);
         $this->seedPos();
         $this->seedAdditionalFixtures($organizations, $users, $members);
+        $this->seedCanonicalDuesInvoices($members);
     }
 
     /** @return array<string, Organization> */
@@ -311,6 +312,66 @@ class UiAuditSeeder extends Seeder
         CooperativePayment::query()->updateOrCreate(
             ['cooperative_member_id' => $members['zero']->id, 'reference_no' => 'UI-AUDIT-PAYMENT-002'],
             ['cooperative_contribution_type_id' => $wajib->id, 'amount' => 100000, 'payment_method' => 'QRIS', 'paid_at' => self::FIXED_DATE, 'status' => 'PENDING', 'notes' => 'Pembayaran QRIS audit UI menunggu verifikasi.'],
+        );
+    }
+
+    /**
+     * Seed canonical dues invoices so that every admin/operator/member screen reads
+     * a deterministic data set without relying on lazy GET-side generation.
+     *
+     * @param  array<string, CooperativeMember>  $members
+     */
+    private function seedCanonicalDuesInvoices(array $members): void
+    {
+        $wajib = CooperativeContributionType::query()->where('code', 'WAJIB')->firstOrFail();
+        $pokok = CooperativeContributionType::query()->where('code', 'POKOK')->firstOrFail();
+        $period = '2026-01';
+        $periodDate = \Carbon\CarbonImmutable::parse(self::FIXED_DATE)->startOfMonth();
+        $dueDate = $periodDate->day(10)->toDateString();
+
+        $activeMembers = CooperativeMember::query()
+            ->active()
+            ->orderBy('id')
+            ->get();
+
+        foreach ($activeMembers as $member) {
+            CooperativeDuesInvoice::query()->firstOrCreate(
+                [
+                    'cooperative_member_id' => $member->id,
+                    'cooperative_contribution_type_id' => $pokok->id,
+                    'period' => $period,
+                ],
+                [
+                    'amount' => $pokok->default_amount,
+                    'paid_amount' => 0,
+                    'due_date' => $dueDate,
+                    'status' => 'UNPAID',
+                ],
+            );
+
+            CooperativeDuesInvoice::query()->firstOrCreate(
+                [
+                    'cooperative_member_id' => $member->id,
+                    'cooperative_contribution_type_id' => $wajib->id,
+                    'period' => $period,
+                ],
+                [
+                    'amount' => $wajib->default_amount,
+                    'paid_amount' => 0,
+                    'due_date' => $dueDate,
+                    'status' => 'UNPAID',
+                ],
+            );
+        }
+
+        // Apply deterministic status overrides so the screens show varied statuses.
+        CooperativeDuesInvoice::query()->updateOrCreate(
+            ['cooperative_member_id' => $members['positive']->id, 'cooperative_contribution_type_id' => $wajib->id, 'period' => $period],
+            ['amount' => 100000, 'paid_amount' => 0, 'due_date' => '2026-01-10', 'status' => 'UNPAID'],
+        );
+        CooperativeDuesInvoice::query()->updateOrCreate(
+            ['cooperative_member_id' => $members['zero']->id, 'cooperative_contribution_type_id' => $wajib->id, 'period' => $period],
+            ['amount' => 100000, 'paid_amount' => 25000, 'due_date' => '2026-01-10', 'status' => 'PARTIAL'],
         );
     }
 }

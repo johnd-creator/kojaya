@@ -24,7 +24,6 @@ use App\Models\MemberPaymentIntent;
 use App\Models\MemberStoreAccount;
 use App\Models\PosTransaction;
 use App\Models\Reward;
-use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\MemberAccessService;
 use App\Services\Cooperative\MemberFinancialActivityService;
 use App\Services\Cooperative\MemberOnboardingService;
@@ -48,7 +47,6 @@ class MemberPortalController extends Controller
         PointService $pointService,
         MemberStatusJourneyService $journeyService,
         SavingsSummaryService $savingsSummary,
-        DuesGenerationService $duesGenerationService,
         MemberProfileCompletenessService $completenessService,
         MemberAccessService $memberAccessService,
     ): Response {
@@ -80,14 +78,6 @@ class MemberPortalController extends Controller
                 ->where('cooperative_contribution_type_id', $pokokType->id)
                 ->oldest('id')
                 ->first();
-
-            if (! $existingPokok) {
-                try {
-                    $existingPokok = $duesGenerationService->ensureOneTimeInvoice($member, 'POKOK');
-                } catch (\Exception $e) {
-                    // Invoice can't be created yet (e.g. period locked), skip silently
-                }
-            }
 
             if ($existingPokok) {
                 $total = (float) $existingPokok->amount;
@@ -357,16 +347,8 @@ class MemberPortalController extends Controller
         Request $request,
         MemberStatusJourneyService $journeyService,
         SavingsSummaryService $savingsSummary,
-        DuesGenerationService $duesGenerationService,
     ): Response {
         $member = $this->memberOrAbort($request);
-        $currentPeriod = CarbonImmutable::now()->format('Y-m');
-
-        try {
-            $duesGenerationService->generateForPeriod($currentPeriod);
-        } catch (\Throwable) {
-            // If the period is locked, keep the member page read-only.
-        }
 
         $summary = $savingsSummary->summary($member);
         $wajibData = $this->wajibSavingsInvoiceData($member);

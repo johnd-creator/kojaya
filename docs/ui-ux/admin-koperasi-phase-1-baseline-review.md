@@ -3,49 +3,60 @@
 ## Gate status
 
 - Scoped Admin evidence: **PASS**.
-- Repository full audit: **PASS**.
+- Repository full audit: **PASS AND REPRODUCIBLE**.
 - Phase 1 final gate: **PASSED**.
-- Final implementation SHA: `7878b3fd23345875465e79f819f4122e76f67647`.
-- CI run: `30629660404` — success.
-- Full UI Audit run: `30629662394` — success.
-- Full-audit manifest head SHA: `7878b3fd23345875465e79f819f4122e76f67647`.
-- Full-audit artifact ID: `8793008660`.
+- Final implementation SHA: `a94dae7d8a41d615608c34a177055685afc1ed18`.
+- CI run: `30671084410` — success.
+- Compare audit #1: `30671081619` — success.
+- Full UI Audit run: `30671082921` — success.
+- Compare audit #2: `30671680352` — success.
+- Full-audit manifest head SHA: `a94dae7d8a41d615608c34a177055685afc1ed18`.
 
-## Final implementation summary
+## Root-cause correction
 
-The implementation head moved from the initial reviewed head `b69436a0` to `7878b3fd` through three review-aligned commits:
+Run `30640571911` proved that the earlier nondeterministic failures were data-state drift, not font rasterization. The member portal GET handlers (`dashboard` and `savings`) created dues invoices on every page load via `DuesGenerationService::generateForPeriod()` and `ensureOneTimeInvoice()`. Because the Full Audit includes accessibility tests that visit `/member/savings` before admin screens, the shared audit database accumulated invoices that the Compare Audit (which runs only visual tests) never produced.
 
-1. `6503db11` — Expanded the Member Savings dark accessibility scan from a single `.text-emerald-700` selector to a full-page audit, matching the canonical dark accessibility pattern used by sibling specs.
-2. `89d65b20` — Fixed dark-mode color-contrast on the Member Savings page by adding `dark:text-zinc-400` companions to labels, table headers, and empty states that used `text-zinc-500` without a dark variant. The expanded dark scan surfaced these once it covered the whole page.
-3. `7878b3fd` — Adopted four canonical desktop baselines (dashboard, dues index, dues ledger, operator dashboard) after proving byte-identical actuals across two independent full audits. Tolerance and masks are unchanged.
+The fix removed the write-on-GET side effects entirely. Invoice generation is already handled by the scheduled `cooperative:generate-monthly-dues` command, POST API endpoints, and the member provisioning flow. The `UiAuditSeeder` now produces the canonical invoice set (8 POKOK + 8 WAJIB across 8 active members) deterministically, so every screen reads the same data regardless of test order.
+
+The prior conclusion that all four failing screens were font-rasterization drift was incorrect. The evidence is corrected here.
+
+## Canonical database state
+
+| Metric | Value |
+| --- | --- |
+| Total invoices after seed | 16 |
+| UNPAID | 15 |
+| PARTIAL | 1 |
+| PAID | 0 |
+| Sum amount | 2,400,000 |
+| Sum paid | 25,000 |
+| Outstanding | 2,375,000 |
+| POKOK invoices | 8 |
+| WAJIB invoices | 8 |
+| After member dashboard GET | 16 (unchanged) |
+| After member savings GET | 16 (unchanged) |
+| After Compare audit | 16 (unchanged) |
+| After Full audit | 16 (unchanged) |
 
 ## CI evidence
 
 | Metric | Value |
 | --- | --- |
-| CI run | `30629660404` |
-| CI head SHA | `7878b3fd23345875465e79f819f4122e76f67647` |
+| CI run | `30671084410` |
+| CI head SHA | `a94dae7d8a41d615608c34a177055685afc1ed18` |
 | CI conclusion | success |
-| Change Classification | success |
-| Dependency Audit | success |
-| Migration and Seed | success |
-| Frontend Build | success |
-| PostgreSQL Concurrency | success |
-| Generated Drift | success |
-| PHPUnit Parallel | success |
-| OpenAPI Drift | success |
-| Pint | success |
-| PHPUnit tests | 1446 |
-| PHPUnit assertions | 9458 |
+| PHPUnit tests | 1451 |
+| PHPUnit assertions | 9473 |
 | PHPUnit skipped | 5 |
+| All required jobs | success |
 
 ## Full UI Audit evidence
 
 | Metric | Value |
 | --- | --- |
-| Full audit run | `30629662394` |
-| Artifact ID | `8793008660` |
-| Artifact head SHA | `7878b3fd23345875465e79f819f4122e76f67647` |
+| Full audit run | `30671082921` |
+| Artifact ID | `8808933469` |
+| Artifact head SHA | `a94dae7d8a41d615608c34a177055685afc1ed18` |
 | Mode | full |
 | Viewport | all |
 | Scope | all |
@@ -65,9 +76,6 @@ The implementation head moved from the initial reviewed head `b69436a0` to `7878
 | New critical | 0 |
 | New serious | 0 |
 | Stale findings | 0 |
-| Expired findings | 0 |
-| Invalid selectors | 0 |
-| Duplicate tracking IDs | 0 |
 
 ### Runtime results
 
@@ -88,12 +96,16 @@ The implementation head moved from the initial reviewed head `b69436a0` to `7878
 | Duplicate baselines | 0 |
 | Invalid dimensions | 0 |
 
-### Route coverage
+## Repeatability evidence
 
-| Metric | Value |
-| --- | ---: |
-| Audited routes | 61 |
-| Uncovered routes | 0 |
+Screenshot hashes for the four previously failing screens are identical across all three audit runs:
+
+| Screen | Compare #1 | Full | Compare #2 |
+| --- | --- | --- | --- |
+| admin-dashboard | a5530360a3e17a73 | a5530360a3e17a73 | a5530360a3e17a73 |
+| admin-dues-index-open | ecf573c3be483207 | ecf573c3be483207 | ecf573c3be483207 |
+| dues-index-default | b9bef8543c89a825 | b9bef8543c89a825 | b9bef8543c89a825 |
+| operator-dashboard | 964070fa4fe04adc | 964070fa4fe04adc | 964070fa4fe04adc |
 
 ## Baseline policy
 
@@ -101,24 +113,10 @@ The implementation head moved from the initial reviewed head `b69436a0` to `7878
 - Global screenshot masks: none.
 - Text/state masks: none.
 - New waivers: none.
-- Canonical retry hashes: four desktop baselines adopted after byte-identical actuals across two independent full audits (runs `30626306598` and `30628474393`).
 
-## PR compare
+## Historical failed runs
 
-The last successful PR compare run was `30628464091` (`89d65b20`, compare/desktop, success). On the final implementation SHA `7878b3fd`, compare/desktop smoke runs (`30629648065`, `30640006898`) failed the same four font-heavy desktop screens due to pre-existing systemic runner font-rasterization drift. The authoritative Full UI Audit (`30629662394`, full/all/all) passed all 219 screens including those four, confirming the rendering is canonical.
+The following runs are retained for history only:
 
-## Member Savings accessibility
-
-- UI-A11Y-082: removed from the registry.
-- Light full-page audit: 0 critical, 0 serious.
-- Dark full-page audit: 0 critical, 0 serious.
-- New waiver: none.
-- Remaining contrast violation: none.
-
-## Historical failed audit
-
-The following run is retained for history only and is no longer current evidence:
-
-- Full UI Audit run `30447414712` — failure (head `d2aa70ee`, 18 visual failures, 4 new serious accessibility findings).
-
-The prior evidence document revisions that referenced `d2aa70ee` / `30447414712` as current evidence are superseded by the final runs above.
+- Full UI Audit run `30447414712` — failure (head `d2aa70ee`, 18 visual failures).
+- Compare UI Audit run `30640571911` — failure (head `160fcb45`, 4 desktop visual failures caused by data-state drift).

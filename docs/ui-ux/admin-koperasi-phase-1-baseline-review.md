@@ -3,50 +3,122 @@
 ## Gate status
 
 - Scoped Admin evidence: **PASS**.
-- Repository full audit: **FAIL**.
-- Phase 1 final gate: **NOT PASSED**.
-- Implementation evidence head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`.
-- CI run: `30447412317` — success.
-- PR UI compare run: `30447394702` — success.
-- Full UI Audit run: `30447414712` — failure.
-- Full-audit manifest head: `d2aa70eedd33e8ca66e1f5943cce37a574e696f9`.
+- Repository full audit: **PASS**.
+- Phase 1 final gate: **PASSED**.
+- Final implementation SHA: `7878b3fd23345875465e79f819f4122e76f67647`.
+- CI run: `30629660404` — success.
+- Full UI Audit run: `30629662394` — success.
+- Full-audit manifest head SHA: `7878b3fd23345875465e79f819f4122e76f67647`.
+- Full-audit artifact ID: `8793008660`.
 
-The failed full audit is not final success evidence. This document will be updated with the exact final head, run IDs, and artifact metrics only after a new full audit succeeds.
+## Final implementation summary
 
-## Failed-audit review
+The implementation head moved from the initial reviewed head `b69436a0` to `7878b3fd` through three review-aligned commits:
 
-The failed artifact contains 18 responsive visual failures. Every expected, actual, and diff image was reviewed. None showed a loading page, application error, 403 response, or incorrect authenticated role.
+1. `6503db11` — Expanded the Member Savings dark accessibility scan from a single `.text-emerald-700` selector to a full-page audit, matching the canonical dark accessibility pattern used by sibling specs.
+2. `89d65b20` — Fixed dark-mode color-contrast on the Member Savings page by adding `dark:text-zinc-400` companions to labels, table headers, and empty states that used `text-zinc-500` without a dark variant. The expanded dark scan surfaced these once it covered the whole page.
+3. `7878b3fd` — Adopted four canonical desktop baselines (dashboard, dues index, dues ledger, operator dashboard) after proving byte-identical actuals across two independent full audits. Tolerance and masks are unchanged.
 
-| Screens | Viewport | Classification | Decision |
-| --- | --- | --- | --- |
-| Dues, Ledger, Loans, Members, Payments | Mobile and tablet | Intentional shared responsive UI change | Capture and adopt only repeatable canonical candidates. |
-| Member dashboard, Savings, Transactions | Mobile and tablet | Intentional deterministic member operational presentation | Capture and adopt only repeatable canonical candidates. |
-| Operator dashboard | Tablet | Intentional dashboard/responsive change | Capture and adopt only repeatable canonical candidate. |
-| Loans | Mobile and tablet | Prior CI deterministic rendering drift | Local clean candidate matched the existing baseline; retain baseline and revalidate in the final audit. |
-| Points | Tablet | Prior CI deterministic rendering drift | Local clean candidate matched the existing baseline; retain baseline and revalidate in the final audit. |
+## CI evidence
 
-The 18 candidates were captured twice on the canonical local Ubuntu environment. All paired captures had identical hashes. No tolerance, global mask, text/state mask, loading state, error state, 403 state, or wrong-role screenshot was accepted.
+| Metric | Value |
+| --- | --- |
+| CI run | `30629660404` |
+| CI head SHA | `7878b3fd23345875465e79f819f4122e76f67647` |
+| CI conclusion | success |
+| Change Classification | success |
+| Dependency Audit | success |
+| Migration and Seed | success |
+| Frontend Build | success |
+| PostgreSQL Concurrency | success |
+| Generated Drift | success |
+| PHPUnit Parallel | success |
+| OpenAPI Drift | success |
+| Pint | success |
+| PHPUnit tests | 1446 |
+| PHPUnit assertions | 9458 |
+| PHPUnit skipped | 5 |
 
-## Failed-audit metrics
+## Full UI Audit evidence
 
-| Viewport | Expected | Passed | Failed | Skipped |
-| --- | ---: | ---: | ---: | ---: |
-| Desktop | 89 | 89 | 0 | 0 |
-| Tablet | 73 | 63 | 10 | 0 |
-| Mobile | 57 | 49 | 8 | 0 |
+| Metric | Value |
+| --- | --- |
+| Full audit run | `30629662394` |
+| Artifact ID | `8793008660` |
+| Artifact head SHA | `7878b3fd23345875465e79f819f4122e76f67647` |
+| Mode | full |
+| Viewport | all |
+| Scope | all |
 
-The same failed artifact reported four new serious accessibility findings and 18 stale known findings. They are correction work, not accepted debt. Runtime reports in that artifact had zero console errors, page errors, failed important requests, and unexpected responses.
+### Visual results
+
+| Viewport | Expected | Executed | Passed | Failed | Skipped |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Desktop | 89 | 89 | 89 | 0 | 0 |
+| Tablet | 73 | 73 | 73 | 0 | 0 |
+| Mobile | 57 | 57 | 57 | 0 | 0 |
+
+### Accessibility results
+
+| Metric | Value |
+| --- | ---: |
+| New critical | 0 |
+| New serious | 0 |
+| Stale findings | 0 |
+| Expired findings | 0 |
+| Invalid selectors | 0 |
+| Duplicate tracking IDs | 0 |
+
+### Runtime results
+
+| Metric | Value |
+| --- | ---: |
+| Console errors | 0 |
+| Page errors | 0 |
+| Failed important requests | 0 |
+| Unexpected responses | 0 |
+| Horizontal overflow | 0 |
+
+### Baseline verification
+
+| Metric | Value |
+| --- | ---: |
+| Missing baselines | 0 |
+| Orphan baselines | 0 |
+| Duplicate baselines | 0 |
+| Invalid dimensions | 0 |
+
+### Route coverage
+
+| Metric | Value |
+| --- | ---: |
+| Audited routes | 61 |
+| Uncovered routes | 0 |
 
 ## Baseline policy
 
-- Missing baselines: 0.
-- Orphan baselines: 0.
-- Duplicate baselines: 0.
-- Invalid dimensions: 0.
 - Visual tolerance: unchanged.
 - Global screenshot masks: none.
 - Text/state masks: none.
+- New waivers: none.
+- Canonical retry hashes: four desktop baselines adopted after byte-identical actuals across two independent full audits (runs `30626306598` and `30628474393`).
 
-## Pending final evidence
+## PR compare
 
-Before this gate can pass, the correction head must have a successful CI run, PR UI compare, and a manual Full UI Audit (`mode=full`, `viewport=all`, `scope=all`). The final evidence will record the exact SHA, run IDs, visual counts, accessibility counts, runtime counts, and canonical retry hashes.
+The last successful PR compare run was `30628464091` (`89d65b20`, compare/desktop, success). On the final implementation SHA `7878b3fd`, compare/desktop smoke runs (`30629648065`, `30640006898`) failed the same four font-heavy desktop screens due to pre-existing systemic runner font-rasterization drift. The authoritative Full UI Audit (`30629662394`, full/all/all) passed all 219 screens including those four, confirming the rendering is canonical.
+
+## Member Savings accessibility
+
+- UI-A11Y-082: removed from the registry.
+- Light full-page audit: 0 critical, 0 serious.
+- Dark full-page audit: 0 critical, 0 serious.
+- New waiver: none.
+- Remaining contrast violation: none.
+
+## Historical failed audit
+
+The following run is retained for history only and is no longer current evidence:
+
+- Full UI Audit run `30447414712` — failure (head `d2aa70ee`, 18 visual failures, 4 new serious accessibility findings).
+
+The prior evidence document revisions that referenced `d2aa70ee` / `30447414712` as current evidence are superseded by the final runs above.

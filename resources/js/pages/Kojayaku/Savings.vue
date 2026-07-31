@@ -331,7 +331,7 @@ const statusClass = (status: string): string => {
                 class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2"
               >
                 <p
-                  class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400"
+                  class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400"
                 >
                   Lunas
                 </p>

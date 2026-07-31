@@ -47,15 +47,6 @@
       "expires_on": "2026-09-30"
     },
     {
-      "screen_id": "member-savings-default",
-      "rule": "color-contrast",
-      "impact": "serious",
-      "selector": ".text-emerald-600",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-082",
-      "expires_on": "2026-09-30"
-    },
-    {
       "screen_id": "pos-categories-index-default",
       "rule": "button-name",
       "impact": "critical",

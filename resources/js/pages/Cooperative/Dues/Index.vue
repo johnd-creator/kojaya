@@ -1030,7 +1030,7 @@ const kpiCards = computed(() => [
                 </Button>
                 <span
                   v-else
-                  class="rounded-md border px-3 py-1.5 text-zinc-400"
+                  class="rounded-md border px-3 py-1.5 text-zinc-500 dark:text-zinc-400"
                   v-html="link.label"
                 />
               </template>

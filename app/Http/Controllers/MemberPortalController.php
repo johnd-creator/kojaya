@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
+use App\Exceptions\PaymentIntentConflictException;
 use App\Http\Requests\Api\MarkMemberOnboardingStepRequest;
 use App\Http\Requests\CompleteMemberOnboardingRequest;
 use App\Http\Requests\Cooperative\RedeemRewardRequest;
@@ -18,7 +19,6 @@ use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Loan;
-use App\Models\LoanInstallment;
 use App\Models\LoanType;
 use App\Models\MemberPaymentIntent;
 use App\Models\MemberStoreAccount;
@@ -33,7 +33,10 @@ use App\Services\Cooperative\MemberProfileCompletenessService;
 use App\Services\Cooperative\MemberStatusJourneyService;
 use App\Services\Cooperative\PointService;
 use App\Services\Cooperative\SavingsSummaryService;
+use App\Services\Integrations\LoanPaymentIntentService;
 use App\Services\Integrations\PaymentGatewayService;
+use App\Services\Integrations\PaymentIntentChargeService;
+use App\Support\Money\MinorAmount;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -720,8 +723,11 @@ class MemberPortalController extends Controller
         return $this->paymentIntentResponse($payment, $invoice, $charge);
     }
 
-    public function createLoanPaymentIntent(Request $request, PaymentGatewayService $gateway): JsonResponse
-    {
+    public function createLoanPaymentIntent(
+        Request $request,
+        LoanPaymentIntentService $loanPaymentIntentService,
+        PaymentIntentChargeService $chargeService,
+    ): JsonResponse {
         $member = $this->memberOrAbort($request);
 
         $data = $request->validate([
@@ -729,58 +735,40 @@ class MemberPortalController extends Controller
             'channel' => ['nullable', 'in:QRIS,VA,E_WALLET'],
         ]);
 
-        $installment = LoanInstallment::query()
-            ->with('loan.loanType')
-            ->whereKey($data['loan_installment_id'])
-            ->whereHas('loan', fn ($query) => $query
-                ->where('cooperative_member_id', $member->id)
-                ->whereIn('status', [LoanStatus::Active->value, LoanStatus::Defaulted->value]))
-            ->whereIn('status', [
-                InstallmentStatus::Pending->value,
-                InstallmentStatus::Partial->value,
-                InstallmentStatus::Overdue->value,
-            ])
-            ->firstOrFail();
-
-        $remaining = round((float) $installment->amount_due - (float) $installment->amount_paid, 2);
-        abort_if($remaining <= 0, 422, 'Cicilan pinjaman ini sudah lunas.');
-
         $channel = strtoupper((string) ($data['channel'] ?? 'QRIS'));
-        $intent = MemberPaymentIntent::query()
-            ->where('cooperative_member_id', $member->id)
-            ->where('payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
-            ->where('payable_id', $installment->id)
-            ->where('gateway_status', 'PENDING')
-            ->latest()
-            ->first();
+        $resolution = $loanPaymentIntentService->resolveOrCreate(
+            member: $member,
+            installmentId: (int) $data['loan_installment_id'],
+            userId: $request->user()?->id,
+            requestedChannel: $channel,
+        );
+        $intent = $resolution->intent->refresh();
+        try {
+            $charge = $chargeService->ensureCharge($intent);
+        } catch (\RuntimeException $exception) {
+            report($exception);
 
-        if (! $intent) {
-            $intent = MemberPaymentIntent::query()->create([
-                'user_id' => $request->user()?->id,
-                'cooperative_member_id' => $member->id,
-                'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
-                'payable_id' => $installment->id,
-                'amount' => $remaining,
-                'channel' => $channel,
-                'gateway_status' => 'PENDING',
-                'metadata' => [
-                    'description' => "Angsuran {$installment->loan?->loanType?->name} #{$installment->installment_no}",
-                    'loan_id' => $installment->loan_id,
-                    'installment_no' => $installment->installment_no,
-                ],
-                'expires_at' => now()->addDay(),
-            ]);
+            return $this->paymentGatewayErrorResponse($exception, $channel);
         }
 
-        $charge = $gateway->createIntentCharge($intent);
+        if (in_array($charge['status'] ?? null, ['PREPARING', 'RECONCILIATION_REQUIRED'], true)) {
+            throw PaymentIntentConflictException::loanReconciliationRequired(
+                'Pembayaran sebelumnya sedang diproses atau perlu direkonsiliasi. Tidak dibuat tagihan kedua.'
+            );
+        }
+
+        $charge['reused'] = ! $resolution->created;
+        $charge['requested_channel'] = $channel;
 
         return response()->json([
             'data' => [
                 'payment_intent' => [
                     'id' => $intent->id,
-                    'amount' => (float) $intent->amount,
+                    'amount' => MinorAmount::fromDecimal($intent->amount) / 100,
                     'channel' => $intent->channel,
                     'expires_at' => $intent->expires_at?->toISOString(),
+                    'reused' => ! $resolution->created,
+                    'requested_channel' => $channel,
                 ],
                 'charge' => $charge,
             ],
@@ -842,9 +830,8 @@ class MemberPortalController extends Controller
         return response()->json([
             'message' => $isInactiveChannel
                 ? "Kanal {$channel} belum aktif di akun sandbox Midtrans ini. Coba Virtual Account atau ubah MIDTRANS_VA_BANK ke bank sandbox yang tersedia."
-                : $e->getMessage(),
+                : 'Payment gateway sedang tidak tersedia. Status pembayaran akan direkonsiliasi sebelum percobaan berikutnya.',
             'error_code' => $isInactiveChannel ? 'MIDTRANS_CHANNEL_INACTIVE' : 'PAYMENT_GATEWAY_ERROR',
-            'gateway_message' => $e->getMessage(),
         ], $isInactiveChannel ? 503 : 422);
     }
 

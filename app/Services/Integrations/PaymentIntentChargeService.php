@@ -9,6 +9,7 @@ use App\Models\MemberPaymentChargeAttempt;
 use App\Models\MemberPaymentIntent;
 use App\Models\PaymentReconciliationIncident;
 use App\Support\Money\MinorAmount;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -114,6 +115,16 @@ class PaymentIntentChargeService
         }
 
         return $this->reconciliationRequiredResponse($intent->refresh());
+    }
+
+    /**
+     * Return the persisted presentation only when it is safe to reuse.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function reusableCharge(MemberPaymentIntent $intent): ?array
+    {
+        return $this->extractReusableCharge($intent);
     }
 
     /**
@@ -296,8 +307,9 @@ class PaymentIntentChargeService
                 return ChargeCommitResult::StaleAttempt;
             }
 
-            // Verify reservation still RESERVED
-            if ($locked->reservationStatus()->value !== 'RESERVED') {
+            // Order intents need an active reservation. Loan installment
+            // intents intentionally have no reservation side effect.
+            if ($locked->isOrderType() && $locked->reservationStatus()->value !== 'RESERVED') {
                 return ChargeCommitResult::InvalidReservation;
             }
 
@@ -580,6 +592,33 @@ class PaymentIntentChargeService
 
         if (empty($payload['reference'])) {
             return null;
+        }
+
+        if (strtoupper((string) ($payload['status'] ?? 'PENDING')) !== 'PENDING') {
+            return null;
+        }
+
+        if (($payload['channel'] ?? $intent->channel) !== $intent->channel) {
+            return null;
+        }
+
+        $intentAmountMinor = MinorAmount::fromDecimal($intent->amount);
+        $payloadAmountMinor = isset($payload['amount_minor'])
+            ? (int) $payload['amount_minor']
+            : MinorAmount::fromDecimal($payload['amount'] ?? $intent->amount);
+
+        if ($payloadAmountMinor !== $intentAmountMinor) {
+            return null;
+        }
+
+        if (! empty($payload['expires_at'])) {
+            try {
+                if (CarbonImmutable::parse((string) $payload['expires_at'])->isPast()) {
+                    return null;
+                }
+            } catch (\Throwable) {
+                return null;
+            }
         }
 
         $hasArtefact = ! empty($payload['qr_string'])

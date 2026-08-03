@@ -79,9 +79,16 @@ npm run ui:repeatability
 ```
 
 Only after `unexpected_hash_differences` is zero should reviewed Linux
-baselines be generated with `npm run ui:update`. `ui:verify-baselines` checks
-missing, orphan, duplicate-name, and dimension errors. Never update a
-baseline merely to hide a regression, and never run `ui:update` in CI.
+baselines be generated with `npm run ui:update`. Screenshots and baselines are
+full-page images: the project viewport controls the exact PNG width, while the
+height follows the rendered document height and must be at least the project
+viewport height. Legitimate page content changes may therefore change a
+baseline's height. The visual comparison remains responsible for detecting
+unexpected height or content drift; `ui:verify-baselines` validates PNG
+integrity, the first IHDR chunk, the exact project width, and the minimum
+viewport height, in addition to missing, orphan, and duplicate-name errors.
+Never update a baseline merely to hide a regression, and never run `ui:update`
+in CI.
 
 For PR #21, the reviewed desktop candidates were captured by the Ubuntu 24.04
 GitHub Actions environment at the exact tested head. The capture produced 72

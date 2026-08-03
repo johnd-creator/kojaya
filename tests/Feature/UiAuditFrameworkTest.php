@@ -66,8 +66,28 @@ class UiAuditFrameworkTest extends TestCase
 
         $this->assertStringContainsString('manifest.json', (string) $teardown);
         $this->assertStringContainsString('JSON.stringify(', (string) $teardown);
+        $this->assertStringContainsString('framework_version: 3', (string) $teardown);
+        $this->assertStringContainsString('route_coverage: routeCoverage', (string) $teardown);
+        $this->assertStringContainsString('visual-entry-coverage.json', (string) $teardown);
         $this->assertStringContainsString('ui-audit-output/runtime', (string) file_get_contents(base_path('tests/visual/helpers/runtime-health.ts')));
         $this->assertStringContainsString('screenshot:', (string) $manifestHelper);
+    }
+
+    public function test_route_and_visual_coverage_artifacts_are_not_overwritten(): void
+    {
+        $teardown = (string) file_get_contents(base_path('tests/visual/global-teardown.ts'));
+
+        $this->assertStringNotContainsString('writeFile(path.join(outputDir, "coverage", "cooperative-route-coverage.json")', $teardown);
+        $this->assertStringNotContainsString('writeFile(path.join(outputDir, "coverage", "cooperative-route-coverage.md")', $teardown);
+        $this->assertStringContainsString('writeFile(path.join(outputDir, "coverage", "visual-entry-coverage.json")', $teardown);
+        $this->assertStringContainsString('writeFile(path.join(outputDir, "coverage", "visual-entry-coverage.md")', $teardown);
+
+        $workflow = (string) file_get_contents(base_path('.github/workflows/ui-audit.yml'));
+        $this->assertStringContainsString('Resolve UI audit metadata', $workflow);
+        $this->assertStringContainsString('UI_AUDIT_DEFAULT_BRANCH_SHA', $workflow);
+        $this->assertStringContainsString('UI_AUDIT_REQUESTED_MODE', $workflow);
+        $this->assertStringContainsString('npm run ui:verify-artifact', $workflow);
+        $this->assertStringNotContainsString('github.event.pull_request.base.sha || github.sha', $workflow);
     }
 
     public function test_accessibility_metrics_are_node_based_and_non_negative(): void
@@ -140,6 +160,7 @@ class UiAuditFrameworkTest extends TestCase
 
         $this->assertIsString($teardown);
         $this->assertStringContainsString('pull_request_number: pullRequestNumber()', $teardown);
+        $this->assertStringContainsString('UI_AUDIT_PULL_REQUEST_NUMBER', $teardown);
         $this->assertStringContainsString('eventName !== "pull_request"', $teardown);
         $this->assertStringNotContainsString('?? 21', $teardown);
     }

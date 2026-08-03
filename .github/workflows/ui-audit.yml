@@ -61,11 +61,15 @@ env:
   UI_AUDIT_VIEWPORT: ${{ github.event_name == 'pull_request' && 'desktop' || inputs.viewport }}
   UI_AUDIT_SCOPE: ${{ github.event_name == 'pull_request' && 'all' || inputs.scope }}
   UI_AUDIT_ENFORCE_COVERAGE: '1'
-  GITHUB_EVENT_NAME: ${{ github.event_name }}
-  GITHUB_EVENT_PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-  GITHUB_EVENT_PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
-  GITHUB_TESTED_SHA: ${{ github.sha }}
-  GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number || '' }}
+  UI_AUDIT_EVENT_NAME: ${{ github.event_name }}
+  UI_AUDIT_REQUESTED_MODE: ${{ github.event_name == 'pull_request' && 'compare' || inputs.mode }}
+  UI_AUDIT_REQUESTED_VIEWPORT: ${{ github.event_name == 'pull_request' && 'desktop' || inputs.viewport }}
+  UI_AUDIT_REQUESTED_SCOPE: ${{ github.event_name == 'pull_request' && 'all' || inputs.scope }}
+  UI_AUDIT_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+  UI_AUDIT_SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  UI_AUDIT_SOURCE_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+  UI_AUDIT_SOURCE_TESTED_SHA: ${{ github.sha }}
+  UI_AUDIT_SOURCE_PR_NUMBER: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || '' }}
 
 jobs:
   ui-audit:
@@ -75,6 +79,58 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Resolve UI audit metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          default_branch="$UI_AUDIT_DEFAULT_BRANCH"
+          git check-ref-format "refs/heads/$default_branch"
+          git fetch --no-tags origin "refs/heads/$default_branch:refs/remotes/origin/$default_branch"
+          default_branch_sha="$(git rev-parse "refs/remotes/origin/$default_branch")"
+
+          if [[ "$UI_AUDIT_EVENT_NAME" == "pull_request" ]]; then
+            head_sha="$UI_AUDIT_SOURCE_HEAD_SHA"
+            tested_sha="$UI_AUDIT_SOURCE_TESTED_SHA"
+            base_sha="$UI_AUDIT_SOURCE_BASE_SHA"
+            pull_request_number="$UI_AUDIT_SOURCE_PR_NUMBER"
+          else
+            head_sha="$(git rev-parse HEAD)"
+            tested_sha="$head_sha"
+            base_sha="$default_branch_sha"
+            pull_request_number=""
+          fi
+
+          sha_names=(head_sha tested_sha base_sha default_branch_sha)
+          sha_values=("$head_sha" "$tested_sha" "$base_sha" "$default_branch_sha")
+          for index in "${!sha_names[@]}"; do
+            if [[ ! "${sha_values[$index]}" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Invalid ${sha_names[$index]}: ${sha_values[$index]}" >&2
+              exit 1
+            fi
+          done
+
+          case "$UI_AUDIT_REQUESTED_MODE" in
+            capture|compare|accessibility|full) ;;
+            *) echo "Unsupported requested mode: $UI_AUDIT_REQUESTED_MODE" >&2; exit 1 ;;
+          esac
+          case "$UI_AUDIT_REQUESTED_VIEWPORT" in
+            desktop|tablet|mobile|all) ;;
+            *) echo "Unsupported requested viewport: $UI_AUDIT_REQUESTED_VIEWPORT" >&2; exit 1 ;;
+          esac
+          case "$UI_AUDIT_REQUESTED_SCOPE" in
+            cooperative|member|store-credit|pos|all) ;;
+            *) echo "Unsupported requested scope: $UI_AUDIT_REQUESTED_SCOPE" >&2; exit 1 ;;
+          esac
+
+          {
+            echo "UI_AUDIT_HEAD_SHA=$head_sha"
+            echo "UI_AUDIT_TESTED_SHA=$tested_sha"
+            echo "UI_AUDIT_BASE_SHA=$base_sha"
+            echo "UI_AUDIT_DEFAULT_BRANCH_SHA=$default_branch_sha"
+            echo "UI_AUDIT_PULL_REQUEST_NUMBER=$pull_request_number"
+          } >> "$GITHUB_ENV"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -135,6 +191,10 @@ jobs:
         if: always() && (env.UI_AUDIT_MODE == 'compare' || env.UI_AUDIT_MODE == 'full')
         run: npm run ui:verify-baselines
 
+      - name: Verify UI audit artifact contract
+        if: always() && (env.UI_AUDIT_MODE == 'compare' || env.UI_AUDIT_MODE == 'full')
+        run: npm run ui:verify-artifact
+
       - name: Prepare baseline candidates
         if: always() && env.UI_AUDIT_MODE == 'capture'
         run: |
@@ -145,7 +205,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kojaya-ui-audit-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.sha }}
+          name: kojaya-ui-audit-${{ github.run_id }}
           if-no-files-found: warn
           retention-days: 14
           path: |

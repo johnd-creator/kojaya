@@ -39,6 +39,18 @@ function expectedScreens(projects: string[]): Array<{ definition: (typeof screen
         .map((project) => ({ definition, project })));
 }
 
+export function pullRequestNumber(
+    eventName: string = process.env.GITHUB_EVENT_NAME ?? "local",
+    rawNumber: string | undefined = process.env.GITHUB_EVENT_PULL_REQUEST_NUMBER,
+): number | null {
+    if (eventName !== "pull_request" || rawNumber === undefined || rawNumber.trim() === "") {
+        return null;
+    }
+
+    const number = Number(rawNumber);
+    return Number.isInteger(number) && number > 0 ? number : null;
+}
+
 export default async function globalTeardown(): Promise<void> {
     const outputDir = path.resolve("ui-audit-output");
     const fragmentsDir = path.join(outputDir, ".manifest-fragments");
@@ -128,7 +140,7 @@ export default async function globalTeardown(): Promise<void> {
         tested_sha: testedSha,
         base_sha: baseSha,
         event_name: process.env.GITHUB_EVENT_NAME ?? "local",
-        pull_request_number: Number(process.env.GITHUB_EVENT_PULL_REQUEST_NUMBER ?? 21),
+        pull_request_number: pullRequestNumber(),
         generated_at: new Date().toISOString(),
         coverage,
         screens,

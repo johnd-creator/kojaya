@@ -3,8 +3,9 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\UiAuditFixtureController;
-use Carbon\CarbonImmutable;
+use App\Providers\AppServiceProvider;
 use Illuminate\Support\Facades\Date;
+use ReflectionMethod;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -50,18 +51,51 @@ class UiAuditFrameworkTest extends TestCase
         $this->assertStringContainsString('/.env.playwright', (string) $gitignore);
     }
 
-    public function test_playwright_environment_uses_only_the_audit_fixed_clock(): void
+    public function test_playwright_environment_uses_asia_jakarta_and_the_fixed_clock_only(): void
     {
-        config(['app.env' => 'playwright']);
-        config(['app.timezone' => 'Asia/Jakarta']);
-        Date::setTestNow(CarbonImmutable::parse((string) config('ui-audit.fixed_now'))->setTimezone('Asia/Jakarta'));
+        $originalEnvironment = app()->environment();
+        $originalTimezone = date_default_timezone_get();
 
-        $this->assertSame('2026-01-15 09:30:00', now('Asia/Jakarta')->format('Y-m-d H:i:s'));
+        try {
+            $this->app->instance('env', 'playwright');
+            config(['app.timezone' => 'UTC']);
+            date_default_timezone_set('UTC');
+            Date::setTestNow(null);
+            $this->invokeUiAuditClock();
 
-        Date::setTestNow(null);
-        config(['app.env' => 'testing']);
-        config(['app.timezone' => 'UTC']);
-        $this->assertNotSame('2026-01-15 09:30:00', now()->format('Y-m-d H:i:s'));
+            $this->assertSame('Asia/Jakarta', config('app.timezone'));
+            $this->assertSame('Asia/Jakarta', date_default_timezone_get());
+            $this->assertSame('2026-01-15 09:30:00', now('Asia/Jakarta')->format('Y-m-d H:i:s'));
+
+            foreach (['testing', 'production'] as $environment) {
+                $this->app->instance('env', $environment);
+                config(['app.timezone' => 'UTC']);
+                date_default_timezone_set('UTC');
+                Date::setTestNow(null);
+                $this->invokeUiAuditClock();
+
+                $this->assertSame('UTC', config('app.timezone'));
+                $this->assertSame('UTC', date_default_timezone_get());
+                $this->assertNull(Date::getTestNow());
+            }
+        } finally {
+            $this->app->instance('env', $originalEnvironment);
+            config(['app.timezone' => 'UTC']);
+            date_default_timezone_set($originalTimezone);
+            Date::setTestNow(null);
+        }
+    }
+
+    public function test_application_timezone_default_is_utc_and_pr_metadata_is_event_scoped(): void
+    {
+        $this->assertSame('UTC', config('app.timezone'));
+
+        $teardown = file_get_contents(base_path('tests/visual/global-teardown.ts'));
+
+        $this->assertIsString($teardown);
+        $this->assertStringContainsString('pull_request_number: pullRequestNumber()', $teardown);
+        $this->assertStringContainsString('eventName !== "pull_request"', $teardown);
+        $this->assertStringNotContainsString('?? 21', $teardown);
     }
 
     public function test_fixture_endpoint_controller_rejects_production_like_environment(): void
@@ -76,5 +110,11 @@ class UiAuditFrameworkTest extends TestCase
         } finally {
             config(['app.env' => 'testing']);
         }
+    }
+
+    private function invokeUiAuditClock(): void
+    {
+        $method = new ReflectionMethod(AppServiceProvider::class, 'configureUiAuditClock');
+        $method->invoke(new AppServiceProvider($this->app));
     }
 }

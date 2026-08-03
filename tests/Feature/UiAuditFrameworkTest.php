@@ -88,6 +88,13 @@ class UiAuditFrameworkTest extends TestCase
         $this->assertStringContainsString('UI_AUDIT_REQUESTED_MODE', $workflow);
         $this->assertStringContainsString('npm run ui:verify-artifact', $workflow);
         $this->assertStringNotContainsString('github.event.pull_request.base.sha || github.sha', $workflow);
+
+        $globalSetup = (string) file_get_contents(base_path('tests/visual/global-setup.ts'));
+        $setupHelper = (string) file_get_contents(base_path('tests/visual/global-setup-helpers.mjs'));
+        $this->assertStringContainsString('prepareAuditOutput', $globalSetup);
+        $this->assertStringContainsString('ui-audit:coverage', $setupHelper);
+        $this->assertStringContainsString('await fs.rm(outputDir', $setupHelper);
+        $this->assertStringNotContainsString('ui-audit:coverage', $workflow);
     }
 
     public function test_accessibility_metrics_are_node_based_and_non_negative(): void

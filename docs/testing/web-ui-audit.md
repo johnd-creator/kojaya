@@ -117,11 +117,16 @@ Manifest schema version 3 records separate PR and workflow-dispatch evidence:
   audited head as a base fallback.
 
 The Laravel `ui-audit:coverage` command owns the canonical
-`coverage/cooperative-route-coverage.json` and `.md` files. They contain route
-reconciliation fields such as discovered, renderable, audited, excluded,
-uncovered, stale, and duplicate counts. Playwright teardown preserves those
-files, embeds the parsed object under `route_coverage`, and writes visual-entry
-counts separately to `coverage/visual-entry-coverage.json` and `.md`.
+`coverage/cooperative-route-coverage.json` and `.md` files. Global Playwright
+setup removes stale `ui-audit-output`, recreates its runtime directories, runs
+this command with `execFile`, and verifies that fresh canonical JSON exists
+before tests start. They contain route reconciliation fields such as
+discovered, renderable, audited, excluded, uncovered, stale, and duplicate
+counts. Playwright teardown preserves those files, embeds the parsed object
+under `route_coverage`, and writes visual-entry counts separately to
+`coverage/visual-entry-coverage.json` and `.md`. The workflow does not run a
+competing pre-cleanup coverage command; setup is the single authoritative
+generation path.
 
 The `ui:verify-artifact` contract verifier runs before upload in CI. It checks
 manifest identity, requested parameters, dispatch base SHA, canonical route

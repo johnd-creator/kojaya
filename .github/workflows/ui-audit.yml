@@ -167,13 +167,15 @@ jobs:
           php artisan --env=playwright db:seed --class=UiAuditSeeder --force --no-interaction
           php artisan --env=playwright storage:link --force --no-interaction
           php artisan --env=playwright wayfinder:generate --no-interaction
-          php artisan --env=playwright ui-audit:coverage --no-interaction
 
       - name: Build frontend
         run: npm run build
 
       - name: Disable Vite development server
         run: rm -f public/hot
+
+      - name: Run global setup lifecycle tests
+        run: npm run ui:test-global-setup
 
       - name: Run Playwright audit
         run: |

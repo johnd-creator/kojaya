@@ -1,12 +1,10 @@
-import fs from "node:fs/promises";
 import path from "node:path";
+import { prepareAuditOutput } from "./global-setup-helpers.mjs";
 
 export default async function globalSetup(): Promise<void> {
-    const outputDir = path.resolve("ui-audit-output");
-
-    await fs.rm(outputDir, { recursive: true, force: true });
-    await fs.mkdir(path.join(outputDir, "screenshots"), { recursive: true });
-    await fs.mkdir(path.join(outputDir, "accessibility"), { recursive: true });
-    await fs.mkdir(path.join(outputDir, "runtime"), { recursive: true });
-    await fs.mkdir(path.resolve("tests/visual/.auth"), { recursive: true });
+    await prepareAuditOutput({
+        outputDir: path.resolve("ui-audit-output"),
+        authDir: path.resolve("tests/visual/.auth"),
+        cwd: path.resolve("."),
+    });
 }

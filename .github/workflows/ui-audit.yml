@@ -1,0 +1,160 @@
+name: Kojaya UI Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Audit mode
+        required: true
+        default: full
+        type: choice
+        options:
+          - capture
+          - compare
+          - accessibility
+          - full
+      viewport:
+        description: Viewport project to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - desktop
+          - tablet
+          - mobile
+          - all
+      scope:
+        description: Registry scope to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - cooperative
+          - member
+          - store-credit
+          - pos
+          - all
+  pull_request:
+    paths:
+      - '.github/workflows/ui-audit.yml'
+      - '.env.playwright.example'
+      - 'app/**'
+      - 'config/**'
+      - 'database/migrations/**'
+      - 'database/seeders/**'
+      - 'resources/js/**'
+      - 'resources/css/**'
+      - 'routes/**'
+      - 'tests/visual/**'
+      - 'tests/Feature/UiAudit*.php'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'composer.json'
+      - 'composer.lock'
+
+permissions:
+  contents: read
+
+env:
+  UI_AUDIT_MODE: ${{ github.event_name == 'pull_request' && 'compare' || inputs.mode }}
+  UI_AUDIT_VIEWPORT: ${{ github.event_name == 'pull_request' && 'desktop' || inputs.viewport }}
+  UI_AUDIT_SCOPE: ${{ github.event_name == 'pull_request' && 'all' || inputs.scope }}
+  UI_AUDIT_ENFORCE_COVERAGE: '1'
+  GITHUB_EVENT_NAME: ${{ github.event_name }}
+  GITHUB_EVENT_PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  GITHUB_EVENT_PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+  GITHUB_TESTED_SHA: ${{ github.sha }}
+  GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number || '' }}
+
+jobs:
+  ui-audit:
+    name: Kojaya UI Audit (${{ github.event_name == 'pull_request' && 'compare' || inputs.mode }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Install deterministic fonts
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y fonts-dejavu fonts-noto-core fonts-noto-ui-core
+
+      - name: Prepare isolated Playwright environment
+        run: |
+          cp .env.playwright.example .env.playwright
+          php artisan --env=playwright key:generate --force --no-interaction
+          mkdir -p database
+          rm -f database/playwright.sqlite
+          php artisan --env=playwright migrate:fresh --force --no-interaction
+          php artisan --env=playwright db:seed --class=UiAuditSeeder --force --no-interaction
+          php artisan --env=playwright storage:link --force --no-interaction
+          php artisan --env=playwright wayfinder:generate --no-interaction
+          php artisan --env=playwright ui-audit:coverage --no-interaction
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Disable Vite development server
+        run: rm -f public/hot
+
+      - name: Run Playwright audit
+        run: |
+          PROJECT_ARGS=""
+          if [ "$UI_AUDIT_VIEWPORT" != "all" ]; then PROJECT_ARGS="--project=$UI_AUDIT_VIEWPORT"; fi
+          case "$UI_AUDIT_MODE" in
+            capture) UI_AUDIT_MODE=capture npm run ui:capture -- $PROJECT_ARGS ;;
+            compare) UI_AUDIT_MODE=compare npm run ui:test -- --grep @visual $PROJECT_ARGS ;;
+            accessibility) UI_AUDIT_MODE=accessibility npm run ui:a11y -- $PROJECT_ARGS ;;
+            full) UI_AUDIT_MODE=compare npm run ui:audit -- $PROJECT_ARGS ;;
+            *) echo "Unsupported UI_AUDIT_MODE=$UI_AUDIT_MODE"; exit 1 ;;
+          esac
+
+      - name: Verify baselines
+        if: always() && (env.UI_AUDIT_MODE == 'compare' || env.UI_AUDIT_MODE == 'full')
+        run: npm run ui:verify-baselines
+
+      - name: Prepare baseline candidates
+        if: always() && env.UI_AUDIT_MODE == 'capture'
+        run: |
+          mkdir -p tests/visual/baseline-candidates
+          cp -R ui-audit-output/screenshots/. tests/visual/baseline-candidates/ 2>/dev/null || true
+
+      - name: Upload UI audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kojaya-ui-audit-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            ui-audit-output/
+            playwright-report/
+            test-results/
+            tests/visual/baseline-candidates/
+            !ui-audit-output/.manifest-fragments/
+            !tests/visual/.auth/
+            !.env
+            !.env.playwright
+            !database/playwright.sqlite

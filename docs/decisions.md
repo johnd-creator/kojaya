@@ -1,5 +1,50 @@
 # Kojaya ERP - Architecture Decision Records (ADR)
 
+## 🎯 ADR-003: Playwright Chromium sebagai Web UI Audit Foundation
+
+**Status:** ✅ Accepted
+**Date:** July 22, 2026
+**Deciders:** Development Team
+
+### Context
+
+Kojaya membutuhkan pemeriksaan visual full-screen, accessibility, dan runtime pada browser nyata yang dapat direview bersama artifact CI. Unit test dan screenshot comparison saja tidak cukup untuk memvalidasi alur Inertia/Vue yang sudah ter-render.
+
+### Decision
+
+Gunakan Playwright Test dengan Chromium, `@axe-core/playwright`, environment/database terisolasi, seeder deterministik, storage state per role, dan manifest screenshot sebagai fondasi audit web. Storybook dan Chromatic ditunda ke fase terpisah.
+
+### Consequences
+
+- Baseline dibuat dan direview pada Linux CI; CI tidak pernah memperbarui baseline otomatis.
+- Artifact menyatukan screenshot, visual diff, axe JSON, runtime report, dan trace untuk audit UX per-screen.
+- Temuan UX/accessibility dicatat terpisah dan tidak mengubah business logic pada foundation PR.
+
+## ADR-UI-001: Inventory-driven web visual audit
+
+**Status:** Accepted
+**Date:** July 23, 2026
+
+The Playwright audit uses one machine-readable registry for route ownership,
+fixtures, role/auth state, viewport policy, accessibility, manifest, and
+baseline validation. Every renderable cooperative/member GET route must be
+audited or have a specific non-visual exclusion. Chromium on Ubuntu 24.04,
+fixed Laravel/JavaScript time, deterministic seeded data, and no server reuse
+are the rendering contract. This prevents a new page from silently bypassing
+visual review while keeping UX findings separate from business logic changes.
+
+## ADR-UI-002: Reproducible audit font loading and accessibility scope
+
+**Status:** Accepted
+**Date:** July 23, 2026
+
+The audit intercepts the application's Instrument Sans stylesheet and serves
+the reviewed weights from committed test assets. This keeps the production
+font unchanged while removing CDN availability and font-cache differences from
+visual comparison. Accessibility debt fingerprints are enforced on the
+mandatory desktop surface; responsive projects remain visual-policy checks
+until viewport-specific accessibility fingerprints are intentionally reviewed.
+
 ## 📋 What is ADR?
 
 Architecture Decision Records (ADR) document important architectural decisions made during the project. Each ADR captures:
@@ -1124,5 +1169,33 @@ member credit limit, and keep an immutable audit trail.
   cashier recorded it without exposing internal models or credentials.
 
 ---
+
+## 🎯 ADR-030: Ubuntu Canonical Visual Baselines for UI Audit
+
+**Status:** READY FOR SENIOR REVIEW
+**Date:** July 23, 2026
+**Deciders:** Engineering
+
+### Decision
+
+- Desktop screenshot baselines for the Playwright UI audit are canonical only
+  when captured on the GitHub Actions Ubuntu 24.04 environment with the locked
+  PHP, Node, Playwright, Chromium, locale, timezone, fixed clock, committed
+  audit fonts, and isolated database.
+- Host-local screenshots are advisory evidence for functional verification and
+  must not replace the Linux baseline because text rasterization varies by OS.
+- A baseline candidate must be reviewed for runtime health and page state, and
+  two clean Ubuntu captures must have identical screenshot hashes before it is
+  committed.
+- CI compares against committed baselines and never updates them
+  automatically.
+
+### Consequences
+
+- A visual mismatch caused only by a noncanonical local renderer cannot be
+  resolved by increasing tolerance or masking text globally.
+- Baseline changes remain visible in the pull request and require human review.
+- The PR gate remains responsible for proving that the exact checked-out head
+  compares successfully against the reviewed Linux baselines.
 
 *Last Updated: July 19, 2026*

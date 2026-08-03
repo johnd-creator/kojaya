@@ -2,6 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
+if (app()->environment(['testing', 'playwright'])) {
+    Route::get('__ui-audit/fixtures', \App\Http\Controllers\UiAuditFixtureController::class)
+        ->middleware(['auth', 'verified'])
+        ->name('ui-audit.fixtures');
+}
+
 Route::redirect('/', '/login')->name('home');
 
 // Google SSO

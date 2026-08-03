@@ -254,6 +254,15 @@ temp/
 /presentasi.html
 artifacts/
 
+# Playwright UI audit artifacts and authentication state
+/playwright-report/
+/test-results/
+/ui-audit-output/
+/tests/visual/.auth/
+/.env.playwright
+/.env.playwright.local
+!.env.playwright.example
+
 # Claude Code memory (optional, contains project notes)
 /.claude/memory/
 

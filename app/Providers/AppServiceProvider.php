@@ -103,11 +103,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureUiAuditClock();
         $this->registerPolicies();
         $this->registerRateLimiters();
         $this->registerObservers();
         $this->registerEventListeners();
         $this->registerJobListeners();
+    }
+
+    protected function configureUiAuditClock(): void
+    {
+        if (app()->environment('playwright')) {
+            config(['app.timezone' => 'Asia/Jakarta']);
+            date_default_timezone_set('Asia/Jakarta');
+            Date::setTestNow(Date::parse((string) config('ui-audit.fixed_now'))->setTimezone('Asia/Jakarta'));
+        }
     }
 
     protected function configureDefaults(): void

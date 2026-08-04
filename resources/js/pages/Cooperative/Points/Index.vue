@@ -65,7 +65,7 @@ const columns = [
       { title: 'Points', href: '/cooperative/points' },
     ]"
   >
-    <PageContainer class="max-w-none">
+    <PageContainer class="max-w-6xl">
       <section
         class="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/60 to-violet-50/40 p-6 shadow-sm shadow-amber-950/5 sm:p-7 dark:border-amber-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
       >
@@ -105,6 +105,7 @@ const columns = [
       </div>
 
       <Card
+        data-testid="points-table-card"
         class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
         <SectionHeader

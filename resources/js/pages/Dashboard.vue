@@ -32,6 +32,7 @@ import {
 import { computed, h } from "vue";
 import type { Component } from "vue";
 import CollectionDonut from "@/components/dashboard/CollectionDonut.vue";
+import AdminCooperativeDashboard from "@/components/dashboard/admin-koperasi/AdminCooperativeDashboard.vue";
 import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
 import ProgressBar from "@/components/dashboard/ProgressBar.vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
@@ -46,6 +47,7 @@ import { formatCurrency, formatNumber } from "@/lib/formatters";
 import {
   hasAnyPermission,
   isPlatformExperience,
+  resolveEffectiveExperience,
   resolveRoleExperience,
   type ResolvedRoleExperience,
   type RoleExperienceDefinition,
@@ -63,98 +65,22 @@ import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
 import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
 import type { BreadcrumbItem } from "@/types";
+import {
+  isAdminDashboardPayload,
+  type AdminCooperativeDashboardPayload,
+  type DashboardPayload,
+  type PlatformDashboardPayload,
+} from "@/types/dashboard";
 
 type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
-
-interface DashboardPayload {
-  summary: {
-    today_sales: number;
-    today_transactions: number;
-    pending_payments: number;
-    low_stock_products: number;
-    active_members: number;
-    unpaid_dues_amount: number;
-  };
-  workQueue: {
-    pending_members: number;
-    pending_payments: number;
-    unpaid_dues: number;
-    low_stock_products: number;
-  };
-  collections: {
-    period: string;
-    total_due: number;
-    paid: number;
-    outstanding: number;
-    collection_rate: number;
-    pending_payment_amount: number;
-    saving_balance: number;
-    member_credit_balance: number;
-  };
-  pos: {
-    today_sales: number;
-    today_transactions: number;
-    monthly_sales: number;
-    monthly_transactions: number;
-    annual_gross_profit: number;
-    member_transactions: number;
-    top_products: Array<{
-      id: number;
-      name: string;
-      category?: string | null;
-      quantity: number;
-      revenue: number;
-      gross_profit: number;
-    }>;
-  };
-  inventory: {
-    low_stock_count: number;
-    critical_products: Array<{
-      id: number;
-      sku: string;
-      name: string;
-      category?: string | null;
-      stock: number;
-      minimum_stock: number;
-    }>;
-  };
-  members: {
-    active: number;
-    pending: number;
-    resigned: number;
-    new_this_month: number;
-  };
-  shu: {
-    year: number;
-    annual_pos_profit: number;
-    annual_pos_points: number;
-    latest_closed_year?: number | null;
-    latest_closed_total: number;
-  };
-  generatedAt: string;
-}
 
 const props = defineProps<{
   dashboard?: DashboardPayload;
 }>();
 
 const page = usePage();
-const userRoles = computed(() =>
-  (
-    (
-      page.props.auth as
-        | { roles?: Array<{ name?: string } | string> }
-        | undefined
-    )?.roles ?? []
-  ).map((role) => (typeof role === "string" ? role : (role.name ?? ""))),
-);
-const userPermissions = computed<string[]>(() => {
-  const permissions = (
-    page.props.auth as { permissions?: string[] } | undefined
-  )?.permissions;
-
-  return permissions ?? [];
-});
+const userRoles = computed(() => page.props.auth.roles ?? []);
+const userPermissions = computed(() => page.props.auth.permissions ?? []);
 
 const roleExperienceDefinitions: Record<
   ResolvedRoleExperience["key"],
@@ -316,9 +242,17 @@ const roleExperienceDefinitions: Record<
   },
 };
 
+const effectiveExperience = computed(() =>
+  resolveEffectiveExperience(
+    page.props.auth.primary_role,
+    userRoles.value,
+    userPermissions.value,
+  ),
+);
+
 const roleExperience = computed<ResolvedRoleExperience>(() =>
   resolveRoleExperience(
-    userRoles.value,
+    effectiveExperience.value,
     userPermissions.value,
     roleExperienceDefinitions,
     { label: "Buka dashboard", href: dashboardRoute().url },
@@ -329,7 +263,8 @@ const canShowCooperativeActions = computed(
   () => !isPlatformExperience(roleExperience.value.key),
 );
 
-const emptyDashboard: DashboardPayload = {
+const emptyDashboard: PlatformDashboardPayload = {
+  workspace: "platform",
   summary: {
     today_sales: 0,
     today_transactions: 0,
@@ -383,7 +318,19 @@ const emptyDashboard: DashboardPayload = {
   generatedAt: new Date().toISOString(),
 };
 
-const dashboard = computed(() => props.dashboard ?? emptyDashboard);
+const dashboardPayload = computed<DashboardPayload>(
+  () => props.dashboard ?? emptyDashboard,
+);
+const adminDashboard = computed<AdminCooperativeDashboardPayload | null>(() =>
+  isAdminDashboardPayload(dashboardPayload.value)
+    ? dashboardPayload.value
+    : null,
+);
+const dashboard = computed<PlatformDashboardPayload>(() =>
+  isAdminDashboardPayload(dashboardPayload.value)
+    ? emptyDashboard
+    : dashboardPayload.value,
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -780,6 +727,12 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
         </PageContainer>
       </template>
 
+      <AdminCooperativeDashboard
+        v-if="adminDashboard"
+        :dashboard="adminDashboard"
+      />
+
+      <template v-else>
       <PageContainer class="max-w-none">
         <!-- HERO -->
         <section
@@ -1529,6 +1482,7 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
           </div>
         </section>
       </PageContainer>
+      </template>
     </Deferred>
   </AppLayout>
 </template>

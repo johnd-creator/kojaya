@@ -74,6 +74,7 @@ import {
   closing as operatorClosing,
 } from "@/routes/cooperative/operator";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
+import { index as cooperativePointsIndex } from "@/routes/cooperative/points";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
 import { index as cooperativePosCoffeeOrdersIndex } from "@/routes/cooperative/pos/coffee-orders";
 import { index as cooperativePosReportsIndex } from "@/routes/cooperative/pos/reports";
@@ -82,6 +83,8 @@ import { index as cooperativePosTransactionsIndex } from "@/routes/cooperative/p
 import { index as cooperativePosCategoriesIndex } from "@/routes/cooperative/pos-categories";
 import { index as cooperativePosProductsIndex } from "@/routes/cooperative/pos-products";
 import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
+import { index as cooperativeRedemptionsIndex } from "@/routes/cooperative/redemptions";
+import { index as cooperativeRewardsIndex } from "@/routes/cooperative/rewards";
 import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
 import {
@@ -90,31 +93,33 @@ import {
 } from "@/routes/cooperative/store-credit";
 import { index as cooperativeStoreCreditTransfersIndex } from "@/routes/cooperative/store-credit/transfers";
 import { storeAccount as memberStoreAccount } from "@/routes/member";
+import {
+  isAdminNavigationExperience,
+  isPlatformExperience,
+  resolveEffectiveExperience,
+  roleExperienceNavigationLabel,
+} from "@/lib/role-experience";
 import type { NavItem } from "@/types";
 import AppLogo from "./AppLogo.vue";
 
 const page = usePage();
-const userRoles = computed(() => {
-  const auth = page.props.auth as any;
-  return (auth?.roles ?? []).map((r: any) =>
-    typeof r === "string" ? r : (r.name ?? ""),
-  );
-});
+const userRoles = computed(() => page.props.auth.roles ?? []);
+const userPermissions = computed(() => page.props.auth.permissions ?? []);
+const effectiveExperience = computed(() =>
+  resolveEffectiveExperience(
+    page.props.auth.primary_role,
+    userRoles.value,
+    userPermissions.value,
+  ),
+);
 const isMember = computed(() => userRoles.value.includes("Anggota"));
 const hasNonMemberRole = computed(
   () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
 const isSystemAdmin = computed(
-  () =>
-    userRoles.value.includes("System Admin") ||
-    userRoles.value.includes("Admin Pusat"),
+  () => isPlatformExperience(effectiveExperience.value),
 );
-const userPermissions = computed<string[]>(() => {
-  const permissions = page.props.auth?.permissions as string[] | undefined;
-
-  return permissions ?? [];
-});
 type MemberAccess = {
   is_active: boolean;
   is_pending_review: boolean;
@@ -122,9 +127,7 @@ type MemberAccess = {
   can_access_onboarding: boolean;
 };
 const memberAccess = computed<MemberAccess | null>(() => {
-  const auth = page.props.auth as any;
-
-  return (auth?.member_access ?? null) as MemberAccess | null;
+  return (page.props.auth.member_access ?? null) as MemberAccess | null;
 });
 const canAccess = (permissions?: string | string[]): boolean => {
   // System Admin and Admin Pusat have access to everything
@@ -663,6 +666,159 @@ const allNavItems: NavItem[] = [
 ] as any[];
 
 const footerNavItems: NavItem[] = [];
+const adminNavItems = computed<NavItem[]>(() =>
+  filterNavByPermission([
+    {
+      title: "Ringkasan",
+      href: "#",
+      icon: LayoutGrid,
+      items: [{ title: "Dashboard", href: dashboard(), icon: LayoutGrid }],
+    },
+    {
+      title: "Anggota",
+      href: "#",
+      icon: Users,
+      items: [
+        {
+          title: "Data Anggota",
+          href: cooperativeMembersIndex().url,
+          permissions: ["view_cooperative_member", "view_cooperative_all"],
+        },
+        {
+          title: "Validasi Anggota",
+          href: cooperativeMembersIndex({
+            query: { validation_status: "PENDING" },
+          }).url,
+          permissions: ["validate_cooperative_member"],
+        },
+        {
+          title: "Pengunduran Diri",
+          href: cooperativeMembersResignationsIndex({
+            query: { status: "PENDING" },
+          }).url,
+          permissions: ["review_cooperative_resignation"],
+        },
+      ],
+    },
+    {
+      title: "Keuangan Anggota",
+      href: "#",
+      icon: WalletCards,
+      items: [
+        {
+          title: "Pembayaran",
+          href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+          permissions: ["manage_cooperative_payment"],
+        },
+        {
+          title: "Iuran dan Tagihan",
+          href: cooperativeDuesIndex({
+            query: { period_scope: "all", status: "OPEN" },
+          }).url,
+          permissions: ["manage_cooperative_dues"],
+        },
+        {
+          title: "Ledger Simpanan",
+          href: cooperativeLedgerIndex().url,
+          permissions: ["view_cooperative_ledger"],
+        },
+        {
+          title: "Penarikan Simpanan",
+          href: cooperativeSavingsWithdrawalsIndex().url,
+          permissions: ["view_cooperative_ledger"],
+        },
+      ],
+    },
+    {
+      title: "Pinjaman",
+      href: "#",
+      icon: CreditCard,
+      items: [
+        {
+          title: "Data Pinjaman",
+          href: cooperativeLoansIndex().url,
+          permissions: ["view_cooperative_loan"],
+        },
+        {
+          title: "Jenis Pinjaman",
+          href: cooperativeLoanTypesIndex().url,
+          permissions: ["manage_cooperative_loan_types"],
+        },
+      ],
+    },
+    {
+      title: "Benefit Anggota",
+      href: "#",
+      icon: Gift,
+      items: [
+        {
+          title: "Poin",
+          href: cooperativePointsIndex().url,
+          permissions: ["manage_cooperative_points"],
+        },
+        {
+          title: "Reward",
+          href: cooperativeRewardsIndex().url,
+          permissions: ["manage_cooperative_rewards"],
+        },
+        {
+          title: "Penukaran Reward",
+          href: cooperativeRedemptionsIndex().url,
+          permissions: ["manage_cooperative_redemption"],
+        },
+        {
+          title: "SHU",
+          href: cooperativeShuIndex().url,
+          permissions: ["manage_cooperative_shu"],
+        },
+      ],
+    },
+    {
+      title: "Operasional Toko",
+      href: "#",
+      icon: Store,
+      items: [
+        {
+          title: "POS",
+          href: cooperativePosIndex().url,
+          permissions: ["access_cooperative_pos"],
+        },
+        {
+          title: "Produk dan Stok",
+          href: cooperativePosProductsIndex().url,
+          permissions: ["manage_pos_products"],
+        },
+        {
+          title: "Laporan POS",
+          href: cooperativePosReportsIndex().url,
+          permissions: ["view_pos_reports"],
+        },
+        {
+          title: "Saldo Toko",
+          href: cooperativeStoreCreditIndex().url,
+          permissions: ["view_store_credit"],
+        },
+        {
+          title: "Laporan Saldo Toko",
+          href: cooperativeStoreCreditReport().url,
+          permissions: ["report_store_credit"],
+        },
+      ],
+    },
+    {
+      title: "Laporan",
+      href: "#",
+      icon: BarChart3,
+      items: [
+        {
+          title: "Laporan Koperasi",
+          href: cooperativeReportsIndex().url,
+          permissions: ["view_cooperative_report"],
+        },
+      ],
+    },
+  ]),
+);
 const memberNavItems = computed<NavItem[]>(() => {
   if (!memberAccess.value?.can_access_financial_features) {
     return [
@@ -691,69 +847,65 @@ const memberNavItems = computed<NavItem[]>(() => {
   }
 
   return [
-  {
-    title: "Beranda",
-    href: "/member",
-    icon: LayoutGrid,
-  },
-  {
-    title: "Simpanan",
-    href: "/member/savings",
-    icon: WalletCards,
-  },
-  {
-    title: "Saldo Toko",
-    href: memberStoreAccount().url,
-    icon: WalletCards,
-  },
-  {
-    title: "Pinjaman",
-    href: "/member/loans",
-    icon: CreditCard,
-  },
-  {
-    title: "Poin & Reward",
-    href: "#",
-    icon: Gift,
-    items: [
-      { title: "Poin Saya", href: "/member/points" },
-      { title: "Rewards", href: "/member/rewards" },
-    ],
-  },
-  {
-    title: "Aktivitas Keuangan",
-    href: "/member/transactions",
-    icon: ReceiptText,
-  },
-  {
-    title: "Profil",
-    href: "/member/profile",
-    icon: UserRound,
-  },
+    {
+      title: "Beranda",
+      href: "/member",
+      icon: LayoutGrid,
+    },
+    {
+      title: "Simpanan",
+      href: "/member/savings",
+      icon: WalletCards,
+    },
+    {
+      title: "Saldo Toko",
+      href: memberStoreAccount().url,
+      icon: WalletCards,
+    },
+    {
+      title: "Pinjaman",
+      href: "/member/loans",
+      icon: CreditCard,
+    },
+    {
+      title: "Poin & Reward",
+      href: "#",
+      icon: Gift,
+      items: [
+        { title: "Poin Saya", href: "/member/points" },
+        { title: "Rewards", href: "/member/rewards" },
+      ],
+    },
+    {
+      title: "Aktivitas Keuangan",
+      href: "/member/transactions",
+      icon: ReceiptText,
+    },
+    {
+      title: "Profil",
+      href: "/member/profile",
+      icon: UserRound,
+    },
   ];
 });
-const mainNavItems = computed(() =>
-  isMemberOnly.value ? memberNavItems.value : filterNavByPermission(allNavItems),
-);
+const mainNavItems = computed(() => {
+  if (isMemberOnly.value) {
+    return memberNavItems.value;
+  }
+
+  if (isAdminNavigationExperience(effectiveExperience.value)) {
+    return adminNavItems.value;
+  }
+
+  return filterNavByPermission(allNavItems);
+});
 const logoHref = computed(() => (isMemberOnly.value ? "/member" : dashboard()));
 const navigationLabel = computed(() => {
   if (isMemberOnly.value) {
     return "Kojayaku";
   }
 
-  if (userRoles.value.includes("Pengurus Koperasi")) {
-    return "Ruang kerja Pengurus";
-  }
-
-  if (userRoles.value.includes("Manajer Koperasi")) {
-    return "Ruang kerja Manajer";
-  }
-
-  if (userRoles.value.includes("Admin Koperasi")) {
-    return "Ruang kerja Admin";
-  }
-
-  return "Platform";
+  return roleExperienceNavigationLabel(effectiveExperience.value);
 });
 </script>
 

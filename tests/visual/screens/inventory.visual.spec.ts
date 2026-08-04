@@ -24,6 +24,23 @@ const manualScenarioIds = new Set([
     "store-credit-report-global",
     "store-credit-transfers-pending",
     "store-credit-transfers-empty",
+    "admin-dashboard-dashboard-admin-koperasi",
+    "admin-members-index-default",
+    "admin-members-index-pending-filter",
+    "admin-members-index-no-results",
+    "admin-members-show-pending-review",
+    "admin-members-show-revision",
+    "admin-members-show-active",
+    "admin-payments-index-pending",
+    "admin-payments-index-empty",
+    "admin-payments-index-selected",
+    "admin-dues-index-open",
+    "admin-dues-index-partial",
+    "admin-dues-index-no-results",
+    "admin-ledger-index-default",
+    "admin-loans-index-default",
+    "admin-loan-types-index-default",
+    "admin-points-index-default",
 ]);
 
 const inventoryScenarios = screenRegistry.filter((definition) => isAuditScopeIncluded(definition) && !manualScenarioIds.has(definition.id));

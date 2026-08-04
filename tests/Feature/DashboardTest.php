@@ -100,10 +100,10 @@ class DashboardTest extends TestCase
         $paidInvoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $activeMember->id,
             'cooperative_contribution_type_id' => $type->id,
-            'period' => now()->subMonth()->format('Y-m'),
+            'period' => now()->startOfMonth()->subMonth()->format('Y-m'),
             'amount' => 50000,
             'paid_amount' => 50000,
-            'due_date' => now()->subMonth()->endOfMonth()->toDateString(),
+            'due_date' => now()->startOfMonth()->subMonth()->endOfMonth()->toDateString(),
             'status' => 'PAID',
         ]);
         CooperativeDuesInvoice::query()->create([

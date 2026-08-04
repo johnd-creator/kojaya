@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cooperative;
 
 use App\Concerns\ResolvesApiPageSize;
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\GenerateDuesRequest;
 use App\Http\Requests\Cooperative\MarkDuesPaidRequest;
@@ -23,17 +24,16 @@ class CooperativeDuesController extends Controller
 {
     use ResolvesApiPageSize;
 
-    public function index(Request $request, DuesGenerationService $duesGenerationService): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
     {
         $period = $this->periodFromRequest($request);
         $periodScope = $request->input('period_scope') === 'all' ? 'all' : 'period';
-
-        $duesGenerationService->generateForPeriod($period);
 
         $query = CooperativeDuesInvoice::query()
             ->forSavingsDues()
             ->forActiveMembers()
             ->with(['member', 'contributionType']);
+        $scopeService->scopeVisibleTo($query, $request->user());
         $status = $request->input('status', '');
 
         if ($periodScope !== 'all') {
@@ -103,7 +103,7 @@ class CooperativeDuesController extends Controller
                 'period_scope' => $periodScope,
                 'status' => $status,
             ],
-            'monthlyDuesInfo' => $this->monthlyDuesInfo($period),
+            'monthlyDuesInfo' => $this->monthlyDuesInfo($period, $scopeService, $request),
             'canResetPaidDues' => $this->canResetPaidDues($request),
         ]);
     }
@@ -115,16 +115,20 @@ class CooperativeDuesController extends Controller
         return back()->with('success', "{$created} dues invoices generated.");
     }
 
-    public function markPaid(MarkDuesPaidRequest $request, CooperativePaymentService $paymentService): RedirectResponse
-    {
+    public function markPaid(
+        MarkDuesPaidRequest $request,
+        CooperativePaymentService $paymentService,
+        OrganizationScopedQueryService $scopeService,
+    ): RedirectResponse {
         $paidCount = 0;
         $requestedAmount = $request->validated('amount');
 
         $invoices = CooperativeDuesInvoice::query()
             ->forActiveMembers()
             ->whereIn('id', $request->validated('invoice_ids'))
-            ->whereIn('status', ['UNPAID', 'PARTIAL'])
-            ->get();
+            ->whereIn('status', ['UNPAID', 'PARTIAL']);
+        $scopeService->scopeVisibleTo($invoices, $request->user());
+        $invoices = $invoices->get();
 
         foreach ($invoices as $invoice) {
             $remainingAmount = (float) $invoice->amount - (float) $invoice->paid_amount;
@@ -160,8 +164,13 @@ class CooperativeDuesController extends Controller
         return back()->with('success', "{$paidCount} tagihan ditandai sudah membayar.");
     }
 
-    public function markUnpaid(CooperativeDuesInvoice $invoice, Request $request, CooperativePaymentService $paymentService): RedirectResponse
-    {
+    public function markUnpaid(
+        CooperativeDuesInvoice $invoice,
+        Request $request,
+        CooperativePaymentService $paymentService,
+        OrganizationScopedQueryService $scopeService,
+    ): RedirectResponse {
+        $scopeService->assertVisible($request->user(), $invoice);
         abort_unless($this->canResetPaidDues($request), 403);
 
         if ($invoice->status !== 'PAID') {
@@ -204,8 +213,11 @@ class CooperativeDuesController extends Controller
     /**
      * @return array<string, mixed>|null
      */
-    private function monthlyDuesInfo(string $period): ?array
-    {
+    private function monthlyDuesInfo(
+        string $period,
+        OrganizationScopedQueryService $scopeService,
+        Request $request,
+    ): ?array {
         $type = CooperativeContributionType::query()
             ->where('is_active', true)
             ->where('frequency', 'MONTHLY')
@@ -221,10 +233,12 @@ class CooperativeDuesController extends Controller
         }
 
         $periodDate = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
-        $aggregate = CooperativeDuesInvoice::query()
+        $aggregateQuery = CooperativeDuesInvoice::query()
             ->forActiveMembers()
             ->where('period', $period)
-            ->where('cooperative_contribution_type_id', $type->id)
+            ->where('cooperative_contribution_type_id', $type->id);
+        $scopeService->scopeVisibleTo($aggregateQuery, $request->user());
+        $aggregate = $aggregateQuery
             ->selectRaw(
                 'COUNT(*) as total_invoices,
                  COALESCE(SUM(amount), 0) as total_nominal,

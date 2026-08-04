@@ -14,6 +14,7 @@ interface Column {
   slot?: string;
   class?: string;
   headerClass?: string;
+  width?: string;
   align?: "left" | "center" | "right";
   format?: (value: any) => string;
   sortable?: boolean;
@@ -49,9 +50,12 @@ interface Props {
   emptyIcon?: any;
   rowClickable?: boolean;
   selectable?: boolean;
+  isRowSelectable?: (row: any) => boolean;
   selected?: any[];
   sortField?: string;
   sortDirection?: "asc" | "desc";
+  tableClass?: string;
+  compact?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -61,9 +65,12 @@ const props = withDefaults(defineProps<Props>(), {
   emptyMessage: "Tidak ada data yang ditemukan.",
   rowClickable: false,
   selectable: false,
+  isRowSelectable: () => true,
   selected: () => [],
   sortField: "",
   sortDirection: "asc",
+  tableClass: "",
+  compact: false,
 });
 
 const emit = defineEmits<{
@@ -112,7 +119,12 @@ const isSelected = (row: any) => {
   return props.selected.some((s) => s.id === row.id);
 };
 
+const isRowSelectable = (row: any): boolean =>
+  props.isRowSelectable?.(row) ?? true;
+
 const toggleRow = (row: any) => {
+  if (!isRowSelectable(row)) return;
+
   const current = [...props.selected];
   const idx = current.findIndex((s) => s.id === row.id);
   if (idx >= 0) {
@@ -124,15 +136,23 @@ const toggleRow = (row: any) => {
 };
 
 const toggleAll = () => {
+  const selectableRows = tableData.value.filter(isRowSelectable);
+
+  if (selectableRows.length === 0) return;
+
   if (allSelected.value) {
     emit("selection-change", []);
   } else {
-    emit("selection-change", [...tableData.value]);
+    emit("selection-change", selectableRows);
   }
 };
 
 const allSelected = computed(() => {
-  return tableData.value.length > 0 && tableData.value.every((row) => isSelected(row));
+  const selectableRows = tableData.value.filter(isRowSelectable);
+
+  return (
+    selectableRows.length > 0 && selectableRows.every((row) => isSelected(row))
+  );
 });
 
 const someSelected = computed(() => {
@@ -144,7 +164,10 @@ const rowId = (row: any) => row.id ?? JSON.stringify(row);
 const handleSort = (col: Column) => {
   if (!col.sortable) return;
   const sortKey = col.sortKey ?? col.key ?? "";
-  const newDir = props.sortField === sortKey && props.sortDirection === "asc" ? "desc" : "asc";
+  const newDir =
+    props.sortField === sortKey && props.sortDirection === "asc"
+      ? "desc"
+      : "asc";
   emit("sort", sortKey, newDir);
 };
 
@@ -157,7 +180,7 @@ const sortIcon = (col: Column) => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="min-w-0 space-y-4">
     <div v-if="searchable" class="flex items-center justify-between">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
@@ -174,38 +197,58 @@ const sortIcon = (col: Column) => {
     </div>
 
     <div
-      class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden"
+      class="min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
     >
-      <div class="overflow-x-auto">
+      <div
+        class="min-w-0 max-w-full overflow-x-auto overscroll-x-contain"
+        role="region"
+        :aria-label="`${tableLabel}, geser untuk melihat kolom lainnya`"
+        tabindex="0"
+      >
         <table
           :aria-label="tableLabel"
-          class="w-full text-left border-collapse"
+          :class="['w-full border-collapse text-left', tableClass]"
           role="table"
         >
+          <colgroup>
+            <col v-if="selectable" style="width: 2.5rem" />
+            <col
+              v-for="(col, index) in columns"
+              :key="index"
+              :style="col.width ? { width: col.width } : undefined"
+            />
+          </colgroup>
           <thead class="sticky top-0 z-10">
             <tr
               class="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
             >
               <th
                 v-if="selectable"
-                class="w-10 py-4 px-4"
+                :class="compact ? 'w-10 px-3 py-3' : 'w-10 px-4 py-4'"
               >
                 <input
                   type="checkbox"
+                  aria-label="Pilih semua baris"
                   class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
                   :checked="allSelected"
                   :indeterminate="someSelected"
+                  :disabled="tableData.every((row) => !isRowSelectable(row))"
                   @change="toggleAll"
                 />
               </th>
               <th
                 v-for="(col, index) in columns"
                 :key="index"
-                class="py-4 px-6 font-medium text-sm text-zinc-500 uppercase tracking-wider"
                 :class="[
+                  compact ? 'px-3 py-3 text-xs' : 'px-6 py-4 text-sm',
+                  compact ? 'min-w-0 max-w-0 overflow-hidden' : '',
+                  'font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-300',
                   getAlignmentClass(col.align),
                   col.headerClass,
-                  { 'cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300': col.sortable },
+                  {
+                    'cursor-pointer select-none hover:text-zinc-700 dark:hover:text-zinc-300':
+                      col.sortable,
+                  },
                 ]"
                 :style="col.sortable ? { cursor: 'pointer' } : {}"
                 @click="handleSort(col)"
@@ -261,26 +304,45 @@ const sortIcon = (col: Column) => {
               :class="{
                 'cursor-pointer': rowClickable,
                 'bg-sky-50/50 dark:bg-sky-950/20': isSelected(row),
+                'opacity-60': selectable && !isRowSelectable(row),
               }"
               @click="rowClickable && emit('row-click', row)"
             >
               <td
                 v-if="selectable"
-                class="py-4 px-4"
+                :class="compact ? 'px-3 py-3' : 'px-4 py-4'"
                 @click.stop
               >
                 <input
                   type="checkbox"
+                  :aria-label="
+                    'Pilih baris ' +
+                    (row.member?.name || row.name || row.id || rowIndex + 1)
+                  "
                   class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
                   :checked="isSelected(row)"
+                  :disabled="!isRowSelectable(row)"
+                  :aria-disabled="!isRowSelectable(row)"
+                  :title="
+                    isRowSelectable(row)
+                      ? 'Pilih baris'
+                      : 'Baris ini tidak dapat dipilih'
+                  "
                   @change="toggleRow(row)"
                 />
               </td>
               <td
                 v-for="(col, colIndex) in columns"
                 :key="colIndex"
-                class="py-4 px-6 text-sm text-zinc-600 dark:text-zinc-400"
-                :class="[getAlignmentClass(col.align), col.class]"
+                :class="[
+                  compact ? 'px-3 py-3' : 'px-6 py-4',
+                  compact ? 'min-w-0 max-w-0 overflow-hidden' : '',
+                  compact
+                    ? 'text-xs text-zinc-600 dark:text-zinc-400'
+                    : 'text-sm text-zinc-600 dark:text-zinc-400',
+                  getAlignmentClass(col.align),
+                  col.class,
+                ]"
               >
                 <slot
                   v-if="col.slot"
@@ -316,7 +378,8 @@ const sortIcon = (col: Column) => {
         class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 px-6 py-4 flex items-center justify-between"
       >
         <p class="text-sm text-zinc-500">
-          Menampilkan <span class="font-medium">{{ paginationData.from }}</span> hingga
+          Menampilkan
+          <span class="font-medium">{{ paginationData.from }}</span> hingga
           <span class="font-medium">{{ paginationData.to }}</span> dari
           <span class="font-medium">{{ paginationData.total }}</span> data
         </p>
@@ -330,7 +393,11 @@ const sortIcon = (col: Column) => {
               :class="{ 'pointer-events-none opacity-50': !link.url }"
               as-child
             >
-              <Link :href="link.url" preserve-scroll>
+              <Link
+                :href="link.url"
+                preserve-scroll
+                @click="emit('page-change', link.url ?? '')"
+              >
                 <span v-html="link.label"></span>
               </Link>
             </Button>

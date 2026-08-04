@@ -10,6 +10,7 @@ use App\Models\CooperativeContributionType;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Services\Cooperative\CooperativePaymentService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,8 +28,40 @@ class CooperativePaymentController extends Controller
         $query = CooperativePayment::query()->with(['member', 'invoice.contributionType', 'contributionType']);
         $scopeService->scopeVisibleTo($query, $request->user());
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+        $canApprovePayments = $this->canApprovePaymentsFromUi($request);
+        $status = $request->input(
+            'status',
+            $canApprovePayments ? 'PENDING' : null,
+        );
+
+        if (is_string($status) && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
+            $query->whereHas('member', function (Builder $memberQuery) use ($search): void {
+                $keyword = mb_strtolower($search);
+                $memberQuery->where(function (Builder $query) use ($keyword): void {
+                    $query->whereRaw('LOWER(name) LIKE ?', ["%{$keyword}%"])
+                        ->orWhereRaw('LOWER(member_no) LIKE ?', ["%{$keyword}%"]);
+                });
+            });
+        }
+
+        $period = $request->input('period');
+        if (is_string($period) && preg_match('/^\d{4}-\d{2}$/', $period) === 1) {
+            $periodDate = CarbonImmutable::createFromFormat('!Y-m', $period);
+
+            $query->whereBetween('paid_at', [
+                $periodDate->startOfMonth()->toDateString(),
+                $periodDate->endOfMonth()->toDateString(),
+            ]);
+        }
+
+        $paymentMethod = $request->input('payment_method');
+        if (is_string($paymentMethod) && in_array($paymentMethod, ['CASH', 'TRANSFER', 'QRIS'], true)) {
+            $query->where('payment_method', $paymentMethod);
         }
 
         $sortField = in_array($request->input('sort_field'), self::SORT_WHITELIST, true)
@@ -44,10 +77,15 @@ class CooperativePaymentController extends Controller
                 ->orderBy('name')->get(['id', 'member_no', 'name']),
             'contributionTypes' => $this->paymentContributionTypes()->get(),
             'filters' => array_merge(
-                $request->only(['status']),
+                [
+                    'status' => $status,
+                    'search' => $search,
+                    'period' => is_string($period) ? $period : '',
+                    'payment_method' => is_string($paymentMethod) ? $paymentMethod : '',
+                ],
                 ['sort_field' => $sortField, 'sort_direction' => $sortDirection],
             ),
-            'canApprovePayments' => $this->canApprovePaymentsFromUi($request),
+            'canApprovePayments' => $canApprovePayments,
         ]);
     }
 

@@ -241,7 +241,7 @@ const statusClass = (status: string): string => {
             </div>
             <div class="min-w-0">
               <p
-                class="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+                class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
               >
                 {{ card.label }}
               </p>
@@ -272,7 +272,7 @@ const statusClass = (status: string): string => {
             </div>
             <div class="min-w-0">
               <p
-                class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-xs"
+                class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 sm:text-xs"
               >
                 {{ card.label }}
               </p>
@@ -317,7 +317,7 @@ const statusClass = (status: string): string => {
             <div class="grid grid-cols-3 gap-2 text-center sm:min-w-[360px]">
               <div class="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2">
                 <p
-                  class="text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                  class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                 >
                   Total
                 </p>
@@ -331,7 +331,7 @@ const statusClass = (status: string): string => {
                 class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2"
               >
                 <p
-                  class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400"
+                  class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400"
                 >
                   Lunas
                 </p>
@@ -409,7 +409,7 @@ const statusClass = (status: string): string => {
             >
               <table class="w-full text-left text-sm">
                 <thead
-                  class="bg-zinc-50/70 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                  class="bg-zinc-50/70 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                 >
                   <tr>
                     <th class="px-4 py-3">Bulan Iuran</th>
@@ -430,7 +430,7 @@ const statusClass = (status: string): string => {
                       <p class="font-bold text-zinc-900 dark:text-zinc-100">
                         {{ invoice.period_label }}
                       </p>
-                      <p class="mt-0.5 text-xs text-zinc-500">
+                      <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                         Jatuh tempo
                         {{
                           invoice.due_date ? formatDate(invoice.due_date) : "-"
@@ -470,7 +470,7 @@ const statusClass = (status: string): string => {
                         v-if="invoice.remaining_amount > 0"
                         type="button"
                         size="sm"
-                        class="bg-emerald-600 hover:bg-emerald-700"
+                        class="bg-emerald-700 hover:bg-emerald-800"
                         @click="
                           openPaymentDialog({
                             id: invoice.id,
@@ -484,7 +484,7 @@ const statusClass = (status: string): string => {
                       </Button>
                       <span
                         v-else
-                        class="text-xs text-emerald-600 dark:text-emerald-400"
+                        class="text-xs text-emerald-700 dark:text-emerald-400"
                         >Lunas</span
                       >
                     </td>
@@ -492,7 +492,7 @@ const statusClass = (status: string): string => {
                   <tr v-if="wajibInvoices.length === 0">
                     <td
                       colspan="6"
-                      class="px-4 py-10 text-center text-zinc-500"
+                      class="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400"
                     >
                       Belum ada tagihan Simpanan Wajib bulanan.
                     </td>
@@ -619,7 +619,7 @@ const statusClass = (status: string): string => {
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                   <thead
-                    class="bg-zinc-50/50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                    class="bg-zinc-50/50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                   >
                     <tr>
                       <th class="px-4 py-3 sm:px-6 sm:py-4">Tanggal</th>
@@ -678,7 +678,7 @@ const statusClass = (status: string): string => {
                     <tr v-if="latestLedger.length === 0">
                       <td
                         colspan="5"
-                        class="px-6 py-12 text-center text-zinc-500"
+                        class="px-6 py-12 text-center text-zinc-500 dark:text-zinc-400"
                       >
                         Belum ada riwayat ledger.
                       </td>
@@ -723,7 +723,7 @@ const statusClass = (status: string): string => {
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                   <thead
-                    class="bg-zinc-50/50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                    class="bg-zinc-50/50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                   >
                     <tr>
                       <th class="px-4 py-3 sm:px-6 sm:py-4">Periode</th>
@@ -767,7 +767,7 @@ const statusClass = (status: string): string => {
                     <tr v-if="latestInvoices.length === 0">
                       <td
                         colspan="4"
-                        class="px-6 py-10 text-center text-zinc-500"
+                        class="px-6 py-10 text-center text-zinc-500 dark:text-zinc-400"
                       >
                         Belum ada tagihan.
                       </td>
@@ -804,7 +804,7 @@ const statusClass = (status: string): string => {
                 <div class="overflow-x-auto">
                   <table class="w-full text-left text-sm">
                     <thead
-                      class="bg-zinc-50/50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                      class="bg-zinc-50/50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
                     >
                       <tr>
                         <th class="px-4 py-3 sm:px-6 sm:py-4">Tanggal</th>
@@ -848,7 +848,7 @@ const statusClass = (status: string): string => {
                       <tr v-if="latestPayments.length === 0">
                         <td
                           colspan="4"
-                          class="px-6 py-10 text-center text-zinc-500"
+                          class="px-6 py-10 text-center text-zinc-500 dark:text-zinc-400"
                         >
                           Belum ada pembayaran.
                         </td>

@@ -30,10 +30,7 @@ import StatusPill from "@/components/dashboard/StatusPill.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -53,11 +50,7 @@ import {
 } from "@/components/ui/select";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
-import {
-  index,
-  markPaid,
-  markUnpaid,
-} from "@/routes/cooperative/dues";
+import { index, markPaid, markUnpaid } from "@/routes/cooperative/dues";
 import { edit as editSavings } from "@/routes/settings/savings";
 
 type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
@@ -128,14 +121,14 @@ const resetPaidForm = useForm({});
 
 const markPaidForm = useForm<{
   invoice_ids: number[];
-  amount: string | number | null;
+  amount: string | number;
   paid_at: string;
   payment_method: string;
   reference_no: string;
   notes: string;
 }>({
   invoice_ids: [],
-  amount: null,
+  amount: "",
   paid_at: new Date().toISOString().slice(0, 10),
   payment_method: "CASH",
   reference_no: "",
@@ -174,7 +167,9 @@ watch(memberSearch, () => {
 const remainingAmount = (invoice: any): number =>
   Number(invoice.amount ?? 0) - Number(invoice.paid_amount ?? 0);
 const isPayable = (invoice: any): boolean =>
-  invoice.status !== "PAID" && invoice.status !== "VOID" && remainingAmount(invoice) > 0;
+  invoice.status !== "PAID" &&
+  invoice.status !== "VOID" &&
+  remainingAmount(invoice) > 0;
 
 const payableInvoiceIds = computed<number[]>(() =>
   props.invoices.data.filter(isPayable).map((invoice: any) => invoice.id),
@@ -218,7 +213,7 @@ const submitMarkPaid = (
   amount?: string | number,
 ): void => {
   markPaidForm.invoice_ids = invoiceIds;
-  markPaidForm.amount = amount || null;
+  markPaidForm.amount = amount || "";
   markPaidForm.post(markPaid().url, {
     preserveScroll: true,
     onSuccess: () => {
@@ -229,7 +224,7 @@ const submitMarkPaid = (
         delete rowPaymentAmounts.value[id];
       });
       showBatchConfirm.value = false;
-      markPaidForm.amount = null;
+      markPaidForm.amount = "";
       markPaidForm.reference_no = "";
       markPaidForm.notes = "";
     },
@@ -287,7 +282,10 @@ const categoryOptions = computed(() => [
 
 const contributionOptions = computed(() => [
   { value: "", label: "Semua jenis" },
-  ...props.contributionTypes.map((t) => ({ value: String(t.id), label: t.name })),
+  ...props.contributionTypes.map((t) => ({
+    value: String(t.id),
+    label: t.name,
+  })),
 ]);
 
 const statusTone = (status: string): Tone => {
@@ -364,17 +362,6 @@ const summary = computed(() => {
   };
 });
 
-function sparklineFor(value: number, points = 8): number[] {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 7.5);
-  const seed = Math.abs(Math.sin(safeValue * 12.9898) * 43758.5453);
-  return Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
-    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
-  });
-}
-
 const kpiCards = computed(() => [
   {
     label: "Total Tagihan",
@@ -382,7 +369,6 @@ const kpiCards = computed(() => [
     icon: FileText as Component,
     tone: "sky" as Tone,
     href: index().url,
-    sparklinePoints: sparklineFor(summary.value.totalInvoices),
     meta:
       periodScope.value === "all"
         ? "Semua periode"
@@ -394,7 +380,6 @@ const kpiCards = computed(() => [
     icon: Banknote as Component,
     tone: "violet" as Tone,
     href: index().url,
-    sparklinePoints: sparklineFor(summary.value.totalNominal),
     meta:
       periodScope.value === "all"
         ? "Seluruh tagihan di semua periode"
@@ -412,7 +397,6 @@ const kpiCards = computed(() => [
         status: "PAID",
       },
     }).url,
-    sparklinePoints: sparklineFor(summary.value.totalPaid),
     meta: `${summary.value.paidCount} tagihan lunas · ${summary.value.collectionRate.toFixed(1)}%`,
   },
   {
@@ -427,7 +411,6 @@ const kpiCards = computed(() => [
         status: "OPEN",
       },
     }).url,
-    sparklinePoints: sparklineFor(summary.value.totalOutstanding),
     meta: "Tagihan belum & sebagian dibayar",
   },
 ]);
@@ -470,8 +453,8 @@ const kpiCards = computed(() => [
               Iuran Simpanan Wajib
             </h1>
             <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Monitoring tagihan iuran simpanan wajib anggota per periode.
-              Pilih beberapa tagihan dan proses pelunasan sekaligus.
+              Monitoring tagihan iuran simpanan wajib anggota per periode. Pilih
+              beberapa tagihan dan proses pelunasan sekaligus.
             </p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
@@ -504,10 +487,14 @@ const kpiCards = computed(() => [
               <Info class="size-5" />
             </span>
             <div class="min-w-0">
-              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+              <p
+                class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+              >
                 Periode aktif
               </p>
-              <h2 class="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+              <h2
+                class="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+              >
                 {{ monthlyDuesInfo.title }}
               </h2>
               <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -520,33 +507,45 @@ const kpiCards = computed(() => [
         <div
           class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
         >
-          <div class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          <div
+            class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400"
+          >
             <Wallet class="size-4" />
             Nominal per anggota
           </div>
-          <p class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+          <p
+            class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white"
+          >
             {{ formatCurrency(monthlyDuesInfo.amount) }}
           </p>
         </div>
         <div
           class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
         >
-          <div class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          <div
+            class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400"
+          >
             <Receipt class="size-4" />
             Tagihan dibuat
           </div>
-          <p class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+          <p
+            class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white"
+          >
             {{ formatNumber(monthlyDuesInfo.total_invoices) }}
           </p>
         </div>
         <div
           class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
         >
-          <div class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          <div
+            class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400"
+          >
             <Hash class="size-4" />
             Jatuh tempo
           </div>
-          <p class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white">
+          <p
+            class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white"
+          >
             {{ monthlyDuesInfo.due_date }}
           </p>
         </div>
@@ -555,9 +554,7 @@ const kpiCards = computed(() => [
       <!-- KPI BAND -->
       <Deferred data="stats">
         <template #fallback>
-          <div aria-live="polite" class="sr-only">
-            Memuat ringkasan iuran.
-          </div>
+          <div aria-live="polite" class="sr-only">Memuat ringkasan iuran.</div>
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div
               v-for="i in 4"
@@ -579,7 +576,6 @@ const kpiCards = computed(() => [
             :icon="card.icon"
             :tone="card.tone"
             :href="card.href"
-            :sparkline-points="card.sparklinePoints"
           />
         </section>
       </Deferred>
@@ -604,11 +600,14 @@ const kpiCards = computed(() => [
                 Filter Tagihan
               </h2>
               <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                Saring berdasarkan cakupan periode, status, anggota, atau jenis iuran.
+                Saring berdasarkan cakupan periode, status, anggota, atau jenis
+                iuran.
               </p>
             </div>
           </div>
-          <div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+          <div
+            class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3"
+          >
             <div class="relative w-full sm:max-w-xs">
               <Search
                 class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
@@ -630,7 +629,7 @@ const kpiCards = computed(() => [
               aria-label="Periode"
             />
             <Select v-model="periodScope">
-              <SelectTrigger class="sm:w-40">
+              <SelectTrigger class="sm:w-40" aria-label="Cakupan periode">
                 <SelectValue placeholder="Cakupan periode" />
               </SelectTrigger>
               <SelectContent>
@@ -644,7 +643,7 @@ const kpiCards = computed(() => [
               </SelectContent>
             </Select>
             <Select v-model="status">
-              <SelectTrigger class="sm:w-40">
+              <SelectTrigger class="sm:w-40" aria-label="Status tagihan">
                 <SelectValue placeholder="Semua status" />
               </SelectTrigger>
               <SelectContent>
@@ -658,7 +657,7 @@ const kpiCards = computed(() => [
               </SelectContent>
             </Select>
             <Select v-model="category">
-              <SelectTrigger class="sm:w-40">
+              <SelectTrigger class="sm:w-40" aria-label="Kategori iuran">
                 <SelectValue placeholder="Semua kategori" />
               </SelectTrigger>
               <SelectContent>
@@ -672,7 +671,7 @@ const kpiCards = computed(() => [
               </SelectContent>
             </Select>
             <Select v-model="contributionTypeId">
-              <SelectTrigger class="sm:w-44">
+              <SelectTrigger class="sm:w-44" aria-label="Jenis iuran">
                 <SelectValue placeholder="Semua jenis" />
               </SelectTrigger>
               <SelectContent>
@@ -713,9 +712,7 @@ const kpiCards = computed(() => [
               <CreditCard class="size-4" />
             </span>
             <div>
-              <p
-                class="text-sm font-semibold text-zinc-950 dark:text-white"
-              >
+              <p class="text-sm font-semibold text-zinc-950 dark:text-white">
                 Batch Payment
                 <span
                   v-if="summary.selectedCount > 0"
@@ -749,7 +746,7 @@ const kpiCards = computed(() => [
               />
             </div>
             <Select v-model="markPaidForm.payment_method">
-              <SelectTrigger class="h-9 w-40">
+              <SelectTrigger class="h-9 w-40" aria-label="Metode pembayaran">
                 <SelectValue placeholder="Metode" />
               </SelectTrigger>
               <SelectContent>
@@ -796,9 +793,7 @@ const kpiCards = computed(() => [
             </Button>
             <Button
               class="bg-emerald-700 hover:bg-emerald-800"
-              :disabled="
-                summary.selectedCount === 0 || markPaidForm.processing
-              "
+              :disabled="summary.selectedCount === 0 || markPaidForm.processing"
               @click="showBatchConfirm = true"
             >
               <CheckCircle2 class="mr-2 size-4" />
@@ -830,7 +825,9 @@ const kpiCards = computed(() => [
                       class="inline-flex h-4 w-4 cursor-pointer items-center justify-center"
                     >
                       <input
+                        id="dues-select-all"
                         type="checkbox"
+                        aria-label="Pilih semua tagihan yang dapat dibayar"
                         class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950"
                         :checked="allPayableSelected"
                         :disabled="payableInvoiceIds.length === 0"
@@ -849,7 +846,9 @@ const kpiCards = computed(() => [
                   <th class="px-4 py-3 text-right font-medium">Aksi</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+              <tbody
+                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+              >
                 <tr
                   v-for="invoice in invoices.data"
                   :key="invoice.id"
@@ -863,13 +862,16 @@ const kpiCards = computed(() => [
                   <td class="px-4 py-3">
                     <label class="inline-flex items-center">
                       <input
+                        :id="'dues-select-' + invoice.id"
                         type="checkbox"
+                        :aria-label="
+                          'Pilih tagihan ' +
+                          (invoice.member?.name ?? invoice.id)
+                        "
                         class="size-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950"
                         :checked="selectedInvoiceIds.includes(invoice.id)"
                         :disabled="!isPayable(invoice)"
-                        @change="
-                          toggleInvoice(invoice.id, isPayable(invoice))
-                        "
+                        @change="toggleInvoice(invoice.id, isPayable(invoice))"
                       />
                     </label>
                   </td>
@@ -1028,7 +1030,7 @@ const kpiCards = computed(() => [
                 </Button>
                 <span
                   v-else
-                  class="rounded-md border px-3 py-1.5 text-zinc-400"
+                  class="rounded-md border px-3 py-1.5 text-zinc-500 dark:text-zinc-400"
                   v-html="link.label"
                 />
               </template>
@@ -1066,8 +1068,8 @@ const kpiCards = computed(() => [
                     paymentMethodOptions.find(
                       (o) => o.value === markPaidForm.payment_method,
                     )?.label
-                  }}
-                </span>.
+                  }} </span
+                >.
               </DialogDescription>
             </div>
           </div>
@@ -1087,25 +1089,25 @@ const kpiCards = computed(() => [
                   <th class="px-4 py-2.5 text-right font-medium">Sisa</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+              <tbody
+                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+              >
                 <tr
                   v-for="invoice in selectedInvoices"
                   :key="invoice.id"
                   class="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40"
                 >
                   <td class="px-4 py-2.5">
-                    <p class="text-sm font-medium text-zinc-950 dark:text-white">
+                    <p
+                      class="text-sm font-medium text-zinc-950 dark:text-white"
+                    >
                       {{ invoice.member?.name ?? "—" }}
                     </p>
-                    <p
-                      class="text-[11px] text-zinc-500 dark:text-zinc-400"
-                    >
+                    <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
                       {{ invoice.member?.member_no ?? "—" }}
                     </p>
                   </td>
-                  <td
-                    class="px-4 py-2.5 text-zinc-600 dark:text-zinc-400"
-                  >
+                  <td class="px-4 py-2.5 text-zinc-600 dark:text-zinc-400">
                     {{ invoice.contribution_type?.name ?? "—" }}
                   </td>
                   <td
@@ -1137,10 +1139,7 @@ const kpiCards = computed(() => [
           </p>
         </div>
         <DialogFooter class="gap-2">
-          <Button
-            variant="outline"
-            @click="showBatchConfirm = false"
-          >
+          <Button variant="outline" @click="showBatchConfirm = false">
             Batal
           </Button>
           <Button

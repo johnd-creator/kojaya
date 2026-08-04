@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +19,7 @@ const props = withDefaults(
     cancelLabel?: string;
     variant?: "default" | "danger" | "warning";
     processing?: boolean;
+    confirmButtonClass?: string;
   }>(),
   {
     title: "Konfirmasi aksi",
@@ -28,6 +28,7 @@ const props = withDefaults(
     cancelLabel: "Batal",
     variant: "default",
     processing: false,
+    confirmButtonClass: "",
   },
 );
 
@@ -35,11 +36,6 @@ const emit = defineEmits<{
   confirm: [];
   cancel: [];
 }>();
-
-const descriptionId = computed(
-  () =>
-    `confirm-dialog-description-${props.title.toLowerCase().replace(/\s+/g, "-")}`,
-);
 
 const cancel = (): void => {
   open.value = false;
@@ -53,10 +49,10 @@ const confirm = (): void => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="sm:max-w-md" :aria-describedby="descriptionId">
+    <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
-        <DialogDescription :id="descriptionId">{{ message }}</DialogDescription>
+        <DialogDescription>{{ message }}</DialogDescription>
       </DialogHeader>
 
       <DialogFooter class="gap-2 sm:justify-end">
@@ -71,6 +67,7 @@ const confirm = (): void => {
         <Button
           type="button"
           :variant="variant === 'danger' ? 'destructive' : 'default'"
+          :class="confirmButtonClass"
           :disabled="processing"
           @click="confirm"
         >

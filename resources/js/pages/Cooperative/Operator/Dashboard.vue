@@ -298,7 +298,7 @@ const handleExport = (type: string) => {
             </div>
 
             <div v-if="exceptionData?.unpaid_dues?.length">
-              <h4 class="mb-2 text-sm font-semibold text-amber-600">Iuran Belum Dibayar</h4>
+              <h4 class="mb-2 text-sm font-semibold text-amber-700 dark:text-amber-300">Iuran Belum Dibayar</h4>
               <div class="rounded-lg border border-amber-200 divide-y">
                 <div v-for="due in exceptionData.unpaid_dues" :key="due.id" class="flex items-center justify-between p-3">
                   <div>
@@ -312,7 +312,7 @@ const handleExport = (type: string) => {
             </div>
 
             <div v-if="exceptionData?.low_stock?.length">
-              <h4 class="mb-2 text-sm font-semibold text-orange-600">Stok Rendah</h4>
+              <h4 class="mb-2 text-sm font-semibold text-orange-700 dark:text-orange-300">Stok Rendah</h4>
               <div class="rounded-lg border border-orange-200 divide-y">
                 <div v-for="product in exceptionData.low_stock" :key="product.id" class="flex items-center justify-between p-3">
                   <div>

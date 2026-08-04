@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\CooperativeContributionType;
+use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\MemberStoreAccount;
 use App\Models\Organization;
@@ -38,6 +40,48 @@ class UiAuditSeederTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'ui.pengurus@kojaya.test']);
         $this->assertDatabaseHas('member_store_accounts', ['balance' => -75000, 'status' => 'active']);
         $this->assertDatabaseHas('member_store_funding_requests', ['idempotency_key' => 'ui-audit-transfer-pending', 'status' => 'pending']);
+    }
+
+    public function test_ui_audit_seeder_produces_deterministic_dues_invoices(): void
+    {
+        $this->seed(UiAuditSeeder::class);
+
+        $firstMetrics = $this->invoiceMetrics();
+
+        $this->seed(UiAuditSeeder::class);
+
+        $this->assertSame($firstMetrics, $this->invoiceMetrics());
+    }
+
+    public function test_canonical_dues_invoice_counts_match_expected_seed_state(): void
+    {
+        $this->seed(UiAuditSeeder::class);
+
+        $this->assertSame(16, CooperativeDuesInvoice::query()->count());
+        $this->assertSame(15, CooperativeDuesInvoice::query()->where('status', 'UNPAID')->count());
+        $this->assertSame(1, CooperativeDuesInvoice::query()->where('status', 'PARTIAL')->count());
+        $this->assertSame(0, CooperativeDuesInvoice::query()->where('status', 'PAID')->count());
+
+        $pokok = CooperativeContributionType::query()->where('code', 'POKOK')->first();
+        $wajib = CooperativeContributionType::query()->where('code', 'WAJIB')->first();
+
+        $this->assertSame(8, CooperativeDuesInvoice::query()->where('cooperative_contribution_type_id', $pokok->id)->count());
+        $this->assertSame(8, CooperativeDuesInvoice::query()->where('cooperative_contribution_type_id', $wajib->id)->count());
+    }
+
+    /**
+     * @return array<string, int|float>
+     */
+    private function invoiceMetrics(): array
+    {
+        return [
+            'total' => CooperativeDuesInvoice::query()->count(),
+            'unpaid' => CooperativeDuesInvoice::query()->where('status', 'UNPAID')->count(),
+            'partial' => CooperativeDuesInvoice::query()->where('status', 'PARTIAL')->count(),
+            'paid' => CooperativeDuesInvoice::query()->where('status', 'PAID')->count(),
+            'sum_amount' => (float) CooperativeDuesInvoice::query()->sum('amount'),
+            'sum_paid' => (float) CooperativeDuesInvoice::query()->sum('paid_amount'),
+        ];
     }
 
     public function test_ui_audit_roles_and_password_are_available(): void

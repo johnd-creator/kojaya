@@ -6,6 +6,20 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-07-28 - Admin Koperasi UI/UX Phase 1
+
+- Created feature/admin-koperasi-ui-ux from the reviewed
+  feature/role-ui-ux checkpoint 88d8be1ce28dbc6cfef350ebdf9b3766d779c509.
+- Added an Admin Koperasi workspace/navigation path, organization-scoped
+  operational dashboard payload, daily work queue, KPI summary, and
+  permission-filtered CTAs.
+- Made the dues index read-only on GET; generation remains explicit through the
+  existing POST workflow.
+- Added focused dashboard, organization-scope, dues read-only, and final
+  approval authorization coverage.
+- Removed synthetic dues KPI sparklines and documented canonical visual
+  baseline follow-up for Ubuntu CI.
+
 ## 🎯 2026-07-22 - Web UI Audit Framework Foundation
 
 - Added the Chromium-only Playwright visual/a11y audit harness, isolated Playwright environment example, deterministic `UiAuditSeeder`, role-based storage-state setup, runtime health reports, screenshot manifest, and pilot coverage for Dashboard, Anggota, Saldo Toko, POS, and Profil.
@@ -1075,5 +1089,7 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Jul 23, 2026 | PR #21 UI Audit Stabilization Follow-up | Engineering | Removed the screenshot dependency on Bunny Fonts by routing committed Instrument Sans audit assets, and limited known accessibility-debt fingerprint evaluation to the mandatory desktop surface so full responsive runs do not misclassify desktop-only selectors as new debt. |
 * Jul 23, 2026 | PR #21 Canonical Baseline Correction | Engineering | Reviewed 72 clean Ubuntu 24.04 desktop capture candidates at the exact PR head, confirmed 72 clean runtime reports and correct seeded page states, and adopted the reviewed candidates as the desktop visual baseline source. Host-local rasterization remains advisory. |
 * Jul 26, 2026 | Member UI/UX Stabilization Scope Isolation | Engineering | Removed organization transfer domain behavior from `feature/role-ui-ux`; the follow-up implementation is tracked on `feature/member-organization-transfer`. No historical ledger or organization mutation is performed by the member UI correction branch. |
+* Jul 29, 2026 | Admin Koperasi Payment Responsive Correction | Engineering | Contained the cooperative payment history table within its responsive grid column, added an accessible horizontal-scroll region for desktop/tablet, introduced mobile payment cards with selection and approval affordances, and added layout assertions plus focused mobile accessibility coverage. |
+* Jul 29, 2026 | Admin Koperasi Sidebar Active State | Engineering | Kept the Keuangan Anggota group open for payment and dues routes, normalized active navigation matching to ignore query strings, and added responsive Playwright coverage for active submenu behavior. |
 
-*This log is maintained throughout the project lifecycle. Last updated: July 26, 2026*
+*This log is maintained throughout the project lifecycle. Last updated: July 29, 2026*

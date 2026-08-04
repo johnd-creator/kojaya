@@ -154,7 +154,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
         $deletedInvoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $type->id,
-            'period' => now()->subMonth()->format('Y-m'),
+            'period' => now()->startOfMonth()->subMonth()->format('Y-m'),
             'amount' => 100000,
             'paid_amount' => 0,
             'due_date' => now()->addWeek()->toDateString(),

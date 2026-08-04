@@ -55,7 +55,7 @@ const updateValue = (value: unknown): void => {
 
 <template>
   <Select :model-value="selectValue" @update:model-value="updateValue">
-    <SelectTrigger :class="props.class">
+    <SelectTrigger :class="props.class" :aria-label="placeholder">
       <SelectValue :placeholder="placeholder" />
     </SelectTrigger>
     <SelectContent>

@@ -20,6 +20,8 @@ class UiAuditFixtureController extends Controller
 
         return response()->json([
             'member-positive' => CooperativeMember::query()->where('member_no', 'AUD-001')->value('id'),
+            'member-pending-review' => CooperativeMember::query()->where('member_no', 'AUD-009')->value('id'),
+            'member-revision' => CooperativeMember::query()->where('member_no', 'AUD-010')->value('id'),
             'members-no-account' => CooperativeMember::query()->where('member_no', 'AUD-007')->value('id'),
             'store-credit-positive' => MemberStoreAccount::query()->whereHas('member', fn (Builder $query): Builder => $query->where('member_no', 'AUD-001'))->value('id'),
             'store-credit-negative' => MemberStoreAccount::query()->whereHas('member', fn (Builder $query): Builder => $query->where('member_no', 'AUD-003'))->value('id'),

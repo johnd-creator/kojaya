@@ -2,96 +2,6 @@
   "version": 1,
   "findings": [
     {
-      "screen_id": "dues-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-43\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-005",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "dues-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-44\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-006",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "dues-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-45\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-007",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "dues-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": ".sm\\:w-44",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-008",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "dues-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-47\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-009",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "dues-index-default",
-      "rule": "label",
-      "impact": "critical",
-      "selector": ".rounded",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-010",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "ledger-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-41\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-011",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "ledger-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-42\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-012",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "ledger-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-43\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-013",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "loan-types-index-default",
-      "rule": "color-contrast",
-      "impact": "serious",
-      "selector": ".bg-destructive",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-014",
-      "expires_on": "2026-09-30"
-    },
-    {
       "screen_id": "loans-calculator-default",
       "rule": "label",
       "impact": "critical",
@@ -128,93 +38,12 @@
       "expires_on": "2026-09-30"
     },
     {
-      "screen_id": "loans-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": ".sm\\:max-w-\\[180px\\]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-019",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "loans-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": ".sm\\:max-w-\\[320px\\]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-020",
-      "expires_on": "2026-09-30"
-    },
-    {
       "screen_id": "loans-show-default",
       "rule": "color-contrast",
       "impact": "serious",
       "selector": ".bg-destructive",
       "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
       "tracking_id": "UI-A11Y-021",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "member-savings-default",
-      "rule": "color-contrast",
-      "impact": "serious",
-      "selector": ".text-emerald-600",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-082",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "members-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-39\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-120",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "members-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": ".sm\\:w-44",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-121",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "members-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-41\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-122",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "members-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "button[aria-controls=\"reka-select-content-v-42\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-123",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "members-resignations-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": ".h-10",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-124",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "operator-dashboard-default",
-      "rule": "color-contrast",
-      "impact": "serious",
-      "selector": ".text-orange-600",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-125",
       "expires_on": "2026-09-30"
     },
     {
@@ -728,15 +557,6 @@
       "selector": ".bg-destructive",
       "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
       "tracking_id": "UI-A11Y-182",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "rewards-index-default",
-      "rule": "scrollable-region-focusable",
-      "impact": "serious",
-      "selector": ".overflow-x-auto",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-183",
       "expires_on": "2026-09-30"
     },
     {

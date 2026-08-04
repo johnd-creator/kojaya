@@ -597,4 +597,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 require __DIR__.'/settings.php';
-// require __DIR__.'/auth.php';
+
+// In-app user guide (role and permission filtered documentation center)
+Route::middleware(['auth'])->prefix('documentation')->name('documentation.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Documentation\DocumentationController::class, 'index'])->name('index');
+    Route::get('/{article:slug}', [\App\Http\Controllers\Documentation\DocumentationController::class, 'show'])
+        ->scopeBindings()
+        ->name('show');
+});

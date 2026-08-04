@@ -13,6 +13,7 @@ use App\Models\Budget;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
+use App\Models\DocumentationArticle;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
 use App\Models\Invoice;
@@ -157,6 +158,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CooperativeMember::class, CooperativeMemberPolicy::class);
         Gate::policy(CooperativePayment::class, CooperativePaymentPolicy::class);
         Gate::policy(CooperativeShuPeriod::class, CooperativeShuPeriodPolicy::class);
+        Gate::policy(DocumentationArticle::class, \App\Policies\DocumentationPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(Leave::class, LeavePolicy::class);

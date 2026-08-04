@@ -168,6 +168,11 @@ const allNavItems: NavItem[] = [
     icon: LayoutGrid,
   },
   {
+    title: "Pusat Panduan",
+    href: "/documentation",
+    icon: BookOpen,
+  },
+  {
     title: "User Management",
     href: "#",
     icon: UserPlus,

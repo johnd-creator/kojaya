@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
 import {
-  Activity,
   BarChart3,
   BookOpen,
   FileSearch,
-  HeartPulse,
   LayoutGrid,
   BriefcaseBusiness,
   UserPlus,
@@ -19,13 +17,11 @@ import {
   WalletCards,
   Store,
   Boxes,
-  Bell,
   CreditCard,
   Gift,
   ReceiptText,
   ClipboardCheck,
   UserRound,
-  AlertTriangle,
 } from "lucide-vue-next";
 import { computed } from "vue";
 import { index as assetsIndex } from "@/actions/App/Http/Controllers/AssetController";
@@ -73,7 +69,10 @@ import {
 } from "@/routes/cooperative/loans";
 import { index as cooperativeMembersIndex } from "@/routes/cooperative/members";
 import { index as cooperativeMembersResignationsIndex } from "@/routes/cooperative/members/resignations";
-import { dashboard as operatorDashboard, closing as operatorClosing } from "@/routes/cooperative/operator";
+import {
+  dashboard as operatorDashboard,
+  closing as operatorClosing,
+} from "@/routes/cooperative/operator";
 import { index as cooperativePaymentsIndex } from "@/routes/cooperative/payments";
 import { index as cooperativePosIndex } from "@/routes/cooperative/pos";
 import { index as cooperativePosCoffeeOrdersIndex } from "@/routes/cooperative/pos/coffee-orders";
@@ -86,8 +85,8 @@ import { index as cooperativeReportsIndex } from "@/routes/cooperative/reports";
 import { index as cooperativeSavingsWithdrawalsIndex } from "@/routes/cooperative/savings/withdrawals";
 import { index as cooperativeShuIndex } from "@/routes/cooperative/shu";
 import {
-    index as cooperativeStoreCreditIndex,
-    report as cooperativeStoreCreditReport,
+  index as cooperativeStoreCreditIndex,
+  report as cooperativeStoreCreditReport,
 } from "@/routes/cooperative/store-credit";
 import { index as cooperativeStoreCreditTransfersIndex } from "@/routes/cooperative/store-credit/transfers";
 import { storeAccount as memberStoreAccount } from "@/routes/member";
@@ -97,22 +96,35 @@ import AppLogo from "./AppLogo.vue";
 const page = usePage();
 const userRoles = computed(() => {
   const auth = page.props.auth as any;
-  return (auth?.roles ?? []).map((r: any) => (typeof r === "string" ? r : r.name ?? ""));
+  return (auth?.roles ?? []).map((r: any) =>
+    typeof r === "string" ? r : (r.name ?? ""),
+  );
 });
 const isMember = computed(() => userRoles.value.includes("Anggota"));
 const hasNonMemberRole = computed(
-  () =>
-    isMember.value &&
-    userRoles.value.some((r) => r !== "Anggota"),
+  () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
-const isSystemAdmin = computed(() =>
-  userRoles.value.includes("System Admin") || userRoles.value.includes("Admin Pusat"),
+const isSystemAdmin = computed(
+  () =>
+    userRoles.value.includes("System Admin") ||
+    userRoles.value.includes("Admin Pusat"),
 );
 const userPermissions = computed<string[]>(() => {
   const permissions = page.props.auth?.permissions as string[] | undefined;
 
   return permissions ?? [];
+});
+type MemberAccess = {
+  is_active: boolean;
+  is_pending_review: boolean;
+  can_access_financial_features: boolean;
+  can_access_onboarding: boolean;
+};
+const memberAccess = computed<MemberAccess | null>(() => {
+  const auth = page.props.auth as any;
+
+  return (auth?.member_access ?? null) as MemberAccess | null;
 });
 const canAccess = (permissions?: string | string[]): boolean => {
   // System Admin and Admin Pusat have access to everything
@@ -644,16 +656,43 @@ const allNavItems: NavItem[] = [
       { title: "Pinjaman", href: "/member/loans" },
       { title: "Poin Saya", href: "/member/points" },
       { title: "Rewards", href: "/member/rewards" },
-      { title: "Transaksi", href: "/member/transactions" },
+      { title: "Aktivitas Keuangan", href: "/member/transactions" },
       { title: "Profil", href: "/member/profile" },
     ],
   },
 ] as any[];
 
 const footerNavItems: NavItem[] = [];
-const memberNavItems: NavItem[] = [
+const memberNavItems = computed<NavItem[]>(() => {
+  if (!memberAccess.value?.can_access_financial_features) {
+    return [
+      {
+        title: "Beranda",
+        href: "/member",
+        icon: LayoutGrid,
+      },
+      ...(memberAccess.value?.can_access_onboarding
+        ? [
+            {
+              title: memberAccess.value.is_pending_review
+                ? "Status Pengajuan"
+                : "Onboarding",
+              href: "/member/onboarding",
+              icon: ClipboardCheck,
+            } as NavItem,
+          ]
+        : []),
+      {
+        title: "Profil",
+        href: "/member/profile",
+        icon: UserRound,
+      },
+    ];
+  }
+
+  return [
   {
-    title: "Kojayaku",
+    title: "Beranda",
     href: "/member",
     icon: LayoutGrid,
   },
@@ -682,7 +721,7 @@ const memberNavItems: NavItem[] = [
     ],
   },
   {
-    title: "Transaksi",
+    title: "Aktivitas Keuangan",
     href: "/member/transactions",
     icon: ReceiptText,
   },
@@ -691,13 +730,31 @@ const memberNavItems: NavItem[] = [
     href: "/member/profile",
     icon: UserRound,
   },
-];
+  ];
+});
 const mainNavItems = computed(() =>
-  isMemberOnly.value
-    ? memberNavItems
-    : filterNavByPermission(allNavItems),
+  isMemberOnly.value ? memberNavItems.value : filterNavByPermission(allNavItems),
 );
 const logoHref = computed(() => (isMemberOnly.value ? "/member" : dashboard()));
+const navigationLabel = computed(() => {
+  if (isMemberOnly.value) {
+    return "Kojayaku";
+  }
+
+  if (userRoles.value.includes("Pengurus Koperasi")) {
+    return "Ruang kerja Pengurus";
+  }
+
+  if (userRoles.value.includes("Manajer Koperasi")) {
+    return "Ruang kerja Manajer";
+  }
+
+  if (userRoles.value.includes("Admin Koperasi")) {
+    return "Ruang kerja Admin";
+  }
+
+  return "Platform";
+});
 </script>
 
 <template>
@@ -715,7 +772,7 @@ const logoHref = computed(() => (isMemberOnly.value ? "/member" : dashboard()));
     </SidebarHeader>
 
     <SidebarContent>
-      <NavMain :items="mainNavItems" />
+      <NavMain :items="mainNavItems" :label="navigationLabel" />
     </SidebarContent>
 
     <SidebarFooter>

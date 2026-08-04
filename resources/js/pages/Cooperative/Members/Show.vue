@@ -366,6 +366,7 @@ const showKategori = computed(() => formatKategori(props.member.kategori));
 const showJenis = computed(
   () => props.member.jenis_anggota_label || "—",
 );
+
 </script>
 
 <template>

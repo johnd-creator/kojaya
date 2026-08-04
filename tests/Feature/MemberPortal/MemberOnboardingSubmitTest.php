@@ -114,6 +114,7 @@ class MemberOnboardingSubmitTest extends TestCase
             'jenis_anggota' => 'AB',
             'jenis_kelamin' => 'L',
             'kategori' => 'IP',
+            'status' => CooperativeMember::VALIDATION_ACTIVE,
             'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'onboarding_submitted_at' => Carbon::now()->subDay(),
         ]);

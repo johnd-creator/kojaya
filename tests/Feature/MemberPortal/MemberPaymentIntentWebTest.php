@@ -2,10 +2,14 @@
 
 namespace Tests\Feature\MemberPortal;
 
+use App\Enums\InstallmentStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
+use App\Models\Loan;
+use App\Models\LoanInstallment;
+use App\Models\MemberPaymentIntent;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -374,6 +378,334 @@ class MemberPaymentIntentWebTest extends TestCase
 
         $this->actingAs($this->memberUser)
             ->getJson(route('member.payments.status', $payment))
+            ->assertForbidden();
+    }
+
+    public function test_member_cannot_create_loan_payment_intent_for_another_member_installment(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('Anggota');
+        $otherMember = CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $otherMember->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_fully_paid_loan_installment_is_rejected(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 100000,
+            'status' => InstallmentStatus::Paid,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_pending_loan_payment_intent_is_reused_safely(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        $first = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertCreated();
+        $second = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertCreated();
+
+        $this->assertSame(
+            $first->json('data.payment_intent.id'),
+            $second->json('data.payment_intent.id'),
+        );
+        $this->assertSame(
+            $first->json('data.charge.reference'),
+            $second->json('data.charge.reference'),
+        );
+        $this->assertFalse($first->json('data.charge.reused'));
+        $this->assertTrue($second->json('data.charge.reused'));
+        $this->assertSame(1, MemberPaymentIntent::query()->count());
+    }
+
+    public function test_expired_internal_loan_intent_is_replaced_with_fresh_charge(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        $first = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'QRIS',
+            ])
+            ->assertCreated();
+
+        $oldIntent = MemberPaymentIntent::query()->findOrFail($first->json('data.payment_intent.id'));
+        $oldReference = $oldIntent->gateway_reference;
+        $oldIntent->forceFill(['expires_at' => now()->subMinute()])->save();
+
+        $second = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'QRIS',
+            ])
+            ->assertCreated();
+
+        $newIntent = MemberPaymentIntent::query()->findOrFail($second->json('data.payment_intent.id'));
+
+        $this->assertNotSame($oldIntent->id, $newIntent->id);
+        $this->assertNotSame($oldReference, $newIntent->gateway_reference);
+        $this->assertSame('EXPIRED', $oldIntent->refresh()->gateway_status);
+        $this->assertTrue($newIntent->expires_at?->isFuture());
+        $this->assertFalse($second->json('data.charge.reused'));
+        $this->assertSame(2, MemberPaymentIntent::query()->count());
+    }
+
+    public function test_channel_change_reuses_active_charge_and_reports_actual_channel(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'QRIS',
+            ])
+            ->assertCreated();
+
+        $second = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'VA',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.payment_intent.channel', 'QRIS')
+            ->assertJsonPath('data.payment_intent.requested_channel', 'VA')
+            ->assertJsonPath('data.charge.channel', 'QRIS')
+            ->assertJsonPath('data.charge.requested_channel', 'VA')
+            ->assertJsonPath('data.charge.reused', true);
+
+        $this->assertSame(1, MemberPaymentIntent::query()->count());
+        $this->assertSame('QRIS', $second->json('data.charge.channel'));
+    }
+
+    public function test_active_stale_amount_fails_closed_without_parallel_intent(): void
+    {
+        config(['services.midtrans.server_key' => 'midtrans-server-key']);
+
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 20000,
+            'status' => InstallmentStatus::Partial,
+        ]);
+        $reference = 'KOJ-MPI-STALE-AMOUNT-1';
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'user_id' => $this->memberUser->id,
+            'cooperative_member_id' => $this->member->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'payable_id' => $installment->id,
+            'amount' => 100000,
+            'channel' => 'QRIS',
+            'gateway_provider' => 'midtrans',
+            'gateway_reference' => $reference,
+            'gateway_status' => 'PENDING',
+            'settlement_status' => 'NOT_SETTLED',
+            'expires_at' => now()->addHour(),
+            'gateway_payload' => [
+                'provider' => 'midtrans',
+                'reference' => $reference,
+                'status' => 'PENDING',
+                'channel' => 'QRIS',
+                'amount' => '100000.00',
+                'amount_minor' => 10000000,
+                'qr_string' => '000201...',
+                'expires_at' => now()->addHour()->toIso8601String(),
+                'instructions' => [],
+            ],
+        ]);
+
+        Http::fake([
+            'api.sandbox.midtrans.com/v2/*/status' => Http::response([
+                'transaction_status' => 'pending',
+                'order_id' => $reference,
+                'gross_amount' => '100000.00',
+                'payment_type' => 'qris',
+            ], 200),
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'QRIS',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'LOAN_PAYMENT_INTENT_AMOUNT_STALE');
+
+        $this->assertSame(1, MemberPaymentIntent::query()->count());
+        $this->assertSame('PENDING', $intent->refresh()->gateway_status);
+        Http::assertSentCount(1);
+    }
+
+    public function test_expired_midtrans_intent_gets_new_order_and_idempotency_identity(): void
+    {
+        config(['services.midtrans.server_key' => 'midtrans-server-key']);
+
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+            'status' => InstallmentStatus::Pending,
+        ]);
+
+        Http::fake(function ($request) {
+            if ($request->method() === 'GET') {
+                return Http::response([
+                    'transaction_status' => 'expire',
+                    'order_id' => 'KOJ-MPI-OLD-1',
+                    'gross_amount' => '100000.00',
+                    'payment_type' => 'qris',
+                ], 200);
+            }
+
+            $payload = $request->data();
+            $orderId = $payload['transaction_details']['order_id'];
+
+            return Http::response([
+                'status_code' => '201',
+                'transaction_status' => 'pending',
+                'order_id' => $orderId,
+                'gross_amount' => '100000.00',
+                'qr_string' => '000201-'.$orderId,
+                'expiry_time' => now()->addDay()->format('Y-m-d H:i:s'),
+            ], 201);
+        });
+
+        $first = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'QRIS',
+            ])
+            ->assertCreated();
+
+        $oldIntent = MemberPaymentIntent::query()->findOrFail($first->json('data.payment_intent.id'));
+        $oldIntent->forceFill(['expires_at' => now()->subMinute()])->save();
+
+        $second = $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+                'channel' => 'QRIS',
+            ])
+            ->assertCreated();
+
+        $postRequests = collect(Http::recorded())->filter(fn ($pair): bool => $pair[0]->method() === 'POST');
+        $idempotencyKeys = $postRequests->map(fn ($pair): ?string => $pair[0]->header('Idempotency-Key')[0] ?? null)->values();
+
+        $this->assertNotSame($first->json('data.charge.reference'), $second->json('data.charge.reference'));
+        $this->assertCount(2, $idempotencyKeys->unique());
+        $this->assertSame(2, MemberPaymentIntent::query()->count());
+        $this->assertSame('EXPIRED', $oldIntent->refresh()->gateway_status);
+    }
+
+    public function test_paid_loan_intent_is_not_replaced(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+            'status' => InstallmentStatus::Pending,
+        ]);
+        $intent = MemberPaymentIntent::factory()->create([
+            'user_id' => $this->memberUser->id,
+            'cooperative_member_id' => $this->member->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'payable_id' => $installment->id,
+            'gateway_status' => 'PAID',
+            'settlement_status' => 'SETTLING',
+            'settled_at' => null,
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->postJson(route('member.loans.installments.payment-intent'), [
+                'loan_installment_id' => $installment->id,
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'LOAN_PAYMENT_INTENT_ALREADY_PAID');
+
+        $this->assertSame(1, MemberPaymentIntent::query()->count());
+        $this->assertSame('PAID', $intent->refresh()->gateway_status);
+    }
+
+    public function test_expiry_service_expires_non_order_loan_intent_without_reservation_logic(): void
+    {
+        $loan = Loan::factory()->active()->create(['cooperative_member_id' => $this->member->id]);
+        $installment = LoanInstallment::factory()->create(['loan_id' => $loan->id]);
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $this->member->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'payable_id' => $installment->id,
+            'gateway_reference' => null,
+            'gateway_status' => 'PENDING',
+            'expires_at' => now()->subMinute(),
+            'reservation_status' => null,
+            'settlement_status' => 'NOT_SETTLED',
+        ]);
+
+        $this->assertTrue(app(\App\Services\Integrations\MemberPaymentIntentStateService::class)->expireStaleIntent($intent));
+        $this->assertSame('EXPIRED', $intent->refresh()->gateway_status);
+        $this->assertNull($intent->refresh()->reservation_status);
+    }
+
+    public function test_loan_payment_intent_status_blocks_another_member(): void
+    {
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('Anggota');
+        $otherMember = CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+        $intent = MemberPaymentIntent::factory()->create([
+            'user_id' => $otherUser->id,
+            'cooperative_member_id' => $otherMember->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'gateway_status' => 'PENDING',
+        ]);
+
+        $this->actingAs($this->memberUser)
+            ->getJson(route('member.loans.payment-intents.status', $intent))
             ->assertForbidden();
     }
 

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\CooperativeNotificationOutbox;
+use App\Models\Loan;
+use App\Models\LoanInstallment;
 use App\Models\MemberPaymentChargeAttempt;
 use App\Models\MemberPaymentIntent;
 use App\Models\Organization;
@@ -923,6 +925,76 @@ class PaymentConcurrencyTest extends TestCase
         $this->assertTrue($intent->isStateCombinationValid(), 'C8: valid state combination');
     }
 
+    // ── C9: Parallel loan installment requests → one intent and charge ──
+
+    public function test_c9_parallel_loan_installment_requests_create_one_charge(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $org->id,
+            'user_id' => $user->id,
+        ]);
+        $loan = Loan::factory()->active()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $org->id,
+        ]);
+        $installment = LoanInstallment::factory()->create([
+            'loan_id' => $loan->id,
+            'amount_due' => 100000,
+            'amount_paid' => 0,
+        ]);
+
+        $startFile = $this->workingDirectory.'/c9-start.signal';
+        $resultDir = $this->workingDirectory.'/results';
+        mkdir($resultDir);
+
+        $processes = [];
+        for ($i = 0; $i < 2; $i++) {
+            $processes[] = $this->startWorker(
+                $this->writeWorkerScript('c9-loan-charge', [
+                    'member_id' => $member->id,
+                    'installment_id' => $installment->id,
+                ]),
+                $startFile,
+                $resultDir,
+                "c9-worker-{$i}",
+                [
+                    'member_id' => $member->id,
+                    'installment_id' => $installment->id,
+                ],
+            );
+        }
+
+        usleep(300000);
+        touch($startFile);
+
+        $results = [
+            $this->finishWorker($processes[0], $resultDir, 'c9-worker-0'),
+            $this->finishWorker($processes[1], $resultDir, 'c9-worker-1'),
+        ];
+
+        $this->assertCount(2, $results);
+        $this->assertSame(1, MemberPaymentIntent::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
+            ->where('payable_id', $installment->id)
+            ->count());
+
+        $intent = MemberPaymentIntent::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
+            ->where('payable_id', $installment->id)
+            ->firstOrFail();
+
+        $this->assertSame(1, MemberPaymentChargeAttempt::query()
+            ->where('member_payment_intent_id', $intent->id)
+            ->count());
+        $this->assertNotNull($intent->refresh()->gateway_reference);
+        $this->assertSame('PENDING', $intent->gateway_status);
+        $this->assertTrue($intent->isStateCombinationValid());
+    }
+
     // ── Worker helpers ──────────────────────────────────────────────────
 
     /**
@@ -949,6 +1021,7 @@ class PaymentConcurrencyTest extends TestCase
             'c7-order' => $this->workerTemplateC7Order(),
             'c8-recovery' => $this->workerTemplateC8Recovery(),
             'c8-charge' => $this->workerTemplateC8Charge(),
+            'c9-loan-charge' => $this->workerTemplateC9LoanCharge(),
             default => throw new \InvalidArgumentException("Unknown action: {$action}"),
         };
 
@@ -1371,6 +1444,43 @@ try {
         'ok' => true,
         'reference' => $charge['reference'] ?? null,
         'status' => $charge['status'] ?? null,
+    ]));
+    exit(0);
+} catch (Throwable $throwable) {
+    file_put_contents($resultFile, json_encode([
+        'ok' => false,
+        'class' => $throwable::class,
+        'message' => $throwable->getMessage(),
+    ]));
+    exit(1);
+}
+PHP;
+    }
+
+    private function workerTemplateC9LoanCharge(): string
+    {
+        return <<<'PHP'
+use App\Models\CooperativeMember;
+use App\Services\Integrations\LoanPaymentIntentService;
+use App\Services\Integrations\PaymentIntentChargeService;
+
+$member = CooperativeMember::query()->findOrFail((int) $params['member_id']);
+$loanIntentService = app(LoanPaymentIntentService::class);
+$chargeService = app(PaymentIntentChargeService::class);
+
+try {
+    $resolution = $loanIntentService->resolveOrCreate(
+        member: $member,
+        installmentId: (int) $params['installment_id'],
+        userId: $member->user_id,
+        requestedChannel: 'QRIS',
+    );
+    $charge = $chargeService->ensureCharge($resolution->intent->refresh());
+
+    file_put_contents($resultFile, json_encode([
+        'ok' => true,
+        'intent_id' => $resolution->intent->id,
+        'reference' => $charge['reference'] ?? null,
     ]));
     exit(0);
 } catch (Throwable $throwable) {

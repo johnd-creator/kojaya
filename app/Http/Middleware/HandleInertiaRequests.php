@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Cooperative\MemberAccessService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -45,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $this->authenticatedUserData($request->user()),
                 'roles' => fn () => $request->user()?->getRoleNames() ?? [],
                 'permissions' => fn () => $request->user()?->getAllPermissions()->pluck('name')->values() ?? [],
+                'member_access' => fn () => app(MemberAccessService::class)->for($request->user()?->cooperativeMember),
             ],
             'appearance' => $request->cookie('appearance') ?? 'system',
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

@@ -21,6 +21,7 @@ import type { NavItem } from "@/types";
 
 defineProps<{
   items: NavItem[];
+  label?: string;
 }>();
 
 const { isCurrentUrl } = useCurrentUrl();
@@ -28,7 +29,7 @@ const { isCurrentUrl } = useCurrentUrl();
 
 <template>
   <SidebarGroup class="px-2 py-0">
-    <SidebarGroupLabel>Platform</SidebarGroupLabel>
+    <SidebarGroupLabel>{{ label ?? "Platform" }}</SidebarGroupLabel>
     <SidebarMenu>
       <template v-for="item in items" :key="item.title">
         <Collapsible
@@ -42,7 +43,9 @@ const { isCurrentUrl } = useCurrentUrl();
           <SidebarMenuItem>
             <CollapsibleTrigger as-child>
               <SidebarMenuButton :tooltip="item.title">
-                <span v-if="item.icon" class="shrink-0"><component :is="item.icon" /></span>
+                <span v-if="item.icon" class="shrink-0"
+                  ><component :is="item.icon"
+                /></span>
                 <span>{{ item.title }}</span>
                 <ChevronRight
                   class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
@@ -76,7 +79,9 @@ const { isCurrentUrl } = useCurrentUrl();
             :tooltip="item.title"
           >
             <Link :href="item.href" prefetch>
-              <span v-if="item.icon" class="shrink-0"><component :is="item.icon" /></span>
+              <span v-if="item.icon" class="shrink-0"
+                ><component :is="item.icon"
+              /></span>
               <span>{{ item.title }}</span>
             </Link>
           </SidebarMenuButton>

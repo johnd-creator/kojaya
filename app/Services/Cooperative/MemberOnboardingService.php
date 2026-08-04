@@ -12,7 +12,7 @@ class MemberOnboardingService
      */
     public function status(CooperativeMember $member): array
     {
-        $progress = $this->progressFor($member);
+        $progress = $this->progressForRead($member);
         $profileComplete = $this->profileIsComplete($member);
         $firstSavingsPaid = $member->payments()->where('status', 'APPROVED')->exists()
             || $member->ledgerEntries()->where('credit', '>', 0)->exists();
@@ -55,10 +55,6 @@ class MemberOnboardingService
         $completedCount = collect($steps)->where('completed', true)->count();
         $isComplete = $completedCount === count($steps);
 
-        if ($isComplete && $progress->completed_at === null) {
-            $progress->update(['completed_at' => now()]);
-        }
-
         return [
             'member_id' => $member->id,
             'completed_steps' => $completedCount,
@@ -85,6 +81,10 @@ class MemberOnboardingService
         $progress = $this->progressFor($member);
         $progress->update([$column => $progress->{$column} ?? now()]);
 
+        if ($this->isComplete($progress->refresh())) {
+            $progress->update(['completed_at' => $progress->completed_at ?? now()]);
+        }
+
         return $progress->refresh();
     }
 
@@ -101,6 +101,22 @@ class MemberOnboardingService
         return MemberOnboardingProgress::query()->firstOrCreate([
             'cooperative_member_id' => $member->id,
         ]);
+    }
+
+    private function progressForRead(CooperativeMember $member): MemberOnboardingProgress
+    {
+        return MemberOnboardingProgress::query()
+            ->where('cooperative_member_id', $member->id)
+            ->first()
+            ?? new MemberOnboardingProgress(['cooperative_member_id' => $member->id]);
+    }
+
+    private function isComplete(MemberOnboardingProgress $progress): bool
+    {
+        return $progress->profile_completed_at !== null
+            && $progress->first_savings_paid_at !== null
+            && $progress->loan_intro_seen_at !== null
+            && $progress->reward_intro_seen_at !== null;
     }
 
     private function profileIsComplete(CooperativeMember $member): bool

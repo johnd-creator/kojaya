@@ -55,11 +55,7 @@ import {
   store as storeRoute,
 } from "@/routes/cooperative/members/opening-balance";
 
-type Category =
-  | "POKOK"
-  | "WAJIB"
-  | "SUKARELA"
-  | "KHUSUS";
+type Category = "POKOK" | "WAJIB" | "SUKARELA" | "KHUSUS";
 
 type SourceType =
   | "MIGRATION_LEDGER"
@@ -120,7 +116,7 @@ const props = defineProps<{
     organization_name: string | null;
   };
   contribution_types: ContributionType[];
-  source_types: SourceType[];
+  source_types: Record<SourceType, string>;
   history: HistoryBatch[];
   capabilities: {
     can_post: boolean;
@@ -135,7 +131,9 @@ const props = defineProps<{
 const { can } = useCan();
 const canManage = computed(() => can("manage_cooperative_opening_balance"));
 
-const flash = computed(() => usePage().props.flash as { success?: string } | undefined);
+const flash = computed(
+  () => usePage().props.flash as { success?: string } | undefined,
+);
 
 const step = ref<number>(1);
 const steps = [
@@ -151,7 +149,10 @@ const form = useForm({
   calculation_end_period: props.default_period.end ?? "",
   include_current_month: false,
   contribution_types: [] as number[],
-  overrides: {} as Record<string, { unit_amount?: number | null; reason?: string | null }>,
+  overrides: {} as Record<
+    string,
+    { unit_amount?: number | null; reason?: string | null }
+  >,
   source_type: "MIGRATION_LEDGER" as SourceType,
   source_reference: "",
   source_document_date: "",
@@ -215,7 +216,14 @@ const overrideEntries = computed(() =>
         ? { contribution: ct, value }
         : null;
     })
-    .filter((entry): entry is { contribution: ContributionType; value: { unit_amount?: number | null; reason?: string | null } } => entry !== null),
+    .filter(
+      (
+        entry,
+      ): entry is {
+        contribution: ContributionType;
+        value: { unit_amount?: number | null; reason?: string | null };
+      } => entry !== null,
+    ),
 );
 
 const stepValid = computed(() => {
@@ -231,7 +239,10 @@ const stepValid = computed(() => {
   }
   if (step.value === 3) {
     return overrideEntries.value.every((entry) => {
-      if (entry.value.unit_amount === undefined || entry.value.unit_amount === null) {
+      if (
+        entry.value.unit_amount === undefined ||
+        entry.value.unit_amount === null
+      ) {
         return true;
       }
       if (!entry.value.reason || entry.value.reason.trim().length < 5) {
@@ -329,26 +340,28 @@ async function calculatePreview() {
 }
 
 function submitDraft() {
-  form.transform((data) => ({
-    ...data,
-    overrides: Object.fromEntries(
-      overrideEntries.value.map((entry) => [
-        entry.contribution.id,
-        {
-          unit_amount: entry.value.unit_amount ?? null,
-          reason: entry.value.reason ?? null,
-        },
-      ]),
-    ),
-  })).post(storeRoute(props.member.id).url, {
-    onSuccess: () => {
-      router.reload({ only: ["history", "flash"] });
-      step.value = 1;
-      form.reset();
-      form.calculation_start_period = props.default_period.start ?? "";
-      form.calculation_end_period = props.default_period.end ?? "";
-    },
-  });
+  form
+    .transform((data) => ({
+      ...data,
+      overrides: Object.fromEntries(
+        overrideEntries.value.map((entry) => [
+          entry.contribution.id,
+          {
+            unit_amount: entry.value.unit_amount ?? null,
+            reason: entry.value.reason ?? null,
+          },
+        ]),
+      ),
+    }))
+    .post(storeRoute(props.member.id).url, {
+      onSuccess: () => {
+        router.reload({ only: ["history", "flash"] });
+        step.value = 1;
+        form.reset();
+        form.calculation_start_period = props.default_period.start ?? "";
+        form.calculation_end_period = props.default_period.end ?? "";
+      },
+    });
 }
 
 const postDialogOpen = ref(false);
@@ -363,18 +376,22 @@ function openPostDialog(batchId: number) {
 
 function confirmPost() {
   if (!postingBatchId.value) return;
-  router.post(postBatchRoute(postingBatchId.value).url, {
-    confirmation_notes: postNotes.value,
-  }, {
-    onSuccess: () => {
-      postDialogOpen.value = false;
-      postingBatchId.value = null;
-      router.reload({ only: ["history", "flash"] });
+  router.post(
+    postBatchRoute(postingBatchId.value).url,
+    {
+      confirmation_notes: postNotes.value,
     },
-    onError: () => {
-      // keep dialog open
+    {
+      onSuccess: () => {
+        postDialogOpen.value = false;
+        postingBatchId.value = null;
+        router.reload({ only: ["history", "flash"] });
+      },
+      onError: () => {
+        // keep dialog open
+      },
     },
-  });
+  );
 }
 
 const voidDialogOpen = ref(false);
@@ -395,20 +412,24 @@ function confirmVoid() {
     return;
   }
   voidError.value = null;
-  router.post(voidBatchRoute(voidBatchId.value).url, {
-    reason: voidReason.value,
-  }, {
-    onSuccess: () => {
-      voidDialogOpen.value = false;
-      voidBatchId.value = null;
-      voidReason.value = "";
-      router.reload({ only: ["history", "flash"] });
+  router.post(
+    voidBatchRoute(voidBatchId.value).url,
+    {
+      reason: voidReason.value,
     },
-    onError: (errors) => {
-      voidError.value =
-        errors?.reason ?? "Gagal melakukan void. Periksa kembali input Anda.";
+    {
+      onSuccess: () => {
+        voidDialogOpen.value = false;
+        voidBatchId.value = null;
+        voidReason.value = "";
+        router.reload({ only: ["history", "flash"] });
+      },
+      onError: (errors) => {
+        voidError.value =
+          errors?.reason ?? "Gagal melakukan void. Periksa kembali input Anda.";
+      },
     },
-  });
+  );
 }
 
 const canShowWizard = computed(() => props.member.status !== "RESIGNED");
@@ -426,14 +447,14 @@ watch(
 </script>
 
 <template>
-  <AppLayout
-    :title="`Wizard Saldo Awal - ${member.nama_anggota}`"
-  >
+  <AppLayout :title="`Wizard Saldo Awal - ${member.nama_anggota}`">
     <Head :title="`Wizard Saldo Awal - ${member.nama_anggota}`" />
 
     <PageContainer>
       <template #header>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div class="flex items-center gap-3">
             <Button variant="ghost" size="icon" as-child>
               <Link :href="`/cooperative/members/${member.id}`">
@@ -505,9 +526,11 @@ watch(
                 v-for="s in steps"
                 :key="s.id"
                 class="flex flex-col rounded-md border px-3 py-2 text-xs"
-                :class="step >= s.id
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-200'
-                  : 'border-muted text-muted-foreground'"
+                :class="
+                  step >= s.id
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-200'
+                    : 'border-muted text-muted-foreground'
+                "
               >
                 <span class="font-semibold">Langkah {{ s.id }}</span>
                 <span class="text-[11px] uppercase tracking-wide">
@@ -549,12 +572,12 @@ watch(
                 <Checkbox
                   id="include-current"
                   :model-value="form.include_current_month"
-                  @update:model-value="(value: boolean) => (form.include_current_month = !!value)"
+                  @update:model-value="
+                    (value: boolean) => (form.include_current_month = !!value)
+                  "
                 />
                 <div>
-                  <Label for="include-current">
-                    Sertakan bulan berjalan
-                  </Label>
+                  <Label for="include-current"> Sertakan bulan berjalan </Label>
                   <p class="text-muted-foreground text-xs">
                     Otomatis menambahkan bulan saat ini ke akhir periode.
                   </p>
@@ -574,18 +597,18 @@ watch(
               >
                 <div class="mb-3 flex items-center justify-between">
                   <p class="font-semibold">{{ category }}</p>
-                  <Badge variant="outline">
-                    {{ group.length }} jenis
-                  </Badge>
+                  <Badge variant="outline"> {{ group.length }} jenis </Badge>
                 </div>
                 <div class="grid gap-3 md:grid-cols-2">
                   <label
                     v-for="ct in group"
                     :key="ct.id"
                     class="flex cursor-pointer items-start gap-3 rounded-md border p-3 transition hover:border-emerald-300"
-                    :class="form.contribution_types.includes(ct.id)
-                      ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
-                      : ''"
+                    :class="
+                      form.contribution_types.includes(ct.id)
+                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
+                        : ''
+                    "
                   >
                     <Checkbox
                       :model-value="form.contribution_types.includes(ct.id)"
@@ -640,7 +663,13 @@ watch(
                     min="0"
                     step="1000"
                     :model-value="form.overrides[ct.id]?.unit_amount ?? ''"
-                    @update:model-value="(value) => setOverrideAmount(ct.id, value === '' ? null : Number(value))"
+                    @update:model-value="
+                      (value) =>
+                        setOverrideAmount(
+                          ct.id,
+                          value === '' ? null : Number(value),
+                        )
+                    "
                   />
                 </div>
                 <div>
@@ -648,13 +677,21 @@ watch(
                   <Input
                     :id="`reason-${ct.id}`"
                     :model-value="form.overrides[ct.id]?.reason ?? ''"
-                    @update:model-value="(value) => setOverrideReason(ct.id, value)"
+                    @update:model-value="
+                      (value) => setOverrideReason(ct.id, value)
+                    "
                   />
                   <p
-                    v-if="form.overrides[ct.id]?.unit_amount !== undefined && form.overrides[ct.id]?.unit_amount !== null && (!form.overrides[ct.id]?.reason || ((form.overrides[ct.id]?.reason?.length ?? 0) < 5))"
+                    v-if="
+                      form.overrides[ct.id]?.unit_amount !== undefined &&
+                      form.overrides[ct.id]?.unit_amount !== null &&
+                      (!form.overrides[ct.id]?.reason ||
+                        (form.overrides[ct.id]?.reason?.length ?? 0) < 5)
+                    "
                     class="mt-1 text-xs text-rose-600"
                   >
-                    Alasan wajib diisi minimal 5 karakter bila mengisi tarif override.
+                    Alasan wajib diisi minimal 5 karakter bila mengisi tarif
+                    override.
                   </p>
                 </div>
               </div>
@@ -669,11 +706,11 @@ watch(
                   class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 >
                   <option
-                    v-for="src in source_types"
-                    :key="src"
-                    :value="src"
+                    v-for="(label, value) in source_types"
+                    :key="value"
+                    :value="value"
                   >
-                    {{ src }}
+                    {{ label }}
                   </option>
                 </select>
                 <p
@@ -770,14 +807,17 @@ watch(
                       class="mt-0.5 size-5 shrink-0"
                       aria-hidden="true"
                     >
-                      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <path
+                        d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                      />
                       <line x1="12" y1="9" x2="12" y2="13" />
                       <line x1="12" y1="17" x2="12.01" y2="17" />
                     </svg>
                     <div class="flex-1 space-y-2">
                       <p class="font-semibold">
-                        Perhatian: ditemukan {{ preview.conflicts.length }} mutasi
-                        simpanan yang berpotensi tumpang tindih.
+                        Perhatian: ditemukan
+                        {{ preview.conflicts.length }} mutasi simpanan yang
+                        berpotensi tumpang tindih.
                       </p>
                       <p class="text-xs">
                         Tinjau daftar berikut. Jika mutasi di bawah ini memang
@@ -808,8 +848,8 @@ watch(
                             v-if="conflict.period"
                             class="text-[11px] text-amber-700"
                           >
-                            Periode {{ conflict.period }} &middot;
-                            Nominal {{ formatCurrency(conflict.amount) }}
+                            Periode {{ conflict.period }} &middot; Nominal
+                            {{ formatCurrency(conflict.amount) }}
                             <span v-if="conflict.posted_at">
                               &middot; diposting
                               {{ formatDate(conflict.posted_at) }}
@@ -828,7 +868,9 @@ watch(
                         <th class="px-3 py-2 font-medium">Jenis</th>
                         <th class="px-3 py-2 text-right font-medium">Bulan</th>
                         <th class="px-3 py-2 text-right font-medium">Tarif</th>
-                        <th class="px-3 py-2 text-right font-medium">Subtotal</th>
+                        <th class="px-3 py-2 text-right font-medium">
+                          Subtotal
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -944,7 +986,9 @@ watch(
                 class="border-muted"
               >
                 <CardHeader class="pb-2">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div
+                    class="flex flex-wrap items-center justify-between gap-2"
+                  >
                     <StatusPill
                       :label="batch.status_label"
                       :tone="batch.status_tone"
@@ -978,16 +1022,10 @@ watch(
                       </span>
                     </li>
                   </ul>
-                  <div
-                    v-if="batch.posted_at"
-                    class="text-emerald-600 text-xs"
-                  >
+                  <div v-if="batch.posted_at" class="text-emerald-600 text-xs">
                     Diposting pada {{ formatDate(batch.posted_at) }}
                   </div>
-                  <div
-                    v-if="batch.voided_at"
-                    class="text-rose-600 text-xs"
-                  >
+                  <div v-if="batch.voided_at" class="text-rose-600 text-xs">
                     Di-void: {{ batch.void_reason }}
                   </div>
                   <div class="flex flex-wrap gap-2 pt-2">
@@ -1033,7 +1071,8 @@ watch(
         <CardContent class="flex items-start gap-3 py-4">
           <ClipboardList class="mt-0.5 size-5 text-muted-foreground" />
           <p class="text-sm text-muted-foreground">
-            Silakan aktifkan kembali anggota ini untuk melanjutkan wizard saldo awal.
+            Silakan aktifkan kembali anggota ini untuk melanjutkan wizard saldo
+            awal.
           </p>
         </CardContent>
       </Card>
@@ -1085,10 +1124,7 @@ watch(
             rows="3"
             placeholder="Mis. Salah periode awal, koreksi nominal, dsb."
           />
-          <p
-            v-if="voidError"
-            class="text-xs text-rose-600"
-          >
+          <p v-if="voidError" class="text-xs text-rose-600">
             {{ voidError }}
           </p>
           <DialogFooter>

@@ -132,7 +132,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
     Route::prefix('member')->name('member.')->middleware('member')->group(function () {
         Route::get('/', [\App\Http\Controllers\MemberPortalController::class, 'dashboard'])->name('dashboard');
-        Route::get('/store-account', [\App\Http\Controllers\MemberPortalController::class, 'storeAccount'])->name('store-account');
+        Route::get('/store-account', [\App\Http\Controllers\MemberPortalController::class, 'storeAccount'])
+            ->middleware('member.active')
+            ->name('store-account');
         Route::get('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'onboarding'])->name('onboarding');
         Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
@@ -148,6 +150,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/savings', [\App\Http\Controllers\MemberPortalController::class, 'savings'])->name('savings');
             Route::get('/loans', [\App\Http\Controllers\MemberPortalController::class, 'loans'])->name('loans');
             Route::post('/loans', [\App\Http\Controllers\MemberPortalController::class, 'applyLoan'])->name('loans.store');
+            Route::post('/loans/installments/payment-intent', [\App\Http\Controllers\MemberPortalController::class, 'createLoanPaymentIntent'])->name('loans.installments.payment-intent');
+            Route::get('/loans/payment-intents/{intent}/status', [\App\Http\Controllers\MemberPortalController::class, 'loanPaymentIntentStatus'])->name('loans.payment-intents.status');
             Route::get('/points', [\App\Http\Controllers\MemberPortalController::class, 'points'])->name('points');
             Route::get('/rewards', [\App\Http\Controllers\MemberPortalController::class, 'rewards'])->name('rewards');
             Route::post('/rewards/{reward}/redeem', [\App\Http\Controllers\MemberPortalController::class, 'redeemReward'])->name('rewards.redeem');

@@ -3,8 +3,6 @@
 namespace App\Services\Cooperative;
 
 use App\Models\CooperativeMember;
-use App\Models\MemberOnboardingProgress;
-use Illuminate\Support\Carbon;
 
 class MemberProfileCompletenessService
 {
@@ -48,15 +46,6 @@ class MemberProfileCompletenessService
         $total = count(self::REQUIRED_FIELDS);
         $percent = (int) round(($completed / max($total, 1)) * 100);
         $isComplete = $completed === $total;
-
-        $progress = MemberOnboardingProgress::query()->firstOrNew([
-            'cooperative_member_id' => $member->id,
-        ]);
-
-        if ($isComplete && $progress->profile_completed_at === null) {
-            $progress->profile_completed_at = Carbon::now();
-            $progress->save();
-        }
 
         $user = $member->user;
         $googleAccount = $user?->socialAccounts()->where('provider', 'google')->latest('last_login_at')->first();

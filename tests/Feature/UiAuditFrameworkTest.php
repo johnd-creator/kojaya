@@ -31,6 +31,34 @@ class UiAuditFrameworkTest extends TestCase
         $this->assertCount(count($names), array_unique($names), 'Duplicate screenshot name in UI audit registry.');
     }
 
+    public function test_registered_desktop_accessibility_screens_have_one_owner(): void
+    {
+        $registry = json_decode((string) file_get_contents(base_path('tests/visual/coverage/cooperative-pages.json')), true, 512, JSON_THROW_ON_ERROR);
+        $inventoryOwned = collect($registry['entries'])
+            ->filter(static fn (array $entry): bool => (bool) ($entry['accessibility'] ?? false)
+                && ($entry['state'] ?? null) === 'default'
+                && in_array('desktop', $entry['viewport_policy'] ?? [], true))
+            ->pluck('id')
+            ->all();
+
+        $duplicates = [];
+        foreach (glob(base_path('tests/visual/accessibility/*.spec.ts')) ?: [] as $path) {
+            if (basename($path) === 'inventory.accessibility.spec.ts') {
+                continue;
+            }
+
+            preg_match_all('/screen\("([^"]+)"\)/', (string) file_get_contents($path), $matches);
+            foreach ($matches[1] ?? [] as $screenId) {
+                if (in_array($screenId, $inventoryOwned, true)) {
+                    $duplicates[] = $screenId.' ('.basename($path).')';
+                }
+            }
+        }
+
+        $this->assertSame([], $duplicates, 'A registered desktop accessibility screen has duplicate owners.');
+        $this->assertStringContainsString('assertUniqueAccessibilityOwners()', (string) file_get_contents(base_path('tests/visual/accessibility/inventory.accessibility.spec.ts')));
+    }
+
     public function test_manifest_and_runtime_outputs_are_generated_by_the_harness(): void
     {
         $teardown = file_get_contents(base_path('tests/visual/global-teardown.ts'));
@@ -38,8 +66,53 @@ class UiAuditFrameworkTest extends TestCase
 
         $this->assertStringContainsString('manifest.json', (string) $teardown);
         $this->assertStringContainsString('JSON.stringify(', (string) $teardown);
+        $this->assertStringContainsString('framework_version: 3', (string) $teardown);
+        $this->assertStringContainsString('route_coverage: routeCoverage', (string) $teardown);
+        $this->assertStringContainsString('visual-entry-coverage.json', (string) $teardown);
         $this->assertStringContainsString('ui-audit-output/runtime', (string) file_get_contents(base_path('tests/visual/helpers/runtime-health.ts')));
         $this->assertStringContainsString('screenshot:', (string) $manifestHelper);
+    }
+
+    public function test_route_and_visual_coverage_artifacts_are_not_overwritten(): void
+    {
+        $teardown = (string) file_get_contents(base_path('tests/visual/global-teardown.ts'));
+
+        $this->assertStringNotContainsString('writeFile(path.join(outputDir, "coverage", "cooperative-route-coverage.json")', $teardown);
+        $this->assertStringNotContainsString('writeFile(path.join(outputDir, "coverage", "cooperative-route-coverage.md")', $teardown);
+        $this->assertStringContainsString('writeFile(path.join(outputDir, "coverage", "visual-entry-coverage.json")', $teardown);
+        $this->assertStringContainsString('writeFile(path.join(outputDir, "coverage", "visual-entry-coverage.md")', $teardown);
+
+        $workflow = (string) file_get_contents(base_path('.github/workflows/ui-audit.yml'));
+        $this->assertStringContainsString('Resolve UI audit metadata', $workflow);
+        $this->assertStringContainsString('UI_AUDIT_DEFAULT_BRANCH_SHA', $workflow);
+        $this->assertStringContainsString('UI_AUDIT_REQUESTED_MODE', $workflow);
+        $this->assertStringContainsString('npm run ui:verify-artifact', $workflow);
+        $this->assertStringNotContainsString('github.event.pull_request.base.sha || github.sha', $workflow);
+
+        $globalSetup = (string) file_get_contents(base_path('tests/visual/global-setup.ts'));
+        $setupHelper = (string) file_get_contents(base_path('tests/visual/global-setup-helpers.mjs'));
+        $this->assertStringContainsString('prepareAuditOutput', $globalSetup);
+        $this->assertStringContainsString('ui-audit:coverage', $setupHelper);
+        $this->assertStringContainsString('await fs.rm(outputDir', $setupHelper);
+        $this->assertStringNotContainsString('ui-audit:coverage', $workflow);
+    }
+
+    public function test_accessibility_metrics_are_node_based_and_non_negative(): void
+    {
+        $helper = (string) file_get_contents(base_path('tests/visual/helpers/accessibility.ts'));
+
+        foreach ([
+            'blocking_rule_count',
+            'blocking_node_count',
+            'known_node_count',
+            'new_node_count',
+            'stale_finding_count',
+        ] as $metric) {
+            $this->assertStringContainsString($metric, $helper);
+        }
+
+        $this->assertStringContainsString('Math.max(0', $helper);
+        $this->assertStringNotContainsString('blockingViolations.length - newViolations.length', $helper);
     }
 
     public function test_playwright_auth_state_and_sensitive_outputs_are_ignored(): void
@@ -94,6 +167,7 @@ class UiAuditFrameworkTest extends TestCase
 
         $this->assertIsString($teardown);
         $this->assertStringContainsString('pull_request_number: pullRequestNumber()', $teardown);
+        $this->assertStringContainsString('UI_AUDIT_PULL_REQUEST_NUMBER', $teardown);
         $this->assertStringContainsString('eventName !== "pull_request"', $teardown);
         $this->assertStringNotContainsString('?? 21', $teardown);
     }

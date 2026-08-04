@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
+import { usePage } from "@inertiajs/vue3";
 import { LogOut, Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
@@ -19,6 +20,7 @@ withDefaults(
 );
 
 const { resolvedAppearance, updateAppearance } = useAppearance();
+const page = usePage();
 const now = ref(new Date());
 let clockTimer: number | undefined;
 
@@ -36,6 +38,14 @@ const formattedDateTime = computed(() =>
 const toggleAppearance = (): void => {
   updateAppearance(resolvedAppearance.value === "dark" ? "light" : "dark");
 };
+
+const memberOnly = computed(() => {
+  const roles = ((page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined)?.roles ?? []).map(
+    (role) => (typeof role === "string" ? role : role.name ?? ""),
+  );
+
+  return roles.includes("Anggota") && roles.every((role) => role === "Anggota");
+});
 
 onMounted(() => {
   clockTimer = window.setInterval(() => {
@@ -62,6 +72,13 @@ onUnmounted(() => {
     </div>
     <div class="flex items-center gap-2">
       <div
+        v-if="memberOnly"
+        class="hidden items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 sm:flex"
+      >
+        Kojayaku · Anggota
+      </div>
+      <div
+        v-else
         class="hidden items-center rounded-md border border-sidebar-border/70 px-3 py-1.5 text-sm text-muted-foreground sm:flex"
       >
         {{ formattedDateTime }}

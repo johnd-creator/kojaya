@@ -101,8 +101,40 @@ remain advisory and must not replace these baselines.
 The manifest is generated from expected registry entries, not only successful
 tests. Each entry has status (`passed`, `failed`, `captured`, `skipped`, or
 `not-run`), route/role/viewport/state, screenshot paths, runtime and
-accessibility report paths, and error text. Top-level head/tested/base SHA
-fields provide PR traceability. Artifacts contain `ui-audit-output/`,
+accessibility report paths, and error text.
+
+Manifest schema version 3 records separate PR and workflow-dispatch evidence:
+
+- Pull-request runs use the PR head SHA, the tested synthetic merge SHA, the
+  PR base SHA, the numeric PR number, and requested `compare`/`desktop`/`all`
+  parameters.
+- Workflow-dispatch runs use the checked-out branch HEAD for head and tested
+  SHA, resolve the current remote default-branch SHA for `base_sha`, use
+  `pull_request_number: null`, and preserve the requested mode, viewport, and
+  scope even when `full` internally executes Playwright in compare mode.
+- Required identity values are resolved before the audit and are validated as
+  strict 40-character lowercase hexadecimal SHAs. Dispatch never uses the
+  audited head as a base fallback.
+
+The Laravel `ui-audit:coverage` command owns the canonical
+`coverage/cooperative-route-coverage.json` and `.md` files. Global Playwright
+setup removes stale `ui-audit-output`, recreates its runtime directories, runs
+this command with `execFile`, and verifies that fresh canonical JSON exists
+before tests start. They contain route reconciliation fields such as
+discovered, renderable, audited, excluded, uncovered, stale, and duplicate
+counts. Playwright teardown preserves those files, embeds the parsed object
+under `route_coverage`, and writes visual-entry counts separately to
+`coverage/visual-entry-coverage.json` and `.md`. The workflow does not run a
+competing pre-cleanup coverage command; setup is the single authoritative
+generation path.
+
+The `ui:verify-artifact` contract verifier runs before upload in CI. It checks
+manifest identity, requested parameters, dispatch base SHA, canonical route
+coverage, and visual-entry coverage. Missing or inconsistent metadata fails
+the workflow while the `if: always()` upload still preserves malformed output
+for diagnosis.
+
+Artifacts contain `ui-audit-output/`,
 `playwright-report/`, and `test-results/`; auth state, cookies, `.env`, SQLite,
 and secrets are excluded.
 

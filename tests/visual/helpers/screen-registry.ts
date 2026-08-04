@@ -41,3 +41,24 @@ export function assertUniqueScreenIds(): void {
         throw new Error("UI audit screen registry contains duplicate IDs.");
     }
 }
+
+export function assertUniqueAccessibilityOwners(): void {
+    const inventoryOwned = new Set(screenRegistry
+        .filter((item) => item.accessibility && item.state === "default" && item.viewport_policy.includes("desktop"))
+        .map((item) => item.id));
+    const accessibilityDirectory = path.resolve("tests/visual/accessibility");
+    const duplicateOwners: string[] = [];
+
+    for (const file of fs.readdirSync(accessibilityDirectory)) {
+        if (!file.endsWith(".spec.ts") || file === "inventory.accessibility.spec.ts") continue;
+
+        const source = fs.readFileSync(path.join(accessibilityDirectory, file), "utf8");
+        for (const id of source.matchAll(/screen\("([^"]+)"\)/g)) {
+            if (inventoryOwned.has(id[1])) duplicateOwners.push(`${id[1]} (${file})`);
+        }
+    }
+
+    if (duplicateOwners.length > 0) {
+        throw new Error(`Duplicate accessibility owners: ${duplicateOwners.join(", ")}`);
+    }
+}

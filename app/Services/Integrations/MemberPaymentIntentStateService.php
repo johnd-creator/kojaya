@@ -283,9 +283,7 @@ class MemberPaymentIntentStateService
                 return false;
             }
 
-            $reservation = $locked->reservationStatus();
-
-            if (! $locked->isOrderType() || $reservation !== PaymentReservationStatus::Reserved) {
+            if ($gatewayStatus !== PaymentGatewayStatus::Pending) {
                 return false;
             }
 
@@ -293,11 +291,64 @@ class MemberPaymentIntentStateService
                 return false;
             }
 
+            $reservation = $locked->reservationStatus();
+
             $locked->forceFill([
                 'gateway_status' => PaymentGatewayStatus::Expired->value,
             ])->save();
 
-            $this->reservationService->expire($locked->refresh(), $context);
+            if ($locked->isOrderType() && $reservation === PaymentReservationStatus::Reserved) {
+                $this->reservationService->expire($locked->refresh(), $context);
+            }
+
+            $this->audit('gateway.expired', $locked, $context);
+
+            return true;
+        });
+    }
+
+    /**
+     * Expire an uncharged intent when its payload can no longer represent the
+     * current payable amount. A provider reference must be absent because a
+     * referenced charge is reconciled before replacement.
+     */
+    public function expireForReplacement(
+        MemberPaymentIntent $intent,
+        string $reason,
+        ?AuditContext $context = null,
+    ): bool {
+        $context ??= AuditContext::forActor(null, AuditContext::SOURCE_DOMAIN);
+
+        return DB::transaction(function () use ($intent, $reason, $context): bool {
+            $locked = MemberPaymentIntent::query()
+                ->lockForUpdate()
+                ->findOrFail($intent->id);
+
+            $gatewayStatus = $locked->gatewayStatus();
+
+            if ($locked->gateway_reference !== null
+                || $locked->settled_at !== null
+                || $gatewayStatus->isPaid()
+                || in_array($gatewayStatus, [
+                    PaymentGatewayStatus::Expired,
+                    PaymentGatewayStatus::Cancelled,
+                    PaymentGatewayStatus::Denied,
+                ], true)) {
+                return false;
+            }
+
+            $locked->forceFill([
+                'gateway_status' => PaymentGatewayStatus::Expired->value,
+                'gateway_payload' => $this->mergePayload($locked->gateway_payload, [
+                    'replacement_reason' => $reason,
+                    'replaced_at' => now()->toISOString(),
+                ]),
+            ])->save();
+
+            $reservation = $locked->reservationStatus();
+            if ($locked->isOrderType() && $reservation === PaymentReservationStatus::Reserved) {
+                $this->reservationService->expire($locked->refresh(), $context);
+            }
 
             $this->audit('gateway.expired', $locked, $context);
 

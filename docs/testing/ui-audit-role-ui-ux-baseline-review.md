@@ -2,9 +2,12 @@
 
 ## Scope
 
-Reviewed branch: `feature/role-ui-ux`  
-Reviewed local head: `d0f159a5`  
+Reviewed branch: `feature/role-ui-ux`
+Original capture-review head: `d0f159a5`
 Base UI audit foundation: `1988e884720d74b08e1c6c13f40a17b806518843`
+
+Follow-up branch commits `845e1d5c` and `88d8be1c` aligned the dashboard
+fixture and refreshed its three viewport baselines after this review.
 
 The canonical environment is Ubuntu 24.04, PHP 8.4, Node 22, the lockfile Playwright/Chromium package, locale `id-ID`, timezone `Asia/Jakarta`, the existing fixed audit time, deterministic fonts, and a fresh SQLite audit database. Canonical capture A is run `30221887044`; canonical capture B is run `30222202009`. A third desktop capture, run `30222600638`, was used to investigate one two-pixel outlier.
 

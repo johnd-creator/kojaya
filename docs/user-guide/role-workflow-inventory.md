@@ -10,7 +10,7 @@ harus menunjuk sebuah slug artikel yang valid.
 ## Ringkasan
 
 - Active workflows: **17**
-- Documented: **11**
+- Documented: **12**
 - Partial: **0**
 - Gap: **5**
 - Deferred: **0**

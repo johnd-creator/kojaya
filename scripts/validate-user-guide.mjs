@@ -292,6 +292,36 @@ function loadRouteNames() {
 }
 
 /**
+ * Enumerate Laravel route names with their HTTP methods. This is
+ * needed to ensure contextual-help entries only reference GET
+ * pages (not POST endpoints).
+ */
+function loadRouteMethods() {
+  const result = spawnSync("php", ["artisan", "route:list", "--json"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `Unable to enumerate routes: ${result.stderr?.toString() || result.stdout?.toString() || "no output"}`,
+    );
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch (error) {
+    throw new Error(`Route JSON parse failed: ${error.message}`);
+  }
+  const methods = new Map();
+  for (const route of parsed) {
+    if (route?.name) {
+      methods.set(route.name, route.method ?? "GET");
+    }
+  }
+  return methods;
+}
+
+/**
  * Enumerate Spatie permission names. On failure this throws —
  * the validator refuses to run with a partial view of the app.
  */
@@ -392,11 +422,14 @@ async function main() {
   // application itself is unreachable, the validator cannot
   // make any claim and must fail loudly.
   let routeNames;
+  let routeMethods;
   try {
     routeNames = loadRouteNames();
+    routeMethods = loadRouteMethods();
   } catch (error) {
     fail("__init__", `Route enumeration failed: ${error.message}`);
     routeNames = new Set();
+    routeMethods = new Map();
   }
   let permissionNames;
   try {
@@ -672,6 +705,11 @@ async function main() {
         if (!routeNames.has(entry.route)) {
           fail("invalid_contextual_mappings", `contextual-help.json: entry for route \`${entry.route}\` does not match a real Laravel route.`);
         }
+        // Contextual help must only reference GET pages, not POST endpoints.
+        const httpMethod = routeMethods.get(entry.route);
+        if (httpMethod && !httpMethod.includes("GET")) {
+          fail("invalid_contextual_mappings", `contextual-help.json: entry for route \`${entry.route}\` uses \`${httpMethod}\` method — contextual help must reference a GET page, not a POST endpoint.`);
+        }
         if (!slugs.has(entry.slug)) {
           fail("invalid_contextual_mappings", `contextual-help.json: entry for route \`${entry.route}\` references unknown slug \`${entry.slug}\`.`);
         }
@@ -811,6 +849,28 @@ async function main() {
         }
         if ((row.documentation_status === "gap" || row.documentation_status === "deferred") && !row.gap_reason) {
           fail("missing_inventory", `Inventory row \`${row.module}\` is \`${row.documentation_status}\` but missing a gap_reason.`);
+        }
+      }
+
+      // Inventory summary must match actual row counts (TASK 5).
+      const computedSummary = {
+        active_workflows: inventoryRows.length,
+        documented: inventoryRows.filter((r) => r?.documentation_status === "documented").length,
+        partial: inventoryRows.filter((r) => r?.documentation_status === "partial").length,
+        gap: inventoryRows.filter((r) => r?.documentation_status === "gap").length,
+        deferred: inventoryRows.filter((r) => r?.documentation_status === "deferred").length,
+      };
+      const jsonSummary = {
+        active_workflows: inventoryJson.active_workflows,
+        documented: inventoryJson.documented,
+        partial: inventoryJson.partial,
+        gap: inventoryJson.gap,
+        deferred: inventoryJson.deferred,
+      };
+      for (const [key, expected] of Object.entries(computedSummary)) {
+        const actual = jsonSummary[key];
+        if (typeof actual !== "number" || actual !== expected) {
+          fail("missing_inventory", `Inventory summary field \`${key}\` is ${actual} but should be ${expected} (auto-computed from rows).`);
         }
       }
     }

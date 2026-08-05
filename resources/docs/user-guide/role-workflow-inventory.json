@@ -2,7 +2,7 @@
   "version": 1,
   "description": "Machine-readable role workflow inventory. Source of truth for docs/user-guide/role-workflow-inventory.md. The Markdown table is generated from this JSON by the validator.",
   "active_workflows": 17,
-  "documented": 11,
+  "documented": 12,
   "partial": 0,
   "gap": 5,
   "deferred": 0,

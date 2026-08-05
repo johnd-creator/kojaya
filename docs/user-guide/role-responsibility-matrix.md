@@ -61,3 +61,80 @@ Tabel: ✅ = izin diberikan, — = tidak diberikan.
 | `view_store_credit_all` | — | — | — | ✅ |
 | `void_cooperative_opening_balance` | — | — | — | ✅ |
 | **Jumlah izin** | 26 | 1 | 29 | 41 |
+
+---
+
+## Deskripsi Peran
+
+### Anggota
+
+- **Tanggung jawab:** Mengelola simpanan dan pinjaman pribadi,
+  membayar iuran tepat waktu, serta memantau poin dan rewards.
+- **Aktivitas:** Melihat dashboard, mengajukan pinjaman, membayar
+  iuran via QRIS/Virtual Account/E-Wallet, menukar poin dengan
+  rewards, memperbarui profil.
+- **Approval:** Tidak memiliki kewenangan approval. Semua
+  pengajuan pinjaman ditinjau oleh Manajer dan Pengurus.
+- **Batas kewenangan:** Hanya dapat melihat dan mengelola data
+  milik sendiri. Tidak dapat mengakses data anggota lain atau
+  modul koperasi.
+- **Handoff:** Pengajuan pinjaman → Manajer Koperasi untuk
+  tinjauan. Pertanyaan administratif → Admin Koperasi.
+- **Tidak boleh:** Memalsukan data, membagikan kredensial login,
+  membayar iuran anggota lain tanpa konfirmasi.
+
+### Admin Koperasi
+
+- **Tanggung jawab:** Operasional harian koperasi — keanggotaan,
+  iuran, jenis pinjaman, POS, dan inventori.
+- **Aktivitas:** Mendaftar dan memvalidasi anggota, mengelola
+  jenis pinjaman, memverifikasi pembayaran, menjalankan shift
+  kasir POS, mengelola stok, merekam setoran kasir.
+- **Approval:** Memverifikasi pembayaran anggota dan permintaan
+  void POS. Tidak melakukan approval pinjaman.
+- **Batas kewenangan:** Tidak dapat menyetujui pinjaman, tidak
+  dapat menutup periode SHU, tidak dapat mengelola pengaturan
+  koperasi, tidak dapat melihat PII anggota.
+- **Handoff:** Aplikasi pinjaman → Manajer Koperasi. Selisih
+  berulang → Manajer Koperasi. Void di luar wewenang → Manajer
+  Koperasi.
+- **Tidak boleh:** Menyetujui pinjaman (bukan wewenang Admin),
+  mengubah pembukuan tanpa otorisasi, membiarkan sesi login
+  terbuka.
+
+### Manajer Koperasi
+
+- **Tanggung jawab:** Pengawasan operasional dan tinjauan
+  aplikasi pinjaman tahap pertama.
+- **Aktivitas:** Meninjau aplikasi pinjaman anggota, memantau
+  keuangan harian, membaca laporan keuangan, mengelola buku
+  besar, merekam pembukuan.
+- **Approval:** Melakukan review awal aplikasi pinjaman (Catat
+  review Manajer) dan dapat menolak aplikasi. Tidak melakukan
+  approval final.
+- **Batas kewenangan:** Tidak dapat menyetujui pinjaman secara
+  final (hanya Pengurus). Tidak dapat mengelola pengaturan
+  koperasi. Tidak dapat melihat PII anggota.
+- **Handoff:** Aplikasi yang sudah direview → Pengurus Koperasi
+  untuk keputusan akhir. Anomali berulang → Pengurus Koperasi.
+- **Tidak boleh:** Melakukan approval final pinjaman, menutup
+  periode SHU tanpa koordinasi Pengurus, mengabaikan anomali
+  keuangan.
+
+### Pengurus Koperasi
+
+- **Tanggung jawab:** Tata kelola koperasi, keputusan strategis,
+  dan approval final.
+- **Aktivitas:** Menyetujui atau menolak aplikasi pinjaman tahap
+  akhir, menutup periode SHU, mengelola pengaturan koperasi,
+  mengelola PII anggota, menvalidasi anggota tahap final.
+- **Approval:** Approval final pinjaman (Setujui sebagai
+  Pengurus). Penutupan periode SHU. Validasi final anggota.
+- **Batas kewenangan:** Tidak melakukan pencairan pinjaman
+  secara langsung (dilakukan oleh peran dengan hak pencairan).
+  Log Audit belum tersedia untuk Pengurus.
+- **Handoff:** Pinjaman disetujui → peran berwenang menjalankan
+  pencairan. Penutupan SHU → Admin Koperasi untuk rekonsiliasi.
+- **Tidak boleh:** Menyetujui pinjaman yang belum direview
+  Manajer, menutup SHU tanpa rekonsiliasi penuh, mendistribusikan
+  poin sebelum SHU ditutup.

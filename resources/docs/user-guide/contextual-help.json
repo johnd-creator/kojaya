@@ -16,7 +16,7 @@
       "label": "Pinjaman Anggota"
     },
     {
-      "route": "member.payments.intent",
+      "route": "member.savings",
       "slug": "anggota-payment-flow",
       "role": "anggota",
       "screenshot_state": "default",

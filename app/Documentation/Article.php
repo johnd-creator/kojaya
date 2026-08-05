@@ -160,4 +160,48 @@ final class Article
     {
         return $this->frontmatter->sort_order;
     }
+
+    /**
+     * Build a single, lowercased search string from the fields that a
+     * user actually wants to query against: title, summary, category,
+     * module, and the body of the article. The body is stripped of
+     * frontmatter, code fences, link URLs, and emphasis markers so the
+     * search does not return false positives like `routes/web.php`
+     * when the user types `route`.
+     */
+    public function searchText(): string
+    {
+        $parts = [
+            $this->title(),
+            $this->summary(),
+            $this->category(),
+            $this->module(),
+            $this->strippedBody(),
+        ];
+
+        return strtolower(trim(implode("\n", array_filter(
+            $parts,
+            static fn ($p): bool => is_string($p) && trim($p) !== '',
+        ))));
+    }
+
+    private function strippedBody(): string
+    {
+        $body = $this->body;
+        if ($body === '') {
+            return '';
+        }
+
+        $body = preg_replace('/```[a-zA-Z0-9_-]*\n[\s\S]*?```/', ' ', $body) ?? $body;
+        $body = preg_replace('/`[^`\n]+`/', ' ', $body) ?? $body;
+        $body = preg_replace('/!\[[^\]]*\]\([^)]*\)/', ' ', $body) ?? $body;
+        $body = preg_replace('/\[([^\]]+)\]\([^)]*\)/', '$1', $body) ?? $body;
+        $body = preg_replace('/^#{1,6}\s+/m', '', $body) ?? $body;
+        $body = preg_replace('/\*{1,3}([^*]+)\*{1,3}/', '$1', $body) ?? $body;
+        $body = preg_replace('/^>\s?/m', '', $body) ?? $body;
+        $body = preg_replace('/^[-*+]\s+/m', '', $body) ?? $body;
+        $body = preg_replace('/\s+/', ' ', $body) ?? $body;
+
+        return trim($body);
+    }
 }

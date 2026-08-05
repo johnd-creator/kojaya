@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Documentation\ArticleAuthorizer;
 use App\Documentation\ArticleRepository;
+use App\Documentation\ContextualHelpRegistry;
+use App\Documentation\DocumentationRoleResolver;
 use App\Services\Authorization\PrimaryRoleResolver;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Cache;
@@ -33,11 +35,26 @@ final class DocumentationServiceProvider extends ServiceProvider
             return $repository;
         });
 
+        $this->app->singleton(DocumentationRoleResolver::class, function ($app): DocumentationRoleResolver {
+            return new DocumentationRoleResolver(
+                $app->make(PrimaryRoleResolver::class),
+            );
+        });
+
         $this->app->singleton(ArticleAuthorizer::class, function ($app): ArticleAuthorizer {
             return new ArticleAuthorizer(
                 $app->make(ArticleRepository::class),
-                $app->make(PrimaryRoleResolver::class),
+                $app->make(DocumentationRoleResolver::class),
             );
+        });
+
+        $this->app->singleton(ContextualHelpRegistry::class, function (): ContextualHelpRegistry {
+            $path = resource_path('docs/user-guide/contextual-help.json');
+            if (! is_file($path)) {
+                $path = base_path('resources/docs/user-guide/contextual-help.json');
+            }
+
+            return new ContextualHelpRegistry($path);
         });
     }
 

@@ -33,6 +33,7 @@ final class ArticleFrontmatter
 
     public const VALID_ROLES = [
         'all',
+        'shared',
         'anggota',
         'admin_koperasi',
         'manajer_koperasi',

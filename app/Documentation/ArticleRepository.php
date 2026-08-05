@@ -66,95 +66,47 @@ final class ArticleRepository
     }
 
     /**
-     * Filter articles to those visible to a user with the given Spatie
-     * role names and permission identifiers.
+     * Filter articles to those visible to the given user.
      *
-     * Algorithm:
-     *  1. Resolve the user's `target_role` slugs from their Spatie role
-     *     names.
-     *  2. Keep articles whose `roles` list contains at least one of
-     *     those slugs OR `all`.
-     *  3. If the article has `required_permissions`, evaluate them
-     *     according to `permission_mode`:
-     *       - `all`: every permission must be present in the user's
-     *         permission set.
-     *       - `any`: at least one permission must be present.
-     *  4. Drop articles whose `status` is not `published`.
+     * Delegates to {@see ArticleAuthorizer} so the role/permission
+     * rules stay in one place. The single source of truth is the
+     * documentation role bucket, not a Spatie role union.
      *
-     * @param  list<string>  $spatieRoleNames
-     * @param  list<string>  $permissionNames
      * @return Collection<int, Article>
      */
-    public function visibleTo(array $spatieRoleNames, array $permissionNames): Collection
+    public function visibleTo(\App\Models\User $user): Collection
     {
-        $targets = $this->resolveTargetRoles($spatieRoleNames);
-        $permissionSet = array_flip(array_map('strval', $permissionNames));
+        $authorizer = app(ArticleAuthorizer::class);
 
-        return $this->published()
-            ->filter(function (Article $article) use ($targets): bool {
-                foreach ($article->roles() as $role) {
-                    if ($role === 'all' || in_array($role, $targets, true)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            })
-            ->filter(function (Article $article) use ($permissionSet): bool {
-                $required = $article->permissions();
-                if ($required === []) {
-                    return true;
-                }
-
-                $mode = $article->permissionMode();
-                if ($mode === 'all') {
-                    foreach ($required as $permission) {
-                        if (! isset($permissionSet[$permission])) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-
-                // mode === 'any'
-                foreach ($required as $permission) {
-                    if (isset($permissionSet[$permission])) {
-                        return true;
-                    }
-                }
-
-                return false;
-            })
-            ->values();
+        return $authorizer->filterVisible($user);
     }
 
     /**
-     * Map Spatie role names to documentation target role identifiers.
-     * Mirrors the previous `DocumentationArticle::targetRolesForUser()`
-     * mapping but adds explicit per-role strings (System Admin and
-     * Admin Pusat map to the `all` bucket only).
+     * Look up a documentation target role from a list of Spatie role
+     * names. Kept for diagnostic use only — the authorizer no longer
+     * consumes this list directly. Uses exact-name matching, never
+     * substring, so a `Site Manager` cannot leak into
+     * `manajer_koperasi`.
      *
      * @param  list<string>  $spatieRoleNames
      * @return list<string>
      */
     public function resolveTargetRoles(array $spatieRoleNames): array
     {
+        $map = [
+            'System Admin' => 'system_admin',
+            'Admin Pusat' => 'admin_pusat',
+            'Pengurus Koperasi' => 'pengurus_koperasi',
+            'Manajer Koperasi' => 'manajer_koperasi',
+            'Admin Koperasi' => 'admin_koperasi',
+            'Kasir Koperasi' => 'admin_koperasi',
+            'Anggota' => 'anggota',
+        ];
+
         $targets = ['all'];
-
         foreach ($spatieRoleNames as $name) {
-            $slug = strtolower(trim((string) $name));
-
-            $mapped = match (true) {
-                str_contains($slug, 'anggota') => 'anggota',
-                str_contains($slug, 'admin koperasi') || str_contains($slug, 'admin-koperasi') => 'admin_koperasi',
-                str_contains($slug, 'manajer') => 'manajer_koperasi',
-                str_contains($slug, 'pengurus') => 'pengurus_koperasi',
-                default => null,
-            };
-
-            if ($mapped !== null && ! in_array($mapped, $targets, true)) {
-                $targets[] = $mapped;
+            if (isset($map[$name]) && ! in_array($map[$name], $targets, true)) {
+                $targets[] = $map[$name];
             }
         }
 

@@ -8,9 +8,9 @@ use App\Documentation\Article;
 use App\Documentation\ArticleAuthorizer;
 use App\Documentation\ArticleRepository;
 use App\Documentation\ContextualHelpRegistry;
+use App\Documentation\DocumentationRoleResolver;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\Authorization\PrimaryRoleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -31,7 +31,7 @@ final class DocumentationController extends Controller
         private readonly ArticleRepository $articles,
         private readonly ArticleAuthorizer $authorizer,
         private readonly ContextualHelpRegistry $contextualHelp,
-        private readonly PrimaryRoleResolver $roleResolver,
+        private readonly DocumentationRoleResolver $docRoleResolver,
     ) {}
 
     /**
@@ -44,13 +44,14 @@ final class DocumentationController extends Controller
         $this->abortIfGuest($user);
 
         $visible = $this->authorizer->filterVisible($user);
+        $docRole = $this->docRoleResolver->resolve($user);
 
         return Inertia::render('Documentation/Index', [
             'sections' => $this->groupSections($visible),
             'modules' => $this->collectModules($visible),
             'articles' => $this->serializeList($visible),
             'userRoles' => $user->getRoleNames()->values()->all(),
-            'primaryRole' => $this->roleResolver->resolve($user)->value,
+            'primaryRole' => $docRole,
             'searchEnabled' => true,
         ]);
     }
@@ -76,17 +77,18 @@ final class DocumentationController extends Controller
         $next = $this->findNeighbour($article, +1, $user);
         $related = $this->findRelated($article, $user);
         $siblings = $this->collectSiblings($article, $user);
+        $docRole = $this->docRoleResolver->resolve($user);
 
         return Inertia::render('Documentation/Show', [
             'article' => $this->serializeArticle($article),
             'navigation' => [
-                'previous' => $previous?->slug(),
-                'next' => $next?->slug(),
+                'previous' => $previous === null ? null : $this->serializeNavItem($previous),
+                'next' => $next === null ? null : $this->serializeNavItem($next),
                 'related' => $related,
             ],
             'siblings' => $siblings,
-            'contextualHelp' => $this->contextualHelp->forRole($this->roleResolver->resolve($user)->value),
-            'primaryRole' => $this->roleResolver->resolve($user)->value,
+            'contextualHelp' => $this->contextualHelp->forRole($docRole),
+            'primaryRole' => $docRole,
         ]);
     }
 
@@ -167,6 +169,7 @@ final class DocumentationController extends Controller
             'last_reviewed_commit' => $article->lastReviewedCommit(),
             'status' => $article->status(),
             'sort_order' => $article->sortOrder(),
+            'search_text' => $article->searchText(),
         ];
     }
 
@@ -183,7 +186,14 @@ final class DocumentationController extends Controller
 
     private function findNeighbour(Article $article, int $offset, User $user): ?Article
     {
-        $list = $this->authorizer->filterVisible($user)->sortBy('sort_order')->values();
+        $list = $this->authorizer
+            ->filterVisible($user)
+            ->sortBy([
+                ['sort_order', 'asc'],
+                ['category', 'asc'],
+                ['title', 'asc'],
+            ])
+            ->values();
 
         $index = null;
         foreach ($list as $i => $candidate) {
@@ -204,7 +214,7 @@ final class DocumentationController extends Controller
     }
 
     /**
-     * @return list<string>
+     * @return list<array{slug: string, title: string, category: string, summary: string}>
      */
     private function findRelated(Article $article, User $user): array
     {
@@ -213,15 +223,34 @@ final class DocumentationController extends Controller
             return [];
         }
 
-        $visibleSlugs = $this->authorizer
-            ->filterVisible($user)
-            ->map(fn (Article $a): string => $a->slug())
-            ->flip();
+        $visible = $this->authorizer->filterVisible($user);
+        $visibleBySlug = [];
+        foreach ($visible as $candidate) {
+            $visibleBySlug[$candidate->slug()] = $candidate;
+        }
 
-        return array_values(array_filter(
-            $related,
-            static fn (string $slug): bool => $visibleSlugs->has($slug),
-        ));
+        $out = [];
+        foreach ($related as $slug) {
+            if (! isset($visibleBySlug[$slug])) {
+                continue;
+            }
+            $out[] = $this->serializeNavItem($visibleBySlug[$slug]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array{slug: string, title: string, category: string, summary: string}
+     */
+    private function serializeNavItem(Article $article): array
+    {
+        return [
+            'slug' => $article->slug(),
+            'title' => $article->title(),
+            'category' => $article->category(),
+            'summary' => $article->summary(),
+        ];
     }
 
     /**

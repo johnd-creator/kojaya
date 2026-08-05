@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Documentation;
 
+use App\Models\User;
+
 /**
  * Central registry of contextual help mappings.
  *
@@ -11,16 +13,13 @@ namespace App\Documentation;
  *
  *   route name  →  documentation slug  →  role  →  permission  →  screenshot state
  *
- * Every entry is sourced from the actual route table. Entries are
- * loaded statically from {@see self::DEFAULT_MAP} for now; once the
- * validation surface proves out the contract, the registry can be
- * wired to read from a JSON file under `resources/docs/user-guide/`.
+ * The source of truth is `resources/docs/user-guide/contextual-help.json`.
+ * Both the backend (this class) and the docs:validate Node script read
+ * from that JSON so the validator and the runtime cannot drift.
  *
- * The registry is the single place a developer touches when adding a
- * "Lihat Panduan" link to a page. The frontend reads from this same
- * map through the controller's `contextualHelp` prop, so the same
- * source of truth powers the shared layout's button and the
- * dedicated `/documentation` page.
+ * Per Fase 11, every entry in the JSON file is also validated
+ * server-side: route name, slug, role, permission, and screenshot
+ * state are all checked against the live application state.
  */
 final class ContextualHelpRegistry
 {
@@ -32,102 +31,27 @@ final class ContextualHelpRegistry
      *     permission?: string,
      *     screenshot_state: string,
      *     label: string,
+     * }>|null
+     */
+    private ?array $entries = null;
+
+    /**
+     * @var list<array{
+     *     route: string,
+     *     slug: string,
+     *     role: string,
+     *     permission?: string,
+     *     screenshot_state: string,
+     *     label: string,
      * }>
      */
-    private const DEFAULT_MAP = [
-        [
-            'route' => 'member.dashboard',
-            'slug' => 'anggota-portal-overview',
-            'role' => 'anggota',
-            'screenshot_state' => 'default',
-            'label' => 'Portal Anggota',
-        ],
-        [
-            'route' => 'member.loans',
-            'slug' => 'anggota-loan-flow',
-            'role' => 'anggota',
-            'screenshot_state' => 'default',
-            'label' => 'Pinjaman Anggota',
-        ],
-        [
-            'route' => 'member.payments.intent',
-            'slug' => 'anggota-payment-flow',
-            'role' => 'anggota',
-            'screenshot_state' => 'default',
-            'label' => 'Pembayaran Iuran',
-        ],
-        [
-            'route' => 'cooperative.operator.dashboard',
-            'slug' => 'admin-koperasi-operational-dashboard',
-            'role' => 'admin_koperasi',
-            'screenshot_state' => 'default',
-            'label' => 'Dashboard Admin Koperasi',
-        ],
-        [
-            'route' => 'cooperative.loan-types.index',
-            'slug' => 'admin-koperasi-loan-types',
-            'role' => 'admin_koperasi',
-            'permission' => 'manage_cooperative_loan_types',
-            'screenshot_state' => 'default',
-            'label' => 'Jenis Pinjaman',
-        ],
-        [
-            'route' => 'cooperative.pos.index',
-            'slug' => 'admin-koperasi-pos-inventory',
-            'role' => 'admin_koperasi',
-            'permission' => 'access_cooperative_pos',
-            'screenshot_state' => 'default',
-            'label' => 'Operasional POS',
-        ],
-        [
-            'route' => 'cooperative.payments.index',
-            'slug' => 'admin-koperasi-payment-queue',
-            'role' => 'admin_koperasi',
-            'permission' => 'manage_cooperative_payment',
-            'screenshot_state' => 'default',
-            'label' => 'Antrean Pembayaran',
-        ],
-        [
-            'route' => 'cooperative.loans.index',
-            'slug' => 'manajer-loan-review',
-            'role' => 'manajer_koperasi',
-            'permission' => 'review_cooperative_loan',
-            'screenshot_state' => 'manager-review',
-            'label' => 'Tinjauan Pinjaman Manajer',
-        ],
-        [
-            'route' => 'cooperative.shu.index',
-            'slug' => 'manajer-financial-monitoring',
-            'role' => 'manajer_koperasi',
-            'permission' => 'view_cooperative_report',
-            'screenshot_state' => 'default',
-            'label' => 'Pemantauan Keuangan',
-        ],
-        [
-            'route' => 'cooperative.loans.approve',
-            'slug' => 'pengurus-loan-approval',
-            'role' => 'pengurus_koperasi',
-            'permission' => 'approve_cooperative_loan',
-            'screenshot_state' => 'chairman-approval',
-            'label' => 'Persetujuan Akhir Pinjaman',
-        ],
-        [
-            'route' => 'cooperative.shu.index',
-            'slug' => 'pengurus-shu-and-governance',
-            'role' => 'pengurus_koperasi',
-            'permission' => 'manage_cooperative_shu',
-            'screenshot_state' => 'default',
-            'label' => 'SHU dan Tata Kelola',
-        ],
-        [
-            'route' => 'audit-logs',
-            'slug' => 'pengurus-shu-and-governance',
-            'role' => 'pengurus_koperasi',
-            'permission' => 'view_audit_logs',
-            'screenshot_state' => 'default',
-            'label' => 'Audit Internal',
-        ],
-    ];
+    private array $duplicates = [];
+
+    public function __construct(
+        private readonly string $jsonPath,
+        private readonly ArticleRepository $articles,
+        private readonly ArticleAuthorizer $authorizer,
+    ) {}
 
     /**
      * @return list<array{
@@ -141,7 +65,93 @@ final class ContextualHelpRegistry
      */
     public function all(): array
     {
-        return self::DEFAULT_MAP;
+        $this->load();
+
+        return $this->entries ?? [];
+    }
+
+    public function duplicates(): array
+    {
+        $this->load();
+
+        return $this->duplicates;
+    }
+
+    /**
+     * Resolve the contextual help entry for the current request.
+     *
+     * The entry is only returned if EVERY of the following holds:
+     *
+     *  - there is an entry for the given route name;
+     *  - the entry's `role` matches the user's primary/effective
+     *    documentation role (or System Admin for any role);
+     *  - the user has the required permission (if any);
+     *  - the referenced article exists, is published, and the user
+     *    is allowed to read it.
+     *
+     * Returns `null` if any check fails — the shared layout's
+     * "Lihat Panduan" button will then hide itself.
+     *
+     * @return array{
+     *     route: string,
+     *     slug: string,
+     *     role: string,
+     *     permission?: string,
+     *     screenshot_state: string,
+     *     label: string,
+     *     article: array<string, mixed>,
+     * }|null
+     */
+    public function resolveForRequest(
+        string $routeName,
+        User $user,
+        DocumentationRoleResolver $roleResolver,
+    ): ?array {
+        $this->load();
+
+        $docRole = $roleResolver->resolve($user);
+        $candidates = array_values(array_filter(
+            $this->entries ?? [],
+            static fn (array $e): bool => $e['route'] === $routeName,
+        ));
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        foreach ($candidates as $entry) {
+            if ($docRole === DocumentationRoleResolver::ROLE_SYSTEM_ADMIN) {
+                // System Admin sees every entry; just confirm the
+                // article exists and is published.
+                $article = $this->articles->findBySlug($entry['slug']);
+                if ($article === null || ! $article->isPublished()) {
+                    continue;
+                }
+
+                return $this->enrich($entry, $article);
+            }
+
+            if ($entry['role'] !== $docRole && $entry['role'] !== 'all' && $entry['role'] !== 'shared') {
+                continue;
+            }
+
+            if (isset($entry['permission']) && ! $user->can($entry['permission'])) {
+                continue;
+            }
+
+            $article = $this->articles->findBySlug($entry['slug']);
+            if ($article === null || ! $article->isPublished()) {
+                continue;
+            }
+
+            if (! $this->authorizer->canView($user, $article)) {
+                continue;
+            }
+
+            return $this->enrich($entry, $article);
+        }
+
+        return null;
     }
 
     /**
@@ -154,22 +164,101 @@ final class ContextualHelpRegistry
      *     label: string,
      * }>
      */
-    public function forRole(string $role): array
+    public function forRole(string $docRole): array
     {
-        return array_values(array_filter(
-            self::DEFAULT_MAP,
-            static fn (array $entry): bool => $entry['role'] === $role || $entry['role'] === 'all',
-        ));
+        $this->load();
+
+        $resolved = $docRole === DocumentationRoleResolver::ROLE_SYSTEM_ADMIN
+            ? ($this->entries ?? [])
+            : array_values(array_filter(
+                $this->entries ?? [],
+                static fn (array $e): bool => $e['role'] === $docRole || $e['role'] === 'all' || $e['role'] === 'shared',
+            ));
+
+        return $resolved;
     }
 
-    public function forRoute(string $routeName): ?array
+    /**
+     * @param  array{
+     *     route: string,
+     *     slug: string,
+     *     role: string,
+     *     permission?: string,
+     *     screenshot_state: string,
+     *     label: string,
+     * }  $entry
+     * @return array{
+     *     route: string,
+     *     slug: string,
+     *     role: string,
+     *     permission?: string,
+     *     screenshot_state: string,
+     *     label: string,
+     *     article: array<string, mixed>,
+     * }
+     */
+    private function enrich(array $entry, Article $article): array
     {
-        foreach (self::DEFAULT_MAP as $entry) {
-            if ($entry['route'] === $routeName) {
-                return $entry;
-            }
+        return $entry + [
+            'article' => [
+                'slug' => $article->slug(),
+                'title' => $article->title(),
+                'summary' => $article->summary(),
+                'category' => $article->category(),
+                'module' => $article->module(),
+            ],
+        ];
+    }
+
+    private function load(): void
+    {
+        if ($this->entries !== null) {
+            return;
         }
 
-        return null;
+        if (! is_file($this->jsonPath)) {
+            $this->entries = [];
+
+            return;
+        }
+
+        $raw = file_get_contents($this->jsonPath);
+        if ($raw === false) {
+            $this->entries = [];
+
+            return;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded) || ! isset($decoded['entries']) || ! is_array($decoded['entries'])) {
+            $this->entries = [];
+
+            return;
+        }
+
+        $seen = [];
+        $entries = [];
+        foreach ($decoded['entries'] as $row) {
+            if (! is_array($row) || ! isset($row['route'], $row['slug'], $row['role'], $row['screenshot_state'], $row['label'])) {
+                continue;
+            }
+            $key = $row['route'].'|'.$row['role'];
+            if (isset($seen[$key])) {
+                $this->duplicates[] = $row;
+
+                continue;
+            }
+            $seen[$key] = true;
+            $entries[] = [
+                'route' => (string) $row['route'],
+                'slug' => (string) $row['slug'],
+                'role' => (string) $row['role'],
+                'screenshot_state' => (string) $row['screenshot_state'],
+                'label' => (string) $row['label'],
+                'permission' => isset($row['permission']) ? (string) $row['permission'] : null,
+            ];
+        }
+
+        $this->entries = $entries;
     }
 }

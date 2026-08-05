@@ -9,25 +9,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-## Related Flutter App
-
-- The Kojayaku Flutter mobile app lives at `/home/john-d/Videos/kojaya-app`.
-- When Laravel API or member-facing behavior must match the mobile app, inspect that Flutter project first and align endpoint contracts, menu names, payload fields, and screen expectations before changing this Laravel app.
-- Treat the Laravel application in this repository as the source of truth for persistence, authorization, validation, and accounting/POS side effects. Flutter screens may prototype UX locally before matching backend endpoints exist.
-
-## Cooperative Role Hierarchy
-
-- Global highest role: `System Admin` as superadmin.
-- Cooperative hierarchy: `Pengurus Koperasi` is the highest cooperative role, followed by `Manajer Koperasi`, then `Admin Koperasi`, then operational roles such as `Kasir Koperasi`.
-- For the loan workflow, `Manajer Koperasi` performs the first review, and `Pengurus Koperasi` performs final approval. `Admin Koperasi` may manage operational loan data but must not be treated as a loan approver.
-
-## Midtrans Sandbox
-
-- Local sandbox config uses `MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_MERCHANT_ID=`, `MIDTRANS_CLIENT_KEY=`, and `MIDTRANS_VA_BANK=` see .env, unless another sandbox VA bank is intentionally being tested.
-- `MIDTRANS_SERVER_KEY` is a secret and must stay in local `.env` or the deployment secret manager only. Do not commit or repeat the full server key in docs, tests, source, logs, or prompts; the sandbox key currently configured locally ends with `TdE4`.
-- Midtrans config is read through `config/services.php` under `services.midtrans`.
-
-- php - 8.5.6
+- php - 8.5.8
 - inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
@@ -49,49 +31,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - eslint (ESLINT) - v9
 - prettier (PRETTIER) - v3
 
-## 📚 MANDATORY: Read Project Documentation First
-
-**CRITICAL:** Before starting ANY task, you MUST read the relevant documentation in the `/docs/` folder to understand project context, architecture, and requirements.
-
-**Required Reading Order (for every task):**
-1. **`docs/project.md`** - Project overview, business context, goals (START HERE)
-2. **`docs/architecture.md`** - System design, tech stack, patterns
-3. **Task-Specific Docs:**
-   - API work? → Read `docs/api.md`
-   - Adding features? → Read `docs/plan.md` and `docs/decisions.md`
-   - Debugging? → Read `docs/log.md` for known issues
-
-**When to Read Documentation:**
-- ✅ **ALWAYS** read before making architectural decisions
-- ✅ **ALWAYS** read before adding new features/modules
-- ✅ **ALWAYS** read `docs/api.md` before working with API endpoints
-- ✅ **ALWAYS** read `docs/decisions.md` before changing existing patterns
-- ✅ **READ FIRST, CODE SECOND** - Documentation prevents mistakes
-
-**Documentation is Authority:**
-- If code conflicts with docs, the docs are likely outdated - **UPDATE THE DOCS**
-- All architecture decisions are documented in `docs/decisions.md`
-- Project roadmap is in `docs/plan.md`
-- API contracts are in `docs/api.md`
-
-**How to Read Documentation Efficiently:**
-```bash
-# Quick overview
-cat docs/project.md
-
-# Check architecture before coding
-cat docs/architecture.md
-
-# Read API docs before touching endpoints
-cat docs/api.md
-
-# Check decisions before changing patterns
-cat docs/decisions.md
-
-# See development history
-cat docs/log.md
-```
-
 ## Skills Activation
 
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
@@ -102,29 +41,9 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 ## Conventions
 
-- **READ DOCUMENTATION FIRST:** Always read relevant `/docs/` files before coding
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
-- **Document Your Changes:** If you make architectural decisions, update `docs/decisions.md`
-- **Log Significant Changes:** Add entries to `docs/log.md` for major features
-
-## Database Safety - Do Not Reset Local Data
-
-**CRITICAL:** The local development database may contain working demo data, login users, roles, permissions, and manually prepared QA state. Do not destroy or reseed it while implementing or testing a feature.
-
-- **NEVER** run destructive database commands against the default `.env` database (`DB_DATABASE=kojaya_erp`) unless the user explicitly asks for a reset in the current conversation.
-- Forbidden without explicit user approval:
-  - `php artisan migrate:fresh`
-  - `php artisan migrate:refresh`
-  - `php artisan migrate:reset`
-  - `php artisan db:wipe`
-  - `php artisan db:seed` or any broad seeder such as `DatabaseSeeder`, `DemoDataSeeder`, `CooperativeSeeder`, or `RolePermissionSeeder`
-  - raw SQL that drops/truncates tables, drops schemas/databases, deletes all rows, or rewrites login/role/permission data
-- Running `php artisan migrate` is allowed only for applying new forward migrations. Before running it, inspect `php artisan migrate:status` and confirm the connection/database name is the intended local app database.
-- If seed data is needed for a feature test, create it inside the PHPUnit test using factories. Do not seed the shared local app database just to make a test pass.
-- If a one-off local recovery is needed, state exactly which database, tables, users, and seeders will be affected, then wait for explicit user approval before writing anything.
-- If you accidentally run a destructive command, stop immediately and report the exact command, timestamp, database name, and observed damage. Do not try to hide or "fix" it with additional resets.
 
 ## Verification Scripts
 
@@ -230,9 +149,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
-- Tests must not mutate the shared `.env` database. PHPUnit must run with the testing environment/database configured by `phpunit.xml` or explicit `APP_ENV=testing`/test DB variables.
-- Before running tests that use database traits or migrations, verify they target a test database, not `DB_DATABASE=kojaya_erp`. If unsure, run a read-only check of `APP_ENV` and database name first.
-- Do not use `migrate:fresh`, `db:wipe`, broad seeders, or manual truncation as part of test setup. Use Laravel testing traits, factories, and per-test setup data instead.
 
 === inertia-laravel/core rules ===
 

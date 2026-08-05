@@ -48,13 +48,17 @@ final class DocumentationServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton(ContextualHelpRegistry::class, function (): ContextualHelpRegistry {
+        $this->app->singleton(ContextualHelpRegistry::class, function ($app): ContextualHelpRegistry {
             $path = resource_path('docs/user-guide/contextual-help.json');
             if (! is_file($path)) {
                 $path = base_path('resources/docs/user-guide/contextual-help.json');
             }
 
-            return new ContextualHelpRegistry($path);
+            return new ContextualHelpRegistry(
+                $path,
+                $app->make(ArticleRepository::class),
+                $app->make(ArticleAuthorizer::class),
+            );
         });
     }
 

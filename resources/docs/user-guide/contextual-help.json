@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "route": "member.dashboard",
+      "slug": "anggota-portal-overview",
+      "role": "anggota",
+      "screenshot_state": "default",
+      "label": "Portal Anggota"
+    },
+    {
+      "route": "member.loans",
+      "slug": "anggota-loan-flow",
+      "role": "anggota",
+      "screenshot_state": "default",
+      "label": "Pinjaman Anggota"
+    },
+    {
+      "route": "member.payments.intent",
+      "slug": "anggota-payment-flow",
+      "role": "anggota",
+      "screenshot_state": "default",
+      "label": "Pembayaran Iuran"
+    },
+    {
+      "route": "cooperative.operator.dashboard",
+      "slug": "admin-koperasi-operational-dashboard",
+      "role": "admin_koperasi",
+      "screenshot_state": "default",
+      "label": "Dashboard Admin Koperasi"
+    },
+    {
+      "route": "cooperative.loan-types.index",
+      "slug": "admin-koperasi-loan-types",
+      "role": "admin_koperasi",
+      "permission": "manage_cooperative_loan_types",
+      "screenshot_state": "default",
+      "label": "Jenis Pinjaman"
+    },
+    {
+      "route": "cooperative.pos.index",
+      "slug": "admin-koperasi-pos-inventory",
+      "role": "admin_koperasi",
+      "permission": "access_cooperative_pos",
+      "screenshot_state": "default",
+      "label": "Operasional POS"
+    },
+    {
+      "route": "cooperative.payments.index",
+      "slug": "admin-koperasi-payment-queue",
+      "role": "admin_koperasi",
+      "permission": "manage_cooperative_payment",
+      "screenshot_state": "default",
+      "label": "Antrean Pembayaran"
+    },
+    {
+      "route": "cooperative.loans.index",
+      "slug": "manajer-loan-review",
+      "role": "manajer_koperasi",
+      "permission": "review_cooperative_loan",
+      "screenshot_state": "manager-review",
+      "label": "Tinjauan Pinjaman Manajer"
+    },
+    {
+      "route": "cooperative.loans.show",
+      "slug": "manajer-loan-review",
+      "role": "manajer_koperasi",
+      "permission": "review_cooperative_loan",
+      "screenshot_state": "manager-review",
+      "label": "Tinjauan Pinjaman Manajer"
+    },
+    {
+      "route": "cooperative.reports.index",
+      "slug": "manajer-financial-monitoring",
+      "role": "manajer_koperasi",
+      "permission": "view_cooperative_report",
+      "screenshot_state": "default",
+      "label": "Pemantauan Keuangan"
+    },
+    {
+      "route": "cooperative.loans.show",
+      "slug": "pengurus-loan-approval",
+      "role": "pengurus_koperasi",
+      "permission": "approve_cooperative_loan",
+      "screenshot_state": "chairman-approval",
+      "label": "Persetujuan Akhir Pinjaman"
+    },
+    {
+      "route": "cooperative.shu.index",
+      "slug": "pengurus-shu-and-governance",
+      "role": "pengurus_koperasi",
+      "permission": "manage_cooperative_shu",
+      "screenshot_state": "default",
+      "label": "SHU dan Tata Kelola"
+    },
+    {
+      "route": "audit-logs",
+      "slug": "pengurus-shu-and-governance",
+      "role": "pengurus_koperasi",
+      "permission": "view_audit_logs",
+      "screenshot_state": "default",
+      "label": "Audit Internal"
+    }
+  ]
+}

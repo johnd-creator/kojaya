@@ -367,7 +367,7 @@ test("validator fails on a duplicate (route, role) key in contextual-help.json",
 
 test("validator fails on a published article that is missing from the inventory", () => {
   const fx = makeFixture((root) => {
-    writeArticle(root, "alpha", "## Tujuan\n\nIsi artikel pertama yang valid dan cukup panjang untuk pengujian.");
+    writeArticle(root, "alpha", "## Tujuan\n\nIsi artikel pertama yang valid dan cukup panjang untuk pengujian.", { roles: ["anggota"] });
     writeContextualHelp(root, []);
     writeInventory(root, []); // alpha is NOT listed
     writeScreenshotManifest(root);

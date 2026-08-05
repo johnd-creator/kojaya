@@ -59,15 +59,55 @@ const screenshotsManifestPath = resolve(projectRoot, "resources/docs/user-guide/
 const publicScreenshotsManifestPath = resolve(projectRoot, "public/docs/user-guide/screenshots.json");
 const coverageScreenshotsPath = resolve(projectRoot, "docs/user-guide/coverage-screenshots.json");
 const contextualHelpPath = resolve(projectRoot, "resources/docs/user-guide/contextual-help.json");
-const inventoryPath = resolve(guideDir, "role-workflow-inventory.md");
+const inventoryMdPath = resolve(guideDir, "role-workflow-inventory.md");
+const inventoryJsonPath = resolve(projectRoot, "resources/docs/user-guide/role-workflow-inventory.json");
 const coverageReportJsonPath = resolve(projectRoot, "docs/user-guide/coverage-report.json");
 const coverageReportMdPath = resolve(projectRoot, "docs/user-guide/coverage-report.md");
+const uiAuditRegistryPath = resolve(projectRoot, "tests/visual/coverage/cooperative-pages.json");
 
 const validRoles = ["all", "shared", "anggota", "admin_koperasi", "manajer_koperasi", "pengurus_koperasi"];
 const validPermissionModes = ["all", "any"];
 const validRiskLevels = ["low", "medium", "high"];
 const validStatuses = ["published", "draft", "archived"];
 const validViewports = ["desktop", "tablet", "mobile"];
+// UI states a contextual-help entry may declare. `default` is the
+// default fallback when no specific UI capture is registered for
+// the route. The documentation-specific states (`manager-review`,
+// `chairman-approval`) are emitted by the contextual-help registry
+// and must be present in the UI Audit `cooperative-pages.json` so
+// the registry and the validator cannot drift.
+const validContextualStates = new Set(["default", "manager-review", "chairman-approval"]);
+const validInventoryRoles = ["Anggota", "Admin Koperasi", "Manajer Koperasi", "Pengurus Koperasi"];
+const validActivityKinds = [
+  "informasional",
+  "operasional",
+  "transaksional",
+  "approval",
+  "finansial",
+  "administrasi",
+];
+const validRiskTiers = [
+  "informasional",
+  "operasional",
+  "transaksional",
+  "approval",
+  "finansial",
+  "destructive",
+];
+const validDocStatuses = ["documented", "partial", "gap", "deferred", "not-applicable"];
+const validActivityVerbs = [
+  "melihat",
+  "membuat",
+  "mengubah",
+  "memverifikasi",
+  "menyetujui",
+  "menolak",
+  "membatalkan",
+  "menutup periode",
+  "mengunduh laporan",
+  "transaksi keuangan",
+  "administrasi lainnya",
+];
 const requiredKeys = [
   "title",
   "slug",
@@ -593,6 +633,27 @@ async function main() {
     fail("broken_screenshots", `Public screenshot manifest missing: ${relative(projectRoot, publicScreenshotsManifestPath)}`);
   }
 
+  // Build a per-route index of declared UI Audit states so we can
+  // validate contextual-help `screenshot_state` against the live
+  // registry instead of the (unrelated) viewport vocabulary.
+  const registryStatesByRoute = new Map();
+  if (existsSync(uiAuditRegistryPath)) {
+    try {
+      const uiRegistry = JSON.parse(readFileSync(uiAuditRegistryPath, "utf8"));
+      for (const regEntry of uiRegistry.entries ?? []) {
+        if (!regEntry.route_name || !regEntry.state) {
+          continue;
+        }
+        if (!registryStatesByRoute.has(regEntry.route_name)) {
+          registryStatesByRoute.set(regEntry.route_name, new Set());
+        }
+        registryStatesByRoute.get(regEntry.route_name).add(String(regEntry.state));
+      }
+    } catch (error) {
+      fail("invalid_contextual_mappings", `Cannot parse UI Audit registry: ${error.message}`);
+    }
+  }
+
   // Contextual-help registry validation.
   if (existsSync(contextualHelpPath)) {
     let help;
@@ -620,10 +681,27 @@ async function main() {
         if (entry.permission && !permissionNames.has(entry.permission)) {
           fail("invalid_contextual_mappings", `contextual-help.json: entry for route \`${entry.route}\` references unknown permission \`${entry.permission}\`.`);
         }
-        if (entry.screenshot_state && !validViewports.includes(entry.screenshot_state)) {
-          // screenshot_state is permissive by design, but unknown
-          // values that do not match any known viewport are warned.
-          warn(`contextual-help.json: entry for route \`${entry.route}\` uses a screenshot_state (\`${entry.screenshot_state}\`) that is not a known viewport.`);
+        // screenshot_state is a UI audit concept (not a viewport).
+        // It must either be a known contextual-help state OR be
+        // declared in the cooperative-pages.json registry for the
+        // same route. We do NOT compare against viewports here.
+        const declaredState = entry.screenshot_state ?? "default";
+        if (!validContextualStates.has(declaredState)) {
+          fail(
+            "invalid_contextual_mappings",
+            `contextual-help.json: entry for route \`${entry.route}\` uses unknown screenshot_state \`${declaredState}\`. Valid values: ${Array.from(validContextualStates).join(", ")}.`,
+          );
+        } else if (declaredState !== "default") {
+          // For non-default states we cross-check against the UI
+          // Audit registry so the contextual-help button can only
+          // point at states that actually have a visual capture.
+          const matchingRegistryEntry = registryStatesByRoute.get(entry.route);
+          if (matchingRegistryEntry && !matchingRegistryEntry.has(declaredState)) {
+            fail(
+              "invalid_contextual_mappings",
+              `contextual-help.json: route \`${entry.route}\` declares screenshot_state \`${declaredState}\`, but the UI Audit registry has no such state for that route. Add the state to cooperative-pages.json or use \`default\`.`,
+            );
+          }
         }
         const key = `${entry.route}|${entry.role}`;
         if (seen.has(key)) {
@@ -666,17 +744,118 @@ async function main() {
     }
   }
 
-  // Inventory cross-check
-  if (existsSync(inventoryPath)) {
-    const inventory = readFileSync(inventoryPath, "utf8");
-    for (const article of articles) {
-      if (article.data.status !== "published") continue;
-      if (!inventory.includes(`\`${article.data.slug}\``)) {
-        fail("missing_inventory", `${article.file}: published article \`${article.data.slug}\` is not referenced in \`${relative(projectRoot, inventoryPath)}\`.`);
+  // Inventory cross-check. The machine-readable JSON file is the
+  // authoritative source; the Markdown is generated from it and the
+  // validator must keep the two in lockstep.
+  let inventoryRows = [];
+  if (existsSync(inventoryJsonPath)) {
+    let inventoryJson;
+    try {
+      inventoryJson = JSON.parse(readFileSync(inventoryJsonPath, "utf8"));
+    } catch (error) {
+      fail("missing_inventory", `Cannot parse ${relative(projectRoot, inventoryJsonPath)}: ${error.message}`);
+      inventoryJson = null;
+    }
+    if (inventoryJson) {
+      inventoryRows = Array.isArray(inventoryJson.rows) ? inventoryJson.rows : [];
+      const seenArticleSlugs = new Map();
+      for (const row of inventoryRows) {
+        if (!row || typeof row !== "object") {
+          fail("missing_inventory", `Inventory row is not an object: ${JSON.stringify(row)}`);
+          continue;
+        }
+        if (!validInventoryRoles.includes(row.role)) {
+          fail("missing_inventory", `Inventory row has invalid role \`${row.role}\`.`);
+        }
+        // Gap/deferred rows represent workflows not yet implemented,
+        // so they legitimately have no route.
+        const isUnimplemented = row.documentation_status === "gap" || row.documentation_status === "deferred";
+        if (!isUnimplemented) {
+          if (!row.route || typeof row.route !== "string") {
+            fail("missing_inventory", `Inventory row for \`${row.module}\` is missing a route.`);
+          } else if (!routeNames.has(row.route)) {
+            fail("missing_inventory", `Inventory row references unknown route \`${row.route}\`.`);
+          }
+        } else if (row.route && typeof row.route === "string" && !routeNames.has(row.route)) {
+          fail("missing_inventory", `Inventory row references unknown route \`${row.route}\`.`);
+        }
+        if (row.permission && !permissionNames.has(row.permission)) {
+          fail("missing_inventory", `Inventory row references unknown permission \`${row.permission}\`.`);
+        }
+        if (!validActivityVerbs.includes(row.activity)) {
+          fail("missing_inventory", `Inventory row has invalid activity \`${row.activity}\`.`);
+        }
+        if (!validActivityKinds.includes(row.activity_kind)) {
+          fail("missing_inventory", `Inventory row has invalid activity_kind \`${row.activity_kind}\`.`);
+        }
+        if (!validRiskTiers.includes(row.risk)) {
+          fail("missing_inventory", `Inventory row has invalid risk \`${row.risk}\`.`);
+        }
+        if (!validDocStatuses.includes(row.documentation_status)) {
+          fail("missing_inventory", `Inventory row has invalid documentation_status \`${row.documentation_status}\`.`);
+        }
+        if (row.documentation_status === "documented") {
+          if (!row.article || typeof row.article !== "string") {
+            fail("missing_inventory", `Inventory row \`${row.module}\` is documented but missing an article slug.`);
+          } else {
+            // An article may legitimately document multiple
+            // workflows (e.g. viewing + creating). Track the first
+            // occurrence but do not error on duplicates.
+            if (!seenArticleSlugs.has(row.article)) {
+              seenArticleSlugs.set(row.article, row.module);
+            }
+            if (!slugs.has(row.article)) {
+              fail("missing_inventory", `Inventory row references unknown article slug \`${row.article}\`.`);
+            }
+          }
+        }
+        if ((row.documentation_status === "gap" || row.documentation_status === "deferred") && !row.gap_reason) {
+          fail("missing_inventory", `Inventory row \`${row.module}\` is \`${row.documentation_status}\` but missing a gap_reason.`);
+        }
       }
     }
   } else {
-    fail("missing_inventory", `Inventory file missing: ${relative(projectRoot, inventoryPath)}`);
+    fail("missing_inventory", `Inventory JSON missing: ${relative(projectRoot, inventoryJsonPath)}`);
+  }
+
+  // Every published article must appear in the inventory.
+  if (inventoryRows.length > 0) {
+    const inventoryArticleSlugs = new Set(
+      inventoryRows
+        .filter((row) => row && typeof row.article === "string")
+        .map((row) => row.article),
+    );
+    for (const article of articles) {
+      if (article.data.status !== "published") continue;
+      // Shared / all-role reference articles (glossary, terminology)
+      // are not workflow-specific and need not appear in the inventory.
+      const articleRoles = article.data.roles ?? [];
+      if (articleRoles.length > 0 && articleRoles.every((r) => r === "all" || r === "shared")) {
+        continue;
+      }
+      if (!inventoryArticleSlugs.has(article.data.slug)) {
+        fail("missing_inventory", `${article.file}: published article \`${article.data.slug}\` is not referenced in the role-workflow inventory.`);
+      }
+    }
+  }
+
+  // The Markdown must keep mentioning every documented inventory
+  // article slug so reviewers skimming the human-readable file
+  // don't miss references that exist only in the JSON.
+  if (existsSync(inventoryMdPath)) {
+    const inventoryMd = readFileSync(inventoryMdPath, "utf8");
+    for (const article of articles) {
+      if (article.data.status !== "published") continue;
+      const mdArticleRoles = article.data.roles ?? [];
+      if (mdArticleRoles.length > 0 && mdArticleRoles.every((r) => r === "all" || r === "shared")) {
+        continue;
+      }
+      if (!inventoryMd.includes(`\`${article.data.slug}\``)) {
+        fail("missing_inventory", `${article.file}: published article \`${article.data.slug}\` is not referenced in \`${relative(projectRoot, inventoryMdPath)}\`.`);
+      }
+    }
+  } else {
+    fail("missing_inventory", `Inventory markdown missing: ${relative(projectRoot, inventoryMdPath)}`);
   }
 
   checks.total = articles.length;

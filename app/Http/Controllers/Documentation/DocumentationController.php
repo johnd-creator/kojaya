@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Documentation;
 use App\Documentation\Article;
 use App\Documentation\ArticleAuthorizer;
 use App\Documentation\ArticleRepository;
-use App\Documentation\ContextualHelpRegistry;
 use App\Documentation\DocumentationRoleResolver;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -30,7 +29,6 @@ final class DocumentationController extends Controller
     public function __construct(
         private readonly ArticleRepository $articles,
         private readonly ArticleAuthorizer $authorizer,
-        private readonly ContextualHelpRegistry $contextualHelp,
         private readonly DocumentationRoleResolver $docRoleResolver,
     ) {}
 
@@ -76,7 +74,6 @@ final class DocumentationController extends Controller
         $previous = $this->findNeighbour($article, -1, $user);
         $next = $this->findNeighbour($article, +1, $user);
         $related = $this->findRelated($article, $user);
-        $docRole = $this->docRoleResolver->resolve($user);
 
         return Inertia::render('Documentation/Show', [
             'article' => $this->serializeArticle($article),
@@ -85,8 +82,6 @@ final class DocumentationController extends Controller
                 'next' => $next === null ? null : $this->serializeNavItem($next),
                 'related' => $related,
             ],
-            'contextualHelp' => $this->contextualHelp->forRole($docRole),
-            'primaryRole' => $docRole,
         ]);
     }
 

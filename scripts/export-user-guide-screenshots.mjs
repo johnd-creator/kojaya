@@ -84,7 +84,10 @@ export async function sha256File(path) {
 
 /**
  * Strip an absolute path of any traversal attempt and verify that
- * the source lives under the baselines root.
+ * the source lives under the baselines root. Containment is
+ * computed with `path.relative()` against the real (resolved)
+ * baseline root so prefix attacks like `tests/visual/baselines-evil`
+ * cannot slip through.
  *
  * @param {string} projectRoot
  * @param {string} source
@@ -103,8 +106,23 @@ export function resolveSafeSource(projectRoot, source) {
   }
   const absolute = isAbsolute(source) ? source : resolve(projectRoot, source);
   const normalised = resolve(absolute);
-  const allowed = resolve(projectRoot, ALLOWED_SOURCE_PREFIX);
-  if (!(normalised + sep).startsWith(allowed)) {
+  const baselineRoot = resolve(projectRoot, ALLOWED_SOURCE_PREFIX);
+  if (isAbsolute(normalised) && normalised.toLowerCase().indexOf("\\") !== -1 && sep === "/") {
+    // Reject Windows-style backslash paths on POSIX hosts.
+    throw new Error(`Source uses a Windows-style path: ${source}`);
+  }
+
+  // Containment check via `relative`. If `relative()` returns an
+  // empty string the path equals the root; if it starts with `..`
+  // (or equals `..`), the path escapes; if it's absolute the path
+  // was driven outside the project root entirely.
+  const rel = relative(baselineRoot, normalised);
+  if (
+    rel === ""
+    || rel.startsWith(`..${sep}`)
+    || rel === ".."
+    || isAbsolute(rel)
+  ) {
     throw new Error(`Source is outside the baselines directory: ${source}`);
   }
   return normalised;

@@ -155,30 +155,6 @@ final class ContextualHelpRegistry
     }
 
     /**
-     * @return list<array{
-     *     route: string,
-     *     slug: string,
-     *     role: string,
-     *     permission?: string,
-     *     screenshot_state: string,
-     *     label: string,
-     * }>
-     */
-    public function forRole(string $docRole): array
-    {
-        $this->load();
-
-        $resolved = $docRole === DocumentationRoleResolver::ROLE_SYSTEM_ADMIN
-            ? ($this->entries ?? [])
-            : array_values(array_filter(
-                $this->entries ?? [],
-                static fn (array $e): bool => $e['role'] === $docRole || $e['role'] === 'all' || $e['role'] === 'shared',
-            ));
-
-        return $resolved;
-    }
-
-    /**
      * @param  array{
      *     route: string,
      *     slug: string,

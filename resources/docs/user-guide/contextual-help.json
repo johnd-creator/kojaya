@@ -58,7 +58,7 @@
       "slug": "manajer-loan-review",
       "role": "manajer_koperasi",
       "permission": "review_cooperative_loan",
-      "screenshot_state": "manager-review",
+      "screenshot_state": "default",
       "label": "Tinjauan Pinjaman Manajer"
     },
     {
@@ -66,7 +66,7 @@
       "slug": "manajer-loan-review",
       "role": "manajer_koperasi",
       "permission": "review_cooperative_loan",
-      "screenshot_state": "manager-review",
+      "screenshot_state": "default",
       "label": "Tinjauan Pinjaman Manajer"
     },
     {
@@ -82,7 +82,7 @@
       "slug": "pengurus-loan-approval",
       "role": "pengurus_koperasi",
       "permission": "approve_cooperative_loan",
-      "screenshot_state": "chairman-approval",
+      "screenshot_state": "default",
       "label": "Persetujuan Akhir Pinjaman"
     },
     {

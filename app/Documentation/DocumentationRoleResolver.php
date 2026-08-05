@@ -38,6 +38,14 @@ final class DocumentationRoleResolver
 
     public const ROLE_GENERIC = 'generic';
 
+    /**
+     * All documentation role buckets the resolver itself can return.
+     *
+     * Note: `all` and `shared` are NOT included here — they are
+     * article-level targets rather than resolver outputs. Helper
+     * methods that historically checked them were unsafe because
+     * they hand-rolled a separate membership check.
+     */
     public const ALL_DOC_ROLES = [
         self::ROLE_ANGGOTA,
         self::ROLE_ADMIN_KOPERASI,
@@ -135,35 +143,5 @@ final class DocumentationRoleResolver
         }
 
         return self::ROLE_GENERIC;
-    }
-
-    /**
-     * Convenience for tests/UI: does the user, under the documentation
-     * role rules, have the right to read a `roles: [doc_role]` article?
-     */
-    public function canReadRole(?User $user, string $docRole): bool
-    {
-        if (! in_array($docRole, self::ALL_DOC_ROLES, true)) {
-            return false;
-        }
-
-        if ($docRole === 'all') {
-            return $user !== null;
-        }
-
-        $userRole = $this->resolve($user);
-
-        if ($userRole === self::ROLE_SYSTEM_ADMIN) {
-            return true;
-        }
-
-        if ($userRole === self::ROLE_ADMIN_PUSAT) {
-            // Admin Pusat is a platform role; per task rules we keep
-            // it on the same footing as System Admin only for shared
-            // documentation.
-            return $docRole === 'shared';
-        }
-
-        return $userRole === $docRole;
     }
 }

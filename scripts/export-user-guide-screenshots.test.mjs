@@ -383,3 +383,70 @@ test("runScreenshots refuses sources outside the baselines directory", async () 
     fx.cleanup();
   }
 });
+
+test("resolveSafeSource rejects the sibling-prefix attack `baselines-evil`", () => {
+  const fx = makeFixture();
+  try {
+    mkdirSync(resolve(fx.root, "tests/visual/baselines-evil/desktop"), { recursive: true });
+    writeFileSync(resolve(fx.root, "tests/visual/baselines-evil/desktop/x.png"), png());
+    assert.throws(
+      () => resolveSafeSource(fx.root, "tests/visual/baselines-evil/desktop/x.png"),
+      /outside the baselines directory/,
+    );
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("resolveSafeSource rejects absolute paths outside the project root", () => {
+  const fx = makeFixture();
+  try {
+    assert.throws(
+      () => resolveSafeSource(fx.root, "/etc/passwd"),
+      /outside the baselines directory/,
+    );
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("resolveSafeSource rejects NUL byte injection", () => {
+  const fx = makeFixture();
+  try {
+    assert.throws(
+      () => resolveSafeSource(fx.root, "tests/visual/baselines/desktop/example.png\0.png"),
+      /NUL byte/,
+    );
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("resolveSafeSource rejects Windows-style backslash traversal on POSIX hosts", () => {
+  const fx = makeFixture();
+  try {
+    // `..\..\etc\passwd` is treated as a literal segment name on
+    // POSIX (no separator), so the existing `..` segment guard
+    // catches it. Use the resolved-path branch instead: a path
+    // containing backslashes whose normalised form lies outside
+    // the baseline root must still be rejected.
+    assert.throws(
+      () => resolveSafeSource(fx.root, "tests/visual/baselines-evil\\windows\\x.png"),
+      /outside the baselines directory|contains a '..' segment|Windows-style/,
+    );
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("resolveSafeSource rejects parent traversal after resolution", () => {
+  const fx = makeFixture();
+  try {
+    assert.throws(
+      () => resolveSafeSource(fx.root, "tests/visual/baselines/desktop/../../../etc/passwd"),
+      /outside the baselines directory|'..' segment/,
+    );
+  } finally {
+    fx.cleanup();
+  }
+});

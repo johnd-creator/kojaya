@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Documentation;
 
+use App\Documentation\Article;
+use App\Documentation\ArticleAuthorizer;
 use App\Documentation\ArticleRepository;
+use App\Documentation\InvalidArticleException;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -15,11 +19,46 @@ class ViewDocumentationCenterTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Per-test isolated guide root. Each test runs against its own
+     * Markdown directory under the OS temp folder so parallel test
+     * runs cannot race over the production `docs/user-guide/`.
+     */
+    private string $temporaryGuidePath = '';
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+
+        $this->temporaryGuidePath = sys_get_temp_dir()
+            .DIRECTORY_SEPARATOR
+            .'kojaya-user-guide-tests'
+            .DIRECTORY_SEPARATOR
+            .Str::uuid()->toString();
+
+        $this->seedTemporaryGuideFromProduction();
+
+        $this->bindTemporaryArticleRepository();
+    }
+
+    /**
+     * Mirror the production guide directory into the per-test
+     * temporary location so the existing positive-path tests keep
+     * seeing the real articles. Tests that need bespoke fixtures
+     * additionally drop them via {@see self::writeTemporaryArticle()}
+     * or {@see self::createArticleWithMode()} — both of which bind a
+     * fresh repository afterwards.
+     */
+    private function seedTemporaryGuideFromProduction(): void
+    {
+        $productionRoot = base_path('docs/user-guide');
+        if (! is_dir($productionRoot)) {
+            return;
+        }
+
+        File::copyDirectory($productionRoot, $this->temporaryGuidePath);
     }
 
     public function test_guest_is_redirected_from_documentation_center(): void
@@ -174,31 +213,13 @@ class ViewDocumentationCenterTest extends TestCase
 
         $user = $this->makeUserWithRole('Admin Koperasi');
 
-        // Create a draft article with `custom_doc_perm_a` and verify it is hidden.
         $slug = 'hidden-test-'.strtolower(Str::random(6));
-        $path = base_path('docs/user-guide/admin-koperasi/'.$slug.'.md');
-        @mkdir(dirname($path), 0775, true);
-        file_put_contents(
-            $path,
-            "---\n".
-            "title: Hidden Test\n".
-            "slug: {$slug}\n".
-            "summary: Hidden by permission gate.\n".
-            "category: Test\n".
-            "module: test\n".
-            "roles: [admin_koperasi]\n".
-            "permissions: [custom_doc_perm_a]\n".
-            "permission_mode: all\n".
-            "route_names: []\n".
-            "risk_level: low\n".
-            "screenshot_entries: []\n".
-            "related_articles: []\n".
-            "last_reviewed_commit: 20c86960\n".
-            "status: published\n".
-            "sort_order: 999\n".
-            "---\n\n# Hi\n",
+        $this->writeTemporaryArticle(
+            role: 'admin-koperasi',
+            slug: $slug,
+            permissions: ['custom_doc_perm_a'],
+            mode: 'all',
         );
-        app(\App\Documentation\ArticleRepository::class)->flush();
 
         $response = $this->actingAs($user)
             ->get('/documentation')
@@ -211,12 +232,9 @@ class ViewDocumentationCenterTest extends TestCase
         );
 
         $user->givePermissionTo('custom_doc_perm_a');
-        app(\App\Documentation\ArticleRepository::class)->flush();
+        $this->bindTemporaryArticleRepository();
         $response = $this->actingAs($user)->get('/documentation')->assertOk();
         $this->assertContains($slug, $this->collectSlugs($response));
-
-        @unlink($path);
-        app(\App\Documentation\ArticleRepository::class)->flush();
     }
 
     public function test_article_with_required_permission_is_shown_to_user_with_at_least_one_match(): void
@@ -227,37 +245,17 @@ class ViewDocumentationCenterTest extends TestCase
         $user->givePermissionTo('custom_doc_perm_b');
 
         $slug = 'visible-test-'.strtolower(Str::random(6));
-        $path = base_path('docs/user-guide/admin-koperasi/'.$slug.'.md');
-        @mkdir(dirname($path), 0775, true);
-        file_put_contents(
-            $path,
-            "---\n".
-            "title: Visible Test\n".
-            "slug: {$slug}\n".
-            "summary: Visible because user has at least one permission.\n".
-            "category: Test\n".
-            "module: test\n".
-            "roles: [admin_koperasi]\n".
-            "permissions: [custom_doc_perm_b]\n".
-            "permission_mode: all\n".
-            "route_names: []\n".
-            "risk_level: low\n".
-            "screenshot_entries: []\n".
-            "related_articles: []\n".
-            "last_reviewed_commit: 20c86960\n".
-            "status: published\n".
-            "sort_order: 999\n".
-            "---\n\n# Hi\n",
+        $this->writeTemporaryArticle(
+            role: 'admin-koperasi',
+            slug: $slug,
+            permissions: ['custom_doc_perm_b'],
+            mode: 'all',
         );
-        app(\App\Documentation\ArticleRepository::class)->flush();
 
         $response = $this->actingAs($user)
             ->get('/documentation')
             ->assertOk();
         $this->assertContains($slug, $this->collectSlugs($response));
-
-        @unlink($path);
-        app(\App\Documentation\ArticleRepository::class)->flush();
     }
 
     public function test_permission_mode_any_returns_article_when_user_has_one_match(): void
@@ -326,9 +324,9 @@ class ViewDocumentationCenterTest extends TestCase
     public function test_invalid_role_in_frontmatter_is_rejected_by_repository(): void
     {
         $relative = 'anggota/bad-roles-'.Str::random(6).'.md';
-        $path = base_path('docs/user-guide/'.$relative);
-        @mkdir(dirname($path), 0775, true);
-        file_put_contents(
+        $path = $this->temporaryGuidePath.DIRECTORY_SEPARATOR.$relative;
+        File::ensureDirectoryExists(dirname($path));
+        File::put(
             $path,
             "---\n".
             "title: Bad\n".
@@ -350,12 +348,11 @@ class ViewDocumentationCenterTest extends TestCase
         );
 
         try {
-            $this->expectException(\App\Documentation\InvalidArticleException::class);
-            app(ArticleRepository::class)->flush();
+            $this->expectException(InvalidArticleException::class);
+            $this->bindTemporaryArticleRepository();
             app(ArticleRepository::class)->loadAll();
         } finally {
             @unlink($path);
-            app(ArticleRepository::class)->flush();
         }
     }
 
@@ -365,11 +362,11 @@ class ViewDocumentationCenterTest extends TestCase
     private function createArticleWithMode(array $permissions, string $mode, bool $draft = false): object
     {
         $slug = 'test-'.strtolower(Str::random(8));
-        $path = base_path('docs/user-guide/anggota/'.$slug.'.md');
-        @mkdir(dirname($path), 0775, true);
         $status = $draft ? 'draft' : 'published';
         $permissionsYml = $permissions === [] ? '[]' : '['.implode(', ', array_map(static fn (string $p): string => "'{$p}'", $permissions)).']';
-        file_put_contents(
+        $path = $this->temporaryGuidePath.DIRECTORY_SEPARATOR.'anggota'.DIRECTORY_SEPARATOR.$slug.'.md';
+        File::ensureDirectoryExists(dirname($path));
+        File::put(
             $path,
             "---\n".
             "title: Test Article\n".
@@ -390,21 +387,123 @@ class ViewDocumentationCenterTest extends TestCase
             "---\n\n# Hi\n",
         );
 
-        $repo = app(ArticleRepository::class);
-        $repo->flush();
+        $this->bindTemporaryArticleRepository();
 
+        $repo = app(ArticleRepository::class);
         $article = $repo->findBySlug($slug);
         $this->assertNotNull($article, "Test article not loaded: {$slug}");
 
         return $article;
     }
 
+    public function test_temporary_directory_is_unique_per_test(): void
+    {
+        // Snapshot the current path; the next test's setUp() will
+        // assign a fresh UUID directory.
+        $first = $this->temporaryGuidePath;
+        $this->assertNotEmpty($first);
+        $this->assertDirectoryExists($first);
+    }
+
+    public function test_production_guide_directory_is_unchanged_by_the_test_suite(): void
+    {
+        $productionRoot = base_path('docs/user-guide');
+        $baseline = [];
+        foreach (File::allFiles($productionRoot) as $file) {
+            $baseline[$file->getRelativePathname()] = $file->getMTime();
+        }
+
+        // Write a temporary article that would otherwise pollute
+        // the production directory if the helper were broken.
+        $slug = 'would-pollute-'.strtolower(Str::random(6));
+        $this->writeTemporaryArticle(
+            role: 'admin-koperasi',
+            slug: $slug,
+            permissions: [],
+            mode: 'all',
+        );
+
+        foreach (File::allFiles($productionRoot) as $file) {
+            $rel = $file->getRelativePathname();
+            $this->assertArrayHasKey($rel, $baseline, "Production guide gained new file: {$rel}");
+            $this->assertSame($baseline[$rel], $file->getMTime(), "Production guide file mtime changed: {$rel}");
+        }
+    }
+
+    public function test_temporary_guide_path_is_cleaned_up_in_tear_down(): void
+    {
+        $path = $this->temporaryGuidePath;
+        $this->assertDirectoryExists($path);
+
+        // Simulate an exception happening mid-test by calling the
+        // tearDown logic directly.
+        File::deleteDirectory($path);
+        $this->assertDirectoryDoesNotExist($path);
+    }
+
+    /**
+     * @param  list<string>  $permissions
+     */
+    private function writeTemporaryArticle(
+        string $role,
+        string $slug,
+        array $permissions,
+        string $mode,
+    ): void {
+        $directory = $this->temporaryGuidePath.DIRECTORY_SEPARATOR.$role;
+        File::ensureDirectoryExists($directory);
+        $path = $directory.DIRECTORY_SEPARATOR.$slug.'.md';
+        $permissionsYml = $permissions === [] ? '[]' : '['.implode(', ', array_map(static fn (string $p): string => "'{$p}'", $permissions)).']';
+        File::put(
+            $path,
+            "---\n".
+            "title: Test Article\n".
+            "slug: {$slug}\n".
+            "summary: Temporary article for testing\n".
+            "category: Test\n".
+            "module: test\n".
+            'roles: ['.str_replace('-', '_', $role)."]\n".
+            "permissions: {$permissionsYml}\n".
+            "permission_mode: {$mode}\n".
+            "route_names: []\n".
+            "risk_level: low\n".
+            "screenshot_entries: []\n".
+            "related_articles: []\n".
+            "last_reviewed_commit: 20c86960\n".
+            "status: published\n".
+            "sort_order: 999\n".
+            "---\n\n# Test Article\n",
+        );
+
+        $this->bindTemporaryArticleRepository();
+    }
+
+    /**
+     * Re-bind ArticleRepository (and dependent services) to the
+     * per-test temporary guide path. Forgetting to do this after a
+     * filesystem write is exactly how parallel tests race.
+     */
+    private function bindTemporaryArticleRepository(): void
+    {
+        $this->app->forgetInstance(ArticleRepository::class);
+        $this->app->forgetInstance(ArticleAuthorizer::class);
+        $this->app->forgetInstance(\App\Documentation\ContextualHelpRegistry::class);
+        $this->app->forgetInstance(\App\Http\Controllers\Documentation\DocumentationController::class);
+
+        $this->app->singleton(
+            ArticleRepository::class,
+            fn () => new ArticleRepository(basePath: $this->temporaryGuidePath),
+        );
+    }
+
     protected function tearDown(): void
     {
-        foreach (glob(base_path('docs/user-guide/anggota/test-*.md')) ?: [] as $file) {
-            @unlink($file);
+        if ($this->temporaryGuidePath !== '' && is_dir($this->temporaryGuidePath)) {
+            File::deleteDirectory($this->temporaryGuidePath);
         }
-        app(ArticleRepository::class)->flush();
+        $this->app->forgetInstance(ArticleRepository::class);
+        $this->app->forgetInstance(ArticleAuthorizer::class);
+
         parent::tearDown();
     }
 

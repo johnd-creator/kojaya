@@ -2219,13 +2219,13 @@
       "accessibility": true
     },
     {
-      "id": "documentation-landing-admin-koperasi",
+      "id": "documentation-landing-admin",
       "module": "documentation",
       "screen": "landing",
       "route_name": "documentation.index",
       "path_template": "/documentation",
       "role": "Admin Koperasi",
-      "auth_state": "admin-koperasi",
+      "auth_state": "admin",
       "state": "default",
       "viewport_policy": [
         "desktop"
@@ -2242,13 +2242,13 @@
       "accessibility": true
     },
     {
-      "id": "documentation-article-admin-koperasi",
+      "id": "documentation-article-admin",
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
       "path_template": "/documentation/admin-koperasi-payment-queue",
       "role": "Admin Koperasi",
-      "auth_state": "admin-koperasi",
+      "auth_state": "admin",
       "state": "default",
       "viewport_policy": [
         "desktop"
@@ -2271,7 +2271,7 @@
       "route_name": "documentation.index",
       "path_template": "/documentation",
       "role": "Manajer Koperasi",
-      "auth_state": "manajer-koperasi",
+      "auth_state": "manajer",
       "state": "default",
       "viewport_policy": [
         "desktop"
@@ -2294,7 +2294,7 @@
       "route_name": "documentation.show",
       "path_template": "/documentation/manajer-loan-review",
       "role": "Manajer Koperasi",
-      "auth_state": "manajer-koperasi",
+      "auth_state": "manajer",
       "state": "default",
       "viewport_policy": [
         "desktop"
@@ -2317,7 +2317,7 @@
       "route_name": "documentation.index",
       "path_template": "/documentation",
       "role": "Pengurus Koperasi",
-      "auth_state": "pengurus-koperasi",
+      "auth_state": "pengurus",
       "state": "default",
       "viewport_policy": [
         "desktop"
@@ -2340,7 +2340,7 @@
       "route_name": "documentation.show",
       "path_template": "/documentation/pengurus-loan-approval",
       "role": "Pengurus Koperasi",
-      "auth_state": "pengurus-koperasi",
+      "auth_state": "pengurus",
       "state": "default",
       "viewport_policy": [
         "desktop"

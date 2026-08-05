@@ -61,9 +61,8 @@ tindakan korektif sebelum masalah membesar.
 5. Periksa pinjaman yang sudah disetujui Pengurus namun
    belum dicairkan. Hubungi Admin Koperasi untuk menanyakan
    status transfer.
-6. Permasalahan hukum (misalnya sengketa atau audit eksternal)
-   dicatat dan diteruskan ke Pengurus Koperasi melalui
-   laporan triwulan.
+6. Permasalahan operasional yang ditemukan dicatat dan
+   diteruskan ke Pengurus Koperasi.
 
 ## Hasil yang diharapkan
 
@@ -89,8 +88,8 @@ tindakan korektif sebelum masalah membesar.
 
 - Buku besar tidak bisa dibuka → hubungi Admin Koperasi
   untuk sinkronisasi.
-- Pencairan tidak bergerak lebih dari 3 hari → hubungi
-  Admin Koperasi untuk eskalasi.
+- Pencairan tidak bergerak → hubungi Admin Koperasi untuk
+  eskalasi.
 - Pinjaman macet tidak turun → susun rencana tindak lanjut
   di rapat internal.
 
@@ -105,8 +104,8 @@ tindakan korektif sebelum masalah membesar.
 
 - Anomali yang berulang → laporkan ke Pengurus Koperasi.
 - Tindak lanjut yang membutuhkan kebijakan → usulkan ke
-  Pengurus melalui rapat triwulan.
-- Permintaan data dari auditor → koordinasikan dengan
+  Pengurus Koperasi.
+- Permintaan data dari pihak luar → koordinasikan dengan
   Pengurus Koperasi.
 
 ## Prosedur terkait

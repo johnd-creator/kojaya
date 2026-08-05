@@ -1,7 +1,7 @@
 ---
 title: Alur Pembayaran Iuran Bulanan
 slug: anggota-payment-flow
-summary: Cara membayar iuran bulanan, memilih invoice yang benar, dan mengunggah bukti transfer.
+summary: Cara membayar iuran bulanan melalui QRIS, Virtual Account, atau E-Wallet.
 category: Anggota · Pembayaran
 module: payments
 roles:
@@ -9,8 +9,8 @@ roles:
 permissions: []
 permission_mode: all
 route_names:
+  - member.savings
   - member.payments.intent
-  - member.payments.proof
   - member.payments.status
 risk_level: medium
 screenshot_entries:
@@ -27,15 +27,13 @@ sort_order: 20
 ## Tujuan
 
 Membantu anggota membayar iuran bulanan tepat waktu melalui
-aplikasi, baik lewat pembayaran otomatis maupun transfer manual
-dengan bukti.
+aplikasi menggunakan kanal pembayaran digital.
 
 ## Kapan digunakan
 
 - Tagihan iuran bulanan sudah terbit.
-- Ingin melihat status tagihan dan bukti bayar.
-- Ingin mengganti metode pembayaran dari otomatis ke manual atau
-  sebaliknya.
+- Ingin membayar tagihan yang belum lunas.
+- Ingin melihat status pembayaran terkini.
 
 ## Prasyarat
 
@@ -45,65 +43,60 @@ dengan bukti.
 
 ## Langkah penggunaan
 
-1. Buka **Simpanan** atau **Dashboard** anggota.
+1. Buka **Simpanan** dari menu portal anggota.
 2. Pilih tagihan dengan status yang menandakan tagihan belum
    dibayar. Sistem hanya menampilkan tagihan yang belum
    dibayar, sehingga anggota tidak salah memilih bulan.
 3. Klik **Bayar**.
-4. Jika memilih pembayaran otomatis, lengkapi pembayaran
-   mengikuti alur yang ditampilkan aplikasi (misalnya
-   pembayaran melalui payment intent dengan kode bayar atau
-   nomor Virtual Account bila tersedia).
-5. Jika memilih transfer manual, klik **Unggah Bukti Transfer**
-   dan lampirkan foto atau PDF bukti transfer dari bank.
-6. Tunggu status pembayaran berubah dari **Menunggu Verifikasi**
-   (`PENDING`) menjadi **Terverifikasi** (`APPROVED`) setelah
-   Admin Koperasi memverifikasi bukti.
+4. Pilih kanal pembayaran yang tersedia:
+   - **QRIS**: sistem menampilkan kode QR untuk dipindai
+     menggunakan aplikasi e-wallet atau m-banking apa pun.
+   - **Virtual Account**: sistem menampilkan nomor Virtual
+     Account untuk transfer melalui ATM atau m-banking.
+   - **E-Wallet**: sistem memberikan tautan untuk melanjutkan
+     pembayaran melalui aplikasi dompet digital.
+5. Selesaikan pembayaran sesuai kanal yang dipilih. Sistem
+   secara otomatis memeriksa status pembayaran dan memperbarui
+   tagihan ketika pembayaran berhasil.
 
 ## Hasil yang diharapkan
 
 - Tagihan berubah status menjadi **Terverifikasi**.
-- Notifikasi berhasil diterima anggota.
-- Histori transaksi di menu **Transaksi** menampilkan pembayaran
-  baru.
+- Histori transaksi di menu **Transaksi** menampilkan
+  pembayaran baru.
 
 ## Status yang mungkin muncul
 
-Label di bawah adalah nilai yang ditampilkan aplikasi untuk
-status pembayaran:
-
-- **PENDING** (Menunggu Verifikasi): bukti sudah diunggah,
-  menunggu persetujuan Admin Koperasi.
-- **APPROVED** (Terverifikasi): pembayaran diverifikasi Admin
-  Koperasi.
-- **REJECTED** (Ditolak): bukti tidak valid; anggota diminta
-  unggah ulang.
+- **Menunggu Pembayaran**: tagihan belum dibayar, kanal
+  pembayaran belum dipilih.
+- **Menunggu Verifikasi**: pembayaran sedang diproses oleh
+  sistem pembayaran.
+- **Terverifikasi**: pembayaran berhasil dan tercatat di
+  pembukuan.
 
 ## Kondisi gagal
 
-- Bukti transfer tidak terbaca → pastikan foto tidak blur dan
-  nominal terlihat jelas.
-- Nominal transfer tidak sesuai tagihan → hubungi Admin Koperasi
-  untuk klarifikasi selisih.
-- Status tidak berubah setelah 1×24 jam → hubungi Admin Koperasi
-  untuk cek antrean verifikasi.
+- Kanal pembayaran tidak aktif → sistem dapat mengalihkan
+  otomatis ke Virtual Account. Coba gunakan kanal lain bila
+  tetap gagal.
+- Kode QR tidak muncul → pastikan koneksi internet stabil dan
+  coba kembali.
+- Status tidak berubah setelah pembayaran → hubungi Admin
+  Koperasi dengan menyertakan nomor tagihan.
 
 ## Hal yang tidak boleh dilakukan
 
-- Mengunggah bukti transfer yang bukan milik sendiri.
-- Memalsukan bukti pembayaran.
 - Membayar iuran anggota lain tanpa konfirmasi Admin Koperasi.
+- Membagikan kode QR atau nomor Virtual Account kepada pihak
+  yang tidak berkepentingan.
 
 ## Handoff
 
-- Bukti yang diunggah akan masuk ke **antrean verifikasi Admin
-  Koperasi** dan diproses pada jam kerja.
-- Jika bukti ditolak, anggota akan menerima notifikasi dan dapat
-  mengunggah ulang.
-- Pertanyaan teknis seputar tagihan → hubungi Admin Koperasi.
+- Pembayaran yang berhasil otomatis tercatat di pembukuan.
+- Jika kanal pembayaran bermasalah, hubungi Admin Koperasi.
 
 ## Prosedur terkait
 
 - **Mengenal Portal Anggota** untuk menemukan menu pembayaran.
 - **Antrean Verifikasi Bukti Pembayaran** (panduan Admin
-  Koperasi) menjelaskan bagaimana bukti diverifikasi.
+  Koperasi) menjelaskan bagaimana pembayaran diproses.

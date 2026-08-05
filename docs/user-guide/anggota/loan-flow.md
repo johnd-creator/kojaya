@@ -57,8 +57,7 @@ tahapan sampai pencairan, tanpa harus datang ke kantor koperasi.
    untuk membayar angsuran.
 7. Untuk membayar angsuran, gunakan metode pembayaran yang
    tersedia pada detail pinjaman. Metode yang ditampilkan
-   mengikuti pilihan yang aktif di aplikasi (misalnya tunai,
-   transfer bank, atau QRIS).
+   meliputi QRIS, Virtual Account, atau E-Wallet.
 8. Pantau status pembayaran angsuran sampai aplikasi berubah ke
    status yang menandakan pinjaman selesai.
 
@@ -73,22 +72,20 @@ tahapan sampai pencairan, tanpa harus datang ke kantor koperasi.
 
 ## Status yang mungkin muncul
 
-Label status di bawah mengikuti nilai yang ditampilkan aplikasi.
-Saat ini aplikasi menampilkan status dengan label dalam Bahasa
-Indonesia yang setara dengan kode status internal:
+Status di bawah menggunakan label Bahasa Indonesia yang
+tampil pada portal anggota:
 
-- **APPLIED** (Diajukan): aplikasi baru, menunggu tinjauan
-  Manajer Koperasi.
-- **MANAGER_APPROVED** (Direview Manajer): sudah disetujui
-  Manajer, menunggu keputusan Pengurus Koperasi.
-- **APPROVED** (Disetujui): disetujui final, menunggu
-  pencairan.
-- **ACTIVE** (Aktif): sudah dicairkan, angsuran berjalan.
-- **PAID_OFF** (Lunas): seluruh angsuran sudah dibayar.
-- **DEFAULTED** (Macet): terdapat angsuran yang terlambat.
-- **REJECTED** (Ditolak): ditolak pada salah satu tahap tinjauan.
-- **WRITTEN_OFF** (Dihapusbukukan): pinjaman dihapus dari
-  pembukuan karena kondisi tertentu.
+- **Diajukan**: aplikasi baru, menunggu tinjauan Manajer
+  Koperasi.
+- **Direview Manajer**: sudah ditinjau Manajer, menunggu
+  keputusan Pengurus Koperasi.
+- **Disetujui**: disetujui final, menunggu pencairan.
+- **Aktif**: sudah dicairkan, angsuran berjalan.
+- **Lunas**: seluruh angsuran sudah dibayar.
+- **Kewajiban Menunggak**: terdapat angsuran yang terlambat.
+- **Ditolak**: ditolak pada salah satu tahap tinjauan.
+- **Dihapuskan**: pinjaman dihapus dari pembukuan karena
+  kondisi tertentu.
 
 ## Kondisi gagal
 
@@ -101,7 +98,6 @@ Indonesia yang setara dengan kode status internal:
 ## Hal yang tidak boleh dilakukan
 
 - Memberikan data palsu pada formulir pengajuan.
-- Memalsukan dokumen pendukung pengajuan.
 - Mengubah jadwal angsuran sendiri tanpa persetujuan koperasi.
 
 ## Handoff

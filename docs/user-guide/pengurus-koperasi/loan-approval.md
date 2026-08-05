@@ -37,8 +37,8 @@ lingkup koperasi.
 
 ## Kapan digunakan
 
-- Ada aplikasi pinjaman dengan status `MANAGER_APPROVED` yang
-  menunggu keputusan akhir.
+- Ada aplikasi pinjaman dengan status **Direview Manajer**
+  yang menunggu keputusan akhir.
 - Ingin menolak aplikasi pada tahap akhir.
 - Ingin menambahkan catatan keputusan pada aplikasi.
 
@@ -46,69 +46,69 @@ lingkup koperasi.
 
 - Sudah login sebagai Pengurus Koperasi.
 - Memiliki hak akses untuk menyetujui pinjaman.
-- Aplikasi sudah berstatus `MANAGER_APPROVED`.
+- Aplikasi sudah berstatus **Direview Manajer**.
 
 ## Langkah penggunaan
 
 1. Buka menu **Pinjaman** dan gunakan filter status
-   `MANAGER_APPROVED`.
+   **Direview Manajer**.
 2. Buka detail aplikasi untuk membaca data pemohon dan
-   ringkasan tinjauan Manajer Koperasi pada log keputusan.
+   ringkasan tinjauan Manajer Koperasi pada riwayat
+   keputusan.
 3. Pilih keputusan yang tersedia pada detail aplikasi:
    - **Setujui sebagai Pengurus** untuk menyetujui aplikasi.
-     Status aplikasi berubah menjadi `APPROVED`. Pencairan
-     belum terjadi sampai ada peran dengan hak akses
-     pencairan (`manage_cooperative_loan`) menjalankan
+     Status aplikasi berubah menjadi **Disetujui**. Pencairan
+     belum terjadi sampai peran berwenang menjalankan
      tindakan **Cairkan Pinjaman**.
    - **Tolak** untuk menolak aplikasi pada tahap akhir. Status
-     aplikasi berubah menjadi `REJECTED` dengan alasan
+     aplikasi berubah menjadi **Ditolak** dengan alasan
      penolakan yang Anda isi.
-4. Catatan keputusan yang Anda isi pada kolom catatan akan
-   tersimpan dalam log keputusan aplikasi dan dapat dilihat
-   oleh anggota serta peran koperasi lainnya.
+4. Catatan keputusan yang Anda isi tersimpan pada riwayat
+   keputusan aplikasi dan dapat dilihat oleh peran
+   koperasi lainnya pada halaman detail pinjaman.
 
 ## Hasil yang diharapkan
 
 - Aplikasi yang disetujui melewati tahap akhir dengan status
-  `APPROVED` dan menunggu pencairan.
+  **Disetujui** dan menunggu pencairan.
 - Aplikasi yang ditolak memiliki alasan penolakan yang
-  tercatat pada log keputusan.
+  tercatat pada riwayat keputusan.
 - Setelah pencairan dijalankan, status aplikasi berubah
-  menjadi `ACTIVE` dan jadwal angsuran tersedia pada detail
+  menjadi **Aktif** dan jadwal angsuran tersedia pada detail
   pinjaman.
 
 ## Status yang mungkin muncul
 
-- **MANAGER_APPROVED**: aplikasi menunggu keputusan akhir
+- **Direview Manajer**: aplikasi menunggu keputusan akhir
   Pengurus.
-- **APPROVED**: aplikasi disetujui final, menunggu pencairan
-  oleh peran dengan hak akses pencairan.
-- **ACTIVE**: aplikasi sudah dicairkan, angsuran berjalan.
-- **REJECTED**: aplikasi ditolak pada tahap akhir.
+- **Disetujui**: aplikasi disetujui final, menunggu pencairan.
+- **Aktif**: aplikasi sudah dicairkan, angsuran berjalan.
+- **Ditolak**: aplikasi ditolak pada tahap akhir.
 
 ## Kondisi gagal
 
 - Manajer belum menyelesaikan tinjauan → minta Manajer
   menyelesaikan tinjauan terlebih dahulu sampai status
-  menjadi `MANAGER_APPROVED`.
+  menjadi **Direview Manajer**.
 - Tombol **Setujui sebagai Pengurus** tidak muncul → aplikasi
-  belum berstatus `MANAGER_APPROVED`, atau Anda belum login
-  sebagai Pengurus Koperasi dengan izin `approve_cooperative_loan`.
+  belum berstatus **Direview Manajer**, atau Anda belum login
+  sebagai Pengurus Koperasi.
 
 ## Hal yang tidak boleh dilakukan
 
-- Menyetujui aplikasi yang belum berstatus `MANAGER_APPROVED`.
+- Menyetujui aplikasi yang belum berstatus **Direview
+  Manajer**.
 - Menolak tanpa alasan yang terdokumentasi pada kolom
   penolakan.
 
 ## Handoff
 
-- Aplikasi yang disetujui → peran dengan hak akses pencairan
-  (`manage_cooperative_loan`) menjalankan **Cairkan Pinjaman**
-  pada detail aplikasi sampai status menjadi `ACTIVE`.
-- Keputusan yang berdampak besar → dicatat pada log keputusan
-  aplikasi dan dapat dirujuk oleh Pengurus, Manajer, atau
-  Admin Koperasi.
+- Aplikasi yang disetujui → peran berwenang menjalankan
+  **Cairkan Pinjaman** pada detail aplikasi sampai status
+  menjadi **Aktif**.
+- Keputusan yang berdampak besar → dicatat pada riwayat
+  keputusan aplikasi dan dapat dirujuk oleh Pengurus,
+  Manajer, atau Admin Koperasi.
 
 ## Prosedur terkait
 

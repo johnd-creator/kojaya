@@ -13,7 +13,6 @@ route_names:
   - cooperative.loans.index
   - cooperative.loans.show
   - cooperative.loans.review
-  - cooperative.loans.approve
   - cooperative.loans.reject
   - cooperative.ledger.index
 risk_level: medium
@@ -45,13 +44,13 @@ koperasi.
 
 - Sudah login sebagai Manajer Koperasi.
 - Memiliki hak akses untuk meninjau pinjaman.
-- Aplikasi sudah berstatus **APPLIED** (diajukan).
+- Aplikasi sudah berstatus **Diajukan**.
 
 ## Langkah penggunaan
 
 1. Buka menu **Pinjaman** dan pilih daftar pinjaman.
 2. Gunakan filter status untuk melihat aplikasi yang menunggu
-   tinjauan Manajer (status `APPLIED`).
+   tinjauan Manajer (status **Diajukan**).
 3. Buka detail aplikasi untuk membaca data yang tersedia pada
    halaman detail:
    - identitas anggota (nama, nomor anggota),
@@ -67,10 +66,10 @@ koperasi.
 5. Pilih keputusan yang tersedia pada detail aplikasi:
    - **Catat review Manajer** untuk meneruskan aplikasi ke
      tahap berikutnya. Status aplikasi berubah menjadi
-     `MANAGER_APPROVED` dan keputusan tercatat pada log
-     keputusan aplikasi dengan catatan yang Anda isi.
+     **Direview Manajer** dan catatan review tersimpan
+     pada riwayat keputusan aplikasi.
    - **Tolak** jika aplikasi tidak memenuhi syarat. Status
-     aplikasi berubah menjadi `REJECTED` dengan alasan
+     aplikasi berubah menjadi **Ditolak** dengan alasan
      penolakan yang harus Anda isi.
 
 ## Hasil yang diharapkan
@@ -81,19 +80,17 @@ koperasi.
 
 ## Status yang mungkin muncul
 
-Label di bawah adalah nilai yang ditampilkan aplikasi untuk
-status pinjaman:
+Status di bawah menggunakan label yang tampil pada aplikasi:
 
-- **APPLIED**: aplikasi baru, menunggu tinjauan Manajer.
-- **MANAGER_APPROVED**: sudah direview Manajer, menunggu
+- **Diajukan**: aplikasi baru, menunggu tinjauan Manajer.
+- **Direview Manajer**: sudah ditinjau Manajer, menunggu
   keputusan Pengurus.
-- **REJECTED**: ditolak pada tahap tinjauan.
+- **Ditolak**: ditolak pada tahap tinjauan.
 
 ## Kondisi gagal
 
-- Angsuran tidak bisa dibayar oleh anggota → minta anggota
-  untuk menyelesaikan tunggakan atau hubungi Admin Koperasi
-  untuk penjadwalan ulang.
+- Anggota menunggak angsuran → ingatkan anggota untuk
+  menyelesaikan tunggakan atau hubungi Admin Koperasi.
 - Catatan review tidak tersimpan → coba ulangi; jika tetap
   gagal, hubungi Admin Koperasi untuk pengecekan teknis.
 
@@ -108,8 +105,8 @@ status pinjaman:
 ## Handoff
 
 - Aplikasi yang sudah disetujui Manajer → status menjadi
-  `MANAGER_APPROVED` dan menunggu keputusan akhir **Pengurus
-  Koperasi**.
+  **Direview Manajer** dan menunggu keputusan akhir
+  **Pengurus Koperasi**.
 - Temuan risiko yang bersifat lintas anggota → laporkan ke
   Pengurus Koperasi.
 

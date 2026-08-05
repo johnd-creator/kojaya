@@ -36,60 +36,62 @@ koperasi.
 ## Kapan digunakan
 
 - Akhir tahun buku, menjelang penutupan periode SHU.
-- Menyusun laporan keuangan untuk anggota.
-- Mengelola distribusi poin anggota setelah SHU ditutup.
+- Ingin melihat pratinjau alokasi SHU sebelum finalisasi.
+- Ingin memantau laporan keuangan koperasi.
 
 ## Prasyarat
 
 - Sudah login sebagai Pengurus Koperasi.
-- Memiliki hak akses `manage_cooperative_shu` untuk menutup
-  periode SHU atau mengelola poin.
+- Memiliki hak akses untuk mengelola SHU.
 - Data pembukuan tahunan sudah lengkap dan direkonsiliasi.
 
 ## Langkah penggunaan
 
-### SHU tahunan
+### Pratinjau dan tutup periode SHU
 
-1. Buka menu **SHU** untuk melihat daftar periode SHU.
-2. Periksa status setiap periode. Periode yang masih terbuka
-   dapat menerima koreksi data.
-3. Setelah seluruh data valid, tutup periode SHU dengan
-   menekan **Tutup Periode**. Status berubah menjadi
-   **Ditutup** dan tidak dapat diubah lagi.
-4. Jika ditemukan ketidaksesuaian setelah periode ditutup,
-   gunakan **Minta Revisi** untuk membuka kembali periode
-   dengan catatan alasan revisi.
+1. Buka menu **SHU** untuk melihat halaman periode SHU.
+2. Masukkan nilai **Pool SHU Koperasi** dan **Pool Laba POS**
+   sesuai data pembukuan tahun berjalan.
+3. Tekan **Preview** untuk melihat pratinjau alokasi SHU per
+   anggota. Pratinjau menampilkan bulan aktif keanggotaan,
+   iuran wajib yang lunas, skor, dan estimasi alokasi.
+4. Periksa pratinjau. Jika data sudah valid, tekan **Tutup**
+   untuk menutup periode. Status berubah menjadi **Tertutup**
+   dan alokasi final tersimpan.
+5. Setelah periode ditutup, data alokasi tidak dapat diubah
+   melalui halaman SHU.
 
-### Distribusi poin anggota
+### Laporan keuangan
 
-1. Distribusi poin ke anggota dapat dilakukan melalui menu
-   **Poin** setelah periode SHU ditutup.
-2. Penambahan poin dilakukan sesuai dengan mekanisme yang
-   tersedia di halaman **Poin**.
+1. Buka menu **Laporan** untuk melihat ringkasan keuangan
+   koperasi.
+2. Gunakan menu **Poin** untuk melihat data poin anggota.
 
 ## Hasil yang diharapkan
 
-- Periode SHU ditutup tepat waktu dan akurat.
-- Distribusi poin ke anggota tercatat dengan benar.
+- Pratinjau alokasi SHU tersedia sebelum finalisasi.
+- Periode SHU ditutup dengan alokasi final yang tersimpan.
+- Data poin anggota dapat dipantau.
 
 ## Status yang mungkin muncul
 
-- **Periode SHU terbuka**: masih menerima koreksi data.
-- **Periode SHU ditutup**: tidak dapat diubah tanpa revisi.
-- **SHU dalam revisi**: periode dibuka kembali untuk
-  koreksi.
+- **Preview**: periode SHU belum difinalisasi, masih dapat
+  disesuaikan.
+- **Tertutup**: periode SHU sudah difinalisasi, alokasi
+  tersimpan dan tidak dapat diubah melalui halaman SHU.
 
 ## Kondisi gagal
 
-- Periode SHU tidak bisa ditutup → selesaikan rekonsiliasi
-  data terlebih dahulu.
-- Permintaan revisi ditolak → tidak ada hak akses atau
-  periode sudah final.
+- Tombol **Tutup** tidak aktif → pastikan nilai pool sudah
+  diisi dan pratinjau sudah dimuat.
+- Penutupan gagal → pastikan periode belum ditutup sebelumnya
+  dan data pembukuan sudah lengkap.
 
 ## Hal yang tidak boleh dilakukan
 
-- Menutup periode SHU tanpa rekonsiliasi penuh.
-- Mendistribusikan poin sebelum SHU ditutup.
+- Menutup periode SHU tanpa memeriksa pratinjau alokasi.
+- Menutup periode sebelum seluruh iuran wajib tahun berjalan
+  direkonsiliasi.
 
 ## Handoff
 
@@ -105,19 +107,13 @@ koperasi.
 
 ## Catatan tentang jangkauan fitur
 
-- **Log Audit** (`audit-logs`) saat ini hanya dapat diakses
-  oleh peran dengan izin `view_audit_logs` dan belum termasuk
-  dalam hak akses standar Pengurus Koperasi. Pengurus dapat
-  meminta Admin Koperasi atau System Admin jika memerlukan
-  penelusuran jejak perubahan.
-- **Halaman pengecualian** (`exceptions.index`) membutuhkan
-  izin `view_balance_sheet` dan saat ini bukan halaman yang
-  dapat dibuka Pengurus Koperasi secara langsung.
+- **Log Audit** belum termasuk dalam hak akses standar Pengurus
+  Koperasi. Pengurus dapat meminta Admin Koperasi atau System
+  Admin jika memerlukan penelusuran jejak perubahan.
+- **Halaman pengecualian** belum dapat dibuka Pengurus Koperasi
+  secara langsung.
 - **Perubahan Anggaran Dasar / Anggaran Rumah Tangga
   (AD/ART)** belum tersedia sebagai workflow terstruktur di
-  Kojaya. Pencatatan dan persetujuan AD/ART dilakukan di luar
-  aplikasi sampai modul tersebut disediakan.
+  Kojaya.
 - **Pencatatan risalah RAT** belum tersedia sebagai workflow
-  terstruktur di Kojaya. Hasil RAT saat ini disimpan di luar
-  aplikasi (misalnya pada sistem arsip internal koperasi) dan
-  belum dirujuk otomatis oleh aplikasi.
+  terstruktur di Kojaya.

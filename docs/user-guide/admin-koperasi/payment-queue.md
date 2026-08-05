@@ -1,7 +1,7 @@
 ---
 title: Antrean Verifikasi Bukti Pembayaran
 slug: admin-koperasi-payment-queue
-summary: Cara memproses bukti transfer anggota yang masuk ke antrean verifikasi.
+summary: Cara memverifikasi pembayaran iuran anggota yang masuk ke antrean.
 category: Admin Koperasi · Pembayaran
 module: payments
 roles:
@@ -53,60 +53,53 @@ menjadi **Terverifikasi** dan tercatat di pembukuan.
    verifikasi.
 2. Buka setiap baris untuk melihat bukti transfer yang diunggah
    anggota.
-3. Periksa tiga hal utama:
-   - **Kesesuaian nominal**: angka pada bukti transfer harus
-     sama dengan nominal tagihan.
-   - **Tanggal transfer**: tidak terlalu lama (idealnya kurang
-     dari 7 hari).
+3. Periksa kesesuaian data pembayaran:
+   - **Nominal**: angka pembayaran harus sama dengan
+     nominal tagihan.
    - **Nama pengirim**: sesuai dengan nama anggota.
-4. Jika bukti valid, tekan **Setujui**. Status berubah menjadi
-   **Terverifikasi** (`APPROVED`) dan anggota menerima
-   notifikasi.
-5. Jika bukti tidak valid, tekan **Tolak** dan berikan alasan
-   singkat. Anggota akan diminta mengunggah ulang.
-6. Untuk memproses banyak bukti sekaligus (misalnya pada akhir
-   hari), gunakan **Verifikasi Massal**. Centang hanya bukti
-   yang sudah diyakini valid, lalu setujui.
+4. Jika pembayaran valid, tekan **Setujui**. Status berubah
+   menjadi **Terverifikasi** dan pembayaran tercatat di
+   pembukuan.
+5. Jika pembayaran tidak valid, berikan keterangan dan
+   tolak. Anggota dapat membayar ulang.
+6. Untuk memproses banyak pembayaran sekaligus (misalnya pada
+   akhir hari), gunakan **Verifikasi Massal**. Centang hanya
+   pembayaran yang sudah diyakini valid, lalu setujui.
 
 ## Hasil yang diharapkan
 
-- Bukti yang valid ditandai **Terverifikasi**.
-- Bukti yang tidak valid ditandai **Ditolak** dengan alasan
-  yang jelas.
+- Pembayaran yang valid ditandai **Terverifikasi**.
+- Pembayaran yang tidak valid ditandai dan anggota dapat
+  membayar ulang.
 - Antrean verifikasi kosong pada akhir hari.
 
 ## Status yang mungkin muncul
 
-Label di bawah adalah nilai yang ditampilkan aplikasi untuk
-status pembayaran:
+Status di bawah menggunakan label yang tampil pada aplikasi:
 
-- **PENDING** (Menunggu Verifikasi): bukti baru diunggah,
-  belum diproses.
-- **APPROVED** (Terverifikasi): bukti valid, pembayaran
-  tercatat.
-- **REJECTED** (Ditolak): bukti tidak valid; anggota dapat
-  unggah ulang.
-- **VOID** (Dibatalkan): pembayaran dibatalkan oleh Admin
-  Koperasi.
+- **Menunggu Verifikasi**: pembayaran baru masuk, belum
+  diproses.
+- **Terverifikasi**: pembayaran valid, tercatat di
+  pembukuan.
 
 ## Kondisi gagal
 
-- Bukti tidak terbaca → minta anggota unggah ulang.
-- Nominal tidak sesuai → hubungi anggota untuk klarifikasi atau
+- Nominal tidak sesuai → hubungi anggota untuk klarifikasi
   selisih.
-- Tanggal transfer terlalu lama → tolak dengan alasan dan minta
-  anggota membayar bulan berjalan.
+- Pembayaran tidak dapat diverifikasi → berikan keterangan
+  dan minta anggota membayar ulang.
 
 ## Hal yang tidak boleh dilakukan
 
-- Menyetujui bukti tanpa memeriksa nominal dan tanggal.
-- Menyetujui bukti yang jelas tidak valid.
-- Mengubah nominal tagihan agar bukti menjadi "sesuai".
-- Memproses bukti di luar wewenang tanpa delegasi.
+- Menyetujui pembayaran tanpa memeriksa nominal.
+- Menyetujui pembayaran yang jelas tidak valid.
+- Mengubah nominal tagihan agar pembayaran menjadi "sesuai".
+- Memproses pembayaran di luar wewenang tanpa delegasi.
 
 ## Handoff
 
-- Bukti yang tidak bisa diputuskan → teruskan ke Manajer Koperasi.
+- Pembayaran yang tidak bisa diputuskan → teruskan ke Manajer
+  Koperasi.
 - Selisih yang berulang dari anggota yang sama → laporkan ke
   Pengurus Koperasi.
 - Antrean menumpuk karena sumber daya → koordinasikan dengan

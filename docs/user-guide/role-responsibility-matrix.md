@@ -1,64 +1,63 @@
-# Matriks Peran × Izin
+# Matriks Tanggung Jawab Peran
 
-Matriks ini merangkum izin utama per peran koperasi. Semua entri
-diverifikasi terhadap `app/Enums/PermissionEnum.php` dan
-`database/seeders/RolePermissionSeeder.php` (commit `20c86960`).
+> **Status:** Otomatis dihasilkan oleh
+> `node scripts/generate-role-matrix.mjs`.
+> Sumber data: `resources/docs/user-guide/role-permissions.json`
+> (Fase 10 dari correction pass).
 
-| Permission | Anggota | Admin Koperasi | Manajer Koperasi | Pengurus Koperasi |
-| --- | --- | --- | --- | --- |
-| `member_portal_access` | ✅ | — | — | — |
-| `view_cooperative_member` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_member` | — | ✅ | — | ✅ |
-| `validate_cooperative_member` | — | ✅ | — | ✅ |
-| `verify_cooperative_member` | — | ✅ | — | — |
-| `view_cooperative_loan` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_loan` | — | ✅ | — | — |
-| `review_cooperative_loan` | — | — | ✅ | — |
+Matriks ini mencantumkan izin (permission) yang diberikan oleh
+`RolePermissionSeeder` kepada setiap peran koperasi. Sumber
+data mesin-mesin (JSON) dibandingkan dengan implementasi Spatie
+oleh `tests/Feature/Documentation/RolePermissionMatrixTest.php`.
+Jika izin ditambah, dihapus, atau dipindahkan antar peran, JSON
+harus diperbarui dan skrip ini dijalankan ulang.
+
+Tabel: ✅ = izin diberikan, — = tidak diberikan.
+
+| Izin | Admin Koperasi | Anggota | Manajer Koperasi | Pengurus Koperasi |
+| --- | :-: | :-: | :-: | :-: |
+| `access_cooperative_pos` | ✅ | — | ✅ | ✅ |
+| `adjust_store_credit` | — | — | ✅ | ✅ |
 | `approve_cooperative_loan` | — | — | — | ✅ |
-| `manage_cooperative_loan_types` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_dues` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_payment` | — | ✅ | ✅ | ✅ |
-| `access_cooperative_pos` | — | ✅ | ✅ | ✅ |
-| `manage_pos_products` | — | ✅ | ✅ | ✅ |
-| `manage_pos_categories` | — | ✅ | ✅ | ✅ |
-| `view_pos_reports` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_points` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_rewards` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_redemption` | — | ✅ | ✅ | ✅ |
-| `manage_cooperative_shu` | — | — | ✅ | ✅ |
-| `view_cooperative_report` | — | ✅ | ✅ | ✅ |
-| `view_audit_logs` | — | — | — | ✅ |
-| `manage_cooperative_settings` | — | — | — | ✅ |
-| `view_cooperative_all` | — | — | — | ✅ |
-| `manage_cooperative_opening_balance` | — | ✅ | ✅ | ✅ |
+| `approve_cooperative_member` | — | — | — | ✅ |
 | `approve_cooperative_opening_balance` | — | — | — | ✅ |
+| `approve_pos_void` | ✅ | — | ✅ | ✅ |
+| `approve_store_credit_transfer` | — | — | ✅ | ✅ |
+| `cashier_store_credit` | ✅ | — | ✅ | ✅ |
+| `export_cooperative_member` | ✅ | — | — | ✅ |
+| `export_cooperative_member_pii` | — | — | — | ✅ |
+| `manage_cooperative_dues` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_ledger` | — | — | ✅ | ✅ |
+| `manage_cooperative_loan` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_loan_types` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_member` | ✅ | — | — | ✅ |
+| `manage_cooperative_opening_balance` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_payment` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_points` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_redemption` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_rewards` | ✅ | — | ✅ | ✅ |
+| `manage_cooperative_settings` | — | — | — | ✅ |
+| `manage_cooperative_shu` | ✅ | — | ✅ | ✅ |
+| `manage_pos_categories` | ✅ | — | ✅ | ✅ |
+| `manage_pos_products` | ✅ | — | ✅ | ✅ |
+| `manage_pos_shu` | — | — | ✅ | ✅ |
+| `manage_store_credit` | ✅ | — | ✅ | ✅ |
+| `manage_store_credit_limit` | — | — | ✅ | ✅ |
+| `member_portal_access` | — | ✅ | — | — |
+| `report_store_credit` | ✅ | — | ✅ | ✅ |
+| `review_cooperative_loan` | — | — | ✅ | — |
+| `review_cooperative_resignation` | ✅ | — | ✅ | ✅ |
+| `update_cooperative_member_pii` | — | — | — | ✅ |
+| `validate_cooperative_member` | ✅ | — | — | ✅ |
+| `verify_cooperative_member` | ✅ | — | — | — |
+| `view_cooperative_all` | — | — | — | ✅ |
+| `view_cooperative_ledger` | ✅ | — | ✅ | ✅ |
+| `view_cooperative_loan` | ✅ | — | ✅ | ✅ |
+| `view_cooperative_member` | ✅ | — | ✅ | ✅ |
+| `view_cooperative_member_pii` | — | — | — | ✅ |
+| `view_cooperative_report` | — | — | ✅ | ✅ |
+| `view_pos_reports` | ✅ | — | ✅ | ✅ |
+| `view_store_credit` | ✅ | — | ✅ | ✅ |
+| `view_store_credit_all` | — | — | — | ✅ |
 | `void_cooperative_opening_balance` | — | — | — | ✅ |
-| `review_cooperative_resignation` | — | ✅ | ✅ | ✅ |
-| `approve_pos_void` | — | ✅ | ✅ | ✅ |
-| `view_store_credit` | — | ✅ | ✅ | ✅ |
-| `manage_store_credit` | — | ✅ | ✅ | ✅ |
-| `cashier_store_credit` | — | ✅ | — | — |
-
-## Penetapan peran utama
-
-`App\Services\Authorization\PrimaryRoleResolver` memilih peran
-"utama" dengan urutan tetap:
-
-1. `System Admin`
-2. `Admin Pusat`
-3. `Pengurus Koperasi`
-4. `Manajer Koperasi`
-5. `Admin Koperasi`
-6. `Kasir Koperasi`
-
-Pengguna dengan banyak peran (mis. `Anggota` + `Admin Koperasi`)
-akan memperoleh peran koperasi utama dari `PrimaryRoleResolver`,
-namun artikel dengan `roles: anggota` tetap dapat diakses karena
-`ArticleRepository::resolveTargetRoles` mengembalikan seluruh
-target role Spatie.
-
-## Frontend
-
-`resources/js/lib/role-experience.ts` memetakan peran ke
-`RoleExperienceKey` dengan prioritas yang sama. Frontend
-`useEffectiveExperience` adalah cerminan dari resolver backend.
+| **Jumlah izin** | 26 | 1 | 29 | 41 |

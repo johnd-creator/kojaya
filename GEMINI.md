@@ -9,7 +9,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.5.8
+- php - 8.5.6
 - inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
@@ -31,6 +31,49 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - eslint (ESLINT) - v9
 - prettier (PRETTIER) - v3
 
+## 📚 MANDATORY: Read Project Documentation First
+
+**CRITICAL:** Before starting ANY task, you MUST read the relevant documentation in the `/docs/` folder to understand project context, architecture, and requirements.
+
+**Required Reading Order (for every task):**
+1. **`docs/project.md`** - Project overview, business context, goals (START HERE)
+2. **`docs/architecture.md`** - System design, tech stack, patterns
+3. **Task-Specific Docs:**
+   - API work? → Read `docs/api.md`
+   - Adding features? → Read `docs/plan.md` and `docs/decisions.md`
+   - Debugging? → Read `docs/log.md` for known issues
+
+**When to Read Documentation:**
+- ✅ **ALWAYS** read before making architectural decisions
+- ✅ **ALWAYS** read before adding new features/modules
+- ✅ **ALWAYS** read `docs/api.md` before working with API endpoints
+- ✅ **ALWAYS** read `docs/decisions.md` before changing existing patterns
+- ✅ **READ FIRST, CODE SECOND** - Documentation prevents mistakes
+
+**Documentation is Authority:**
+- If code conflicts with docs, the docs are likely outdated - **UPDATE THE DOCS**
+- All architecture decisions are documented in `docs/decisions.md`
+- Project roadmap is in `docs/plan.md`
+- API contracts are in `docs/api.md`
+
+**How to Read Documentation Efficiently:**
+```bash
+# Quick overview
+cat docs/project.md
+
+# Check architecture before coding
+cat docs/architecture.md
+
+# Read API docs before touching endpoints
+cat docs/api.md
+
+# Check decisions before changing patterns
+cat docs/decisions.md
+
+# See development history
+cat docs/log.md
+```
+
 ## Skills Activation
 
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
@@ -41,9 +84,12 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 ## Conventions
 
+- **READ DOCUMENTATION FIRST:** Always read relevant `/docs/` files before coding
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
+- **Document Your Changes:** If you make architectural decisions, update `docs/decisions.md`
+- **Log Significant Changes:** Add entries to `docs/log.md` for major features
 
 ## Verification Scripts
 

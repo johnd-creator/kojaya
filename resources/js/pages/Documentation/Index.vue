@@ -1,6 +1,12 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { BookOpen, ArrowRight, ShieldCheck, ListChecks } from "lucide-vue-next";
+import {
+  BookOpen,
+  ArrowRight,
+  ShieldCheck,
+  ListChecks,
+} from "lucide-vue-next";
 import {
   Card,
   CardContent,
@@ -9,23 +15,37 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import DocumentationSearch from "@/components/Documentation/DocumentationSearch.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";
+
+type ArticleSummary = {
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  module: string;
+  roles: string[];
+  permissions: string[];
+  permission_mode: string;
+  risk_level: string;
+  screenshot_entries: string[];
+  related_articles: string[];
+  last_reviewed_commit: string;
+  status: string;
+  sort_order: number;
+};
 
 type InertiaPageProps = {
   sections: Array<{
     category: string;
-    articles: Array<{
-      id: number;
-      slug: string;
-      title: string;
-      summary: string;
-      category: string;
-      target_role: string;
-      required_permissions: string[];
-    }>;
+    articles: ArticleSummary[];
   }>;
+  modules: string[];
+  articles: ArticleSummary[];
   userRoles: string[];
+  primaryRole: string;
+  searchEnabled: boolean;
 };
 
 const props = defineProps<InertiaPageProps>();
@@ -41,6 +61,50 @@ const ROLE_LABELS: Record<string, string> = {
   manajer_koperasi: "Manajer Koperasi",
   pengurus_koperasi: "Pengurus Koperasi",
 };
+
+const RISK_LABELS: Record<string, string> = {
+  low: "Risiko rendah",
+  medium: "Risiko sedang",
+  high: "Risiko tinggi",
+};
+
+const searchQuery = ref("");
+const moduleFilter = ref("");
+
+const filteredSlugs = computed<Set<string>>(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (q === "" && moduleFilter.value === "") {
+    return new Set(props.articles.map((a) => a.slug));
+  }
+  return new Set(
+    props.articles
+      .filter((a) => {
+        if (moduleFilter.value !== "" && a.module !== moduleFilter.value) {
+          return false;
+        }
+        if (q === "") {
+          return true;
+        }
+        return (
+          a.title.toLowerCase().includes(q) ||
+          a.summary.toLowerCase().includes(q) ||
+          a.category.toLowerCase().includes(q)
+        );
+      })
+      .map((a) => a.slug),
+  );
+});
+
+const visibleSections = computed(() => {
+  return props.sections
+    .map((section) => ({
+      category: section.category,
+      articles: section.articles.filter((a) => filteredSlugs.value.has(a.slug)),
+    }))
+    .filter((section) => section.articles.length > 0);
+});
+
+const hasResults = computed(() => visibleSections.value.length > 0);
 </script>
 
 <template>
@@ -80,7 +144,9 @@ const ROLE_LABELS: Record<string, string> = {
             </p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          <div
+            class="flex flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400"
+          >
             <ListChecks class="h-4 w-4" />
             <span>Peran Anda:&nbsp;</span>
             <span
@@ -91,11 +157,19 @@ const ROLE_LABELS: Record<string, string> = {
               {{ role }}
             </span>
           </div>
+
+          <DocumentationSearch
+            v-if="props.searchEnabled"
+            v-model:modelValue="searchQuery"
+            v-model:moduleFilter="moduleFilter"
+            :articles="props.articles"
+            :modules="props.modules"
+          />
         </CardContent>
       </Card>
 
       <div
-        v-for="section in props.sections"
+        v-for="section in visibleSections"
         :key="section.category"
         class="space-y-3"
       >
@@ -113,7 +187,7 @@ const ROLE_LABELS: Record<string, string> = {
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Card
             v-for="article in section.articles"
-            :key="article.id"
+            :key="article.slug"
             class="border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800/80 dark:bg-zinc-900/80"
           >
             <CardHeader>
@@ -127,14 +201,14 @@ const ROLE_LABELS: Record<string, string> = {
                   </Link>
                 </CardTitle>
                 <Badge variant="outline" class="shrink-0 text-[10px]">
-                  {{ ROLE_LABELS[article.target_role] ?? article.target_role }}
+                  {{ ROLE_LABELS[article.roles[0] ?? ""] ?? article.roles[0] }}
                 </Badge>
               </div>
               <CardDescription>{{ article.summary }}</CardDescription>
             </CardHeader>
-            <CardContent class="flex items-center justify-between">
+            <CardContent class="flex items-center justify-between gap-2">
               <span class="text-xs text-zinc-500 dark:text-zinc-400">
-                {{ article.required_permissions.length }} izin spesifik
+                {{ RISK_LABELS[article.risk_level] ?? article.risk_level }}
               </span>
               <Link
                 :href="`/documentation/${article.slug}`"
@@ -149,10 +223,18 @@ const ROLE_LABELS: Record<string, string> = {
       </div>
 
       <div
-        v-if="props.sections.length === 0"
+        v-if="!hasResults"
         class="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-400"
       >
-        Belum ada artikel yang dipublikasikan untuk peran Anda.
+        <p class="font-medium">Tidak ada artikel yang cocok dengan filter.</p>
+        <p class="mt-1 text-xs">
+          Coba kosongkan pencarian atau pilih modul lain. Jika ini
+          tidak terduga, jalankan
+          <code class="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
+            npm run docs:validate
+          </code>
+          untuk memastikan struktur repositori valid.
+        </p>
       </div>
     </div>
   </AppLayout>

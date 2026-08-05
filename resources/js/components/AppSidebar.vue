@@ -670,7 +670,13 @@ const allNavItems: NavItem[] = [
   },
 ] as any[];
 
-const footerNavItems: NavItem[] = [];
+const footerNavItems: NavItem[] = [
+  {
+    title: "Pusat Panduan",
+    href: "/documentation",
+    icon: BookOpen,
+  },
+];
 const adminNavItems = computed<NavItem[]>(() =>
   filterNavByPermission([
     {
@@ -822,6 +828,11 @@ const adminNavItems = computed<NavItem[]>(() =>
         },
       ],
     },
+    {
+      title: "Pusat Panduan",
+      href: "/documentation",
+      icon: BookOpen,
+    },
   ]),
 );
 const memberNavItems = computed<NavItem[]>(() => {
@@ -847,6 +858,11 @@ const memberNavItems = computed<NavItem[]>(() => {
         title: "Profil",
         href: "/member/profile",
         icon: UserRound,
+      },
+      {
+        title: "Pusat Panduan",
+        href: "/documentation",
+        icon: BookOpen,
       },
     ];
   }
@@ -890,6 +906,11 @@ const memberNavItems = computed<NavItem[]>(() => {
       title: "Profil",
       href: "/member/profile",
       icon: UserRound,
+    },
+    {
+      title: "Pusat Panduan",
+      href: "/documentation",
+      icon: BookOpen,
     },
   ];
 });

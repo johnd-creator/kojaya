@@ -34,6 +34,7 @@ type ArticleSummary = {
   last_reviewed_commit: string;
   status: string;
   sort_order: number;
+  search_text?: string;
 };
 
 type InertiaPageProps = {
@@ -85,10 +86,18 @@ const filteredSlugs = computed<Set<string>>(() => {
         if (q === "") {
           return true;
         }
-        return (
-          a.title.toLowerCase().includes(q) ||
-          a.summary.toLowerCase().includes(q) ||
-          a.category.toLowerCase().includes(q)
+        // Match against title, summary, category, AND the
+        // pre-computed full-text search index (body content).
+        // The backend strips headings, code fences, link URLs, and
+        // markup so the user only sees procedural matches.
+        const haystacks = [
+          a.title,
+          a.summary,
+          a.category,
+          a.search_text ?? "",
+        ];
+        return haystacks.some((haystack) =>
+          haystack.toLowerCase().includes(q),
         );
       })
       .map((a) => a.slug),

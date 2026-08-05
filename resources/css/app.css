@@ -220,6 +220,64 @@
   ) !important;
 }
 
+/*
+ * Print mode for the in-app documentation center.
+ *
+ * When a user clicks "Cetak Panduan" we want the printed page to
+ * contain ONLY the article body and its screenshots. The sidebar,
+ * application header, breadcrumbs, contextual help button, and
+ * the per-article navigation chrome must all be hidden.
+ */
+@media print {
+  [data-sidebar="sidebar"],
+  [data-sidebar="sidebar-wrapper"],
+  [data-sidebar="header"],
+  [data-sidebar="trigger"],
+  [data-sidebar="rail"],
+  header[data-sidebar="sidebar-header"],
+  aside[data-sidebar="menu"],
+  nav[aria-label="Navigasi artikel"],
+  [data-testid="contextual-help-button"],
+  [data-testid="print-article-button"] {
+    display: none !important;
+  }
+
+  body,
+  html {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* The SidebarInset is the only visible area on print. */
+  [data-sidebar="inset"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* The MemberMobileNav also has to be hidden for printed pages. */
+  nav[aria-label="Member mobile navigation"] {
+    display: none !important;
+  }
+
+  /* Page break helpers for the article body. */
+  article#article-* {
+    page-break-before: avoid;
+  }
+
+  article h2,
+  article h3,
+  article h4 {
+    page-break-after: avoid;
+  }
+
+  article img,
+  article figure {
+    page-break-inside: avoid;
+  }
+}
+
 [data-sidebar="menu-button"][data-active="true"] {
   background: rgba(255, 255, 255, 0.14) !important;
   color: #ffffff;

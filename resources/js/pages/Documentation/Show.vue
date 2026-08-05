@@ -9,8 +9,8 @@ import {
   ChevronRight,
   Tag,
   GitCommit,
-  Image as ImageIcon,
   ListChecks,
+  Printer,
 } from "lucide-vue-next";
 import {
   Card,
@@ -21,9 +21,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import MarkdownArticle from "@/components/Documentation/MarkdownArticle.vue";
+import DocumentationToc from "@/components/Documentation/DocumentationToc.vue";
 import ScreenshotViewer from "@/components/Documentation/ScreenshotViewer.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";
+
+type NavItem = {
+  slug: string;
+  title: string;
+  category: string;
+  summary: string;
+};
 
 type ArticleProps = {
   slug: string;
@@ -46,11 +54,10 @@ type ArticleProps = {
 type InertiaPageProps = {
   article: ArticleProps;
   navigation: {
-    previous: string | null;
-    next: string | null;
-    related: string[];
+    previous: NavItem | null;
+    next: NavItem | null;
+    related: NavItem[];
   };
-  siblings: ArticleProps[];
   contextualHelp: Array<{
     route: string;
     slug: string;
@@ -106,20 +113,31 @@ const screenshotEntries = computed(() => {
     }));
 });
 
-const relatedArticles = computed(() => {
-  return props.siblings.filter((s) =>
-    props.navigation.related.includes(s.slug),
-  );
-});
+// TOC items come from the MarkdownArticle instance via defineExpose.
+// We keep them as a ref so the DocumentationToc component can react
+// to changes (e.g. when the article body updates without a remount).
+const tocItems = ref<Array<{ level: number; id: string; text: string }>>([]);
 
-const previousArticle = computed(() => {
-  return props.siblings.find((s) => s.slug === props.navigation.previous) ?? null;
-});
-const nextArticle = computed(() => {
-  return props.siblings.find((s) => s.slug === props.navigation.next) ?? null;
-});
+const markdownRef = ref<InstanceType<typeof MarkdownArticle> | null>(null);
+
+function captureToc(): void {
+  const exposed = markdownRef.value;
+  if (!exposed) {
+    tocItems.value = [];
+    return;
+  }
+  tocItems.value = (exposed.toc?.value ?? []) as Array<{
+    level: number;
+    id: string;
+    text: string;
+  }>;
+}
 
 onMounted(async () => {
+  // Capture the TOC after the article has rendered. We use a small
+  // queueMicrotask delay because the renderer resets its collected
+  // TOC at the start of every computed re-evaluation.
+  queueMicrotask(captureToc);
   try {
     const res = await fetch("/docs/user-guide/screenshots.json", {
       headers: { Accept: "application/json" },
@@ -131,25 +149,32 @@ onMounted(async () => {
     screenshotManifest.value = null;
   }
 });
+
+function printArticle(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.print();
+}
 </script>
 
 <template>
   <AppLayout :breadcrumbs="breadcrumbs">
     <Head :title="article.title" />
 
-    <div class="mx-auto max-w-6xl space-y-6 p-6">
+    <div class="mx-auto max-w-6xl space-y-6 p-6 print:p-0 print:space-y-4">
       <Link
         href="/documentation"
-        class="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+        class="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 print:hidden"
       >
         <ArrowLeft class="h-4 w-4" />
         Kembali ke Pusat Panduan
       </Link>
 
       <div class="grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <div class="space-y-6">
+        <div class="space-y-6 print:space-y-4">
           <Card
-            class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+            class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80 print:border-0 print:shadow-none print:bg-transparent"
           >
             <CardHeader class="space-y-3">
               <div class="flex flex-wrap items-center gap-2">
@@ -174,10 +199,12 @@ onMounted(async () => {
                   {{ RISK_LABELS[article.risk_level] ?? article.risk_level }}
                 </Badge>
               </div>
-              <CardTitle class="text-2xl">{{ article.title }}</CardTitle>
+              <CardTitle class="text-2xl print:text-2xl">
+                {{ article.title }}
+              </CardTitle>
               <CardDescription>{{ article.summary }}</CardDescription>
               <p
-                class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
+                class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 print:hidden"
               >
                 <GitCommit class="h-3.5 w-3.5" />
                 <span>Tinjau commit:</span>
@@ -191,12 +218,25 @@ onMounted(async () => {
                 <span aria-hidden="true">·</span>
                 <span>Modul: {{ article.module }}</span>
               </p>
+              <div class="flex flex-wrap items-center gap-2 print:hidden">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                  data-testid="print-article-button"
+                  @click="printArticle"
+                >
+                  <Printer class="h-3.5 w-3.5" />
+                  Cetak Panduan
+                </button>
+              </div>
             </CardHeader>
             <CardContent>
               <MarkdownArticle
                 v-if="article.body"
+                ref="markdownRef"
                 :body="article.body"
                 :slug="article.slug"
+                @vue:updated="captureToc"
               />
               <p
                 v-else
@@ -210,8 +250,8 @@ onMounted(async () => {
           <ScreenshotViewer :entries="screenshotEntries" />
 
           <Card
-            v-if="relatedArticles.length > 0"
-            class="border-zinc-200/80 bg-white/95 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+            v-if="navigation.related.length > 0"
+            class="border-zinc-200/80 bg-white/95 dark:border-zinc-800/80 dark:bg-zinc-900/80 print:hidden"
           >
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
@@ -222,7 +262,7 @@ onMounted(async () => {
             <CardContent>
               <ul class="space-y-2 text-sm">
                 <li
-                  v-for="related in relatedArticles"
+                  v-for="related in navigation.related"
                   :key="related.slug"
                   class="flex items-center justify-between gap-2"
                 >
@@ -239,30 +279,32 @@ onMounted(async () => {
           </Card>
 
           <nav
-            v-if="previousArticle || nextArticle"
+            v-if="navigation.previous || navigation.next"
             aria-label="Navigasi artikel"
-            class="flex flex-col gap-2 sm:flex-row sm:justify-between"
+            class="flex flex-col gap-2 sm:flex-row sm:justify-between print:hidden"
           >
             <Link
-              v-if="previousArticle"
-              :href="`/documentation/${previousArticle.slug}`"
+              v-if="navigation.previous"
+              :href="`/documentation/${navigation.previous.slug}`"
               class="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
             >
               <ChevronLeft class="h-4 w-4" />
               <span class="flex flex-col text-left">
                 <span class="text-[10px] uppercase tracking-wider">Sebelumnya</span>
-                <span class="font-medium">{{ previousArticle.title }}</span>
+                <span class="font-medium">{{ navigation.previous.title }}</span>
+                <span class="text-[10px] text-zinc-500">{{ navigation.previous.category }}</span>
               </span>
             </Link>
             <span v-else />
             <Link
-              v-if="nextArticle"
-              :href="`/documentation/${nextArticle.slug}`"
+              v-if="navigation.next"
+              :href="`/documentation/${navigation.next.slug}`"
               class="inline-flex items-center justify-end gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
             >
               <span class="flex flex-col text-right">
                 <span class="text-[10px] uppercase tracking-wider">Berikutnya</span>
-                <span class="font-medium">{{ nextArticle.title }}</span>
+                <span class="font-medium">{{ navigation.next.title }}</span>
+                <span class="text-[10px] text-zinc-500">{{ navigation.next.category }}</span>
               </span>
               <ChevronRight class="h-4 w-4" />
             </Link>
@@ -270,7 +312,12 @@ onMounted(async () => {
           </nav>
         </div>
 
-        <aside class="space-y-4">
+        <aside class="space-y-4 print:hidden">
+          <DocumentationToc
+            v-if="tocItems.length > 0"
+            :items="tocItems"
+            :article-slug="article.slug"
+          />
           <Card
             v-if="article.permissions.length > 0"
             class="border-zinc-200/80 bg-white/95 dark:border-zinc-800/80 dark:bg-zinc-900/80"

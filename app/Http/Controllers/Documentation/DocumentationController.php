@@ -76,7 +76,6 @@ final class DocumentationController extends Controller
         $previous = $this->findNeighbour($article, -1, $user);
         $next = $this->findNeighbour($article, +1, $user);
         $related = $this->findRelated($article, $user);
-        $siblings = $this->collectSiblings($article, $user);
         $docRole = $this->docRoleResolver->resolve($user);
 
         return Inertia::render('Documentation/Show', [
@@ -86,7 +85,6 @@ final class DocumentationController extends Controller
                 'next' => $next === null ? null : $this->serializeNavItem($next),
                 'related' => $related,
             ],
-            'siblings' => $siblings,
             'contextualHelp' => $this->contextualHelp->forRole($docRole),
             'primaryRole' => $docRole,
         ]);
@@ -251,19 +249,5 @@ final class DocumentationController extends Controller
             'category' => $article->category(),
             'summary' => $article->summary(),
         ];
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function collectSiblings(Article $article, User $user): array
-    {
-        return $this->authorizer
-            ->filterVisible($user)
-            ->filter(fn (Article $a): bool => $a->category() === $article->category() && $a->slug() !== $article->slug())
-            ->sortBy('sort_order')
-            ->map(fn (Article $a): array => $this->serializeListItem($a))
-            ->values()
-            ->all();
     }
 }

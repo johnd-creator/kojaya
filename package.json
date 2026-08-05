@@ -21,7 +21,8 @@
         "ui:test-global-setup": "node --test tests/visual/global-setup.test.mjs",
         "ui:repeatability": "node tests/visual/scripts/repeatability.mjs",
         "docs:validate": "node scripts/validate-user-guide.mjs",
-        "docs:screenshots": "node scripts/export-user-guide-screenshots.mjs"
+        "docs:screenshots": "node scripts/export-user-guide-screenshots.mjs",
+        "docs:screenshots:test": "node --test scripts/export-user-guide-screenshots.test.mjs"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.12.1",

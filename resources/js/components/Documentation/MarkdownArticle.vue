@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { renderMarkdownArticle } from "@/components/Documentation/markdown-renderer";
 
 const props = defineProps<{
@@ -13,13 +13,17 @@ export type TocItem = {
   text: string;
 };
 
+const emit = defineEmits<{
+  (event: "toc-ready", items: TocItem[]): void;
+}>();
+
 const rendered = computed(() => renderMarkdownArticle(props.body));
 const sanitisedHtml = computed(() => rendered.value.html);
 const toc = computed<TocItem[]>(() => rendered.value.toc);
 
-defineExpose({
-  toc,
-  headingIds: computed(() => new Set(toc.value.map((item) => item.id))),
+watch(toc, (items) => emit("toc-ready", items), {
+  immediate: true,
+  deep: true,
 });
 </script>
 

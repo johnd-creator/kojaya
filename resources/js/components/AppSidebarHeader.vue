@@ -41,9 +41,12 @@ const toggleAppearance = (): void => {
 };
 
 const memberOnly = computed(() => {
-  const roles = ((page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined)?.roles ?? []).map(
-    (role) => (typeof role === "string" ? role : role.name ?? ""),
-  );
+  const roles = (
+    (
+      page.props.auth as
+        { roles?: Array<{ name?: string } | string> } | undefined
+    )?.roles ?? []
+  ).map((role) => (typeof role === "string" ? role : (role.name ?? "")));
 
   return roles.includes("Anggota") && roles.every((role) => role === "Anggota");
 });
@@ -70,7 +73,7 @@ onUnmounted(() => {
       <template v-if="breadcrumbs && breadcrumbs.length > 0">
         <Breadcrumbs :breadcrumbs="breadcrumbs" />
       </template>
-      <ContextualHelpButton class="hidden md:inline-flex" />
+      <ContextualHelpButton class="inline-flex" />
     </div>
     <div class="flex items-center gap-2">
       <div

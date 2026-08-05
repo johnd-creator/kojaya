@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Head, Link } from "@inertiajs/vue3";
-import {
-  BookOpen,
-  ArrowRight,
-  ShieldCheck,
-  ListChecks,
-} from "lucide-vue-next";
+import { BookOpen, ArrowRight, ShieldCheck, ListChecks } from "lucide-vue-next";
 import {
   Card,
   CardContent,
@@ -90,15 +85,8 @@ const filteredSlugs = computed<Set<string>>(() => {
         // pre-computed full-text search index (body content).
         // The backend strips headings, code fences, link URLs, and
         // markup so the user only sees procedural matches.
-        const haystacks = [
-          a.title,
-          a.summary,
-          a.category,
-          a.search_text ?? "",
-        ];
-        return haystacks.some((haystack) =>
-          haystack.toLowerCase().includes(q),
-        );
+        const haystacks = [a.title, a.summary, a.category, a.search_text ?? ""];
+        return haystacks.some((haystack) => haystack.toLowerCase().includes(q));
       })
       .map((a) => a.slug),
   );
@@ -145,11 +133,13 @@ const hasResults = computed(() => visibleSections.value.length > 0);
             >
               Panduan penggunaan Kojaya untuk peran Anda.
             </h1>
-            <p class="max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            <p
+              class="max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400"
+            >
               Daftar artikel di bawah ini otomatis disaring berdasarkan peran
               dan izin login Anda. Anda hanya melihat prosedur yang relevan
-              dengan pekerjaan harian Anda, baik sebagai anggota maupun
-              pengurus koperasi.
+              dengan pekerjaan harian Anda, baik sebagai anggota maupun pengurus
+              koperasi.
             </p>
           </div>
 
@@ -235,14 +225,10 @@ const hasResults = computed(() => visibleSections.value.length > 0);
         v-if="!hasResults"
         class="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-400"
       >
-        <p class="font-medium">Tidak ada artikel yang cocok dengan filter.</p>
+        <p class="font-medium">Tidak ada panduan yang cocok.</p>
         <p class="mt-1 text-xs">
-          Coba kosongkan pencarian atau pilih modul lain. Jika ini
-          tidak terduga, jalankan
-          <code class="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
-            npm run docs:validate
-          </code>
-          untuk memastikan struktur repositori valid.
+          Coba gunakan kata lain atau pilih modul lain. Jika Anda merasa panduan
+          yang seharusnya ada belum muncul, hubungi Admin Koperasi.
         </p>
       </div>
     </div>

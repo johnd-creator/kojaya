@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link, usePage } from "@inertiajs/vue3";
 import {
   ArrowLeft,
   BookOpen,
@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Tag,
-  GitCommit,
   ListChecks,
   Printer,
 } from "lucide-vue-next";
@@ -58,18 +57,14 @@ type InertiaPageProps = {
     next: NavItem | null;
     related: NavItem[];
   };
-  contextualHelp: Array<{
-    route: string;
-    slug: string;
-    role: string;
-    permission?: string;
-    screenshot_state: string;
-    label: string;
-  }>;
-  primaryRole: string;
+  auth?: {
+    roles?: Array<{ name?: string } | string>;
+  };
 };
 
 const props = defineProps<InertiaPageProps>();
+
+const page = usePage();
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: "Pusat Panduan", href: "/documentation" },
@@ -85,12 +80,37 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const RISK_LABELS: Record<string, string> = {
-  low: "Risiko rendah",
-  medium: "Risiko sedang",
-  high: "Risiko tinggi",
+  low: "Risiko transaksi rendah",
+  medium: "Risiko transaksi sedang",
+  high: "Risiko transaksi tinggi",
 };
 
-const screenshotManifest = ref<{ entries: Array<Record<string, unknown>> } | null>(null);
+// Maintainer-only technical metadata is hidden by default; toggle
+// with the "?teknis=1" query parameter so a System Admin reviewer
+// can still inspect it without exposing it to other users.
+const isSystemAdmin = computed(() => {
+  const roles = (
+    (
+      page.props.auth as
+        { roles?: Array<{ name?: string } | string> } | undefined
+    )?.roles ?? []
+  ).map((role) => (typeof role === "string" ? role : (role.name ?? "")));
+  return roles.includes("System Admin");
+});
+
+const showTechnicalMetadata = computed(() => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return (
+    isSystemAdmin.value &&
+    new URLSearchParams(window.location.search).get("teknis") === "1"
+  );
+});
+
+const screenshotManifest = ref<{
+  entries: Array<Record<string, unknown>>;
+} | null>(null);
 const screenshotEntries = computed(() => {
   if (!screenshotManifest.value) {
     return [];
@@ -109,35 +129,24 @@ const screenshotEntries = computed(() => {
       url: `/docs/user-guide/screens/${String(entry.viewport ?? "desktop")}/${String(entry.id)}.png`,
       alt: String(entry.title ?? entry.id ?? ""),
       caption: typeof entry.caption === "string" ? entry.caption : "",
-      viewport: (String(entry.viewport ?? "desktop") as "desktop" | "tablet" | "mobile"),
+      viewport: String(entry.viewport ?? "desktop") as
+        "desktop" | "tablet" | "mobile",
     }));
 });
 
-// TOC items come from the MarkdownArticle instance via defineExpose.
-// We keep them as a ref so the DocumentationToc component can react
-// to changes (e.g. when the article body updates without a remount).
+// TOC items come from the MarkdownArticle instance via an explicit
+// `toc-ready` event. Listening to `defineExpose` causes an implicit
+// dependency on Vue's public-instance ref-unwrapping behaviour,
+// which is not stable across Vue versions.
 const tocItems = ref<Array<{ level: number; id: string; text: string }>>([]);
 
-const markdownRef = ref<InstanceType<typeof MarkdownArticle> | null>(null);
-
-function captureToc(): void {
-  const exposed = markdownRef.value;
-  if (!exposed) {
-    tocItems.value = [];
-    return;
-  }
-  tocItems.value = (exposed.toc?.value ?? []) as Array<{
-    level: number;
-    id: string;
-    text: string;
-  }>;
+function captureToc(
+  items: Array<{ level: number; id: string; text: string }>,
+): void {
+  tocItems.value = items;
 }
 
 onMounted(async () => {
-  // Capture the TOC after the article has rendered. We use a small
-  // queueMicrotask delay because the renderer resets its collected
-  // TOC at the start of every computed re-evaluation.
-  queueMicrotask(captureToc);
   try {
     const res = await fetch("/docs/user-guide/screenshots.json", {
       headers: { Accept: "application/json" },
@@ -203,21 +212,25 @@ function printArticle(): void {
                 {{ article.title }}
               </CardTitle>
               <CardDescription>{{ article.summary }}</CardDescription>
-              <p
-                class="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 print:hidden"
+              <div
+                v-if="showTechnicalMetadata"
+                class="rounded-md border border-dashed border-zinc-300 p-3 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300 print:hidden"
               >
-                <GitCommit class="h-3.5 w-3.5" />
-                <span>Tinjau commit:</span>
-                <code
-                  class="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] dark:bg-zinc-800"
-                >
-                  {{ article.last_reviewed_commit }}
-                </code>
-                <span aria-hidden="true">·</span>
-                <span>Status: {{ article.status }}</span>
-                <span aria-hidden="true">·</span>
-                <span>Modul: {{ article.module }}</span>
-              </p>
+                <p class="font-semibold uppercase tracking-wide text-zinc-500">
+                  Metadata teknis (khusus System Admin)
+                </p>
+                <p class="mt-1">
+                  Commit tinjauan:
+                  <code
+                    class="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] dark:bg-zinc-800"
+                  >
+                    {{ article.last_reviewed_commit }}
+                  </code>
+                </p>
+                <p>
+                  Status: {{ article.status }} · Modul: {{ article.module }}
+                </p>
+              </div>
               <div class="flex flex-wrap items-center gap-2 print:hidden">
                 <button
                   type="button"
@@ -233,10 +246,9 @@ function printArticle(): void {
             <CardContent>
               <MarkdownArticle
                 v-if="article.body"
-                ref="markdownRef"
                 :body="article.body"
                 :slug="article.slug"
-                @vue:updated="captureToc"
+                @toc-ready="captureToc"
               />
               <p
                 v-else
@@ -272,7 +284,9 @@ function printArticle(): void {
                   >
                     {{ related.title }}
                   </Link>
-                  <span class="text-xs text-zinc-500">{{ related.category }}</span>
+                  <span class="text-xs text-zinc-500">{{
+                    related.category
+                  }}</span>
                 </li>
               </ul>
             </CardContent>
@@ -290,9 +304,13 @@ function printArticle(): void {
             >
               <ChevronLeft class="h-4 w-4" />
               <span class="flex flex-col text-left">
-                <span class="text-[10px] uppercase tracking-wider">Sebelumnya</span>
+                <span class="text-[10px] uppercase tracking-wider"
+                  >Sebelumnya</span
+                >
                 <span class="font-medium">{{ navigation.previous.title }}</span>
-                <span class="text-[10px] text-zinc-500">{{ navigation.previous.category }}</span>
+                <span class="text-[10px] text-zinc-500">{{
+                  navigation.previous.category
+                }}</span>
               </span>
             </Link>
             <span v-else />
@@ -302,9 +320,13 @@ function printArticle(): void {
               class="inline-flex items-center justify-end gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
             >
               <span class="flex flex-col text-right">
-                <span class="text-[10px] uppercase tracking-wider">Berikutnya</span>
+                <span class="text-[10px] uppercase tracking-wider"
+                  >Berikutnya</span
+                >
                 <span class="font-medium">{{ navigation.next.title }}</span>
-                <span class="text-[10px] text-zinc-500">{{ navigation.next.category }}</span>
+                <span class="text-[10px] text-zinc-500">{{
+                  navigation.next.category
+                }}</span>
               </span>
               <ChevronRight class="h-4 w-4" />
             </Link>
@@ -319,14 +341,16 @@ function printArticle(): void {
             :article-slug="article.slug"
           />
           <Card
-            v-if="article.permissions.length > 0"
+            v-if="showTechnicalMetadata && article.permissions.length > 0"
             class="border-zinc-200/80 bg-white/95 dark:border-zinc-800/80 dark:bg-zinc-900/80"
           >
             <CardHeader>
               <CardTitle class="text-sm">Izin yang dibutuhkan</CardTitle>
               <CardDescription>
                 Mode pencocokan:
-                <code class="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
+                <code
+                  class="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800"
+                >
                   {{ article.permission_mode }}
                 </code>
               </CardDescription>
@@ -334,7 +358,9 @@ function printArticle(): void {
             <CardContent>
               <ul class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
                 <li v-for="perm in article.permissions" :key="perm">
-                  <code class="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
+                  <code
+                    class="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800"
+                  >
                     {{ perm }}
                   </code>
                 </li>

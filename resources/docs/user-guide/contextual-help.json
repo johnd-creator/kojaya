@@ -92,14 +92,6 @@
       "permission": "manage_cooperative_shu",
       "screenshot_state": "default",
       "label": "SHU dan Tata Kelola"
-    },
-    {
-      "route": "audit-logs",
-      "slug": "pengurus-shu-and-governance",
-      "role": "pengurus_koperasi",
-      "permission": "view_audit_logs",
-      "screenshot_state": "default",
-      "label": "Audit Internal"
     }
   ]
 }

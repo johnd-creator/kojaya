@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-08-05T07:46:12.659Z",
+  "articles": {
+    "total": 12,
+    "published": 12,
+    "draft": 0,
+    "archived": 0
+  },
+  "broken_screenshots": 0,
+  "broken_routes": 0,
+  "broken_related": 0,
+  "broken_links": 0,
+  "invalid_roles": 0,
+  "invalid_permissions": 0,
+  "invalid_contextual_mappings": 0,
+  "stale_commits": 0,
+  "body_jargon": 0,
+  "body_credentials": 0,
+  "body_baseline": 0,
+  "missing_inventory": 0,
+  "errors": [],
+  "warnings": [
+    "contextual-help.json: entry for route `member.dashboard` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `member.loans` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `member.payments.intent` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.operator.dashboard` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.loan-types.index` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.pos.index` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.payments.index` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.loans.index` uses a screenshot_state (`manager-review`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.loans.show` uses a screenshot_state (`manager-review`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.reports.index` uses a screenshot_state (`default`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.loans.show` uses a screenshot_state (`chairman-approval`) that is not a known viewport.",
+    "contextual-help.json: entry for route `cooperative.shu.index` uses a screenshot_state (`default`) that is not a known viewport."
+  ]
+}

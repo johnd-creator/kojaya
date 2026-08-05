@@ -176,8 +176,6 @@ final class ArticleFrontmatter
     }
 
     /**
-     * @param  mixed  $value
-     *
      * @throws InvalidArticleException
      */
     private static function string(mixed $value, string $key, string $source): string
@@ -192,7 +190,6 @@ final class ArticleFrontmatter
     }
 
     /**
-     * @param  mixed  $value
      * @return list<string>
      *
      * @throws InvalidArticleException

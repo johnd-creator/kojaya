@@ -6,6 +6,4 @@ namespace App\Documentation;
 
 use RuntimeException;
 
-final class InvalidArticleException extends RuntimeException
-{
-}
+final class InvalidArticleException extends RuntimeException {}

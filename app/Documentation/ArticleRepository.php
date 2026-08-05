@@ -6,7 +6,6 @@ namespace App\Documentation;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 /**
  * Read-only repository for in-app user guide articles.

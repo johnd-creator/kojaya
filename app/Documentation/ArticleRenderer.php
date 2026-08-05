@@ -120,6 +120,7 @@ final class ArticleRenderer
                 $flushParagraph();
                 $closeLists();
                 $i++;
+
                 continue;
             }
 
@@ -136,6 +137,7 @@ final class ArticleRenderer
                 $i++;
                 $attr = $language !== '' ? ' data-language="'.$language.'"' : '';
                 $html .= '<pre'.$attr.'><code>'.htmlspecialchars(rtrim($code, "\n"), ENT_QUOTES, 'UTF-8').'</code></pre>'."\n";
+
                 continue;
             }
 
@@ -146,6 +148,7 @@ final class ArticleRenderer
                 $content = self::inlineMarkdown($m[2]);
                 $html .= "<h{$level}>{$content}</h{$level}>\n";
                 $i++;
+
                 continue;
             }
 
@@ -154,6 +157,7 @@ final class ArticleRenderer
                 $closeLists();
                 $html .= '<hr />'."\n";
                 $i++;
+
                 continue;
             }
 
@@ -162,6 +166,7 @@ final class ArticleRenderer
                 $closeLists();
                 $html .= '<blockquote><p>'.self::inlineMarkdown($m[1]).'</p></blockquote>'."\n";
                 $i++;
+
                 continue;
             }
 
@@ -170,6 +175,7 @@ final class ArticleRenderer
                 $closeLists();
                 $html .= $this->renderTable($lines[$i], $lines[$i + 1], $i + 2 < count($lines) ? $lines[$i + 2] : null);
                 $i += 3;
+
                 continue;
             }
 
@@ -182,6 +188,7 @@ final class ArticleRenderer
                 }
                 $html .= '<li>'.self::inlineMarkdown($m[1]).'</li>'."\n";
                 $i++;
+
                 continue;
             }
 
@@ -194,6 +201,7 @@ final class ArticleRenderer
                 }
                 $html .= '<li>'.self::inlineMarkdown($m[1]).'</li>'."\n";
                 $i++;
+
                 continue;
             }
 

@@ -6,7 +6,6 @@ namespace App\Documentation;
 
 use App\Models\User;
 use App\Services\Authorization\PrimaryRoleResolver;
-use App\Support\CooperativeContext;
 
 /**
  * Authorization helper for the documentation center.

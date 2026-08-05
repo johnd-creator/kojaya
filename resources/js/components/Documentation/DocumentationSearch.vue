@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
 import { Search, X } from "lucide-vue-next";
+import { computed, ref, watch } from "vue";
 
 type ArticleSummary = {
   slug: string;
@@ -10,6 +10,7 @@ type ArticleSummary = {
   module: string;
   roles: string[];
   risk_level: string;
+  search_text: string;
 };
 
 const props = defineProps<{
@@ -45,7 +46,8 @@ const filtered = computed<ArticleSummary[]>(() => {
     return (
       article.title.toLowerCase().includes(q) ||
       article.summary.toLowerCase().includes(q) ||
-      article.category.toLowerCase().includes(q)
+      article.category.toLowerCase().includes(q) ||
+      (article.search_text ?? "").toLowerCase().includes(q)
     );
   });
 });

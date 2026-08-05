@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
+import path from "node:path";
 import { DocumentationPage } from "../pages/DocumentationPage";
 
 /**
  * Visual + accessibility spec for the in-app user guide
- * (`/documentation`). The spec is structured around the entries
- * registered in `tests/visual/coverage/cooperative-pages.json`
- * under the `documentation` module.
+ * (`/documentation`). Each role-specific scenario is scoped with the
+ * matching Playwright storage state so the article authorizer returns
+ * the right page instead of a 403.
  *
  * These tests run in `UI_AUDIT_MODE=capture` to record candidate
  * baselines. Baselines are NEVER updated automatically — a human
@@ -13,8 +14,11 @@ import { DocumentationPage } from "../pages/DocumentationPage";
  * comparison baseline.
  */
 
+const authState = (role: string): string =>
+  path.resolve("tests/visual/.auth", `${role}.json`);
+
 test.describe("documentation center @visual @accessibility", () => {
-  test("anggota landing renders search, filter, and article cards", async ({
+  test("landing renders search, filter, and article cards", async ({
     page,
   }) => {
     await page.goto("/documentation");
@@ -25,41 +29,63 @@ test.describe("documentation center @visual @accessibility", () => {
     await expect(docs.articleCards.first()).toBeVisible();
   });
 
-  test("admin koperasi article body is sanitised", async ({ page }) => {
-    await page.goto("/documentation/admin-koperasi-payment-queue");
-    const docs = new DocumentationPage(page);
-    await expect(docs.articleBody).toBeVisible();
-    const html = await docs.articleBody.innerHTML();
-    expect(html).not.toMatch(/<script\b/i);
-    expect(html).not.toMatch(/on\w+\s*=/i);
+  test.describe("as admin koperasi", () => {
+    test.use({ storageState: authState("admin") });
+
+    test("admin koperasi article body is sanitised", async ({ page }) => {
+      await page.goto("/documentation/admin-koperasi-payment-queue");
+      const docs = new DocumentationPage(page);
+      await expect(docs.articleBody).toBeVisible();
+      const html = await docs.articleBody.innerHTML();
+      expect(html).not.toMatch(/<script\b/i);
+      expect(html).not.toMatch(/on\w+\s*=/i);
+    });
   });
 
-  test("search filters articles and surfaces empty state", async ({ page }) => {
+  test("search surfaces loan articles for pinjaman query", async ({ page }) => {
     await page.goto("/documentation");
     const docs = new DocumentationPage(page);
     await docs.search("pinjaman");
+    await expect(docs.articleCards.first()).toBeVisible();
+  });
+
+  test("search empty state for a query with no matches", async ({ page }) => {
+    await page.goto("/documentation");
+    const docs = new DocumentationPage(page);
+    await docs.search("zzzz-tidak-ada-hasil");
     const noResults = page.getByText(/tidak ada artikel/i);
     await expect(noResults).toBeVisible();
   });
 
-  test("mobile article layout has no horizontal overflow", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/documentation/anggota-loan-flow");
-    const docs = new DocumentationPage(page);
-    await expect(docs.articleBody).toBeVisible();
-    const overflowing = await page.evaluate(() => {
-      const el = document.documentElement;
-      return el.scrollWidth - el.clientWidth;
+  test.describe("as anggota", () => {
+    test.use({ storageState: authState("anggota") });
+
+    test("mobile article layout has no horizontal overflow", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("/documentation/anggota-loan-flow");
+      const docs = new DocumentationPage(page);
+      await expect(docs.articleBody).toBeVisible();
+      const overflowing = await page.evaluate(() => {
+        const el = document.documentElement;
+        return el.scrollWidth - el.clientWidth;
+      });
+      expect(overflowing).toBeLessThanOrEqual(2);
     });
-    expect(overflowing).toBeLessThanOrEqual(2);
   });
 
-  test("direct URL to foreign-role article returns 403", async ({ request }) => {
-    // Without authentication the response is a redirect to /login,
-    // which is the documented fallback.
-    const response = await request.get("/documentation/pengurus-loan-approval", {
-      maxRedirects: 0,
-    });
+  test("direct URL to foreign-role article returns 403", async ({
+    request,
+  }) => {
+    // The default storage state is pengurus, which cannot open an
+    // admin-koperasi-only article.
+    const response = await request.get(
+      "/documentation/admin-koperasi-payment-queue",
+      {
+        maxRedirects: 0,
+      },
+    );
     expect([302, 401, 403]).toContain(response.status());
   });
 });

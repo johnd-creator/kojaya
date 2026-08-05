@@ -1,7 +1,7 @@
 ---
 title: Pemantauan Keuangan Harian
 slug: manajer-financial-monitoring
-summary: Cara membaca ringkasan simpan pinjam, NPL, dan pencairan.
+summary: Cara membaca ringkasan simpan pinjam, pinjaman macet, dan status pencairan.
 category: Manajer Koperasi · Keuangan
 module: reports
 roles:
@@ -29,33 +29,89 @@ sort_order: 20
 
 # Pemantauan Keuangan Harian
 
-## Dashboard
+## Tujuan
 
-- Ringkasan harian:
-  `route('cooperative.operator.dashboard')` (widget Manajer).
-- NPL: badge di pojok kanan atas widget.
-- Angsuran tertunda: taut ke
-  `route('cooperative.loans.index')` dengan filter
-  `status=DEFAULTED`.
+Memberikan Manajer Koperasi cara cepat untuk membaca kondisi
+keuangan harian koperasi, menemukan anomali, dan memicu
+tindakan korektif sebelum masalah membesar.
 
-## Tindakan korektif
+## Kapan digunakan
 
-- Angsuran macet → tugaskan Admin Koperasi untuk
-  follow-up lewat `route('cooperative.payments.index')`.
-- Setoran kasir harian → rekonsiliasi di
-  `route('cooperative.pos.closings.index')`; cocokan dengan
-  `route('cooperative.ledger.index')`.
-- Pencairan yang belum cair di
-  `route('cooperative.loans.index')` (filter `status=APPROVED`)
-  → hubungi Admin untuk status transfer lewat
-  `route('cooperative.loans.disburse')`.
+- Awal hari kerja untuk melihat posisi kas dan pinjaman
+  kemarin.
+- Menjelang rapat internal untuk menyiapkan angka ringkas.
+- Saat menerima laporan anomali dari Admin Koperasi.
 
-## Eskalasi
+## Prasyarat
 
-Permasalahan hukum (sengketa, audit eksternal) → teruskan ke
-Pengurus via laporan triwulan pada
-`route('cooperative.reports.index')`.
+- Sudah login sebagai Manajer Koperasi.
+- Memiliki hak akses untuk membaca laporan keuangan.
 
-> **Catatan:** tidak ada preset laporan bernama "AnnualReport",
-> "RAT", atau "Pengurus". `CooperativeReportController` hanya
-> menyediakan `index`, `summary`, `sales`, dan `nplAging`.
+## Langkah penggunaan
+
+1. Buka **Dashboard Operasional**. Widget Manajer menampilkan
+   ringkasan harian.
+2. Periksa indikator **Pinjaman Macet** pada pojok kanan
+   atas. Jika angkanya naik, buka daftar pinjaman dengan
+   filter **Macet** untuk melihat anggota yang menunggak.
+3. Periksa **Angsuran Tertunda**. Jika ada, tugaskan Admin
+   Koperasi untuk menindaklanjuti melalui menu **Pembayaran**.
+4. Cocokan setoran kasir kemarin pada menu **Penyetoran
+   Kasir** dengan pembukuan pada menu **Buku Besar**.
+5. Periksa pinjaman yang sudah disetujui Pengurus namun
+   belum dicairkan. Hubungi Admin Koperasi untuk menanyakan
+   status transfer.
+6. Permasalahan hukum (misalnya sengketa atau audit eksternal)
+   dicatat dan diteruskan ke Pengurus Koperasi melalui
+   laporan triwulan.
+
+## Hasil yang diharapkan
+
+- Manajer memahami posisi kas, piutang, dan pencairan setiap
+  pagi.
+- Anomali ditemukan lebih awal dan ditindaklanjuti pada hari
+  yang sama.
+- Rekonsiliasi kas dan pembukuan selesai sebelum tutup buku
+  harian.
+
+## Status yang mungkin muncul
+
+- **Pinjaman macet naik**: indikator perubahan mingguan.
+- **Angsuran tertunda**: daftar angsuran yang belum dibayar
+  setelah jatuh tempo.
+- **Pinjaman belum dicairkan**: daftar pinjaman dengan
+  keputusan **Disetujui** namun belum ada pencatatan
+  pencairan.
+- **Selisih setoran**: perbedaan antara setoran kasir dan
+  pembukuan.
+
+## Kondisi gagal
+
+- Buku besar tidak bisa dibuka → hubungi Admin Koperasi
+  untuk sinkronisasi.
+- Pencairan tidak bergerak lebih dari 3 hari → hubungi
+  Admin Koperasi untuk eskalasi.
+- Pinjaman macet tidak turun → susun rencana tindak lanjut
+  di rapat internal.
+
+## Hal yang tidak boleh dilakukan
+
+- Mengubah catatan pembukuan tanpa otorisasi.
+- Menutup hari dengan selisih yang belum jelas penyebabnya.
+- Memindahkan tanggung jawab tindak lanjut ke peran di bawah
+  tanpa instruksi tertulis.
+
+## Handoff
+
+- Anomali yang berulang → laporkan ke Pengurus Koperasi.
+- Tindak lanjut yang membutuhkan kebijakan → usulkan ke
+  Pengurus melalui rapat triwulan.
+- Permintaan data dari auditor → koordinasikan dengan
+  Pengurus Koperasi.
+
+## Prosedur terkait
+
+- **Tinjauan Aplikasi Pinjaman oleh Manajer** untuk proses
+  aplikasi.
+- **SHU, Tata Kelola, dan Audit Internal** untuk konteks
+  Pengurus.

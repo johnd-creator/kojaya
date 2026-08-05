@@ -1,7 +1,7 @@
 ---
-title: Alur Pembayaran Iuran via Midtrans
+title: Alur Pembayaran Iuran Bulanan
 slug: anggota-payment-flow
-summary: Cara membayar iuran bulanan, memilih invoice yang benar, dan mengunggah bukti.
+summary: Cara membayar iuran bulanan, memilih invoice yang benar, dan mengunggah bukti transfer.
 category: Anggota · Pembayaran
 module: payments
 roles:
@@ -25,39 +25,82 @@ status: published
 sort_order: 20
 ---
 
-# Alur Pembayaran Iuran via Midtrans
+# Alur Pembayaran Iuran Bulanan
+
+## Tujuan
+
+Membantu anggota membayar iuran bulanan tepat waktu melalui
+aplikasi, baik lewat pembayaran otomatis maupun transfer manual
+dengan bukti.
+
+## Kapan digunakan
+
+- Tagihan iuran bulanan sudah terbit.
+- Ingin melihat status tagihan dan bukti bayar.
+- Ingin mengganti metode pembayaran dari otomatis ke manual atau
+  sebaliknya.
+
+## Prasyarat
+
+- Sudah login sebagai anggota.
+- Profil keanggotaan aktif dan data finansial lengkap.
+- Tagihan bulan berjalan sudah tersedia di daftar tagihan.
+
+## Langkah penggunaan
 
 1. Buka **Simpanan** atau **Dashboard** anggota.
-2. Pilih tagihan dengan status `pending`. Frontend hanya menampilkan
-   invoice yang statusnya `pending` agar anggota tidak salah bayar.
-3. Klik **Bayar**; sistem membuat payment intent via
-   `route('member.payments.intent')`
-   (`MemberPortalController@createPaymentIntent`).
-4. Selesaikan pembayaran di `MidtransPaymentDialog.vue` dengan VA
-   bank sandbox sesuai `MIDTRANS_VA_BANK` di `.env`.
-5. Status dipantau di `route('member.payments.status')` sampai
-   menjadi `paid`.
+2. Pilih tagihan dengan status **Menunggu Pembayaran**. Sistem
+   hanya menampilkan tagihan yang belum dibayar, sehingga anggota
+   tidak salah memilih bulan.
+3. Klik **Bayar**.
+4. Jika memilih pembayaran otomatis, lengkapi pembayaran di
+   halaman bank virtual yang muncul. Gunakan kode bayar atau
+   nomor Virtual Account yang ditampilkan.
+5. Jika memilih transfer manual, klik **Unggah Bukti Transfer**
+   dan lampirkan foto atau PDF bukti transfer dari bank.
+6. Tunggu status berubah dari **Menunggu Pembayaran** menjadi
+   **Lunas** setelah Admin Koperasi memverifikasi bukti.
 
-## Bukti transfer manual
+## Hasil yang diharapkan
 
-Jika memilih manual, gunakan `PaymentProofDialog.vue` lalu unggah
-bukti ke `route('member.payments.proof')`
-(`MemberPortalController@uploadPaymentProof`). Bukti yang diunggah
-menciptakan catatan `CooperativePayment` berstatus `PENDING` dan
-masuk ke **antrean verifikasi** Admin Koperasi, bukan ke
-`route('cooperative.dues.mark-paid')`.
+- Tagihan berubah status menjadi **Lunas**.
+- Notifikasi berhasil diterima anggota.
+- Histori transaksi di menu **Transaksi** menampilkan pembayaran
+  baru.
 
-> **Catatan:** `cooperative.dues.mark-paid` adalah endpoint perekaman
-> kasir yang langsung menyetujui pembayaran. Antrean bukti anggota
-> diproses melalui:
->
-> - `route('cooperative.payments.index')` — daftar `PENDING`
-> - `route('cooperative.payments.approve')` — verifikasi satu per satu
-> - `route('cooperative.payments.bulk-approve')` — verifikasi
->   masal
+## Status yang mungkin muncul
 
-## Notifikasi
+- **Menunggu Pembayaran**: tagihan terbit, belum dibayar.
+- **Menunggu Verifikasi**: bukti sudah diunggah, menunggu
+  persetujuan Admin Koperasi.
+- **Lunas**: pembayaran diverifikasi Admin Koperasi.
+- **Ditolak**: bukti tidak valid; anggota diminta unggah ulang.
 
-Pembayaran sukses memperbarui `notifications` dan mengirim lewat
-outbox dengan idempotency key = UUID outbox (lihat
-[`docs/decisions.md`](../../decisions.md)).
+## Kondisi gagal
+
+- Bukti transfer tidak terbaca → pastikan foto tidak blur dan
+  nominal terlihat jelas.
+- Nominal transfer tidak sesuai tagihan → hubungi Admin Koperasi
+  untuk klarifikasi selisih.
+- Status tidak berubah setelah 1×24 jam → hubungi Admin Koperasi
+  untuk cek antrean verifikasi.
+
+## Hal yang tidak boleh dilakukan
+
+- Mengunggah bukti transfer yang bukan milik sendiri.
+- Memalsukan bukti pembayaran.
+- Membayar iuran anggota lain tanpa konfirmasi Admin Koperasi.
+
+## Handoff
+
+- Bukti yang diunggah akan masuk ke **antrean verifikasi Admin
+  Koperasi** dan diproses pada jam kerja.
+- Jika bukti ditolak, anggota akan menerima notifikasi dan dapat
+  mengunggah ulang.
+- Pertanyaan teknis seputar tagihan → hubungi Admin Koperasi.
+
+## Prosedur terkait
+
+- **Mengenal Portal Anggota** untuk menemukan menu pembayaran.
+- **Antrean Verifikasi Bukti Pembayaran** (panduan Admin
+  Koperasi) menjelaskan bagaimana bukti diverifikasi.

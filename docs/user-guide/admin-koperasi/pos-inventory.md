@@ -49,47 +49,105 @@ sort_order: 30
 
 # Operasi Harian POS, Inventori, dan Setoran Kasir
 
-## POS
+## Tujuan
 
-- Buka shift: `route('cooperative.pos.shifts.index')` lalu
-  `route('cooperative.pos.shifts.open')`.
-- Catat order: `route('cooperative.pos.transactions.store')` dan
-  pantau di `route('cooperative.pos.transactions.index')`.
-- Pantauan coffee orders:
-  `route('cooperative.pos.coffee-orders.index')` dan ubah status
-  lewat `route('cooperative.pos.coffee-orders.update-status')`.
-- Void: `route('cooperative.pos.void-requests.index')` (perlu
-  permission `approve_pos_void`) lalu proses via
-  `route('cooperative.pos.void-requests.process')`.
-- Retur: `route('cooperative.pos.returns.create')` (per
-  transaksi) lalu simpan di
-  `route('cooperative.pos.returns.store')`.
-- Kredit/angsuran anggota:
-  `route('cooperative.pos.credit.create')` dan
-  `route('cooperative.pos.credit.store')`.
+Memandu Admin Koperasi dalam menjalankan operasional harian
+koperasi: buka-tutup shift kasir, catat penjualan, kelola
+pesanan khusus, retur, setoran kas, dan opname stok.
 
-## Setoran kasir
+## Kapan digunakan
 
-Setelah shift, tutup lewat
-`route('cooperative.pos.shifts.close')`. Setoran harian kemudian
-direkam di `route('cooperative.pos.closings.index')` dan
-ditutup via `route('cooperative.pos.closings.close')` (perlu
-permission `view_pos_reports`).
+- Memulai shift kasir di pagi hari.
+- Menjual barang, menerima pesanan, atau memproses retur.
+- Mengelola opname stok, penerimaan barang, atau transfer
+  gudang.
+- Menutup shift di akhir hari dan merekam setoran kasir.
 
-## Inventori
+## Prasyarat
 
-- Stok opname: `route('cooperative.pos.inventory.counts.index')`,
-  `route('cooperative.pos.inventory.counts.create')`,
-  `route('cooperative.pos.inventory.counts.show')`.
-- Penerimaan barang:
-  `route('cooperative.pos.inventory.receipts.index')` /
-  `route('cooperative.pos.inventory.receipts.create')`.
-- Transfer gudang:
-  `route('cooperative.pos.inventory.transfers.index')` /
-  `route('cooperative.pos.inventory.transfers.create')`.
+- Sudah login sebagai Admin Koperasi.
+- Memiliki hak akses untuk POS dan/atau inventori.
+- Saldo kas awal telah ditentukan oleh prosedur internal
+  koperasi.
 
-## Laporan
+## Langkah penggunaan
 
-- Laporan POS: `route('cooperative.pos.reports.index')`.
-- Laporan koperasi: `route('cooperative.reports.index')`.
-- SHU: `route('cooperative.shu.index')`.
+### POS
+
+1. Buka menu **POS**. Sistem menampilkan daftar shift.
+2. Tekan **Buka Shift** untuk memulai shift kasir, lalu catat
+   saldo awal.
+3. Untuk mencatat penjualan, tekan **Transaksi Baru**, pilih
+   produk, tentukan jumlah, lalu tekan **Simpan**. Pantau
+   daftar transaksi pada menu **Daftar Transaksi**.
+4. Untuk pesanan khusus (misalnya pesanan kopi), buka **Pesanan
+   Kopi** dan ubah status pesanan ketika siap saji, selesai,
+   atau dibatalkan.
+5. Untuk transaksi yang perlu dibatalkan, buka **Permintaan
+   Void**, pilih transaksi, dan proses sesuai prosedur
+   pembatalan.
+6. Untuk retur, buka **Retur**, pilih transaksi asal, isi
+   alasan, lalu simpan retur.
+7. Untuk kredit/angsuran anggota dari POS, buka **Kredit/Store
+   Account**, pilih anggota, isi nominal, lalu simpan.
+
+### Setoran kasir
+
+1. Setelah shift berakhir, buka **Tutup Shift** untuk menutup
+   shift kasir dan menghasilkan ringkasan penjualan.
+2. Buka menu **Penyetoran Kasir** untuk merekam setoran harian.
+3. Tekan **Tutup Setoran** untuk mengunci setoran hari tersebut.
+   Akses laporan setoran memerlukan hak akses tambahan.
+
+### Inventori
+
+1. Untuk opname stok, buka **Stok Opname**, pilih periode, lalu
+   catat hasil perhitungan fisik. Sistem akan menampilkan
+   selisih.
+2. Untuk penerimaan barang, buka **Penerimaan Barang**, isi
+   supplier, produk, dan jumlah, lalu simpan.
+3. Untuk transfer antar gudang, buka **Transfer Gudang**, isi
+   gudang asal, gudang tujuan, produk, dan jumlah, lalu simpan.
+
+## Hasil yang diharapkan
+
+- Shift kasir tercatat rapi dengan saldo awal, total penjualan,
+  dan saldo akhir yang seimbang.
+- Stok barang di sistem sesuai dengan stok fisik.
+- Setoran harian sudah direkam dan ditutup.
+
+## Status yang mungkin muncul
+
+- **Shift terbuka**: shift kasir sedang berjalan.
+- **Shift tertutup**: shift sudah ditutup.
+- **Permintaan void menunggu**: ada permintaan pembatalan yang
+  perlu ditinjau.
+- **Selisih stok**: opname menemukan perbedaan antara stok
+  sistem dan fisik.
+
+## Kondisi gagal
+
+- Produk tidak ditemukan di POS → pastikan produk sudah
+  diaktifkan di modul **Produk**.
+- Void ditolak → transaksi tidak memenuhi kriteria pembatalan.
+- Setoran tidak bisa ditutup → cek apakah seluruh transaksi
+  sudah direkonsiliasi.
+
+## Hal yang tidak boleh dilakukan
+
+- Membuka shift tanpa menentukan saldo awal.
+- Menutup shift tanpa menutup setoran harian.
+- Memodifikasi stok di luar siklus opname/penerimaan.
+- Memproses void di luar wewenang.
+
+## Handoff
+
+- Selisih setoran yang berulang → laporkan ke Manajer Koperasi.
+- Permintaan void di luar wewenang → teruskan ke Manajer Koperasi.
+- Opname dengan selisih besar → laporkan ke Pengurus Koperasi.
+
+## Prosedur terkait
+
+- **Dashboard Operasional Admin Koperasi** untuk menemukan menu
+  POS dan Inventori.
+- **Pemantauan Keuangan Harian** untuk rekonsiliasi Manajer.

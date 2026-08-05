@@ -1,7 +1,7 @@
 ---
-title: Mengenal Portal Anggota Kojayaku
+title: Mengenal Portal Anggota
 slug: anggota-portal-overview
-summary: Peta singkat menu anggota, alur simpan pinjam, dan notifikasi Midtrans.
+summary: Peta singkat menu anggota, ringkasan simpan pinjam, dan alur notifikasi pembayaran.
 category: Anggota · Memulai
 module: portal
 roles:
@@ -30,45 +30,88 @@ status: published
 sort_order: 10
 ---
 
-# Mengenal Portal Anggota Kojayaku
+# Mengenal Portal Anggota
 
-Portal anggota berada di belakang middleware `member` dan prefix
-`member.*`. Semua URL dibuka setelah login anggota (lihat
-`routes/web.php` baris grup `Route::prefix('member')->name('member.')`
-di dalam `Route::middleware(['auth', 'verified'])`).
+## Tujuan
 
-## Menu utama
+Memberikan gambaran umum menu yang tersedia untuk anggota setelah
+login, sehingga anggota dapat langsung menemukan fitur simpan pinjam,
+pembayaran, dan notifikasi.
 
-- **Dashboard** → `route('member.dashboard')`
-  Menampilkan ringkasan simpanan pokok, simpanan wajib, status
-  keanggotaan, dan pintasan pembayaran.
-- **Profil Saya** → `route('member.profile')`
-  Mengelola data diri, keluarga, dan dokumen.
-- **Simpanan** → `route('member.savings')`
-  Riwayat simpanan pokok, wajib, dan sukarela.
-- **Pinjaman** → `route('member.loans')`
-  Daftar pinjaman aktif, angsuran berjalan, dan kalkulator plafon.
-- **Poin & Rewards** → `route('member.points')` dan
-  `route('member.rewards')`
-- **Transaksi & Store Account** → `route('member.transactions')` dan
-  `route('member.store-account')`
-- **Notifikasi** → `route('member.notifications')`
+## Kapan digunakan
 
-## Onboarding
+- Baru pertama kali login ke aplikasi.
+- Ingin tahu letak menu tertentu (misalnya pinjaman atau iuran).
+- Ingin memantau poin, rewards, dan histori transaksi.
 
-Setelah pertama kali login, anggota diarahkan ke
-`route('member.onboarding')` untuk melengkapi data diri. Status
-onboarding dan validasi menentukan apakah anggota dapat mengakses
-fitur finansial — lihat
-`App\Services\Cooperative\MemberAccessService` untuk logika
-`can_access_financial_features` dan `is_active`.
+## Prasyarat
 
-## Pembayaran iuran
+- Sudah terdaftar sebagai anggota koperasi.
+- Sudah menyelesaikan verifikasi email.
+- Profil dasar sudah lengkap (nama, nomor identitas, kontak).
 
-Pembayaran bulanan dipicu oleh
-`php artisan cooperative:generate-monthly-dues` (lihat
-`App\Console\Commands\CooperativeGenerateMonthlyDues`). Invoice
-yang muncul hanya untuk bulan yang belum dibayar; anggota memilih
-invoice lalu membuka `MidtransPaymentDialog.vue` atau
-`PaymentProofDialog.vue` untuk transfer manual. Lihat artikel
-**Alur Pembayaran Iuran via Midtrans** untuk langkah lengkap.
+## Langkah penggunaan
+
+1. Masuk ke aplikasi menggunakan akun anggota.
+2. Pada halaman utama, Anda akan melihat **Dashboard** yang
+   menampilkan ringkasan simpanan pokok, simpanan wajib, status
+   keanggotaan, dan pintasan ke fitur finansial.
+3. Buka **Profil Saya** untuk memperbarui data diri, keluarga, dan
+   dokumen keanggotaan.
+4. Buka **Simpanan** untuk melihat histori simpanan pokok, wajib,
+   dan sukarela.
+5. Buka **Pinjaman** untuk melihat daftar pinjaman aktif, angsuran
+   berjalan, dan kalkulator plafon.
+6. Buka **Poin & Rewards** untuk melihat poin yang terkumpul dan
+   katalog hadiah.
+7. Buka **Transaksi** atau **Store Account** untuk melihat histori
+   transaksi.
+8. Buka **Notifikasi** untuk melihat informasi tagihan, status
+   pinjaman, dan pengumuman koperasi.
+9. Setelah login pertama kali, sistem akan meminta Anda melengkapi
+   data onboarding. Selesaikan onboarding agar semua fitur finansial
+   dapat diakses.
+
+## Hasil yang diharapkan
+
+- Anggota memahami letak setiap menu tanpa harus bertanya.
+- Anggota dapat langsung menuju fitur yang dibutuhkan dari
+  dashboard.
+- Onboarding selesai dan anggota masuk kategori "aktif" sehingga
+  fitur finansial tampil penuh.
+
+## Status yang mungkin muncul
+
+- **Onboarding belum lengkap**: menu finansial belum bisa dibuka.
+- **Akun non-aktif**: keanggotaan ditangguhkan, hubungi Admin
+  Koperasi.
+- **Email belum diverifikasi**: sistem meminta verifikasi sebelum
+  login berhasil.
+
+## Kondisi gagal
+
+- Lupa kata sandi → gunakan menu **Lupa Sandi** di halaman login.
+- Data profil tidak bisa disimpan → cek koneksi internet dan
+  pastikan semua kolom wajib terisi.
+- Onboarding macet di satu langkah → hubungi Admin Koperasi untuk
+  bantuan.
+
+## Hal yang tidak boleh dilakukan
+
+- Memberikan kredensial login kepada orang lain.
+- Mengubah data diri milik anggota lain.
+- Memalsukan dokumen pendukung yang diminta saat onboarding.
+
+## Handoff
+
+- Jika anggota baru bingung → arahkan ke Admin Koperasi.
+- Jika status keanggotaan non-aktif → Admin Koperasi akan
+  mengaktifkan kembali setelah verifikasi data.
+- Untuk pertanyaan seputar pinjaman → gunakan prosedur
+  **Mengajukan dan Melacak Pinjaman**.
+
+## Prosedur terkait
+
+- **Alur Pembayaran Iuran via Midtrans** untuk langkah bayar iuran.
+- **Mengajukan dan Melacak Pinjaman** untuk langkah ajukan
+  pinjaman.

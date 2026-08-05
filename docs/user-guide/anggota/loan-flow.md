@@ -1,7 +1,7 @@
 ---
 title: Mengajukan dan Melacak Pinjaman
 slug: anggota-loan-flow
-summary: Cara mengajukan pinjaman baru dan membaca status aplikasi.
+summary: Cara mengajukan pinjaman baru dan membaca status aplikasi hingga pencairan.
 category: Anggota · Pinjaman
 module: loans
 roles:
@@ -26,53 +26,96 @@ sort_order: 30
 
 # Mengajukan dan Melacak Pinjaman
 
-1. Buka **Pinjaman** (`route('member.loans')`).
-2. Pilih tab **Simulasi & Ajukan** pada
-   `resources/js/pages/Kojayaku/Loans.vue`.
-3. Isi jenis pinjaman, nominal, tenor, tanggal jatuh tempo
-   pertama, tujuan, dan catatan. Validasi dilakukan oleh
-   `App\Http\Requests\StoreMemberLoanApplicationRequest`.
-4. Klik **Kirim Pengajuan Pinjaman**. Sistem melakukan
-   `POST` ke `route('member.loans.store')`
-   (`MemberPortalController@applyLoan`) yang memanggil
-   `App\Services\Cooperative\LoanService::apply()` dengan
-   `cooperative_member_id` dari user yang sedang login.
+## Tujuan
 
-## Status aplikasi
+Membantu anggota mengajukan pinjaman baru dan memantau setiap
+tahapan sampai pencairan, tanpa harus datang ke kantor koperasi.
 
-Enum `App\Enums\LoanStatus` menentukan status yang mungkin:
+## Kapan digunakan
 
-| Status | Konteks |
-| --- | --- |
-| `APPLIED` | Aplikasi baru, menunggu tinjauan Manajer. |
-| `MANAGER_APPROVED` | Sudah disetujui Manajer, menunggu keputusan Pengurus. |
-| `APPROVED` | Disetujui final, menunggu pencairan. |
-| `REJECTED` | Ditolak pada salah satu tahap. |
-| `ACTIVE` | Sudah dicairkan, angsuran berjalan. |
-| `PAID_OFF` | Lunas. |
-| `DEFAULTED` | Angsuran macet. |
-| `WRITTEN_OFF` | Dihapusbukukan. |
+- Ingin mengajukan pinjaman untuk kebutuhan konsumtif, produktif,
+  atau darurat.
+- Ingin melihat status aplikasi pinjaman yang sedang berjalan.
+- Ingin membayar angsuran yang sudah jatuh tempo.
 
-Frontend `Kojayaku/Loans.vue` memfilter daftar berdasarkan kolom
-`status` (string dari enum). Untuk melihat perkembangan, kembali ke
-tab **Daftar Pinjaman & Riwayat** dan pilih aplikasi.
+## Prasyarat
 
-## Pembayaran angsuran
+- Sudah login sebagai anggota.
+- Status keanggotaan aktif.
+- Tidak memiliki pinjaman macet yang belum diselesaikan.
+- Data profil dan pekerjaan sudah lengkap.
 
-Untuk membayar angsuran yang jatuh tempo:
+## Langkah penggunaan
 
-1. Buka detail angsuran dari daftar pinjaman.
-2. Sistem membuat payment intent melalui
-   `route('member.loans.installments.payment-intent')`
-   (`MemberPortalController@createLoanPaymentIntent`).
-3. Pantau status melalui
-   `route('member.loans.payment-intents.status')`
-   (`MemberPortalController@loanPaymentIntentStatus`).
-4. `App\Services\Integrations\LoanPaymentIntentService` memastikan
-   hanya ada satu payment intent aktif per angsuran.
+1. Buka menu **Pinjaman** pada portal anggota.
+2. Pilih tab **Simulasi & Ajukan**.
+3. Isi jenis pinjaman, jumlah yang diinginkan, tenor (lama
+   pinjaman), tanggal angsuran pertama, tujuan pinjaman, dan
+   catatan tambahan bila ada.
+4. Tekan **Kirim Pengajuan**.
+5. Setelah pengajuan terkirim, buka tab **Daftar Pinjaman &
+   Riwayat** untuk memantau status.
+6. Setelah pinjaman disetujui dan dicairkan, buka detail pinjaman
+   untuk membayar angsuran.
+7. Untuk membayar angsuran, tekan **Bayar Angsuran** pada detail
+   pinjaman, lalu selesaikan pembayaran di halaman bank virtual
+   yang muncul.
+8. Pantau status pembayaran angsuran sampai berubah menjadi
+   **Lunas**.
 
-## Pembatalan aplikasi
+## Hasil yang diharapkan
 
-Saat ini aplikasi pinjaman **tidak dapat dibatalkan oleh anggota**
-melalui antarmuka. Jika ingin menarik aplikasi, hubungi Admin
-Koperasi melalui kanal yang tersedia.
+- Aplikasi pinjaman tampil di daftar dengan status **Diajukan**.
+- Status berganti ke **Ditolak**, **Disetujui Manajer**, atau
+  **Disetujui Pengurus** sesuai proses tinjauan.
+- Setelah pencairan, angsuran tampil di jadwal angsuran dan
+  dapat dibayar tepat waktu.
+
+## Status yang mungkin muncul
+
+- **Diajukan**: aplikasi baru, menunggu tinjauan Manajer Koperasi.
+- **Disetujui Manajer**: sudah disetujui Manajer, menunggu
+  keputusan Pengurus Koperasi.
+- **Disetujui**: disetujui final, sedang dijadwalkan pencairan.
+- **Ditolak**: ditolak pada salah satu tahap tinjauan.
+- **Aktif**: sudah dicairkan, angsuran berjalan.
+- **Lunas**: seluruh angsuran sudah dibayar.
+- **Macet**: terdapat angsuran yang terlambat bayar.
+- **Dihapusbukukan**: pinjaman dihapus dari pembukuan karena
+  kondisi tertentu.
+
+## Kondisi gagal
+
+- Plafon tidak cukup → kecilkan nominal atau perpanjang tenor.
+- Data pekerjaan tidak lengkap → lengkapi dulu di menu **Profil
+  Saya**.
+- Angsuran tidak bisa dibayar → pastikan metode pembayaran aktif
+  dan nominal sesuai jadwal.
+- Status tidak berubah setelah beberapa hari kerja → hubungi
+  Admin Koperasi.
+
+## Hal yang tidak boleh dilakukan
+
+- Mengajukan lebih dari satu pinjaman dalam waktu bersamaan
+  tanpa konfirmasi.
+- Memberikan data pekerjaan atau penghasilan palsu.
+- Memalsukan dokumen pendukung pengajuan.
+- Mengubah jadwal angsuran sendiri tanpa persetujuan.
+
+## Handoff
+
+- Peninjauan aplikasi pinjaman dilakukan **Manajer Koperasi**
+  terlebih dahulu, lalu **Pengurus Koperasi** untuk keputusan
+  akhir.
+- Pencairan dilakukan oleh Admin Koperasi setelah semua persetujuan
+  terpenuhi.
+- Pertanyaan seputar status atau penolakan → hubungi Admin
+  Koperasi dengan menyertakan nomor aplikasi pinjaman.
+
+## Prosedur terkait
+
+- **Mengenal Portal Anggota** untuk menemukan menu pinjaman.
+- **Tinjauan Aplikasi Pinjaman oleh Manajer** (panduan Manajer)
+  menjelaskan bagaimana aplikasi ditinjau.
+- **Persetujuan Akhir Pinjaman oleh Pengurus** (panduan Pengurus)
+  menjelaskan tahap keputusan akhir.

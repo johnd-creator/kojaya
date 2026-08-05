@@ -1,10 +1,5 @@
 import { type Locator, type Page, expect } from "@playwright/test";
 
-/**
- * Page object for the in-app documentation center
- * (`/documentation`). The object is used by the visual specs that
- * cover landing, article, search, and contextual-help scenarios.
- */
 export class DocumentationPage {
   public readonly heading: Locator;
   public readonly searchInput: Locator;
@@ -12,7 +7,10 @@ export class DocumentationPage {
   public readonly articleCards: Locator;
   public readonly articleBody: Locator;
   public readonly screenshotButton: Locator;
+  public readonly screenshotDialog: Locator;
   public readonly contextualHelpLink: Locator;
+  public readonly tocList: Locator;
+  public readonly tocLinks: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole("heading", { level: 1 });
@@ -23,9 +21,14 @@ export class DocumentationPage {
     this.articleCards = page.locator("a[href^='/documentation/']");
     this.articleBody = page.locator("article.prose");
     this.screenshotButton = page.locator("button[aria-label*=screenshot]");
+    this.screenshotDialog = page.locator("[role='dialog']");
     this.contextualHelpLink = page.getByRole("link", {
       name: /lihat panduan/i,
     });
+    this.tocList = page.locator(
+      "nav[aria-label*='daftar isi'], nav[aria-label*='table of contents'], .toc, [data-testid='toc']",
+    );
+    this.tocLinks = this.tocList.locator("a[href^='#']");
   }
 
   async gotoLanding(): Promise<void> {

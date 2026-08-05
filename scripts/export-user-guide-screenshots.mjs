@@ -45,7 +45,7 @@
  * production manifest or baseline directory.
  */
 
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync, createReadStream } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync, createReadStream } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
@@ -125,6 +125,25 @@ export function resolveSafeSource(projectRoot, source) {
   ) {
     throw new Error(`Source is outside the baselines directory: ${source}`);
   }
+
+  // Symlink escape prevention: resolve the real path of both the
+  // source file and the baseline root, then verify the real path
+  // is still contained. This catches symlinks inside the baselines
+  // directory that point to files outside it.
+  if (existsSync(normalised)) {
+    const realSource = realpathSync(normalised);
+    const realBaselineRoot = realpathSync(baselineRoot);
+    const realRel = relative(realBaselineRoot, realSource);
+    if (
+      realRel === ""
+      || realRel.startsWith(`..${sep}`)
+      || realRel === ".."
+      || isAbsolute(realRel)
+    ) {
+      throw new Error(`Source resolves outside the baselines directory via symlink: ${source}`);
+    }
+  }
+
   return normalised;
 }
 

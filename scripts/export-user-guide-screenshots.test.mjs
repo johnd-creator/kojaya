@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { deflateSync } from "node:zlib";
 import { Buffer } from "node:buffer";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -445,6 +445,29 @@ test("resolveSafeSource rejects parent traversal after resolution", () => {
     assert.throws(
       () => resolveSafeSource(fx.root, "tests/visual/baselines/desktop/../../../etc/passwd"),
       /outside the baselines directory|'..' segment/,
+    );
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("resolveSafeSource rejects symlink escape from baselines directory", () => {
+  const fx = makeFixture();
+  try {
+    // Create an external file outside baselines.
+    const externalFile = join(fx.root, "secret.png");
+    writeFileSync(externalFile, png());
+    // Create a symlink inside baselines pointing to the external file.
+    const symlinkPath = join(fx.root, "tests/visual/baselines/desktop/escaped.png");
+    try {
+      symlinkSync(externalFile, symlinkPath);
+    } catch {
+      // Symlinks may not be supported on all platforms.
+      return;
+    }
+    assert.throws(
+      () => resolveSafeSource(fx.root, "tests/visual/baselines/desktop/escaped.png"),
+      /symlink|outside the baselines directory/,
     );
   } finally {
     fx.cleanup();

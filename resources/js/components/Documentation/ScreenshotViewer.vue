@@ -52,14 +52,45 @@ function close(): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Escape") {
+  if (event.key === "Escape") {
+    if (active.value === null) {
+      return;
+    }
+    event.preventDefault();
+    close();
     return;
   }
-  if (active.value === null) {
-    return;
+  if (event.key === "Tab") {
+    const focusable = getFocusableElements();
+    if (focusable.length === 0) {
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const activeEl = document.activeElement;
+    if (event.shiftKey) {
+      if (activeEl === first || !dialogRef.value?.contains(activeEl)) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (activeEl === last || !dialogRef.value?.contains(activeEl)) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
   }
-  event.preventDefault();
-  close();
+}
+
+function getFocusableElements(): HTMLElement[] {
+  if (!dialogRef.value) {
+    return [];
+  }
+  const selector =
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  return Array.from(
+    dialogRef.value.querySelectorAll<HTMLElement>(selector),
+  ).filter((el) => el.offsetParent !== null || el === document.activeElement);
 }
 
 function onBackdropClick(event: MouseEvent): void {

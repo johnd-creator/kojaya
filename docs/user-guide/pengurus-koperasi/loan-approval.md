@@ -15,7 +15,6 @@ route_names:
   - cooperative.loans.approve
   - cooperative.loans.disburse
   - cooperative.loans.reject
-  - audit-logs
 risk_level: high
 screenshot_entries:
   - pengurus-loan-approval-desktop
@@ -32,14 +31,14 @@ sort_order: 10
 ## Tujuan
 
 Memandu Pengurus Koperasi dalam mengambil keputusan akhir atas
-aplikasi pinjaman yang sudah disetujui Manajer, sehingga
+aplikasi pinjaman yang sudah direview Manajer, sehingga
 pencairan hanya terjadi setelah persetujuan tertinggi di
 lingkup koperasi.
 
 ## Kapan digunakan
 
-- Ada aplikasi pinjaman dengan status **Disetujui Manajer**
-  yang menunggu keputusan akhir.
+- Ada aplikasi pinjaman dengan status `MANAGER_APPROVED` yang
+  menunggu keputusan akhir.
 - Ingin menolak aplikasi pada tahap akhir.
 - Ingin menambahkan catatan keputusan pada aplikasi.
 
@@ -47,67 +46,69 @@ lingkup koperasi.
 
 - Sudah login sebagai Pengurus Koperasi.
 - Memiliki hak akses untuk menyetujui pinjaman.
-- Aplikasi sudah pernah ditinjau oleh Manajer Koperasi.
+- Aplikasi sudah berstatus `MANAGER_APPROVED`.
 
 ## Langkah penggunaan
 
-1. Buka menu **Pinjaman** dan saring daftar dengan filter
-   **Disetujui Manajer**.
+1. Buka menu **Pinjaman** dan gunakan filter status
+   `MANAGER_APPROVED`.
 2. Buka detail aplikasi untuk membaca data pemohon dan
-   ringkasan tinjauan Manajer.
-3. Telaah pertimbangan yang sudah diberikan Manajer, termasuk
-   data pekerjaan, simpanan, agunan, dan rekomendasi.
-4. Pilih keputusan:
-   - **Setujui**: status aplikasi berubah menjadi
-     **Disetujui** dan sistem menjadwalkan pencairan oleh
-     Admin Koperasi. Jadwal angsuran akan ditampilkan pada
-     detail pinjaman.
-   - **Tolak**: status aplikasi berubah menjadi **Ditolak**
-     dan anggota menerima notifikasi.
-5. Jika perlu menambahkan catatan keputusan, gunakan kolom
-   catatan yang tersedia pada detail aplikasi.
+   ringkasan tinjauan Manajer Koperasi pada log keputusan.
+3. Pilih keputusan yang tersedia pada detail aplikasi:
+   - **Setujui sebagai Pengurus** untuk menyetujui aplikasi.
+     Status aplikasi berubah menjadi `APPROVED`. Pencairan
+     belum terjadi sampai ada peran dengan hak akses
+     pencairan (`manage_cooperative_loan`) menjalankan
+     tindakan **Cairkan Pinjaman**.
+   - **Tolak** untuk menolak aplikasi pada tahap akhir. Status
+     aplikasi berubah menjadi `REJECTED` dengan alasan
+     penolakan yang Anda isi.
+4. Catatan keputusan yang Anda isi pada kolom catatan akan
+   tersimpan dalam log keputusan aplikasi dan dapat dilihat
+   oleh anggota serta peran koperasi lainnya.
 
 ## Hasil yang diharapkan
 
-- Aplikasi yang disetujui melewati tahap akhir dan
-  dijadwalkan pencairan.
-- Aplikasi yang ditolak memiliki alasan yang tercatat.
-- Setiap keputusan tercatat dalam log audit aplikasi.
+- Aplikasi yang disetujui melewati tahap akhir dengan status
+  `APPROVED` dan menunggu pencairan.
+- Aplikasi yang ditolak memiliki alasan penolakan yang
+  tercatat pada log keputusan.
+- Setelah pencairan dijalankan, status aplikasi berubah
+  menjadi `ACTIVE` dan jadwal angsuran tersedia pada detail
+  pinjaman.
 
 ## Status yang mungkin muncul
 
-- **Disetujui Manajer**: aplikasi menunggu keputusan
+- **MANAGER_APPROVED**: aplikasi menunggu keputusan akhir
   Pengurus.
-- **Disetujui**: aplikasi disetujui final, menunggu
-  pencairan.
-- **Ditolak**: aplikasi ditolak pada tahap akhir.
-- **Sedang Dicairkan**: aplikasi disetujui dan Admin Koperasi
-  sedang memproses pencairan.
+- **APPROVED**: aplikasi disetujui final, menunggu pencairan
+  oleh peran dengan hak akses pencairan.
+- **ACTIVE**: aplikasi sudah dicairkan, angsuran berjalan.
+- **REJECTED**: aplikasi ditolak pada tahap akhir.
 
 ## Kondisi gagal
 
 - Manajer belum menyelesaikan tinjauan → minta Manajer
-  menyelesaikan tinjauan terlebih dahulu.
-- Agunan tidak sesuai kebijakan → minta tinjauan ulang oleh
-  Manajer.
-- Data pemohon berubah setelah tinjauan Manajer → koordinasikan
-  dengan Admin Koperasi untuk memperbarui data.
+  menyelesaikan tinjauan terlebih dahulu sampai status
+  menjadi `MANAGER_APPROVED`.
+- Tombol **Setujui sebagai Pengurus** tidak muncul → aplikasi
+  belum berstatus `MANAGER_APPROVED`, atau Anda belum login
+  sebagai Pengurus Koperasi dengan izin `approve_cooperative_loan`.
 
 ## Hal yang tidak boleh dilakukan
 
-- Menyetujui aplikasi yang belum ditinjau Manajer.
-- Mengubah data aplikasi setelah disetujui Manajer tanpa
-  pemberitahuan.
-- Menyetujui tanpa melihat data keuangan terkini.
-- Menolak tanpa alasan yang terdokumentasi.
+- Menyetujui aplikasi yang belum berstatus `MANAGER_APPROVED`.
+- Menolak tanpa alasan yang terdokumentasi pada kolom
+  penolakan.
 
 ## Handoff
 
-- Aplikasi yang disetujui → Admin Koperasi mencairkan dan
-  menjadwalkan angsuran.
-- Keputusan yang berdampak besar → laporkan pada RAT
-  melalui notulen eksternal.
-- Temuan risiko portofolio → masukkan dalam laporan triwulan.
+- Aplikasi yang disetujui → peran dengan hak akses pencairan
+  (`manage_cooperative_loan`) menjalankan **Cairkan Pinjaman**
+  pada detail aplikasi sampai status menjadi `ACTIVE`.
+- Keputusan yang berdampak besar → dicatat pada log keputusan
+  aplikasi dan dapat dirujuk oleh Pengurus, Manajer, atau
+  Admin Koperasi.
 
 ## Prosedur terkait
 

@@ -12,9 +12,6 @@ route_names:
   - member.payments.intent
   - member.payments.proof
   - member.payments.status
-  - cooperative.payments.index
-  - cooperative.payments.approve
-  - cooperative.payments.bulk-approve
 risk_level: medium
 screenshot_entries:
   - anggota-payment-flow-desktop
@@ -49,32 +46,38 @@ dengan bukti.
 ## Langkah penggunaan
 
 1. Buka **Simpanan** atau **Dashboard** anggota.
-2. Pilih tagihan dengan status **Menunggu Pembayaran**. Sistem
-   hanya menampilkan tagihan yang belum dibayar, sehingga anggota
-   tidak salah memilih bulan.
+2. Pilih tagihan dengan status yang menandakan tagihan belum
+   dibayar. Sistem hanya menampilkan tagihan yang belum
+   dibayar, sehingga anggota tidak salah memilih bulan.
 3. Klik **Bayar**.
-4. Jika memilih pembayaran otomatis, lengkapi pembayaran di
-   halaman bank virtual yang muncul. Gunakan kode bayar atau
-   nomor Virtual Account yang ditampilkan.
+4. Jika memilih pembayaran otomatis, lengkapi pembayaran
+   mengikuti alur yang ditampilkan aplikasi (misalnya
+   pembayaran melalui payment intent dengan kode bayar atau
+   nomor Virtual Account bila tersedia).
 5. Jika memilih transfer manual, klik **Unggah Bukti Transfer**
    dan lampirkan foto atau PDF bukti transfer dari bank.
-6. Tunggu status berubah dari **Menunggu Pembayaran** menjadi
-   **Lunas** setelah Admin Koperasi memverifikasi bukti.
+6. Tunggu status pembayaran berubah dari **Menunggu Verifikasi**
+   (`PENDING`) menjadi **Terverifikasi** (`APPROVED`) setelah
+   Admin Koperasi memverifikasi bukti.
 
 ## Hasil yang diharapkan
 
-- Tagihan berubah status menjadi **Lunas**.
+- Tagihan berubah status menjadi **Terverifikasi**.
 - Notifikasi berhasil diterima anggota.
 - Histori transaksi di menu **Transaksi** menampilkan pembayaran
   baru.
 
 ## Status yang mungkin muncul
 
-- **Menunggu Pembayaran**: tagihan terbit, belum dibayar.
-- **Menunggu Verifikasi**: bukti sudah diunggah, menunggu
-  persetujuan Admin Koperasi.
-- **Lunas**: pembayaran diverifikasi Admin Koperasi.
-- **Ditolak**: bukti tidak valid; anggota diminta unggah ulang.
+Label di bawah adalah nilai yang ditampilkan aplikasi untuk
+status pembayaran:
+
+- **PENDING** (Menunggu Verifikasi): bukti sudah diunggah,
+  menunggu persetujuan Admin Koperasi.
+- **APPROVED** (Terverifikasi): pembayaran diverifikasi Admin
+  Koperasi.
+- **REJECTED** (Ditolak): bukti tidak valid; anggota diminta
+  unggah ulang.
 
 ## Kondisi gagal
 

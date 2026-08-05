@@ -30,7 +30,7 @@ sort_order: 40
 
 Memandu Admin Koperasi dalam memverifikasi bukti transfer iuran
 yang diunggah anggota, sehingga pembayaran dapat berubah status
-menjadi **Lunas** dan tercatat di pembukuan.
+menjadi **Terverifikasi** dan tercatat di pembukuan.
 
 ## Kapan digunakan
 
@@ -60,7 +60,8 @@ menjadi **Lunas** dan tercatat di pembukuan.
      dari 7 hari).
    - **Nama pengirim**: sesuai dengan nama anggota.
 4. Jika bukti valid, tekan **Setujui**. Status berubah menjadi
-   **Lunas** dan anggota menerima notifikasi.
+   **Terverifikasi** (`APPROVED`) dan anggota menerima
+   notifikasi.
 5. Jika bukti tidak valid, tekan **Tolak** dan berikan alasan
    singkat. Anggota akan diminta mengunggah ulang.
 6. Untuk memproses banyak bukti sekaligus (misalnya pada akhir
@@ -69,18 +70,24 @@ menjadi **Lunas** dan tercatat di pembukuan.
 
 ## Hasil yang diharapkan
 
-- Bukti yang valid ditandai **Lunas**.
+- Bukti yang valid ditandai **Terverifikasi**.
 - Bukti yang tidak valid ditandai **Ditolak** dengan alasan
   yang jelas.
 - Antrean verifikasi kosong pada akhir hari.
 
 ## Status yang mungkin muncul
 
-- **Menunggu Verifikasi**: bukti baru diunggah, belum diproses.
-- **Disetujui**: bukti valid, pembayaran Lunas.
-- **Ditolak**: bukti tidak valid; anggota dapat unggah ulang.
-- **Diproses Massal**: bukti sedang dalam proses verifikasi
-  sekaligus.
+Label di bawah adalah nilai yang ditampilkan aplikasi untuk
+status pembayaran:
+
+- **PENDING** (Menunggu Verifikasi): bukti baru diunggah,
+  belum diproses.
+- **APPROVED** (Terverifikasi): bukti valid, pembayaran
+  tercatat.
+- **REJECTED** (Ditolak): bukti tidak valid; anggota dapat
+  unggah ulang.
+- **VOID** (Dibatalkan): pembayaran dibatalkan oleh Admin
+  Koperasi.
 
 ## Kondisi gagal
 

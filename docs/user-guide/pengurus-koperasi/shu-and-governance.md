@@ -1,7 +1,7 @@
 ---
 title: SHU, Tata Kelola, dan Audit Internal
 slug: pengurus-shu-and-governance
-summary: Siklus SHU tahunan, audit internal, dan perubahan anggaran dasar.
+summary: Siklus SHU tahunan dan peran Pengurus dalam tata kelola koperasi.
 category: Pengurus Koperasi · Tata Kelola
 module: governance
 roles:
@@ -15,8 +15,6 @@ route_names:
   - cooperative.shu.request-revision
   - cooperative.points.index
   - cooperative.reports.index
-  - audit-logs
-  - exceptions.index
 risk_level: high
 screenshot_entries:
   - pengurus-shu-and-governance-desktop
@@ -32,22 +30,20 @@ sort_order: 20
 ## Tujuan
 
 Memandu Pengurus Koperasi dalam mengelola siklus Sisa Hasil
-Usaha (SHU) tahunan, melakukan audit internal, dan mengelola
-perubahan anggaran dasar / anggaran rumah tangga (AD/ART)
+Usaha (SHU) tahunan, serta peran Pengurus dalam tata kelola
 koperasi.
 
 ## Kapan digunakan
 
 - Akhir tahun buku, menjelang penutupan periode SHU.
-- Menyusun laporan triwulan untuk anggota.
-- Menangani permintaan audit internal atau eksternal.
-- Memutuskan perubahan AD/ART.
+- Menyusun laporan keuangan untuk anggota.
+- Mengelola distribusi poin anggota setelah SHU ditutup.
 
 ## Prasyarat
 
 - Sudah login sebagai Pengurus Koperasi.
-- Memiliki hak akses untuk menutup periode SHU, mengelola
-  poin, atau mengubah AD/ART.
+- Memiliki hak akses `manage_cooperative_shu` untuk menutup
+  periode SHU atau mengelola poin.
 - Data pembukuan tahunan sudah lengkap dan direkonsiliasi.
 
 ## Langkah penggunaan
@@ -63,25 +59,18 @@ koperasi.
 4. Jika ditemukan ketidaksesuaian setelah periode ditutup,
    gunakan **Minta Revisi** untuk membuka kembali periode
    dengan catatan alasan revisi.
-5. Distribusi poin ke anggota dapat dilakukan melalui menu
+
+### Distribusi poin anggota
+
+1. Distribusi poin ke anggota dapat dilakukan melalui menu
    **Poin** setelah periode SHU ditutup.
-
-### Audit internal
-
-1. Buka **Log Audit** untuk melihat jejak perubahan data
-   penting, termasuk perubahan pinjaman, kas, dan keanggotaan.
-2. Untuk mengawasi anomali lintas modul, buka **Pengecualian**
-   untuk melihat peringatan otomatis.
-3. Perubahan AD/ART dilakukan melalui modul **Pengaturan
-   Koperasi** dengan hak akses khusus. Pastikan keputusan
-   sudah disetujui dalam rapat pleno dan didokumentasikan.
+2. Penambahan poin dilakukan sesuai dengan mekanisme yang
+   tersedia di halaman **Poin**.
 
 ## Hasil yang diharapkan
 
 - Periode SHU ditutup tepat waktu dan akurat.
 - Distribusi poin ke anggota tercatat dengan benar.
-- Audit internal berjalan dengan jejak yang utuh.
-- Perubahan AD/ART terdokumentasi dengan baik.
 
 ## Status yang mungkin muncul
 
@@ -89,7 +78,6 @@ koperasi.
 - **Periode SHU ditutup**: tidak dapat diubah tanpa revisi.
 - **SHU dalam revisi**: periode dibuka kembali untuk
   koreksi.
-- **Audit log aktif**: pencatatan audit berjalan normal.
 
 ## Kondisi gagal
 
@@ -97,24 +85,16 @@ koperasi.
   data terlebih dahulu.
 - Permintaan revisi ditolak → tidak ada hak akses atau
   periode sudah final.
-- Log audit tidak menampilkan transaksi → hubungi Admin
-  Koperasi untuk pengecekan teknis.
 
 ## Hal yang tidak boleh dilakukan
 
 - Menutup periode SHU tanpa rekonsiliasi penuh.
-- Mengubah AD/ART tanpa keputusan rapat pleno.
-- Menghapus atau mengubah log audit.
 - Mendistribusikan poin sebelum SHU ditutup.
 
 ## Handoff
 
 - Penutupan SHU tepat waktu → koordinasikan dengan Admin
   Koperasi untuk rekonsiliasi data.
-- Temuan audit → laporkan ke seluruh Pengurus dan, jika
-  diminta, ke auditor eksternal.
-- Perubahan AD/ART → sosialisasikan ke anggota melalui
-  kanal komunikasi koperasi.
 
 ## Prosedur terkait
 
@@ -123,11 +103,21 @@ koperasi.
 - **Pemantauan Keuangan Harian** untuk rekonsiliasi oleh
   Manajer.
 
-## Catatan tentang RAT
+## Catatan tentang jangkauan fitur
 
-Pencatatan risalah RAT belum tersedia sebagai workflow
-terstruktur di Kojaya. Hasil RAT saat ini disimpan di luar
-aplikasi (misalnya pada sistem arsip internal koperasi) dan
-dirujuk secara manual. Pengurus dapat menggunakan modul
-**Log Audit** untuk menelusuri keputusan yang diambil
-pada periode terkait.
+- **Log Audit** (`audit-logs`) saat ini hanya dapat diakses
+  oleh peran dengan izin `view_audit_logs` dan belum termasuk
+  dalam hak akses standar Pengurus Koperasi. Pengurus dapat
+  meminta Admin Koperasi atau System Admin jika memerlukan
+  penelusuran jejak perubahan.
+- **Halaman pengecualian** (`exceptions.index`) membutuhkan
+  izin `view_balance_sheet` dan saat ini bukan halaman yang
+  dapat dibuka Pengurus Koperasi secara langsung.
+- **Perubahan Anggaran Dasar / Anggaran Rumah Tangga
+  (AD/ART)** belum tersedia sebagai workflow terstruktur di
+  Kojaya. Pencatatan dan persetujuan AD/ART dilakukan di luar
+  aplikasi sampai modul tersebut disediakan.
+- **Pencatatan risalah RAT** belum tersedia sebagai workflow
+  terstruktur di Kojaya. Hasil RAT saat ini disimpan di luar
+  aplikasi (misalnya pada sistem arsip internal koperasi) dan
+  belum dirujuk otomatis oleh aplikasi.

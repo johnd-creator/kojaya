@@ -15,8 +15,35 @@
 ## Memperbarui artikel
 
 1. Perbarui konten Markdown.
-2. Naikkan `last_reviewed_commit` ke SHA pendek saat ini.
+2. Perbarui `last_reviewed_commit` jika aplikasi (route,
+   controller, permission, atau UI) berubah. Lihat penjelasan
+   di bawah.
 3. Jalankan validator sebelum commit.
+
+## Makna `last_reviewed_commit`
+
+Field `last_reviewed_commit` menunjuk **commit aplikasi** yang
+menjadi basis validasi workflow artikel — bukan commit
+dokumentasi. Saat validator dijalankan, field ini diverifikasi:
+
+1. `git cat-file -e <sha>^{commit}` — commit harus ada.
+2. `git merge-base --is-ancestor <sha> HEAD` — commit harus
+   menjadi ancestor dari HEAD.
+
+**Kapan memperbarui:**
+
+- Jika route, controller, permission, atau UI yang dirujuk
+  artikel berubah, perbarui field ke commit aplikasi terbaru
+  yang berisi perubahan tersebut.
+- Jika hanya teks artikel yang diperbaiki tanpa perubahan
+  aplikasi, field tidak perlu dinaikkan.
+
+**Strategi aman:**
+
+- Gunakan SHA pendek dari `origin/main` (base aplikasi) jika
+  artikel direview terhadap state aplikasi terbaru.
+- Jangan mengisi dengan SHA HEAD cabang dokumentasi yang belum
+  memiliki kode aplikasi baru.
 
 ## Menambah route
 

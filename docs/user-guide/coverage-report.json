@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T09:29:44.599Z",
+  "generated_at": "2026-08-05T16:43:29.572Z",
   "articles": {
     "total": 12,
     "published": 12,
@@ -19,18 +19,5 @@
   "body_baseline": 0,
   "missing_inventory": 0,
   "errors": [],
-  "warnings": [
-    "contextual-help.json: entry for route `member.dashboard` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `member.loans` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `member.payments.intent` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.operator.dashboard` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.loan-types.index` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.pos.index` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.payments.index` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.loans.index` uses a screenshot_state (`manager-review`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.loans.show` uses a screenshot_state (`manager-review`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.reports.index` uses a screenshot_state (`default`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.loans.show` uses a screenshot_state (`chairman-approval`) that is not a known viewport.",
-    "contextual-help.json: entry for route `cooperative.shu.index` uses a screenshot_state (`default`) that is not a known viewport."
-  ]
+  "warnings": []
 }

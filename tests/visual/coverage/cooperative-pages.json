@@ -1821,11 +1821,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-koperasi",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Memantau pekerjaan operasional koperasi",
-      "primary_actions": ["Membuka antrean kerja"],
+      "primary_actions": [
+        "Membuka antrean kerja"
+      ],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1839,11 +1845,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-default",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau data anggota",
-      "primary_actions": ["Membuka detail anggota"],
+      "primary_actions": [
+        "Membuka detail anggota"
+      ],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -1857,11 +1869,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "pending-filter",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Memvalidasi calon anggota",
-      "primary_actions": ["Membuka antrean validasi"],
+      "primary_actions": [
+        "Membuka antrean validasi"
+      ],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -1875,11 +1893,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "no-results",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menangani pencarian tanpa hasil",
-      "primary_actions": ["Mengubah pencarian"],
+      "primary_actions": [
+        "Mengubah pencarian"
+      ],
       "risk_level": "informational",
       "visual": true,
       "accessibility": false
@@ -1893,11 +1917,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "pending-review",
-      "viewport_policy": ["desktop", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "mobile"
+      ],
       "fixture": "member-pending-review",
       "ready_locator": "role=heading",
       "goal": "Memeriksa anggota yang menunggu validasi",
-      "primary_actions": ["Meminta revisi", "Memvalidasi data"],
+      "primary_actions": [
+        "Meminta revisi",
+        "Memvalidasi data"
+      ],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1911,11 +1941,16 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "revision",
-      "viewport_policy": ["desktop", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "mobile"
+      ],
       "fixture": "member-revision",
       "ready_locator": "role=heading",
       "goal": "Menindaklanjuti data anggota yang perlu revisi",
-      "primary_actions": ["Membuka catatan revisi"],
+      "primary_actions": [
+        "Membuka catatan revisi"
+      ],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": false
@@ -1929,11 +1964,16 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "active",
-      "viewport_policy": ["desktop", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "mobile"
+      ],
       "fixture": "member-positive",
       "ready_locator": "role=heading",
       "goal": "Meninjau ringkasan anggota aktif",
-      "primary_actions": ["Membuka informasi anggota"],
+      "primary_actions": [
+        "Membuka informasi anggota"
+      ],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -1947,11 +1987,18 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "pending",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Memverifikasi pembayaran pending",
-      "primary_actions": ["Memeriksa identitas pembayaran", "Menyetujui pembayaran"],
+      "primary_actions": [
+        "Memeriksa identitas pembayaran",
+        "Menyetujui pembayaran"
+      ],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1965,11 +2012,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "empty",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menangani antrean pembayaran kosong",
-      "primary_actions": ["Membuka seluruh status"],
+      "primary_actions": [
+        "Membuka seluruh status"
+      ],
       "risk_level": "informational",
       "visual": true,
       "accessibility": false
@@ -1983,11 +2036,18 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "selected",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau keamanan aksi bulk",
-      "primary_actions": ["Memilih pembayaran", "Mengonfirmasi aksi bulk"],
+      "primary_actions": [
+        "Memilih pembayaran",
+        "Mengonfirmasi aksi bulk"
+      ],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": false
@@ -2001,11 +2061,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "open",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menindaklanjuti tunggakan iuran",
-      "primary_actions": ["Memfilter tagihan terbuka"],
+      "primary_actions": [
+        "Memfilter tagihan terbuka"
+      ],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -2019,11 +2085,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "partial",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Membedakan pembayaran sebagian",
-      "primary_actions": ["Meninjau sisa tagihan"],
+      "primary_actions": [
+        "Meninjau sisa tagihan"
+      ],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -2037,11 +2109,17 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "no-results",
-      "viewport_policy": ["desktop", "tablet", "mobile"],
+      "viewport_policy": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menangani filter tagihan tanpa hasil",
-      "primary_actions": ["Mengubah filter"],
+      "primary_actions": [
+        "Mengubah filter"
+      ],
       "risk_level": "informational",
       "visual": true,
       "accessibility": false
@@ -2089,6 +2167,261 @@
         "Membuka detail akun"
       ],
       "risk_level": "transactional",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-landing-anggota",
+      "module": "documentation",
+      "screen": "landing",
+      "route_name": "documentation.index",
+      "path_template": "/documentation",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "mobile"
+      ],
+      "fixture": "documentation-landing",
+      "ready_locator": "role=heading[name*=Panduan]",
+      "goal": "Melihat landing Pusat Panduan sebagai Anggota",
+      "primary_actions": [
+        "Memfilter artikel",
+        "Membuka artikel"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-article-anggota",
+      "module": "documentation",
+      "screen": "article",
+      "route_name": "documentation.show",
+      "path_template": "/documentation/anggota-loan-flow",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "default",
+      "viewport_policy": [
+        "desktop",
+        "mobile"
+      ],
+      "fixture": "documentation-article",
+      "ready_locator": "role=heading[name*=Mengajukan]",
+      "goal": "Membaca artikel pinjaman anggota",
+      "primary_actions": [
+        "Membaca artikel",
+        "Navigasi ke prosedur terkait"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-landing-admin-koperasi",
+      "module": "documentation",
+      "screen": "landing",
+      "route_name": "documentation.index",
+      "path_template": "/documentation",
+      "role": "Admin Koperasi",
+      "auth_state": "admin-koperasi",
+      "state": "default",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-landing",
+      "ready_locator": "role=heading[name*=Panduan]",
+      "goal": "Melihat landing Pusat Panduan sebagai Admin Koperasi",
+      "primary_actions": [
+        "Memfilter artikel",
+        "Membuka artikel"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-article-admin-koperasi",
+      "module": "documentation",
+      "screen": "article",
+      "route_name": "documentation.show",
+      "path_template": "/documentation/admin-koperasi-payment-queue",
+      "role": "Admin Koperasi",
+      "auth_state": "admin-koperasi",
+      "state": "default",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-article",
+      "ready_locator": "role=heading[name*=Antrean]",
+      "goal": "Membaca artikel antrean pembayaran",
+      "primary_actions": [
+        "Membaca artikel",
+        "Navigasi ke prosedur terkait"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-landing-manajer",
+      "module": "documentation",
+      "screen": "landing",
+      "route_name": "documentation.index",
+      "path_template": "/documentation",
+      "role": "Manajer Koperasi",
+      "auth_state": "manajer-koperasi",
+      "state": "default",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-landing",
+      "ready_locator": "role=heading[name*=Panduan]",
+      "goal": "Melihat landing Pusat Panduan sebagai Manajer Koperasi",
+      "primary_actions": [
+        "Memfilter artikel",
+        "Membuka artikel"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-article-manajer",
+      "module": "documentation",
+      "screen": "article",
+      "route_name": "documentation.show",
+      "path_template": "/documentation/manajer-loan-review",
+      "role": "Manajer Koperasi",
+      "auth_state": "manajer-koperasi",
+      "state": "default",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-article",
+      "ready_locator": "role=heading[name*=Tinjauan]",
+      "goal": "Membaca artikel tinjauan pinjaman manajer",
+      "primary_actions": [
+        "Membaca artikel",
+        "Navigasi ke prosedur terkait"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-landing-pengurus",
+      "module": "documentation",
+      "screen": "landing",
+      "route_name": "documentation.index",
+      "path_template": "/documentation",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus-koperasi",
+      "state": "default",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-landing",
+      "ready_locator": "role=heading[name*=Panduan]",
+      "goal": "Melihat landing Pusat Panduan sebagai Pengurus Koperasi",
+      "primary_actions": [
+        "Memfilter artikel",
+        "Membuka artikel"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-article-pengurus",
+      "module": "documentation",
+      "screen": "article",
+      "route_name": "documentation.show",
+      "path_template": "/documentation/pengurus-loan-approval",
+      "role": "Pengurus Koperasi",
+      "auth_state": "pengurus-koperasi",
+      "state": "default",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-article",
+      "ready_locator": "role=heading[name*=Persetujuan]",
+      "goal": "Membaca artikel persetujuan pengurus",
+      "primary_actions": [
+        "Membaca artikel",
+        "Navigasi ke prosedur terkait"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-landing-search-no-results",
+      "module": "documentation",
+      "screen": "landing",
+      "route_name": "documentation.index",
+      "path_template": "/documentation",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "search-no-results",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-landing",
+      "ready_locator": "role=heading[name*=Panduan]",
+      "goal": "Empty state ketika pencarian tidak menemukan artikel",
+      "primary_actions": [
+        "Memfilter artikel",
+        "Melihat empty state"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-article-with-screenshot",
+      "module": "documentation",
+      "screen": "article",
+      "route_name": "documentation.show",
+      "path_template": "/documentation/anggota-portal-overview",
+      "role": "System Admin",
+      "auth_state": "system-admin",
+      "state": "with-screenshot",
+      "viewport_policy": [
+        "desktop"
+      ],
+      "fixture": "documentation-article",
+      "ready_locator": "role=heading[name*=Portal]",
+      "goal": "Artikel dengan lampiran screenshot",
+      "primary_actions": [
+        "Melihat screenshot",
+        "Membuka zoom"
+      ],
+      "risk_level": "informational",
+      "visual": true,
+      "accessibility": true
+    },
+    {
+      "id": "documentation-article-mobile-overflow",
+      "module": "documentation",
+      "screen": "article",
+      "route_name": "documentation.show",
+      "path_template": "/documentation/anggota-loan-flow",
+      "role": "Anggota",
+      "auth_state": "anggota",
+      "state": "mobile-overflow",
+      "viewport_policy": [
+        "mobile"
+      ],
+      "fixture": "documentation-article",
+      "ready_locator": "role=heading[name*=Mengajukan]",
+      "goal": "Mobile article tanpa overflow",
+      "primary_actions": [
+        "Scroll vertikal",
+        "Akses breadcrumb"
+      ],
+      "risk_level": "informational",
       "visual": true,
       "accessibility": true
     }

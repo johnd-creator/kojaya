@@ -1,6 +1,6 @@
-# Inventaris Workflow Aktif per Peran
+# Inventaris Workflow per Peran
 
-Daftar workflow yang diimplementasikan aplikasi dan tercakup dalam
+Daftar workflow aplikasi dan celah produk yang tercakup dalam
 pusat panduan. Baris inventaris dihasilkan secara deterministik
 dari `resources/docs/user-guide/role-workflow-inventory.json`.
 Setiap artikel published pada pusat panduan harus muncul di
@@ -9,10 +9,11 @@ harus menunjuk sebuah slug artikel yang valid.
 
 ## Ringkasan
 
-- Active workflows: **17**
+- Tracked workflows: **17**
+- Implemented: **12**
 - Documented: **12**
 - Partial: **0**
-- Gap: **5**
+- Product gaps: **5**
 - Deferred: **0**
 
 ## Matriks

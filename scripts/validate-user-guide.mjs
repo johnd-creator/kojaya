@@ -852,19 +852,24 @@ async function main() {
         }
       }
 
-      // Inventory summary must match actual row counts (TASK 5).
+      // Inventory summary must match actual row counts.
+      const implementedCount = inventoryRows.filter(
+        (r) => r?.documentation_status === "documented" || r?.documentation_status === "partial",
+      ).length;
       const computedSummary = {
-        active_workflows: inventoryRows.length,
+        tracked_workflows: inventoryRows.length,
+        implemented_workflows: implementedCount,
         documented: inventoryRows.filter((r) => r?.documentation_status === "documented").length,
         partial: inventoryRows.filter((r) => r?.documentation_status === "partial").length,
-        gap: inventoryRows.filter((r) => r?.documentation_status === "gap").length,
+        product_gaps: inventoryRows.filter((r) => r?.documentation_status === "gap").length,
         deferred: inventoryRows.filter((r) => r?.documentation_status === "deferred").length,
       };
       const jsonSummary = {
-        active_workflows: inventoryJson.active_workflows,
+        tracked_workflows: inventoryJson.tracked_workflows,
+        implemented_workflows: inventoryJson.implemented_workflows,
         documented: inventoryJson.documented,
         partial: inventoryJson.partial,
-        gap: inventoryJson.gap,
+        product_gaps: inventoryJson.product_gaps,
         deferred: inventoryJson.deferred,
       };
       for (const [key, expected] of Object.entries(computedSummary)) {

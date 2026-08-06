@@ -42,7 +42,7 @@ screenshot_entries:
   - admin-koperasi-pos-inventory-desktop
 related_articles:
   - admin-koperasi-payment-queue
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 30
 ---

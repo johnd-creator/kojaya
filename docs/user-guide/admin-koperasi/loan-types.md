@@ -19,7 +19,7 @@ screenshot_entries:
   - admin-koperasi-loan-types-desktop
 related_articles:
   - admin-koperasi-operational-dashboard
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 20
 ---

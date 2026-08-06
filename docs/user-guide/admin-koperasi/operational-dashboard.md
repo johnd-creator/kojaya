@@ -32,7 +32,7 @@ related_articles:
   - admin-koperasi-loan-types
   - admin-koperasi-pos-inventory
   - admin-koperasi-payment-queue
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 10
 ---

@@ -17,7 +17,7 @@ screenshot_entries:
   - anggota-payment-flow-desktop
 related_articles:
   - anggota-portal-overview
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 20
 ---
@@ -38,49 +38,53 @@ aplikasi menggunakan kanal pembayaran digital.
 ## Prasyarat
 
 - Sudah login sebagai anggota.
-- Profil keanggotaan aktif dan data finansial lengkap.
+- Profil keanggotaan aktif.
 - Tagihan bulan berjalan sudah tersedia di daftar tagihan.
 
 ## Langkah penggunaan
 
 1. Buka **Simpanan** dari menu portal anggota.
-2. Pilih tagihan dengan status yang menandakan tagihan belum
-   dibayar. Sistem hanya menampilkan tagihan yang belum
-   dibayar, sehingga anggota tidak salah memilih bulan.
+2. Halaman Simpanan menampilkan seluruh tagihan iuran
+   wajib bulanan, baik yang sudah lunas maupun yang belum
+   dibayar. Pilih tagihan yang berstatus belum dibayar
+   atau dibayar sebagian. Tombol **Bayar** tersedia pada
+   tagihan yang masih memiliki sisa pembayaran.
 3. Klik **Bayar**.
 4. Pilih kanal pembayaran yang tersedia:
    - **QRIS**: sistem menampilkan kode QR untuk dipindai
-     menggunakan aplikasi e-wallet atau m-banking apa pun.
+     menggunakan aplikasi e-wallet atau m-banking.
    - **Virtual Account**: sistem menampilkan nomor Virtual
      Account untuk transfer melalui ATM atau m-banking.
-   - **E-Wallet**: sistem memberikan tautan untuk melanjutkan
-     pembayaran melalui aplikasi dompet digital.
+   - **E-Wallet**: sistem memberikan tautan untuk
+     melanjutkan pembayaran melalui aplikasi dompet
+     digital.
 5. Selesaikan pembayaran sesuai kanal yang dipilih. Sistem
-   secara otomatis memeriksa status pembayaran dan memperbarui
-   tagihan ketika pembayaran berhasil.
+   memeriksa status pembayaran dan memperbarui tagihan
+   ketika pembayaran berhasil.
 
 ## Hasil yang diharapkan
 
-- Tagihan berubah status menjadi **Terverifikasi**.
-- Histori transaksi di menu **Transaksi** menampilkan
-  pembayaran baru.
+- Tagihan yang dibayar berubah status menjadi **Lunas**.
+- Histori simpanan memperbarui saldo.
 
 ## Status yang mungkin muncul
 
-- **Menunggu Pembayaran**: tagihan belum dibayar, kanal
-  pembayaran belum dipilih.
-- **Menunggu Verifikasi**: pembayaran sedang diproses oleh
-  sistem pembayaran.
-- **Terverifikasi**: pembayaran berhasil dan tercatat di
-  pembukuan.
+Status tagihan di halaman Simpanan:
+
+- **Belum dibayar**: tagihan belum memiliki pembayaran.
+- **Dibayar sebagian**: tagihan memiliki pembayaran namun
+  masih ada sisa.
+- **Lunas**: tagihan telah dibayar penuh.
+
+Status pembayaran dapat dilihat oleh Admin Koperasi pada
+halaman Antrean Verifikasi Pembayaran.
 
 ## Kondisi gagal
 
-- Kanal pembayaran tidak aktif → sistem dapat mengalihkan
-  otomatis ke Virtual Account. Coba gunakan kanal lain bila
-  tetap gagal.
-- Kode QR tidak muncul → pastikan koneksi internet stabil dan
-  coba kembali.
+- Kanal pembayaran tidak aktif → pilih kanal lain yang
+  tersedia atau hubungi Admin Koperasi.
+- Kode QR tidak muncul → pastikan koneksi internet stabil
+  dan coba kembali.
 - Status tidak berubah setelah pembayaran → hubungi Admin
   Koperasi dengan menyertakan nomor tagihan.
 
@@ -98,5 +102,5 @@ aplikasi menggunakan kanal pembayaran digital.
 ## Prosedur terkait
 
 - **Mengenal Portal Anggota** untuk menemukan menu pembayaran.
-- **Antrean Verifikasi Bukti Pembayaran** (panduan Admin
-  Koperasi) menjelaskan bagaimana pembayaran diproses.
+- **Antrean Verifikasi Pembayaran** (panduan Admin Koperasi)
+  menjelaskan bagaimana pembayaran diproses.

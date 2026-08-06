@@ -20,7 +20,7 @@ screenshot_entries:
   - pengurus-shu-and-governance-desktop
 related_articles:
   - pengurus-loan-approval
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 20
 ---

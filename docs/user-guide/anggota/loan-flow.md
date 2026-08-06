@@ -19,7 +19,7 @@ screenshot_entries:
   - anggota-loan-flow-mobile
 related_articles:
   - anggota-portal-overview
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 30
 ---
@@ -89,7 +89,8 @@ tampil pada portal anggota:
 
 ## Kondisi gagal
 
-- Plafon tidak cukup → kecilkan nominal atau perpanjang tenor.
+- Nominal di luar batas jenis pinjaman → pastikan nominal
+  dan tenor berada dalam batas jenis pinjaman yang dipilih.
 - Angsuran tidak bisa dibayar → pastikan metode pembayaran
   aktif dan nominal sesuai jadwal.
 - Status tidak berubah dalam beberapa waktu → hubungi Admin

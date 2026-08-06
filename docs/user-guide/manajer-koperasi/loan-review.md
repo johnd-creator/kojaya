@@ -21,7 +21,7 @@ screenshot_entries:
 related_articles:
   - manajer-financial-monitoring
   - pengurus-loan-approval
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 10
 ---

@@ -22,7 +22,7 @@ screenshot_entries:
   - manajer-financial-monitoring-desktop
 related_articles:
   - manajer-loan-review
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 20
 ---

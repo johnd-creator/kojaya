@@ -1,5 +1,5 @@
 ---
-title: Antrean Verifikasi Bukti Pembayaran
+title: Antrean Verifikasi Pembayaran
 slug: admin-koperasi-payment-queue
 summary: Cara memverifikasi pembayaran iuran anggota yang masuk ke antrean.
 category: Admin Koperasi · Pembayaran
@@ -19,81 +19,74 @@ screenshot_entries:
 related_articles:
   - anggota-payment-flow
   - admin-koperasi-operational-dashboard
-last_reviewed_commit: 20c86960
+last_reviewed_commit: b20cd587
 status: published
 sort_order: 40
 ---
 
-# Antrean Verifikasi Bukti Pembayaran
+# Antrean Verifikasi Pembayaran
 
 ## Tujuan
 
-Memandu Admin Koperasi dalam memverifikasi bukti transfer iuran
-yang diunggah anggota, sehingga pembayaran dapat berubah status
-menjadi **Terverifikasi** dan tercatat di pembukuan.
+Memandu Admin Koperasi dalam memverifikasi pembayaran iuran
+anggota yang masuk ke antrean, sehingga pembayaran dapat
+berubah status menjadi **Terverifikasi** dan tercatat di
+pembukuan.
 
 ## Kapan digunakan
 
-- Ada bukti transfer anggota yang menunggu verifikasi pada
-  antrean.
-- Akan memproses banyak bukti sekaligus pada akhir hari.
-- Bukti sebelumnya ditolak dan anggota diminta mengunggah ulang.
+- Ada pembayaran anggota yang berstatus **Menunggu Verifikasi**.
+- Akan memproses banyak pembayaran sekaligus pada akhir hari.
 
 ## Prasyarat
 
 - Sudah login sebagai Admin Koperasi.
 - Memiliki hak akses untuk verifikasi pembayaran.
-- Bukti transfer yang diunggah anggota sudah tersedia di
-  antrean.
 
 ## Langkah penggunaan
 
-1. Buka menu **Pembayaran** dan pilih sub-menu **Antrean
-   Verifikasi**. Sistem menampilkan daftar bukti yang menunggu
-   verifikasi.
-2. Buka setiap baris untuk melihat bukti transfer yang diunggah
-   anggota.
-3. Periksa kesesuaian data pembayaran:
-   - **Nominal**: angka pembayaran harus sama dengan
-     nominal tagihan.
-   - **Nama pengirim**: sesuai dengan nama anggota.
-4. Jika pembayaran valid, tekan **Setujui**. Status berubah
-   menjadi **Terverifikasi** dan pembayaran tercatat di
-   pembukuan.
-5. Jika pembayaran tidak valid, berikan keterangan dan
-   tolak. Anggota dapat membayar ulang.
-6. Untuk memproses banyak pembayaran sekaligus (misalnya pada
-   akhir hari), gunakan **Verifikasi Massal**. Centang hanya
-   pembayaran yang sudah diyakini valid, lalu setujui.
+1. Buka menu **Pembayaran**. Sistem menampilkan daftar
+   pembayaran dengan kolom tanggal, anggota, jenis simpanan,
+   metode, status, keterangan, dan nominal.
+2. Gunakan filter status **Menunggu Verifikasi** untuk melihat
+   pembayaran yang belum diproses.
+3. Periksa data pembayaran pada setiap baris:
+   - **Nominal**: sesuai dengan tagihan anggota.
+   - **Metode**: kanal pembayaran yang digunakan anggota.
+   - **Anggota**: nama dan data anggota yang membayar.
+4. Jika pembayaran valid, tekan ikon centang (**Setujui**).
+   Status berubah menjadi **Terverifikasi** dan pembayaran
+   tercatat di pembukuan.
+5. Untuk memproses banyak pembayaran sekaligus, centang
+   baris-baris yang sudah diyakini valid, lalu gunakan
+   **Approve Semua** untuk verifikasi massal.
 
 ## Hasil yang diharapkan
 
-- Pembayaran yang valid ditandai **Terverifikasi**.
-- Pembayaran yang tidak valid ditandai dan anggota dapat
-  membayar ulang.
+- Pembayaran yang valid berstatus **Terverifikasi**.
+- Pembayaran yang belum dapat diverifikasi tetap berstatus
+  **Menunggu Verifikasi** hingga klarifikasi selesai.
 - Antrean verifikasi kosong pada akhir hari.
 
 ## Status yang mungkin muncul
 
-Status di bawah menggunakan label yang tampil pada aplikasi:
-
 - **Menunggu Verifikasi**: pembayaran baru masuk, belum
   diproses.
-- **Terverifikasi**: pembayaran valid, tercatat di
-  pembukuan.
+- **Terverifikasi**: pembayaran valid, tercatat di pembukuan.
 
 ## Kondisi gagal
 
 - Nominal tidak sesuai → hubungi anggota untuk klarifikasi
   selisih.
-- Pembayaran tidak dapat diverifikasi → berikan keterangan
-  dan minta anggota membayar ulang.
+- Pembayaran belum dapat diverifikasi → biarkan tetap
+  berstatus **Menunggu Verifikasi** dan lakukan klarifikasi
+  di luar aplikasi.
 
 ## Hal yang tidak boleh dilakukan
 
 - Menyetujui pembayaran tanpa memeriksa nominal.
 - Menyetujui pembayaran yang jelas tidak valid.
-- Mengubah nominal tagihan agar pembayaran menjadi "sesuai".
+- Mengubah nominal tagihan agar pembayaran menjadi sesuai.
 - Memproses pembayaran di luar wewenang tanpa delegasi.
 
 ## Handoff
@@ -105,9 +98,15 @@ Status di bawah menggunakan label yang tampil pada aplikasi:
 - Antrean menumpuk karena sumber daya → koordinasikan dengan
   Manajer Koperasi untuk pembagian tugas.
 
+## Catatan tentang jangkauan fitur
+
+- Fitur penolakan pembayaran terstruktur belum tersedia pada
+  halaman pembayaran Kojaya. Pembayaran yang belum dapat
+  diverifikasi tetap berstatus **Menunggu Verifikasi**.
+
 ## Prosedur terkait
 
-- **Alur Pembayaran Iuran Bulanan** untuk langkah yang dilakukan
-  anggota.
+- **Alur Pembayaran Iuran Bulanan** untuk langkah yang
+  dilakukan anggota.
 - **Dashboard Operasional Admin Koperasi** untuk menemukan
   menu Antrean.

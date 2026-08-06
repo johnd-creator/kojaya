@@ -117,9 +117,8 @@ Tabel: ✅ = izin diberikan, — = tidak diberikan.
   koperasi. Tidak dapat melihat PII anggota.
 - **Handoff:** Aplikasi yang sudah direview → Pengurus Koperasi
   untuk keputusan akhir. Anomali berulang → Pengurus Koperasi.
-- **Tidak boleh:** Melakukan approval final pinjaman, menutup
-  periode SHU tanpa koordinasi Pengurus, mengabaikan anomali
-  keuangan.
+- **Tidak boleh:** Melakukan approval final pinjaman, mengabaikan
+  anomali keuangan.
 
 ### Pengurus Koperasi
 
@@ -130,11 +129,13 @@ Tabel: ✅ = izin diberikan, — = tidak diberikan.
   mengelola PII anggota, menvalidasi anggota tahap final.
 - **Approval:** Approval final pinjaman (Setujui sebagai
   Pengurus). Penutupan periode SHU. Validasi final anggota.
-- **Batas kewenangan:** Tidak melakukan pencairan pinjaman
-  secara langsung (dilakukan oleh peran dengan hak pencairan).
-  Log Audit belum tersedia untuk Pengurus.
-- **Handoff:** Pinjaman disetujui → peran berwenang menjalankan
-  pencairan. Penutupan SHU → Admin Koperasi untuk rekonsiliasi.
+- **Batas kewenangan:** Pengurus memiliki permission
+  pengelolaan pinjaman dan dapat menjalankan pencairan
+  apabila action tersedia. Dalam operasional, tugas tersebut
+  dapat didelegasikan sesuai SOP koperasi. Log Audit belum
+  tersedia untuk Pengurus.
+- **Handoff:** Pinjaman disetujui → pencairan dapat dijalankan
+  oleh peran dengan permission pengelolaan pinjaman.
+  Penutupan SHU → Admin Koperasi untuk rekonsiliasi.
 - **Tidak boleh:** Menyetujui pinjaman yang belum direview
-  Manajer, menutup SHU tanpa rekonsiliasi penuh, mendistribusikan
-  poin sebelum SHU ditutup.
+  Manajer, menutup SHU tanpa rekonsiliasi penuh.

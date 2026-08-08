@@ -12,18 +12,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -37,18 +30,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -62,18 +48,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau ledger sebagai Admin Koperasi",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -87,18 +66,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -112,18 +84,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -137,18 +102,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman pinjaman sebagai Admin Koperasi",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -162,18 +120,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau tipe pinjaman sebagai Admin Koperasi",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -187,18 +138,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman calculator",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -212,18 +156,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -237,18 +174,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "loan-applied",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman show",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -262,18 +192,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -287,18 +210,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -312,18 +228,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -337,18 +246,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "member-positive",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman show",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -362,18 +264,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "member-positive",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman edit",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -387,18 +282,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "member-positive",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman show",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -412,17 +300,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman closing",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -436,17 +318,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman dashboard",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -460,18 +336,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -485,17 +354,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -509,17 +372,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau poin anggota sebagai Admin Koperasi",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -533,18 +390,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -558,17 +408,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -582,17 +426,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -606,17 +444,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "product-primary",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman show",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -630,18 +462,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -655,18 +480,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -680,17 +498,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -704,17 +516,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -728,17 +534,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "stock-count-draft",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman show",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -752,17 +552,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "inventory-location",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -776,17 +570,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "inventory-location",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -800,17 +588,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "inventory-location",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -824,17 +606,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "inventory-location",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -848,18 +624,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "member-positive",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -873,18 +642,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -898,18 +660,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -923,17 +678,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -947,18 +696,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman index",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -972,18 +714,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "pos-transaction-completed",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman show",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -997,18 +732,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "pos-transaction-completed",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman receipt",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1022,18 +750,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman default",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1047,18 +768,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman member",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1072,18 +786,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman store-account",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1097,18 +804,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman onboarding",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1122,18 +822,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman profile",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1147,18 +840,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman notifications",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1172,18 +858,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman savings",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1197,18 +876,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman loans",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1222,18 +894,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman points",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1247,18 +912,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman rewards",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1272,18 +930,11 @@
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman transactions",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1297,18 +948,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman withdrawals",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1322,17 +966,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman rewards",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1346,17 +984,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman redemptions",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1370,17 +1002,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "redemption-pending",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman redemptions",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1394,17 +1020,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman shu",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1418,18 +1038,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman void-requests",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1443,18 +1056,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "pos-transaction-completed",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman create",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1468,17 +1074,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet"
-      ],
+      "viewport_policy": ["desktop", "tablet"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman reports",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1492,18 +1092,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1517,18 +1110,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau halaman default",
-      "primary_actions": [
-        "Meninjau data",
-        "Menggunakan aksi utama"
-      ],
+      "primary_actions": ["Meninjau data", "Menggunakan aksi utama"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1542,16 +1128,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "empty",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1565,16 +1146,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "search-results",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1588,16 +1164,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "no-results",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1611,17 +1182,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "open-account-dialog",
-      "viewport_policy": [
-        "desktop",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1635,16 +1200,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "validation-error",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1658,18 +1218,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "positive-balance",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "store-credit-positive",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1683,16 +1236,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "negative-balance",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "store-credit-negative",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1706,16 +1254,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "suspended",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "store-credit-suspended",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1729,16 +1272,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "empty-ledger",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "store-credit-empty-ledger",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1752,16 +1290,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "with-ledger",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "store-credit-positive",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1775,16 +1308,11 @@
       "role": "Manajer Koperasi",
       "auth_state": "manajer",
       "state": "local",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1798,16 +1326,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "global",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1821,17 +1344,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-koperasi",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Memantau pekerjaan operasional koperasi",
-      "primary_actions": [
-        "Membuka antrean kerja"
-      ],
+      "primary_actions": ["Membuka antrean kerja"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": true
@@ -1845,17 +1362,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "admin-default",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau data anggota",
-      "primary_actions": [
-        "Membuka detail anggota"
-      ],
+      "primary_actions": ["Membuka detail anggota"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -1869,17 +1380,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "pending-filter",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Memvalidasi calon anggota",
-      "primary_actions": [
-        "Membuka antrean validasi"
-      ],
+      "primary_actions": ["Membuka antrean validasi"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -1893,17 +1398,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "no-results",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menangani pencarian tanpa hasil",
-      "primary_actions": [
-        "Mengubah pencarian"
-      ],
+      "primary_actions": ["Mengubah pencarian"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": false
@@ -1917,17 +1416,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "pending-review",
-      "viewport_policy": [
-        "desktop",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "member-pending-review",
       "ready_locator": "role=heading",
       "goal": "Memeriksa anggota yang menunggu validasi",
-      "primary_actions": [
-        "Meminta revisi",
-        "Memvalidasi data"
-      ],
+      "primary_actions": ["Meminta revisi", "Memvalidasi data"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -1941,16 +1434,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "revision",
-      "viewport_policy": [
-        "desktop",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "member-revision",
       "ready_locator": "role=heading",
       "goal": "Menindaklanjuti data anggota yang perlu revisi",
-      "primary_actions": [
-        "Membuka catatan revisi"
-      ],
+      "primary_actions": ["Membuka catatan revisi"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": false
@@ -1964,16 +1452,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "active",
-      "viewport_policy": [
-        "desktop",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "member-positive",
       "ready_locator": "role=heading",
       "goal": "Meninjau ringkasan anggota aktif",
-      "primary_actions": [
-        "Membuka informasi anggota"
-      ],
+      "primary_actions": ["Membuka informasi anggota"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -1987,11 +1470,7 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "pending",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Memverifikasi pembayaran pending",
@@ -2012,17 +1491,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "empty",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menangani antrean pembayaran kosong",
-      "primary_actions": [
-        "Membuka seluruh status"
-      ],
+      "primary_actions": ["Membuka seluruh status"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": false
@@ -2036,18 +1509,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "selected",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Meninjau keamanan aksi bulk",
-      "primary_actions": [
-        "Memilih pembayaran",
-        "Mengonfirmasi aksi bulk"
-      ],
+      "primary_actions": ["Memilih pembayaran", "Mengonfirmasi aksi bulk"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": false
@@ -2061,17 +1527,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "open",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menindaklanjuti tunggakan iuran",
-      "primary_actions": [
-        "Memfilter tagihan terbuka"
-      ],
+      "primary_actions": ["Memfilter tagihan terbuka"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -2085,17 +1545,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "partial",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Membedakan pembayaran sebagian",
-      "primary_actions": [
-        "Meninjau sisa tagihan"
-      ],
+      "primary_actions": ["Meninjau sisa tagihan"],
       "risk_level": "operational",
       "visual": true,
       "accessibility": false
@@ -2109,17 +1563,11 @@
       "role": "Admin Koperasi",
       "auth_state": "admin",
       "state": "no-results",
-      "viewport_policy": [
-        "desktop",
-        "tablet",
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Menangani filter tagihan tanpa hasil",
-      "primary_actions": [
-        "Mengubah filter"
-      ],
+      "primary_actions": ["Mengubah filter"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": false
@@ -2133,16 +1581,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "pending",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -2156,16 +1599,11 @@
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
       "state": "empty",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "module-default",
       "ready_locator": "role=heading",
       "goal": "Mengelola dan meninjau Saldo Toko",
-      "primary_actions": [
-        "Meninjau saldo",
-        "Membuka detail akun"
-      ],
+      "primary_actions": ["Meninjau saldo", "Membuka detail akun"],
       "risk_level": "transactional",
       "visual": true,
       "accessibility": true
@@ -2178,18 +1616,12 @@
       "path_template": "/documentation",
       "role": "Anggota",
       "auth_state": "anggota",
-      "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "mobile"
-      ],
+      "state": "default-anggota",
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "documentation-landing",
       "ready_locator": "role=heading[name*=Panduan]",
       "goal": "Melihat landing Pusat Panduan sebagai Anggota",
-      "primary_actions": [
-        "Memfilter artikel",
-        "Membuka artikel"
-      ],
+      "primary_actions": ["Memfilter artikel", "Membuka artikel"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2199,21 +1631,15 @@
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
-      "path_template": "/documentation/anggota-loan-flow",
+      "path_template": "/documentation/{slug}",
       "role": "Anggota",
       "auth_state": "anggota",
-      "state": "default",
-      "viewport_policy": [
-        "desktop",
-        "mobile"
-      ],
+      "state": "default-anggota",
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "documentation-article",
       "ready_locator": "role=heading[name*=Mengajukan]",
       "goal": "Membaca artikel pinjaman anggota",
-      "primary_actions": [
-        "Membaca artikel",
-        "Navigasi ke prosedur terkait"
-      ],
+      "primary_actions": ["Membaca artikel", "Navigasi ke prosedur terkait"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2226,17 +1652,12 @@
       "path_template": "/documentation",
       "role": "Admin Koperasi",
       "auth_state": "admin",
-      "state": "default",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "state": "default-admin",
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-landing",
       "ready_locator": "role=heading[name*=Panduan]",
       "goal": "Melihat landing Pusat Panduan sebagai Admin Koperasi",
-      "primary_actions": [
-        "Memfilter artikel",
-        "Membuka artikel"
-      ],
+      "primary_actions": ["Memfilter artikel", "Membuka artikel"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2246,20 +1667,15 @@
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
-      "path_template": "/documentation/admin-koperasi-payment-queue",
+      "path_template": "/documentation/{slug}",
       "role": "Admin Koperasi",
       "auth_state": "admin",
-      "state": "default",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "state": "default-admin",
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-article",
       "ready_locator": "role=heading[name*=Antrean]",
       "goal": "Membaca artikel antrean pembayaran",
-      "primary_actions": [
-        "Membaca artikel",
-        "Navigasi ke prosedur terkait"
-      ],
+      "primary_actions": ["Membaca artikel", "Navigasi ke prosedur terkait"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2272,17 +1688,12 @@
       "path_template": "/documentation",
       "role": "Manajer Koperasi",
       "auth_state": "manajer",
-      "state": "default",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "state": "default-manajer",
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-landing",
       "ready_locator": "role=heading[name*=Panduan]",
       "goal": "Melihat landing Pusat Panduan sebagai Manajer Koperasi",
-      "primary_actions": [
-        "Memfilter artikel",
-        "Membuka artikel"
-      ],
+      "primary_actions": ["Memfilter artikel", "Membuka artikel"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2292,20 +1703,15 @@
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
-      "path_template": "/documentation/manajer-loan-review",
+      "path_template": "/documentation/{slug}",
       "role": "Manajer Koperasi",
       "auth_state": "manajer",
-      "state": "default",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "state": "default-manajer",
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-article",
       "ready_locator": "role=heading[name*=Tinjauan]",
       "goal": "Membaca artikel tinjauan pinjaman manajer",
-      "primary_actions": [
-        "Membaca artikel",
-        "Navigasi ke prosedur terkait"
-      ],
+      "primary_actions": ["Membaca artikel", "Navigasi ke prosedur terkait"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2318,17 +1724,12 @@
       "path_template": "/documentation",
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
-      "state": "default",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "state": "default-pengurus",
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-landing",
       "ready_locator": "role=heading[name*=Panduan]",
       "goal": "Melihat landing Pusat Panduan sebagai Pengurus Koperasi",
-      "primary_actions": [
-        "Memfilter artikel",
-        "Membuka artikel"
-      ],
+      "primary_actions": ["Memfilter artikel", "Membuka artikel"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2338,20 +1739,15 @@
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
-      "path_template": "/documentation/pengurus-loan-approval",
+      "path_template": "/documentation/{slug}",
       "role": "Pengurus Koperasi",
       "auth_state": "pengurus",
-      "state": "default",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "state": "default-pengurus",
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-article",
       "ready_locator": "role=heading[name*=Persetujuan]",
       "goal": "Membaca artikel persetujuan pengurus",
-      "primary_actions": [
-        "Membaca artikel",
-        "Navigasi ke prosedur terkait"
-      ],
+      "primary_actions": ["Membaca artikel", "Navigasi ke prosedur terkait"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2365,16 +1761,11 @@
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "search-no-results",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-landing",
       "ready_locator": "role=heading[name*=Panduan]",
       "goal": "Empty state ketika pencarian tidak menemukan artikel",
-      "primary_actions": [
-        "Memfilter artikel",
-        "Melihat empty state"
-      ],
+      "primary_actions": ["Memfilter artikel", "Melihat empty state"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2384,20 +1775,15 @@
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
-      "path_template": "/documentation/anggota-portal-overview",
+      "path_template": "/documentation/{slug}",
       "role": "System Admin",
       "auth_state": "system-admin",
       "state": "with-screenshot",
-      "viewport_policy": [
-        "desktop"
-      ],
+      "viewport_policy": ["desktop"],
       "fixture": "documentation-article",
       "ready_locator": "role=heading[name*=Portal]",
       "goal": "Artikel dengan lampiran screenshot",
-      "primary_actions": [
-        "Melihat screenshot",
-        "Membuka zoom"
-      ],
+      "primary_actions": ["Melihat screenshot", "Membuka zoom"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true
@@ -2407,20 +1793,15 @@
       "module": "documentation",
       "screen": "article",
       "route_name": "documentation.show",
-      "path_template": "/documentation/anggota-loan-flow",
+      "path_template": "/documentation/{slug}",
       "role": "Anggota",
       "auth_state": "anggota",
       "state": "mobile-overflow",
-      "viewport_policy": [
-        "mobile"
-      ],
+      "viewport_policy": ["desktop", "mobile"],
       "fixture": "documentation-article",
       "ready_locator": "role=heading[name*=Mengajukan]",
       "goal": "Mobile article tanpa overflow",
-      "primary_actions": [
-        "Scroll vertikal",
-        "Akses breadcrumb"
-      ],
+      "primary_actions": ["Scroll vertikal", "Akses breadcrumb"],
       "risk_level": "informational",
       "visual": true,
       "accessibility": true

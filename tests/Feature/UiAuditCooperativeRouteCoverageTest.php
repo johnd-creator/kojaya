@@ -60,8 +60,10 @@ class UiAuditCooperativeRouteCoverageTest extends TestCase
                     || $uri === 'settings/profile'
                     || str_starts_with($uri, 'cooperative/')
                     || str_starts_with($uri, 'member/')
+                    || str_starts_with($uri, 'documentation')
                     || str_starts_with($name, 'cooperative.')
-                    || str_starts_with($name, 'member.');
+                    || str_starts_with($name, 'member.')
+                    || str_starts_with($name, 'documentation.');
             })
             ->values()
             ->all();

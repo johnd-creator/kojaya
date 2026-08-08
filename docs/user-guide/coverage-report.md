@@ -1,12 +1,12 @@
 # Laporan Cakupan Pusat Panduan
 
 > Dibuat otomatis oleh `npm run docs:validate`.
-> Pembuatan terakhir: 2026-08-06T04:00:35.740Z
+> Pembuatan terakhir: 2026-08-08T05:42:37.124Z
 
 ## Ringkasan
 
-- Total artikel: **12**
-- Published: **12**
+- Total artikel: **19**
+- Published: **19**
 - Draft: **0**
 - Archived: **0**
 
@@ -23,6 +23,7 @@
 - Body jargon violations: 0
 - Body credential references: 0
 - Body baseline path references: 0
+- Broken inline images: 0
 - Articles missing from inventory: 0
 
 ## Pesan error

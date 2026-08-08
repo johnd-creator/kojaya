@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
 import { Head, Link, usePage } from "@inertiajs/vue3";
 import {
   ArrowLeft,
@@ -7,10 +6,14 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  Tag,
   ListChecks,
   Printer,
 } from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
+import DocumentationToc from "@/components/Documentation/DocumentationToc.vue";
+import MarkdownArticle from "@/components/Documentation/MarkdownArticle.vue";
+import ScreenshotViewer from "@/components/Documentation/ScreenshotViewer.vue";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -18,10 +21,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import MarkdownArticle from "@/components/Documentation/MarkdownArticle.vue";
-import DocumentationToc from "@/components/Documentation/DocumentationToc.vue";
-import ScreenshotViewer from "@/components/Documentation/ScreenshotViewer.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import type { BreadcrumbItem } from "@/types";
 
@@ -77,12 +76,6 @@ const ROLE_LABELS: Record<string, string> = {
   admin_koperasi: "Admin Koperasi",
   manajer_koperasi: "Manajer Koperasi",
   pengurus_koperasi: "Pengurus Koperasi",
-};
-
-const RISK_LABELS: Record<string, string> = {
-  low: "Risiko transaksi rendah",
-  medium: "Risiko transaksi sedang",
-  high: "Risiko transaksi tinggi",
 };
 
 // Maintainer-only technical metadata is hidden by default; toggle
@@ -171,22 +164,24 @@ function printArticle(): void {
   <AppLayout :breadcrumbs="breadcrumbs">
     <Head :title="article.title" />
 
-    <div class="mx-auto max-w-6xl space-y-6 p-6 print:p-0 print:space-y-4">
+    <div
+      class="mx-auto max-w-5xl space-y-6 p-4 sm:p-6 print:p-0 print:space-y-4"
+    >
       <Link
         href="/documentation"
-        class="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 print:hidden"
+        class="inline-flex items-center gap-1 text-sm text-zinc-500 transition hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-300 print:hidden"
       >
         <ArrowLeft class="h-4 w-4" />
         Kembali ke Pusat Panduan
       </Link>
 
-      <div class="grid gap-6 lg:grid-cols-[1fr_18rem]">
+      <div class="grid gap-6 lg:grid-cols-[1fr_16rem]">
         <div class="space-y-6 print:space-y-4">
           <Card
-            class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80 print:border-0 print:shadow-none print:bg-transparent"
+            class="overflow-hidden border-zinc-200/80 bg-white shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900 print:border-0 print:shadow-none print:bg-transparent"
           >
             <CardHeader class="space-y-3">
-              <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-2">
                 <Badge
                   variant="secondary"
                   class="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
@@ -203,15 +198,13 @@ function printArticle(): void {
                   <ShieldCheck class="mr-1 h-3.5 w-3.5" />
                   {{ ROLE_LABELS[role] ?? role }}
                 </Badge>
-                <Badge variant="outline" class="text-[10px]">
-                  <Tag class="mr-1 h-3.5 w-3.5" />
-                  {{ RISK_LABELS[article.risk_level] ?? article.risk_level }}
-                </Badge>
               </div>
-              <CardTitle class="text-2xl print:text-2xl">
+              <CardTitle class="text-2xl leading-tight print:text-2xl">
                 {{ article.title }}
               </CardTitle>
-              <CardDescription>{{ article.summary }}</CardDescription>
+              <CardDescription class="text-base leading-relaxed">{{
+                article.summary
+              }}</CardDescription>
               <div
                 v-if="showTechnicalMetadata"
                 class="rounded-md border border-dashed border-zinc-300 p-3 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300 print:hidden"
@@ -243,7 +236,9 @@ function printArticle(): void {
                 </button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent
+              class="border-t border-zinc-100 pt-6 dark:border-zinc-800"
+            >
               <MarkdownArticle
                 v-if="article.body"
                 :body="article.body"
@@ -263,30 +258,33 @@ function printArticle(): void {
 
           <Card
             v-if="navigation.related.length > 0"
-            class="border-zinc-200/80 bg-white/95 dark:border-zinc-800/80 dark:bg-zinc-900/80 print:hidden"
+            data-testid="documentation-related-articles"
+            class="border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900 print:hidden"
           >
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
-                <ListChecks class="h-4 w-4" />
+                <ListChecks
+                  class="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                />
                 Prosedur terkait
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ul class="space-y-2 text-sm">
-                <li
-                  v-for="related in navigation.related"
-                  :key="related.slug"
-                  class="flex items-center justify-between gap-2"
-                >
+              <ul class="grid gap-2 sm:grid-cols-2">
+                <li v-for="related in navigation.related" :key="related.slug">
                   <Link
                     :href="`/documentation/${related.slug}`"
-                    class="text-emerald-700 hover:underline dark:text-emerald-300"
+                    class="group flex flex-col gap-0.5 rounded-lg border border-zinc-200 p-3 transition hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-zinc-800 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-950/20"
                   >
-                    {{ related.title }}
+                    <span
+                      class="text-sm font-medium text-zinc-900 group-hover:text-emerald-700 dark:text-zinc-100 dark:group-hover:text-emerald-300"
+                    >
+                      {{ related.title }}
+                    </span>
+                    <span class="text-xs text-zinc-500 dark:text-zinc-400">{{
+                      related.category
+                    }}</span>
                   </Link>
-                  <span class="text-xs text-zinc-500">{{
-                    related.category
-                  }}</span>
                 </li>
               </ul>
             </CardContent>
@@ -295,42 +293,47 @@ function printArticle(): void {
           <nav
             v-if="navigation.previous || navigation.next"
             aria-label="Navigasi artikel"
-            class="flex flex-col gap-2 sm:flex-row sm:justify-between print:hidden"
+            data-testid="documentation-article-navigation"
+            class="flex flex-col gap-3 sm:flex-row sm:justify-between print:hidden"
           >
             <Link
               v-if="navigation.previous"
               :href="`/documentation/${navigation.previous.slug}`"
-              class="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              class="group flex flex-1 items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 transition hover:border-emerald-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-500/30"
             >
-              <ChevronLeft class="h-4 w-4" />
+              <ChevronLeft
+                class="h-5 w-5 shrink-0 text-zinc-400 transition group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+              />
               <span class="flex flex-col text-left">
-                <span class="text-[10px] uppercase tracking-wider"
+                <span class="text-[10px] uppercase tracking-wider text-zinc-400"
                   >Sebelumnya</span
                 >
-                <span class="font-medium">{{ navigation.previous.title }}</span>
-                <span class="text-[10px] text-zinc-500">{{
-                  navigation.previous.category
-                }}</span>
+                <span
+                  class="text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                  >{{ navigation.previous.title }}</span
+                >
               </span>
             </Link>
-            <span v-else />
+            <span v-else class="hidden flex-1 sm:block" />
             <Link
               v-if="navigation.next"
               :href="`/documentation/${navigation.next.slug}`"
-              class="inline-flex items-center justify-end gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              class="group flex flex-1 items-center justify-end gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-right transition hover:border-emerald-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-500/30"
             >
-              <span class="flex flex-col text-right">
-                <span class="text-[10px] uppercase tracking-wider"
+              <span class="flex flex-col">
+                <span class="text-[10px] uppercase tracking-wider text-zinc-400"
                   >Berikutnya</span
                 >
-                <span class="font-medium">{{ navigation.next.title }}</span>
-                <span class="text-[10px] text-zinc-500">{{
-                  navigation.next.category
-                }}</span>
+                <span
+                  class="text-sm font-medium text-zinc-900 dark:text-zinc-100"
+                  >{{ navigation.next.title }}</span
+                >
               </span>
-              <ChevronRight class="h-4 w-4" />
+              <ChevronRight
+                class="h-5 w-5 shrink-0 text-zinc-400 transition group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+              />
             </Link>
-            <span v-else />
+            <span v-else class="hidden flex-1 sm:block" />
           </nav>
         </div>
 

@@ -117,8 +117,8 @@ const hasNonMemberRole = computed(
   () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
-const isSystemAdmin = computed(
-  () => isPlatformExperience(effectiveExperience.value),
+const isSystemAdmin = computed(() =>
+  isPlatformExperience(effectiveExperience.value),
 );
 type MemberAccess = {
   is_active: boolean;
@@ -166,11 +166,6 @@ const allNavItems: NavItem[] = [
     title: "Dashboard",
     href: dashboard(),
     icon: LayoutGrid,
-  },
-  {
-    title: "Pusat Panduan",
-    href: "/documentation",
-    icon: BookOpen,
   },
   {
     title: "User Management",
@@ -828,11 +823,6 @@ const adminNavItems = computed<NavItem[]>(() =>
         },
       ],
     },
-    {
-      title: "Pusat Panduan",
-      href: "/documentation",
-      icon: BookOpen,
-    },
   ]),
 );
 const memberNavItems = computed<NavItem[]>(() => {
@@ -858,11 +848,6 @@ const memberNavItems = computed<NavItem[]>(() => {
         title: "Profil",
         href: "/member/profile",
         icon: UserRound,
-      },
-      {
-        title: "Pusat Panduan",
-        href: "/documentation",
-        icon: BookOpen,
       },
     ];
   }
@@ -906,11 +891,6 @@ const memberNavItems = computed<NavItem[]>(() => {
       title: "Profil",
       href: "/member/profile",
       icon: UserRound,
-    },
-    {
-      title: "Pusat Panduan",
-      href: "/documentation",
-      icon: BookOpen,
     },
   ];
 });

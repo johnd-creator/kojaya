@@ -78,3 +78,19 @@ Validator Node `scripts/validate-user-guide.mjs` (npm script
 
 Lihat laporan di `docs/user-guide/role-workflow-inventory.md` dan
 `docs/user-guide/role-responsibility-matrix.md` untuk audit.
+
+## Gambar di dalam langkah
+
+Artikel boleh menyisipkan gambar langsung di antara langkah prosedur dengan
+Markdown standar:
+
+```md
+![Deskripsi gambar yang bermakna](/docs/user-guide/images/contoh/step-01.png)
+```
+
+Gunakan asset lokal di bawah `public/docs/user-guide/`. `alt` wajib menjelaskan
+isi atau tujuan gambar. Validator akan menolak gambar tanpa `alt`, URL
+eksternal, dan path yang tidak memiliki file tujuan.
+
+Gunakan `screenshot_entries` jika gambar membutuhkan modal zoom, label
+viewport, caption pipeline, atau pengujian visual khusus.

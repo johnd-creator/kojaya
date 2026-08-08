@@ -137,13 +137,14 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="group relative block w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          :data-testid="`documentation-screenshot-${entry.id}`"
           :aria-label="`Perbesar screenshot ${entry.alt}`"
           @click="open(entry, $event)"
         >
           <img
             :src="entry.url"
             :alt="entry.alt"
-            loading="lazy"
+            loading="eager"
             class="block h-auto w-full transition group-hover:scale-[1.01]"
           />
           <span

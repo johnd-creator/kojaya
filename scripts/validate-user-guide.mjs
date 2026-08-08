@@ -144,6 +144,7 @@ const checks = {
   body_jargon: 0,
   body_credentials: 0,
   body_baseline: 0,
+  broken_inline_images: 0,
   missing_inventory: 0,
 };
 
@@ -391,6 +392,23 @@ function extractInternalLinks(markdown) {
 }
 
 /**
+ * Extract Markdown image references while ignoring fenced and inline code.
+ * Inline article images must point at the local public documentation assets.
+ */
+function extractInlineImages(markdown) {
+  const source = markdown
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`\n]+`/g, "");
+  const out = [];
+  const re = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  let match;
+  while ((match = re.exec(source)) !== null) {
+    out.push({ alt: match[1].trim(), href: match[2].trim(), raw: match[0] });
+  }
+  return out;
+}
+
+/**
  * Body jargon check: the user-facing body of an article must NOT
  * contain technical tokens. Frontmatter is allowed to mention
  * route_names, permissions, etc. — this is the check the Fase 9
@@ -600,6 +618,27 @@ async function main() {
       const targetFile = resolve(join(projectRoot, article.file, "..", normalized));
       if (!existsSync(targetFile)) {
         fail("broken_links", `${article.file}: broken internal link \`${link.href}\` (target \`${normalized}\` does not exist).`);
+      }
+    }
+  }
+
+  // Inline Markdown images must resolve to local public documentation assets.
+  for (const article of articles) {
+    for (const image of extractInlineImages(article.body)) {
+      if (image.alt === "") {
+        fail("broken_inline_images", `${article.file}: inline image \`${image.href}\` must have non-empty alt text.`);
+        continue;
+      }
+
+      if (!image.href.startsWith("/docs/user-guide/")) {
+        fail("broken_inline_images", `${article.file}: inline image \`${image.href}\` must use a local /docs/user-guide/ path.`);
+        continue;
+      }
+
+      const imagePath = resolve(projectRoot, "public", image.href.slice(1));
+      const publicRoot = resolve(projectRoot, "public", "docs/user-guide");
+      if (!imagePath.startsWith(`${publicRoot}/`) || !existsSync(imagePath)) {
+        fail("broken_inline_images", `${article.file}: inline image \`${image.href}\` does not resolve to an existing public asset.`);
       }
     }
   }
@@ -959,6 +998,7 @@ function writeCoverageReports() {
     body_jargon: checks.body_jargon,
     body_credentials: checks.body_credentials,
     body_baseline: checks.body_baseline,
+    broken_inline_images: checks.broken_inline_images,
     missing_inventory: checks.missing_inventory,
     errors: errors.map((e) => ({ category: e.category, message: e.message })),
     warnings,
@@ -992,6 +1032,7 @@ function writeCoverageReports() {
     `- Body jargon violations: ${checks.body_jargon}`,
     `- Body credential references: ${checks.body_credentials}`,
     `- Body baseline path references: ${checks.body_baseline}`,
+    `- Broken inline images: ${checks.broken_inline_images}`,
     `- Articles missing from inventory: ${checks.missing_inventory}`,
     "",
     "## Pesan error",

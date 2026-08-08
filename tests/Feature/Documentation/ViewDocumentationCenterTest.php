@@ -89,14 +89,7 @@ class ViewDocumentationCenterTest extends TestCase
             ->get('/documentation')
             ->assertOk();
 
-        $roles = $this->collectTargetRoles($response);
-        foreach ($roles as $role) {
-            $this->assertContains(
-                $role,
-                ['all', 'anggota'],
-                "Anggota must not see an article with target_role={$role}",
-            );
-        }
+        $this->assertArticlesAreAuthorizedForRole($response, 'anggota');
     }
 
     public function test_admin_koperasi_sees_only_admin_or_all_articles(): void
@@ -107,13 +100,7 @@ class ViewDocumentationCenterTest extends TestCase
             ->get('/documentation')
             ->assertOk();
 
-        foreach ($this->collectTargetRoles($response) as $role) {
-            $this->assertContains(
-                $role,
-                ['all', 'admin_koperasi'],
-                "Admin Koperasi must not see an article with target_role={$role}",
-            );
-        }
+        $this->assertArticlesAreAuthorizedForRole($response, 'admin_koperasi');
     }
 
     public function test_manajer_koperasi_sees_only_manajer_or_all_articles(): void
@@ -124,13 +111,7 @@ class ViewDocumentationCenterTest extends TestCase
             ->get('/documentation')
             ->assertOk();
 
-        foreach ($this->collectTargetRoles($response) as $role) {
-            $this->assertContains(
-                $role,
-                ['all', 'manajer_koperasi'],
-                "Manajer must not see an article with target_role={$role}",
-            );
-        }
+        $this->assertArticlesAreAuthorizedForRole($response, 'manajer_koperasi');
     }
 
     public function test_pengurus_koperasi_sees_only_pengurus_or_all_articles(): void
@@ -141,13 +122,7 @@ class ViewDocumentationCenterTest extends TestCase
             ->get('/documentation')
             ->assertOk();
 
-        foreach ($this->collectTargetRoles($response) as $role) {
-            $this->assertContains(
-                $role,
-                ['all', 'pengurus_koperasi'],
-                "Pengurus must not see an article with target_role={$role}",
-            );
-        }
+        $this->assertArticlesAreAuthorizedForRole($response, 'pengurus_koperasi');
     }
 
     public function test_show_route_returns_403_when_user_lacks_target_role(): void
@@ -515,20 +490,18 @@ class ViewDocumentationCenterTest extends TestCase
         return $user;
     }
 
-    /**
-     * @return list<string>
-     */
-    private function collectTargetRoles(\Illuminate\Testing\TestResponse $response): array
-    {
-        $articles = $this->collectArticlePayloads($response);
-        $roles = [];
-        foreach ($articles as $article) {
-            foreach ($article['roles'] ?? [] as $role) {
-                $roles[] = $role;
-            }
-        }
+    private function assertArticlesAreAuthorizedForRole(
+        \Illuminate\Testing\TestResponse $response,
+        string $role,
+    ): void {
+        foreach ($this->collectArticlePayloads($response) as $article) {
+            $articleRoles = $article['roles'] ?? [];
 
-        return array_values(array_unique($roles));
+            $this->assertTrue(
+                array_intersect($articleRoles, ['all', 'shared', $role]) !== [],
+                "{$role} must not see an article without a matching target role.",
+            );
+        }
     }
 
     /**

@@ -30,7 +30,7 @@ watch(toc, (items) => emit("toc-ready", items), {
 <template>
   <article
     :id="`article-${slug}`"
-    class="prose prose-zinc max-w-none text-sm leading-7 text-zinc-700 dark:prose-invert dark:text-zinc-200"
+    class="prose max-w-none"
     v-html="sanitisedHtml"
   />
 </template>

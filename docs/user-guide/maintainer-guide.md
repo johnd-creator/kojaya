@@ -61,6 +61,18 @@ melaporkan route yang tidak ada.
 4. Jalankan `npm run docs:screenshots` untuk menyalin ke
    `public/docs/user-guide/screens/`.
 
+## Menambah gambar inline pada prosedur
+
+1. Simpan asset di `public/docs/user-guide/images/<article-slug>/` dengan nama
+   yang stabil, misalnya `step-01-member-list.png`.
+2. Referensikan asset dengan path root-relative di Markdown:
+   `![Daftar anggota](/docs/user-guide/images/<article-slug>/step-01-member-list.png)`.
+3. Tulis `alt` yang menjelaskan layar atau tindakan yang terlihat.
+4. Gunakan gambar inline untuk menjelaskan langkah tertentu; gunakan
+   `screenshot_entries` untuk screenshot yang memerlukan modal zoom atau
+   pipeline baseline.
+5. Jalankan `npm run docs:validate` untuk memeriksa path dan `alt` gambar.
+
 ## Menghapus artikel
 
 1. Hapus file Markdown.

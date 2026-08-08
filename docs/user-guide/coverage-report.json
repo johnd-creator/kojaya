@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-06T04:00:35.740Z",
+  "generated_at": "2026-08-08T05:42:37.124Z",
   "articles": {
-    "total": 12,
-    "published": 12,
+    "total": 19,
+    "published": 19,
     "draft": 0,
     "archived": 0
   },
@@ -17,6 +17,7 @@
   "body_jargon": 0,
   "body_credentials": 0,
   "body_baseline": 0,
+  "broken_inline_images": 0,
   "missing_inventory": 0,
   "errors": [],
   "warnings": []

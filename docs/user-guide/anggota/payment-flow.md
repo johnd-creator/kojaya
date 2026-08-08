@@ -49,6 +49,9 @@ aplikasi menggunakan kanal pembayaran digital.
    dibayar. Pilih tagihan yang berstatus belum dibayar
    atau dibayar sebagian. Tombol **Bayar** tersedia pada
    tagihan yang masih memiliki sisa pembayaran.
+
+   ![Halaman pembayaran iuran pada portal anggota](/docs/user-guide/screens/desktop/anggota-payment-flow-desktop.png)
+
 3. Klik **Bayar**.
 4. Pilih kanal pembayaran yang tersedia:
    - **QRIS**: sistem menampilkan kode QR untuk dipindai

@@ -107,6 +107,21 @@ test("renderMarkdownArticle keeps safe http(s) and relative links", () => {
   assert.match(html, /href="#tujuan"/);
 });
 
+test("renderMarkdownArticle keeps safe inline images", () => {
+  const body = "![Halaman pembayaran](/docs/user-guide/screens/example.png)";
+  const { html } = renderMarkdownArticle(body);
+
+  assert.match(html, /<img[^>]+src="\/docs\/user-guide\/screens\/example\.png"/);
+  assert.match(html, /alt="Halaman pembayaran"/);
+});
+
+test("renderMarkdownArticle removes unsafe inline image URIs", () => {
+  const body = "![Tidak aman](javascript:alert(1))";
+  const { html } = renderMarkdownArticle(body);
+
+  assert.ok(!/javascript:/i.test(html));
+});
+
 test("renderMarkdownArticle produces a stable TOC across calls", () => {
   const body = "## A\n\nIsi.\n\n## B\n\nIsi.\n\n## A\n\nIsi.";
   const a = renderMarkdownArticle(body);

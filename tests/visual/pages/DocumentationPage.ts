@@ -3,10 +3,22 @@ import { type Locator, type Page, expect } from "@playwright/test";
 export class DocumentationPage {
   public readonly heading: Locator;
   public readonly searchInput: Locator;
-  public readonly moduleSelect: Locator;
+  public readonly categoryFilter: Locator;
+  public readonly roleFilter: Locator;
+  public readonly guideGrid: Locator;
   public readonly articleCards: Locator;
+  public readonly articleSections: Locator;
+  public readonly articleCtas: Locator;
   public readonly articleBody: Locator;
-  public readonly screenshotButton: Locator;
+  public readonly roleSummary: Locator;
+  public readonly quickStart: Locator;
+  public readonly quickStartItems: Locator;
+  public readonly emptyState: Locator;
+  public readonly resetFilters: Locator;
+  public readonly referenceSection: Locator;
+  public readonly sidebarFooter: Locator;
+  public readonly sidebarHelpLink: Locator;
+  public readonly screenshotButtons: Locator;
   public readonly screenshotDialog: Locator;
   public readonly contextualHelpLink: Locator;
   public readonly tocList: Locator;
@@ -15,19 +27,29 @@ export class DocumentationPage {
   constructor(private readonly page: Page) {
     this.heading = page.getByRole("heading", { level: 1 });
     this.searchInput = page.getByRole("searchbox", {
-      name: /cari artikel/i,
+      name: /cari panduan/i,
     });
-    this.moduleSelect = page.getByRole("combobox", { name: /modul/i });
-    this.articleCards = page.locator("a[href^='/documentation/']");
+    this.categoryFilter = page.getByTestId("documentation-category-filter");
+    this.roleFilter = page.getByTestId("documentation-role-filter");
+    this.guideGrid = page.getByTestId("documentation-guide-grid");
+    this.articleCards = page.getByTestId("documentation-article-card");
+    this.articleSections = page.getByTestId("documentation-article-sections");
+    this.articleCtas = page.getByTestId("documentation-article-cta");
     this.articleBody = page.locator("article.prose");
-    this.screenshotButton = page.locator("button[aria-label*=screenshot]");
+    this.roleSummary = page.getByTestId("documentation-role-summary");
+    this.quickStart = page.getByTestId("documentation-quick-start");
+    this.quickStartItems = page.getByTestId("documentation-quick-start-item");
+    this.emptyState = page.getByTestId("documentation-empty-state");
+    this.resetFilters = page.getByTestId("documentation-reset-filters");
+    this.referenceSection = page.getByTestId("documentation-reference-section");
+    this.sidebarFooter = page.getByTestId("sidebar-footer-navigation");
+    this.sidebarHelpLink = page.getByTestId("sidebar-footer-help-link");
+    this.screenshotButtons = page.locator("button[aria-label*=screenshot]");
     this.screenshotDialog = page.locator("[role='dialog']");
     this.contextualHelpLink = page.getByRole("link", {
       name: /lihat panduan/i,
     });
-    this.tocList = page.locator(
-      "nav[aria-label*='daftar isi'], nav[aria-label*='table of contents'], .toc, [data-testid='toc']",
-    );
+    this.tocList = page.getByTestId("documentation-toc");
     this.tocLinks = this.tocList.locator("a[href^='#']");
   }
 
@@ -40,8 +62,14 @@ export class DocumentationPage {
     await this.searchInput.fill(query);
   }
 
-  async selectModule(value: string): Promise<void> {
-    await this.moduleSelect.selectOption(value);
+  async selectCategory(label: string): Promise<void> {
+    await this.categoryFilter
+      .getByRole("button", { name: new RegExp(label, "i") })
+      .click();
+  }
+
+  async selectRole(label: string): Promise<void> {
+    await this.roleFilter.selectOption({ label });
   }
 
   async openArticle(slug: string): Promise<void> {
@@ -49,9 +77,7 @@ export class DocumentationPage {
     await expect(this.articleBody).toBeVisible();
   }
 
-  async openScreenshot(): Promise<void> {
-    if (await this.screenshotButton.count()) {
-      await this.screenshotButton.first().click();
-    }
+  screenshotTrigger(id: string): Locator {
+    return this.page.getByTestId(`documentation-screenshot-${id}`);
   }
 }

@@ -9,9 +9,9 @@ harus menunjuk sebuah slug artikel yang valid.
 
 ## Ringkasan
 
-- Tracked workflows: **17**
-- Implemented: **12**
-- Documented: **12**
+- Tracked workflows: **28**
+- Implemented: **23**
+- Documented: **23**
 - Partial: **0**
 - Product gaps: **5**
 - Deferred: **0**
@@ -32,6 +32,17 @@ harus menunjuk sebuah slug artikel yang valid.
 | Manajer Koperasi | Keuangan | Pemantauan Keuangan | `cooperative.reports.index` | `view_cooperative_report` | mengunduh laporan | informasional | operasional | ya | documented | `manajer-financial-monitoring` |
 | Pengurus Koperasi | Pinjaman | Persetujuan Akhir Pinjaman | `cooperative.loans.show` | `approve_cooperative_loan` | menyetujui | approval | approval | ya | documented | `pengurus-loan-approval` |
 | Pengurus Koperasi | Tata Kelola | SHU | `cooperative.shu.index` | `manage_cooperative_shu` | menutup periode | administrasi | finansial | ya | documented | `pengurus-shu-and-governance` |
+| Anggota | Portal Anggota | Onboarding | `member.onboarding` | `member_portal_access` | mengubah | administrasi | operasional | tidak | documented | `anggota-onboarding-and-access` |
+| Admin Koperasi | Keanggotaan | Validasi Anggota | `cooperative.members.validate` | `validate_cooperative_member` | memverifikasi | approval | approval | tidak | documented | `admin-koperasi-member-validation` |
+| Admin Koperasi | Keuangan Anggota | Saldo Awal | `cooperative.members.opening-balance.show` | `manage_cooperative_opening_balance` | mengubah | administrasi | finansial | tidak | documented | `admin-koperasi-opening-balance` |
+| Admin Koperasi | Iuran & Simpanan | Iuran dan Ledger | `cooperative.dues.index` | `manage_cooperative_dues` | mengubah | administrasi | finansial | tidak | documented | `cooperative-dues-and-ledger` |
+| Manajer Koperasi | Iuran & Simpanan | Iuran dan Ledger | `cooperative.ledger.index` | `view_cooperative_ledger` | melihat | informasional | finansial | tidak | documented | `cooperative-dues-and-ledger` |
+| Pengurus Koperasi | Iuran & Simpanan | Iuran dan Ledger | `cooperative.ledger.index` | `view_cooperative_ledger` | melihat | informasional | finansial | tidak | documented | `cooperative-dues-and-ledger` |
+| Admin Koperasi | Saldo Toko | Akun Saldo Toko | `cooperative.store-credit.index` | `view_store_credit` | mengubah | administrasi | finansial | tidak | documented | `cooperative-store-credit` |
+| Manajer Koperasi | Saldo Toko | Laporan Saldo Toko | `cooperative.store-credit.report` | `report_store_credit` | mengunduh laporan | informasional | finansial | tidak | documented | `cooperative-store-credit` |
+| Pengurus Koperasi | Saldo Toko | Verifikasi Transfer | `cooperative.store-credit.transfers.index` | `approve_store_credit_transfer` | memverifikasi | approval | finansial | tidak | documented | `cooperative-store-credit` |
+| Manajer Koperasi | Operasional | Cockpit Operator | `cooperative.operator.dashboard` | `view_cooperative_report` | melihat | informasional | operasional | tidak | documented | `manajer-operator-cockpit` |
+| Pengurus Koperasi | Keanggotaan | Approval Final Anggota | `cooperative.members.approve-final` | `approve_cooperative_member` | menyetujui | approval | approval | tidak | documented | `pengurus-member-approval` |
 | Anggota | Pembatalan Pinjaman | Pembatalan Aplikasi | _(belum tersedia)_ | _(belum tersedia)_ | membatalkan | transaksional | operasional | tidak | gap | _(lihat alasan)_ |
 | Pengurus Koperasi | Tata Kelola | Approval Minute | _(belum tersedia)_ | _(belum tersedia)_ | administrasi lainnya | administrasi | operasional | tidak | gap | _(lihat alasan)_ |
 | Pengurus Koperasi | Tata Kelola | Risalah RAT | _(belum tersedia)_ | _(belum tersedia)_ | administrasi lainnya | administrasi | operasional | tidak | gap | _(lihat alasan)_ |

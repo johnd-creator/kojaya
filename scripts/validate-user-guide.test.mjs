@@ -308,6 +308,54 @@ test("validator fails on a baseline path in the body", () => {
   }
 });
 
+test("validator fails when an inline image is missing", () => {
+  const fx = makeFixture((root) => {
+    writeArticle(root, "alpha", [
+      "## Tujuan",
+      "",
+      "![Tampilan yang hilang](/docs/user-guide/screens/missing.png)",
+      "",
+      "Isi artikel yang cukup panjang untuk pengujian gambar inline.",
+    ].join("\n"));
+    writeContextualHelp(root, []);
+    writeInventory(root, ["alpha"]);
+    writeScreenshotManifest(root);
+    writePublicScreenshotManifest(root);
+  });
+  try {
+    const result = runValidator(fx.root);
+    assert.notEqual(result.code, 0);
+    assert.match(combinedOutput(result), /inline image.*does not resolve/);
+  } finally {
+    fx.cleanup();
+  }
+});
+
+test("validator rejects inline images without alt text or local paths", () => {
+  const fx = makeFixture((root) => {
+    writeArticle(root, "alpha", [
+      "## Tujuan",
+      "",
+      "![](/docs/user-guide/screens/example.png)",
+      "![Eksternal](https://example.org/example.png)",
+      "",
+      "Isi artikel yang cukup panjang untuk pengujian keamanan gambar inline.",
+    ].join("\n"));
+    writeContextualHelp(root, []);
+    writeInventory(root, ["alpha"]);
+    writeScreenshotManifest(root);
+    writePublicScreenshotManifest(root);
+  });
+  try {
+    const result = runValidator(fx.root);
+    assert.notEqual(result.code, 0);
+    assert.match(combinedOutput(result), /must have non-empty alt text/);
+    assert.match(combinedOutput(result), /must use a local \/docs\/user-guide\/ path/);
+  } finally {
+    fx.cleanup();
+  }
+});
+
 test("validator fails on a contextual-help entry with an unknown slug", () => {
   const fx = makeFixture((root) => {
     writeArticle(root, "alpha", "## Tujuan\n\nIsi artikel pertama yang valid dan cukup panjang untuk pengujian.");

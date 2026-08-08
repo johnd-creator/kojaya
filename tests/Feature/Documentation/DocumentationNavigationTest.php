@@ -11,11 +11,9 @@ use Tests\TestCase;
 
 /**
  * Asserts that the Pusat Panduan link is reachable from every
- * cooperative role's navigation array. The link is configured in
- * `resources/js/components/AppSidebar.vue` (member, admin, all)
- * and surfaced as `footerNavItems`. We test the underlying
- * repository behaviour (the route is reachable and the menu
- * contains the slug) so the test is stable across Vue refactors.
+ * cooperative role and is declared once in the shared sidebar footer.
+ * The route remains backend-authorized; this test only protects the
+ * presentation contract that keeps help separate from work menus.
  */
 class DocumentationNavigationTest extends TestCase
 {
@@ -65,39 +63,28 @@ class DocumentationNavigationTest extends TestCase
         $source = file_get_contents(base_path('resources/js/components/AppSidebar.vue'));
         $this->assertNotFalse($source);
 
-        // Footer slot
+        // The footer is the single shared location for help navigation.
         $this->assertStringContainsString(
             'footerNavItems',
             $source,
-            'AppSidebar.vue must declare `footerNavItems` for centralised footer navigation.',
+        );
+        $this->assertSame(
+            1,
+            substr_count($source, 'title: "Pusat Panduan"'),
+            'AppSidebar.vue must declare Pusat Panduan only once.',
+        );
+        $this->assertMatchesRegularExpression(
+            '/footerNavItems[\s\S]+Pusat Panduan[\s\S]+\/documentation/',
+            $source,
+            'Pusat Panduan must remain in footerNavItems.',
         );
 
-        // Member nav (active financial features branch)
-        $this->assertMatchesRegularExpression(
-            '/memberNavItems[\s\S]+Pusat Panduan[\s\S]+\/documentation/',
-            $source,
-            'Active-member sidebar must include Pusat Panduan.',
-        );
-
-        // Member nav (inactive branch)
-        $this->assertMatchesRegularExpression(
-            '/can_access_financial_features[\s\S]+Pusat Panduan[\s\S]+\/documentation/',
-            $source,
-            'Inactive-member sidebar must include Pusat Panduan.',
-        );
-
-        // Admin nav
-        $this->assertMatchesRegularExpression(
-            '/adminNavItems[\s\S]+Pusat Panduan[\s\S]+\/documentation/',
-            $source,
-            'Admin Koperasi sidebar must include Pusat Panduan.',
-        );
-
-        // Manajer/Pengurus all-items nav
-        $this->assertMatchesRegularExpression(
-            '/allNavItems[\s\S]+Pusat Panduan[\s\S]+\/documentation/',
-            $source,
-            'Generic (Manajer / Pengurus) sidebar must include Pusat Panduan.',
+        $footerSource = file_get_contents(base_path('resources/js/components/NavFooter.vue'));
+        $this->assertNotFalse($footerSource);
+        $this->assertStringContainsString('<Link', $footerSource);
+        $this->assertStringContainsString(
+            'v-if="!isExternal(item.href)"',
+            $footerSource,
         );
     }
 }

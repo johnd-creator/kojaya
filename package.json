@@ -19,7 +19,12 @@
         "ui:verify-baselines": "node tests/visual/scripts/verify-baselines.mjs",
         "ui:verify-artifact": "node tests/visual/scripts/verify-audit-artifact.mjs",
         "ui:test-global-setup": "node --test tests/visual/global-setup.test.mjs",
-        "ui:repeatability": "node tests/visual/scripts/repeatability.mjs"
+        "ui:repeatability": "node tests/visual/scripts/repeatability.mjs",
+        "docs:validate": "node scripts/validate-user-guide.mjs",
+        "docs:validate:test": "node --test scripts/validate-user-guide.test.mjs",
+        "docs:screenshots": "node scripts/export-user-guide-screenshots.mjs",
+        "docs:screenshots:test": "node --test scripts/export-user-guide-screenshots.test.mjs",
+        "docs:renderer:test": "node --experimental-strip-types --test tests/node/markdown-renderer.test.mts"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.12.1",
@@ -36,6 +41,8 @@
         "eslint-import-resolver-typescript": "^4.4.4",
         "eslint-plugin-import": "^2.32.0",
         "eslint-plugin-vue": "^9.32.0",
+        "isomorphic-dompurify": "^3.19.0",
+        "marked": "^18.0.9",
         "prettier": "^3.4.2",
         "prettier-plugin-tailwindcss": "^0.6.11",
         "typescript": "^5.2.2",

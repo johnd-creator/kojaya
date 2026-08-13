@@ -177,7 +177,7 @@ class UiAuditFrameworkTest extends TestCase
         config(['app.env' => 'production']);
 
         try {
-            (new UiAuditFixtureController)();
+            $this->app->call([new UiAuditFixtureController, '__invoke']);
             $this->fail('The UI audit fixture endpoint must reject production-like environments.');
         } catch (HttpException $exception) {
             $this->assertSame(404, $exception->getStatusCode());

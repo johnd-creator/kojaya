@@ -96,7 +96,7 @@ class UiAuditCoverage extends Command
 
         return $uri === 'dashboard'
             || $uri === 'settings/profile'
-            || Str::startsWith($uri, ['cooperative/', 'member/'])
-            || Str::startsWith($name, ['cooperative.', 'member.']);
+            || Str::startsWith($uri, ['cooperative/', 'member/', 'documentation'])
+            || Str::startsWith($name, ['cooperative.', 'member.', 'documentation.']);
     }
 }

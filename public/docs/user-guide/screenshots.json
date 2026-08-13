@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "source_commit": "999684c5f72029bd52ea8dced11203cac344c2d1",
+  "generated_at": "2026-08-07T17:14:05.377Z",
+  "entries": [
+    {
+      "id": "anggota-portal-overview-desktop",
+      "source": "tests/visual/baselines/desktop/member-portal--member--default.png",
+      "asset": "/docs/user-guide/screens/desktop/anggota-portal-overview-desktop.png",
+      "viewport": "desktop",
+      "module": "portal",
+      "title": "Portal Anggota · Desktop",
+      "caption": "Tampilan awal Portal Anggota untuk peran Anggota.",
+      "checksum": "sha256:3fb85ac0c6e685954d54154f21c4dc9a1f57eade08e9b7d4df0359aeed87861d"
+    },
+    {
+      "id": "anggota-payment-flow-desktop",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
+      "asset": "/docs/user-guide/screens/desktop/anggota-payment-flow-desktop.png",
+      "viewport": "desktop",
+      "module": "payments",
+      "title": "Pembayaran Iuran · Desktop",
+      "caption": "Daftar invoice anggota dan tombol Bayar.",
+      "checksum": "sha256:8e095aaac7a86872e443dae66675883d6c131f44b5e5551f9d42cccd1f1577db"
+    },
+    {
+      "id": "anggota-loan-flow-desktop",
+      "source": "tests/visual/baselines/desktop/member-portal--loans--default.png",
+      "asset": "/docs/user-guide/screens/desktop/anggota-loan-flow-desktop.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Pinjaman Anggota · Desktop",
+      "caption": "Tab Simulasi & Ajukan untuk pengajuan pinjaman.",
+      "checksum": "sha256:5b112976010e330bed619743893ffda2d6b26be0fdbaaac42fb03c1927dc3ec4"
+    },
+    {
+      "id": "anggota-loan-flow-mobile",
+      "source": "tests/visual/baselines/mobile/member-portal--loans--default.png",
+      "asset": "/docs/user-guide/screens/mobile/anggota-loan-flow-mobile.png",
+      "viewport": "mobile",
+      "module": "loans",
+      "title": "Pinjaman Anggota · Mobile",
+      "caption": "Tampilan mobile untuk pengajuan pinjaman.",
+      "checksum": "sha256:affe8a3324edad086dcc046fe03c224273c8691fa9a4520b458e665f7d89911d"
+    },
+    {
+      "id": "admin-koperasi-operational-dashboard-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "asset": "/docs/user-guide/screens/desktop/admin-koperasi-operational-dashboard-desktop.png",
+      "viewport": "desktop",
+      "module": "dashboard",
+      "title": "Dashboard Admin Koperasi · Desktop",
+      "caption": "Widget operasional harian Admin Koperasi.",
+      "checksum": "sha256:9533c1085b08399077eb94f610a796d541c3e9f5fd477260e3bd784a07fe228c"
+    },
+    {
+      "id": "admin-koperasi-loan-types-desktop",
+      "source": "tests/visual/baselines/desktop/loans--index--admin-default.png",
+      "asset": "/docs/user-guide/screens/desktop/admin-koperasi-loan-types-desktop.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Jenis Pinjaman · Desktop",
+      "caption": "Halaman kelola jenis pinjaman.",
+      "checksum": "sha256:b2173c468760cc7f6bf554a4f1ec8c844ec745b29594e56504dc3c2299defd30"
+    },
+    {
+      "id": "admin-koperasi-pos-inventory-desktop",
+      "source": "tests/visual/baselines/desktop/pos-inventory--index--default.png",
+      "asset": "/docs/user-guide/screens/desktop/admin-koperasi-pos-inventory-desktop.png",
+      "viewport": "desktop",
+      "module": "pos",
+      "title": "POS & Inventori · Desktop",
+      "caption": "Modul POS dan inventori Admin Koperasi.",
+      "checksum": "sha256:4d9e0c34af85082223a5237f506d77136c3b928ce42bfdc86d68421118e71bc0"
+    },
+    {
+      "id": "admin-koperasi-payment-queue-desktop",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
+      "asset": "/docs/user-guide/screens/desktop/admin-koperasi-payment-queue-desktop.png",
+      "viewport": "desktop",
+      "module": "payments",
+      "title": "Antrean Pembayaran · Desktop",
+      "caption": "Daftar bukti pembayaran PENDING.",
+      "checksum": "sha256:8e095aaac7a86872e443dae66675883d6c131f44b5e5551f9d42cccd1f1577db"
+    },
+    {
+      "id": "manajer-loan-review-desktop",
+      "source": "tests/visual/baselines/desktop/loans--loans--admin-default.png",
+      "asset": "/docs/user-guide/screens/desktop/manajer-loan-review-desktop.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Tinjauan Pinjaman Manajer · Desktop",
+      "caption": "Filter status APPLIED untuk tinjauan Manajer.",
+      "checksum": "sha256:b5b2ffb47badc0c463b7db08bd906e1f11bcde1a71763c5cf593fbca23f08af3"
+    },
+    {
+      "id": "manajer-financial-monitoring-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "asset": "/docs/user-guide/screens/desktop/manajer-financial-monitoring-desktop.png",
+      "viewport": "desktop",
+      "module": "reports",
+      "title": "Pemantauan Keuangan · Desktop",
+      "caption": "Ringkasan simpan pinjam untuk Manajer.",
+      "checksum": "sha256:9533c1085b08399077eb94f610a796d541c3e9f5fd477260e3bd784a07fe228c"
+    },
+    {
+      "id": "pengurus-loan-approval-desktop",
+      "source": "tests/visual/baselines/desktop/loans--loans--default.png",
+      "asset": "/docs/user-guide/screens/desktop/pengurus-loan-approval-desktop.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Persetujuan Akhir Pinjaman · Desktop",
+      "caption": "Daftar pinjaman MANAGER_APPROVED untuk Pengurus.",
+      "checksum": "sha256:d20518109ad19f5a6ee33a4f605fc1acca08557ab28d6df8267cf113a3366b46"
+    },
+    {
+      "id": "pengurus-shu-and-governance-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "asset": "/docs/user-guide/screens/desktop/pengurus-shu-and-governance-desktop.png",
+      "viewport": "desktop",
+      "module": "governance",
+      "title": "SHU dan Tata Kelola · Desktop",
+      "caption": "Modul SHU dan audit untuk Pengurus.",
+      "checksum": "sha256:9533c1085b08399077eb94f610a796d541c3e9f5fd477260e3bd784a07fe228c"
+    }
+  ]
+}

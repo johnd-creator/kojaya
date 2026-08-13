@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Documentation\DocumentationRoleResolver;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\MemberStoreAccount;
@@ -11,14 +12,24 @@ use App\Models\PosTransaction;
 use App\Models\RewardRedemption;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class UiAuditFixtureController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request, DocumentationRoleResolver $docRoleResolver): JsonResponse
     {
         abort_unless(in_array((string) config('app.env'), ['testing', 'playwright'], true), 404);
 
+        $documentationArticle = match ($docRoleResolver->resolve($request->user())) {
+            DocumentationRoleResolver::ROLE_ANGGOTA => 'anggota-loan-flow',
+            DocumentationRoleResolver::ROLE_ADMIN_KOPERASI => 'admin-koperasi-payment-queue',
+            DocumentationRoleResolver::ROLE_MANAJER_KOPERASI => 'manajer-loan-review',
+            DocumentationRoleResolver::ROLE_PENGURUS_KOPERASI => 'pengurus-loan-approval',
+            default => 'anggota-portal-overview',
+        };
+
         return response()->json([
+            'documentation-article' => $documentationArticle,
             'member-positive' => CooperativeMember::query()->where('member_no', 'AUD-001')->value('id'),
             'member-pending-review' => CooperativeMember::query()->where('member_no', 'AUD-009')->value('id'),
             'member-revision' => CooperativeMember::query()->where('member_no', 'AUD-010')->value('id'),

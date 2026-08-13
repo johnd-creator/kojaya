@@ -22,6 +22,7 @@ class MemberP0SecurityClosureTest extends TestCase
         'active_organization',
         'appearance',
         'auth',
+        'contextualHelp',
         'csrf_token',
         'errors',
         'googleSsoEnabled',

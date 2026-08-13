@@ -117,8 +117,8 @@ const hasNonMemberRole = computed(
   () => isMember.value && userRoles.value.some((r: string) => r !== "Anggota"),
 );
 const isMemberOnly = computed(() => isMember.value && !hasNonMemberRole.value);
-const isSystemAdmin = computed(
-  () => isPlatformExperience(effectiveExperience.value),
+const isSystemAdmin = computed(() =>
+  isPlatformExperience(effectiveExperience.value),
 );
 type MemberAccess = {
   is_active: boolean;
@@ -665,7 +665,13 @@ const allNavItems: NavItem[] = [
   },
 ] as any[];
 
-const footerNavItems: NavItem[] = [];
+const footerNavItems: NavItem[] = [
+  {
+    title: "Pusat Panduan",
+    href: "/documentation",
+    icon: BookOpen,
+  },
+];
 const adminNavItems = computed<NavItem[]>(() =>
   filterNavByPermission([
     {

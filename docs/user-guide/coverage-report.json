@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-08-13T05:39:13.026Z",
+  "articles": {
+    "total": 19,
+    "published": 19,
+    "draft": 0,
+    "archived": 0
+  },
+  "broken_screenshots": 0,
+  "broken_routes": 0,
+  "broken_related": 0,
+  "broken_links": 0,
+  "invalid_roles": 0,
+  "invalid_permissions": 0,
+  "invalid_contextual_mappings": 0,
+  "stale_commits": 0,
+  "body_jargon": 0,
+  "body_credentials": 0,
+  "body_baseline": 0,
+  "broken_inline_images": 0,
+  "missing_inventory": 0,
+  "errors": [],
+  "warnings": []
+}

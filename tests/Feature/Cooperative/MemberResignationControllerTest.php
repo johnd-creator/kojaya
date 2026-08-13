@@ -19,6 +19,7 @@ class MemberResignationControllerTest extends TestCase
         'active_organization',
         'appearance',
         'auth',
+        'contextualHelp',
         'csrf_token',
         'errors',
         'googleSsoEnabled',

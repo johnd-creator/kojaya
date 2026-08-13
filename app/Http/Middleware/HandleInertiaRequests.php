@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Documentation\ContextualHelpRegistry;
+use App\Documentation\DocumentationRoleResolver;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Authorization\PrimaryRoleResolver;
@@ -66,7 +68,47 @@ class HandleInertiaRequests extends Middleware
                     ? $request->user()->unreadNotifications()->count()
                     : 0,
             ],
+            'contextualHelp' => fn () => $this->resolveContextualHelp($request),
         ];
+    }
+
+    /**
+     * Compute the contextual help entry for the current route, or
+     * `null` if the current request is not authenticated or has no
+     * mapping. Lazy: only invoked when the shared prop is read by
+     * the frontend, so it never blocks non-documentation routes.
+     *
+     * @return array{
+     *     route: string,
+     *     slug: string,
+     *     role: string,
+     *     permission?: string|null,
+     *     screenshot_state: string,
+     *     label: string,
+     *     article: array{slug: string, title: string, summary: string, category: string, module: string},
+     * }|null
+     */
+    private function resolveContextualHelp(Request $request): ?array
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        $route = $request->route();
+        if (! $route) {
+            return null;
+        }
+        $name = $route->getName();
+        if (! is_string($name) || $name === '') {
+            return null;
+        }
+
+        return app(ContextualHelpRegistry::class)->resolveForRequest(
+            $name,
+            $user,
+            app(DocumentationRoleResolver::class),
+        );
     }
 
     /**

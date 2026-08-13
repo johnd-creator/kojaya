@@ -4,6 +4,7 @@ import { usePage } from "@inertiajs/vue3";
 import { LogOut, Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import Breadcrumbs from "@/components/Breadcrumbs.vue";
+import ContextualHelpButton from "@/components/Documentation/ContextualHelpButton.vue";
 import NotificationIcon from "@/components/Notification/NotificationIcon.vue";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -40,9 +41,12 @@ const toggleAppearance = (): void => {
 };
 
 const memberOnly = computed(() => {
-  const roles = ((page.props.auth as { roles?: Array<{ name?: string } | string> } | undefined)?.roles ?? []).map(
-    (role) => (typeof role === "string" ? role : role.name ?? ""),
-  );
+  const roles = (
+    (
+      page.props.auth as
+        { roles?: Array<{ name?: string } | string> } | undefined
+    )?.roles ?? []
+  ).map((role) => (typeof role === "string" ? role : (role.name ?? "")));
 
   return roles.includes("Anggota") && roles.every((role) => role === "Anggota");
 });
@@ -69,6 +73,7 @@ onUnmounted(() => {
       <template v-if="breadcrumbs && breadcrumbs.length > 0">
         <Breadcrumbs :breadcrumbs="breadcrumbs" />
       </template>
+      <ContextualHelpButton class="inline-flex" />
     </div>
     <div class="flex items-center gap-2">
       <div

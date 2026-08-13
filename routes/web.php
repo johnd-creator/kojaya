@@ -597,4 +597,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 require __DIR__.'/settings.php';
-// require __DIR__.'/auth.php';
+
+// In-app user guide (role and permission filtered documentation center).
+// All routes are guarded by `auth` + `verified`; the controller delegates
+// per-article authorization to the documentation policy. URLs use the
+// kebab-case slug from the Markdown frontmatter, not a route-model
+// binding, because the documentation center is file-based.
+Route::middleware(['auth', 'verified'])->prefix('documentation')->name('documentation.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Documentation\DocumentationController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\Documentation\DocumentationController::class, 'show'])
+        ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('show');
+});

@@ -1,0 +1,107 @@
+{
+  "$schema": "./screenshots.schema.json",
+  "version": 1,
+  "viewport_policy": {
+    "desktop": { "width": 1440, "height": 900 },
+    "tablet": { "width": 768, "height": 1024 },
+    "mobile": { "width": 390, "height": 844 }
+  },
+  "entries": [
+    {
+      "id": "anggota-portal-overview-desktop",
+      "source": "tests/visual/baselines/desktop/member-portal--member--default.png",
+      "viewport": "desktop",
+      "module": "portal",
+      "title": "Portal Anggota · Desktop",
+      "caption": "Tampilan awal Portal Anggota untuk peran Anggota."
+    },
+    {
+      "id": "anggota-payment-flow-desktop",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
+      "viewport": "desktop",
+      "module": "payments",
+      "title": "Pembayaran Iuran · Desktop",
+      "caption": "Daftar invoice anggota dan tombol Bayar."
+    },
+    {
+      "id": "anggota-loan-flow-desktop",
+      "source": "tests/visual/baselines/desktop/member-portal--loans--default.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Pinjaman Anggota · Desktop",
+      "caption": "Tab Simulasi & Ajukan untuk pengajuan pinjaman."
+    },
+    {
+      "id": "anggota-loan-flow-mobile",
+      "source": "tests/visual/baselines/mobile/member-portal--loans--default.png",
+      "viewport": "mobile",
+      "module": "loans",
+      "title": "Pinjaman Anggota · Mobile",
+      "caption": "Tampilan mobile untuk pengajuan pinjaman."
+    },
+    {
+      "id": "admin-koperasi-operational-dashboard-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "viewport": "desktop",
+      "module": "dashboard",
+      "title": "Dashboard Admin Koperasi · Desktop",
+      "caption": "Widget operasional harian Admin Koperasi."
+    },
+    {
+      "id": "admin-koperasi-loan-types-desktop",
+      "source": "tests/visual/baselines/desktop/loans--index--admin-default.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Jenis Pinjaman · Desktop",
+      "caption": "Halaman kelola jenis pinjaman."
+    },
+    {
+      "id": "admin-koperasi-pos-inventory-desktop",
+      "source": "tests/visual/baselines/desktop/pos-inventory--index--default.png",
+      "viewport": "desktop",
+      "module": "pos",
+      "title": "POS & Inventori · Desktop",
+      "caption": "Modul POS dan inventori Admin Koperasi."
+    },
+    {
+      "id": "admin-koperasi-payment-queue-desktop",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
+      "viewport": "desktop",
+      "module": "payments",
+      "title": "Antrean Pembayaran · Desktop",
+      "caption": "Daftar bukti pembayaran PENDING."
+    },
+    {
+      "id": "manajer-loan-review-desktop",
+      "source": "tests/visual/baselines/desktop/loans--loans--admin-default.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Tinjauan Pinjaman Manajer · Desktop",
+      "caption": "Filter status APPLIED untuk tinjauan Manajer."
+    },
+    {
+      "id": "manajer-financial-monitoring-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "viewport": "desktop",
+      "module": "reports",
+      "title": "Pemantauan Keuangan · Desktop",
+      "caption": "Ringkasan simpan pinjam untuk Manajer."
+    },
+    {
+      "id": "pengurus-loan-approval-desktop",
+      "source": "tests/visual/baselines/desktop/loans--loans--default.png",
+      "viewport": "desktop",
+      "module": "loans",
+      "title": "Persetujuan Akhir Pinjaman · Desktop",
+      "caption": "Daftar pinjaman MANAGER_APPROVED untuk Pengurus."
+    },
+    {
+      "id": "pengurus-shu-and-governance-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "viewport": "desktop",
+      "module": "governance",
+      "title": "SHU dan Tata Kelola · Desktop",
+      "caption": "Modul SHU dan audit untuk Pengurus."
+    }
+  ]
+}

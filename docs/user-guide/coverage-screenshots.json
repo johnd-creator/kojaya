@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "source_commit": "999684c5f72029bd52ea8dced11203cac344c2d1",
+  "generated_at": "2026-08-07T17:14:05.377Z",
+  "counts": {
+    "copied": 0,
+    "updated": 0,
+    "unchanged": 12,
+    "missing": 0,
+    "broken": 0
+  },
+  "total": 12,
+  "entries": [
+    {
+      "id": "anggota-portal-overview-desktop",
+      "source": "tests/visual/baselines/desktop/member-portal--member--default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/anggota-portal-overview-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "anggota-payment-flow-desktop",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/anggota-payment-flow-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "anggota-loan-flow-desktop",
+      "source": "tests/visual/baselines/desktop/member-portal--loans--default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/anggota-loan-flow-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "anggota-loan-flow-mobile",
+      "source": "tests/visual/baselines/mobile/member-portal--loans--default.png",
+      "viewport": "mobile",
+      "destination": "public/docs/user-guide/screens/mobile/anggota-loan-flow-mobile.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "admin-koperasi-operational-dashboard-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/admin-koperasi-operational-dashboard-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "admin-koperasi-loan-types-desktop",
+      "source": "tests/visual/baselines/desktop/loans--index--admin-default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/admin-koperasi-loan-types-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "admin-koperasi-pos-inventory-desktop",
+      "source": "tests/visual/baselines/desktop/pos-inventory--index--default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/admin-koperasi-pos-inventory-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "admin-koperasi-payment-queue-desktop",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/admin-koperasi-payment-queue-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "manajer-loan-review-desktop",
+      "source": "tests/visual/baselines/desktop/loans--loans--admin-default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/manajer-loan-review-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "manajer-financial-monitoring-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/manajer-financial-monitoring-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "pengurus-loan-approval-desktop",
+      "source": "tests/visual/baselines/desktop/loans--loans--default.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/pengurus-loan-approval-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    },
+    {
+      "id": "pengurus-shu-and-governance-desktop",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
+      "viewport": "desktop",
+      "destination": "public/docs/user-guide/screens/desktop/pengurus-shu-and-governance-desktop.png",
+      "status": "unchanged",
+      "detail": null
+    }
+  ]
+}

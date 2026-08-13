@@ -71,7 +71,7 @@ test.describe("documentation anggota @visual @accessibility", () => {
   });
 
   test("portal overview article renders body", async ({ page }) => {
-    await page.goto("/documentation/anggota-payment-flow");
+    await page.goto("/documentation/anggota-portal-overview");
     const docs = new DocumentationPage(page);
     await expect(docs.articleBody).toBeVisible();
   });
@@ -143,7 +143,7 @@ test.describe("documentation anggota @visual @accessibility", () => {
   test("previous and next article links navigate to authorized articles", async ({
     page,
   }) => {
-    await page.goto("/documentation/anggota-portal-overview");
+    await page.goto("/documentation/anggota-payment-flow");
     const docs = new DocumentationPage(page);
     const navigation = page.getByTestId("documentation-article-navigation");
     const next = navigation.getByRole("link", { name: /berikutnya/i });

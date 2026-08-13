@@ -609,6 +609,63 @@ test.describe("documentation UX V2 @visual", () => {
     });
   });
 
+  test.describe("admin koperasi single-role experience", () => {
+    test.use({ storageState: authState("admin") });
+
+    test("no role selector with correct context label", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await expect(docs.heading).toBeVisible();
+      await expect(docs.roleFilter).toHaveCount(0);
+      await expect(docs.roleSummary).toContainText("Admin Koperasi");
+    });
+
+    test("cross-role articles do not create fake role context", async ({
+      page,
+    }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await expect(docs.roleFilter).toHaveCount(0);
+      await expect(docs.roleSummary).toContainText("Admin Koperasi");
+      await expect(docs.roleSummary.getByText(/manajer/i)).toHaveCount(0);
+      await expect(docs.roleSummary.getByText(/pengurus/i)).toHaveCount(0);
+    });
+
+    test("quick start shows admin-specific guides", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await expect(docs.quickStart).toBeVisible();
+      await expect(docs.quickStartItems.first()).toBeVisible();
+      const count = await docs.quickStartItems.count();
+      expect(count).toBeLessThanOrEqual(4);
+      expect(count).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  test.describe("manajer single-role experience", () => {
+    test.use({ storageState: authState("manajer") });
+
+    test("no role selector with correct context label", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await expect(docs.heading).toBeVisible();
+      await expect(docs.roleFilter).toHaveCount(0);
+      await expect(docs.roleSummary).toContainText("Manajer Koperasi");
+    });
+  });
+
+  test.describe("pengurus single-role experience", () => {
+    test.use({ storageState: authState("pengurus") });
+
+    test("no role selector with correct context label", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await expect(docs.heading).toBeVisible();
+      await expect(docs.roleFilter).toHaveCount(0);
+      await expect(docs.roleSummary).toContainText("Pengurus Koperasi");
+    });
+  });
+
   test.describe("system admin multi-role experience", () => {
     test.use({ storageState: authState("system-admin") });
 
@@ -644,6 +701,46 @@ test.describe("documentation UX V2 @visual", () => {
       await page.goto("/documentation");
       const docs = new DocumentationPage(page);
       await docs.selectRole("Admin Koperasi");
+      await expect(docs.quickStartItems.first()).toBeVisible();
+      const count = await docs.quickStartItems.count();
+      expect(count).toBeLessThanOrEqual(4);
+      expect(count).toBeGreaterThanOrEqual(1);
+    });
+
+    test("semua mode shows orientation instead of random quick start", async ({
+      page,
+    }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await docs.selectRole("Semua");
+      await expect(docs.quickStart).toBeVisible();
+      await expect(docs.quickStartItems).toHaveCount(0);
+    });
+
+    test("selecting anggota shows anggota quick start", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await docs.selectRole("Anggota");
+      await expect(docs.quickStartItems.first()).toBeVisible();
+      const count = await docs.quickStartItems.count();
+      expect(count).toBeLessThanOrEqual(4);
+      expect(count).toBeGreaterThanOrEqual(1);
+    });
+
+    test("selecting manajer shows manajer quick start", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await docs.selectRole("Manajer Koperasi");
+      await expect(docs.quickStartItems.first()).toBeVisible();
+      const count = await docs.quickStartItems.count();
+      expect(count).toBeLessThanOrEqual(4);
+      expect(count).toBeGreaterThanOrEqual(1);
+    });
+
+    test("selecting pengurus shows pengurus quick start", async ({ page }) => {
+      await page.goto("/documentation");
+      const docs = new DocumentationPage(page);
+      await docs.selectRole("Pengurus Koperasi");
       await expect(docs.quickStartItems.first()).toBeVisible();
       const count = await docs.quickStartItems.count();
       expect(count).toBeLessThanOrEqual(4);

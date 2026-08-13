@@ -149,7 +149,19 @@ const workflowArticlesAll = computed(() =>
     .sort((a, b) => a.sort_order - b.sort_order),
 );
 
+/**
+ * The context selector is only available to System Admin, who is
+ * backend-authorized to see all published articles. For every other
+ * role the backend returns a single-role payload, so we show a static
+ * label instead of deriving misleading options from cross-role article
+ * metadata.
+ */
+const isSystemAdmin = computed(() => props.primaryRole === "system_admin");
+
 const availableRoles = computed<string[]>(() => {
+  if (!isSystemAdmin.value) {
+    return ROLE_ORDER.filter((r) => r === props.primaryRole);
+  }
   const roles = new Set<string>();
   workflowArticlesAll.value.forEach((a) =>
     articleWorkflowRoles(a).forEach((r) => roles.add(r)),
@@ -157,10 +169,10 @@ const availableRoles = computed<string[]>(() => {
   return ROLE_ORDER.filter((r) => roles.has(r));
 });
 
-const isMultiRole = computed(() => availableRoles.value.length > 1);
+const isMultiRole = computed(() => isSystemAdmin.value);
 
 const effectiveDefaultRole = computed(() =>
-  availableRoles.value.includes(props.primaryRole) ? props.primaryRole : "all",
+  isSystemAdmin.value ? "all" : props.primaryRole,
 );
 
 const selectedRole = ref(effectiveDefaultRole.value);
@@ -230,6 +242,12 @@ const displayArticles = computed(() => {
 });
 
 const quickStartArticles = computed(() => {
+  // System Admin in "Semua" mode should not see random Quick Start
+  // cards. An orientation block is shown instead (see template).
+  if (isSystemAdmin.value && selectedRole.value === "all") {
+    return [];
+  }
+
   const role =
     selectedRole.value !== "all"
       ? selectedRole.value
@@ -246,12 +264,17 @@ const quickStartArticles = computed(() => {
       .slice(0, 4);
   }
 
-  return [...workflowArticlesAll.value].slice(0, 4);
+  return [];
 });
+
+const showQuickStartOrientation = computed(
+  () => isSystemAdmin.value && selectedRole.value === "all",
+);
 
 const singleRoleLabel = computed(
   () =>
-    ROLE_LABELS[availableRoles.value[0] ?? props.primaryRole] ??
+    ROLE_LABELS[props.primaryRole] ??
+    ROLE_LABELS[availableRoles.value[0] ?? ""] ??
     "Panduan untuk Anda",
 );
 
@@ -342,7 +365,24 @@ function resetFilters(): void {
 
       <!-- QUICK START -->
       <section
-        v-if="quickStartArticles.length > 0"
+        v-if="showQuickStartOrientation"
+        data-testid="documentation-quick-start"
+        class="space-y-3"
+      >
+        <div>
+          <h2
+            class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+          >
+            Mulai dari sini
+          </h2>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400">
+            Pilih peran di atas untuk melihat panduan yang direkomendasikan.
+          </p>
+        </div>
+      </section>
+
+      <section
+        v-else-if="quickStartArticles.length > 0"
         data-testid="documentation-quick-start"
         class="space-y-4"
       >

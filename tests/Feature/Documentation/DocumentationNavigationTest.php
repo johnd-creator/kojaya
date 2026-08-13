@@ -7,6 +7,7 @@ namespace Tests\Feature\Documentation;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -25,9 +26,7 @@ class DocumentationNavigationTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    /**
-     * @dataProvider roleProvider
-     */
+    #[DataProvider('roleProvider')]
     public function test_documentation_route_is_reachable_for_role(string $role): void
     {
         $user = User::factory()->create();

@@ -19,27 +19,27 @@ hanya memvalidasi struktur dan metadata, bukan kebenaran setiap langkah.
 
 ## Ringkasan per artikel
 
-| Role | File | Slug | Grade | Accuracy confidence | User clarity |
-| --- | --- | --- | --- | --- | --- |
-| Admin Koperasi | `admin-koperasi/operational-dashboard.md` | `admin-koperasi-operational-dashboard` | B | Sedang | Baik, tetapi terlalu banyak modul |
-| Admin Koperasi | `admin-koperasi/payment-queue.md` | `admin-koperasi-payment-queue` | B | Sedang-tinggi | Baik |
-| Admin Koperasi | `admin-koperasi/loan-types.md` | `admin-koperasi-loan-types` | B | Sedang | Baik |
-| Admin Koperasi | `admin-koperasi/pos-inventory.md` | `admin-koperasi-pos-inventory` | C | Sedang-rendah | Terlalu padat |
-| Anggota | `anggota/portal-overview.md` | `anggota-portal-overview` | B | Sedang | Baik |
-| Anggota | `anggota/payment-flow.md` | `anggota-payment-flow` | B | Sedang | Baik, perlu ekspektasi status |
-| Anggota | `anggota/loan-flow.md` | `anggota-loan-flow` | B | Sedang-tinggi | Baik, perlu batasan waktu/status |
-| Manajer Koperasi | `manajer-koperasi/loan-review.md` | `manajer-loan-review` | B | Sedang-tinggi | Baik |
-| Manajer Koperasi | `manajer-koperasi/financial-monitoring.md` | `manajer-financial-monitoring` | C | Rendah-sedang | Membutuhkan pemetaan layar |
-| Pengurus Koperasi | `pengurus-koperasi/loan-approval.md` | `pengurus-loan-approval` | B | Sedang-tinggi | Baik |
-| Pengurus Koperasi | `pengurus-koperasi/shu-and-governance.md` | `pengurus-shu-and-governance` | C | Sedang | Mencampur SHU dan tata kelola |
-| Semua peran | `shared/glossary.md` | `shared-glossary` | C | Tinggi untuk istilah yang ada | Terlalu tipis |
-| Anggota | `anggota/onboarding-and-access.md` | `anggota-onboarding-and-access` | B | Tinggi | Baik, perlu istilah status yang konsisten |
-| Admin Koperasi | `admin-koperasi/member-validation.md` | `admin-koperasi-member-validation` | B | Tinggi | Baik, perlu batas aksi Admin/Pengurus |
-| Admin Koperasi | `admin-koperasi/opening-balance.md` | `admin-koperasi-opening-balance` | B | Sedang-tinggi | Baik, perlu contoh data dan handoff posting |
-| Semua role koperasi | `cooperative-dues-and-ledger.md` | `cooperative-dues-and-ledger` | B | Sedang-tinggi | Role-aware, perlu matriks aksi per role |
-| Admin, Manajer, Pengurus | `cooperative-store-credit.md` | `cooperative-store-credit` | B | Sedang | Ringkas, perlu pembeda kewenangan yang lebih konkret |
-| Manajer Koperasi | `manajer-koperasi/operator-cockpit.md` | `manajer-operator-cockpit` | B | Tinggi | Baik, perlu definisi metrik dan pengecualian |
-| Pengurus Koperasi | `pengurus-koperasi/member-approval.md` | `pengurus-member-approval` | B | Tinggi | Baik, perlu checklist keputusan resmi |
+| Role                     | File                                       | Slug                                   | Grade | Accuracy confidence           | User clarity                                         |
+| ------------------------ | ------------------------------------------ | -------------------------------------- | ----- | ----------------------------- | ---------------------------------------------------- |
+| Admin Koperasi           | `admin-koperasi/operational-dashboard.md`  | `admin-koperasi-operational-dashboard` | B     | Sedang                        | Baik, tetapi terlalu banyak modul                    |
+| Admin Koperasi           | `admin-koperasi/payment-queue.md`          | `admin-koperasi-payment-queue`         | B     | Sedang-tinggi                 | Baik                                                 |
+| Admin Koperasi           | `admin-koperasi/loan-types.md`             | `admin-koperasi-loan-types`            | B     | Sedang                        | Baik                                                 |
+| Admin Koperasi           | `admin-koperasi/pos-inventory.md`          | `admin-koperasi-pos-inventory`         | C     | Sedang-rendah                 | Terlalu padat                                        |
+| Anggota                  | `anggota/portal-overview.md`               | `anggota-portal-overview`              | B     | Sedang                        | Baik                                                 |
+| Anggota                  | `anggota/payment-flow.md`                  | `anggota-payment-flow`                 | B     | Sedang                        | Baik, perlu ekspektasi status                        |
+| Anggota                  | `anggota/loan-flow.md`                     | `anggota-loan-flow`                    | B     | Sedang-tinggi                 | Baik, perlu batasan waktu/status                     |
+| Manajer Koperasi         | `manajer-koperasi/loan-review.md`          | `manajer-loan-review`                  | B     | Sedang-tinggi                 | Baik                                                 |
+| Manajer Koperasi         | `manajer-koperasi/financial-monitoring.md` | `manajer-financial-monitoring`         | C     | Rendah-sedang                 | Membutuhkan pemetaan layar                           |
+| Pengurus Koperasi        | `pengurus-koperasi/loan-approval.md`       | `pengurus-loan-approval`               | B     | Sedang-tinggi                 | Baik                                                 |
+| Pengurus Koperasi        | `pengurus-koperasi/shu-and-governance.md`  | `pengurus-shu-and-governance`          | C     | Sedang                        | Mencampur SHU dan tata kelola                        |
+| Semua peran              | `shared/glossary.md`                       | `shared-glossary`                      | C     | Tinggi untuk istilah yang ada | Terlalu tipis                                        |
+| Anggota                  | `anggota/onboarding-and-access.md`         | `anggota-onboarding-and-access`        | B     | Tinggi                        | Baik, perlu istilah status yang konsisten            |
+| Admin Koperasi           | `admin-koperasi/member-validation.md`      | `admin-koperasi-member-validation`     | B     | Tinggi                        | Baik, perlu batas aksi Admin/Pengurus                |
+| Admin Koperasi           | `admin-koperasi/opening-balance.md`        | `admin-koperasi-opening-balance`       | B     | Sedang-tinggi                 | Baik, perlu contoh data dan handoff posting          |
+| Semua role koperasi      | `cooperative-dues-and-ledger.md`           | `cooperative-dues-and-ledger`          | B     | Sedang-tinggi                 | Role-aware, perlu matriks aksi per role              |
+| Admin, Manajer, Pengurus | `cooperative-store-credit.md`              | `cooperative-store-credit`             | B     | Sedang                        | Ringkas, perlu pembeda kewenangan yang lebih konkret |
+| Manajer Koperasi         | `manajer-koperasi/operator-cockpit.md`     | `manajer-operator-cockpit`             | B     | Tinggi                        | Baik, perlu definisi metrik dan pengecualian         |
+| Pengurus Koperasi        | `pengurus-koperasi/member-approval.md`     | `pengurus-member-approval`             | B     | Tinggi                        | Baik, perlu checklist keputusan resmi                |
 
 Tidak ada artikel grade A atau D pada pass ini. Grade C berarti prioritas
 editorial, bukan bukti bahwa artikel salah secara materiil.
@@ -612,3 +612,83 @@ Prioritaskan artikel grade C (`admin-koperasi-pos-inventory.md`,
 `pengurus-koperasi/shu-and-governance.md`, dan `shared/glossary.md`), lalu
 verifikasi klaim yang tercantum di atas terhadap source aplikasi. Setelah itu,
 rapikan artikel grade B tanpa mengubah alur bisnis yang belum disepakati.
+
+## Pending Manual Editorial Review
+
+Tujuh artikel berikut ditambahkan pada pass dokumentasi terakhir dan belum
+melalui editorial review user. Semua artikel berstatus `published` dan lolos
+`npm run docs:validate`, tetapi prosedur, istilah, dan klaim di dalamnya
+memerlukan konfirmasi manual sebelum dianggap final.
+
+### Daftar artikel
+
+| #   | Slug                               | Role                     | Title                                               | Source verification needed                                                                         |
+| --- | ---------------------------------- | ------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1   | `anggota-onboarding-and-access`    | Anggota                  | Menyelesaikan Onboarding dan Memahami Akses Anggota | Urutan tahap onboarding, field wajib per tahap, arti status Ditolak, kapan fitur finansial terbuka |
+| 2   | `admin-koperasi-member-validation` | Admin Koperasi           | Mengelola dan Memvalidasi Data Anggota              | Field yang wajib diperiksa, batas aksi Admin vs Pengurus, alur pengunduran diri                    |
+| 3   | `admin-koperasi-opening-balance`   | Admin Koperasi           | Mengelola Saldo Awal Anggota                        | Definisi source type, siapa melakukan posting dan void, aturan koreksi batch                       |
+| 4   | `cooperative-dues-and-ledger`      | Admin, Manajer, Pengurus | Mengelola Iuran dan Membaca Ledger Simpanan         | Matriks aksi per role, definisi mutasi ledger, alur penarikan simpanan                             |
+| 5   | `cooperative-store-credit`         | Admin, Manajer, Pengurus | Mengelola Saldo Toko Anggota                        | Status akun, status transfer, prosedur suspend/limit/adjustment                                    |
+| 6   | `manajer-operator-cockpit`         | Manajer Koperasi         | Memantau Cockpit Operasional Koperasi               | Definisi metrik, sumber data, periode, kriteria eskalasi                                           |
+| 7   | `pengurus-member-approval`         | Pengurus Koperasi        | Approval Final Data Anggota                         | Kriteria approval, format alasan, konsekuensi keputusan terhadap akses anggota                     |
+
+### Pertanyaan utama untuk setiap artikel
+
+1. **anggota-onboarding-and-access:** Data apa yang wajib disiapkan per tahap?
+   Kapan Admin menerima pendaftaran? Apa yang harus diperbaiki saat revisi?
+   Kapan menu finansial terbuka?
+2. **admin-koperasi-member-validation:** Apa yang wajib dicek? Kapan diteruskan
+   ke Pengurus? Bagaimana menangani revisi? Siapa memproses pengunduran diri?
+3. **admin-koperasi-opening-balance:** Apa sumber saldo yang boleh dipakai?
+   Kapan batch boleh diposting? Bagaimana membatalkan batch? Siapa menyetujui?
+4. **cooperative-dues-and-ledger:** Apa beda Belum Lunas dan Sebagian? Kapan
+   memakai void? Siapa memproses penarikan? Bagaimana menelusuri koreksi?
+5. **cooperative-store-credit:** Apa beda saldo dan limit? Siapa menyetujui
+   transfer? Kapan akun ditangguhkan? Bagaimana adjustment dicatat?
+6. **manajer-operator-cockpit:** Angka berasal dari periode apa? Apa arti
+   pengecualian? Kapan perlu ekspor? Siapa menerima eskalasi?
+7. **pengurus-member-approval:** Apa yang dianggap lengkap? Kapan memilih revisi?
+   Apa dampak reject? Kapan anggota bisa masuk ke portal finansial?
+
+### Catatan terminology dan struktur
+
+- Artikel 4 dan 5 memiliki category format `Koperasi · suffix` alih-alih
+  `Role · suffix`. Pertimbangkan apakah format ini konsisten dengan
+  konvensi artikel lain atau perlu disesuaikan.
+- Artikel 4 dan 5 memiliki roles lintas-role (`admin_koperasi`,
+  `manajer_koperasi`, `pengurus_koperasi`). Verifikasi bahwa pembagian
+  kewenangan per role akurat terhadap policy backend.
+- Artikel 2 (`admin-koperasi-member-validation.md`) dan artikel 7
+  (`pengurus-koperasi/member-approval.md`) mendeskripsikan dua sisi alur
+  validasi ke approval yang sama. Pastikan terminology dan handoff konsisten.
+
+## LAST_REVIEWED_COMMIT audit
+
+Semua tujuh artikel baru menggunakan `last_reviewed_commit:
+999684c5f72029bd52ea8dced11203cac344c2d1` (branch HEAD pada saat artikel
+dibuat). Audit ini memeriksa apakah SHA tersebut merepresentasikan commit
+source code yang benar-benar digunakan untuk memverifikasi prosedur.
+
+### Temuan
+
+| Slug                               | last_reviewed_commit | Status                       |
+| ---------------------------------- | -------------------- | ---------------------------- |
+| `anggota-onboarding-and-access`    | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+| `admin-koperasi-member-validation` | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+| `admin-koperasi-opening-balance`   | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+| `cooperative-dues-and-ledger`      | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+| `cooperative-store-credit`         | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+| `manajer-operator-cockpit`         | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+| `pengurus-member-approval`         | `999684c5`           | REQUIRES MANUAL CONFIRMATION |
+
+### Catatan
+
+SHA `999684c5` adalah branch HEAD ketika artikel-artikel ini ditulis. SHA ini
+secara teknis valid sebagai titik tinjauan karena seluruh source code yang
+direferensikan sudah ada pada commit tersebut. Namun, karena prosedur
+belum diverifikasi langkah-demi-langkah terhadap UI source pada commit
+tersebut oleh reviewer, semua artikel ditandai REQUIRES MANUAL CONFIRMATION.
+
+Tidak ada perubahan metadata `last_reviewed_commit` yang dilakukan pada task ini.
+User dapat memperbarui SHA setelah melakukan verifikasi manual atau mempertahankan
+`999684c5` jika dianggap sudah cukup.

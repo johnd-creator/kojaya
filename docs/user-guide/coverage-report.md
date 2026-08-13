@@ -1,7 +1,7 @@
 # Laporan Cakupan Pusat Panduan
 
 > Dibuat otomatis oleh `npm run docs:validate`.
-> Pembuatan terakhir: 2026-08-08T05:42:37.124Z
+> Pembuatan terakhir: 2026-08-13T05:39:13.026Z
 
 ## Ringkasan
 

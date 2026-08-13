@@ -18,6 +18,7 @@ async function resolveRoute(page: Parameters<typeof installStableEnvironment>[0]
     expect(response.ok(), `Fixture endpoint failed for ${entry.id}.`).toBe(true);
     const fixtures = (await response.json()) as Record<string, string | number | null>;
     const fixture = fixtures[entry.fixture];
+    expect(fixture, `Undefined fixture ${entry.fixture} for ${entry.id}.`).toBeDefined();
     expect(fixture, `Missing fixture ${entry.fixture} for ${entry.id}.`).not.toBeNull();
 
     return entry.path_template.replace(/\{[^}]+\}/g, String(fixture));

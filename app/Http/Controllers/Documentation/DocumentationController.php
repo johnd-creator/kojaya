@@ -181,11 +181,17 @@ final class DocumentationController extends Controller
     {
         $list = $this->authorizer
             ->filterVisible($user)
-            ->sortBy([
-                ['sort_order', 'asc'],
-                ['category', 'asc'],
-                ['title', 'asc'],
-            ])
+            ->sort(
+                fn (Article $left, Article $right): int => [
+                    $left->sortOrder(),
+                    $left->category(),
+                    $left->title(),
+                ] <=> [
+                    $right->sortOrder(),
+                    $right->category(),
+                    $right->title(),
+                ],
+            )
             ->values();
 
         $index = null;

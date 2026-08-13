@@ -143,18 +143,18 @@ test.describe("documentation anggota @visual @accessibility", () => {
   test("previous and next article links navigate to authorized articles", async ({
     page,
   }) => {
-    await page.goto("/documentation/anggota-payment-flow");
+    await page.goto("/documentation/anggota-portal-overview");
     const docs = new DocumentationPage(page);
     const navigation = page.getByTestId("documentation-article-navigation");
     const next = navigation.getByRole("link", { name: /berikutnya/i });
 
     await expect(next).toHaveAttribute(
       "href",
-      "/documentation/anggota-loan-flow",
+      "/documentation/anggota-payment-flow",
     );
     await expect(next).toBeVisible();
     await next.click();
-    await expect(page).toHaveURL(/\/documentation\/anggota-loan-flow$/);
+    await expect(page).toHaveURL(/\/documentation\/anggota-payment-flow$/);
     await expect(docs.articleBody).toBeVisible();
   });
 

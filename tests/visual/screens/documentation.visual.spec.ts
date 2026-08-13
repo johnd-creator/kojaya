@@ -71,7 +71,7 @@ test.describe("documentation anggota @visual @accessibility", () => {
   });
 
   test("portal overview article renders body", async ({ page }) => {
-    await page.goto("/documentation/anggota-portal-overview");
+    await page.goto("/documentation/anggota-payment-flow");
     const docs = new DocumentationPage(page);
     await expect(docs.articleBody).toBeVisible();
   });
@@ -150,11 +150,11 @@ test.describe("documentation anggota @visual @accessibility", () => {
 
     await expect(next).toHaveAttribute(
       "href",
-      "/documentation/anggota-payment-flow",
+      "/documentation/anggota-loan-flow",
     );
     await expect(next).toBeVisible();
     await next.click();
-    await expect(page).toHaveURL(/\/documentation\/anggota-payment-flow$/);
+    await expect(page).toHaveURL(/\/documentation\/anggota-loan-flow$/);
     await expect(docs.articleBody).toBeVisible();
   });
 

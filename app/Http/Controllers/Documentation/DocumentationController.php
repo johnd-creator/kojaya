@@ -136,7 +136,17 @@ final class DocumentationController extends Controller
     private function serializeList(Collection $articles): array
     {
         return $articles
-            ->sortBy('sort_order')
+            ->sort(
+                fn (Article $left, Article $right): int => [
+                    $left->sortOrder(),
+                    $left->category(),
+                    $left->title(),
+                ] <=> [
+                    $right->sortOrder(),
+                    $right->category(),
+                    $right->title(),
+                ],
+            )
             ->map(fn (Article $a): array => $this->serializeListItem($a))
             ->values()
             ->all();

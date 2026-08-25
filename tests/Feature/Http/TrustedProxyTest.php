@@ -82,7 +82,7 @@ class TrustedProxyTest extends TestCase
             'secure' => false,
             'scheme' => 'http',
             'host' => 'localhost',
-            'url' => 'http://localhost/probe',
+            'url' => 'http://localhost:8000/probe',
         ]);
     }
 }

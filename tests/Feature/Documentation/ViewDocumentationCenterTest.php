@@ -81,6 +81,33 @@ class ViewDocumentationCenterTest extends TestCase
         );
     }
 
+    public function test_documentation_articles_with_equal_sort_orders_have_deterministic_tie_breakers(): void
+    {
+        $user = $this->makeUserWithRole('System Admin');
+
+        $response = $this->actingAs($user)
+            ->get('/documentation')
+            ->assertOk();
+
+        $articles = $this->collectArticlePayloads($response);
+        $expected = $articles;
+
+        usort(
+            $expected,
+            static fn (array $left, array $right): int => [
+                $left['sort_order'],
+                $left['category'],
+                $left['title'],
+            ] <=> [
+                $right['sort_order'],
+                $right['category'],
+                $right['title'],
+            ],
+        );
+
+        $this->assertSame($expected, $articles);
+    }
+
     public function test_anggota_only_sees_anggota_or_all_articles(): void
     {
         $anggota = $this->makeUserWithRole('Anggota');

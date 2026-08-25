@@ -675,13 +675,12 @@ const footerNavItems: NavItem[] = [
 const adminNavItems = computed<NavItem[]>(() =>
   filterNavByPermission([
     {
-      title: "Ringkasan",
-      href: "#",
+      title: "Dashboard",
+      href: dashboard(),
       icon: LayoutGrid,
-      items: [{ title: "Dashboard", href: dashboard(), icon: LayoutGrid }],
     },
     {
-      title: "Anggota",
+      title: "Keanggotaan",
       href: "#",
       icon: Users,
       items: [
@@ -691,7 +690,7 @@ const adminNavItems = computed<NavItem[]>(() =>
           permissions: ["view_cooperative_member", "view_cooperative_all"],
         },
         {
-          title: "Validasi Anggota",
+          title: "Validasi / Status",
           href: cooperativeMembersIndex({
             query: { validation_status: "PENDING" },
           }).url,
@@ -707,21 +706,21 @@ const adminNavItems = computed<NavItem[]>(() =>
       ],
     },
     {
-      title: "Keuangan Anggota",
+      title: "Iuran & Simpanan",
       href: "#",
       icon: WalletCards,
       items: [
         {
-          title: "Pembayaran",
-          href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
-          permissions: ["manage_cooperative_payment"],
-        },
-        {
-          title: "Iuran dan Tagihan",
+          title: "Iuran & Tagihan",
           href: cooperativeDuesIndex({
             query: { period_scope: "all", status: "OPEN" },
           }).url,
           permissions: ["manage_cooperative_dues"],
+        },
+        {
+          title: "Pembayaran",
+          href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
+          permissions: ["manage_cooperative_payment"],
         },
         {
           title: "Ledger Simpanan",
@@ -746,6 +745,11 @@ const adminNavItems = computed<NavItem[]>(() =>
           permissions: ["view_cooperative_loan"],
         },
         {
+          title: "Kalkulator Pinjaman",
+          href: cooperativeLoansCalculator().url,
+          permissions: ["view_cooperative_loan"],
+        },
+        {
           title: "Jenis Pinjaman",
           href: cooperativeLoanTypesIndex().url,
           permissions: ["manage_cooperative_loan_types"],
@@ -753,56 +757,19 @@ const adminNavItems = computed<NavItem[]>(() =>
       ],
     },
     {
-      title: "Benefit Anggota",
+      title: "Saldo Toko",
       href: "#",
-      icon: Gift,
+      icon: Wallet,
       items: [
         {
-          title: "Poin",
-          href: cooperativePointsIndex().url,
-          permissions: ["manage_cooperative_points"],
-        },
-        {
-          title: "Reward",
-          href: cooperativeRewardsIndex().url,
-          permissions: ["manage_cooperative_rewards"],
-        },
-        {
-          title: "Penukaran Reward",
-          href: cooperativeRedemptionsIndex().url,
-          permissions: ["manage_cooperative_redemption"],
-        },
-        {
-          title: "SHU",
-          href: cooperativeShuIndex().url,
-          permissions: ["manage_cooperative_shu"],
-        },
-      ],
-    },
-    {
-      title: "Operasional Toko",
-      href: "#",
-      icon: Store,
-      items: [
-        {
-          title: "POS",
-          href: cooperativePosIndex().url,
-          permissions: ["access_cooperative_pos"],
-        },
-        {
-          title: "Produk dan Stok",
-          href: cooperativePosProductsIndex().url,
-          permissions: ["manage_pos_products"],
-        },
-        {
-          title: "Laporan POS",
-          href: cooperativePosReportsIndex().url,
-          permissions: ["view_pos_reports"],
-        },
-        {
-          title: "Saldo Toko",
+          title: "Akun Saldo Toko",
           href: cooperativeStoreCreditIndex().url,
           permissions: ["view_store_credit"],
+        },
+        {
+          title: "Verifikasi Transfer",
+          href: cooperativeStoreCreditTransfersIndex().url,
+          permissions: ["approve_store_credit_transfer"],
         },
         {
           title: "Laporan Saldo Toko",
@@ -812,10 +779,120 @@ const adminNavItems = computed<NavItem[]>(() =>
       ],
     },
     {
-      title: "Laporan",
+      title: "Poin & Reward",
       href: "#",
-      icon: BarChart3,
+      icon: Gift,
       items: [
+        {
+          title: "Poin Anggota",
+          href: cooperativePointsIndex().url,
+          permissions: ["manage_cooperative_points"],
+        },
+        {
+          title: "Katalog Reward",
+          href: cooperativeRewardsIndex().url,
+          permissions: ["manage_cooperative_rewards"],
+        },
+        {
+          title: "Penukaran Reward",
+          href: cooperativeRedemptionsIndex().url,
+          permissions: ["manage_cooperative_redemption"],
+        },
+        {
+          title: "SHU Koperasi",
+          href: cooperativeShuIndex().url,
+          permissions: ["manage_cooperative_shu"],
+        },
+      ],
+    },
+    {
+      title: "POS Toko",
+      href: "#",
+      icon: Store,
+      items: [
+        {
+          title: "Kasir POS",
+          href: cooperativePosIndex().url,
+          permissions: ["access_cooperative_pos"],
+        },
+        {
+          title: "Riwayat Transaksi",
+          href: cooperativePosTransactionsIndex().url,
+          permissions: ["access_cooperative_pos"],
+        },
+        {
+          title: "Pesanan Kopi",
+          href: cooperativePosCoffeeOrdersIndex().url,
+          permissions: ["access_cooperative_pos"],
+        },
+        {
+          title: "Laporan Penjualan",
+          href: cooperativePosReportsIndex().url,
+          permissions: ["view_pos_reports"],
+        },
+        {
+          title: "SHU POS Tahunan",
+          href: cooperativePosShuIndex().url,
+          permissions: ["manage_pos_shu"],
+        },
+      ],
+    },
+    {
+      title: "Inventory POS",
+      href: "#",
+      icon: Boxes,
+      items: [
+        {
+          title: "Produk",
+          href: cooperativePosProductsIndex().url,
+          permissions: ["manage_pos_products"],
+        },
+        {
+          title: "Kategori",
+          href: cooperativePosCategoriesIndex().url,
+          permissions: ["manage_pos_categories"],
+        },
+        {
+          title: "Stok Minimum",
+          href: cooperativePosProductsIndex({ query: { low_stock: 1 } }).url,
+          permissions: ["manage_pos_products"],
+        },
+        {
+          title: "Stock Movement",
+          href: "/cooperative/pos/inventory/counts",
+          permissions: ["manage_pos_products"],
+        },
+        {
+          title: "Penerimaan Stok",
+          href: "/cooperative/pos/inventory/receipts",
+          permissions: ["manage_pos_products"],
+        },
+        {
+          title: "Transfer Stok",
+          href: "/cooperative/pos/inventory/transfers",
+          permissions: ["manage_pos_products"],
+        },
+      ],
+    },
+    {
+      title: "Operator Koperasi",
+      href: "#",
+      icon: ClipboardCheck,
+      permissions: ["view_cooperative_report", "manage_cooperative_settings"],
+      items: [
+        {
+          title: "Dashboard Operator",
+          href: operatorDashboard().url,
+          permissions: [
+            "view_cooperative_report",
+            "manage_cooperative_settings",
+          ],
+        },
+        {
+          title: "Tutup Periode",
+          href: operatorClosing().url,
+          permissions: ["manage_cooperative_settings"],
+        },
         {
           title: "Laporan Koperasi",
           href: cooperativeReportsIndex().url,

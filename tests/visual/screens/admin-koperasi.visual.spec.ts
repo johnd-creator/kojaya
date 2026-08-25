@@ -270,7 +270,7 @@ test("admin-sidebar-keuangan-active-with-query @sidebar", async ({ page }) => {
 
   const keuanganMenu = page
     .locator('[data-sidebar="menu-button"]')
-    .filter({ hasText: "Keuangan Anggota" });
+    .filter({ hasText: "Iuran & Simpanan" });
   const activeSubmenu = (label: string) =>
     page
       .locator('[data-sidebar="menu-sub-button"][data-active="true"]')
@@ -288,5 +288,5 @@ test("admin-sidebar-keuangan-active-with-query @sidebar", async ({ page }) => {
   });
   await openSidebarForSmallViewport();
   await expect(keuanganMenu).toHaveAttribute("data-state", "open");
-  await expect(activeSubmenu("Iuran dan Tagihan")).toHaveCount(1);
+  await expect(activeSubmenu("Iuran & Tagihan")).toHaveCount(1);
 });

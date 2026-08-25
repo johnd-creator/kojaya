@@ -17,6 +17,7 @@ class PosProduct extends Model
     ];
 
     protected $fillable = [
+        'organization_id',
         'pos_category_id',
         'sku',
         'barcode',

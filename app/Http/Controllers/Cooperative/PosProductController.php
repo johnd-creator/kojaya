@@ -55,6 +55,7 @@ class PosProductController extends Controller
         PosProductImageService $imageService,
     ): RedirectResponse {
         $data = $request->validated();
+        $data['organization_id'] = $request->user()->organization_id;
 
         if ($request->hasFile('image')) {
             $data['image_path'] = $imageService->storeImage(

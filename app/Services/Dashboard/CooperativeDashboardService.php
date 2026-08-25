@@ -18,6 +18,7 @@ use App\Models\PosTransactionItem;
 use App\Models\User;
 use App\Services\Authorization\PrimaryRoleResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 class CooperativeDashboardService
 {
@@ -155,6 +156,16 @@ class CooperativeDashboardService
     {
         $now = CarbonImmutable::now();
         $currentPeriod = $now->format('Y-m');
+        $organizationId = $this->scopeService->scopeOrganizationIdFor($user);
+
+        $todayTransactions = PosTransaction::query()
+            ->whereDate('sold_at', $now->toDateString());
+        $this->scopePosTransactions($todayTransactions, $organizationId);
+
+        $lowStockProducts = PosProduct::query()
+            ->where('is_active', true)
+            ->whereColumn('stock', '<=', 'minimum_stock');
+        $this->scopePosProducts($lowStockProducts, $organizationId);
 
         $members = CooperativeMember::query();
         $this->scopeService->scopeVisibleTo($members, $user);
@@ -201,9 +212,12 @@ class CooperativeDashboardService
                 'code' => $organization->code,
             ] : null,
             'summary' => [
+                'today_sales' => (float) (clone $todayTransactions)->sum('total_amount'),
+                'today_transactions' => (clone $todayTransactions)->count(),
                 'pending_members' => $pendingMembers->count(),
                 'revision_members' => $revisionMembers->count(),
                 'pending_payments' => $pendingPayments->count(),
+                'low_stock_products' => $lowStockProducts->count(),
                 'unpaid_dues_count' => $openDues->count(),
                 'unpaid_dues_amount' => (float) $openDues
                     ->selectRaw('coalesce(sum(amount - paid_amount), 0) as outstanding_amount')
@@ -215,6 +229,7 @@ class CooperativeDashboardService
                 'pending_members' => $pendingMembers->count(),
                 'revision_members' => $revisionMembers->count(),
                 'unpaid_dues' => $openDues->count(),
+                'low_stock_products' => $lowStockProducts->count(),
                 'pending_resignations' => $pendingResignations,
             ],
             'collections' => [
@@ -228,6 +243,32 @@ class CooperativeDashboardService
             'generated_at' => $generatedAt,
             'generatedAt' => $generatedAt,
         ];
+    }
+
+    private function scopePosTransactions(Builder $query, ?string $organizationId): void
+    {
+        if ($organizationId === null) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($organizationId): void {
+            $query
+                ->whereHas('cashier', fn (Builder $cashier): Builder => $cashier->where('organization_id', $organizationId))
+                ->orWhereHas('member', fn (Builder $member): Builder => $member->where('organization_id', $organizationId));
+        });
+    }
+
+    private function scopePosProducts(Builder $query, ?string $organizationId): void
+    {
+        if ($organizationId === null) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($organizationId): void {
+            $query
+                ->whereNull('organization_id')
+                ->orWhere('organization_id', $organizationId);
+        });
     }
 
     /**

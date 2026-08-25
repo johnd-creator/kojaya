@@ -37,10 +37,6 @@ type Props = {
   user: User;
 };
 
-const handleLogout = () => {
-  router.flushAll();
-};
-
 defineProps<Props>();
 </script>
 
@@ -97,7 +93,7 @@ defineProps<Props>();
     <Link
       class="block w-full cursor-pointer"
       :href="logout()"
-      @click="handleLogout"
+      method="post"
       as="button"
       data-test="logout-button"
     >

@@ -9,6 +9,7 @@ import NotificationIcon from "@/components/Notification/NotificationIcon.vue";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAppearance } from "@/composables/useAppearance";
+import { logout } from "@/routes";
 import type { BreadcrumbItem } from "@/types";
 
 withDefaults(
@@ -110,7 +111,7 @@ onUnmounted(() => {
         aria-label="Keluar"
         as-child
       >
-        <Link href="/logout" method="post" as="button">
+        <Link :href="logout()" method="post" as="button">
           <LogOut class="h-5 w-5" />
         </Link>
       </Button>

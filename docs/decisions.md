@@ -1226,3 +1226,28 @@ member credit limit, and keep an immutable audit trail.
   permission-safe read model is available.
 
 *Last Updated: July 19, 2026*
+
+## 🎯 ADR-032: Host-Isolated QA Sessions and Trusted Proxy Scheme
+
+**Status:** READY FOR SENIOR REVIEW
+**Date:** August 25, 2026
+**Deciders:** Engineering
+
+### Decision
+
+- The web application trusts only the proxy addresses supplied through the
+  `TRUSTED_PROXIES` configuration value; it does not trust arbitrary forwarded
+  headers from the internet.
+- QA uses an HTTPS application URL and a host-only, QA-specific database
+  session cookie. A production deployment must use a different cookie name.
+- The proxy chain must preserve the public host and `X-Forwarded-Proto` value
+  through Nginx to PHP so Laravel can generate HTTPS URLs and redirects.
+
+### Consequences
+
+- The QA operator must verify the proxy address seen by PHP and configure it in
+  the deployment environment before relying on forwarded HTTPS headers.
+- Cloudflare and Nginx must keep authenticated and Inertia responses private
+  and uncached.
+- A missing or incorrect proxy environment value is detectable through the
+  trusted-proxy regression test and header-only QA checks.

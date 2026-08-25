@@ -25,9 +25,17 @@ export class LoginPage {
             .replace(/&lt;/g, "<")
             .replace(/&gt;/g, ">");
         const parsed = JSON.parse(decoded) as {
-            props?: { auth?: { roles?: Array<{ name?: string } | string> } };
+            props?: {
+                auth?: {
+                    roles?: Array<{ name?: string } | string>;
+                    user?: { roles?: Array<{ name?: string } | string> };
+                };
+            };
         };
-        const roles = (parsed.props?.auth?.roles ?? []).map((item) =>
+        const roleValues = parsed.props?.auth?.roles?.length
+            ? parsed.props.auth.roles
+            : (parsed.props?.auth?.user?.roles ?? []);
+        const roles = roleValues.map((item) =>
             typeof item === "string" ? item : item.name,
         );
 

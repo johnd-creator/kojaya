@@ -9,7 +9,6 @@ export class LoginPage {
         await this.page.locator('input[name="password"]').fill(password);
         await this.page.locator('[data-test="login-button"]').click();
         await expect(this.page).not.toHaveURL(/\/login(?:\?|$)/);
-        await this.page.reload();
         await this.assertRole(role);
     }
 

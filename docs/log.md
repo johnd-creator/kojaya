@@ -1068,6 +1068,8 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 
 ---
 
+* Aug 25, 2026 | QA Authentication Inertia Proxy Hardening | Engineering | Identified HTTP-scheme downgrade in login/logout redirects behind Cloudflare Tunnel, added least-privilege trusted-proxy configuration and host-isolated session guidance, and made both logout entry points submit the same Inertia POST transition. QA deployment and browser acceptance remain operator steps. |
+
 ## 🙏 Acknowledgments
 
 **Development Team:**

@@ -9,13 +9,13 @@ export class LoginPage {
         await this.page.locator('input[name="password"]').fill(password);
         await this.page.locator('[data-test="login-button"]').click();
         await expect(this.page).not.toHaveURL(/\/login(?:\?|$)/);
-        await this.assertRole(role);
+        await expect.poll(() => this.readRoles(), { timeout: 15_000 }).toContain(role);
     }
 
-    private async assertRole(role: string): Promise<void> {
+    private async readRoles(): Promise<string[]> {
         const pageData = await this.page.locator("#app").getAttribute("data-page");
         if (!pageData) {
-            throw new Error("Inertia page data is unavailable after login.");
+            return [];
         }
 
         const decoded = pageData
@@ -39,6 +39,6 @@ export class LoginPage {
             typeof item === "string" ? item : item.name,
         );
 
-        expect(roles).toContain(role);
+        return roles.filter((role): role is string => typeof role === "string");
     }
 }

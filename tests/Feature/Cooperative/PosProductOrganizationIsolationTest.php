@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Models\PosInventoryLocation;
 use App\Models\PosProduct;
 use App\Models\User;
+use App\Services\Cooperative\PosTransactionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -106,6 +107,36 @@ class PosProductOrganizationIsolationTest extends TestCase
             'sku' => 'ORG-A-OWNED-001',
             'organization_id' => $this->organization->id,
         ]);
+    }
+
+    public function test_pos_reports_only_expose_the_active_organization(): void
+    {
+        $this->admin->givePermissionTo('view_pos_reports');
+        $product = $this->product($this->organization, ['name' => 'Laporan Organisasi A', 'sale_price' => 1000]);
+        $otherProduct = $this->product($this->otherOrganization, ['name' => 'Laporan Organisasi B', 'sale_price' => 9000, 'stock' => 1]);
+
+        app(PosTransactionService::class)->create([
+            'client_reference' => 'ORG-REPORT-A',
+            'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
+            'payments' => [['payment_method' => 'CASH', 'amount' => 1000, 'cash_received' => 1000]],
+        ], $this->admin);
+        app(PosTransactionService::class)->create([
+            'client_reference' => 'ORG-REPORT-B',
+            'items' => [['pos_product_id' => $otherProduct->id, 'quantity' => 1]],
+            'payments' => [['payment_method' => 'CASH', 'amount' => 9000, 'cash_received' => 9000]],
+        ], $this->otherAdmin);
+
+        $this->actingAs($this->admin)
+            ->get(route('cooperative.pos.reports.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('products', fn ($products): bool => $products->pluck('name')->contains($product->name)
+                    && ! $products->pluck('name')->contains($otherProduct->name))
+                ->loadDeferredProps('analytics', fn ($page) => $page
+                    ->where('analytics.summary.transactions', 1)
+                    ->where('analytics.summary.gross_sales', 1000)
+                )
+            );
     }
 
     public function test_inventory_receipts_transfers_and_counts_reject_foreign_and_legacy_products(): void

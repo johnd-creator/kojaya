@@ -9,6 +9,7 @@ use App\Models\BackgroundJob;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\User;
+use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosSalesReportService;
 use App\Services\Export\PosReportCsvExport;
 use Illuminate\Http\JsonResponse;
@@ -21,10 +22,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PosReportController extends Controller
 {
-    public function __construct(private PosSalesReportService $service) {}
+    public function __construct(
+        private PosSalesReportService $service,
+        private PosProductAccessService $productAccess,
+    ) {}
 
     public function index(): Response
     {
+        $user = request()->user();
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
         $filters = $this->filters();
@@ -41,7 +46,8 @@ class PosReportController extends Controller
                 'top_members' => $this->service->topMembers($from, $to, $filters),
                 'cashier_performance' => $this->service->cashierPerformance($from, $to, $filters),
             ], 'analytics'),
-            'products' => PosProduct::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'products' => $this->productAccess->scopeVisibleTo(PosProduct::query(), $user)
+                ->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'categories' => PosCategory::query()->orderBy('name')->get(['id', 'name']),
             'cashiers' => User::query()->orderBy('name')->get(['id', 'name']),
         ]);
@@ -73,6 +79,7 @@ class PosReportController extends Controller
         $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
         $to = $validated['to'] ?? now()->toDateString();
         $filters = array_filter($validated['filters'] ?? [], fn ($v) => $v !== null && $v !== '');
+        $filters['organization_id'] = $request->user()->organization_id;
 
         $job = BackgroundJob::query()->create([
             'user_id' => $request->user()->id,
@@ -138,6 +145,7 @@ class PosReportController extends Controller
     private function filters(): array
     {
         return array_filter([
+            'organization_id' => request()->user()->organization_id,
             'pos_product_id' => request()->input('pos_product_id'),
             'category_id' => request()->input('category_id'),
             'cashier_id' => request()->input('cashier_id'),

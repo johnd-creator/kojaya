@@ -21,6 +21,7 @@ class PosTransactionService
         private PosJournalPostingService $journal,
         private CooperativeNotificationDispatcher $notificationDispatcher,
         private MemberStoreCheckoutService $storeCheckout,
+        private PosProductAccessService $productAccess,
     ) {}
 
     /**
@@ -57,6 +58,9 @@ class PosTransactionService
 
                 foreach ($data['items'] as $item) {
                     $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
+                    if ($cashier !== null) {
+                        $this->productAccess->assertCanOperate($cashier, $product);
+                    }
                     $quantity = (int) $item['quantity'];
 
                     if ($product->is_discontinued || ! $product->is_active || $product->stock < $quantity) {

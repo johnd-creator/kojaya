@@ -8,18 +8,32 @@ use App\Models\PosInventoryLocation;
 use App\Models\PosStockReceipt;
 use App\Models\PosSupplier;
 use App\Services\Cooperative\PosInventoryService;
+use App\Services\Cooperative\PosProductAccessService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PosInventoryReceiptController extends Controller
 {
-    public function __construct(private PosInventoryService $service) {}
+    public function __construct(
+        private PosInventoryService $service,
+        private PosProductAccessService $productAccess,
+    ) {}
 
     public function index(): Response
     {
+        $user = request()->user();
         $receipts = PosStockReceipt::query()
-            ->with(['supplier', 'location', 'receiver', 'items'])
+            ->with([
+                'supplier',
+                'location',
+                'receiver',
+                'items' => fn (Builder $query): Builder => $query
+                    ->whereHas('product', fn (Builder $productQuery): Builder => $this->productAccess->scopeVisibleTo($productQuery, $user))
+                    ->with('product'),
+            ])
+            ->whereHas('items.product', fn (Builder $query): Builder => $this->productAccess->scopeVisibleTo($query, $user))
             ->orderByDesc('received_at')
             ->orderByDesc('id')
             ->paginate(20);

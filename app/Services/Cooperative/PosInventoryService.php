@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 
 class PosInventoryService
 {
+    public function __construct(private readonly PosProductAccessService $productAccess) {}
+
     public function ensureDefaultLocation(): PosInventoryLocation
     {
         $default = PosInventoryLocation::query()->where('is_default', true)->first();
@@ -58,6 +60,7 @@ class PosInventoryService
 
         $products = PosProduct::query()
             ->whereNotIn('id', $existing)
+            ->whereNotNull('organization_id')
             ->where('stock', '>', 0)
             ->get(['id', 'stock']);
 
@@ -134,6 +137,9 @@ class PosInventoryService
 
             foreach ($data['items'] as $item) {
                 $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
+                if ($receiver !== null) {
+                    $this->productAccess->assertCanOperate($receiver, $product);
+                }
                 $qty = (int) $item['quantity'];
                 $unitCost = (float) $item['unit_cost'];
                 $lineTotal = round($qty * $unitCost, 2);
@@ -188,6 +194,9 @@ class PosInventoryService
 
             foreach ($data['items'] as $item) {
                 $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
+                if ($user !== null) {
+                    $this->productAccess->assertCanOperate($user, $product);
+                }
                 $qty = (int) $item['quantity'];
 
                 $available = $this->getStockAt($product, $from->id);
@@ -229,6 +238,9 @@ class PosInventoryService
 
             foreach ($items as $item) {
                 $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
+                if ($user !== null) {
+                    $this->productAccess->assertCanOperate($user, $product);
+                }
                 $systemQty = $this->getStockAt($product, $location->id);
                 $countedQty = (int) $item['counted_qty'];
 
@@ -261,6 +273,8 @@ class PosInventoryService
 
     public function approveCount(PosStockCount $count, User $supervisor): PosStockCount
     {
+        $this->assertCountCanBeOperated($count, $supervisor);
+
         if ($count->status !== PosStockCount::STATUS_REVIEW) {
             throw ValidationException::withMessages([
                 'count' => 'Stock opname belum direview.',
@@ -276,6 +290,7 @@ class PosInventoryService
                 if (! $product) {
                     continue;
                 }
+                $this->productAccess->assertCanOperate($supervisor, $product);
                 $diff = (int) $item->difference;
 
                 if ($diff === 0) {
@@ -296,6 +311,19 @@ class PosInventoryService
 
             return $count->refresh();
         });
+    }
+
+    public function assertCountCanBeOperated(PosStockCount $count, User $user): void
+    {
+        $count->loadMissing('items.product');
+
+        foreach ($count->items as $item) {
+            if ($item->product === null) {
+                continue;
+            }
+
+            $this->productAccess->assertCanOperate($user, $item->product);
+        }
     }
 
     public function sellStock(PosProduct $product, PosInventoryLocation $location, int $quantity, string $sourceType, int $sourceId, ?string $referenceNo = null, ?string $movementType = 'SALE'): PosStockMovement

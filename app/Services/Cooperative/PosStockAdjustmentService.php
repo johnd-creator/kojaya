@@ -4,13 +4,20 @@ namespace App\Services\Cooperative;
 
 use App\Models\PosProduct;
 use App\Models\PosStockMovement;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PosStockAdjustmentService
 {
-    public function adjust(PosProduct $product, string $movementType, int $quantity, ?string $notes = null): PosStockMovement
+    public function __construct(private readonly PosProductAccessService $productAccess) {}
+
+    public function adjust(PosProduct $product, string $movementType, int $quantity, ?string $notes = null, ?User $user = null): PosStockMovement
     {
+        if ($user !== null) {
+            $this->productAccess->assertCanOperate($user, $product);
+        }
+
         return DB::transaction(function () use ($product, $movementType, $quantity, $notes): PosStockMovement {
             $product = PosProduct::query()->lockForUpdate()->findOrFail($product->id);
             $stockBefore = $product->stock;

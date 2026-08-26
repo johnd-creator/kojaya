@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosProduct;
 use App\Models\PosReturn;
 use App\Models\PosTransaction;
@@ -19,10 +20,13 @@ class PosSprint6ReportFiltersTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private Organization $organization;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
+        $this->organization = Organization::factory()->create();
     }
 
     public function test_returns_count_and_total_apply_cashier_filter(): void
@@ -30,6 +34,7 @@ class PosSprint6ReportFiltersTest extends TestCase
         $cashierA = $this->cashier('cashier-a');
         $cashierB = $this->cashier('cashier-b');
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 100,
@@ -54,9 +59,10 @@ class PosSprint6ReportFiltersTest extends TestCase
     public function test_returns_count_and_total_apply_member_filter(): void
     {
         $cashier = $this->cashier('cashier');
-        $memberA = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
-        $memberB = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
+        $memberA = CooperativeMember::factory()->active()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000]);
+        $memberB = CooperativeMember::factory()->active()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 100,
@@ -81,8 +87,9 @@ class PosSprint6ReportFiltersTest extends TestCase
     public function test_returns_apply_payment_filter(): void
     {
         $cashier = $this->cashier('cashier');
-        $member = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 100,
@@ -109,11 +116,13 @@ class PosSprint6ReportFiltersTest extends TestCase
         $cashierA = $this->cashier('cashier-A');
         $cashierB = $this->cashier('cashier-B');
         $productA = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 100,
         ]);
         $productB = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 2000,
             'sale_price' => 9000,
             'stock' => 100,
@@ -140,9 +149,10 @@ class PosSprint6ReportFiltersTest extends TestCase
     public function test_member_filter_excludes_other_member_returns(): void
     {
         $cashier = $this->cashier('cashier');
-        $memberA = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
-        $memberB = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
+        $memberA = CooperativeMember::factory()->active()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000]);
+        $memberB = CooperativeMember::factory()->active()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 100,
@@ -172,6 +182,7 @@ class PosSprint6ReportFiltersTest extends TestCase
         $user->givePermissionTo('view_pos_reports');
 
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -248,7 +259,7 @@ class PosSprint6ReportFiltersTest extends TestCase
 
     private function cashier(string $name): User
     {
-        $user = User::factory()->create(['name' => $name]);
+        $user = User::factory()->create(['name' => $name, 'organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports', 'manage_pos_products']);
 
         return $user;

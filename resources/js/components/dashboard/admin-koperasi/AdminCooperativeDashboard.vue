@@ -20,11 +20,11 @@ import {
 import { computed } from "vue";
 import type { Component } from "vue";
 import CollectionDonut from "@/components/dashboard/CollectionDonut.vue";
-import EmptyState from "@/components/EmptyState.vue";
 import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
-import PageContainer from "@/components/PageContainer.vue";
 import ProgressBar from "@/components/dashboard/ProgressBar.vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import EmptyState from "@/components/EmptyState.vue";
+import PageContainer from "@/components/PageContainer.vue";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
 import { hasAnyPermission } from "@/lib/role-experience";
@@ -34,8 +34,8 @@ import { index as membersIndex } from "@/routes/cooperative/members";
 import { index as resignationsIndex } from "@/routes/cooperative/members/resignations";
 import { index as paymentsIndex } from "@/routes/cooperative/payments";
 import { index as posIndex } from "@/routes/cooperative/pos";
-import { index as posProductsIndex } from "@/routes/cooperative/pos-products";
 import { index as posReportsIndex } from "@/routes/cooperative/pos/reports";
+import { index as posProductsIndex } from "@/routes/cooperative/pos-products";
 import type { AdminCooperativeDashboardPayload } from "@/types/dashboard";
 
 type Tone = "emerald" | "amber" | "rose" | "sky" | "violet";
@@ -47,7 +47,6 @@ type Kpi = {
   href: string;
   icon: Component;
   tone: Tone;
-  sparkline: number[];
   permissions: string[];
 };
 
@@ -93,18 +92,6 @@ const formatUpdatedAt = (value: string): string =>
       }).format(new Date(value))
     : "Data diperbarui saat halaman dibuka";
 
-const sparklineFor = (value: number): number[] => {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 7.5);
-
-  return Array.from({ length: 8 }, (_, index) => {
-    const progress = index / 7;
-    const variation = (Math.sin((safeValue + index) * 1.7) + 1) / 2;
-
-    return Math.max(0.05, base * (0.35 + progress * 0.85) + variation * 0.12);
-  });
-};
-
 const reportHref = computed(() =>
   hasAnyPermission(permissions.value, ["view_pos_reports"])
     ? posReportsIndex().url
@@ -126,7 +113,6 @@ const kpis = computed<Kpi[]>(() => {
       href: posIndex().url,
       icon: Store,
       tone: "emerald",
-      sparkline: sparklineFor(data.summary.today_sales),
       permissions: ["access_cooperative_pos"],
     },
     {
@@ -136,7 +122,6 @@ const kpis = computed<Kpi[]>(() => {
       href: paymentsIndex({ query: { status: "PENDING" } }).url,
       icon: CreditCard,
       tone: "amber",
-      sparkline: sparklineFor(data.summary.pending_payments),
       permissions: ["manage_cooperative_payment"],
     },
     {
@@ -146,7 +131,6 @@ const kpis = computed<Kpi[]>(() => {
       href: duesIndex({ query: { period_scope: "all", status: "OPEN" } }).url,
       icon: ReceiptText,
       tone: "rose",
-      sparkline: sparklineFor(data.work_queue.unpaid_dues),
       permissions: ["manage_cooperative_dues"],
     },
     {
@@ -156,7 +140,6 @@ const kpis = computed<Kpi[]>(() => {
       href: posProductsIndex({ query: { low_stock: 1 } }).url,
       icon: Boxes,
       tone: "sky",
-      sparkline: sparklineFor(data.summary.low_stock_products),
       permissions: ["manage_pos_products"],
     },
   ].filter((kpi) => hasAnyPermission(permissions.value, kpi.permissions));
@@ -342,7 +325,6 @@ const collectionStats = computed(() => {
         :icon="kpi.icon"
         :tone="kpi.tone"
         :href="kpi.href"
-        :sparkline-points="kpi.sparkline"
         :trend="null"
       />
     </section>

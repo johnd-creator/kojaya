@@ -21,6 +21,7 @@ class PosReturnService
         private readonly PosClosingGuard $closingGuard,
         private readonly PosJournalPostingService $journal,
         private readonly MemberStoreCheckoutService $storeCheckout,
+        private readonly PosProductAccessService $productAccess,
     ) {}
 
     /**
@@ -98,6 +99,9 @@ class PosReturnService
                 $location = $this->inventory->resolveLocationFor($transaction->pos_cashier_shift_id);
 
                 $product = PosProduct::query()->lockForUpdate()->findOrFail($transactionItem->pos_product_id);
+                if ($cashier !== null) {
+                    $this->productAccess->assertCanOperate($cashier, $product);
+                }
 
                 $this->inventory->restoreSaleStock(
                     product: $product,

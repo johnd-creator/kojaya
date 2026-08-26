@@ -252,9 +252,16 @@ class CooperativeDashboardService
         }
 
         $query->where(function (Builder $query) use ($organizationId): void {
-            $query
-                ->whereHas('cashier', fn (Builder $cashier): Builder => $cashier->where('organization_id', $organizationId))
-                ->orWhereHas('member', fn (Builder $member): Builder => $member->where('organization_id', $organizationId));
+            $query->where(function (Builder $query) use ($organizationId): void {
+                $query->whereHas('cashier', fn (Builder $cashier): Builder => $cashier->where('organization_id', $organizationId))
+                    ->where(function (Builder $query) use ($organizationId): void {
+                        $query->whereNull('cooperative_member_id')
+                            ->orWhereHas('member', fn (Builder $member): Builder => $member->where('organization_id', $organizationId));
+                    });
+            })->orWhere(function (Builder $query) use ($organizationId): void {
+                $query->whereNull('cashier_id')
+                    ->whereHas('member', fn (Builder $member): Builder => $member->where('organization_id', $organizationId));
+            });
         });
     }
 
@@ -264,11 +271,7 @@ class CooperativeDashboardService
             return;
         }
 
-        $query->where(function (Builder $query) use ($organizationId): void {
-            $query
-                ->whereNull('organization_id')
-                ->orWhere('organization_id', $organizationId);
-        });
+        $query->where('organization_id', $organizationId);
     }
 
     /**

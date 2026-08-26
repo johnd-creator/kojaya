@@ -7,18 +7,32 @@ use App\Http\Requests\Cooperative\StorePosStockCountRequest;
 use App\Models\PosInventoryLocation;
 use App\Models\PosStockCount;
 use App\Services\Cooperative\PosInventoryService;
+use App\Services\Cooperative\PosProductAccessService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PosInventoryCountController extends Controller
 {
-    public function __construct(private PosInventoryService $service) {}
+    public function __construct(
+        private PosInventoryService $service,
+        private PosProductAccessService $productAccess,
+    ) {}
 
     public function index(): Response
     {
+        $user = request()->user();
         $counts = PosStockCount::query()
-            ->with(['location', 'requester', 'approver', 'items.product'])
+            ->with([
+                'location',
+                'requester',
+                'approver',
+                'items' => fn (Builder $query): Builder => $query
+                    ->whereHas('product', fn (Builder $productQuery): Builder => $this->productAccess->scopeVisibleTo($productQuery, $user))
+                    ->with('product'),
+            ])
+            ->whereHas('items.product', fn (Builder $query): Builder => $this->productAccess->scopeVisibleTo($query, $user))
             ->orderByDesc('counted_at')
             ->orderByDesc('id')
             ->paginate(20);
@@ -50,6 +64,7 @@ class PosInventoryCountController extends Controller
 
     public function show(PosStockCount $count): Response
     {
+        $this->service->assertCountCanBeOperated($count, request()->user());
         $count->load(['items.product', 'location', 'requester', 'approver']);
 
         return Inertia::render('Cooperative/Inventory/Counts/Show', [
@@ -59,6 +74,7 @@ class PosInventoryCountController extends Controller
 
     public function submit(PosStockCount $count): RedirectResponse
     {
+        $this->service->assertCountCanBeOperated($count, request()->user());
         $this->service->submitForReview($count);
 
         return back()->with('success', 'Stock opname dikirim untuk review.');

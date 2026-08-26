@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosInventoryLocation;
 use App\Models\PosInventoryStock;
 use App\Models\PosProduct;
@@ -19,10 +20,13 @@ class PosPhase3InventoryTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private Organization $organization;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
+        $this->organization = Organization::factory()->create();
     }
 
     public function test_default_location_is_ensured_on_first_access(): void
@@ -40,7 +44,7 @@ class PosPhase3InventoryTest extends TestCase
     public function test_receipt_increases_stock_at_location_and_records_movement(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 0,
@@ -83,7 +87,7 @@ class PosPhase3InventoryTest extends TestCase
             'name' => 'Gudang',
             'is_active' => true,
         ]);
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 20,
@@ -116,7 +120,7 @@ class PosPhase3InventoryTest extends TestCase
             'name' => 'Gudang',
             'is_active' => true,
         ]);
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 2,
@@ -139,7 +143,7 @@ class PosPhase3InventoryTest extends TestCase
         $cashier = $this->cashier();
         $service = app(\App\Services\Cooperative\PosInventoryService::class);
         $location = $service->ensureDefaultLocation();
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -166,7 +170,7 @@ class PosPhase3InventoryTest extends TestCase
         $supervisor = $this->supervisor();
         $service = app(\App\Services\Cooperative\PosInventoryService::class);
         $location = $service->ensureDefaultLocation();
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -194,7 +198,7 @@ class PosPhase3InventoryTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'manage_pos_products']);
 
         return $user;
@@ -202,9 +206,20 @@ class PosPhase3InventoryTest extends TestCase
 
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'manage_pos_products']);
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function product(array $attributes = []): PosProduct
+    {
+        return PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
+            ...$attributes,
+        ]);
     }
 }

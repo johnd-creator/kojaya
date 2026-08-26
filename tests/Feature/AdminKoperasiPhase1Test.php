@@ -154,6 +154,9 @@ class AdminKoperasiPhase1Test extends TestCase
         PosProduct::factory()->lowStock()->create([
             'organization_id' => $otherOrganization->id,
         ]);
+        PosProduct::factory()->lowStock()->create([
+            'organization_id' => null,
+        ]);
 
         PosTransaction::query()->create([
             'transaction_no' => 'POS-ORG-A-001',
@@ -174,6 +177,17 @@ class AdminKoperasiPhase1Test extends TestCase
             'discount_amount' => 0,
             'total_amount' => 900000,
             'gross_profit' => 300000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransaction::query()->create([
+            'transaction_no' => 'POS-MISMATCH-001',
+            'cooperative_member_id' => $otherMember->id,
+            'cashier_id' => $admin->id,
+            'subtotal' => 777000,
+            'discount_amount' => 0,
+            'total_amount' => 777000,
+            'gross_profit' => 200000,
             'status' => 'COMPLETED',
             'sold_at' => now(),
         ]);

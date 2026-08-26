@@ -4,6 +4,7 @@ namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosProduct;
 use App\Models\PosReturn;
 use App\Models\PosTransaction;
@@ -20,16 +21,20 @@ class PosSprint5JournalConsistencyTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private Organization $organization;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
+        $this->organization = Organization::factory()->create();
     }
 
     public function test_cash_sale_to_non_member_posts_sale_and_cogs(): void
     {
         $cashier = $this->cashier();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -60,8 +65,12 @@ class PosSprint5JournalConsistencyTest extends TestCase
     public function test_member_credit_sale_posts_three_entries(): void
     {
         $cashier = $this->cashier();
-        $member = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'credit_limit' => 100000,
+        ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1500,
             'sale_price' => 6000,
             'stock' => 5,
@@ -98,8 +107,12 @@ class PosSprint5JournalConsistencyTest extends TestCase
     public function test_return_posts_credit_to_member_ledger_and_contra_revenue(): void
     {
         $cashier = $this->cashier();
-        $member = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'credit_limit' => 100000,
+        ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -138,6 +151,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -173,8 +187,12 @@ class PosSprint5JournalConsistencyTest extends TestCase
     {
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
-        $member = CooperativeMember::factory()->active()->create(['credit_limit' => 100000]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'credit_limit' => 100000,
+        ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -221,6 +239,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -249,6 +268,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
     {
         $cashier = $this->cashier();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -274,6 +294,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
     {
         $cashier = $this->cashier();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -300,6 +321,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
     {
         $cashier = $this->cashier();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'cost_price' => 1000,
             'sale_price' => 0,
             'stock' => 5,
@@ -318,7 +340,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports', 'manage_pos_products']);
 
         return $user;
@@ -326,7 +348,7 @@ class PosSprint5JournalConsistencyTest extends TestCase
 
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;

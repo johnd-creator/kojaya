@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CooperativeMember;
 use App\Models\MemberPaymentIntent;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Services\Cooperative\MemberOrderIntentService;
@@ -15,6 +16,8 @@ use Tests\TestCase;
 class PaymentReservationStateMachineTest extends TestCase
 {
     use DatabaseMigrations;
+
+    private Organization $organization;
 
     protected function setUp(): void
     {
@@ -423,6 +426,7 @@ class PaymentReservationStateMachineTest extends TestCase
         ]);
 
         return PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'name' => $name.uniqid(),
             'cost_price' => $price * 0.5,
@@ -436,8 +440,10 @@ class PaymentReservationStateMachineTest extends TestCase
      */
     private function actingMember(array $abilities): CooperativeMember
     {
-        $user = \App\Models\User::factory()->create();
+        $this->organization = Organization::factory()->create();
+        $user = \App\Models\User::factory()->create(['organization_id' => $this->organization->id]);
         $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
             'user_id' => $user->id,
         ]);
 

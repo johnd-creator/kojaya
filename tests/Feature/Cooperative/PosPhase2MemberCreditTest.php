@@ -33,6 +33,7 @@ class PosPhase2MemberCreditTest extends TestCase
             'credit_limit' => 0,
         ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -61,6 +62,7 @@ class PosPhase2MemberCreditTest extends TestCase
             'credit_limit' => 100000,
         ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -94,6 +96,7 @@ class PosPhase2MemberCreditTest extends TestCase
             'outstanding_balance' => 8000,
         ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -161,6 +164,7 @@ class PosPhase2MemberCreditTest extends TestCase
             'credit_limit' => 100000,
         ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,

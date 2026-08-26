@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosSyncRequest;
@@ -41,6 +42,7 @@ class PosPhase6OfflineSyncTest extends TestCase
         $user = $this->cashier();
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -75,6 +77,7 @@ class PosPhase6OfflineSyncTest extends TestCase
         $user = $this->cashier();
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -130,11 +133,13 @@ class PosPhase6OfflineSyncTest extends TestCase
         $user = $this->cashier();
         $category = PosCategory::factory()->create();
         PosProduct::factory()->count(3)->create([
+            'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,
             'is_active' => true,
             'is_discontinued' => false,
         ]);
         PosProduct::factory()->create([
+            'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,
             'is_active' => false,
         ]);
@@ -146,7 +151,7 @@ class PosPhase6OfflineSyncTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo('access_cooperative_pos');
 
         return $user;

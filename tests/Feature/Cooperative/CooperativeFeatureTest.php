@@ -1693,6 +1693,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Kasir Koperasi');
         $member = $this->member(['status' => 'PENDING', 'credit_limit' => 100000]);
+        $user->update(['organization_id' => $member->organization_id]);
         $product = $this->product(['stock' => 5, 'sale_price' => 10000]);
 
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
@@ -1729,6 +1730,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Kasir Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $product = $this->product(['stock' => 5, 'cost_price' => 6000, 'sale_price' => 10000]);
 
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
@@ -1775,6 +1777,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Kasir Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $product = $this->product(['stock' => 5, 'cost_price' => 6000, 'sale_price' => 10000]);
 
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
@@ -1809,6 +1812,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Kasir Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $product = $this->product([
             'stock' => 5,
             'cost_price' => 220000,
@@ -1850,6 +1854,7 @@ class CooperativeFeatureTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Kasir Koperasi');
         $member = $this->member(['status' => 'ACTIVE']);
+        $user->update(['organization_id' => $member->organization_id]);
         $product = $this->product([
             'stock' => 5,
             'cost_price' => 220000,
@@ -1961,6 +1966,7 @@ class CooperativeFeatureTest extends TestCase
         $user->assignRole('Kasir Koperasi');
         $firstMember = $this->member(['member_no' => 'KOP-2026-00003', 'status' => 'ACTIVE']);
         $secondMember = $this->member(['member_no' => 'KOP-2026-00004', 'status' => 'ACTIVE']);
+        $user->update(['organization_id' => $firstMember->organization_id]);
         $firstProduct = $this->product(['stock' => 5, 'cost_price' => 5000, 'sale_price' => 10000]);
         $secondProduct = $this->product(['stock' => 5, 'cost_price' => 5000, 'sale_price' => 20000]);
 
@@ -2144,6 +2150,7 @@ class CooperativeFeatureTest extends TestCase
         ]);
 
         return PosProduct::query()->create([
+            'organization_id' => Organization::query()->where('code', 'KOP-001')->value('id'),
             'pos_category_id' => $category->id,
             'sku' => 'SKU-'.fake()->unique()->numberBetween(1, 9999),
             'name' => fake()->word(),

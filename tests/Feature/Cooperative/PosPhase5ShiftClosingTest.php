@@ -4,6 +4,7 @@ namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosAuditLog;
 use App\Models\PosCashierShift;
 use App\Models\PosCategory;
@@ -49,7 +50,7 @@ class PosPhase5ShiftClosingTest extends TestCase
     {
         $cashier = $this->cashier();
         $category = PosCategory::factory()->create();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -92,11 +93,12 @@ class PosPhase5ShiftClosingTest extends TestCase
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $supervisorMember = CooperativeMember::factory()->create([
+            'organization_id' => $supervisor->organization_id,
             'user_id' => $supervisor->id,
             'status' => 'ACTIVE',
         ]);
         $category = PosCategory::factory()->create();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -142,9 +144,13 @@ class PosPhase5ShiftClosingTest extends TestCase
     public function test_journal_posting_creates_sale_and_cogs_entries(): void
     {
         $cashier = $this->cashier();
-        $member = CooperativeMember::factory()->create(['credit_limit' => 50000, 'status' => 'ACTIVE']);
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
+            'credit_limit' => 50000,
+            'status' => 'ACTIVE',
+        ]);
         $category = PosCategory::factory()->create();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -175,9 +181,13 @@ class PosPhase5ShiftClosingTest extends TestCase
     public function test_journal_member_credit_entry(): void
     {
         $cashier = $this->cashier();
-        $member = CooperativeMember::factory()->create(['credit_limit' => 50000, 'status' => 'ACTIVE']);
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $cashier->organization_id,
+            'credit_limit' => 50000,
+            'status' => 'ACTIVE',
+        ]);
         $category = PosCategory::factory()->create();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -234,7 +244,7 @@ class PosPhase5ShiftClosingTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo('access_cooperative_pos');
 
         return $user;
@@ -242,9 +252,20 @@ class PosPhase5ShiftClosingTest extends TestCase
 
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'manage_pos_products', 'view_pos_reports']);
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function product(User $cashier, array $attributes = []): PosProduct
+    {
+        return PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
+            ...$attributes,
+        ]);
     }
 }

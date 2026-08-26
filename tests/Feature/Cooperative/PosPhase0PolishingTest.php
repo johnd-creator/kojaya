@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -26,7 +27,9 @@ class PosPhase0PolishingTest extends TestCase
     public function test_pos_product_can_be_created_with_brand_variant_unit_and_image(): void
     {
         Storage::fake('public');
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => Organization::factory()->create()->id,
+        ]);
         $user->assignRole('System Admin');
         $category = PosCategory::factory()->create();
 

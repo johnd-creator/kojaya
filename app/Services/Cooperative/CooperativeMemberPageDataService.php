@@ -16,6 +16,7 @@ class CooperativeMemberPageDataService
     {
         return [
             ...$this->base($member),
+            'organization_name' => $member->relationLoaded('organization') ? $member->organization?->name : null,
             'saving_balance' => (float) ($member->saving_balance ?? 0),
             'credit_balance' => (float) ($member->credit_balance ?? 0),
             'identity_number' => $this->mask($member->identity_number),

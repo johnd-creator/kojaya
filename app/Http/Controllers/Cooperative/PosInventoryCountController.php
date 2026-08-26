@@ -9,6 +9,7 @@ use App\Models\PosStockCount;
 use App\Services\Cooperative\PosInventoryService;
 use App\Services\Cooperative\PosProductAccessService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +29,7 @@ class PosInventoryCountController extends Controller
                 'location',
                 'requester',
                 'approver',
-                'items' => fn (Builder $query): Builder => $query
+                'items' => fn (Relation $query): Relation => $query
                     ->whereHas('product', fn (Builder $productQuery): Builder => $this->productAccess->scopeVisibleTo($productQuery, $user))
                     ->with('product'),
             ])

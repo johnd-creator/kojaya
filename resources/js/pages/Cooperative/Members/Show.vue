@@ -263,17 +263,6 @@ const invoiceTone = (status: string | null | undefined): Tone => {
   return "zinc";
 };
 
-function sparklineFor(value: number, points = 8): number[] {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 7.5);
-  const seed = Math.abs(Math.sin(safeValue * 12.9898) * 43758.5453);
-  return Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
-    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
-  });
-}
-
 const openReviewDialog = (action: "revision" | "reject"): void => {
   reviewAction.value = action;
   reviewNotes.value = "";
@@ -328,7 +317,6 @@ const kpiCards = computed(() => [
     icon: PiggyBank as Component,
     tone: "emerald" as Tone,
     href: showRoute(props.member.id).url,
-    sparklinePoints: sparklineFor(props.savingsSummary.total_balance),
     meta: "Akumulasi seluruh kategori simpanan",
   },
   {
@@ -337,7 +325,6 @@ const kpiCards = computed(() => [
     icon: WalletCards as Component,
     tone: "sky" as Tone,
     href: showRoute(props.member.id).url,
-    sparklinePoints: sparklineFor(props.savingsSummary.by_category?.POKOK ?? 0),
     meta: "Setoran awal keanggotaan",
   },
   {
@@ -346,7 +333,6 @@ const kpiCards = computed(() => [
     icon: Wallet as Component,
     tone: "violet" as Tone,
     href: showRoute(props.member.id).url,
-    sparklinePoints: sparklineFor(props.savingsSummary.by_category?.WAJIB ?? 0),
     meta: "Iuran rutin bulanan",
   },
   {
@@ -355,9 +341,6 @@ const kpiCards = computed(() => [
     icon: TrendingUp as Component,
     tone: "amber" as Tone,
     href: showRoute(props.member.id).url,
-    sparklinePoints: sparklineFor(
-      props.savingsSummary.by_category?.SUKARELA ?? 0,
-    ),
     meta: "Tabungan sukarela anggota",
   },
 ]);
@@ -569,7 +552,6 @@ const showJenis = computed(
           :icon="card.icon"
           :tone="card.tone"
           :href="card.href"
-          :sparkline-points="card.sparklinePoints"
         />
       </section>
 

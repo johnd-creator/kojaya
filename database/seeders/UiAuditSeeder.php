@@ -53,7 +53,7 @@ class UiAuditSeeder extends Seeder
         $users = $this->seedUsers($organizations['pusat']);
         $members = $this->seedMembers($organizations, $users);
         $this->seedStoreCredit($organizations, $users, $members);
-        $this->seedPos();
+        $this->seedPos($organizations['pusat']);
         $this->seedAdditionalFixtures($organizations, $users, $members);
         $this->seedCanonicalDuesInvoices($members);
     }
@@ -213,7 +213,7 @@ class UiAuditSeeder extends Seeder
         );
     }
 
-    private function seedPos(): void
+    private function seedPos(Organization $organization): void
     {
         $category = PosCategory::query()->updateOrCreate(['slug' => 'ui-audit-grocery'], ['name' => 'Audit Grocery', 'is_active' => true]);
         $products = [
@@ -226,7 +226,7 @@ class UiAuditSeeder extends Seeder
         foreach ($products as [$sku, $name, $salePrice, $stock, $minimumStock, $imagePath]) {
             PosProduct::query()->updateOrCreate(
                 ['sku' => $sku],
-                ['pos_category_id' => $category->id, 'barcode' => null, 'name' => $name, 'image_path' => $imagePath, 'brand' => 'Kojaya Audit', 'variant' => null, 'unit' => 'pcs', 'rack_location' => 'A1', 'cost_price' => max($salePrice - 5000, 0), 'sale_price' => $salePrice, 'stock' => $stock, 'minimum_stock' => $minimumStock, 'is_active' => true, 'is_discontinued' => false],
+                ['organization_id' => $organization->id, 'pos_category_id' => $category->id, 'barcode' => null, 'name' => $name, 'image_path' => $imagePath, 'brand' => 'Kojaya Audit', 'variant' => null, 'unit' => 'pcs', 'rack_location' => 'A1', 'cost_price' => max($salePrice - 5000, 0), 'sale_price' => $salePrice, 'stock' => $stock, 'minimum_stock' => $minimumStock, 'is_active' => true, 'is_discontinued' => false],
             );
         }
 

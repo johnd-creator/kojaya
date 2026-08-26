@@ -109,6 +109,48 @@ class PosProductOrganizationIsolationTest extends TestCase
         ]);
     }
 
+    public function test_global_user_without_target_organization_cannot_create_null_owned_product(): void
+    {
+        $globalUser = User::factory()->create(['organization_id' => null]);
+        $globalUser->assignRole('System Admin');
+        $category = \App\Models\PosCategory::factory()->create();
+
+        $this->actingAs($globalUser)
+            ->post(route('cooperative.pos-products.store'), [
+                'pos_category_id' => $category->id,
+                'sku' => 'GLOBAL-UNSCOPED-001',
+                'name' => 'Unscoped Product',
+                'sale_price' => 1500,
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('pos_products', [
+            'sku' => 'GLOBAL-UNSCOPED-001',
+        ]);
+    }
+
+    public function test_global_user_creates_in_the_existing_active_organization_context(): void
+    {
+        $globalUser = User::factory()->create(['organization_id' => null]);
+        $globalUser->assignRole('System Admin');
+        $category = \App\Models\PosCategory::factory()->create();
+
+        $this->actingAs($globalUser)
+            ->withSession(['active_organization_id' => $this->otherOrganization->id])
+            ->post(route('cooperative.pos-products.store'), [
+                'pos_category_id' => $category->id,
+                'sku' => 'GLOBAL-SCOPED-001',
+                'name' => 'Scoped Global Product',
+                'sale_price' => 1500,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('pos_products', [
+            'sku' => 'GLOBAL-SCOPED-001',
+            'organization_id' => $this->otherOrganization->id,
+        ]);
+    }
+
     public function test_pos_reports_only_expose_the_active_organization(): void
     {
         $this->admin->givePermissionTo('view_pos_reports');

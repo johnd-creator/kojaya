@@ -198,19 +198,6 @@ const contributionTypeStats = computed(() =>
   })),
 );
 
-function sparklineFor(value: number, points = 8): number[] {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 8);
-  const seed = Math.abs(Math.sin(safeValue * 7.913) * 32741.41);
-
-  return Array.from({ length: points }, (_, index) => {
-    const t = index / (points - 1);
-    const wave = (Math.sin((seed + index) * 1.35) + 1) / 2;
-
-    return Math.max(0.06, base * (0.4 + t * 0.75) + wave * 0.14);
-  });
-}
-
 const kpiCards = computed(() => [
   {
     label: "Total Simpanan",
@@ -219,7 +206,6 @@ const kpiCards = computed(() => [
     icon: Wallet as Component,
     tone: "emerald" as Tone,
     href: ledgerIndex().url,
-    sparklinePoints: sparklineFor(Number(props.summary.total_balance ?? 0)),
   },
   ...contributionTypeStats.value.map((stat) => ({
     label: stat.name,
@@ -233,7 +219,6 @@ const kpiCards = computed(() => [
         contribution_type_id: stat.id,
       },
     }).url,
-    sparklinePoints: sparklineFor(stat.rawValue),
   })),
   {
     label: "Belum Dikategorikan",
@@ -242,7 +227,6 @@ const kpiCards = computed(() => [
     icon: HelpCircle as Component,
     tone: "zinc" as Tone,
     href: ledgerIndex().url,
-    sparklinePoints: sparklineFor(Number(props.summary.uncategorized ?? 0)),
   },
 ]);
 
@@ -433,7 +417,6 @@ const memberNo = (entry: any) =>
           :icon="card.icon"
           :tone="card.tone"
           :href="card.href"
-          :sparkline-points="card.sparklinePoints"
         />
       </section>
 

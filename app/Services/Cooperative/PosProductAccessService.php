@@ -2,6 +2,7 @@
 
 namespace App\Services\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosProduct;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -35,11 +36,23 @@ class PosProductAccessService
         }
     }
 
-    public function assertCanCreate(User $user): void
+    public function assertCanCreate(User $user): string
     {
         if (! $this->isGlobalOperator($user)) {
-            $this->organizationIdFor($user);
+            return $this->organizationIdFor($user);
         }
+
+        $organizationId = session('active_organization_id') ?? $user->organization_id;
+
+        if ($organizationId === null || $organizationId === '') {
+            throw new AuthorizationException('An explicit target organization is required to create a POS product.');
+        }
+
+        if (! Organization::query()->whereKey($organizationId)->exists()) {
+            throw new AuthorizationException('The target organization is invalid.');
+        }
+
+        return (string) $organizationId;
     }
 
     private function isGlobalOperator(User $user): bool

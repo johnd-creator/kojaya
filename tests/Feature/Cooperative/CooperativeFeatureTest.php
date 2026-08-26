@@ -2008,7 +2008,9 @@ class CooperativeFeatureTest extends TestCase
     public function test_pos_category_and_product_can_be_managed(): void
     {
         $this->seed(RolePermissionSeeder::class);
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => Organization::factory()->create()->id,
+        ]);
         $user->assignRole('System Admin');
 
         $this->actingAs($user)->post(route('cooperative.pos-categories.store'), [

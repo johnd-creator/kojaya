@@ -42,10 +42,7 @@ import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
 import {
   Dialog,
@@ -259,25 +256,27 @@ const openEditDialog = (row: any): void => {
 
 const submitEditMember = (): void => {
   if (!editMemberId.value) return;
-  editMemberForm.transform((data) => ({
-    employee_id: data.employee_id || undefined,
-    no_anggota: data.no_anggota || undefined,
-    nama_anggota: data.nama_anggota,
-    name: data.name,
-    email: data.email || undefined,
-    no_telp: data.no_telp || undefined,
-    phone: data.phone || undefined,
-    jenis_anggota: data.jenis_anggota,
-    jenis_kelamin: data.jenis_kelamin,
-    kategori: data.kategori,
-    autodebet: data.autodebet,
-  })).put(update(editMemberId.value).url, {
-    preserveScroll: true,
-    onSuccess: () => {
-      editMemberDialogOpen.value = false;
-      editMemberId.value = null;
-    },
-  });
+  editMemberForm
+    .transform((data) => ({
+      employee_id: data.employee_id || undefined,
+      no_anggota: data.no_anggota || undefined,
+      nama_anggota: data.nama_anggota,
+      name: data.name,
+      email: data.email || undefined,
+      no_telp: data.no_telp || undefined,
+      phone: data.phone || undefined,
+      jenis_anggota: data.jenis_anggota,
+      jenis_kelamin: data.jenis_kelamin,
+      kategori: data.kategori,
+      autodebet: data.autodebet,
+    }))
+    .put(update(editMemberId.value).url, {
+      preserveScroll: true,
+      onSuccess: () => {
+        editMemberDialogOpen.value = false;
+        editMemberId.value = null;
+      },
+    });
 };
 const statusOptions = [
   { label: "Semua status", value: "" },
@@ -310,6 +309,7 @@ const { resetFilters } = useTableFilters(filters, {
 const columns = [
   { header: "Anggota", key: "nama_anggota", slot: "member" },
   { header: "No. Anggota", key: "no_anggota", slot: "memberNo" },
+  { header: "Organisasi", key: "organization_name", slot: "organization" },
   { header: "Status", key: "status", slot: "status" },
   { header: "Validasi", key: "validation_status", slot: "validationStatus" },
   { header: "Kategori", key: "kategori", slot: "kategori" },
@@ -458,10 +458,7 @@ const approveFinalAction = (row: any): void => {
   router.post(approveFinal(row.id).url, undefined, { preserveScroll: true });
 };
 
-const openReviewDialog = (
-  row: any,
-  action: "revision" | "reject",
-): void => {
+const openReviewDialog = (row: any, action: "revision" | "reject"): void => {
   reviewRowId.value = row.id;
   reviewAction.value = action;
   reviewNotes.value = "";
@@ -573,24 +570,16 @@ const clearFilter = (key: string): void => {
   (filters.value as Record<string, string>)[key] = "";
 };
 
-const stats = computed(() => props.stats ?? {
-  active: 0,
-  inactive: 0,
-  alb: 0,
-  pending_validation: 0,
-  rejected: 0,
-});
-
-function sparklineFor(value: number, points = 8): number[] {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 7.5);
-  const seed = Math.abs(Math.sin(safeValue * 12.9898) * 43758.5453);
-  return Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
-    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
-  });
-}
+const stats = computed(
+  () =>
+    props.stats ?? {
+      active: 0,
+      inactive: 0,
+      alb: 0,
+      pending_validation: 0,
+      rejected: 0,
+    },
+);
 
 const totalMembers = computed(
   () =>
@@ -608,7 +597,6 @@ const kpiCards = computed(() => [
     icon: UserCheck as Component,
     tone: "emerald" as Tone,
     href: index({ query: { status: "ACTIVE" } }).url,
-    sparklinePoints: sparklineFor(stats.value.active),
     meta: "Status keanggotaan aktif",
   },
   {
@@ -617,7 +605,6 @@ const kpiCards = computed(() => [
     icon: UserX as Component,
     tone: "zinc" as Tone,
     href: index({ query: { status: "INACTIVE" } }).url,
-    sparklinePoints: sparklineFor(stats.value.inactive),
     meta: "Belum aktif atau dinonaktifkan",
   },
   {
@@ -626,7 +613,6 @@ const kpiCards = computed(() => [
     icon: WalletCards as Component,
     tone: "violet" as Tone,
     href: index({ query: { kategori: "ALB" } }).url,
-    sparklinePoints: sparklineFor(stats.value.alb),
     meta: "Anggota Luar Biasa",
   },
   {
@@ -635,7 +621,6 @@ const kpiCards = computed(() => [
     icon: ClipboardCheck as Component,
     tone: "amber" as Tone,
     href: index({ query: { validation_status: "PENDING" } }).url,
-    sparklinePoints: sparklineFor(stats.value.pending_validation ?? 0),
     meta: "Verifikasi admin / final",
   },
   {
@@ -644,7 +629,6 @@ const kpiCards = computed(() => [
     icon: ShieldCheck as Component,
     tone: "rose" as Tone,
     href: index({ query: { validation_status: "REJECTED" } }).url,
-    sparklinePoints: sparklineFor(stats.value.rejected ?? 0),
     meta: "Pengajuan ditolak",
   },
 ]);
@@ -718,11 +702,7 @@ const kpiCards = computed(() => [
             Memuat statistik anggota koperasi.
           </div>
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Skeleton
-              v-for="i in 5"
-              :key="i"
-              class="h-36 rounded-2xl"
-            />
+            <Skeleton v-for="i in 5" :key="i" class="h-36 rounded-2xl" />
           </div>
         </template>
 
@@ -739,7 +719,6 @@ const kpiCards = computed(() => [
             :icon="card.icon"
             :tone="card.tone"
             :href="card.href"
-            :sparkline-points="card.sparklinePoints"
           />
         </section>
       </Deferred>
@@ -768,7 +747,9 @@ const kpiCards = computed(() => [
               </p>
             </div>
           </div>
-          <div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+          <div
+            class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3"
+          >
             <div class="relative w-full sm:max-w-xs">
               <Search
                 class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
@@ -896,6 +877,17 @@ const kpiCards = computed(() => [
               </Link>
             </template>
 
+            <template #organization="{ row }">
+              <span
+                v-if="row.organization_name"
+                class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60"
+              >
+                <Building2 class="size-3" />
+                {{ row.organization_name }}
+              </span>
+              <span v-else class="text-xs text-zinc-400">-</span>
+            </template>
+
             <template #status="{ row }">
               <StatusPill
                 :tone="memberStatusToTone(row.status)"
@@ -946,9 +938,7 @@ const kpiCards = computed(() => [
             <template #actions="{ row }">
               <div class="flex items-center justify-end gap-1.5">
                 <Button
-                  v-if="
-                    canVerifyMember && isAdminVerificationReady(row)
-                  "
+                  v-if="canVerifyMember && isAdminVerificationReady(row)"
                   size="sm"
                   variant="default"
                   class="bg-emerald-700 hover:bg-emerald-800"
@@ -1003,7 +993,10 @@ const kpiCards = computed(() => [
                         <PowerOff class="mr-2 size-4" />
                         Nonaktifkan
                       </DropdownMenuItem>
-                      <DropdownMenuItem v-else @click="router.post(activate(row.id).url)">
+                      <DropdownMenuItem
+                        v-else
+                        @click="router.post(activate(row.id).url)"
+                      >
                         <Power class="mr-2 size-4 text-emerald-600" />
                         Aktifkan
                       </DropdownMenuItem>
@@ -1079,9 +1072,7 @@ const kpiCards = computed(() => [
             <div>
               <DialogTitle>
                 {{
-                  reviewAction === "reject"
-                    ? "Tolak anggota"
-                    : "Minta revisi"
+                  reviewAction === "reject" ? "Tolak anggota" : "Minta revisi"
                 }}
               </DialogTitle>
               <DialogDescription>
@@ -1121,9 +1112,7 @@ const kpiCards = computed(() => [
             :disabled="reviewNotes.trim().length < 5 || reviewProcessing"
             @click="submitReview"
           >
-            {{
-              reviewAction === "reject" ? "Tolak anggota" : "Kirim revisi"
-            }}
+            {{ reviewAction === "reject" ? "Tolak anggota" : "Kirim revisi" }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1152,7 +1141,9 @@ const kpiCards = computed(() => [
         <form class="space-y-6" @submit.prevent="submitCreateMember">
           <!-- Identitas -->
           <section class="space-y-3">
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <header
+              class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               <IdCard class="size-4 text-emerald-600" />
               Identitas
             </header>
@@ -1216,7 +1207,9 @@ const kpiCards = computed(() => [
 
           <!-- Keanggotaan -->
           <section class="space-y-3">
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <header
+              class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               <Building2 class="size-4 text-sky-600" />
               Keanggotaan
             </header>
@@ -1274,7 +1267,9 @@ const kpiCards = computed(() => [
 
           <!-- Pembayaran -->
           <section class="space-y-3">
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <header
+              class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               <Banknote class="size-4 text-violet-600" />
               Pembayaran
             </header>
@@ -1364,7 +1359,9 @@ const kpiCards = computed(() => [
         <form class="space-y-6" @submit.prevent="submitEditMember">
           <!-- Identitas -->
           <section class="space-y-3">
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <header
+              class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               <IdCard class="size-4 text-emerald-600" />
               Identitas
             </header>
@@ -1417,7 +1414,9 @@ const kpiCards = computed(() => [
 
           <!-- Keanggotaan -->
           <section class="space-y-3">
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <header
+              class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               <Building2 class="size-4 text-sky-600" />
               Keanggotaan
             </header>
@@ -1480,7 +1479,9 @@ const kpiCards = computed(() => [
 
           <!-- Pembayaran -->
           <section class="space-y-3">
-            <header class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <header
+              class="flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+            >
               <Banknote class="size-4 text-violet-600" />
               Pembayaran
             </header>
@@ -1502,7 +1503,6 @@ const kpiCards = computed(() => [
                 </select>
                 <InputError :message="editMemberForm.errors.autodebet" />
               </div>
-
             </div>
           </section>
 

@@ -184,9 +184,11 @@ class PosPhase0PolishingTest extends TestCase
 
     public function test_successful_cash_transaction_records_change(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -259,11 +261,13 @@ class PosPhase0PolishingTest extends TestCase
 
     public function test_transaction_history_filters_by_member_cashier_method(): void
     {
-        $cashierA = User::factory()->create(['name' => 'Kasir A']);
-        $cashierB = User::factory()->create(['name' => 'Kasir B']);
+        $organization = Organization::factory()->create();
+        $cashierA = User::factory()->create(['name' => 'Kasir A', 'organization_id' => $organization->id]);
+        $cashierB = User::factory()->create(['name' => 'Kasir B', 'organization_id' => $organization->id]);
         $cashierA->givePermissionTo('access_cooperative_pos');
         $cashierB->givePermissionTo('access_cooperative_pos');
         $product = PosProduct::factory()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 100,

@@ -383,7 +383,7 @@ const columns = computed(() => [
     header: "Tanggal",
     key: "paid_at",
     slot: "paid_at",
-    width: props.canApprovePayments ? "13%" : "14%",
+    width: props.canApprovePayments ? "12%" : "13%",
     sortable: true,
     sortKey: "paid_at",
   },
@@ -391,7 +391,7 @@ const columns = computed(() => [
     header: "Anggota",
     key: "member.name",
     slot: "member",
-    width: props.canApprovePayments ? "13%" : "17%",
+    width: props.canApprovePayments ? "18%" : "18%",
   },
   {
     header: "Jenis Simpanan",
@@ -403,13 +403,13 @@ const columns = computed(() => [
     header: "Metode",
     key: "payment_method",
     slot: "method",
-    width: props.canApprovePayments ? "9%" : "12%",
+    width: props.canApprovePayments ? "12%" : "12%",
   },
   {
     header: "Status",
     key: "status",
     slot: "status",
-    width: props.canApprovePayments ? "12%" : "14%",
+    width: props.canApprovePayments ? "11%" : "12%",
     sortable: true,
     sortKey: "status",
   },
@@ -417,14 +417,14 @@ const columns = computed(() => [
     header: "Keterangan",
     key: "notes",
     slot: "notes",
-    width: props.canApprovePayments ? "12%" : "19%",
+    width: props.canApprovePayments ? "14%" : "18%",
   },
   {
     header: "Nominal",
     key: "amount",
     slot: "amount",
     align: "right" as const,
-    width: props.canApprovePayments ? "12%" : "9%",
+    width: props.canApprovePayments ? "11%" : "10%",
     sortable: true,
     sortKey: "amount",
   },
@@ -435,7 +435,7 @@ const columns = computed(() => [
           key: "actions",
           slot: "actions",
           align: "right" as const,
-          width: "9%",
+          width: "8%",
         },
       ]
     : []),
@@ -790,7 +790,7 @@ const columns = computed(() => [
             />
             <CardContent class="px-0 pb-0">
               <form
-                class="grid min-w-0 gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800/70"
+                class="grid min-w-0 gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1.35fr)_minmax(9.5rem,1fr)_minmax(9.5rem,1fr)_minmax(10.5rem,1fr)] dark:border-zinc-800/70"
                 @submit.prevent="applyFilters"
               >
                 <div class="space-y-1.5 sm:col-span-2 xl:col-span-1">
@@ -798,7 +798,7 @@ const columns = computed(() => [
                   <Input
                     id="payment-filter-search"
                     v-model="filterSearch"
-                    placeholder="Nama atau nomor anggota"
+                    placeholder="Cari nama/no. anggota"
                   />
                 </div>
                 <div class="space-y-1.5">
@@ -934,7 +934,7 @@ const columns = computed(() => [
 
                 <template #notes="{ value }">
                   <span
-                    class="block max-w-[10rem] truncate text-xs text-zinc-600 dark:text-zinc-400"
+                    class="block max-w-[12rem] truncate text-xs text-zinc-600 dark:text-zinc-400"
                     :title="value || ''"
                   >
                     {{ value || "-" }}

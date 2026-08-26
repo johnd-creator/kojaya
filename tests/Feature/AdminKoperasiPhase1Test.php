@@ -134,6 +134,30 @@ class AdminKoperasiPhase1Test extends TestCase
             );
     }
 
+    public function test_admin_dashboard_uses_neutral_collection_state_when_period_has_no_dues(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->loadDeferredProps('dashboard', fn (Assert $page) => $page
+                    ->where('dashboard.workspace', 'admin-koperasi')
+                    ->where('dashboard.collections.total_due', 0)
+                    ->where('dashboard.collections.paid', 0)
+                    ->where('dashboard.collections.outstanding', 0)
+                    ->where('dashboard.collections.collection_rate', 0)
+                )
+            );
+    }
+
     public function test_admin_dashboard_scopes_pos_and_inventory_metrics_to_organization(): void
     {
         $organization = Organization::factory()->create();

@@ -103,10 +103,12 @@ const props = defineProps<{
     autodebet: Array<{ value: string; label: string }>;
   };
   stats?: {
+    total: number;
     active: number;
     inactive: number;
     alb: number;
     pending_validation?: number;
+    revision?: number;
     rejected?: number;
   };
 }>();
@@ -573,22 +575,17 @@ const clearFilter = (key: string): void => {
 const stats = computed(
   () =>
     props.stats ?? {
+      total: 0,
       active: 0,
       inactive: 0,
       alb: 0,
       pending_validation: 0,
+      revision: 0,
       rejected: 0,
     },
 );
 
-const totalMembers = computed(
-  () =>
-    stats.value.active +
-    stats.value.inactive +
-    stats.value.alb +
-    (stats.value.pending_validation ?? 0) +
-    (stats.value.rejected ?? 0),
-);
+const totalMembers = computed(() => stats.value.total);
 
 const kpiCards = computed(() => [
   {
@@ -616,12 +613,12 @@ const kpiCards = computed(() => [
     meta: "Anggota Luar Biasa",
   },
   {
-    label: "Menunggu Validasi",
-    value: stats.value.pending_validation ?? 0,
+    label: "Perlu Tindak Lanjut",
+    value: (stats.value.pending_validation ?? 0) + (stats.value.revision ?? 0),
     icon: ClipboardCheck as Component,
     tone: "amber" as Tone,
-    href: index({ query: { validation_status: "PENDING" } }).url,
-    meta: "Verifikasi admin / final",
+    href: index().url,
+    meta: `${stats.value.pending_validation ?? 0} menunggu approval · ${stats.value.revision ?? 0} perlu revisi`,
   },
   {
     label: "Ditolak",
@@ -728,7 +725,7 @@ const kpiCards = computed(() => [
         class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
         <div
-          class="flex flex-col gap-3 border-b border-zinc-200/70 px-5 py-4 lg:flex-row lg:items-center lg:justify-between dark:border-zinc-800/70"
+          class="flex flex-col gap-3 border-b border-zinc-200/70 px-5 py-4 lg:flex-row lg:items-center lg:justify-between xl:flex-col xl:items-stretch dark:border-zinc-800/70"
         >
           <div class="flex items-start gap-3">
             <span
@@ -748,9 +745,9 @@ const kpiCards = computed(() => [
             </div>
           </div>
           <div
-            class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3"
+            class="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start sm:gap-3"
           >
-            <div class="relative w-full sm:max-w-xs">
+            <div class="relative w-full sm:max-w-xs sm:grow">
               <Search
                 class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
                 aria-hidden="true"
@@ -767,25 +764,25 @@ const kpiCards = computed(() => [
               v-model="filters.status"
               :options="statusOptions"
               placeholder="Status"
-              class="w-full sm:w-40"
+              class="w-full shrink-0 sm:w-40"
             />
             <SelectFilter
               v-model="filters.validation_status"
               :options="validationStatusOptions"
               placeholder="Validasi"
-              class="w-full sm:w-44"
+              class="w-full shrink-0 sm:w-44"
             />
             <SelectFilter
               v-model="filters.jenis_anggota"
               :options="jenisAnggotaOptions"
               placeholder="Jenis"
-              class="w-full sm:w-40"
+              class="w-full shrink-0 sm:w-40"
             />
             <SelectFilter
               v-model="filters.kategori"
               :options="kategoriOptions"
               placeholder="Kategori"
-              class="w-full sm:w-40"
+              class="w-full shrink-0 sm:w-40"
             />
             <Button
               variant="ghost"

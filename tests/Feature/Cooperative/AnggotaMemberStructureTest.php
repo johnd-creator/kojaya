@@ -132,6 +132,42 @@ class AnggotaMemberStructureTest extends TestCase
             );
     }
 
+    public function test_member_summary_includes_revision_and_is_organization_scoped(): void
+    {
+        $organization = Organization::factory()->create();
+        $otherOrganization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+
+        CooperativeMember::factory()->active()->count(5)->create([
+            'organization_id' => $organization->id,
+        ]);
+        CooperativeMember::factory()->pending()->create([
+            'organization_id' => $organization->id,
+        ]);
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'status' => 'INACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_REVISION,
+        ]);
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $otherOrganization->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Members/Index')
+                ->loadDeferredProps('member-stats', fn (Assert $page) => $page
+                    ->where('stats.total', 7)
+                    ->where('stats.active', 5)
+                    ->where('stats.pending_validation', 1)
+                    ->where('stats.revision', 1)
+                )
+            );
+    }
+
     public function test_cooperative_member_show_includes_savings_summary_by_category(): void
     {
         $organization = Organization::factory()->create();

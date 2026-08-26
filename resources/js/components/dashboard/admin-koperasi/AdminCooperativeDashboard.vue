@@ -226,6 +226,10 @@ const collectionTone = computed<"emerald" | "amber" | "rose">(() => {
   return "rose";
 });
 
+const hasCollectionDue = computed(
+  () => (dashboard.value?.collections.total_due ?? 0) > 0,
+);
+
 const collectionStats = computed(() => {
   const data = dashboard.value;
 
@@ -329,9 +333,9 @@ const collectionStats = computed(() => {
       />
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-3">
+    <section class="grid items-start gap-6 xl:grid-cols-3">
       <Card
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 xl:col-span-2 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="self-start overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 xl:col-span-2 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
         <SectionHeader
           title="Prioritas Hari Ini"
@@ -397,7 +401,7 @@ const collectionStats = computed(() => {
       </Card>
 
       <Card
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="self-start overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
         <SectionHeader
           title="Kas & Iuran"
@@ -406,11 +410,46 @@ const collectionStats = computed(() => {
           tone="emerald"
         />
         <CardContent v-if="dashboard" class="space-y-5 px-6 py-5">
-          <CollectionDonut
-            :paid="dashboard.collections.paid"
-            :outstanding="dashboard.collections.outstanding"
-            :rate="dashboard.collections.collection_rate"
-          />
+          <div v-if="hasCollectionDue" class="space-y-5">
+            <CollectionDonut
+              :paid="dashboard.collections.paid"
+              :outstanding="dashboard.collections.outstanding"
+              :rate="dashboard.collections.collection_rate"
+            />
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-zinc-500 dark:text-zinc-400">
+                  Progress koleksi
+                </span>
+                <span class="font-semibold tabular-nums">
+                  {{ dashboard.collections.collection_rate.toFixed(1) }}%
+                </span>
+              </div>
+              <ProgressBar
+                :value="dashboard.collections.collection_rate"
+                :tone="collectionTone"
+                label="Collection rate"
+              />
+            </div>
+          </div>
+          <div
+            v-else
+            class="flex items-center gap-3 rounded-xl border border-zinc-200/70 bg-zinc-50/80 px-4 py-5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
+          >
+            <span
+              class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            >
+              <CheckCircle2 class="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-zinc-950 dark:text-white">
+                Belum ada tagihan periode ini
+              </p>
+              <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Ringkasan koleksi akan muncul saat tagihan diterbitkan.
+              </p>
+            </div>
+          </div>
           <div class="grid gap-2.5 sm:grid-cols-3">
             <div
               v-for="stat in collectionStats"
@@ -428,21 +467,6 @@ const collectionStats = computed(() => {
                 {{ stat.value }}
               </p>
             </div>
-          </div>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-medium text-zinc-500 dark:text-zinc-400">
-                Progress koleksi
-              </span>
-              <span class="font-semibold tabular-nums">
-                {{ dashboard.collections.collection_rate.toFixed(1) }}%
-              </span>
-            </div>
-            <ProgressBar
-              :value="dashboard.collections.collection_rate"
-              :tone="collectionTone"
-              label="Collection rate"
-            />
           </div>
           <div class="flex flex-wrap gap-2 pt-1">
             <Link

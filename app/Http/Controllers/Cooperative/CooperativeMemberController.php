@@ -134,12 +134,14 @@ class CooperativeMemberController extends Controller
                 $clone = fn () => clone $statsQuery;
 
                 return [
+                    'total' => (clone $clone())->count(),
                     'active' => (clone $clone())->where('status', 'ACTIVE')->count(),
                     'inactive' => (clone $clone())->whereIn('status', ['INACTIVE', 'RESIGNED'])->count(),
                     'alb' => (clone $clone())->where('jenis_anggota', 'ALB')->count(),
                     'pending_validation' => (clone $clone())
                         ->whereIn('validation_status', ['PENDING', 'PENDING_VALIDATION'])
                         ->count(),
+                    'revision' => (clone $clone())->where('validation_status', 'REVISION')->count(),
                     'rejected' => (clone $clone())->where('validation_status', 'REJECTED')->count(),
                 ];
             }, 'member-stats'),

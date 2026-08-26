@@ -110,6 +110,28 @@ class AnggotaMemberStructureTest extends TestCase
         $this->assertSoftDeleted('cooperative_members', ['id' => $member->id]);
     }
 
+    public function test_cooperative_members_index_includes_organization_name(): void
+    {
+        $organization = Organization::factory()->create(['name' => 'Koperasi Jaya Bersama']);
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'no_anggota' => '010',
+            'member_no' => '010',
+            'nama_anggota' => 'Agus Setiawan',
+            'name' => 'Agus Setiawan',
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('cooperative.members.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Members/Index')
+                ->where('members.data.0.organization_id', $organization->id)
+                ->where('members.data.0.organization_name', 'Koperasi Jaya Bersama')
+            );
+    }
+
     public function test_cooperative_member_show_includes_savings_summary_by_category(): void
     {
         $organization = Organization::factory()->create();

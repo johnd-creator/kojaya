@@ -310,6 +310,7 @@ const { resetFilters } = useTableFilters(filters, {
 const columns = [
   { header: "Anggota", key: "nama_anggota", slot: "member" },
   { header: "No. Anggota", key: "no_anggota", slot: "memberNo" },
+  { header: "Organisasi", key: "organization_name", slot: "organization" },
   { header: "Status", key: "status", slot: "status" },
   { header: "Validasi", key: "validation_status", slot: "validationStatus" },
   { header: "Kategori", key: "kategori", slot: "kategori" },
@@ -894,6 +895,17 @@ const kpiCards = computed(() => [
                   </span>
                 </span>
               </Link>
+            </template>
+
+            <template #organization="{ row }">
+              <span
+                v-if="row.organization_name"
+                class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60"
+              >
+                <Building2 class="size-3" />
+                {{ row.organization_name }}
+              </span>
+              <span v-else class="text-xs text-zinc-400">-</span>
             </template>
 
             <template #status="{ row }">

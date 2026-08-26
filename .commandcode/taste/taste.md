@@ -70,3 +70,6 @@
 
 # branch-naming
 - Hardening / production-readiness branches follow the pattern `hardening/<task-id>-<nama-singkat>` (e.g., `hardening/p0-01-remove-public-scripts`). The task id segment must match the `[TASK_ID]` used in the PR title and the supervisor's task list. Confidence: 0.80
+
+# merge-gate-discipline
+See [merge-gate-discipline/taste.md](merge-gate-discipline/taste.md)

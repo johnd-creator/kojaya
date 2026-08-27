@@ -7,6 +7,7 @@ use App\Http\Requests\Cooperative\StorePosTransactionRequest;
 use App\Models\CooperativeMember;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
+use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ use Inertia\Response;
 
 class PosRegisterController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, PosProductAccessService $productAccess): Response
     {
         $members = CooperativeMember::query()
             ->where('organization_id', $request->user()->organization_id)
@@ -40,7 +41,8 @@ class PosRegisterController extends Controller
             ]);
 
         return Inertia::render('Cooperative/Pos/Register', [
-            'products' => PosProduct::query()->with('category')->where('is_active', true)->orderBy('name')->get(),
+            'products' => $productAccess->scopeVisibleTo(PosProduct::query(), $request->user())
+                ->with('category')->where('is_active', true)->orderBy('name')->get(),
             'categories' => PosCategory::query()->where('is_active', true)->orderBy('name')->get(),
             'members' => $members,
         ]);

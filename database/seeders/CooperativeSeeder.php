@@ -102,7 +102,7 @@ class CooperativeSeeder extends Seeder
         $kasir->syncRoles(['Kasir Koperasi']);
 
         $members = $this->seedMembers($headOffice, $pokok, $wajib, $sukarela, $pengurus, $adminKop);
-        $products = $this->seedPosInventory();
+        $products = $this->seedPosInventory($headOffice);
         $this->seedPosTransactions($members, $products, $kasir);
 
         if (! CooperativeShuPeriod::query()->where('year', 2025)->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])->exists()) {
@@ -326,7 +326,7 @@ class CooperativeSeeder extends Seeder
     /**
      * @return array<string, PosProduct>
      */
-    private function seedPosInventory(): array
+    private function seedPosInventory(Organization $organization): array
     {
         $categories = [
             'sembako' => PosCategory::query()->updateOrCreate(['slug' => 'sembako'], ['name' => 'Sembako', 'is_active' => true]),
@@ -358,6 +358,7 @@ class CooperativeSeeder extends Seeder
             $seeded[$product['sku']] = PosProduct::query()->updateOrCreate(
                 ['sku' => $product['sku']],
                 [
+                    'organization_id' => $organization->id,
                     'pos_category_id' => $categories[$product['category']]->id,
                     'barcode' => $product['barcode'],
                     'name' => $product['name'],

@@ -9,6 +9,7 @@ use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanType;
+use App\Models\Organization;
 use App\Models\PosProduct;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -109,6 +110,7 @@ class Sprint2BusinessCriticalFlowsTest extends TestCase
         $user->givePermissionTo('access_cooperative_pos');
 
         $product = PosProduct::factory()->create([
+            'organization_id' => $member->organization_id,
             'stock' => 10,
             'sale_price' => 20000,
             'cost_price' => 15000,
@@ -159,8 +161,10 @@ class Sprint2BusinessCriticalFlowsTest extends TestCase
      */
     private function memberUser(): array
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,

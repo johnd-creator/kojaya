@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CooperativeMember;
 use App\Models\MemberPaymentIntent;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -17,6 +18,8 @@ use Tests\TestCase;
 class MemberCoffeeOrderApiTest extends TestCase
 {
     use DatabaseMigrations;
+
+    private Organization $organization;
 
     protected function setUp(): void
     {
@@ -35,6 +38,7 @@ class MemberCoffeeOrderApiTest extends TestCase
         ]);
 
         PosProduct::factory()->create([
+            'organization_id' => $member->organization_id,
             'pos_category_id' => $category->id,
             'name' => 'Kopi Susu Gula Aren',
             'sale_price' => 22000,
@@ -73,6 +77,7 @@ class MemberCoffeeOrderApiTest extends TestCase
             'slug' => 'espresso',
         ]);
         $product = PosProduct::factory()->create([
+            'organization_id' => $member->organization_id,
             'pos_category_id' => $category->id,
             'name' => 'Espresso Kojaya',
             'cost_price' => 8000,
@@ -133,6 +138,7 @@ class MemberCoffeeOrderApiTest extends TestCase
         $this->actingMember(['member:write']);
         $category = PosCategory::factory()->create(['name' => 'Espresso', 'slug' => 'espresso-amount']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'sale_price' => 18000,
             'stock' => 10,
@@ -162,8 +168,10 @@ class MemberCoffeeOrderApiTest extends TestCase
      */
     private function actingMember(array $abilities): CooperativeMember
     {
-        $user = User::factory()->create();
+        $this->organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
             'user_id' => $user->id,
         ]);
 

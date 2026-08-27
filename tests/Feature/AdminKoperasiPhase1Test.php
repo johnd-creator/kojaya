@@ -7,6 +7,8 @@ use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Organization;
+use App\Models\PosProduct;
+use App\Models\PosTransaction;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -130,6 +132,135 @@ class AdminKoperasiPhase1Test extends TestCase
                     ->missing('dashboard.shu'),
                 ),
             );
+    }
+
+    public function test_admin_dashboard_uses_neutral_collection_state_when_period_has_no_dues(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->loadDeferredProps('dashboard', fn (Assert $page) => $page
+                    ->where('dashboard.workspace', 'admin-koperasi')
+                    ->where('dashboard.collections.total_due', 0)
+                    ->where('dashboard.collections.paid', 0)
+                    ->where('dashboard.collections.outstanding', 0)
+                    ->where('dashboard.collections.collection_rate', 0)
+                )
+            );
+    }
+
+    public function test_admin_dashboard_scopes_pos_and_inventory_metrics_to_organization(): void
+    {
+        $organization = Organization::factory()->create();
+        $otherOrganization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        $otherCashier = User::factory()->create(['organization_id' => $otherOrganization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $otherMember = CooperativeMember::factory()->active()->create([
+            'organization_id' => $otherOrganization->id,
+        ]);
+
+        PosProduct::factory()->lowStock()->create([
+            'organization_id' => $organization->id,
+        ]);
+        PosProduct::factory()->lowStock()->create([
+            'organization_id' => $otherOrganization->id,
+        ]);
+        PosProduct::factory()->lowStock()->create([
+            'organization_id' => null,
+        ]);
+
+        PosTransaction::query()->create([
+            'transaction_no' => 'POS-ORG-A-001',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $admin->id,
+            'subtotal' => 100000,
+            'discount_amount' => 0,
+            'total_amount' => 100000,
+            'gross_profit' => 40000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransaction::query()->create([
+            'transaction_no' => 'POS-ORG-B-001',
+            'cooperative_member_id' => $otherMember->id,
+            'cashier_id' => $otherCashier->id,
+            'subtotal' => 900000,
+            'discount_amount' => 0,
+            'total_amount' => 900000,
+            'gross_profit' => 300000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransaction::query()->create([
+            'transaction_no' => 'POS-MISMATCH-001',
+            'cooperative_member_id' => $otherMember->id,
+            'cashier_id' => $admin->id,
+            'subtotal' => 777000,
+            'discount_amount' => 0,
+            'total_amount' => 777000,
+            'gross_profit' => 200000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->loadDeferredProps('dashboard', fn (Assert $page) => $page
+                    ->where('dashboard.summary.today_sales', 100000)
+                    ->where('dashboard.summary.today_transactions', 1)
+                    ->where('dashboard.summary.low_stock_products', 1)
+                    ->where('dashboard.work_queue.low_stock_products', 1)
+                ),
+            );
+    }
+
+    public function test_admin_navigation_restores_cooperative_sections_without_platform_modules(): void
+    {
+        $sidebar = file_get_contents(resource_path('js/components/AppSidebar.vue'));
+
+        self::assertIsString($sidebar);
+        $adminNavigation = substr(
+            $sidebar,
+            strpos($sidebar, 'const adminNavItems'),
+            strpos($sidebar, 'const memberNavItems') - strpos($sidebar, 'const adminNavItems'),
+        );
+
+        foreach ([
+            'Dashboard',
+            'Keanggotaan',
+            'Iuran & Simpanan',
+            'Pinjaman',
+            'Saldo Toko',
+            'Poin & Reward',
+            'POS Toko',
+            'Inventory POS',
+            'Stock Movement',
+        ] as $section) {
+            self::assertStringContainsString($section, $adminNavigation);
+        }
+
+        self::assertStringNotContainsString('Stock Opname', $adminNavigation);
+
+        foreach (['User Management', 'Human Resources', 'Finance', 'Audit Logs'] as $platformModule) {
+            self::assertStringNotContainsString($platformModule, $adminNavigation);
+        }
+
+        self::assertStringContainsString('Pusat Panduan', $sidebar);
     }
 
     public function test_admin_dashboard_get_does_not_mutate_records(): void

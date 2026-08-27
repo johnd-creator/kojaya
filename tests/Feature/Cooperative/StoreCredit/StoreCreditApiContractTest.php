@@ -76,7 +76,7 @@ class StoreCreditApiContractTest extends TestCase
 
         $cashier = User::factory()->create(['organization_id' => $member->organization_id]);
         $cashier->givePermissionTo(['access_cooperative_pos', 'cashier_store_credit', 'view_store_credit']);
-        $product = \App\Models\PosProduct::factory()->create(['cost_price' => 1000, 'sale_price' => 50000, 'stock' => 10, 'is_active' => true]);
+        $product = \App\Models\PosProduct::factory()->create(['organization_id' => $member->organization_id, 'cost_price' => 1000, 'sale_price' => 50000, 'stock' => 10, 'is_active' => true]);
 
         $this->actingAs($cashier)->postJson(route('cooperative.pos.transactions.store'), [
             'client_reference' => 'SC-CONTRACT-NEG',

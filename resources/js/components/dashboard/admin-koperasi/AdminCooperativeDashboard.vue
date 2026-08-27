@@ -2,33 +2,53 @@
 import { Head, Link, usePage } from "@inertiajs/vue3";
 import {
   ArrowRight,
-  CalendarDays,
+  Boxes,
+  Calendar,
+  CalendarClock,
   CheckCircle2,
   ClipboardCheck,
   CreditCard,
   FileWarning,
+  PackageCheck,
   ReceiptText,
+  ShieldCheck,
+  Sparkles,
+  Store,
   UserCheck,
-  UserRoundCheck,
-  Users,
+  WalletCards,
 } from "lucide-vue-next";
 import { computed } from "vue";
 import type { Component } from "vue";
+import CollectionDonut from "@/components/dashboard/CollectionDonut.vue";
+import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
+import ProgressBar from "@/components/dashboard/ProgressBar.vue";
+import SectionHeader from "@/components/dashboard/SectionHeader.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Card, CardContent } from "@/components/ui/card";
-import { hasAnyPermission } from "@/lib/role-experience";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
+import { hasAnyPermission } from "@/lib/role-experience";
 import { dashboard as dashboardRoute } from "@/routes";
 import { index as duesIndex } from "@/routes/cooperative/dues";
 import { index as membersIndex } from "@/routes/cooperative/members";
 import { index as resignationsIndex } from "@/routes/cooperative/members/resignations";
 import { index as paymentsIndex } from "@/routes/cooperative/payments";
-import {
-  actionableQueueItems as filterActionableQueueItems,
-  primaryQueueItem as resolvePrimaryQueueItem,
-} from "@/lib/admin-work-queue";
+import { index as posIndex } from "@/routes/cooperative/pos";
+import { index as posReportsIndex } from "@/routes/cooperative/pos/reports";
+import { index as posProductsIndex } from "@/routes/cooperative/pos-products";
 import type { AdminCooperativeDashboardPayload } from "@/types/dashboard";
+
+type Tone = "emerald" | "amber" | "rose" | "sky" | "violet";
+
+type Kpi = {
+  label: string;
+  value: string;
+  meta: string;
+  href: string;
+  icon: Component;
+  tone: Tone;
+  permissions: string[];
+};
 
 type QueueItem = {
   label: string;
@@ -37,7 +57,7 @@ type QueueItem = {
   href: string;
   permission: string[];
   icon: Component;
-  tone: "amber" | "sky" | "rose" | "violet";
+  tone: Tone;
 };
 
 const props = defineProps<{ dashboard?: AdminCooperativeDashboardPayload }>();
@@ -48,30 +68,94 @@ const permissions = computed<string[]>(
 const dashboard = computed<AdminCooperativeDashboardPayload | null>(
   () => props.dashboard ?? null,
 );
-const organizationLabel = computed(
-  () => dashboard.value?.organization?.name ?? "Organisasi aktif",
-);
+
 const generatedAt = computed(
   () => dashboard.value?.generated_at ?? dashboard.value?.generatedAt ?? "",
 );
+const organizationLabel = computed(
+  () => dashboard.value?.organization?.name ?? "Organisasi aktif",
+);
 
-const permittedQueueItems = computed<QueueItem[]>(() => {
+const formatDate = (value: string): string =>
+  new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+
+const formatUpdatedAt = (value: string): string =>
+  value
+    ? new Intl.DateTimeFormat("id-ID", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(value))
+    : "Data diperbarui saat halaman dibuka";
+
+const reportHref = computed(() =>
+  hasAnyPermission(permissions.value, ["view_pos_reports"])
+    ? posReportsIndex().url
+    : dashboardRoute().url,
+);
+
+const kpis = computed<Kpi[]>(() => {
   const data = dashboard.value;
-  if (!data) return [];
 
-  const items: QueueItem[] = [
+  if (!data) {
+    return [];
+  }
+
+  return [
     {
-      label: "Pembayaran menunggu verifikasi",
-      description: "Periksa identitas, invoice, bukti, dan metode pembayaran.",
-      count: data.work_queue.pending_payments,
-      href: paymentsIndex({ query: { status: "PENDING" } }).url,
-      permission: ["manage_cooperative_payment"],
-      icon: CreditCard,
-      tone: "amber",
+      label: "Omzet POS Hari Ini",
+      value: formatCurrency(data.summary.today_sales),
+      meta: `${formatNumber(data.summary.today_transactions)} transaksi hari ini`,
+      href: posIndex().url,
+      icon: Store,
+      tone: "emerald",
+      permissions: ["access_cooperative_pos"],
     },
     {
-      label: "Calon anggota perlu divalidasi",
-      description: "Validasi kelengkapan data sebelum diteruskan ke Pengurus.",
+      label: "Pembayaran Pending",
+      value: formatNumber(data.summary.pending_payments),
+      meta: `${formatCurrency(data.collections.pending_payment_amount)} nilai tertunda`,
+      href: paymentsIndex({ query: { status: "PENDING" } }).url,
+      icon: CreditCard,
+      tone: "amber",
+      permissions: ["manage_cooperative_payment"],
+    },
+    {
+      label: "Tunggakan Iuran Semua Periode",
+      value: formatCurrency(data.summary.unpaid_dues_amount),
+      meta: `${formatNumber(data.work_queue.unpaid_dues)} tagihan perlu follow-up`,
+      href: duesIndex({ query: { period_scope: "all", status: "OPEN" } }).url,
+      icon: ReceiptText,
+      tone: "rose",
+      permissions: ["manage_cooperative_dues"],
+    },
+    {
+      label: "Produk Stok Kritis",
+      value: formatNumber(data.summary.low_stock_products),
+      meta: "Di bawah atau sama dengan stok minimum",
+      href: posProductsIndex({ query: { low_stock: 1 } }).url,
+      icon: Boxes,
+      tone: "sky",
+      permissions: ["manage_pos_products"],
+    },
+  ].filter((kpi) => hasAnyPermission(permissions.value, kpi.permissions));
+});
+
+const queueItems = computed<QueueItem[]>(() => {
+  const data = dashboard.value;
+
+  if (!data) {
+    return [];
+  }
+
+  return [
+    {
+      label: "Verifikasi anggota baru",
+      description: "Calon anggota menunggu aktivasi status.",
       count: data.work_queue.pending_members,
       href: membersIndex({ query: { validation_status: "PENDING" } }).url,
       permission: ["validate_cooperative_member"],
@@ -80,8 +164,7 @@ const permittedQueueItems = computed<QueueItem[]>(() => {
     },
     {
       label: "Data anggota perlu revisi",
-      description:
-        "Tinjau catatan revisi dan bantu menutup data yang belum lengkap.",
+      description: "Tinjau catatan revisi dan lengkapi data anggota.",
       count: data.work_queue.revision_members,
       href: membersIndex({ query: { validation_status: "REVISION" } }).url,
       permission: ["validate_cooperative_member"],
@@ -89,9 +172,17 @@ const permittedQueueItems = computed<QueueItem[]>(() => {
       tone: "violet",
     },
     {
-      label: "Iuran belum tertagih",
-      description:
-        "Tindak lanjuti tagihan belum dibayar atau dibayar sebagian.",
+      label: "Approve pembayaran",
+      description: "Periksa bukti dan metode pembayaran agar ledger akurat.",
+      count: data.work_queue.pending_payments,
+      href: paymentsIndex({ query: { status: "PENDING" } }).url,
+      permission: ["manage_cooperative_payment"],
+      icon: ShieldCheck,
+      tone: "amber",
+    },
+    {
+      label: "Tindak lanjut tagihan",
+      description: "Tagihan unpaid atau partial lintas periode perlu ditagih.",
       count: data.work_queue.unpaid_dues,
       href: duesIndex({ query: { period_scope: "all", status: "OPEN" } }).url,
       permission: ["manage_cooperative_dues"],
@@ -100,326 +191,302 @@ const permittedQueueItems = computed<QueueItem[]>(() => {
     },
     {
       label: "Pengunduran diri menunggu review",
-      description:
-        "Periksa pengajuan yang membutuhkan tindak lanjut administratif.",
+      description: "Periksa pengajuan yang membutuhkan tindak lanjut.",
       count: data.work_queue.pending_resignations ?? 0,
       href: resignationsIndex({ query: { status: "PENDING" } }).url,
       permission: ["review_cooperative_resignation"],
       icon: FileWarning,
       tone: "violet",
     },
-  ];
-
-  return items.filter((item) =>
-    hasAnyPermission(permissions.value, item.permission),
-  );
+    {
+      label: "Restock produk",
+      description: "Produk POS sudah mencapai stok minimum.",
+      count: data.work_queue.low_stock_products,
+      href: posProductsIndex({ query: { low_stock: 1 } }).url,
+      permission: ["manage_pos_products"],
+      icon: PackageCheck,
+      tone: "amber",
+    },
+  ]
+    .filter((item) => hasAnyPermission(permissions.value, item.permission))
+    .filter((item) => item.count > 0);
 });
 
-const actionableQueueItems = computed(() =>
-  filterActionableQueueItems(permittedQueueItems.value),
+const collectionTone = computed<"emerald" | "amber" | "rose">(() => {
+  const rate = dashboard.value?.collections.collection_rate ?? 0;
+
+  if (rate >= 80) {
+    return "emerald";
+  }
+
+  if (rate >= 50) {
+    return "amber";
+  }
+
+  return "rose";
+});
+
+const hasCollectionDue = computed(
+  () => (dashboard.value?.collections.total_due ?? 0) > 0,
 );
 
-const primaryAction = computed(
-  () =>
-    resolvePrimaryQueueItem(permittedQueueItems.value) ?? {
-      label: "Buka dashboard",
-      href: dashboardRoute().url,
-    },
-);
-
-const kpis = computed(() => {
+const collectionStats = computed(() => {
   const data = dashboard.value;
-  if (!data) return [];
 
   return [
     {
-      label: "Pembayaran pending",
-      value: formatNumber(data.summary.pending_payments),
-      detail:
-        formatCurrency(data.collections.pending_payment_amount) +
-        " menunggu review",
-      href: paymentsIndex({ query: { status: "PENDING" } }).url,
-      permission: ["manage_cooperative_payment"],
-      icon: CreditCard,
-      tone: "amber",
+      label: "Tagihan periode ini",
+      value: formatCurrency(data?.collections.total_due ?? 0),
     },
     {
-      label: "Calon anggota pending",
-      value: formatNumber(data.summary.pending_members),
-      detail: `${data.summary.revision_members} data perlu revisi`,
-      href: membersIndex({ query: { validation_status: "PENDING" } }).url,
-      permission: ["validate_cooperative_member"],
-      icon: Users,
-      tone: "sky",
+      label: "Sudah dibayar",
+      value: formatCurrency(data?.collections.paid ?? 0),
     },
     {
-      label: "Outstanding iuran",
-      value: formatCurrency(data.summary.unpaid_dues_amount),
-      detail: String(data.summary.unpaid_dues_count) + " tagihan terbuka",
-      href: duesIndex({ query: { period_scope: "all", status: "OPEN" } }).url,
-      permission: ["manage_cooperative_dues"],
-      icon: ReceiptText,
-      tone: "rose",
+      label: "Outstanding",
+      value: formatCurrency(data?.collections.outstanding ?? 0),
     },
-    {
-      label: "Anggota aktif",
-      value: formatNumber(data.summary.active_members),
-      detail: "Dalam organisasi aktif",
-      href: membersIndex({ query: { status: "ACTIVE" } }).url,
-      permission: ["view_cooperative_member"],
-      icon: UserRoundCheck,
-      tone: "emerald",
-    },
-  ].filter((item) => hasAnyPermission(permissions.value, item.permission));
+  ];
 });
-
-const toneClasses: Record<string, string> = {
-  amber:
-    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200",
-  sky: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200",
-  rose: "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200",
-  violet:
-    "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200",
-  emerald:
-    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200",
-};
-
-const formatGeneratedAt = (value: string): string => {
-  if (!value) return "Data diperbarui saat halaman dibuka";
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-};
 </script>
 
 <template>
-  <Head title="Ruang kerja Admin Koperasi" />
   <PageContainer class="max-w-none">
+    <Head title="Dashboard Koperasi" />
+
     <section
-      class="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-white via-emerald-50/70 to-sky-50/50 p-6 shadow-sm shadow-emerald-950/5 sm:p-8 dark:border-emerald-900/50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
-      aria-labelledby="admin-workspace-title"
+      class="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-6 shadow-sm shadow-emerald-950/5 sm:p-7 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
+      aria-labelledby="cooperative-dashboard-title"
     >
       <div
-        class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+        class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10"
+        aria-hidden="true"
+      />
+      <div
+        class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
+        aria-hidden="true"
+      />
+      <div
+        class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
       >
         <div class="space-y-3">
           <span
-            class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
+            class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
           >
-            <ClipboardCheck class="size-3.5" aria-hidden="true" />
-            Admin Koperasi
+            <Sparkles class="size-3.5" aria-hidden="true" />
+            Operasional Harian
           </span>
           <h1
-            id="admin-workspace-title"
+            id="cooperative-dashboard-title"
             class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
           >
-            Operasional koperasi hari ini
+            Dashboard Koperasi
           </h1>
-          <p
-            class="max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400"
-          >
-            Periksa anggota baru, pembayaran, tagihan, dan pekerjaan
-            administrasi yang memerlukan tindak lanjut.
+          <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+            Prioritas kerja hari ini, kas iuran, POS toko, stok, dan ringkasan
+            keputusan manajemen — semua di satu tempat.
           </p>
-          <p
-            class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
-          >
-            <CalendarDays class="size-3.5" aria-hidden="true" />
-            {{ organizationLabel }} · {{ formatGeneratedAt(generatedAt) }}
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">
+            {{ organizationLabel }}
           </p>
         </div>
-        <Link
-          :href="primaryAction?.href ?? dashboardRoute().url"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950"
+        <div
+          class="flex w-full flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white/70 p-3 text-sm shadow-sm shadow-zinc-950/5 backdrop-blur sm:flex-row sm:items-center sm:gap-4 sm:p-4 dark:border-zinc-800/80 dark:bg-zinc-950/40"
         >
-          {{ primaryAction?.label ?? "Buka dashboard" }}
-          <ArrowRight class="size-4" aria-hidden="true" />
-        </Link>
+          <div class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+            <Calendar class="size-4 text-emerald-600" aria-hidden="true" />
+            <span class="font-medium">{{ formatDate(generatedAt) }}</span>
+          </div>
+          <div
+            class="hidden h-5 w-px bg-zinc-200 sm:block dark:bg-zinc-800"
+            aria-hidden="true"
+          />
+          <div class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+            <CalendarClock class="size-4 text-emerald-600" aria-hidden="true" />
+            <span>Update {{ formatUpdatedAt(generatedAt) }}</span>
+          </div>
+          <Link
+            :href="reportHref"
+            class="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950"
+          >
+            Laporan
+            <ArrowRight class="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
     </section>
 
     <section
-      v-if="kpis.length > 0"
       class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      aria-label="KPI operasional Admin Koperasi"
+      aria-label="Ringkasan KPI operasional"
     >
-      <Link
+      <GradientKpiCard
         v-for="kpi in kpis"
         :key="kpi.label"
+        :label="kpi.label"
+        :value="kpi.value"
+        :meta="kpi.meta"
+        :icon="kpi.icon"
+        :tone="kpi.tone"
         :href="kpi.href"
-        class="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:ring-offset-zinc-950"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              {{ kpi.label }}
-            </p>
-            <p
-              class="mt-2 text-2xl font-bold tabular-nums text-zinc-950 dark:text-white"
-            >
-              {{ kpi.value }}
-            </p>
-            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {{ kpi.detail }}
-            </p>
-          </div>
-          <span
-            :class="[
-              'inline-flex size-10 items-center justify-center rounded-xl border',
-              toneClasses[kpi.tone],
-            ]"
-          >
-            <component :is="kpi.icon" class="size-5" aria-hidden="true" />
-          </span>
-        </div>
-      </Link>
+        :trend="null"
+      />
     </section>
 
-    <section
-      class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]"
-    >
+    <section class="grid items-start gap-6 xl:grid-cols-3">
       <Card
-        class="overflow-hidden border-zinc-200/80 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="self-start overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 xl:col-span-2 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <div
-          class="border-b border-zinc-200/70 px-5 py-4 dark:border-zinc-800/70"
-        >
-          <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
-            Pekerjaan yang perlu ditindaklanjuti
-          </h2>
-          <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Urutan dimulai dari dampak operasional paling mendesak.
-          </p>
-        </div>
-        <CardContent class="p-4 sm:p-5">
-          <div
-            v-if="actionableQueueItems.length > 0"
-            class="grid gap-3 sm:grid-cols-2"
-          >
+        <SectionHeader
+          title="Prioritas Hari Ini"
+          description="Antrian kerja yang paling memengaruhi operasional koperasi."
+          :icon="CalendarClock"
+          tone="amber"
+          :href="queueItems[0]?.href"
+          href-label="Buka prioritas"
+        />
+        <CardContent class="px-3 pb-3 sm:px-4 sm:pb-4">
+          <div v-if="queueItems.length > 0" class="grid gap-2 sm:grid-cols-2">
             <Link
-              v-for="item in actionableQueueItems"
+              v-for="item in queueItems"
               :key="item.label"
               :href="item.href"
-              class="group flex min-h-32 flex-col justify-between rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
-              :class="toneClasses[item.tone]"
+              prefetch
+              class="group relative flex flex-col gap-3 rounded-xl border border-zinc-200/70 bg-white/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300/80 hover:bg-white hover:shadow-md hover:shadow-zinc-950/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:border-zinc-800/70 dark:bg-zinc-950/40 dark:hover:border-zinc-700/80 dark:hover:bg-zinc-900"
             >
               <div class="flex items-start justify-between gap-3">
-                <component :is="item.icon" class="size-5" aria-hidden="true" />
                 <span
-                  class="rounded-full bg-white/75 px-2.5 py-1 text-xs font-bold tabular-nums dark:bg-zinc-950/40"
-                  >{{ formatNumber(item.count) }}</span
+                  class="inline-flex size-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
                 >
+                  <component
+                    :is="item.icon"
+                    class="size-4"
+                    aria-hidden="true"
+                  />
+                </span>
+                <span
+                  class="rounded-full bg-zinc-100 px-2 py-1 text-xs font-semibold tabular-nums text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                >
+                  {{ formatNumber(item.count) }}
+                </span>
               </div>
-              <div class="mt-4">
-                <h3 class="text-sm font-semibold">{{ item.label }}</h3>
-                <p class="mt-1 text-xs leading-5">
+              <div class="space-y-1">
+                <p class="text-sm font-semibold text-zinc-950 dark:text-white">
+                  {{ item.label }}
+                </p>
+                <p
+                  class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400"
+                >
                   {{ item.description }}
                 </p>
               </div>
               <span
-                class="mt-3 inline-flex items-center gap-1 text-xs font-semibold"
-                >Buka antrean
+                class="flex items-center justify-end text-xs font-semibold text-zinc-500 transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-300"
+              >
+                Buka
                 <ArrowRight
-                  class="size-3.5 transition group-hover:translate-x-0.5"
+                  class="ml-1 size-3.5 transition-transform group-hover:translate-x-0.5"
                   aria-hidden="true"
-              /></span>
+                />
+              </span>
             </Link>
           </div>
           <EmptyState
             v-else
             :icon="CheckCircle2"
-            title="Tidak ada pekerjaan tertunda"
-            description="Semua pekerjaan Admin Koperasi yang tersedia untuk akun ini sudah tertangani."
+            title="Semua prioritas tertangani"
+            description="Tidak ada pekerjaan tertunda yang membutuhkan tindakan dari akun ini."
           />
         </CardContent>
       </Card>
 
       <Card
-        class="border-zinc-200/80 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="self-start overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <div
-          class="border-b border-zinc-200/70 px-5 py-4 dark:border-zinc-800/70"
-        >
-          <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">
-            Ringkasan iuran
-          </h2>
-          <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Periode aktif {{ dashboard?.collections.period ?? "—" }}
-          </p>
-        </div>
-        <CardContent v-if="dashboard" class="space-y-5 p-5">
-          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <div class="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-950/50">
-              <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                Total tagihan
-              </p>
-              <p
-                class="mt-1 font-semibold tabular-nums text-zinc-950 dark:text-white"
-              >
-                {{ formatCurrency(dashboard.collections.total_due) }}
-              </p>
-            </div>
-            <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
-              <p class="text-xs text-emerald-700 dark:text-emerald-300">
-                Sudah dibayar
-              </p>
-              <p
-                class="mt-1 font-semibold tabular-nums text-emerald-900 dark:text-emerald-100"
-              >
-                {{ formatCurrency(dashboard.collections.paid) }}
-              </p>
-            </div>
-            <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/30">
-              <p class="text-xs text-rose-700 dark:text-rose-300">
-                Outstanding
-              </p>
-              <p
-                class="mt-1 font-semibold tabular-nums text-rose-900 dark:text-rose-100"
-              >
-                {{ formatCurrency(dashboard.collections.outstanding) }}
-              </p>
-            </div>
-          </div>
-          <div>
-            <div class="flex items-center justify-between gap-3 text-sm">
-              <span class="font-medium text-zinc-700 dark:text-zinc-300"
-                >Collection rate</span
-              ><span
-                class="font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
-                >{{ dashboard.collections.collection_rate.toFixed(1) }}%</span
-              >
-            </div>
-            <div
-              class="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
-              role="progressbar"
-              aria-label="Collection rate"
-              :aria-valuenow="dashboard.collections.collection_rate"
-              aria-valuemin="0"
-              aria-valuemax="100"
-            >
-              <div
-                class="h-full rounded-full bg-emerald-600 transition-all"
-                :style="{
-                  width:
-                    String(
-                      Math.min(
-                        100,
-                        Math.max(0, dashboard.collections.collection_rate),
-                      ),
-                    ) + '%',
-                }"
+        <SectionHeader
+          title="Kas & Iuran"
+          :description="`Periode ${dashboard?.collections.period ?? '—'}`"
+          :icon="WalletCards"
+          tone="emerald"
+        />
+        <CardContent v-if="dashboard" class="space-y-5 px-6 py-5">
+          <div v-if="hasCollectionDue" class="space-y-5">
+            <CollectionDonut
+              :paid="dashboard.collections.paid"
+              :outstanding="dashboard.collections.outstanding"
+              :rate="dashboard.collections.collection_rate"
+            />
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-zinc-500 dark:text-zinc-400">
+                  Progress koleksi
+                </span>
+                <span class="font-semibold tabular-nums">
+                  {{ dashboard.collections.collection_rate.toFixed(1) }}%
+                </span>
+              </div>
+              <ProgressBar
+                :value="dashboard.collections.collection_rate"
+                :tone="collectionTone"
+                label="Collection rate"
               />
             </div>
           </div>
-          <Link
-            v-if="hasAnyPermission(permissions, ['manage_cooperative_dues'])"
-            :href="
-              duesIndex({ query: { period_scope: 'all', status: 'OPEN' } }).url
-            "
-            class="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:text-emerald-300"
-            >Lihat iuran terbuka <ArrowRight class="size-4" aria-hidden="true"
-          /></Link>
+          <div
+            v-else
+            class="flex items-center gap-3 rounded-xl border border-zinc-200/70 bg-zinc-50/80 px-4 py-5 dark:border-zinc-800/70 dark:bg-zinc-950/50"
+          >
+            <span
+              class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            >
+              <CheckCircle2 class="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-zinc-950 dark:text-white">
+                Belum ada tagihan periode ini
+              </p>
+              <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Ringkasan koleksi akan muncul saat tagihan diterbitkan.
+              </p>
+            </div>
+          </div>
+          <div class="grid gap-2.5 sm:grid-cols-3">
+            <div
+              v-for="stat in collectionStats"
+              :key="stat.label"
+              class="rounded-lg border border-zinc-200/70 bg-zinc-50/70 p-3 dark:border-zinc-800/70 dark:bg-zinc-950/50"
+            >
+              <p
+                class="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+              >
+                {{ stat.label }}
+              </p>
+              <p
+                class="mt-1 text-sm font-bold tabular-nums text-zinc-950 sm:text-base dark:text-white"
+              >
+                {{ stat.value }}
+              </p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <Link
+              v-if="
+                hasAnyPermission(permissions, ['manage_cooperative_payment'])
+              "
+              :href="paymentsIndex().url"
+              class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-950/15 transition hover:bg-emerald-800"
+            >
+              Input pembayaran
+              <ArrowRight class="size-4" aria-hidden="true" />
+            </Link>
+            <Link
+              v-if="hasAnyPermission(permissions, ['manage_cooperative_dues'])"
+              :href="duesIndex().url"
+              class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              Kelola tagihan
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </section>

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CooperativeMember;
 use App\Models\MemberPaymentIntent;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -19,6 +20,8 @@ use Tests\TestCase;
 class PaymentCanonicalItemTest extends TestCase
 {
     use DatabaseMigrations;
+
+    private Organization $organization;
 
     protected function setUp(): void
     {
@@ -465,12 +468,17 @@ class PaymentCanonicalItemTest extends TestCase
      */
     public function test_coffee_order_response_item_not_null(): void
     {
-        $user = \App\Models\User::factory()->create();
-        $member = CooperativeMember::factory()->active()->create(['user_id' => $user->id]);
+        $this->organization = Organization::factory()->create();
+        $user = \App\Models\User::factory()->create(['organization_id' => $this->organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => $user->id,
+        ]);
         Sanctum::actingAs($user, ['member:write']);
 
         $category = PosCategory::factory()->create(['name' => 'Signature']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'sale_price' => 25000,
             'stock' => 20,
@@ -672,6 +680,7 @@ class PaymentCanonicalItemTest extends TestCase
         ]);
 
         return PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'name' => $name.'-'.uniqid(),
             'cost_price' => $price * 0.5,
@@ -685,8 +694,10 @@ class PaymentCanonicalItemTest extends TestCase
      */
     private function actingMember(array $abilities): CooperativeMember
     {
-        $user = \App\Models\User::factory()->create();
+        $this->organization = Organization::factory()->create();
+        $user = \App\Models\User::factory()->create(['organization_id' => $this->organization->id]);
         $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
             'user_id' => $user->id,
         ]);
 

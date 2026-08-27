@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CooperativeNotificationOutbox;
 use App\Models\MemberPaymentIntent;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -32,8 +33,10 @@ class PaymentNotificationOutboxTest extends TestCase
 
     public function test_duplicate_paid_webhook_produces_one_outbox_and_one_notification(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = \App\Models\User::factory()->create(['organization_id' => $organization->id]);
         $member = \App\Models\CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
             'user_id' => $user->id,
         ]);
 
@@ -41,6 +44,7 @@ class PaymentNotificationOutboxTest extends TestCase
 
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->for($category, 'category')->create([
+            'organization_id' => $organization->id,
             'cost_price' => 5000,
             'sale_price' => 10000,
             'stock' => 50,

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cooperative;
 
 use App\Models\CooperativeMember;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\User;
@@ -16,18 +17,22 @@ class PosPhase4ReportsTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private Organization $organization;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
+        $this->organization = Organization::factory()->create();
     }
 
     public function test_summary_aggregates_sales_gross_profit_and_returns(): void
     {
-        $cashier = User::factory()->create();
-        $member = CooperativeMember::factory()->create(['credit_limit' => 50000, 'status' => 'ACTIVE']);
+        $cashier = $this->createUser();
+        $member = CooperativeMember::factory()->create(['organization_id' => $this->organization->id, 'credit_limit' => 50000, 'status' => 'ACTIVE']);
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -59,9 +64,10 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_payment_reconciliation_groups_by_method(): void
     {
-        $cashier = User::factory()->create();
+        $cashier = $this->createUser();
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -91,9 +97,10 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_daily_trend_returns_per_day_revenue(): void
     {
-        $cashier = User::factory()->create();
+        $cashier = $this->createUser();
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -116,11 +123,12 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_top_members_lists_top_spenders(): void
     {
-        $cashier = User::factory()->create();
-        $m1 = CooperativeMember::factory()->create(['credit_limit' => 100000, 'status' => 'ACTIVE']);
-        $m2 = CooperativeMember::factory()->create(['credit_limit' => 100000, 'status' => 'ACTIVE']);
+        $cashier = $this->createUser();
+        $m1 = CooperativeMember::factory()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000, 'status' => 'ACTIVE']);
+        $m2 = CooperativeMember::factory()->create(['organization_id' => $this->organization->id, 'credit_limit' => 100000, 'status' => 'ACTIVE']);
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -151,10 +159,10 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_product_sales_aggregates_by_product(): void
     {
-        $cashier = User::factory()->create();
+        $cashier = $this->createUser();
         $category = PosCategory::factory()->create();
-        $p1 = PosProduct::factory()->create(['pos_category_id' => $category->id, 'cost_price' => 1000, 'sale_price' => 5000, 'stock' => 100]);
-        $p2 = PosProduct::factory()->create(['pos_category_id' => $category->id, 'cost_price' => 2000, 'sale_price' => 6000, 'stock' => 100]);
+        $p1 = PosProduct::factory()->create(['organization_id' => $this->organization->id, 'pos_category_id' => $category->id, 'cost_price' => 1000, 'sale_price' => 5000, 'stock' => 100]);
+        $p2 = PosProduct::factory()->create(['organization_id' => $this->organization->id, 'pos_category_id' => $category->id, 'cost_price' => 2000, 'sale_price' => 6000, 'stock' => 100]);
 
         $service = app(PosTransactionService::class);
         $service->create([
@@ -178,7 +186,7 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_reports_page_is_accessible_with_view_reports_permission(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
         $this->actingAs($user)
@@ -189,7 +197,7 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_reports_page_raw_url_resolves_to_pos_report_controller(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
         $this->actingAs($user)
@@ -204,11 +212,12 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_pos_reports_loads_deferred_analytics(): void
     {
-        $cashier = User::factory()->create();
+        $cashier = $this->createUser();
         $cashier->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -241,11 +250,12 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_pos_reports_filters_sync_from_query_params(): void
     {
-        $cashier = User::factory()->create();
+        $cashier = $this->createUser();
         $cashier->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -286,11 +296,11 @@ class PosPhase4ReportsTest extends TestCase
 
     public function test_reports_csv_export_streams_csv(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
         $category = PosCategory::factory()->create();
-        $product = PosProduct::factory()->create(['pos_category_id' => $category->id, 'cost_price' => 1000, 'sale_price' => 5000, 'stock' => 10]);
+        $product = PosProduct::factory()->create(['organization_id' => $this->organization->id, 'pos_category_id' => $category->id, 'cost_price' => 1000, 'sale_price' => 5000, 'stock' => 10]);
         app(PosTransactionService::class)->create([
             'client_reference' => 'PHASE4-CSV',
             'items' => [['pos_product_id' => $product->id, 'quantity' => 1]],
@@ -302,5 +312,10 @@ class PosPhase4ReportsTest extends TestCase
         $content = $response->streamedContent();
         $this->assertStringContainsString('RINGKASAN', $content);
         $this->assertStringContainsString('REKONSILIASI PEMBAYARAN', $content);
+    }
+
+    private function createUser(): User
+    {
+        return User::factory()->create(['organization_id' => $this->organization->id]);
     }
 }

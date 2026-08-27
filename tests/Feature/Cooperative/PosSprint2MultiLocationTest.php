@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosInventoryLocation;
 use App\Models\PosInventoryStock;
 use App\Models\PosProduct;
@@ -20,15 +21,18 @@ class PosSprint2MultiLocationTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private Organization $organization;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
+        $this->organization = Organization::factory()->create();
     }
 
     public function test_default_location_backfills_old_product_stock(): void
     {
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 12,
@@ -47,7 +51,7 @@ class PosSprint2MultiLocationTest extends TestCase
         $service = app(PosInventoryService::class);
         $location = $service->ensureDefaultLocation();
 
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 0,
@@ -131,7 +135,7 @@ class PosSprint2MultiLocationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 0,
@@ -177,7 +181,7 @@ class PosSprint2MultiLocationTest extends TestCase
         $service = app(PosInventoryService::class);
         $location = $service->ensureDefaultLocation();
 
-        $product = PosProduct::factory()->create([
+        $product = $this->product([
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 2,
@@ -202,7 +206,7 @@ class PosSprint2MultiLocationTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'manage_pos_products', 'view_pos_reports']);
 
         return $user;
@@ -210,9 +214,20 @@ class PosSprint2MultiLocationTest extends TestCase
 
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $user->givePermissionTo(['access_cooperative_pos', 'manage_pos_products', 'approve_pos_void']);
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function product(array $attributes = []): PosProduct
+    {
+        return PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
+            ...$attributes,
+        ]);
     }
 }

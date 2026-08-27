@@ -228,6 +228,7 @@ class StoreCreditPosIntegrationTest extends TestCase
         ]);
 
         $product = PosProduct::factory()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 50000,
             'stock' => 10,

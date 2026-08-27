@@ -151,17 +151,6 @@ const avatarBgClass: Record<Tone, string> = {
   zinc: "bg-zinc-100 text-zinc-700 ring-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700/60",
 };
 
-function sparklineFor(value: number, points = 8): number[] {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 7.5);
-  const seed = Math.abs(Math.sin(safeValue * 12.9898) * 43758.5453);
-  return Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
-    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
-  });
-}
-
 const kpiCards = computed(() => {
   const baseQuery = (status: string): string => {
     const params = new URLSearchParams();
@@ -177,7 +166,6 @@ const kpiCards = computed(() => {
       icon: ClipboardCheck as Component,
       tone: "amber" as Tone,
       href: baseQuery("PENDING"),
-      sparklinePoints: sparklineFor(stats.value.pending ?? 0),
       meta: "Perlu ditinjau",
     },
     {
@@ -186,7 +174,6 @@ const kpiCards = computed(() => {
       icon: UserCheck as Component,
       tone: "emerald" as Tone,
       href: baseQuery("APPROVED"),
-      sparklinePoints: sparklineFor(stats.value.approved ?? 0),
       meta: "Anggota resign",
     },
     {
@@ -195,7 +182,6 @@ const kpiCards = computed(() => {
       icon: ShieldCheck as Component,
       tone: "rose" as Tone,
       href: baseQuery("REJECTED"),
-      sparklinePoints: sparklineFor(stats.value.rejected ?? 0),
       meta: "Pengajuan ditolak",
     },
     {
@@ -204,7 +190,6 @@ const kpiCards = computed(() => {
       icon: Ban as Component,
       tone: "zinc" as Tone,
       href: baseQuery("CANCELLED"),
-      sparklinePoints: sparklineFor(stats.value.cancelled ?? 0),
       meta: "Dicabut anggota",
     },
   ];
@@ -306,7 +291,6 @@ watch(
           :icon="card.icon"
           :tone="card.tone"
           :href="card.href"
-          :sparkline-points="card.sparklinePoints"
         />
       </section>
 

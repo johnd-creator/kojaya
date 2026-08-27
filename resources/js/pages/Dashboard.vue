@@ -356,27 +356,6 @@ const formatLongDate = (value: string): string =>
     year: "numeric",
   }).format(new Date(value));
 
-// Deterministic synthetic sparkline from a scalar value.
-// Decorative only — real trend is communicated via TrendBadge label.
-function sparklineFor(value: number, points = 8): number[] {
-  const safeValue = Math.max(0, Number(value) || 0);
-  const base = Math.min(1, Math.log10(safeValue + 1) / 7.5);
-  const seed = Math.abs(Math.sin(safeValue * 12.9898) * 43758.5453);
-  return Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
-    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
-  });
-}
-
-// A 3-point short trendline for the POS stat tiles.
-function miniSpark(value: number): number[] {
-  const safe = Math.max(0, Number(value) || 0);
-  const low = safe * 0.7;
-  const mid = safe * 0.88;
-  return [low, mid, safe];
-}
-
 interface KpiCard {
   label: string;
   value: () => string;
@@ -384,9 +363,6 @@ interface KpiCard {
   href: string;
   icon: Component;
   tone: Tone;
-  sparkline: () => number[];
-  trend: () => number | null;
-  trendLabel: string;
   permissions: string[];
 }
 
@@ -399,15 +375,6 @@ const kpiCards = computed<KpiCard[]>(() => [
     href: cooperativePosIndex().url,
     icon: Store,
     tone: "emerald",
-    sparkline: () => sparklineFor(dashboard.value.summary.today_sales),
-    trend: () =>
-      dashboard.value.pos.monthly_sales > 0
-        ? ((dashboard.value.summary.today_sales * 30 -
-            dashboard.value.pos.monthly_sales) /
-            Math.max(1, dashboard.value.pos.monthly_sales)) *
-          100
-        : null,
-    trendLabel: "vs bulan lalu",
     permissions: ["access_cooperative_pos"],
   },
   {
@@ -418,9 +385,6 @@ const kpiCards = computed<KpiCard[]>(() => [
     href: cooperativePaymentsIndex({ query: { status: "PENDING" } }).url,
     icon: CreditCard,
     tone: "amber",
-    sparkline: () => sparklineFor(dashboard.value.summary.pending_payments),
-    trend: () => null,
-    trendLabel: "butuh review",
     permissions: ["manage_cooperative_payment"],
   },
   {
@@ -433,9 +397,6 @@ const kpiCards = computed<KpiCard[]>(() => [
     }).url,
     icon: ReceiptText,
     tone: "rose",
-    sparkline: () => sparklineFor(dashboard.value.workQueue.unpaid_dues),
-    trend: () => null,
-    trendLabel: "perlu ditagih",
     permissions: ["manage_cooperative_dues"],
   },
   {
@@ -445,9 +406,6 @@ const kpiCards = computed<KpiCard[]>(() => [
     href: cooperativePosProductsIndex({ query: { low_stock: 1 } }).url,
     icon: Boxes,
     tone: "sky",
-    sparkline: () => sparklineFor(dashboard.value.summary.low_stock_products),
-    trend: () => null,
-    trendLabel: "perlu restock",
     permissions: ["manage_pos_products"],
   },
 ]);
@@ -844,9 +802,6 @@ const renderToneIcon = (icon: Component, tone: Tone) =>
             :icon="card.icon"
             :tone="card.tone"
             :href="card.href"
-            :sparkline-points="card.sparkline()"
-            :trend="card.trend()"
-            :trend-label="card.trendLabel"
           />
         </section>
 

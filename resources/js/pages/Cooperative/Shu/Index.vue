@@ -49,17 +49,6 @@ const totals = computed(() =>
   isClosed.value ? props.closedPeriod : props.preview,
 );
 
-const sparklineFor = (value: number, points = 8): number[] => {
-  const safe = Math.max(0, value || 0);
-  const base = Math.min(1, Math.log10(safe + 1) / 7.5);
-  const seed = Math.abs(Math.sin(safe * 12.9898) * 43758.5453);
-  return Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const noise = (Math.sin((seed + i) * 1.7) + 1) / 2;
-    return Math.max(0.05, base * (0.35 + t * 0.85) + noise * 0.12);
-  });
-};
-
 const kpiCards = computed(() => [
   {
     label: "Pool SHU Koperasi",
@@ -68,7 +57,6 @@ const kpiCards = computed(() => [
     icon: BadgeDollarSign as Component,
     tone: "emerald" as Tone,
     href: index().url,
-    sparklinePoints: sparklineFor(Number(totals.value.cooperative_pool ?? 0)),
   },
   {
     label: "Total Skor SHU",
@@ -77,7 +65,6 @@ const kpiCards = computed(() => [
     icon: Star as Component,
     tone: "amber" as Tone,
     href: index().url,
-    sparklinePoints: sparklineFor(Number(totals.value.total_shu_score ?? 0)),
   },
   {
     label: "Skor Keanggotaan",
@@ -86,9 +73,6 @@ const kpiCards = computed(() => [
     icon: Users as Component,
     tone: "sky" as Tone,
     href: index().url,
-    sparklinePoints: sparklineFor(
-      Number(totals.value.total_membership_score ?? 0),
-    ),
   },
   {
     label: "Skor Iuran Wajib",
@@ -97,7 +81,6 @@ const kpiCards = computed(() => [
     icon: CalendarCheck as Component,
     tone: "violet" as Tone,
     href: index().url,
-    sparklinePoints: sparklineFor(Number(totals.value.total_dues_score ?? 0)),
   },
   {
     label: "Status Tahun",
@@ -108,7 +91,6 @@ const kpiCards = computed(() => [
     icon: LockKeyhole as Component,
     tone: isClosed.value ? ("rose" as Tone) : ("amber" as Tone),
     href: index().url,
-    sparklinePoints: sparklineFor(isClosed.value ? 100 : 0),
   },
 ]);
 
@@ -237,7 +219,6 @@ const closePeriod = () => {
           :icon="card.icon"
           :tone="card.tone"
           :href="card.href"
-          :sparkline-points="card.sparklinePoints"
         />
       </section>
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosProduct;
 use App\Models\PosVoidRequest;
 use App\Models\User;
@@ -26,7 +27,7 @@ class PosSprint3ClosingLockTest extends TestCase
     public function test_sale_on_locked_date_is_rejected(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -46,7 +47,7 @@ class PosSprint3ClosingLockTest extends TestCase
     public function test_return_on_locked_origin_date_is_rejected(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -73,7 +74,7 @@ class PosSprint3ClosingLockTest extends TestCase
     public function test_return_on_locked_return_date_is_rejected(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -103,7 +104,7 @@ class PosSprint3ClosingLockTest extends TestCase
     {
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -129,7 +130,7 @@ class PosSprint3ClosingLockTest extends TestCase
     public function test_locked_date_does_not_block_open_dates(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -149,7 +150,7 @@ class PosSprint3ClosingLockTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports', 'manage_pos_products']);
 
         return $user;
@@ -157,9 +158,20 @@ class PosSprint3ClosingLockTest extends TestCase
 
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function product(User $cashier, array $attributes = []): PosProduct
+    {
+        return PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
+            ...$attributes,
+        ]);
     }
 }

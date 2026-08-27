@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosStockMovement;
@@ -60,9 +61,11 @@ class PosTransactionConcurrencyTest extends TestCase
 
     public function test_parallel_pos_requests_with_same_client_reference_resolve_to_single_transaction(): void
     {
-        $cashier = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $cashier = User::factory()->create(['organization_id' => $organization->id]);
         $category = PosCategory::factory()->create();
         $product = PosProduct::factory()->for($category, 'category')->create([
+            'organization_id' => $organization->id,
             'cost_price' => 6000,
             'sale_price' => 10000,
             'stock' => 5,

@@ -69,11 +69,14 @@ export type PlatformDashboardPayload = {
 
 export type AdminCooperativeDashboardPayload = {
   workspace: "admin-koperasi";
-  organization?: { id?: number; name?: string; code?: string } | null;
+  organization?: { id?: string | number; name?: string; code?: string } | null;
   summary: {
+    today_sales: number;
+    today_transactions: number;
     pending_members: number;
     revision_members: number;
     pending_payments: number;
+    low_stock_products: number;
     unpaid_dues_count: number;
     unpaid_dues_amount: number;
     active_members: number;
@@ -83,6 +86,7 @@ export type AdminCooperativeDashboardPayload = {
     pending_members: number;
     revision_members: number;
     unpaid_dues: number;
+    low_stock_products: number;
     pending_resignations?: number | null;
   };
   collections: {

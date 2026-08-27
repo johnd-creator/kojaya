@@ -110,6 +110,64 @@ class AnggotaMemberStructureTest extends TestCase
         $this->assertSoftDeleted('cooperative_members', ['id' => $member->id]);
     }
 
+    public function test_cooperative_members_index_includes_organization_name(): void
+    {
+        $organization = Organization::factory()->create(['name' => 'Koperasi Jaya Bersama']);
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'no_anggota' => '010',
+            'member_no' => '010',
+            'nama_anggota' => 'Agus Setiawan',
+            'name' => 'Agus Setiawan',
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('cooperative.members.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Members/Index')
+                ->where('members.data.0.organization_id', $organization->id)
+                ->where('members.data.0.organization_name', 'Koperasi Jaya Bersama')
+            );
+    }
+
+    public function test_member_summary_includes_revision_and_is_organization_scoped(): void
+    {
+        $organization = Organization::factory()->create();
+        $otherOrganization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+
+        CooperativeMember::factory()->active()->count(5)->create([
+            'organization_id' => $organization->id,
+        ]);
+        CooperativeMember::factory()->pending()->create([
+            'organization_id' => $organization->id,
+        ]);
+        CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'status' => 'INACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_REVISION,
+        ]);
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $otherOrganization->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('cooperative.members.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Members/Index')
+                ->loadDeferredProps('member-stats', fn (Assert $page) => $page
+                    ->where('stats.total', 7)
+                    ->where('stats.active', 5)
+                    ->where('stats.pending_validation', 1)
+                    ->where('stats.revision', 1)
+                )
+            );
+    }
+
     public function test_cooperative_member_show_includes_savings_summary_by_category(): void
     {
         $organization = Organization::factory()->create();

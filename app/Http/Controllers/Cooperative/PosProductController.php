@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\StorePosStockAdjustmentRequest;
 use App\Http\Requests\Cooperative\UpdatePosProductRequest;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
+use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosProductImageService;
 use App\Services\Cooperative\PosStockAdjustmentService;
 use Illuminate\Http\RedirectResponse;
@@ -17,9 +18,9 @@ use Inertia\Response;
 
 class PosProductController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, PosProductAccessService $productAccess): Response
     {
-        $query = PosProduct::query()->with('category');
+        $query = $productAccess->scopeVisibleTo(PosProduct::query(), $request->user())->with('category');
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -53,8 +54,10 @@ class PosProductController extends Controller
     public function store(
         StorePosProductRequest $request,
         PosProductImageService $imageService,
+        PosProductAccessService $productAccess,
     ): RedirectResponse {
         $data = $request->validated();
+        $data['organization_id'] = $productAccess->assertCanCreate($request->user());
 
         if ($request->hasFile('image')) {
             $data['image_path'] = $imageService->storeImage(
@@ -69,8 +72,9 @@ class PosProductController extends Controller
         return back()->with('success', 'POS product created successfully.');
     }
 
-    public function show(PosProduct $product): Response
+    public function show(Request $request, PosProduct $product, PosProductAccessService $productAccess): Response
     {
+        $productAccess->assertCanOperate($request->user(), $product);
         $product->load(['category', 'stockMovements' => fn ($query) => $query->orderByDesc('created_at')->limit(100)]);
 
         return Inertia::render('Cooperative/Inventory/Products/Show', [
@@ -82,7 +86,9 @@ class PosProductController extends Controller
         UpdatePosProductRequest $request,
         PosProduct $product,
         PosProductImageService $imageService,
+        PosProductAccessService $productAccess,
     ): RedirectResponse {
+        $productAccess->assertCanOperate($request->user(), $product);
         $data = $request->validated();
 
         if ($request->boolean('remove_image')) {
@@ -102,8 +108,9 @@ class PosProductController extends Controller
         return back()->with('success', 'POS product updated successfully.');
     }
 
-    public function destroy(PosProduct $product, PosProductImageService $imageService): RedirectResponse
+    public function destroy(Request $request, PosProduct $product, PosProductImageService $imageService, PosProductAccessService $productAccess): RedirectResponse
     {
+        $productAccess->assertCanOperate($request->user(), $product);
         if ($product->stockMovements()->exists()) {
             return back()->with('error', 'Cannot delete product with stock movements.');
         }
@@ -118,12 +125,15 @@ class PosProductController extends Controller
         StorePosStockAdjustmentRequest $request,
         PosProduct $product,
         PosStockAdjustmentService $service,
+        PosProductAccessService $productAccess,
     ): RedirectResponse {
+        $productAccess->assertCanOperate($request->user(), $product);
         $service->adjust(
             $product,
             $request->validated('movement_type'),
             (int) $request->validated('quantity'),
             $request->validated('notes'),
+            $request->user(),
         );
 
         return back()->with('success', 'POS stock adjusted successfully.');

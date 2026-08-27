@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CooperativeMember;
 use App\Models\MemberPaymentIntent;
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -16,6 +17,8 @@ use Tests\TestCase;
 class MemberStoreOrderApiTest extends TestCase
 {
     use DatabaseMigrations;
+
+    private Organization $organization;
 
     protected function setUp(): void
     {
@@ -34,6 +37,7 @@ class MemberStoreOrderApiTest extends TestCase
         ]);
 
         PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'name' => 'Beras Premium 5kg',
             'sale_price' => 75000,
@@ -52,6 +56,7 @@ class MemberStoreOrderApiTest extends TestCase
         $member = $this->actingMember(['member:read', 'member:write']);
         $category = PosCategory::factory()->create(['name' => 'Sembako', 'slug' => 'sembako']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'name' => 'Minyak Goreng 2L',
             'cost_price' => 25000,
@@ -128,6 +133,7 @@ class MemberStoreOrderApiTest extends TestCase
         $this->actingMember(['member:write']);
         $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'name' => 'Buku Tulis',
             'cost_price' => 3000,
@@ -152,6 +158,7 @@ class MemberStoreOrderApiTest extends TestCase
         $this->actingMember(['member:write']);
         $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk-amount']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'sale_price' => 5000,
             'stock' => 10,
@@ -181,6 +188,7 @@ class MemberStoreOrderApiTest extends TestCase
         $this->actingMember(['member:write']);
         $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
             'name' => 'Pulpen',
             'cost_price' => 1000,
@@ -200,6 +208,7 @@ class MemberStoreOrderApiTest extends TestCase
     {
         $this->actingMember(['member:write']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'sale_price' => 5000,
             'stock' => 4,
         ]);
@@ -225,6 +234,7 @@ class MemberStoreOrderApiTest extends TestCase
     {
         $this->actingMember(['member:write']);
         $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
             'sale_price' => 5000,
             'stock' => 4,
         ]);
@@ -254,8 +264,10 @@ class MemberStoreOrderApiTest extends TestCase
      */
     private function actingMember(array $abilities): CooperativeMember
     {
-        $user = User::factory()->create();
+        $this->organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
             'user_id' => $user->id,
         ]);
 

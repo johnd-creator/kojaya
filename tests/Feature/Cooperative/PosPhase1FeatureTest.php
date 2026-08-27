@@ -29,7 +29,7 @@ class PosPhase1FeatureTest extends TestCase
         $organization = Organization::factory()->create();
         $cashier->update(['organization_id' => $organization->id]);
         $member = CooperativeMember::factory()->create(['status' => 'ACTIVE', 'organization_id' => $organization->id]);
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -59,7 +59,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_split_payment_with_mismatched_total_is_rejected(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -84,7 +84,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_member_credit_payment_requires_active_member(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -107,7 +107,7 @@ class PosPhase1FeatureTest extends TestCase
     {
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -160,7 +160,7 @@ class PosPhase1FeatureTest extends TestCase
     {
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -195,7 +195,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_duplicate_void_request_is_rejected(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -224,7 +224,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_receipt_endpoint_renders_transaction(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -251,7 +251,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_return_creation_via_web_controller(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -284,7 +284,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_return_form_without_pos_transaction_id_uses_route_binding(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 5,
@@ -323,7 +323,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_return_cannot_reference_items_from_another_transaction(): void
     {
         $cashier = $this->cashier();
-        $product = PosProduct::factory()->create([
+        $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -365,15 +365,26 @@ class PosPhase1FeatureTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo('access_cooperative_pos');
 
         return $user;
     }
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function product(User $cashier, array $attributes = []): PosProduct
+    {
+        return PosProduct::factory()->create([
+            'organization_id' => $cashier->organization_id,
+            ...$attributes,
+        ]);
+    }
+
     private function supervisor(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;

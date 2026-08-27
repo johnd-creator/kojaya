@@ -17,6 +17,8 @@ class CoffeeOrderWorkflowTest extends TestCase
 {
     use DatabaseMigrations;
 
+    private Organization $organization;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,7 +32,7 @@ class CoffeeOrderWorkflowTest extends TestCase
         $organization = Organization::factory()->create();
         $admin = $this->posAdmin($organization);
         $member = $this->actingMember(['member:read', 'member:write'], $organization);
-        $product = $this->coffeeProduct();
+        $product = $this->coffeeProduct($organization);
 
         $this->postJson('/api/v1/member/coffee/orders', [
             'pos_product_id' => $product->id,
@@ -74,7 +76,7 @@ class CoffeeOrderWorkflowTest extends TestCase
     {
         $organization = Organization::factory()->create();
         $member = $this->actingMember(['member:read', 'member:write'], $organization);
-        $product = $this->coffeeProduct();
+        $product = $this->coffeeProduct($organization);
 
         $response = $this->postJson('/api/v1/member/coffee/orders', [
             'pos_product_id' => $product->id,
@@ -130,8 +132,11 @@ class CoffeeOrderWorkflowTest extends TestCase
 
         $orderId = CoffeeOrder::query()->firstOrFail()->id;
 
-        $otherUser = User::factory()->create();
-        CooperativeMember::factory()->active()->create(['user_id' => $otherUser->id]);
+        $otherUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => $otherUser->id,
+        ]);
         Sanctum::actingAs($otherUser, ['member:read']);
 
         $this->getJson('/api/v1/member/coffee/orders/'.$orderId)
@@ -140,7 +145,7 @@ class CoffeeOrderWorkflowTest extends TestCase
         $this->assertSame($member->id, CoffeeOrder::query()->firstOrFail()->cooperative_member_id);
     }
 
-    private function coffeeProduct(): PosProduct
+    private function coffeeProduct(?Organization $organization = null): PosProduct
     {
         $category = PosCategory::factory()->create([
             'name' => 'Espresso',
@@ -148,6 +153,7 @@ class CoffeeOrderWorkflowTest extends TestCase
         ]);
 
         return PosProduct::factory()->create([
+            'organization_id' => ($organization ?? $this->organization)->id,
             'pos_category_id' => $category->id,
             'name' => 'Espresso Kojaya',
             'cost_price' => 8000,
@@ -161,11 +167,12 @@ class CoffeeOrderWorkflowTest extends TestCase
      */
     private function actingMember(array $abilities, ?Organization $organization = null): CooperativeMember
     {
+        $this->organization = $organization ?? Organization::factory()->create();
         $user = User::factory()->create([
-            'organization_id' => $organization?->id,
+            'organization_id' => $this->organization->id,
         ]);
         $member = CooperativeMember::factory()->active()->create([
-            'organization_id' => $organization?->id ?? Organization::factory(),
+            'organization_id' => $this->organization->id,
             'user_id' => $user->id,
         ]);
 

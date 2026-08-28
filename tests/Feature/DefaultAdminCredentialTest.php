@@ -11,37 +11,34 @@ class DefaultAdminCredentialTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_seeder_creates_admin_user_in_testing_environment(): void
+    public function test_seeder_does_not_create_admin_user_in_any_environment(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
-        $this->assertNotNull(
+        $this->assertNull(
             User::where('email', 'admin@erp.com')->first(),
-            'Default admin user should be created in non-production environments.',
+            'RolePermissionSeeder must not create privileged users with default passwords in testing.',
         );
-    }
 
-    public function test_seeder_does_not_create_admin_in_production_environment(): void
-    {
         $this->app['env'] = 'production';
-
-        // Run the seeder directly to bypass db:seed's confirmToProceed() prompt
-        // which cannot interact during tests.
         (new RolePermissionSeeder)->run();
 
         $this->assertNull(
             User::where('email', 'admin@erp.com')->first(),
-            'Default admin user must not be created in production.',
+            'RolePermissionSeeder must not create privileged users with default passwords in production.',
         );
     }
 
-    public function test_seeder_still_creates_roles_and_permissions_in_production(): void
+    public function test_seeder_creates_roles_and_permissions_in_all_environments(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
-        // Roles and permissions are always created regardless of environment.
         $this->assertDatabaseHas('roles', ['name' => 'System Admin']);
         $this->assertDatabaseHas('roles', ['name' => 'Anggota']);
+        $this->assertDatabaseHas('roles', ['name' => 'Pengurus Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Manajer Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Admin Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Kasir Koperasi']);
         $this->assertDatabaseHas('permissions', ['name' => 'view_cooperative_member']);
         $this->assertDatabaseHas('permissions', ['name' => 'export_cooperative_member']);
         $this->assertDatabaseHas('permissions', ['name' => 'review_cooperative_resignation']);

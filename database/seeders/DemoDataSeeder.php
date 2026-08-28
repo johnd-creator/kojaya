@@ -52,6 +52,10 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
+            throw new \LogicException('DemoDataSeeder is only available in local, testing, or playwright environments.');
+        }
+
         $this->call(RolePermissionSeeder::class);
 
         $headOffice = Organization::query()->firstOrCreate(

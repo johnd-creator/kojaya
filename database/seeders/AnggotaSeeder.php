@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
-use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\Organization;
@@ -19,9 +18,14 @@ class AnggotaSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Guarded strictly for local development and test environments.
      */
     public function run(): void
     {
+        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
+            throw new \LogicException('AnggotaSeeder is only available in local, testing, or playwright environments.');
+        }
+
         $organization = Organization::query()->firstOrCreate(
             ['code' => 'KOP-001'],
             [
@@ -47,7 +51,7 @@ class AnggotaSeeder extends Seeder
             $namaAnggota = $row['nama_anggota'];
             $noRekening = strtoupper((string) ($row['no_rekening'] ?? ''));
 
-            $member = CooperativeMember::query()->updateOrCreate(
+            $member = CooperativeMember::withTrashed()->updateOrCreate(
                 ['no_anggota' => $row['no_anggota']],
                 [
                     ...$row,
@@ -70,63 +74,33 @@ class AnggotaSeeder extends Seeder
                     'no_rekening' => $row['autodebet'] === 'MANUAL' || $noRekening === 'MANUAL' ? null : $row['no_rekening'],
                 ]
             );
+            $member->restore();
 
-            $memberNumber = (int) $row['no_anggota'];
-            $this->resetDemoSavingsForMember($member, [$pokok->id, $wajib->id]);
+            $memberNumber = (int) substr((string) $row['no_anggota'], -3);
             $this->seedInvoicePayment($member, $pokok, Carbon::parse($row['tanggal_aktif'])->format('Y-m'), (float) $pokok->default_amount, (float) $pokok->default_amount, 'ANGGOTA-POKOK-'.$row['no_anggota'], $pengurus);
             $this->seedMonthlyMandatoryDues($member, $wajib, $memberNumber, $pengurus);
         }
     }
 
+    /**
+     * Namespaced demo member identities to prevent collision with production members.
+     *
+     * @return list<array<string, mixed>>
+     */
     private function rows(): array
     {
         return [
-            ['no_anggota' => '001', 'tanggal_aktif' => '2025-01-01', 'nama_anggota' => 'Ahmad Hidayat', 'status' => 'AKTIF', 'npwp' => '12.345.678.9-012.000', 'no_telp' => '081234560001', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'IP', 'autodebet' => 'BNI', 'no_rekening' => '880100001'],
-            ['no_anggota' => '002', 'tanggal_aktif' => '2025-02-01', 'nama_anggota' => 'Siti Aminah', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560002', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'P', 'kategori' => 'IP', 'autodebet' => 'BRI', 'no_rekening' => '330200002'],
-            ['no_anggota' => '003', 'tanggal_aktif' => '2025-03-01', 'nama_anggota' => 'Budi Santoso*', 'status' => 'AKTIF', 'npwp' => '22.333.444.5-666.000', 'no_telp' => '081234560003', 'jenis_anggota' => 'ALB', 'jenis_kelamin' => 'L', 'kategori' => 'CDB', 'autodebet' => 'MANUAL', 'no_rekening' => null],
-            ['no_anggota' => '004', 'tanggal_aktif' => '2025-04-01', 'nama_anggota' => 'Dewi Lestari', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560004', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'P', 'kategori' => 'KOP', 'autodebet' => 'MANUAL', 'no_rekening' => 'MANUAL'],
-            ['no_anggota' => '005', 'tanggal_aktif' => '2025-05-01', 'nama_anggota' => 'Rudi Hartono', 'status' => 'AKTIF', 'npwp' => '33.444.555.6-777.000', 'no_telp' => null, 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'IP', 'autodebet' => 'BNI', 'no_rekening' => '880100005'],
-            ['no_anggota' => '006', 'tanggal_aktif' => '2025-06-01', 'nama_anggota' => 'Maya Putri*', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560006', 'jenis_anggota' => 'ALB', 'jenis_kelamin' => 'P', 'kategori' => 'CDB', 'autodebet' => 'BRI', 'no_rekening' => '330200006'],
-            ['no_anggota' => '007', 'tanggal_aktif' => '2025-07-01', 'nama_anggota' => 'Agus Salim', 'status' => 'AKTIF', 'npwp' => '44.555.666.7-888.000', 'no_telp' => '081234560007', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'KOP', 'autodebet' => 'MANUAL', 'no_rekening' => null],
-            ['no_anggota' => '008', 'tanggal_aktif' => '2025-08-01', 'nama_anggota' => 'Nina Kartika', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560008', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'P', 'kategori' => 'IP', 'autodebet' => 'BNI', 'no_rekening' => '880100008'],
-            ['no_anggota' => '009', 'tanggal_aktif' => '2025-09-01', 'nama_anggota' => 'Fajar Nugroho', 'status' => 'AKTIF', 'npwp' => '55.666.777.8-999.000', 'no_telp' => '081234560009', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'CDB', 'autodebet' => 'BRI', 'no_rekening' => '330200009'],
-            ['no_anggota' => '010', 'tanggal_aktif' => '2025-10-01', 'nama_anggota' => 'Ratna Sari*', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560010', 'jenis_anggota' => 'ALB', 'jenis_kelamin' => 'P', 'kategori' => 'KOP', 'autodebet' => 'MANUAL', 'no_rekening' => null],
+            ['no_anggota' => 'DEMO-ANG-001', 'tanggal_aktif' => '2025-01-01', 'nama_anggota' => 'Ahmad Hidayat', 'status' => 'AKTIF', 'npwp' => '12.345.678.9-012.000', 'no_telp' => '081234560001', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'IP', 'autodebet' => 'BNI', 'no_rekening' => '880100001'],
+            ['no_anggota' => 'DEMO-ANG-002', 'tanggal_aktif' => '2025-02-01', 'nama_anggota' => 'Siti Aminah', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560002', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'P', 'kategori' => 'IP', 'autodebet' => 'BRI', 'no_rekening' => '330200002'],
+            ['no_anggota' => 'DEMO-ANG-003', 'tanggal_aktif' => '2025-03-01', 'nama_anggota' => 'Budi Santoso*', 'status' => 'AKTIF', 'npwp' => '22.333.444.5-666.000', 'no_telp' => '081234560003', 'jenis_anggota' => 'ALB', 'jenis_kelamin' => 'L', 'kategori' => 'CDB', 'autodebet' => 'MANUAL', 'no_rekening' => null],
+            ['no_anggota' => 'DEMO-ANG-004', 'tanggal_aktif' => '2025-04-01', 'nama_anggota' => 'Dewi Lestari', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560004', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'P', 'kategori' => 'KOP', 'autodebet' => 'MANUAL', 'no_rekening' => 'MANUAL'],
+            ['no_anggota' => 'DEMO-ANG-005', 'tanggal_aktif' => '2025-05-01', 'nama_anggota' => 'Rudi Hartono', 'status' => 'AKTIF', 'npwp' => '33.444.555.6-777.000', 'no_telp' => null, 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'IP', 'autodebet' => 'BNI', 'no_rekening' => '880100005'],
+            ['no_anggota' => 'DEMO-ANG-006', 'tanggal_aktif' => '2025-06-01', 'nama_anggota' => 'Maya Putri*', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560006', 'jenis_anggota' => 'ALB', 'jenis_kelamin' => 'P', 'kategori' => 'CDB', 'autodebet' => 'BRI', 'no_rekening' => '330200006'],
+            ['no_anggota' => 'DEMO-ANG-007', 'tanggal_aktif' => '2025-07-01', 'nama_anggota' => 'Agus Salim', 'status' => 'AKTIF', 'npwp' => '44.555.666.7-888.000', 'no_telp' => '081234560007', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'KOP', 'autodebet' => 'MANUAL', 'no_rekening' => null],
+            ['no_anggota' => 'DEMO-ANG-008', 'tanggal_aktif' => '2025-08-01', 'nama_anggota' => 'Nina Kartika', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560008', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'P', 'kategori' => 'IP', 'autodebet' => 'BNI', 'no_rekening' => '880100008'],
+            ['no_anggota' => 'DEMO-ANG-009', 'tanggal_aktif' => '2025-09-01', 'nama_anggota' => 'Fajar Nugroho', 'status' => 'AKTIF', 'npwp' => '55.666.777.8-999.000', 'no_telp' => '081234560009', 'jenis_anggota' => 'AB', 'jenis_kelamin' => 'L', 'kategori' => 'CDB', 'autodebet' => 'BRI', 'no_rekening' => '330200009'],
+            ['no_anggota' => 'DEMO-ANG-010', 'tanggal_aktif' => '2025-10-01', 'nama_anggota' => 'Ratna Sari*', 'status' => 'AKTIF', 'npwp' => null, 'no_telp' => '081234560010', 'jenis_anggota' => 'ALB', 'jenis_kelamin' => 'P', 'kategori' => 'KOP', 'autodebet' => 'MANUAL', 'no_rekening' => null],
         ];
-    }
-
-    /**
-     * @param  array<int, int>  $contributionTypeIds
-     */
-    private function resetDemoSavingsForMember(CooperativeMember $member, array $contributionTypeIds): void
-    {
-        $invoiceIds = CooperativeDuesInvoice::withTrashed()
-            ->where('cooperative_member_id', $member->id)
-            ->whereIn('cooperative_contribution_type_id', $contributionTypeIds)
-            ->pluck('id');
-
-        $paymentIds = CooperativePayment::query()
-            ->where('cooperative_member_id', $member->id)
-            ->where(function ($query) use ($invoiceIds): void {
-                $query->where('reference_no', 'like', 'DEMO-%')
-                    ->orWhereIn('cooperative_dues_invoice_id', $invoiceIds);
-            })
-            ->pluck('id');
-
-        if ($paymentIds->isNotEmpty()) {
-            CooperativeLedgerEntry::query()
-                ->where('cooperative_member_id', $member->id)
-                ->whereIn('cooperative_payment_id', $paymentIds)
-                ->delete();
-
-            CooperativePayment::query()
-                ->whereIn('id', $paymentIds)
-                ->delete();
-        }
-
-        CooperativeDuesInvoice::withTrashed()
-            ->where('cooperative_member_id', $member->id)
-            ->whereIn('cooperative_contribution_type_id', $contributionTypeIds)
-            ->forceDelete();
     }
 
     private function seedMonthlyMandatoryDues(
@@ -219,6 +193,8 @@ class AnggotaSeeder extends Seeder
             ],
         );
 
-        app(CooperativePaymentService::class)->approve($payment, $pengurus);
+        if ($payment->wasRecentlyCreated || $payment->ledgerEntries()->doesntExist()) {
+            app(CooperativePaymentService::class)->approve($payment, $pengurus);
+        }
     }
 }

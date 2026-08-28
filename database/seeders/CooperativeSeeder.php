@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\CooperativeShuPeriodStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
-use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
@@ -23,8 +22,16 @@ use Illuminate\Support\Str;
 
 class CooperativeSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     * Guarded strictly for local development and test environments.
+     */
     public function run(): void
     {
+        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
+            throw new \LogicException('CooperativeSeeder is only available in local, testing, or playwright environments.');
+        }
+
         $headOffice = Organization::query()->updateOrCreate(
             ['code' => 'KOP-001'],
             [
@@ -145,8 +152,8 @@ class CooperativeSeeder extends Seeder
 
         foreach ($names as $index => [$name, $joinedAt]) {
             $number = $index + 1;
-            $email = 'anggota'.$number.'@koperasijayabersama.id';
-            $memberNumber = 'KOP-'.str_pad((string) $number, 3, '0', STR_PAD_LEFT);
+            $email = 'demo.anggota'.$number.'@koperasijayabersama.id';
+            $memberNumber = 'DEMO-KOP-'.str_pad((string) $number, 3, '0', STR_PAD_LEFT);
             $member = CooperativeMember::withTrashed()->updateOrCreate(
                 ['email' => $email],
                 [
@@ -176,53 +183,17 @@ class CooperativeSeeder extends Seeder
             );
             $member->restore();
 
-            $this->resetDemoSavingsForMember($member, [$pokok->id, $wajib->id, $sukarela->id]);
-            $this->seedInvoicePayment($member, $pokok, Carbon::parse($joinedAt)->format('Y-m'), (float) $pokok->default_amount, (float) $pokok->default_amount, 'POKOK-'.$number, $pengurus);
+            $this->seedInvoicePayment($member, $pokok, Carbon::parse($joinedAt)->format('Y-m'), (float) $pokok->default_amount, (float) $pokok->default_amount, 'DEMO-POKOK-'.$number, $pengurus);
             $this->seedMonthlyMandatoryDues($member, $wajib, $number, $pengurus);
 
             if ($number <= 4) {
-                $this->seedInvoicePayment($member, $sukarela, '2026-05', 25000 * $number, 25000 * $number, 'SUKARELA-'.$number, $pengurus);
+                $this->seedInvoicePayment($member, $sukarela, '2026-05', 25000 * $number, 25000 * $number, 'DEMO-SUKARELA-'.$number, $pengurus);
             }
 
             $members[] = $member;
         }
 
         return $members;
-    }
-
-    /**
-     * @param  array<int, int>  $contributionTypeIds
-     */
-    private function resetDemoSavingsForMember(CooperativeMember $member, array $contributionTypeIds): void
-    {
-        $invoiceIds = CooperativeDuesInvoice::withTrashed()
-            ->where('cooperative_member_id', $member->id)
-            ->whereIn('cooperative_contribution_type_id', $contributionTypeIds)
-            ->pluck('id');
-
-        $paymentIds = CooperativePayment::query()
-            ->where('cooperative_member_id', $member->id)
-            ->where(function ($query) use ($invoiceIds): void {
-                $query->where('reference_no', 'like', 'DEMO-%')
-                    ->orWhereIn('cooperative_dues_invoice_id', $invoiceIds);
-            })
-            ->pluck('id');
-
-        if ($paymentIds->isNotEmpty()) {
-            CooperativeLedgerEntry::query()
-                ->where('cooperative_member_id', $member->id)
-                ->whereIn('cooperative_payment_id', $paymentIds)
-                ->delete();
-
-            CooperativePayment::query()
-                ->whereIn('id', $paymentIds)
-                ->delete();
-        }
-
-        CooperativeDuesInvoice::withTrashed()
-            ->where('cooperative_member_id', $member->id)
-            ->whereIn('cooperative_contribution_type_id', $contributionTypeIds)
-            ->forceDelete();
     }
 
     private function seedMonthlyMandatoryDues(
@@ -249,7 +220,7 @@ class CooperativeSeeder extends Seeder
                 $period,
                 (float) $wajib->default_amount,
                 $paidAmount,
-                'WAJIB-'.$memberNumber.'-'.$period,
+                'DEMO-WAJIB-'.$memberNumber.'-'.$period,
                 $pengurus,
             );
         }
@@ -320,7 +291,9 @@ class CooperativeSeeder extends Seeder
             ],
         );
 
-        app(CooperativePaymentService::class)->approve($payment, $pengurus);
+        if ($payment->wasRecentlyCreated || $payment->ledgerEntries()->doesntExist()) {
+            app(CooperativePaymentService::class)->approve($payment, $pengurus);
+        }
     }
 
     /**

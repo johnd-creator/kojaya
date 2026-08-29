@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Backup;
 
+use App\Services\Backup\BackupDatabaseService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use PDO;
 use RuntimeException;
 use Symfony\Component\Process\Process;
@@ -79,14 +81,13 @@ class PostgresRestoreDrillTest extends TestCase
         $this->createDisposableDatabase($this->disposableSourceDb, $host, $port, $username, $password);
 
         // 3. Configure temporary database connection for source
-        Config::set('database.connections.restore_drill_source', array_merge($connection, [
-            'database' => $this->disposableSourceDb,
-        ]));
-        DB::purge('restore_drill_source');
+        Config::set('database.connections.pgsql.database', $this->disposableSourceDb);
+        Config::set('database.default', 'pgsql');
+        DB::purge('pgsql');
 
         // 4. Migrate disposable source database
         $this->artisan('migrate', [
-            '--database' => 'restore_drill_source',
+            '--database' => 'pgsql',
             '--force' => true,
         ])->assertSuccessful();
 
@@ -115,33 +116,32 @@ class PostgresRestoreDrillTest extends TestCase
         $this->assertGreaterThan(0, $sourceUserCount);
         $this->assertGreaterThan(0, $sourceOrgCount);
 
-        // 6. Execute pg_dump custom format from disposable source database
-        $this->dumpFilePath = storage_path('app/private/backups/tmp/drill_'.uniqid().'.dump');
-        File::ensureDirectoryExists(dirname($this->dumpFilePath));
+        // 6. Execute actual Kojaya BackupDatabaseService code path
+        $drillDirectory = 'backups/database/drill_'.uniqid();
+        $backupService = app(\App\Services\Backup\BackupDatabaseService::class);
+        $result = $backupService->backup(
+            disk: 'local',
+            directory: $drillDirectory,
+            purpose: 'restore-drill'
+        );
 
-        $dumpProcess = new Process([
-            'pg_dump',
-            '--format=custom',
-            '--no-owner',
-            '--no-acl',
-            '--host='.$host,
-            '--port='.$port,
-            '--username='.$username,
-            '--dbname='.$this->disposableSourceDb,
-            '--file='.$this->dumpFilePath,
-        ], base_path(), ['PGPASSWORD' => $password]);
-        $dumpProcess->setTimeout(120);
-        $dumpProcess->run();
+        $this->assertSame('success', $result['status']);
+        $producedRelativePath = $result['primary_copy']['path'];
+        $this->dumpFilePath = Storage::disk('local')->path($producedRelativePath);
 
-        if (! $dumpProcess->isSuccessful()) {
-            $error = trim($dumpProcess->getErrorOutput() ?: $dumpProcess->getOutput());
-            $this->fail("pg_dump of disposable source database failed: {$error}");
-        }
-
+        // 7. Assert produced .dump, .json manifest, and .sha256 checksum
         $this->assertFileExists($this->dumpFilePath);
         $this->assertGreaterThan(0, File::size($this->dumpFilePath));
+        $this->assertFileExists($this->dumpFilePath.'.json');
+        $this->assertFileExists($this->dumpFilePath.'.sha256');
 
-        // 7. Verify dump archive using pg_restore --list
+        // 8. Cryptographically verify the produced backup artifact
+        $verificationService = app(\App\Services\Backup\BackupVerificationService::class);
+        $manifest = $verificationService->verifyStorageBackup('local', $producedRelativePath, requireProvenance: true);
+        $this->assertSame('verified', $manifest->verificationStatus);
+        $this->assertSame('pgsql', $manifest->databaseEngine);
+
+        // 9. Verify dump archive structure using pg_restore --list
         $listProcess = new Process([
             'pg_restore',
             '--list',
@@ -150,10 +150,10 @@ class PostgresRestoreDrillTest extends TestCase
         $listProcess->run();
         $this->assertTrue($listProcess->isSuccessful(), 'pg_restore --list must succeed on custom dump');
 
-        // 8. Create disposable target database
+        // 10. Create disposable target database
         $this->createDisposableDatabase($this->disposableTargetDb, $host, $port, $username, $password);
 
-        // 9. Execute pg_restore into disposable target database
+        // 11. Execute pg_restore into disposable target database
         $restoreProcess = new Process([
             'pg_restore',
             '--no-owner',
@@ -173,7 +173,7 @@ class PostgresRestoreDrillTest extends TestCase
             $this->fail("pg_restore into disposable target database failed: {$error}");
         }
 
-        // 10. Verify restored data in target database
+        // 12. Verify restored data in target database
         $pdoTarget = new PDO(
             "pgsql:host={$host};port={$port};dbname={$this->disposableTargetDb}",
             $username,
@@ -193,6 +193,9 @@ class PostgresRestoreDrillTest extends TestCase
         $this->assertSame('Drill Source Org', $restoredOrgName);
 
         unset($pdoTarget);
+
+        // Cleanup drill directory in storage
+        Storage::disk('local')->deleteDirectory($drillDirectory);
     }
 
     private function createDisposableDatabase(string $dbName, string $host, string $port, string $user, string $pass): void

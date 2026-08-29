@@ -308,4 +308,58 @@ class BackupDatabaseCommandTest extends TestCase
             ->expectsOutputToContain('Database backup failed')
             ->assertFailed();
     }
+
+    public function test_backup_fails_closed_when_require_offsite_and_no_offsite_disk_configured(): void
+    {
+        Storage::fake('local');
+        Config::set('operations.backup.require_offsite', true);
+        Config::set('operations.backup.offsite_enabled', false);
+        Config::set('operations.backup.offsite_disk', null);
+
+        $this->artisan('backup:database')
+            ->expectsOutputToContain('no usable off-site disk is configured')
+            ->assertFailed();
+    }
+
+    public function test_backup_fails_closed_when_require_offsite_cli_option_and_no_disk(): void
+    {
+        Storage::fake('local');
+        Config::set('operations.backup.offsite_disk', null);
+
+        $this->artisan('backup:database', [
+            '--require-offsite' => true,
+        ])
+            ->expectsOutputToContain('no usable off-site disk is configured')
+            ->assertFailed();
+    }
+
+    public function test_backup_succeeds_when_require_offsite_and_valid_disk_and_valid_sha(): void
+    {
+        Storage::fake('local');
+        Storage::fake('s3');
+
+        $this->artisan('backup:database', [
+            '--offsite-disk' => 's3',
+            '--require-offsite' => true,
+        ])->assertSuccessful();
+
+        $offsiteFiles = Storage::disk('s3')->files('backups/database');
+        $this->assertCount(3, $offsiteFiles);
+    }
+
+    public function test_backup_sanitizes_hostile_app_env_against_path_traversal(): void
+    {
+        Storage::fake('local');
+        $this->app['env'] = '../../etc/passwd';
+
+        $this->artisan('backup:database')->assertSuccessful();
+
+        $files = Storage::disk('local')->files('backups/database');
+        $dumpFiles = array_values(array_filter($files, fn (string $f): bool => str_ends_with($f, '.sqlite')));
+        $this->assertNotEmpty($dumpFiles);
+
+        $this->assertStringStartsWith('backups/database/kojaya-etc-passwd-', $dumpFiles[0]);
+        $this->assertStringNotContainsString('..', $dumpFiles[0]);
+        $this->assertStringNotContainsString('/', str_replace('backups/database/', '', $dumpFiles[0]));
+    }
 }

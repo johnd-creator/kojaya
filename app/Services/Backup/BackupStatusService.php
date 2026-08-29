@@ -101,13 +101,33 @@ class BackupStatusService
             ];
         }
 
-        // Authoritative backup creation time from manifest
+        // Authoritative backup creation time from manifest (strictly required)
+        if (trim($manifest->createdAt) === '') {
+            return [
+                'status' => 'corrupt',
+                'is_healthy' => false,
+                'latest_backup' => $latestPath,
+                'manifest' => $manifest,
+                'age_hours' => null,
+                'max_age_hours' => $maxAgeHours,
+                'message' => "Latest backup [{$latestPath}] has missing created_at timestamp in manifest.",
+            ];
+        }
+
         try {
             $createdAt = Carbon::parse($manifest->createdAt, 'UTC');
             $ageSeconds = max(0, now('UTC')->getTimestamp() - $createdAt->getTimestamp());
             $ageHours = round($ageSeconds / 3600, 2);
         } catch (Throwable) {
-            $ageHours = round(max(0, time() - (int) $storage->lastModified($latestPath)) / 3600, 2);
+            return [
+                'status' => 'corrupt',
+                'is_healthy' => false,
+                'latest_backup' => $latestPath,
+                'manifest' => $manifest,
+                'age_hours' => null,
+                'max_age_hours' => $maxAgeHours,
+                'message' => "Latest backup [{$latestPath}] has unparseable created_at timestamp in manifest.",
+            ];
         }
 
         if ($ageHours > $maxAgeHours) {

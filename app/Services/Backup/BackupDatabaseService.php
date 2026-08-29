@@ -87,11 +87,16 @@ class BackupDatabaseService
         $this->retentionService->validateDiskSafety($disk);
         $this->retentionService->validateDirectorySafety($directory);
 
-        $offsiteEnabled = $offsiteDisk !== null || (bool) config('operations.backup.offsite_enabled', false);
+        $hasExplicitOffsiteDisk = $offsiteDisk !== null;
         $offsiteDisk = $offsiteDisk ?: config('operations.backup.offsite_disk');
         $offsiteDisk = is_string($offsiteDisk) && trim($offsiteDisk) !== '' ? trim($offsiteDisk) : null;
         $offsiteDirectory = trim((string) ($offsiteDirectory ?: config('operations.backup.offsite_directory', 'backups/database')), '/\\');
         $requireOffsite = $requireOffsite ?? (bool) config('operations.backup.require_offsite', false);
+        $offsiteEnabled = $offsiteDisk !== null && ($hasExplicitOffsiteDisk || (bool) config('operations.backup.offsite_enabled', false) || $requireOffsite);
+
+        if ($requireOffsite && $offsiteDisk === null) {
+            throw new RuntimeException('Off-site backup replication is required (require_offsite=true), but no usable off-site disk is configured.');
+        }
 
         if ($offsiteDisk !== null) {
             $this->retentionService->validateDiskSafety($offsiteDisk);
@@ -108,6 +113,7 @@ class BackupDatabaseService
             throw new RuntimeException("Database backup in [{$environment}] requires PostgreSQL driver, found [{$driver}].");
         }
 
+        $environmentSlug = $this->slugify($environment);
         $databaseName = (string) ($connection['database'] ?? 'database');
         $databaseSlug = $this->slugify($databaseName);
         $host = isset($connection['host']) ? (string) $connection['host'] : null;
@@ -122,7 +128,7 @@ class BackupDatabaseService
         $gitShaShort = substr($gitSha, 0, 7) ?: 'unknown';
         $utcTimestamp = now('UTC')->format('Ymd\THis\Z');
 
-        $backupId = "kojaya-{$environment}-{$databaseSlug}-{$utcTimestamp}-{$gitShaShort}";
+        $backupId = "kojaya-{$environmentSlug}-{$databaseSlug}-{$utcTimestamp}-{$gitShaShort}";
         $extension = match ($driver) {
             'pgsql' => 'dump',
             'sqlite' => 'sqlite',
@@ -587,10 +593,11 @@ class BackupDatabaseService
     private function slugify(string $value): string
     {
         return str($value)
-            ->afterLast(DIRECTORY_SEPARATOR)
+            ->replace(['/', '\\', '..'], '-')
             ->replaceMatches('/[^A-Za-z0-9_.-]+/', '-')
-            ->trim('-')
+            ->replaceMatches('/\.+/', '.')
+            ->trim('.-')
             ->lower()
-            ->value() ?: 'database';
+            ->value() ?: 'unknown';
     }
 }

@@ -126,4 +126,41 @@ class BackupStatusCommandTest extends TestCase
             ->expectsOutputToContain('No backup files found')
             ->assertFailed();
     }
+
+    public function test_status_fails_corrupt_when_manifest_created_at_is_invalid_even_if_mtime_fresh(): void
+    {
+        Storage::fake('local');
+
+        $dbPath = storage_path('framework/test_status_invalid_ts_'.uniqid().'.sqlite');
+        File::ensureDirectoryExists(dirname($dbPath));
+
+        $sqlite = new SQLite3($dbPath);
+        $sqlite->exec('CREATE TABLE t (id INT)');
+        $sqlite->close();
+
+        $content = File::get($dbPath);
+        $sha = hash('sha256', $content);
+
+        // Manifest has unparseable/invalid timestamp
+        $manifestJson = json_encode([
+            'backup_id' => 'invalid-ts-1',
+            'created_at' => 'NOT_A_VALID_DATE_STRING',
+            'database_engine' => 'sqlite',
+            'sha256' => $sha,
+            'verification_status' => 'verified',
+        ]);
+
+        Storage::disk('local')->put('backups/database/invalid_ts.sqlite', $content);
+        Storage::disk('local')->put('backups/database/invalid_ts.sqlite.json', $manifestJson);
+        Storage::disk('local')->put('backups/database/invalid_ts.sqlite.sha256', "{$sha}  invalid_ts.sqlite\n");
+
+        // Filesystem mtime is fresh
+        touch(Storage::disk('local')->path('backups/database/invalid_ts.sqlite'), now()->getTimestamp());
+
+        $this->artisan('backup:status')
+            ->expectsOutputToContain('unparseable created_at timestamp')
+            ->assertFailed();
+
+        File::delete($dbPath);
+    }
 }

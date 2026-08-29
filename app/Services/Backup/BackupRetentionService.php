@@ -56,7 +56,7 @@ class BackupRetentionService
                 $timestamp = null;
                 if ($manifest && $manifest->createdAt !== '') {
                     try {
-                        $timestamp = Carbon::parse($manifest->createdAt)->getTimestamp();
+                        $timestamp = Carbon::parse($manifest->createdAt, 'UTC')->getTimestamp();
                     } catch (Throwable) {
                         $timestamp = null;
                     }
@@ -75,12 +75,11 @@ class BackupRetentionService
             }
         }
 
-        // Sort newest first
+        // Sort candidates newest first
         usort($candidates, fn (array $a, array $b): int => $b['timestamp'] <=> $a['timestamp']);
 
         // Separate valid candidates vs invalid/unverified candidates
         $validCandidates = array_values(array_filter($candidates, fn (array $item): bool => $item['is_valid']));
-        $invalidCandidates = array_values(array_filter($candidates, fn (array $item): bool => ! $item['is_valid']));
 
         // Protect at least $minKeep valid backups
         $protectedValidPaths = [];
@@ -90,34 +89,36 @@ class BackupRetentionService
 
         $retainedFiles = [];
         $filesToPrune = [];
+        $manualReviewCandidates = [];
 
         foreach ($candidates as $item) {
             $path = $item['path'];
             $timestamp = $item['timestamp'];
             $isValid = $item['is_valid'];
 
-            // 1. Never prune protected valid backups
+            // 1. NEVER auto-delete invalid, corrupt, unverified, or mismatching backups!
+            if (! $isValid) {
+                $retainedFiles[] = $path;
+                $manualReviewCandidates[] = $path;
+
+                continue;
+            }
+
+            // 2. Never prune protected valid backups
             if (isset($protectedValidPaths[$path])) {
                 $retainedFiles[] = $path;
 
                 continue;
             }
 
-            // 2. If valid and newer than cutoff, keep
-            if ($isValid && $timestamp >= $cutoffTimestamp) {
+            // 3. If valid and newer than cutoff (not expired), keep
+            if ($timestamp >= $cutoffTimestamp) {
                 $retainedFiles[] = $path;
 
                 continue;
             }
 
-            // 3. If no valid backups exist at all, fail closed and retain all candidates
-            if (empty($validCandidates)) {
-                $retainedFiles[] = $path;
-
-                continue;
-            }
-
-            // 4. Candidate is eligible for pruning
+            // 4. Candidate is VALID, EXPIRED, and NOT protected by min_keep -> eligible for pruning
             $filesToPrune[] = $path;
             if ($storage->exists($path.'.json')) {
                 $filesToPrune[] = $path.'.json';
@@ -143,6 +144,7 @@ class BackupRetentionService
             'pruned_count' => $prunedCount,
             'pruned_files' => array_values(array_unique($filesToPrune)),
             'retained_files' => array_values(array_unique($retainedFiles)),
+            'manual_review_candidates' => array_values(array_unique($manualReviewCandidates)),
             'dry_run' => $dryRun,
         ];
     }
@@ -253,6 +255,50 @@ class BackupRetentionService
             return false;
         }
 
+        // Streaming SHA-256 calculation of actual stored backup bytes
+        try {
+            $actualSha256 = $this->calculateStorageStreamSha256($disk, $backupPath);
+            if (! hash_equals(strtolower($manifest->sha256), strtolower($actualSha256))) {
+                return false;
+            }
+        } catch (Throwable) {
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Compute SHA-256 hash by streaming directly from a storage disk.
+     */
+    public function calculateStorageStreamSha256(string $disk, string $path): string
+    {
+        if ($this->verificationService !== null) {
+            return $this->verificationService->calculateStorageStreamSha256($disk, $path);
+        }
+
+        $storage = Storage::disk($disk);
+        $stream = $storage->readStream($path);
+
+        if ($stream === false) {
+            throw new InvalidArgumentException("Unable to open read stream for [{$disk}:{$path}].");
+        }
+
+        $ctx = hash_init('sha256');
+
+        try {
+            while (! feof($stream)) {
+                $buffer = fread($stream, 1048576); // 1MB chunk
+                if ($buffer !== false && $buffer !== '') {
+                    hash_update($ctx, $buffer);
+                }
+            }
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+
+        return hash_final($ctx);
     }
 }

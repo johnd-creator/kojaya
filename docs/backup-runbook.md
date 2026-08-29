@@ -19,7 +19,7 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 | Layer | Type | Mechanism | Schedule / Trigger | Target SLA |
 | :--- | :--- | :--- | :--- | :--- |
 | **Layer 1** | **Pre-Deploy Logical Backup** | `php artisan backup:database --purpose=pre-deploy` | Mandatory pre-deployment gate in `bin/deploy.sh` | Zero data loss across deployments |
-| **Layer 2** | **Scheduled Logical Backup** | `php artisan backup:database --purpose=scheduled --prune` | Daily at 02:30 UTC+7 via Laravel Scheduler | Max 24h data age (SLA < 26h) |
+| **Layer 2** | **Scheduled Logical Backup** | `php artisan backup:database --purpose=scheduled --prune` | Daily at 02:30 UTC / 09:30 WIB via Laravel Scheduler | Max 24h data age (SLA < 26h) |
 | **Layer 3** | **Off-Site Copy** | Provider-neutral Laravel Filesystem disk (`s3`, `r2`, `minio`) | Replicated with streaming SHA-256 validation | Geographic redundancy |
 | **Layer 4** | **WAL Archiving / PITR** | Continuous WAL streaming (e.g. pgBackRest) *(Follow-up Design)* | Continuous archive | RPO <= 15 min, RTO <= 1 hour |
 | **Layer 5** | **Infrastructure Snapshot** | VPS / Disk block storage snapshot | Weekly / Monthly by cloud provider | Disaster recovery of host OS *(Not a DB replacement)* |
@@ -272,24 +272,39 @@ createdb kojaya_recovery_20260829
 pg_restore --no-owner --no-acl --exit-on-error --dbname=kojaya_recovery_20260829 kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump
 ```
 
-#### 6. Application Code Alignment & Migration After Restore
+#### 6. Application Code Alignment, Config Cache Clear, and Migration After Restore
 1. **Checkout Application Revision:** Check out the exact Git commit SHA recorded in the manifest (`application_git_sha`).
    ```bash
    git checkout <manifest_git_sha>
    ```
-2. **Inspect Migration Status:**
-   ```bash
-   DB_DATABASE=kojaya_recovery_20260829 php artisan migrate:status
-   ```
-3. **Apply Forward-Only Migrations Deliberately:**
-   If rolling forward to a newer application version, apply only forward migrations deliberately:
-   ```bash
-   DB_DATABASE=kojaya_recovery_20260829 php artisan migrate --force
-   ```
-4. **Clear Caches & Run Preflight:**
+2. **Clear Caching Layers Immediately:** Clear all cached configuration, routes, and views before establishing recovery database context to prevent stale configuration pollution.
    ```bash
    php artisan optimize:clear
-   DB_DATABASE=kojaya_recovery_20260829 php artisan app:release-preflight --strict-production
+   ```
+3. **Establish Recovery DB Context & Verify Runtime DB Identity:**
+   Configure the recovery database target context:
+   ```bash
+   export DB_DATABASE=kojaya_recovery_20260829
+   ```
+   Execute an explicit runtime PostgreSQL verification query to prove that the application runtime is actively connected to the intended recovery database:
+   ```bash
+   php artisan tinker --execute="echo 'Connected DB: ' . DB::selectOne('SELECT current_database() as db')->db . PHP_EOL;"
+   ```
+   > [!CRITICAL]
+   > The output MUST strictly equal `kojaya_recovery_20260829`. If the output does not match or indicates the live production database, **STOP IMMEDIATELY**. Never execute migrations or commands before runtime database identity is proven.
+4. **Inspect Migration Status:**
+   ```bash
+   php artisan migrate:status
+   ```
+5. **Review Migration Plan:** Confirm the list of unapplied migrations and verify that no destructive operations are pending.
+6. **Apply Forward-Only Migrations Deliberately:**
+   Only after runtime DB identity is proven and reviewed:
+   ```bash
+   php artisan migrate --force
+   ```
+7. **Execute Release Preflight:**
+   ```bash
+   php artisan app:release-preflight --strict-production
    ```
 
 #### 7. Cutover, Post-Recovery Smoke Test, and Exit Maintenance

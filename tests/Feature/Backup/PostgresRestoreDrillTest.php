@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Backup;
 
+use App\DTOs\Backup\BackupManifestDTO;
 use App\Services\Backup\BackupDatabaseService;
+use App\Services\Backup\BackupVerificationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -15,22 +17,32 @@ use Throwable;
 
 class PostgresRestoreDrillTest extends TestCase
 {
+    private static string $requiredConnection = '';
+
     private ?string $disposableSourceDb = null;
 
     private ?string $disposableTargetDb = null;
 
     private ?string $dumpFilePath = null;
 
+    private ?string $drillDirectory = null;
+
+    public static function setUpBeforeClass(): void
+    {
+        self::$requiredConnection = getenv('DB_CONNECTION') ?: 'sqlite';
+    }
+
+    public function refreshDatabase(): void {}
+
     protected function setUp(): void
     {
-        parent::setUp();
-
-        if (! app()->environment('testing')) {
-            throw new RuntimeException('CRITICAL: PostgreSQL restore drill is strictly prohibited outside APP_ENV=testing.');
+        $appEnv = getenv('APP_ENV') ?: 'testing';
+        if ($appEnv !== 'testing') {
+            throw new RuntimeException('CRITICAL: PostgreSQL restore drill is strictly prohibited outside APP_ENV=testing. Got APP_ENV='.$appEnv);
         }
 
-        if (Config::get('database.default') !== 'pgsql') {
-            $this->markTestSkipped('PostgreSQL restore drill requires pgsql database connection.');
+        if (self::$requiredConnection !== 'pgsql') {
+            throw new RuntimeException('PostgreSQL restore drill REQUIRES PostgreSQL (DB_CONNECTION=pgsql). Got DB_CONNECTION='.self::$requiredConnection);
         }
 
         // Verify pg_dump and pg_restore binaries are available
@@ -40,22 +52,65 @@ class PostgresRestoreDrillTest extends TestCase
         $pgRestoreCheck->run();
 
         if (! $pgDumpCheck->isSuccessful() || ! $pgRestoreCheck->isSuccessful()) {
-            $this->markTestSkipped('pg_dump and pg_restore binaries are required for PostgreSQL restore drill.');
+            throw new RuntimeException('pg_dump and pg_restore binaries are required for PostgreSQL restore drill.');
         }
+
+        $this->refreshApplication();
+
+        if (! app()->environment('testing')) {
+            throw new RuntimeException('CRITICAL: PostgreSQL restore drill is strictly prohibited outside APP_ENV=testing.');
+        }
+
+        $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+        $dbPort = getenv('DB_PORT') ?: '5432';
+        $dbDatabase = getenv('DB_DATABASE') ?: 'kojaya_test';
+        $dbUsername = getenv('DB_USERNAME') ?: 'kojaya';
+        $dbPassword = getenv('DB_PASSWORD') ?: 'kojaya';
+
+        putenv('DB_CONNECTION=pgsql');
+        putenv('DB_DATABASE='.$dbDatabase);
+        $_ENV['DB_CONNECTION'] = 'pgsql';
+        $_ENV['DB_DATABASE'] = $dbDatabase;
+        $_SERVER['DB_CONNECTION'] = 'pgsql';
+        $_SERVER['DB_DATABASE'] = $dbDatabase;
+
+        Config::set('database.default', 'pgsql');
+        Config::set('database.connections.pgsql', [
+            'driver' => 'pgsql',
+            'host' => $dbHost,
+            'port' => $dbPort,
+            'database' => $dbDatabase,
+            'username' => $dbUsername,
+            'password' => $dbPassword,
+            'charset' => 'utf8',
+            'prefix' => '',
+            'search_path' => 'public',
+        ]);
+
+        DB::purge('pgsql');
+        DB::reconnect('pgsql');
     }
 
     protected function tearDown(): void
     {
         if ($this->disposableSourceDb !== null) {
             $this->safelyDropDisposableDatabase($this->disposableSourceDb);
+            $this->disposableSourceDb = null;
         }
 
         if ($this->disposableTargetDb !== null) {
             $this->safelyDropDisposableDatabase($this->disposableTargetDb);
+            $this->disposableTargetDb = null;
         }
 
         if ($this->dumpFilePath !== null && File::exists($this->dumpFilePath)) {
             File::delete($this->dumpFilePath);
+            $this->dumpFilePath = null;
+        }
+
+        if ($this->drillDirectory !== null) {
+            Storage::disk('local')->deleteDirectory($this->drillDirectory);
+            $this->drillDirectory = null;
         }
 
         parent::tearDown();
@@ -84,6 +139,7 @@ class PostgresRestoreDrillTest extends TestCase
         Config::set('database.connections.pgsql.database', $this->disposableSourceDb);
         Config::set('database.default', 'pgsql');
         DB::purge('pgsql');
+        DB::reconnect('pgsql');
 
         // 4. Migrate disposable source database
         $this->artisan('migrate', [
@@ -117,16 +173,20 @@ class PostgresRestoreDrillTest extends TestCase
         $this->assertGreaterThan(0, $sourceOrgCount);
 
         // 6. Execute actual Kojaya BackupDatabaseService code path
-        $drillDirectory = 'backups/database/drill_'.uniqid();
-        $backupService = app(\App\Services\Backup\BackupDatabaseService::class);
+        $this->drillDirectory = 'backups/database/drill_'.uniqid();
+        $backupService = app(BackupDatabaseService::class);
         $result = $backupService->backup(
             disk: 'local',
-            directory: $drillDirectory,
+            directory: $this->drillDirectory,
             purpose: 'restore-drill'
         );
 
-        $this->assertSame('success', $result['status']);
-        $producedRelativePath = $result['primary_copy']['path'];
+        $this->assertInstanceOf(BackupManifestDTO::class, $result['manifest']);
+        $this->assertSame('local', $result['disk']);
+        $this->assertNotEmpty($result['path']);
+        $this->assertArrayHasKey('offsite', $result);
+
+        $producedRelativePath = $result['path'];
         $this->dumpFilePath = Storage::disk('local')->path($producedRelativePath);
 
         // 7. Assert produced .dump, .json manifest, and .sha256 checksum
@@ -136,7 +196,7 @@ class PostgresRestoreDrillTest extends TestCase
         $this->assertFileExists($this->dumpFilePath.'.sha256');
 
         // 8. Cryptographically verify the produced backup artifact
-        $verificationService = app(\App\Services\Backup\BackupVerificationService::class);
+        $verificationService = app(BackupVerificationService::class);
         $manifest = $verificationService->verifyStorageBackup('local', $producedRelativePath, requireProvenance: true);
         $this->assertSame('verified', $manifest->verificationStatus);
         $this->assertSame('pgsql', $manifest->databaseEngine);
@@ -193,9 +253,6 @@ class PostgresRestoreDrillTest extends TestCase
         $this->assertSame('Drill Source Org', $restoredOrgName);
 
         unset($pdoTarget);
-
-        // Cleanup drill directory in storage
-        Storage::disk('local')->deleteDirectory($drillDirectory);
     }
 
     private function createDisposableDatabase(string $dbName, string $host, string $port, string $user, string $pass): void

@@ -440,7 +440,7 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
       - name: PostgreSQL Backup and Restore Drill
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite BackupRestoreDrill
+        run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite BackupRestoreDrill --display-skipped
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1

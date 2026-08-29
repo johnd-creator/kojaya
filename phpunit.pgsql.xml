@@ -17,6 +17,9 @@
             <file>tests/Feature/Member/MemberLifecycleTokenRevocationTest.php</file>
             <file>tests/Feature/Security/PrivilegedRoleMutationAuditTest.php</file>
         </testsuite>
+        <testsuite name="BackupRestoreDrill">
+            <file>tests/Feature/Backup/PostgresRestoreDrillTest.php</file>
+        </testsuite>
     </testsuites>
     <source>
         <include>

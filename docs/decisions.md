@@ -1292,3 +1292,51 @@ Accidental execution of `php artisan db:seed` or destructive migration commands 
 | **Testing / Playwright** | ✅ Allowed | ✅ Allowed (Reference-only by default) | ✅ Allowed (In-memory/isolated test DB) | ✅ Allowed (Invoked explicitly per test) | Factories or `admin:create` |
 | **Local Development** | ✅ Allowed | ✅ Allowed (Seeds reference + demo fixtures) | ✅ Allowed | ✅ Allowed | Pre-seeded or `admin:create` |
 
+---
+
+## 🎯 ADR-034: Kojaya Backup & Disaster Recovery Safety V1
+
+**Status:** ✅ Accepted
+**Date:** August 29, 2026
+**Deciders:** Engineering Team
+
+### Context
+
+Production operations require verifiable data protection, disaster recovery, and pre-deployment backup guarantees. Previous gaps included:
+1. No mandatory pre-deployment backup gate.
+2. Lack of cryptographic checksums and structured manifests.
+3. Absence of in-line archive verification (`pg_restore --list`).
+4. Absence of automated restore drill validation in CI.
+5. Inadequate retention controls to protect against accidental backup deletion.
+
+### Decision
+
+1. **Native PostgreSQL Logical Backup Strategy:**
+   - Production backups use `pg_dump --format=custom` (`-Fc`), enabling selective table inspection, table-level restore, and archive listing (`pg_restore --list`).
+   - Backup execution is strictly read-only against the source database.
+2. **Cryptographic Checksums & Manifests:**
+   - Every backup generates a SHA-256 hash file (`.sha256`) and a versioned JSON manifest (`.json`) capturing environment, git commit SHA, database identity, server version, format, size, checksum, non-sensitive row count evidence, and off-site copy status.
+   - Manifests and logs strictly exclude credentials, `APP_KEY`, API tokens, or secrets.
+3. **Fail-Closed In-Line Dump Verification:**
+   - Backups are only marked valid if `pg_dump` succeeds, file size > 0, SHA-256 matches, and `pg_restore --list` archive listing succeeds.
+4. **Mandatory Pre-Deployment Backup Gate:**
+   - Integrated `php artisan backup:database --purpose=pre-deploy` into `bin/deploy.sh` before entering maintenance mode or applying code/database changes. Any backup failure immediately aborts deployment.
+5. **Provider-Neutral Off-Site Replication:**
+   - Uses Laravel Filesystem disks (`local`, `s3`, `r2`, `minio`). Configurable fail-closed behavior via `BACKUP_REQUIRE_OFFSITE`.
+6. **Safe Retention Architecture:**
+   - Pruning defaults to dry-run preview (`backup:prune`). Actual deletion requires `--execute`.
+   - Never deletes the only valid backup (protects `--keep` backups).
+   - Enforces strict path validation against path traversal and public directories.
+7. **Freshness & Health Monitoring:**
+   - `php artisan backup:status` evaluates latest backup age against SLA (default 26 hours) and returns non-zero on stale, missing, or corrupt backups.
+8. **Automated CI Restore Drill:**
+   - GitHub Actions CI executes real PostgreSQL backup and restore drills into ephemeral disposable databases (`kojaya_restore_test_*`) with fixture validation and drop cleanup.
+
+### Consequences
+
+- Deployments cannot proceed without a verified database backup.
+- Storage retention is safe, predictable, and cannot delete application files or valid backups.
+- Real restore capabilities are continuously validated in isolated CI.
+- Follow-up work will implement Layer 4 continuous WAL archiving (pgBackRest) for Point-in-Time Recovery (PITR).
+
+

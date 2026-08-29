@@ -435,3 +435,17 @@ jobs:
           DB_DATABASE: kojaya_test
           DB_USERNAME: kojaya
           DB_PASSWORD: kojaya
+      - name: Install PostgreSQL client tools
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: PostgreSQL Backup and Restore Drill
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite BackupRestoreDrill
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: kojaya_test
+          DB_USERNAME: kojaya
+          DB_PASSWORD: kojaya
+

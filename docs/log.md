@@ -6,6 +6,18 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-08-29 - Backup & Disaster Recovery Safety V1 (KOJAYA-P0-BACKUP-DR-SAFETY-V1)
+
+- Built fail-closed native PostgreSQL logical backup system with `pg_dump --format=custom`.
+- Added cryptographic SHA-256 integrity metadata and versioned JSON backup manifests (`.json` and `.sha256`) capturing database engine, server version, environment, Git commit SHA, row counts, and off-site copy status.
+- Added in-line dump verification (`pg_restore --list` archive inspection and SQLite integrity checks) before marking backups as verified.
+- Added mandatory pre-deployment backup gate in `bin/deploy.sh` (`php artisan backup:database --purpose=pre-deploy`) that aborts deployments if backup or verification fails.
+- Added provider-neutral off-site replication to Laravel filesystem disks (`local`, `s3`, `r2`, `minio`) with configurable `BACKUP_REQUIRE_OFFSITE` enforcement.
+- Added safe retention architecture with default dry-run (`php artisan backup:prune`), minimum keep protection, and directory path traversal guards.
+- Added backup freshness and SLA health check command (`php artisan backup:status`).
+- Added real PostgreSQL backup and restore drill with isolated disposable database lifecycle (`kojaya_restore_test_*`) in CI.
+- Updated `docs/backup-runbook.md` with complete operational runbook, recovery objectives (RPO <= 15m, RTO <= 1h), and Layer 4 PITR / WAL archiving strategy.
+
 ## 🎯 2026-08-28 - Database Seeder Safety Hardening (KOJAYA-P0-SEED-SAFETY-HARDENING)
 
 - Separated reference/master seeders from demo fixture seeders in `DatabaseSeeder`.

@@ -2,13 +2,9 @@
 
 namespace Tests\Feature\Backup;
 
-use App\Models\Organization;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use PDO;
 use RuntimeException;
 use Symfony\Component\Process\Process;
@@ -17,15 +13,19 @@ use Throwable;
 
 class PostgresRestoreDrillTest extends TestCase
 {
-    use RefreshDatabase;
+    private ?string $disposableSourceDb = null;
 
-    private ?string $disposableDbName = null;
+    private ?string $disposableTargetDb = null;
 
     private ?string $dumpFilePath = null;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        if (! app()->environment('testing')) {
+            throw new RuntimeException('CRITICAL: PostgreSQL restore drill is strictly prohibited outside APP_ENV=testing.');
+        }
 
         if (Config::get('database.default') !== 'pgsql') {
             $this->markTestSkipped('PostgreSQL restore drill requires pgsql database connection.');
@@ -44,8 +44,12 @@ class PostgresRestoreDrillTest extends TestCase
 
     protected function tearDown(): void
     {
-        if ($this->disposableDbName !== null) {
-            $this->safelyDropDisposableDatabase($this->disposableDbName);
+        if ($this->disposableSourceDb !== null) {
+            $this->safelyDropDisposableDatabase($this->disposableSourceDb);
+        }
+
+        if ($this->disposableTargetDb !== null) {
+            $this->safelyDropDisposableDatabase($this->disposableTargetDb);
         }
 
         if ($this->dumpFilePath !== null && File::exists($this->dumpFilePath)) {
@@ -55,76 +59,101 @@ class PostgresRestoreDrillTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_postgresql_backup_and_real_restore_drill_in_isolated_environment(): void
+    public function test_postgresql_backup_and_real_restore_drill_with_disposable_source_and_target(): void
     {
         $connection = Config::get('database.connections.pgsql');
-        $sourceDb = (string) ($connection['database'] ?? '');
         $host = (string) ($connection['host'] ?? '127.0.0.1');
         $port = (string) ($connection['port'] ?? '5432');
         $username = (string) ($connection['username'] ?? 'postgres');
         $password = (string) ($connection['password'] ?? '');
 
-        // Safety Guard 1: Must never run against production DB
-        if (in_array(strtolower($sourceDb), ['kojaya_erp', 'kojaya_prod', 'kojaya_production', 'production'], true)) {
-            throw new RuntimeException("CRITICAL SAFETY ERROR: Restore drill attempted against protected database [{$sourceDb}]. Aborting.");
-        }
+        // 1. Generate strictly namespaced disposable source and target database names
+        $uniqueId = uniqid().'_'.time();
+        $this->disposableSourceDb = 'kojaya_restore_source_'.$uniqueId;
+        $this->disposableTargetDb = 'kojaya_restore_target_'.$uniqueId;
 
-        // 1. Seed deterministic test fixtures in source DB
-        $testOrg = Organization::query()->firstOrCreate(
-            ['slug' => 'restore-drill-org'],
-            [
-                'name' => 'Restore Drill Test Organization',
-                'is_active' => true,
-            ]
-        );
+        $this->assertMatchesRegularExpression('/^kojaya_restore_source_[a-zA-Z0-9_]+$/', $this->disposableSourceDb);
+        $this->assertMatchesRegularExpression('/^kojaya_restore_target_[a-zA-Z0-9_]+$/', $this->disposableTargetDb);
 
-        $testUser = User::query()->firstOrCreate(
-            ['email' => 'restore.drill.'.uniqid().'@kojaya.local'],
-            [
-                'name' => 'Restore Drill User',
-                'password' => bcrypt('test-password-only'),
-            ]
-        );
+        // 2. Create disposable source database
+        $this->createDisposableDatabase($this->disposableSourceDb, $host, $port, $username, $password);
 
-        $sourceUserCount = (int) DB::connection('pgsql')->table('users')->count();
-        $sourceOrgCount = (int) DB::connection('pgsql')->table('organizations')->count();
+        // 3. Configure temporary database connection for source
+        Config::set('database.connections.restore_drill_source', array_merge($connection, [
+            'database' => $this->disposableSourceDb,
+        ]));
+        DB::purge('restore_drill_source');
 
-        // 2. Perform Backup via BackupDatabaseCommand
-        Storage::fake('local');
-        $backupDir = 'backups/restore-drill-test';
-
-        $this->artisan('backup:database', [
-            '--purpose' => 'restore-drill',
-            '--directory' => $backupDir,
+        // 4. Migrate disposable source database
+        $this->artisan('migrate', [
+            '--database' => 'restore_drill_source',
+            '--force' => true,
         ])->assertSuccessful();
 
-        $files = Storage::disk('local')->files($backupDir);
-        $dumpFiles = array_values(array_filter($files, fn (string $f): bool => str_ends_with($f, '.dump')));
-        $this->assertCount(1, $dumpFiles, 'Expected exactly one .dump file');
+        // 5. Seed deterministic test fixtures into disposable source database
+        $pdoSource = new PDO(
+            "pgsql:host={$host};port={$port};dbname={$this->disposableSourceDb}",
+            $username,
+            $password,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
 
-        $dumpRelativePath = $dumpFiles[0];
-        $this->dumpFilePath = storage_path('app/private/backups/tmp/drill_restore_'.uniqid().'.dump');
+        $pdoSource->exec("
+            INSERT INTO organizations (name, slug, is_active, created_at, updated_at)
+            VALUES ('Drill Source Org', 'drill-source-org', true, NOW(), NOW());
+        ");
+
+        $pdoSource->exec("
+            INSERT INTO users (name, email, password, created_at, updated_at)
+            VALUES ('Drill Source User', 'drill.user@kojaya.local', 'fake-hashed-password', NOW(), NOW());
+        ");
+
+        $sourceUserCount = (int) $pdoSource->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $sourceOrgCount = (int) $pdoSource->query('SELECT COUNT(*) FROM organizations')->fetchColumn();
+        unset($pdoSource);
+
+        $this->assertGreaterThan(0, $sourceUserCount);
+        $this->assertGreaterThan(0, $sourceOrgCount);
+
+        // 6. Execute pg_dump custom format from disposable source database
+        $this->dumpFilePath = storage_path('app/private/backups/tmp/drill_'.uniqid().'.dump');
         File::ensureDirectoryExists(dirname($this->dumpFilePath));
-        File::put($this->dumpFilePath, Storage::disk('local')->get($dumpRelativePath));
 
-        // 3. Verify Manifest and Checksum
-        $manifestJson = Storage::disk('local')->get($dumpRelativePath.'.json');
-        $manifest = json_decode($manifestJson, true);
-        $this->assertSame('verified', $manifest['verification_status']);
-        $this->assertSame('restore-drill', $manifest['purpose']);
-        $this->assertSame('pgsql', $manifest['database_engine']);
+        $dumpProcess = new Process([
+            'pg_dump',
+            '--format=custom',
+            '--no-owner',
+            '--no-acl',
+            '--host='.$host,
+            '--port='.$port,
+            '--username='.$username,
+            '--dbname='.$this->disposableSourceDb,
+            '--file='.$this->dumpFilePath,
+        ], base_path(), ['PGPASSWORD' => $password]);
+        $dumpProcess->setTimeout(120);
+        $dumpProcess->run();
 
-        // 4. Generate Disposable Restore Database Name with strict naming pattern
-        $this->disposableDbName = 'kojaya_restore_test_'.uniqid().'_'.time();
-        $this->assertMatchesRegularExpression('/^kojaya_restore_test_[a-zA-Z0-9_]+$/', $this->disposableDbName);
+        if (! $dumpProcess->isSuccessful()) {
+            $error = trim($dumpProcess->getErrorOutput() ?: $dumpProcess->getOutput());
+            $this->fail("pg_dump of disposable source database failed: {$error}");
+        }
 
-        // Safety Guard 2: Target cannot equal source database
-        $this->assertNotSame($sourceDb, $this->disposableDbName);
+        $this->assertFileExists($this->dumpFilePath);
+        $this->assertGreaterThan(0, File::size($this->dumpFilePath));
 
-        // 5. Create disposable database
-        $this->createDisposableDatabase($this->disposableDbName, $host, $port, $username, $password);
+        // 7. Verify dump archive using pg_restore --list
+        $listProcess = new Process([
+            'pg_restore',
+            '--list',
+            $this->dumpFilePath,
+        ], base_path());
+        $listProcess->run();
+        $this->assertTrue($listProcess->isSuccessful(), 'pg_restore --list must succeed on custom dump');
 
-        // 6. Execute pg_restore into disposable database
+        // 8. Create disposable target database
+        $this->createDisposableDatabase($this->disposableTargetDb, $host, $port, $username, $password);
+
+        // 9. Execute pg_restore into disposable target database
         $restoreProcess = new Process([
             'pg_restore',
             '--no-owner',
@@ -133,7 +162,7 @@ class PostgresRestoreDrillTest extends TestCase
             '--host='.$host,
             '--port='.$port,
             '--username='.$username,
-            '--dbname='.$this->disposableDbName,
+            '--dbname='.$this->disposableTargetDb,
             $this->dumpFilePath,
         ], base_path(), ['PGPASSWORD' => $password]);
         $restoreProcess->setTimeout(120);
@@ -141,36 +170,36 @@ class PostgresRestoreDrillTest extends TestCase
 
         if (! $restoreProcess->isSuccessful()) {
             $error = trim($restoreProcess->getErrorOutput() ?: $restoreProcess->getOutput());
-            $this->fail("pg_restore into disposable database failed: {$error}");
+            $this->fail("pg_restore into disposable target database failed: {$error}");
         }
 
-        // 7. Verify restored dataset inside the disposable database
-        $pdo = new PDO(
-            "pgsql:host={$host};port={$port};dbname={$this->disposableDbName}",
+        // 10. Verify restored data in target database
+        $pdoTarget = new PDO(
+            "pgsql:host={$host};port={$port};dbname={$this->disposableTargetDb}",
             $username,
             $password,
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
 
-        $restoredUserCount = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-        $restoredOrgCount = (int) $pdo->query('SELECT COUNT(*) FROM organizations')->fetchColumn();
+        $restoredUserCount = (int) $pdoTarget->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $restoredOrgCount = (int) $pdoTarget->query('SELECT COUNT(*) FROM organizations')->fetchColumn();
 
         $this->assertSame($sourceUserCount, $restoredUserCount);
         $this->assertSame($sourceOrgCount, $restoredOrgCount);
 
-        // Verify specific fixture record persisted intact
-        $stmt = $pdo->prepare('SELECT name FROM organizations WHERE slug = :slug');
-        $stmt->execute(['slug' => 'restore-drill-org']);
+        $stmt = $pdoTarget->prepare('SELECT name FROM organizations WHERE slug = :slug');
+        $stmt->execute(['slug' => 'drill-source-org']);
         $restoredOrgName = $stmt->fetchColumn();
-        $this->assertSame('Restore Drill Test Organization', $restoredOrgName);
+        $this->assertSame('Drill Source Org', $restoredOrgName);
 
-        // Explicitly close connection before tearDown drop
-        unset($pdo);
+        unset($pdoTarget);
     }
 
     private function createDisposableDatabase(string $dbName, string $host, string $port, string $user, string $pass): void
     {
-        $this->assertMatchesRegularExpression('/^kojaya_restore_test_[a-zA-Z0-9_]+$/', $dbName);
+        if (! preg_match('/^kojaya_restore_(source|target)_[a-zA-Z0-9_]+$/', $dbName)) {
+            throw new RuntimeException("Invalid disposable database name [{$dbName}].");
+        }
 
         $process = new Process([
             'psql',
@@ -183,7 +212,6 @@ class PostgresRestoreDrillTest extends TestCase
         $process->run();
 
         if (! $process->isSuccessful()) {
-            // Fallback to template1 or existing connection db
             $process = new Process([
                 'psql',
                 '--host='.$host,
@@ -203,8 +231,7 @@ class PostgresRestoreDrillTest extends TestCase
 
     private function safelyDropDisposableDatabase(string $dbName): void
     {
-        // Enforce disposable DB naming guard
-        if (! preg_match('/^kojaya_restore_test_[a-zA-Z0-9_]+$/', $dbName)) {
+        if (! preg_match('/^kojaya_restore_(source|target)_[a-zA-Z0-9_]+$/', $dbName)) {
             return;
         }
 

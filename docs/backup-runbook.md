@@ -6,10 +6,11 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 
 **Core Safety Invariants:**
 1. **Source Database Read-Only:** Backups execute read-only against the source database. Backups never modify, drop, truncate, migrate, or seed data.
-2. **PostgreSQL-Native Logical Tooling:** Production backups use `pg_dump --format=custom` (`-Fc`), enabling verifiable inspection (`pg_restore --list`) and selective restore.
-3. **No Overwrites over Live Database:** Never restore directly over the live production or shared staging database with single-line scripts. Production restore is an approved, controlled runbook executed through maintenance mode.
+2. **PostgreSQL-Native Logical Tooling:** Production backups use `pg_dump --format=custom` (`-Fc`), enabling verifiable inspection (`pg_restore --list`) and selective table restore.
+3. **Empty Recovery Target Required:** Never restore directly over a live, populated production database. Production recovery must restore into a fresh, isolated recovery database target (`kojaya_recovery_<timestamp>`) before controlled cutover.
 4. **Never Improvise with Destructive Resets:** Never run `migrate:fresh`, `migrate:refresh`, `migrate:reset`, or `db:wipe` as recovery.
 5. **No Credentials in Artifacts/Logs:** Manifests, logs, checksums, and deployment receipts must never contain passwords, `APP_KEY`, API tokens, or secrets.
+6. **No Public Storage for Backups:** Primary and off-site backup disks must never be public disks, rooted beneath `storage/app/public` or `public/`, or configured with public URLs.
 
 ---
 
@@ -19,12 +20,13 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 | :--- | :--- | :--- | :--- | :--- |
 | **Layer 1** | **Pre-Deploy Logical Backup** | `php artisan backup:database --purpose=pre-deploy` | Mandatory pre-deployment gate in `bin/deploy.sh` | Zero data loss across deployments |
 | **Layer 2** | **Scheduled Logical Backup** | `php artisan backup:database --purpose=scheduled --prune` | Daily at 02:30 UTC+7 via Laravel Scheduler | Max 24h data age (SLA < 26h) |
-| **Layer 3** | **Off-Site Copy** | Provider-neutral Laravel Filesystem disk (`s3`, `r2`, `minio`) | Replicated upon successful local verification | Geographic redundancy |
+| **Layer 3** | **Off-Site Copy** | Provider-neutral Laravel Filesystem disk (`s3`, `r2`, `minio`) | Replicated with streaming SHA-256 validation | Geographic redundancy |
 | **Layer 4** | **WAL Archiving / PITR** | Continuous WAL streaming (e.g. pgBackRest) *(Follow-up Design)* | Continuous archive | RPO <= 15 min, RTO <= 1 hour |
 | **Layer 5** | **Infrastructure Snapshot** | VPS / Disk block storage snapshot | Weekly / Monthly by cloud provider | Disaster recovery of host OS *(Not a DB replacement)* |
 
-> [!IMPORTANT]
-> VM or disk snapshots are **not a replacement** for database-aware logical dumps and continuous WAL streams, as snapshots may capture in-memory write buffers in an inconsistent crash state.
+> [!NOTE]
+> A `pg_dump` custom-format logical dump is a schema- and table-level logical representation, **not** a PostgreSQL physical base backup for WAL replay. Point-in-Time Recovery (PITR) via continuous WAL archiving is designed as follow-up Layer 4.
+> VM or block storage snapshots are also **not a replacement** for database-aware logical backups and continuous WAL archiving, as filesystem snapshots can capture in-flight database write buffers in an inconsistent state.
 
 ---
 
@@ -33,24 +35,24 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 ### 1. Create a Database Backup (`backup:database`)
 
 ```bash
-# Standard manual backup (local disk)
+# Standard manual backup (private local disk)
 php artisan backup:database --purpose=manual
 
 # Pre-deployment backup gate (aborts deploy if return code != 0)
 php artisan backup:database --purpose=pre-deploy
 
-# Backup with explicit off-site replication to S3/R2
+# Backup with explicit off-site replication to private S3/R2 disk
 php artisan backup:database --purpose=scheduled --offsite-disk=s3 --require-offsite --prune
 ```
 
-**Options:**
-- `--disk=`: Target primary disk (default: `config('operations.backup.disk')` = `local`).
-- `--directory=`: Directory inside disk (default: `backups/database`).
+**Options & Safety Guards:**
+- `--disk=`: Target primary disk (default: `config('operations.backup.disk')` = `local`). Public disks are strictly rejected.
+- `--directory=`: Directory inside disk (default: `backups/database`). Path traversal and `public/` paths are rejected.
 - `--purpose=`: Purpose label (`manual`, `scheduled`, `pre-deploy`, `restore-drill`).
-- `--offsite-disk=`: Optional secondary off-site disk for replication.
+- `--offsite-disk=`: Optional secondary off-site disk for replication (must be private).
 - `--offsite-directory=`: Directory on off-site disk.
-- `--require-offsite`: Fail closed with non-zero exit code if off-site replication fails.
-- `--prune`: Automatically prune expired backups based on retention policy after successful backup.
+- `--require-offsite`: Fail closed with non-zero exit code if off-site replication or streaming SHA-256 verification fails. When omitted, inherits `operations.backup.require_offsite` config.
+- `--prune`: Automatically prune expired backups based on verified-backup retention policy after successful backup.
 
 ### 2. Verify Backup Artifacts (`backup:verify`)
 
@@ -63,12 +65,13 @@ php artisan backup:verify backups/database/kojaya-production-kojaya_erp-20260829
 ```
 
 **Verification Steps Executed:**
-1. Validates file existence and non-zero file size.
-2. Checks SHA-256 checksum against companion `.json` manifest or `.sha256` file.
-3. Performs read-only archive inspection:
+1. Validates filesystem disk safety (rejects public disks).
+2. Validates file existence and non-zero file size.
+3. Checks streaming SHA-256 checksum against companion `.json` manifest and `.sha256` file.
+4. Performs read-only archive structure inspection:
    - For PostgreSQL: `pg_restore --list <dump_file>`
    - For SQLite: `PRAGMA integrity_check`
-4. Returns exit code 0 on success, exit code 1 on failure.
+5. Returns exit code 0 on success, exit code 1 on failure.
 
 ### 3. Check Backup Freshness and Health (`backup:status`)
 
@@ -80,9 +83,11 @@ php artisan backup:status
 php artisan backup:status --max-age=12
 ```
 
-**Outputs & Exit Codes:**
-- `0 (SUCCESS)`: Latest backup exists, manifest and checksum are valid, and age <= max age hours.
-- `1 (FAILURE)`: Backups missing, corrupted, or stale (older than SLA threshold).
+**Freshness & Integrity Rules:**
+- Authoritative age is computed from `manifest.created_at` (UTC timestamp), preventing touched or copied files from falsely appearing fresh.
+- Strict cryptographic metadata (`.json` and `.sha256`) is required; missing metadata is reported as `corrupt` / failed.
+- Exit code `0 (HEALTHY)`: Latest backup exists, manifest and checksum are valid, archive is intact, and age <= max age hours.
+- Exit code `1 (FAILURE)`: Backups missing, corrupted, missing metadata, or stale.
 
 ### 4. Prune Expired Backups (`backup:prune`)
 
@@ -96,7 +101,7 @@ php artisan backup:prune --execute --days=14 --keep=1
 
 **Safety Guarantees:**
 - **Dry-run by default:** Does not delete any file unless `--execute` is supplied.
-- **Minimum Keep Guarantee:** Never deletes the only remaining valid backup (keeps at least `--keep` backups, default 1).
+- **Verified Backup Protection:** Identifies verified valid backups and guarantees at least `--keep` (default 1) **verified valid** backups remain, preventing corrupt newest backups from causing deletion of the only valid older backup.
 - **Companion File Pruning:** Automatically deletes companion `.json` manifest and `.sha256` checksum files alongside the dump.
 - **Path Traversal Protection:** Validates directory path to prevent escaping the backup namespace or accessing `public/`.
 
@@ -164,7 +169,7 @@ The deployment script `bin/deploy.sh` enforces the mandatory deployment ordering
 1. Release Preflight & Exact SHA verification
    ↓
 2. Pre-deploy Backup: php artisan backup:database --purpose=pre-deploy
-   ↓ (If backup, checksum, or archive verification fails -> ABORT DEPLOYMENT)
+   ↓ (If backup, checksum, primary stored verification, or offsite copy fails -> ABORT DEPLOYMENT)
 3. Maintenance Mode: php artisan down --retry=60
    ↓
 4. Deploy Code & Install Dependencies (composer install, npm ci, npm run build)
@@ -176,9 +181,9 @@ The deployment script `bin/deploy.sh` enforces the mandatory deployment ordering
 7. Exit Maintenance: php artisan up
 ```
 
-### Deployment Receipt Specification
+### Target / Required Deployment Receipt Format
 
-Deployments generate a structured receipt recording execution metadata:
+For auditing and release verification, deployment pipelines must record deployment receipts adhering to this specification:
 
 ```json
 {
@@ -205,10 +210,30 @@ Restoring a production database is an exceptional emergency procedure requiring 
 
 ### ⚠️ Prohibited Actions
 - 🚫 **NEVER** run `migrate:fresh` or `db:wipe` as a recovery mechanism.
-- 🚫 **NEVER** execute `pg_restore --clean` without prior approval and off-line backup verification.
-- 🚫 **NEVER** restore over an active application while queues or workers are consuming jobs.
+- 🚫 **NEVER** restore directly over a populated live production database.
+- 🚫 **NEVER** restore while queues or workers are consuming jobs.
 
-### Step-by-Step Production Recovery Procedure
+### Step-by-Step Production Recovery Procedure (Empty Recovery Database Model)
+
+```text
+Preserve Current Broken DB State
+              ↓
+Create Fresh Empty Recovery DB (createdb kojaya_recovery_<timestamp>)
+              ↓
+Restore Archive into Recovery DB (pg_restore --exit-on-error)
+              ↓
+Verify Checksum, Data Integrity, and Representative Row Counts
+              ↓
+Align Application Code to Manifest Git SHA (git checkout <git_sha>)
+              ↓
+Inspect and Apply Deliberate Forward Migrations (php artisan migrate:status / migrate --force)
+              ↓
+Execute Preflight & Smoke Test against Recovery DB
+              ↓
+Controlled Cutover to Recovery DB (update connection / rename database)
+              ↓
+Retain Prior Broken DB for Forensic Review Until Final Acceptance
+```
 
 #### 1. Incident Declaration & Approvals
 - Declare Severity 1 / Disaster Recovery incident.
@@ -217,7 +242,7 @@ Restoring a production database is an exceptional emergency procedure requiring 
 
 #### 2. Enter Maintenance Mode & Drain Queues
 ```bash
-php artisan down --retry=60 --secret="emergency-recovery-access"
+php artisan down --retry=60 --secret="<APPROVED_RECOVERY_TOKEN>"
 php artisan queue:restart
 # Stop queue workers on the server (systemctl stop kojaya-worker)
 ```
@@ -232,52 +257,50 @@ sha256sum --check kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump.sha
 pg_restore --list kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump > /tmp/restore_table_manifest.txt
 ```
 
-#### 4. Rehearsal in Isolated Disposable Database
-Before restoring into production, verify the backup against a disposable database:
+#### 4. Preserve Existing State & Create Empty Recovery Target Database
 ```bash
-# In PostgreSQL CLI (isolated server/instance):
-createdb kojaya_restore_drill_temp
-pg_restore --no-owner --no-acl --exit-on-error --dbname=kojaya_restore_drill_temp kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump
-# Validate row counts and table integrity
-psql -d kojaya_restore_drill_temp -c "SELECT count(*) FROM users;"
-dropdb kojaya_restore_drill_temp
+# Take a safety snapshot of the broken/current state before any changes
+pg_dump --format=custom --file=/var/backups/kojaya/pre_recovery_broken_state_$(date +%s).dump kojaya_erp
+
+# Create new empty recovery database
+createdb kojaya_recovery_20260829
 ```
 
-#### 5. Execute Production Database Restore
+#### 5. Execute Restore into Empty Recovery Database
 ```bash
-# Create a safety snapshot of the broken/current DB before restoring
-pg_dump --format=custom --file=/var/backups/kojaya/pre_restore_state_$(date +%s).dump kojaya_erp
-
-# Restore into target database
-pg_restore --no-owner --no-acl --exit-on-error --dbname=kojaya_erp kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump
+# Restore into the empty recovery target database
+pg_restore --no-owner --no-acl --exit-on-error --dbname=kojaya_recovery_20260829 kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump
 ```
 
 #### 6. Application Code Alignment & Migration After Restore
-When restoring an older dump:
 1. **Checkout Application Revision:** Check out the exact Git commit SHA recorded in the manifest (`application_git_sha`).
+   ```bash
+   git checkout <manifest_git_sha>
+   ```
 2. **Inspect Migration Status:**
    ```bash
-   php artisan migrate:status
+   DB_DATABASE=kojaya_recovery_20260829 php artisan migrate:status
    ```
 3. **Apply Forward-Only Migrations Deliberately:**
    If rolling forward to a newer application version, apply only forward migrations deliberately:
    ```bash
-   php artisan migrate --force
+   DB_DATABASE=kojaya_recovery_20260829 php artisan migrate --force
    ```
 4. **Clear Caches & Run Preflight:**
    ```bash
    php artisan optimize:clear
-   php artisan app:release-preflight --strict-production
+   DB_DATABASE=kojaya_recovery_20260829 php artisan app:release-preflight --strict-production
    ```
 
-#### 7. Post-Recovery Smoke Test & Exit Maintenance
-- Verify essential business entities (Users, Members, Accounting Ledgers, POS Products).
-- Verify read/write functionality on non-financial endpoints.
-- Start queue workers.
-- Exit maintenance mode:
-  ```bash
-  php artisan up
-  ```
+#### 7. Cutover, Post-Recovery Smoke Test, and Exit Maintenance
+1. Update production configuration `DB_DATABASE=kojaya_recovery_20260829` (or rename database after disconnecting sessions).
+2. Verify essential business entities (Users, Members, Accounting Ledgers, POS Products).
+3. Start queue workers (`systemctl start kojaya-worker`).
+4. Exit maintenance mode:
+   ```bash
+   php artisan up
+   ```
+5. Retain prior broken database (`kojaya_erp` or safety dump) for forensic and auditing purposes until sign-off.
 
 ---
 
@@ -293,8 +316,8 @@ For Kojaya Production V2 disaster recovery, continuous Point-in-Time Recovery (P
 ┌─────────────────────────────────────────────────────────────┐
 │                    PostgreSQL Server                        │
 │  ┌───────────────────────┐       ┌───────────────────────┐  │
-│  │   Daily Full Backup   │       │   Continuous WAL Seg   │  │
-│  │   (pg_dump / base)    │       │   (16MB WAL files)    │  │
+│  │   Daily Base Backup   │       │   Continuous WAL Seg   │  │
+│  │     (pgBackRest)      │       │   (16MB WAL files)    │  │
 │  └───────────┬───────────┘       └───────────┬───────────┘  │
 └──────────────┼───────────────────────────────┼──────────────┘
                │                               │

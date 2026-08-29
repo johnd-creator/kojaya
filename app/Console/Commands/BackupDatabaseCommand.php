@@ -20,26 +20,19 @@ class BackupDatabaseCommand extends Command
 
     protected $description = 'Create a verified database backup with cryptographic manifest, checksum, and optional offsite replication';
 
-    public function __construct(
-        private readonly BackupDatabaseService $backupService = new BackupDatabaseService,
-        private readonly BackupRetentionService $retentionService = new BackupRetentionService,
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(BackupDatabaseService $backupService, BackupRetentionService $retentionService): int
     {
         $disk = $this->option('disk') ? (string) $this->option('disk') : null;
         $directory = $this->option('directory') ? (string) $this->option('directory') : null;
         $purpose = (string) ($this->option('purpose') ?: 'manual');
         $offsiteDisk = $this->option('offsite-disk') ? (string) $this->option('offsite-disk') : null;
         $offsiteDirectory = $this->option('offsite-directory') ? (string) $this->option('offsite-directory') : null;
-        $requireOffsite = (bool) $this->option('require-offsite');
+        $requireOffsite = $this->option('require-offsite') ? true : null;
 
         $this->info("Initiating database backup [purpose: {$purpose}]...");
 
         try {
-            $result = $this->backupService->backup(
+            $result = $backupService->backup(
                 disk: $disk,
                 directory: $directory,
                 purpose: $purpose,
@@ -69,7 +62,7 @@ class BackupDatabaseCommand extends Command
             }
 
             if ($this->option('prune')) {
-                $pruneResult = $this->retentionService->prune(
+                $pruneResult = $retentionService->prune(
                     disk: $targetDisk,
                     directory: dirname($targetPath),
                     dryRun: false,

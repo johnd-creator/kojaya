@@ -1317,26 +1317,34 @@ Production operations require verifiable data protection, disaster recovery, and
 2. **Cryptographic Checksums & Manifests:**
    - Every backup generates a SHA-256 hash file (`.sha256`) and a versioned JSON manifest (`.json`) capturing environment, git commit SHA, database identity, server version, format, size, checksum, non-sensitive row count evidence, and off-site copy status.
    - Manifests and logs strictly exclude credentials, `APP_KEY`, API tokens, or secrets.
-3. **Fail-Closed In-Line Dump Verification:**
-   - Backups are only marked valid if `pg_dump` succeeds, file size > 0, SHA-256 matches, and `pg_restore --list` archive listing succeeds.
-4. **Mandatory Pre-Deployment Backup Gate:**
+3. **Fail-Closed In-Line and Final Stored Verification:**
+   - Backups are only marked valid if `pg_dump` succeeds, file size > 0, SHA-256 matches, in-line archive inspection succeeds, AND the final written storage artifact on primary disk is cryptographically verified (size, streaming SHA-256, and archive integrity).
+4. **Mandatory Pre-Deployment Backup Gate & Provenance Fail-Closed:**
    - Integrated `php artisan backup:database --purpose=pre-deploy` into `bin/deploy.sh` before entering maintenance mode or applying code/database changes. Any backup failure immediately aborts deployment.
-5. **Provider-Neutral Off-Site Replication:**
-   - Uses Laravel Filesystem disks (`local`, `s3`, `r2`, `minio`). Configurable fail-closed behavior via `BACKUP_REQUIRE_OFFSITE`.
-6. **Safe Retention Architecture:**
+   - Pre-deploy backups in production/staging fail closed if exact Git commit SHA cannot be determined or if `BACKUP_ENABLED=false`.
+5. **Storage Security & Public Disk Rejection:**
+   - Primary and off-site backup disks must be private. Any disk configured as `public`, with public visibility, or rooted beneath `storage/app/public` or `public/` is strictly rejected.
+6. **Provider-Neutral Off-Site Replication with Streaming SHA-256:**
+   - Uses Laravel Filesystem disks (`local`, `s3`, `r2`, `minio`). Configurable fail-closed behavior via `BACKUP_REQUIRE_OFFSITE` (which cannot be silently overridden by absent CLI flags).
+   - Replicated off-site bytes are cryptographically validated using stream hashing before recording `sha256_verified=true`.
+7. **Verified-Backup Retention Architecture:**
    - Pruning defaults to dry-run preview (`backup:prune`). Actual deletion requires `--execute`.
-   - Never deletes the only valid backup (protects `--keep` backups).
+   - Retention evaluates candidate backup integrity and guarantees that at least `min_keep` **verified valid** backups remain, preventing corrupt newest backups from causing pruning of the only valid older backup.
    - Enforces strict path validation against path traversal and public directories.
-7. **Freshness & Health Monitoring:**
-   - `php artisan backup:status` evaluates latest backup age against SLA (default 26 hours) and returns non-zero on stale, missing, or corrupt backups.
-8. **Automated CI Restore Drill:**
-   - GitHub Actions CI executes real PostgreSQL backup and restore drills into ephemeral disposable databases (`kojaya_restore_test_*`) with fixture validation and drop cleanup.
+8. **Freshness & Health Monitoring:**
+   - `php artisan backup:status` evaluates latest backup age based on authoritative `manifest.created_at` against SLA (default 26 hours) and requires full cryptographic metadata (`.json` and `.sha256`) to report healthy status.
+9. **Automated CI Restore Drill with Disposable Source & Target:**
+   - GitHub Actions CI executes real PostgreSQL backup and restore drills into ephemeral disposable databases (`kojaya_restore_source_*` and `kojaya_restore_target_*`) with fixture validation and cleanup.
+10. **Empty Recovery Target Model for Production Disaster Recovery:**
+    - Production recovery procedures restore exclusively into fresh empty recovery database instances before controlled cutover. Restoring over populated live databases is strictly prohibited.
 
 ### Consequences
 
-- Deployments cannot proceed without a verified database backup.
-- Storage retention is safe, predictable, and cannot delete application files or valid backups.
-- Real restore capabilities are continuously validated in isolated CI.
+- Deployments cannot proceed without a verified database backup and verified Git commit SHA provenance.
+- Backups cannot be accidentally exposed via public storage disks or public URLs.
+- Storage retention is safe, predictable, and cannot delete valid backups.
+- Real restore capabilities are continuously validated in isolated CI with disposable databases.
 - Follow-up work will implement Layer 4 continuous WAL archiving (pgBackRest) for Point-in-Time Recovery (PITR).
+
 
 

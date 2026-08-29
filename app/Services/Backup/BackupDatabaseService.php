@@ -37,10 +37,17 @@ class BackupDatabaseService
         'migrations',
     ];
 
+    private readonly BackupVerificationService $verificationService;
+
+    private readonly BackupRetentionService $retentionService;
+
     public function __construct(
-        private readonly BackupVerificationService $verificationService = new BackupVerificationService,
-        private readonly BackupRetentionService $retentionService = new BackupRetentionService,
-    ) {}
+        ?BackupVerificationService $verificationService = null,
+        ?BackupRetentionService $retentionService = null,
+    ) {
+        $this->verificationService = $verificationService ?? app(BackupVerificationService::class);
+        $this->retentionService = $retentionService ?? app(BackupRetentionService::class);
+    }
 
     /**
      * Create a verified database backup with cryptographic manifest and optional off-site replication.
@@ -61,8 +68,23 @@ class BackupDatabaseService
         ?bool $requireOffsite = null,
     ): array {
         $startTime = microtime(true);
+        $environment = app()->environment();
+        $isBackupEnabled = (bool) config('operations.backup.enabled', true);
+
+        // Backup enabled check
+        if (! $isBackupEnabled) {
+            if ($purpose === 'pre-deploy' && in_array($environment, ['production', 'staging'], true)) {
+                throw new RuntimeException("Database backup is disabled via BACKUP_ENABLED=false, but pre-deploy backup is mandatory in [{$environment}]. Deployment aborted.");
+            }
+
+            throw new RuntimeException('Database backup is disabled via BACKUP_ENABLED=false.');
+        }
+
         $disk = (string) ($disk ?: config('operations.backup.disk', 'local'));
         $directory = trim((string) ($directory ?: config('operations.backup.directory', 'backups/database')), '/\\');
+
+        // Disk safety validation (must not be public)
+        $this->retentionService->validateDiskSafety($disk);
         $this->retentionService->validateDirectorySafety($directory);
 
         $offsiteEnabled = $offsiteDisk !== null || (bool) config('operations.backup.offsite_enabled', false);
@@ -71,13 +93,13 @@ class BackupDatabaseService
         $requireOffsite = $requireOffsite ?? (bool) config('operations.backup.require_offsite', false);
 
         if ($offsiteDisk !== null) {
+            $this->retentionService->validateDiskSafety($offsiteDisk);
             $this->retentionService->validateDirectorySafety($offsiteDirectory);
         }
 
         $connectionName = config('database.default');
         $connection = config("database.connections.{$connectionName}");
         $driver = (string) ($connection['driver'] ?? '');
-        $environment = app()->environment();
 
         // Database identity safety guard:
         // Production and staging MUST use PostgreSQL
@@ -90,7 +112,12 @@ class BackupDatabaseService
         $host = isset($connection['host']) ? (string) $connection['host'] : null;
         $port = $connection['port'] ?? null;
         $serverVersion = $this->resolveServerVersion($connectionName, $driver);
+
         $gitSha = $this->resolveGitSha();
+        if ($purpose === 'pre-deploy' && in_array($environment, ['production', 'staging'], true) && $gitSha === 'unknown') {
+            throw new RuntimeException("Pre-deploy database backup in [{$environment}] requires exact Git commit SHA provenance, but Git SHA could not be resolved.");
+        }
+
         $gitShaShort = substr($gitSha, 0, 7) ?: 'unknown';
         $utcTimestamp = now('UTC')->format('Ymd\THis\Z');
 
@@ -137,7 +164,7 @@ class BackupDatabaseService
             $sizeBytes = (int) File::size($tmpFile);
             $sha256 = (string) hash_file('sha256', $tmpFile);
 
-            // 4. In-line archive verification
+            // 4. In-line archive verification on local temp file
             $this->verificationService->verifyLocalArchive($tmpFile, $driver);
 
             // 5. Verify computed checksum
@@ -179,16 +206,23 @@ class BackupDatabaseService
             if ($stream === false) {
                 throw new RuntimeException("Failed to open temporary dump file [{$tmpFile}] for reading.");
             }
-            $storage->put($targetPath, $stream);
+            $putSuccess = $storage->put($targetPath, $stream);
             if (is_resource($stream)) {
                 fclose($stream);
+            }
+
+            if (! $putSuccess) {
+                throw new RuntimeException("Failed to write backup dump to primary storage [{$disk}:{$targetPath}].");
             }
 
             $sha256Content = "{$sha256}  {$backupFilename}\n";
             $storage->put($targetPath.'.sha256', $sha256Content);
             $storage->put($targetPath.'.json', $manifest->toJson());
 
-            // 8. Handle Off-site Replication if enabled
+            // 8. CRITICAL: Verify final primary stored artifact
+            $this->verifyFinalPrimaryArtifact($disk, $targetPath, $sizeBytes, $sha256);
+
+            // 9. Handle Off-site Replication if enabled
             $offsiteResult = [
                 'enabled' => $offsiteEnabled,
                 'disk' => $offsiteDisk,
@@ -279,6 +313,31 @@ class BackupDatabaseService
     }
 
     /**
+     * Verify the final stored artifact on primary storage disk.
+     */
+    private function verifyFinalPrimaryArtifact(string $disk, string $targetPath, int $expectedSizeBytes, string $expectedSha256): void
+    {
+        $storage = Storage::disk($disk);
+
+        if (! $storage->exists($targetPath)) {
+            throw new RuntimeException("Primary storage verification failed: file [{$targetPath}] does not exist on disk [{$disk}].");
+        }
+
+        $storedSize = (int) $storage->size($targetPath);
+        if ($storedSize !== $expectedSizeBytes) {
+            throw new RuntimeException("Primary storage verification failed: size mismatch (expected {$expectedSizeBytes} bytes, found {$storedSize} bytes) on disk [{$disk}].");
+        }
+
+        $storedSha256 = $this->verificationService->calculateStorageStreamSha256($disk, $targetPath);
+        if (! hash_equals(strtolower($expectedSha256), strtolower($storedSha256))) {
+            throw new RuntimeException("Primary storage verification failed: SHA-256 mismatch on disk [{$disk}].");
+        }
+
+        // Full archive integrity check on stored artifact
+        $this->verificationService->verifyStorageBackup($disk, $targetPath, requireProvenance: true);
+    }
+
+    /**
      * @param  array<string, mixed>  $connection
      */
     private function executeDump(string $driver, array $connection, string $tmpFile): void
@@ -360,12 +419,15 @@ class BackupDatabaseService
             '--host='.($connection['host'] ?? '127.0.0.1'),
             '--port='.(string) ($connection['port'] ?? 3306),
             '--user='.($connection['username'] ?? ''),
-            ($connection['password'] ?? null) ? '--password='.$connection['password'] : null,
             (string) ($connection['database'] ?? ''),
             '--result-file='.$tmpFile,
         ]));
 
-        $process = new Process($command, base_path());
+        $processEnv = [
+            'MYSQL_PWD' => (string) ($connection['password'] ?? ''),
+        ];
+
+        $process = new Process($command, base_path(), array_filter($processEnv));
         $process->setTimeout((int) config('operations.backup.timeout', 300));
         $process->run();
 
@@ -397,9 +459,13 @@ class BackupDatabaseService
             if ($stream === false) {
                 throw new RuntimeException('Failed to open temporary dump file for offsite upload.');
             }
-            $offsiteStorage->put($offsiteTargetPath, $stream);
+            $putSuccess = $offsiteStorage->put($offsiteTargetPath, $stream);
             if (is_resource($stream)) {
                 fclose($stream);
+            }
+
+            if (! $putSuccess) {
+                throw new RuntimeException("Failed to write backup dump to offsite storage [{$offsiteDisk}:{$offsiteTargetPath}].");
             }
 
             $offsiteStorage->put($offsiteTargetPath.'.sha256', "{$sha256}  {$backupFilename}\n");
@@ -411,6 +477,12 @@ class BackupDatabaseService
 
             if ($offsiteSize !== $expectedSize) {
                 throw new RuntimeException("Off-site size mismatch: expected {$expectedSize} bytes, got {$offsiteSize} bytes on [{$offsiteDisk}].");
+            }
+
+            // Real cryptographic SHA-256 verification of remote offsite bytes
+            $offsiteCalculatedSha256 = $this->verificationService->calculateStorageStreamSha256($offsiteDisk, $offsiteTargetPath);
+            if (! hash_equals(strtolower($sha256), strtolower($offsiteCalculatedSha256))) {
+                throw new RuntimeException("Off-site SHA-256 verification mismatch on [{$offsiteDisk}]: expected [{$sha256}], calculated [{$offsiteCalculatedSha256}].");
             }
 
             return [
@@ -486,7 +558,7 @@ class BackupDatabaseService
 
     private function resolveGitSha(): string
     {
-        $envSha = (string) env('APP_GIT_SHA', '');
+        $envSha = (string) (config('app.git_sha') ?: env('APP_GIT_SHA', ''));
         if (preg_match('/^[0-9a-fA-F]{40}$/', $envSha)) {
             return $envSha;
         }
@@ -497,10 +569,18 @@ class BackupDatabaseService
                 return $sha;
             }
         } catch (Throwable) {
-            // Non-git environment fallback
+            // Non-git environment
         }
 
-        return '138963f69c045546170c1beedee5f5d555c63d14';
+        $revisionFile = base_path('REVISION');
+        if (File::exists($revisionFile)) {
+            $rev = trim((string) File::get($revisionFile));
+            if (preg_match('/^[0-9a-fA-F]{40}$/', $rev)) {
+                return $rev;
+            }
+        }
+
+        return 'unknown';
     }
 
     private function slugify(string $value): string

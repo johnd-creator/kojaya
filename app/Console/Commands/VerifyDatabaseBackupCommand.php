@@ -17,20 +17,14 @@ class VerifyDatabaseBackupCommand extends Command
 
     protected $description = 'Verify the integrity, checksum, and archive contents of a database backup';
 
-    public function __construct(
-        private readonly BackupVerificationService $verificationService = new BackupVerificationService,
-        private readonly BackupRetentionService $retentionService = new BackupRetentionService,
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(BackupVerificationService $verificationService, BackupRetentionService $retentionService): int
     {
         $disk = (string) ($this->option('disk') ?: config('operations.backup.disk', 'local'));
         $directory = trim((string) ($this->option('directory') ?: config('operations.backup.directory', 'backups/database')), '/\\');
 
         try {
-            $this->retentionService->validateDirectorySafety($directory);
+            $retentionService->validateDiskSafety($disk);
+            $retentionService->validateDirectorySafety($directory);
         } catch (Throwable $e) {
             $this->error("Directory validation error: {$e->getMessage()}");
 
@@ -48,7 +42,7 @@ class VerifyDatabaseBackupCommand extends Command
         $this->info("Verifying database backup: {$disk}:{$path}");
 
         try {
-            $manifest = $this->verificationService->verifyStorageBackup($disk, $path);
+            $manifest = $verificationService->verifyStorageBackup($disk, $path);
 
             $this->info("Backup verified successfully: {$disk}:{$path}");
             $this->line("Backup ID:   {$manifest->backupId}");

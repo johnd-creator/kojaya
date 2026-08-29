@@ -35,6 +35,7 @@ class BackupDatabaseCommandTest extends TestCase
         Config::set('database.connections.sqlite.database', $this->tempDbPath);
         Config::set('operations.backup.disk', 'local');
         Config::set('operations.backup.directory', 'backups/database');
+        Config::set('operations.backup.enabled', true);
     }
 
     protected function tearDown(): void
@@ -100,6 +101,60 @@ class BackupDatabaseCommandTest extends TestCase
         $this->assertStringNotContainsString('token', strtolower($manifestJson));
     }
 
+    public function test_backup_rejects_public_primary_disk(): void
+    {
+        Storage::fake('public');
+
+        $this->artisan('backup:database', [
+            '--disk' => 'public',
+        ])
+            ->expectsOutputToContain('Public filesystem disk [public] cannot be used')
+            ->assertFailed();
+
+        $this->assertEmpty(Storage::disk('public')->allFiles());
+    }
+
+    public function test_backup_rejects_public_offsite_disk(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $this->artisan('backup:database', [
+            '--offsite-disk' => 'public',
+        ])
+            ->expectsOutputToContain('Public filesystem disk [public] cannot be used')
+            ->assertFailed();
+    }
+
+    public function test_backup_rejects_disk_with_public_visibility(): void
+    {
+        Storage::fake('local');
+        Config::set('filesystems.disks.custom_public_disk', [
+            'driver' => 'local',
+            'root' => storage_path('app/custom'),
+            'visibility' => 'public',
+        ]);
+
+        $this->artisan('backup:database', [
+            '--disk' => 'custom_public_disk',
+        ])
+            ->expectsOutputToContain('has public visibility and cannot be used')
+            ->assertFailed();
+    }
+
+    public function test_config_require_offsite_is_honored_without_cli_flag(): void
+    {
+        Storage::fake('local');
+        Config::set('operations.backup.offsite_enabled', true);
+        Config::set('operations.backup.offsite_disk', 'non_existent_disk');
+        Config::set('operations.backup.require_offsite', true);
+
+        // Command invoked WITHOUT --require-offsite flag must still fail closed because config is true
+        $this->artisan('backup:database')
+            ->expectsOutputToContain('Database backup failed')
+            ->assertFailed();
+    }
+
     public function test_backup_fails_closed_in_production_environment_with_non_postgres_driver(): void
     {
         Storage::fake('local');
@@ -142,7 +197,7 @@ class BackupDatabaseCommandTest extends TestCase
             ->assertFailed();
     }
 
-    public function test_offsite_backup_replicates_to_secondary_disk(): void
+    public function test_offsite_backup_replicates_to_secondary_disk_and_verifies_sha256(): void
     {
         Storage::fake('local');
         Storage::fake('s3');
@@ -167,21 +222,6 @@ class BackupDatabaseCommandTest extends TestCase
         $this->assertTrue($manifest['offsite_copy']['sha256_verified']);
     }
 
-    public function test_offsite_failure_fails_backup_when_offsite_is_required(): void
-    {
-        Storage::fake('local');
-        // Non-configured offsite disk throws on access
-        Config::set('filesystems.disks.failing_disk', [
-            'driver' => 'local',
-            'root' => '/root/non_existent_unwritable_path_'.uniqid(),
-        ]);
-
-        $this->artisan('backup:database', [
-            '--offsite-disk' => 'failing_disk',
-            '--require-offsite' => true,
-        ])->assertFailed();
-    }
-
     public function test_source_database_remains_read_only_and_untouched(): void
     {
         Storage::fake('local');
@@ -198,6 +238,74 @@ class BackupDatabaseCommandTest extends TestCase
         $afterCount = $sqlite->querySingle('SELECT COUNT(*) FROM test_users');
         $sqlite->close();
 
-        $this->assertSame(2, $afterCount);
+        $this->assertSame($initialCount, $afterCount);
+    }
+
+    public function test_pre_deploy_backup_aborts_in_production_if_backup_disabled(): void
+    {
+        Storage::fake('local');
+        $this->app['env'] = 'production';
+        Config::set('operations.backup.enabled', false);
+
+        $this->artisan('backup:database', [
+            '--purpose' => 'pre-deploy',
+        ])
+            ->expectsOutputToContain('Database backup is disabled via BACKUP_ENABLED=false, but pre-deploy backup is mandatory')
+            ->assertFailed();
+    }
+
+    public function test_backup_rejects_disk_with_root_in_public_path(): void
+    {
+        Storage::fake('local');
+        Config::set('filesystems.disks.custom_root_public', [
+            'driver' => 'local',
+            'root' => public_path('uploads'),
+        ]);
+
+        $this->artisan('backup:database', [
+            '--disk' => 'custom_root_public',
+        ])
+            ->expectsOutputToContain('root is located in a public directory')
+            ->assertFailed();
+    }
+
+    public function test_backup_rejects_disk_with_root_in_storage_app_public(): void
+    {
+        Storage::fake('local');
+        Config::set('filesystems.disks.custom_root_storage_public', [
+            'driver' => 'local',
+            'root' => storage_path('app/public/backups'),
+        ]);
+
+        $this->artisan('backup:database', [
+            '--disk' => 'custom_root_storage_public',
+        ])
+            ->expectsOutputToContain('root is located in a public directory')
+            ->assertFailed();
+    }
+
+    public function test_offsite_sha256_mismatch_fails_offsite_verification(): void
+    {
+        Storage::fake('local');
+        Storage::fake('s3');
+
+        Config::set('operations.backup.require_offsite', true);
+
+        $this->partialMock(\App\Services\Backup\BackupVerificationService::class, function ($mock) {
+            $mock->shouldReceive('calculateStorageStreamSha256')
+                ->andReturnUsing(function ($disk, $path) {
+                    if ($disk === 'local') {
+                        return hash('sha256', Storage::disk('local')->get($path));
+                    }
+
+                    return 'corrupted_mismatched_remote_hash';
+                });
+        });
+
+        $this->artisan('backup:database', [
+            '--offsite-disk' => 's3',
+        ])
+            ->expectsOutputToContain('Database backup failed')
+            ->assertFailed();
     }
 }

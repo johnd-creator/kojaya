@@ -32,7 +32,16 @@ class BackupVerificationTest extends TestCase
         $content = File::get($dbPath);
         $sha = hash('sha256', $content);
 
+        $manifestJson = json_encode([
+            'backup_id' => 'test-1',
+            'created_at' => now('UTC')->toIso8601String(),
+            'database_engine' => 'sqlite',
+            'sha256' => $sha,
+            'verification_status' => 'verified',
+        ]);
+
         Storage::disk('local')->put('backups/test.sqlite', $content);
+        Storage::disk('local')->put('backups/test.sqlite.json', $manifestJson);
         Storage::disk('local')->put('backups/test.sqlite.sha256', "{$sha}  test.sqlite\n");
 
         $this->artisan('backup:verify', [
@@ -43,6 +52,18 @@ class BackupVerificationTest extends TestCase
             ->assertSuccessful();
 
         File::delete($dbPath);
+    }
+
+    public function test_verify_rejects_public_disk(): void
+    {
+        Storage::fake('public');
+
+        $this->artisan('backup:verify', [
+            'path' => 'backups/test.sqlite',
+            '--disk' => 'public',
+        ])
+            ->expectsOutputToContain('Public filesystem disk [public] cannot be used')
+            ->assertFailed();
     }
 
     public function test_verify_fails_when_file_is_missing(): void
@@ -80,14 +101,24 @@ class BackupVerificationTest extends TestCase
         $sqlite->exec('CREATE TABLE t (id INT)');
         $sqlite->close();
 
-        Storage::disk('local')->put('backups/test.sqlite', File::get($dbPath));
+        $content = File::get($dbPath);
+        $manifestJson = json_encode([
+            'backup_id' => 'test-mismatch',
+            'created_at' => now('UTC')->toIso8601String(),
+            'database_engine' => 'sqlite',
+            'sha256' => 'expected_good_hash',
+            'verification_status' => 'verified',
+        ]);
+
+        Storage::disk('local')->put('backups/test.sqlite', $content);
+        Storage::disk('local')->put('backups/test.sqlite.json', $manifestJson);
         Storage::disk('local')->put('backups/test.sqlite.sha256', "bad_checksum_hash  test.sqlite\n");
 
         $this->artisan('backup:verify', [
             'path' => 'backups/test.sqlite',
             '--disk' => 'local',
         ])
-            ->expectsOutputToContain('Checksum mismatch')
+            ->expectsOutputToContain('Storage SHA-256 mismatch')
             ->assertFailed();
 
         File::delete($dbPath);
@@ -96,13 +127,25 @@ class BackupVerificationTest extends TestCase
     public function test_verify_fails_on_corrupted_sqlite_file(): void
     {
         Storage::fake('local');
-        Storage::disk('local')->put('backups/corrupted.sqlite', 'NOT A SQLITE DATABASE HEADER STRING');
+        $corruptData = 'NOT A SQLITE DATABASE HEADER STRING';
+        $sha = hash('sha256', $corruptData);
+        $manifestJson = json_encode([
+            'backup_id' => 'test-corrupt',
+            'created_at' => now('UTC')->toIso8601String(),
+            'database_engine' => 'sqlite',
+            'sha256' => $sha,
+            'verification_status' => 'verified',
+        ]);
+
+        Storage::disk('local')->put('backups/corrupted.sqlite', $corruptData);
+        Storage::disk('local')->put('backups/corrupted.sqlite.json', $manifestJson);
+        Storage::disk('local')->put('backups/corrupted.sqlite.sha256', "{$sha}  corrupted.sqlite\n");
 
         $this->artisan('backup:verify', [
             'path' => 'backups/corrupted.sqlite',
             '--disk' => 'local',
         ])
-            ->expectsOutputToContain('SQLite integrity check failed')
+            ->expectsOutputToContain('SQLite backup verification failed')
             ->assertFailed();
     }
 }

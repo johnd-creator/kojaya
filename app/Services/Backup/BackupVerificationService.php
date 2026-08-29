@@ -11,6 +11,10 @@ use Throwable;
 
 class BackupVerificationService
 {
+    public function __construct(
+        private readonly ?BackupRetentionService $retentionService = null,
+    ) {}
+
     /**
      * Verify a local dump file for archive integrity.
      */
@@ -46,10 +50,46 @@ class BackupVerificationService
     }
 
     /**
+     * Compute SHA-256 hash by streaming directly from a storage disk.
+     */
+    public function calculateStorageStreamSha256(string $disk, string $path): string
+    {
+        $storage = Storage::disk($disk);
+        $stream = $storage->readStream($path);
+
+        if ($stream === false) {
+            throw new RuntimeException("Unable to open read stream for [{$disk}:{$path}].");
+        }
+
+        $ctx = hash_init('sha256');
+
+        try {
+            while (! feof($stream)) {
+                $buffer = fread($stream, 1048576); // 1MB chunk
+                if ($buffer !== false && $buffer !== '') {
+                    hash_update($ctx, $buffer);
+                }
+            }
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+
+        return hash_final($ctx);
+    }
+
+    /**
      * Verify a backup stored in a Laravel filesystem disk.
      */
-    public function verifyStorageBackup(string $disk, string $path): BackupManifest
+    public function verifyStorageBackup(string $disk, string $path, bool $requireProvenance = false): BackupManifest
     {
+        if ($this->retentionService) {
+            $this->retentionService->validateDiskSafety($disk);
+        } else {
+            (new BackupRetentionService)->validateDiskSafety($disk);
+        }
+
         $storage = Storage::disk($disk);
 
         if (! $storage->exists($path)) {
@@ -65,6 +105,7 @@ class BackupVerificationService
         };
 
         $manifestPath = $path.'.json';
+        $shaPath = $path.'.sha256';
         $manifest = null;
 
         if ($storage->exists($manifestPath)) {
@@ -76,6 +117,28 @@ class BackupVerificationService
             }
         }
 
+        if ($requireProvenance && ($manifest === null || ! $storage->exists($shaPath))) {
+            throw new RuntimeException("Managed backup [{$disk}:{$path}] is missing required cryptographic provenance (.json manifest or .sha256 checksum).");
+        }
+
+        // 1. Verify streaming SHA-256
+        $streamSha256 = $this->calculateStorageStreamSha256($disk, $path);
+
+        if ($manifest && $manifest->sha256 !== '') {
+            if (! hash_equals(strtolower($manifest->sha256), strtolower($streamSha256))) {
+                throw new RuntimeException("Storage SHA-256 mismatch against manifest: expected [{$manifest->sha256}], calculated [{$streamSha256}].");
+            }
+        }
+
+        if ($storage->exists($shaPath)) {
+            $shaContent = trim((string) $storage->get($shaPath));
+            $expectedSha = explode(' ', $shaContent)[0] ?? '';
+            if ($expectedSha !== '' && ! hash_equals(strtolower($expectedSha), strtolower($streamSha256))) {
+                throw new RuntimeException("Storage SHA-256 mismatch against .sha256 file: expected [{$expectedSha}], calculated [{$streamSha256}].");
+            }
+        }
+
+        // 2. Download to isolated temporary file to perform archive structure verification
         $tmpDirectory = storage_path('app/private/backups/verify');
         File::ensureDirectoryExists($tmpDirectory);
         $tmpFile = $tmpDirectory.'/'.uniqid('verify-', true).'.'.$extension;
@@ -97,23 +160,11 @@ class BackupVerificationService
                 fclose($stream);
             }
 
-            // Verify checksum if manifest or .sha256 file exists
-            if ($manifest && $manifest->sha256 !== '') {
-                $this->verifyChecksum($tmpFile, $manifest->sha256);
-            } elseif ($storage->exists($path.'.sha256')) {
-                $shaContent = trim((string) $storage->get($path.'.sha256'));
-                $expectedSha = explode(' ', $shaContent)[0] ?? '';
-                if ($expectedSha !== '') {
-                    $this->verifyChecksum($tmpFile, $expectedSha);
-                }
-            }
-
             // Verify archive integrity
             $this->verifyLocalArchive($tmpFile, $engine);
 
             if ($manifest === null) {
                 $size = (int) File::size($tmpFile);
-                $sha256 = (string) hash_file('sha256', $tmpFile);
                 $manifest = new BackupManifest(
                     backupId: pathinfo($path, PATHINFO_FILENAME),
                     createdAt: now('UTC')->toIso8601String(),
@@ -127,7 +178,7 @@ class BackupVerificationService
                     backupFilename: basename($path),
                     backupFormat: $extension === 'dump' ? 'custom' : $extension,
                     backupSizeBytes: $size,
-                    sha256: $sha256,
+                    sha256: $streamSha256,
                     purpose: 'manual',
                     verificationStatus: 'verified',
                     verifiedAt: now('UTC')->toIso8601String(),
@@ -150,33 +201,39 @@ class BackupVerificationService
 
         if (! $process->isSuccessful()) {
             $errorOutput = trim($process->getErrorOutput() ?: $process->getOutput());
-            throw new RuntimeException("PostgreSQL archive verification failed (pg_restore --list): {$errorOutput}");
+            throw new RuntimeException("PostgreSQL archive verification (pg_restore --list) failed: {$errorOutput}");
         }
     }
 
     private function verifySqliteArchive(string $filePath): void
     {
         try {
-            $database = new SQLite3($filePath, SQLITE3_OPEN_READONLY);
-            $database->enableExceptions(true);
-            $result = @$database->querySingle('PRAGMA integrity_check');
-            @$database->close();
+            $db = new SQLite3($filePath, SQLITE3_OPEN_READONLY);
+            $db->enableExceptions(true);
+
+            $result = $db->querySingle('PRAGMA integrity_check;');
+            $db->close();
 
             if ($result !== 'ok') {
-                $msg = is_string($result) && $result !== '' ? $result : 'invalid archive';
-                throw new RuntimeException("PRAGMA integrity_check returned [{$msg}].");
+                throw new RuntimeException("SQLite integrity check failed: returned [{$result}].");
             }
         } catch (Throwable $e) {
-            throw new RuntimeException("SQLite integrity check failed: {$e->getMessage()}", 0, $e);
+            throw new RuntimeException("SQLite backup verification failed: {$e->getMessage()}", 0, $e);
         }
     }
 
     private function verifySqlArchive(string $filePath): void
     {
-        $contents = File::get($filePath);
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) {
+            throw new RuntimeException("Cannot read SQL archive file [{$filePath}].");
+        }
 
-        if (! str_contains($contents, 'CREATE') && ! str_contains($contents, 'INSERT')) {
-            throw new RuntimeException('SQL dump does not contain CREATE or INSERT statements.');
+        $header = fread($handle, 4096);
+        fclose($handle);
+
+        if ($header === false || strlen($header) < 10) {
+            throw new RuntimeException("SQL archive [{$filePath}] is too short or unreadable.");
         }
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Services\Backup;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Throwable;
 
 class BackupRetentionService
 {
@@ -12,8 +14,13 @@ class BackupRetentionService
      */
     private const BACKUP_EXTENSIONS = ['dump', 'sqlite', 'sqlite3', 'db', 'sql'];
 
+    public function __construct(
+        private readonly ?BackupVerificationService $verificationService = null,
+    ) {}
+
     /**
-     * Prune expired backups according to retention policy.
+     * Prune expired backups according to retention policy while guaranteeing
+     * that at least $minKeep verified valid backups remain.
      *
      * @return array{
      *     pruned_count: int,
@@ -29,55 +36,89 @@ class BackupRetentionService
         ?int $minKeep = null,
         bool $dryRun = true,
     ): array {
+        $this->validateDiskSafety($disk);
         $this->validateDirectorySafety($directory);
 
         $storage = Storage::disk($disk);
         $retentionDays = max(1, $retentionDays ?? (int) config('operations.backup.retention_days', 14));
         $minKeep = max(1, $minKeep ?? (int) config('operations.backup.min_keep', 1));
-        $cutoffTimestamp = now()->subDays($retentionDays)->getTimestamp();
+        $cutoffTimestamp = now('UTC')->subDays($retentionDays)->getTimestamp();
 
         $allFiles = $storage->files($directory);
 
-        // Group by primary backup base
-        $backupFiles = [];
+        $candidates = [];
         foreach ($allFiles as $file) {
             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
             if (in_array($ext, self::BACKUP_EXTENSIONS, true)) {
-                $backupFiles[] = [
+                $manifest = $this->loadManifestIfPresent($storage, $file);
+                $isValid = $this->checkBackupValidity($disk, $file, $manifest);
+
+                $timestamp = null;
+                if ($manifest && $manifest->createdAt !== '') {
+                    try {
+                        $timestamp = Carbon::parse($manifest->createdAt)->getTimestamp();
+                    } catch (Throwable) {
+                        $timestamp = null;
+                    }
+                }
+
+                if ($timestamp === null) {
+                    $timestamp = (int) $storage->lastModified($file);
+                }
+
+                $candidates[] = [
                     'path' => $file,
-                    'timestamp' => (int) $storage->lastModified($file),
+                    'timestamp' => $timestamp,
+                    'is_valid' => $isValid,
+                    'manifest' => $manifest,
                 ];
             }
         }
 
         // Sort newest first
-        usort($backupFiles, fn (array $a, array $b): int => $b['timestamp'] <=> $a['timestamp']);
+        usort($candidates, fn (array $a, array $b): int => $b['timestamp'] <=> $a['timestamp']);
 
-        $totalBackups = count($backupFiles);
+        // Separate valid candidates vs invalid/unverified candidates
+        $validCandidates = array_values(array_filter($candidates, fn (array $item): bool => $item['is_valid']));
+        $invalidCandidates = array_values(array_filter($candidates, fn (array $item): bool => ! $item['is_valid']));
+
+        // Protect at least $minKeep valid backups
+        $protectedValidPaths = [];
+        foreach (array_slice($validCandidates, 0, $minKeep) as $validItem) {
+            $protectedValidPaths[$validItem['path']] = true;
+        }
+
         $retainedFiles = [];
         $filesToPrune = [];
 
-        foreach ($backupFiles as $index => $item) {
+        foreach ($candidates as $item) {
             $path = $item['path'];
             $timestamp = $item['timestamp'];
+            $isValid = $item['is_valid'];
 
-            // Always keep at least $minKeep backups
-            if ($index < $minKeep) {
+            // 1. Never prune protected valid backups
+            if (isset($protectedValidPaths[$path])) {
                 $retainedFiles[] = $path;
 
                 continue;
             }
 
-            // If newer than cutoff, keep
-            if ($timestamp >= $cutoffTimestamp) {
+            // 2. If valid and newer than cutoff, keep
+            if ($isValid && $timestamp >= $cutoffTimestamp) {
                 $retainedFiles[] = $path;
 
                 continue;
             }
 
-            // Otherwise, candidate for pruning
+            // 3. If no valid backups exist at all, fail closed and retain all candidates
+            if (empty($validCandidates)) {
+                $retainedFiles[] = $path;
+
+                continue;
+            }
+
+            // 4. Candidate is eligible for pruning
             $filesToPrune[] = $path;
-            // Also include companion manifest and checksum if they exist
             if ($storage->exists($path.'.json')) {
                 $filesToPrune[] = $path.'.json';
             }
@@ -89,8 +130,10 @@ class BackupRetentionService
         $prunedCount = 0;
         if (! $dryRun) {
             foreach ($filesToPrune as $fileToDelete) {
-                $storage->delete($fileToDelete);
-                $prunedCount++;
+                if ($storage->exists($fileToDelete)) {
+                    $storage->delete($fileToDelete);
+                    $prunedCount++;
+                }
             }
         } else {
             $prunedCount = count($filesToPrune);
@@ -98,10 +141,57 @@ class BackupRetentionService
 
         return [
             'pruned_count' => $prunedCount,
-            'pruned_files' => $filesToPrune,
-            'retained_files' => $retainedFiles,
+            'pruned_files' => array_values(array_unique($filesToPrune)),
+            'retained_files' => array_values(array_unique($retainedFiles)),
             'dry_run' => $dryRun,
         ];
+    }
+
+    /**
+     * Validate that the filesystem disk is safe and private (not publicly accessible).
+     */
+    public function validateDiskSafety(string $disk): void
+    {
+        $normalizedDisk = strtolower(trim($disk));
+
+        if ($normalizedDisk === 'public') {
+            throw new InvalidArgumentException("Public filesystem disk [{$disk}] cannot be used for database backups.");
+        }
+
+        $diskConfig = config("filesystems.disks.{$disk}");
+        if (! is_array($diskConfig)) {
+            throw new InvalidArgumentException("Filesystem disk [{$disk}] is not configured in filesystems configuration.");
+        }
+
+        // 1. Explicit public visibility check
+        if (isset($diskConfig['visibility']) && strtolower((string) $diskConfig['visibility']) === 'public') {
+            throw new InvalidArgumentException("Filesystem disk [{$disk}] has public visibility and cannot be used for database backups.");
+        }
+
+        // 2. Local root location checks
+        if (isset($diskConfig['root'])) {
+            $rawRoot = (string) $diskConfig['root'];
+            $resolvedRoot = realpath($rawRoot) ?: $rawRoot;
+            $publicPath = realpath(public_path()) ?: public_path();
+            $storagePublicPath = realpath(storage_path('app/public')) ?: storage_path('app/public');
+
+            if (
+                str_starts_with($resolvedRoot, $publicPath) ||
+                str_starts_with($resolvedRoot, $storagePublicPath) ||
+                str_contains($rawRoot, 'storage/app/public') ||
+                str_contains($rawRoot, 'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'public')
+            ) {
+                throw new InvalidArgumentException("Filesystem disk [{$disk}] root is located in a public directory and cannot be used for backups.");
+            }
+        }
+
+        // 3. Publicly served URL check
+        if (isset($diskConfig['url']) && is_string($diskConfig['url'])) {
+            $url = strtolower($diskConfig['url']);
+            if (str_contains($url, '/storage') || str_contains($url, 'storage/')) {
+                throw new InvalidArgumentException("Filesystem disk [{$disk}] is configured as publicly served storage.");
+            }
+        }
     }
 
     /**
@@ -119,5 +209,50 @@ class BackupRetentionService
         if (str_starts_with($normalized, 'public') || str_starts_with($normalized, 'app/public')) {
             throw new InvalidArgumentException("Backups cannot be stored in or pruned from public directory [{$directory}].");
         }
+    }
+
+    private function loadManifestIfPresent(mixed $storage, string $backupPath): ?BackupManifest
+    {
+        $manifestPath = $backupPath.'.json';
+        if (! $storage->exists($manifestPath)) {
+            return null;
+        }
+
+        try {
+            $content = (string) $storage->get($manifestPath);
+            $data = json_decode($content, true);
+            if (is_array($data)) {
+                return BackupManifest::fromArray($data);
+            }
+        } catch (Throwable) {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function checkBackupValidity(string $disk, string $backupPath, ?BackupManifest $manifest): bool
+    {
+        $storage = Storage::disk($disk);
+
+        if (! $storage->exists($backupPath) || (int) $storage->size($backupPath) <= 0) {
+            return false;
+        }
+
+        if (! $manifest || ! $storage->exists($backupPath.'.sha256')) {
+            return false;
+        }
+
+        if ($manifest->sha256 === '' || $manifest->verificationStatus !== 'verified') {
+            return false;
+        }
+
+        $shaContent = trim((string) $storage->get($backupPath.'.sha256'));
+        $expectedSha = explode(' ', $shaContent)[0] ?? '';
+        if ($expectedSha === '' || ! hash_equals(strtolower($manifest->sha256), strtolower($expectedSha))) {
+            return false;
+        }
+
+        return true;
     }
 }

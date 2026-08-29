@@ -15,20 +15,14 @@ class BackupStatusCommand extends Command
 
     protected $description = 'Check the freshness, integrity, and SLA health of the latest database backup';
 
-    public function __construct(
-        private readonly BackupStatusService $statusService = new BackupStatusService,
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(BackupStatusService $statusService): int
     {
         $disk = (string) ($this->option('disk') ?: config('operations.backup.disk', 'local'));
         $directory = trim((string) ($this->option('directory') ?: config('operations.backup.directory', 'backups/database')), '/\\');
         $maxAge = $this->option('max-age') !== null ? (int) $this->option('max-age') : null;
 
         try {
-            $result = $this->statusService->checkStatus(
+            $result = $statusService->checkStatus(
                 disk: $disk,
                 directory: $directory,
                 maxAgeHours: $maxAge,

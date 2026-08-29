@@ -18,13 +18,7 @@ class PruneDatabaseBackupsCommand extends Command
 
     protected $description = 'Prune old database backups according to retention policy (defaults to dry-run)';
 
-    public function __construct(
-        private readonly BackupRetentionService $retentionService = new BackupRetentionService,
-    ) {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function handle(BackupRetentionService $retentionService): int
     {
         $disk = (string) ($this->option('disk') ?: config('operations.backup.disk', 'local'));
         $directory = trim((string) ($this->option('directory') ?: config('operations.backup.directory', 'backups/database')), '/\\');
@@ -39,7 +33,7 @@ class PruneDatabaseBackupsCommand extends Command
         }
 
         try {
-            $result = $this->retentionService->prune(
+            $result = $retentionService->prune(
                 disk: $disk,
                 directory: $directory,
                 retentionDays: $days,

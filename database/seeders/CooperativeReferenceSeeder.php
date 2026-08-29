@@ -12,6 +12,8 @@ class CooperativeReferenceSeeder extends Seeder
 {
     /**
      * Seed production-safe reference and master data for cooperative operations.
+     * Uses firstOrCreate to ensure existing operator-configured settings (e.g. default_amount, is_active)
+     * are preserved and never silently overwritten during deployments.
      */
     public function run(): void
     {
@@ -38,7 +40,7 @@ class CooperativeReferenceSeeder extends Seeder
         ];
 
         foreach ($contributionTypes as $type) {
-            CooperativeContributionType::query()->updateOrCreate(
+            CooperativeContributionType::query()->firstOrCreate(
                 ['code' => $type['code']],
                 $type,
             );
@@ -54,7 +56,7 @@ class CooperativeReferenceSeeder extends Seeder
         ];
 
         foreach ($posCategories as $category) {
-            PosCategory::query()->updateOrCreate(
+            PosCategory::query()->firstOrCreate(
                 ['slug' => $category['slug']],
                 ['name' => $category['name'], 'is_active' => true],
             );

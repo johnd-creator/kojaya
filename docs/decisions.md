@@ -1285,9 +1285,10 @@ Accidental execution of `php artisan db:seed` or destructive migration commands 
 
 ### Deployment Contract
 
-| Environment | `migrate --force` | `db:seed` (Default) | `migrate:fresh` / `migrate:refresh` / `db:wipe` | Demo Seeders (`--class=...`) | Admin Bootstrap |
+| Environment | `migrate --force` | `db:seed` (Default / Generic) | `migrate:fresh` / `migrate:refresh` / `db:wipe` | Demo Seeders (`--class=...`) | Admin Bootstrap |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Production** | ✅ Allowed (Standard Deploy) | ⚠️ Not normal deploy; Safe reference-only | 🚫 FORBIDDEN (Prohibited) | 🚫 FORBIDDEN (Throws LogicException) | Explicit `php artisan admin:create` |
-| **Staging / QA** | ✅ Allowed (Standard Deploy) | ⚠️ Not normal deploy; Safe reference-only | 🚫 FORBIDDEN (Prohibited) | 🚫 FORBIDDEN (Throws LogicException) | Explicit `php artisan admin:create` |
-| **Local / Test** | ✅ Allowed | ✅ Allowed (Seeds reference + demo) | ✅ Allowed | ✅ Allowed | Pre-seeded or `admin:create` |
+| **Production** | ✅ Allowed (Standard Deploy) | ⚠️ Not normal deploy; Safe reference-only | 🚫 FORBIDDEN (Prohibited by Laravel) | 🚫 FORBIDDEN (Throws `LogicException`) | Explicit `php artisan admin:create` |
+| **Staging / QA** | ✅ Allowed (Standard Deploy) | ⚠️ Not normal deploy; Safe reference-only | 🚫 FORBIDDEN (Prohibited by Laravel) | 🚫 FORBIDDEN (Throws `LogicException`) | Explicit `php artisan admin:create` |
+| **Testing / Playwright** | ✅ Allowed | ✅ Allowed (Reference-only by default) | ✅ Allowed (In-memory/isolated test DB) | ✅ Allowed (Invoked explicitly per test) | Factories or `admin:create` |
+| **Local Development** | ✅ Allowed | ✅ Allowed (Seeds reference + demo fixtures) | ✅ Allowed | ✅ Allowed | Pre-seeded or `admin:create` |
 

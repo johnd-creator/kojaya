@@ -7,6 +7,11 @@ use Illuminate\Database\Seeder;
 
 class LoanTypeSeeder extends Seeder
 {
+    /**
+     * Seed canonical loan products with initial defaults.
+     * Uses firstOrCreate so existing operator-managed loan parameters (interest rate,
+     * min/max amounts, terms, active status) are strictly preserved during deployments.
+     */
     public function run(): void
     {
         $loanTypes = [
@@ -49,7 +54,7 @@ class LoanTypeSeeder extends Seeder
         ];
 
         foreach ($loanTypes as $loanType) {
-            LoanType::query()->updateOrCreate(
+            LoanType::query()->firstOrCreate(
                 ['code' => $loanType['code']],
                 [
                     ...$loanType,

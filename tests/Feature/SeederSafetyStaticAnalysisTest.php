@@ -62,6 +62,58 @@ class SeederSafetyStaticAnalysisTest extends TestCase
         }
     }
 
+    public function test_reference_seeders_do_not_create_users_or_passwords(): void
+    {
+        $seederDir = database_path('seeders');
+        $credentialTokens = [
+            'User::create',
+            'User::updateOrCreate',
+            'User::firstOrCreate',
+            'Hash::make',
+        ];
+
+        foreach ($this->referenceSeeders as $fileName) {
+            $filePath = $seederDir.'/'.$fileName;
+            $this->assertFileExists($filePath);
+            $content = file_get_contents($filePath);
+            $this->assertIsString($content);
+
+            foreach ($credentialTokens as $token) {
+                $this->assertStringNotContainsString(
+                    $token,
+                    $content,
+                    "Reference seeder '{$fileName}' must never create users or credentials with token '{$token}'.",
+                );
+            }
+        }
+    }
+
+    public function test_operational_reference_seeders_use_first_or_create_for_business_parameters(): void
+    {
+        $seederDir = database_path('seeders');
+        $operationalSeeders = [
+            'CooperativeReferenceSeeder.php',
+            'LoanTypeSeeder.php',
+            'JobGradeSeeder.php',
+            'LeaveTypeSeeder.php',
+            'SalaryComponentTypeSeeder.php',
+            'WorkShiftSeeder.php',
+        ];
+
+        foreach ($operationalSeeders as $fileName) {
+            $filePath = $seederDir.'/'.$fileName;
+            $this->assertFileExists($filePath);
+            $content = file_get_contents($filePath);
+            $this->assertIsString($content);
+
+            $this->assertStringNotContainsString(
+                'updateOrCreate(',
+                $content,
+                "Operational reference seeder '{$fileName}' must not use updateOrCreate to prevent overwriting operator configurations.",
+            );
+        }
+    }
+
     public function test_non_reference_seeders_contain_strict_environment_guards(): void
     {
         $seederDir = database_path('seeders');

@@ -212,16 +212,37 @@ class DatabaseSeederSafetyTest extends TestCase
 
         $contributionType = CooperativeContributionType::factory()->create([
             'code' => 'POKOK',
-            'name' => 'Simpanan Pokok Custom',
-            'default_amount' => 250000,
+            'name' => 'Simpanan Pokok Custom Production',
+            'default_amount' => 350000,
+            'is_active' => false,
+        ]);
+
+        $customLoanType = LoanType::query()->create([
+            'code' => 'emergency',
+            'name' => 'Pinjaman Darurat Kustom',
+            'description' => 'Deskripsi kustom pengurus',
+            'interest_rate' => 2.75,
+            'admin_fee' => 50000,
+            'late_fee_per_day' => 10000,
+            'min_amount' => 750000,
+            'max_amount' => 12000000,
+            'min_term_months' => 2,
+            'max_term_months' => 12,
+            'is_active' => false,
+        ]);
+
+        $customPosCategory = PosCategory::query()->create([
+            'slug' => 'sembako',
+            'name' => 'Sembako & Kebutuhan Pokok',
+            'is_active' => false,
         ]);
 
         $invoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $realMember->id,
             'cooperative_contribution_type_id' => $contributionType->id,
             'period' => '2026-01',
-            'amount' => 250000,
-            'paid_amount' => 250000,
+            'amount' => 350000,
+            'paid_amount' => 350000,
             'due_date' => '2026-01-10',
             'status' => 'PAID',
         ]);
@@ -230,7 +251,7 @@ class DatabaseSeederSafetyTest extends TestCase
             'cooperative_member_id' => $realMember->id,
             'cooperative_dues_invoice_id' => $invoice->id,
             'reference_no' => 'REAL-PAY-2026-001',
-            'amount' => 250000,
+            'amount' => 350000,
             'payment_method' => 'TRANSFER',
             'paid_at' => '2026-01-05',
             'status' => 'APPROVED',
@@ -241,7 +262,7 @@ class DatabaseSeederSafetyTest extends TestCase
             'cooperative_payment_id' => $payment->id,
             'entry_type' => 'SAVING_PAYMENT',
             'ledger_scope' => 'SAVINGS',
-            'credit' => 250000,
+            'credit' => 350000,
             'debit' => 0,
         ]);
 
@@ -279,9 +300,27 @@ class DatabaseSeederSafetyTest extends TestCase
         $realMember->refresh();
         $this->assertSame('Real Active Member', $realMember->name);
 
+        $contributionType->refresh();
+        $this->assertSame('Simpanan Pokok Custom Production', $contributionType->name);
+        $this->assertSame(350000.0, (float) $contributionType->default_amount);
+        $this->assertFalse((bool) $contributionType->is_active, 'Existing contribution type active status must be preserved.');
+
+        $customLoanType->refresh();
+        $this->assertSame('Pinjaman Darurat Kustom', $customLoanType->name);
+        $this->assertSame(2.75, (float) $customLoanType->interest_rate);
+        $this->assertSame(750000.0, (float) $customLoanType->min_amount);
+        $this->assertSame(12000000.0, (float) $customLoanType->max_amount);
+        $this->assertSame(2, $customLoanType->min_term_months);
+        $this->assertSame(12, $customLoanType->max_term_months);
+        $this->assertFalse((bool) $customLoanType->is_active, 'Existing loan type active status must be preserved.');
+
+        $customPosCategory->refresh();
+        $this->assertSame('Sembako & Kebutuhan Pokok', $customPosCategory->name);
+        $this->assertFalse((bool) $customPosCategory->is_active, 'Existing POS category active status must be preserved.');
+
         $invoice->refresh();
         $this->assertSame('PAID', $invoice->status);
-        $this->assertSame(250000.0, (float) $invoice->paid_amount);
+        $this->assertSame(350000.0, (float) $invoice->paid_amount);
 
         $this->assertDatabaseHas('cooperative_payments', ['id' => $payment->id, 'reference_no' => 'REAL-PAY-2026-001']);
         $this->assertDatabaseHas('cooperative_ledger_entries', ['id' => $ledgerEntry->id]);

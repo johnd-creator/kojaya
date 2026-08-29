@@ -156,6 +156,95 @@ class DefaultAdminCredentialTest extends TestCase
         );
     }
 
+    public function test_admin_create_fails_and_does_not_create_user_when_password_is_empty(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $this->artisan('admin:create', [
+            '--email' => 'empty@example.com',
+            '--name' => 'Empty Password Admin',
+            '--password' => '',
+        ])->assertFailed();
+
+        $this->assertNull(User::where('email', 'empty@example.com')->first());
+    }
+
+    public function test_admin_create_fails_and_does_not_create_user_when_password_is_weak(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        // Test with too short password
+        $this->artisan('admin:create', [
+            '--email' => 'weak1@example.com',
+            '--name' => 'Weak Admin 1',
+            '--password' => 'short',
+        ])->assertFailed();
+
+        $this->assertNull(User::where('email', 'weak1@example.com')->first());
+
+        // Test with password missing mixed case, numbers, or symbols
+        $this->artisan('admin:create', [
+            '--email' => 'weak2@example.com',
+            '--name' => 'Weak Admin 2',
+            '--password' => 'onlylowercaseletters12345',
+        ])->assertFailed();
+
+        $this->assertNull(User::where('email', 'weak2@example.com')->first());
+    }
+
+    public function test_admin_create_with_update_existing_fails_and_preserves_state_when_password_is_weak(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $existingUser = User::factory()->create([
+            'email' => 'existing.member@example.com',
+            'name' => 'Original Member Name',
+            'password' => Hash::make('OriginalSecureSecret123!'),
+            'organization_id' => null,
+        ]);
+        $existingUser->assignRole('Anggota');
+
+        $this->artisan('admin:create', [
+            '--email' => 'existing.member@example.com',
+            '--name' => 'Attempted Modified Name',
+            '--password' => 'weakpass',
+            '--role' => 'System Admin',
+            '--update-existing' => true,
+        ])->assertFailed();
+
+        $existingUser->refresh();
+        $this->assertSame('Original Member Name', $existingUser->name);
+        $this->assertTrue(Hash::check('OriginalSecureSecret123!', $existingUser->password));
+        $this->assertTrue($existingUser->hasRole('Anggota'));
+        $this->assertFalse($existingUser->hasRole('System Admin'));
+        $this->assertNull($existingUser->organization_id);
+    }
+
+    public function test_admin_create_preserves_existing_null_organization_on_update(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(CooperativeReferenceSeeder::class);
+
+        $existingUser = User::factory()->create([
+            'email' => 'nullorg.admin@example.com',
+            'organization_id' => null,
+            'password' => Hash::make('OriginalSecret123!'),
+        ]);
+
+        $this->artisan('admin:create', [
+            '--email' => 'nullorg.admin@example.com',
+            '--role' => 'Pengurus Koperasi',
+            '--update-existing' => true,
+        ])->assertSuccessful();
+
+        $existingUser->refresh();
+        $this->assertNull(
+            $existingUser->organization_id,
+            'Updating an existing user with NULL organization_id must leave organization_id as NULL without assigning KOP-001.',
+        );
+        $this->assertTrue($existingUser->hasRole('Pengurus Koperasi'));
+    }
+
     public function test_admin_create_preserves_existing_organization_on_update(): void
     {
         $this->seed(RolePermissionSeeder::class);

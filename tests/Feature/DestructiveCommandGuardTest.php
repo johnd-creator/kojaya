@@ -27,6 +27,9 @@ class DestructiveCommandGuardTest extends TestCase
         ];
 
         foreach (['production', 'staging', 'qa'] as $env) {
+            // Explicitly reset prohibition state before testing each environment to prove independent wiring
+            DB::prohibitDestructiveCommands(false);
+
             $this->app['env'] = $env;
             config(['app.env' => $env]);
 
@@ -49,6 +52,8 @@ class DestructiveCommandGuardTest extends TestCase
     public function test_app_service_provider_allows_safe_environments(): void
     {
         foreach (['local', 'testing', 'playwright'] as $env) {
+            DB::prohibitDestructiveCommands(false);
+
             $this->app['env'] = $env;
             config(['app.env' => $env]);
 
@@ -70,6 +75,8 @@ class DestructiveCommandGuardTest extends TestCase
     public function test_forward_migrations_are_never_prohibited(): void
     {
         foreach (['production', 'staging', 'qa'] as $env) {
+            DB::prohibitDestructiveCommands(false);
+
             $this->app['env'] = $env;
             config(['app.env' => $env]);
 

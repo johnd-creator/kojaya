@@ -6,7 +6,9 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class CreateAdminUserCommand extends Command
@@ -27,7 +29,7 @@ class CreateAdminUserCommand extends Command
     protected $signature = 'admin:create
         {--email= : Admin email address}
         {--name= : Admin display name}
-        {--password= : Admin password (optional; omitted generates a secure random password)}
+        {--password= : Admin password (optional; omitted generates a secure random password). WARNING: Passing passwords via CLI option may expose them in shell history and process lists.}
         {--role=System Admin : Privileged administrative role to assign}
         {--update-existing : Explicitly allow modifying an existing user account}';
 
@@ -56,6 +58,35 @@ class CreateAdminUserCommand extends Command
             return self::FAILURE;
         }
 
+        $providedPassword = $this->option('password');
+        if ($providedPassword !== null) {
+            $validator = Validator::make(
+                ['password' => $providedPassword],
+                [
+                    'password' => [
+                        'required',
+                        'string',
+                        Password::min(12)
+                            ->letters()
+                            ->mixedCase()
+                            ->numbers()
+                            ->symbols(),
+                    ],
+                ],
+                [
+                    'password.required' => 'The password field cannot be empty.',
+                ],
+            );
+
+            if ($validator->fails()) {
+                foreach ($validator->errors()->all() as $error) {
+                    $this->error($error);
+                }
+
+                return self::FAILURE;
+            }
+        }
+
         $existingUser = User::where('email', $email)->first();
         $isUpdate = (bool) $this->option('update-existing');
 
@@ -65,21 +96,13 @@ class CreateAdminUserCommand extends Command
             return self::FAILURE;
         }
 
-        $providedPassword = $this->option('password');
         $generatedPassword = null;
 
         if ($existingUser) {
             $name = $this->option('name') ?: $existingUser->name;
-            $organizationId = $existingUser->organization_id;
-
-            if (! $organizationId) {
-                $headOffice = Organization::query()->where('code', 'KOP-001')->first();
-                $organizationId = $headOffice?->id;
-            }
 
             $updateData = [
                 'name' => $name,
-                'organization_id' => $organizationId,
             ];
 
             if ($providedPassword !== null) {

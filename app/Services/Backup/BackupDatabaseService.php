@@ -89,6 +89,7 @@ class BackupDatabaseService
 
         $offsiteEnabled = $offsiteDisk !== null || (bool) config('operations.backup.offsite_enabled', false);
         $offsiteDisk = $offsiteDisk ?: config('operations.backup.offsite_disk');
+        $offsiteDisk = is_string($offsiteDisk) && trim($offsiteDisk) !== '' ? trim($offsiteDisk) : null;
         $offsiteDirectory = trim((string) ($offsiteDirectory ?: config('operations.backup.offsite_directory', 'backups/database')), '/\\');
         $requireOffsite = $requireOffsite ?? (bool) config('operations.backup.require_offsite', false);
 
@@ -147,7 +148,7 @@ class BackupDatabaseService
 
         $tmpDirectory = storage_path('app/private/backups/tmp');
         File::ensureDirectoryExists($tmpDirectory);
-        $tmpFile = "{$tmpDirectory}/{$backupFilename}";
+        $tmpFile = "{$tmpDirectory}/".uniqid('tmp-backup-', true)."-{$backupFilename}";
 
         try {
             // 1. Gather non-sensitive row counts before dump

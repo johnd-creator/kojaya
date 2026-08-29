@@ -35,7 +35,7 @@ class DemoMemberSeederTest extends TestCase
 
         $wajib = CooperativeContributionType::query()->where('code', 'WAJIB')->firstOrFail();
         $pokok = CooperativeContributionType::query()->where('code', 'POKOK')->firstOrFail();
-        $member = CooperativeMember::query()->where('no_anggota', '001')->firstOrFail();
+        $member = CooperativeMember::query()->where('no_anggota', 'DEMO-ANG-001')->firstOrFail();
 
         $this->assertSame('ACTIVE', $member->status);
         $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->validation_status);

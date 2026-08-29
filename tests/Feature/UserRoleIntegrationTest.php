@@ -16,7 +16,6 @@ class UserRoleIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->fakeCooperativeReceiptIssuance();
         $this->artisan('db:seed');
     }
 
@@ -50,6 +49,12 @@ class UserRoleIntegrationTest extends TestCase
 
     public function test_system_admin_is_created_with_pusat_organization(): void
     {
+        $this->artisan('admin:create', [
+            '--email' => 'admin@erp.com',
+            '--name' => 'System Admin',
+            '--password' => 'SecureAdminPass123!',
+        ])->assertSuccessful();
+
         $admin = User::where('email', 'admin@erp.com')->first();
 
         $this->assertNotNull($admin);
@@ -61,8 +66,12 @@ class UserRoleIntegrationTest extends TestCase
 
     public function test_creating_new_user_with_role_and_organization(): void
     {
-        $admin = User::where('email', 'admin@erp.com')->first();
-        $pusat = Organization::where('code', 'KOP-001')->first();
+        $pusat = Organization::where('code', 'KOP-001')->firstOrFail();
+        $admin = User::factory()->create([
+            'email' => 'admin@erp.com',
+            'organization_id' => $pusat->id,
+        ]);
+        $admin->syncRoles(['System Admin']);
 
         $response = $this->actingAs($admin)->post('/users', [
             'name' => 'John Doe',

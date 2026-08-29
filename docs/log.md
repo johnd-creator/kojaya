@@ -6,6 +6,18 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-08-28 - Database Seeder Safety Hardening (KOJAYA-P0-SEED-SAFETY-HARDENING)
+
+- Separated reference/master seeders from demo fixture seeders in `DatabaseSeeder`.
+- Default `php artisan db:seed` in production/staging runs only idempotent reference data.
+- Added `CooperativeReferenceSeeder` for core organization, contribution types, and POS categories.
+- Added fail-closed environment guards (`['local', 'testing', 'playwright']`) to all demo seeders (`CooperativeSeeder`, `AnggotaSeeder`, `DemoDataSeeder`, `InvoiceSeeder`, `CooperativeManagerRoleSeeder`).
+- Removed destructive `resetDemoSavingsForMember` ledger/invoice delete operations.
+- Namespaced demo member identities (`DEMO-ANG-001`, `DEMO-KOP-001`) to prevent collisions with real members.
+- Removed hardcoded admin user creation with `'password'` from `RolePermissionSeeder`; privileged user creation is delegated to `admin:create`.
+- Hardened `AppServiceProvider` with `DB::prohibitDestructiveCommands(! app()->environment('local', 'testing', 'playwright'))` to prohibit `migrate:fresh`, `migrate:refresh`, `db:wipe` in staging and production.
+- Added comprehensive regression and static analysis test suites.
+
 ## 🎯 2026-07-28 - Admin Koperasi UI/UX Phase 1
 
 - Created feature/admin-koperasi-ui-ux from the reviewed

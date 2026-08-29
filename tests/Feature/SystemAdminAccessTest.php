@@ -16,11 +16,12 @@ class SystemAdminAccessTest extends TestCase
     {
         parent::setUp();
 
-        // Seed roles and permissions (this creates admin@erp.com user)
+        // Seed roles and permissions
         $this->seed(\Database\Seeders\RolePermissionSeeder::class);
 
-        // Get the existing system admin user created by seeder
-        $this->systemAdmin = User::where('email', 'admin@erp.com')->first();
+        // Create system admin user for testing access
+        $this->systemAdmin = User::factory()->create(['email' => 'admin@erp.com']);
+        $this->systemAdmin->syncRoles(['System Admin']);
     }
 
     public function test_system_admin_has_all_permissions_via_spatie(): void

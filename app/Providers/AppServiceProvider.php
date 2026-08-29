@@ -127,7 +127,7 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! app()->isProduction());
 
         DB::prohibitDestructiveCommands(
-            app()->isProduction(),
+            ! app()->environment('local', 'testing', 'playwright'),
         );
 
         Password::defaults(fn (): ?Password => app()->isProduction()

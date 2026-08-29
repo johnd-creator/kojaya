@@ -91,6 +91,23 @@ This project has domain-specific skills available. You MUST activate the relevan
 - **Document Your Changes:** If you make architectural decisions, update `docs/decisions.md`
 - **Log Significant Changes:** Add entries to `docs/log.md` for major features
 
+## Database Safety - Do Not Reset Local Data
+
+**CRITICAL:** The local development database may contain working demo data, login users, roles, permissions, and manually prepared QA state. Do not destroy or reseed it while implementing or testing a feature.
+
+- **NEVER** run destructive database commands against the default `.env` database (`DB_DATABASE=kojaya_erp`) unless the user explicitly asks for a reset in the current conversation.
+- Forbidden without explicit user approval:
+  - `php artisan migrate:fresh`
+  - `php artisan migrate:refresh`
+  - `php artisan migrate:reset`
+  - `php artisan db:wipe`
+  - `php artisan db:seed` or any broad seeder such as `DatabaseSeeder`, `DemoDataSeeder`, `CooperativeSeeder`, or `RolePermissionSeeder`
+  - raw SQL that drops/truncates tables, drops schemas/databases, deletes all rows, or rewrites login/role/permission data
+- Running `php artisan migrate` is allowed only for applying new forward migrations. Before running it, inspect `php artisan migrate:status` and confirm the connection/database name is the intended local app database.
+- If seed data is needed for a feature test, create it inside the PHPUnit test using factories. Do not seed the shared local app database just to make a test pass.
+- If a one-off local recovery is needed, state exactly which database, tables, users, and seeders will be affected, then wait for explicit user approval before writing anything.
+- If you accidentally run a destructive command, stop immediately and report the exact command, timestamp, database name, and observed damage. Do not try to hide or "fix" it with additional resets.
+
 ## Verification Scripts
 
 - Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
@@ -195,6 +212,9 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+- Tests must not mutate the shared `.env` database. PHPUnit must run with the testing environment/database configured by `phpunit.xml` or explicit `APP_ENV=testing`/test DB variables.
+- Before running tests that use database traits or migrations, verify they target a test database, not `DB_DATABASE=kojaya_erp`. If unsure, run a read-only check of `APP_ENV` and database name first.
+- Do not use `migrate:fresh`, `db:wipe`, broad seeders, or manual truncation as part of test setup. Use Laravel testing traits, factories, and per-test setup data instead.
 
 === inertia-laravel/core rules ===
 

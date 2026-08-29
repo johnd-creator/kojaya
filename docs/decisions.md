@@ -1251,3 +1251,44 @@ member credit limit, and keep an immutable audit trail.
   and uncached.
 - A missing or incorrect proxy environment value is detectable through the
   trusted-proxy regression test and header-only QA checks.
+
+---
+
+## 🎯 ADR-033: Database Seeding Architecture and Migration Safety Hardening
+
+**Status:** ✅ Accepted
+**Date:** August 28, 2026
+**Deciders:** Engineering Team
+
+### Context
+
+Accidental execution of `php artisan db:seed` or destructive migration commands (`migrate:fresh`, `migrate:refresh`, `db:wipe`) in staging or production environments creates severe risks:
+1. Production/staging financial ledger mutation, dues force-deletion, and dummy member generation.
+2. Privileged admin user provisioning with predictable default passwords (`'password'`).
+3. Accidental table drop or schema wipe during deployments.
+
+### Decision
+
+1. **Separation of Reference and Demo Seeders:**
+   - Default `DatabaseSeeder` in production/staging contains ONLY deterministic, idempotent reference seeders (`TaxRuleSeeder`, `RolePermissionSeeder`, `LoanTypeSeeder`, `JobGradeSeeder`, `LeaveTypeSeeder`, `SalaryComponentTypeSeeder`, `WorkShiftSeeder`, `CooperativeReferenceSeeder`).
+   - Demo fixture seeders (`CooperativeSeeder`, `AnggotaSeeder`, `DemoDataSeeder`, `InvoiceSeeder`, `CooperativeManagerRoleSeeder`) are isolated to `local` environments in `DatabaseSeeder`.
+2. **Fail-Closed Environment Guards:**
+   - All demo and test seeders implement explicit hard environment whitelist checks (`['local', 'testing', 'playwright']`) and throw a `\LogicException` if invoked in staging or production.
+3. **Privileged User Bootstrap Separation:**
+   - Removed all default-password admin user creation from `RolePermissionSeeder`.
+   - Production and staging privileged administrator bootstrapping must use the explicit, secure `php artisan admin:create` command.
+4. **Destructive Reset Removal & Collision Safety:**
+   - Removed destructive ledger/dues wipe methods (`resetDemoSavingsForMember`).
+   - Namespaced demo member identities (`DEMO-ANG-001`, `DEMO-KOP-001`) to prevent collision with real cooperative members.
+5. **Laravel Native Prohibit Destructive Commands:**
+   - Configured `DB::prohibitDestructiveCommands(! app()->environment('local', 'testing', 'playwright'))` in `AppServiceProvider`.
+
+### Deployment Contract
+
+| Environment | `migrate --force` | `db:seed` (Default / Generic) | `migrate:fresh` / `migrate:refresh` / `db:wipe` | Demo Seeders (`--class=...`) | Admin Bootstrap |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Production** | ✅ Allowed (Standard Deploy) | ⚠️ Not normal deploy; Safe reference-only | 🚫 FORBIDDEN (Prohibited by Laravel) | 🚫 FORBIDDEN (Throws `LogicException`) | Explicit `php artisan admin:create` |
+| **Staging / QA** | ✅ Allowed (Standard Deploy) | ⚠️ Not normal deploy; Safe reference-only | 🚫 FORBIDDEN (Prohibited by Laravel) | 🚫 FORBIDDEN (Throws `LogicException`) | Explicit `php artisan admin:create` |
+| **Testing / Playwright** | ✅ Allowed | ✅ Allowed (Reference-only by default) | ✅ Allowed (In-memory/isolated test DB) | ✅ Allowed (Invoked explicitly per test) | Factories or `admin:create` |
+| **Local Development** | ✅ Allowed | ✅ Allowed (Seeds reference + demo fixtures) | ✅ Allowed | ✅ Allowed | Pre-seeded or `admin:create` |
+

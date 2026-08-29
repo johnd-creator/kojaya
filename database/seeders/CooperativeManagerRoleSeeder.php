@@ -14,6 +14,10 @@ class CooperativeManagerRoleSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
+            throw new \LogicException('CooperativeManagerRoleSeeder is only available in local, testing, or playwright environments.');
+        }
+
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         foreach (PermissionEnum::values() as $permission) {

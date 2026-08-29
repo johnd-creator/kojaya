@@ -2,11 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Organization;
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -321,44 +317,10 @@ class RolePermissionSeeder extends Seeder
         // Anggota — self-service only; administrative access is enforced
         // by the member portal middleware (ownership via cooperativeMember relation)
         // and cooperative policies, NOT by admin permissions.
+        // Note: syncPermissions intentionally syncs the exact list of permissions
+        // declared in source control and revokes any retired permissions from the role.
         Role::where('name', 'Anggota')->first()?->syncPermissions([
             'member_portal_access',
         ]);
-
-        // Ensure initially there's a head office (Pusat) Organization
-        $pusat = Organization::updateOrCreate(
-            ['code' => 'KOP-001'],
-            [
-                'id' => Organization::query()->where('code', 'KOP-001')->value('id') ?? Str::uuid(),
-                'name' => 'Koperasi Jaya Bersama',
-                'level' => 'L0',
-                'type' => 'HEAD_OFFICE',
-                'parent_id' => null,
-                'address' => 'Jalan Jaya Bersama No. 1, Jakarta',
-                'phone' => '021-12345678',
-                'email' => 'info@koperasijayabersama.id',
-                'is_active' => true,
-            ]
-        );
-
-        // Create a Super Admin user only in non-production environments.
-        // Production deployments must bootstrap the initial admin via a secure
-        // command (e.g. php artisan admin:create) or a secret manager — never via
-        // the seeder with a known password.
-        if (! app()->environment('production')) {
-            $adminEmail = config('app.admin_email', 'admin@erp.com');
-            $adminPassword = config('app.admin_password', 'password');
-
-            $user = User::updateOrCreate(
-                ['email' => $adminEmail],
-                [
-                    'name' => 'System Admin ERP',
-                    'password' => Hash::make($adminPassword),
-                    'organization_id' => $pusat->id,
-                ]
-            );
-
-            $user->assignRole('System Admin');
-        }
     }
 }

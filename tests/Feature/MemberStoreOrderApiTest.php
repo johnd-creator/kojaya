@@ -95,10 +95,11 @@ class MemberStoreOrderApiTest extends TestCase
             ->assertJsonPath('data.is_settled', false)
             ->assertJsonPath('data.payable_type', 'store_order');
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk()
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            64000.0,
+        )->assertOk()
             ->assertJsonPath('data.gateway_status', 'PAID');
 
         $transaction = PosTransaction::query()
@@ -218,10 +219,12 @@ class MemberStoreOrderApiTest extends TestCase
             'client_reference' => 'MOBILE-STORE-EXPIRED',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'EXPIRED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'expire',
+            15000.0,
+            statusCode: '407',
+        )->assertOk();
 
         $this->assertDatabaseHas('pos_inventory_stocks', [
             'pos_product_id' => $product->id,

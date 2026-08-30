@@ -67,6 +67,14 @@ class PaymentIntentChargeService
             $this->handleProviderChargeException($intent->id, $attempt, $exception);
 
             throw $exception;
+        } catch (\App\Exceptions\PaymentGatewayUnavailableException $exception) {
+            $this->handleProviderChargeException(
+                $intent->id,
+                $attempt,
+                ProviderChargeException::rejected($exception->getMessage(), 503, $exception),
+            );
+
+            throw $exception;
         } catch (RuntimeException $exception) {
             // Unclassified RuntimeException from unknown source — treat as Unknown
             $this->handleProviderChargeException(

@@ -76,10 +76,11 @@ class PaymentCanonicalItemTest extends TestCase
             'client_reference' => 'DUP-SETTLE-TEST',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            50000.0,
+        )->assertOk();
 
         $transaction = PosTransaction::query()
             ->where('client_reference', 'DUP-SETTLE-TEST')
@@ -117,10 +118,12 @@ class PaymentCanonicalItemTest extends TestCase
         ]);
 
         // Release order A via webhook CANCELLED
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $responseA->json('data.charge.reference'),
-            'status' => 'CANCELLED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $responseA->json('data.charge.reference'),
+            'cancel',
+            50000.0,
+            statusCode: '410',
+        )->assertOk();
 
         // After release of A, reserved must be 4 (B's reservation), not 0
         $this->assertDatabaseHas('pos_inventory_stocks', [
@@ -194,10 +197,12 @@ class PaymentCanonicalItemTest extends TestCase
         ])->assertCreated();
 
         // Release reservation
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'CANCELLED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'cancel',
+            20000.0,
+            statusCode: '410',
+        )->assertOk();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->assertSame('RELEASED', $intent->reservation_status);
@@ -311,10 +316,12 @@ class PaymentCanonicalItemTest extends TestCase
         ])->assertCreated();
 
         // Cancel (release reservation)
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'CANCELLED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'cancel',
+            20000.0,
+            statusCode: '410',
+        )->assertOk();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->assertSame('CANCELLED', $intent->gateway_status);
@@ -613,10 +620,12 @@ class PaymentCanonicalItemTest extends TestCase
         ])->assertCreated();
 
         // Release reservation
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'CANCELLED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'cancel',
+            20000.0,
+            statusCode: '410',
+        )->assertOk();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
 

@@ -72,6 +72,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (\App\Exceptions\PaymentGatewayUnavailableException $exception, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            return ApiResponse::error(
+                $exception->getMessage() ?: 'Layanan pembayaran gateway sedang tidak tersedia.',
+                $exception->statusCode,
+                [],
+                'PAYMENT_GATEWAY_UNAVAILABLE',
+            );
+        });
+
         $exceptions->render(function (PaymentIntentConflictException $exception, Request $request) {
             if (! $request->is('api/*') && ! $request->expectsJson()) {
                 return null;

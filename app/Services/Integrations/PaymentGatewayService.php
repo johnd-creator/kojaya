@@ -3,6 +3,7 @@
 namespace App\Services\Integrations;
 
 use App\Contracts\Integrations\PaymentGatewayProvider;
+use App\Exceptions\PaymentGatewayUnavailableException;
 use App\Exceptions\PaymentGatewayWebhookVerificationException;
 use App\Exceptions\ProviderChargeException;
 use App\Models\CooperativePayment;
@@ -23,50 +24,18 @@ class PaymentGatewayService
         //
     }
 
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function applyInternalWebhook(array $payload): ?CooperativePayment
+    public function isConfigured(): bool
     {
-        $reference = (string) ($payload['reference'] ?? $payload['gateway_reference'] ?? '');
+        return $this->provider->isConfigured();
+    }
 
-        if ($reference === '') {
-            Log::warning('Payment gateway webhook missing reference');
-
-            return null;
+    public function isSimulationAllowed(): bool
+    {
+        if (app()->environment('production') || config('app.env') === 'production' || (bool) config('services.midtrans.is_production')) {
+            return false;
         }
 
-        $payment = CooperativePayment::query()
-            ->where('gateway_reference', $reference)
-            ->first();
-
-        if (! $payment) {
-            Log::warning('Payment gateway webhook payment not found', [
-                'gateway_reference' => $reference,
-            ]);
-
-            return null;
-        }
-
-        $newStatus = strtoupper((string) ($payload['status'] ?? ''));
-
-        if (! MidtransPaymentProvider::isTransitionAllowed($payment->gateway_status, $newStatus)) {
-            Log::warning('Payment gateway webhook rejected: invalid status transition', [
-                'payment_id' => $payment->id,
-                'gateway_reference' => $reference,
-                'current_status' => $payment->gateway_status,
-                'new_status' => $newStatus,
-            ]);
-
-            return $payment;
-        }
-
-        $payment->forceFill([
-            'gateway_status' => $newStatus,
-            'gateway_payload' => $payload,
-        ])->save();
-
-        return $payment;
+        return (bool) config('services.payment_gateway.allow_simulation', false);
     }
 
     /**
@@ -80,21 +49,25 @@ class PaymentGatewayService
             return $existingCharge;
         }
 
-        if (! $this->provider->isConfigured()) {
+        if ($this->provider->isConfigured()) {
+            $charge = $this->provider->createCharge($payment, $channel);
+
+            $payment->forceFill([
+                'payment_method' => $channel,
+                'gateway_provider' => $charge['provider'],
+                'gateway_reference' => $charge['reference'],
+                'gateway_status' => 'PENDING',
+                'gateway_payload' => $this->storedGatewayPayload($charge),
+            ])->save();
+
+            return $this->publicChargePayload($charge);
+        }
+
+        if ($this->isSimulationAllowed()) {
             return $this->publicChargePayload($this->createChargeInternal($payment, $channel));
         }
 
-        $charge = $this->provider->createCharge($payment, $channel);
-
-        $payment->forceFill([
-            'payment_method' => $channel,
-            'gateway_provider' => $charge['provider'],
-            'gateway_reference' => $charge['reference'],
-            'gateway_status' => 'PENDING',
-            'gateway_payload' => $this->storedGatewayPayload($charge),
-        ])->save();
-
-        return $this->publicChargePayload($charge);
+        throw new PaymentGatewayUnavailableException('Payment gateway provider is not configured.');
     }
 
     /**
@@ -127,19 +100,23 @@ class PaymentGatewayService
      */
     public function buildIntentCharge(MemberPaymentIntent $intent): array
     {
-        if (! $this->provider->isConfigured()) {
+        if ($this->provider->isConfigured()) {
+            $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
+
+            if (empty($charge['reference'])) {
+                throw ProviderChargeException::notCreated(
+                    'Provider returned charge without a reference (malformed or empty response).'
+                );
+            }
+
+            return $charge;
+        }
+
+        if ($this->isSimulationAllowed()) {
             return $this->createIntentChargeInternal($intent);
         }
 
-        $charge = $this->provider->createIntentCharge($intent->loadMissing(['member.user']));
-
-        if (empty($charge['reference'])) {
-            throw ProviderChargeException::notCreated(
-                'Provider returned charge without a reference (malformed or empty response).'
-            );
-        }
-
-        return $charge;
+        throw new PaymentGatewayUnavailableException('Payment gateway provider is not configured.');
     }
 
     /**
@@ -148,11 +125,11 @@ class PaymentGatewayService
      */
     public function applyWebhook(array $payload, array $headers = []): ?CooperativePayment
     {
-        if ($this->provider->isConfigured()) {
-            return $this->applyProviderWebhook($payload, $headers);
+        if (! $this->provider->isConfigured()) {
+            throw new PaymentGatewayWebhookVerificationException('Payment gateway provider is not configured.');
         }
 
-        return $this->applyInternalWebhook($payload);
+        return $this->applyProviderWebhook($payload, $headers);
     }
 
     /**
@@ -193,6 +170,18 @@ class PaymentGatewayService
             return null;
         }
 
+        $expectedAmountMinor = MinorAmount::fromDecimal($payment->amount);
+        if ($event->amountMinor !== null && $event->amountMinor !== $expectedAmountMinor) {
+            Log::warning('Payment gateway webhook amount mismatch', [
+                'payment_id' => $payment->id,
+                'gateway_reference' => $reference,
+                'expected_amount_minor' => $expectedAmountMinor,
+                'actual_amount_minor' => $event->amountMinor,
+            ]);
+
+            return $payment;
+        }
+
         if (! MidtransPaymentProvider::isTransitionAllowed($payment->gateway_status, $event->status)) {
             Log::warning('Payment gateway webhook rejected: invalid status transition', [
                 'payment_id' => $payment->id,
@@ -218,39 +207,37 @@ class PaymentGatewayService
      */
     public function applyWebhookToMemberIntent(array $payload, array $headers = [], ?AuditContext $context = null): ?MemberPaymentIntent
     {
-        if ($this->provider->isConfigured()) {
-            if (! $this->provider->verifyWebhook($payload, $headers)) {
-                return null;
-            }
-
-            $event = $this->provider->parseWebhook($payload);
-            $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
-                ? $event->gatewayReference
-                : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
-
-            if ($reference === '') {
-                return null;
-            }
-
-            return $this->stateService->applyGatewayEvent(
-                $reference,
-                $event->status,
-                $event->rawPayload,
-                $event->amountMinor,
-                null,
-                $context,
-            );
+        if (! $this->provider->isConfigured()) {
+            throw new PaymentGatewayWebhookVerificationException('Payment gateway provider is not configured.');
         }
 
-        $reference = (string) ($payload['reference'] ?? $payload['gateway_reference'] ?? '');
+        if (! $this->provider->verifyWebhook($payload, $headers)) {
+            Log::warning('Payment gateway webhook signature verification failed for intent', [
+                'gateway_reference' => $payload['order_id'] ?? $payload['reference'] ?? 'unknown',
+            ]);
+
+            throw new PaymentGatewayWebhookVerificationException('Invalid payment gateway webhook signature.');
+        }
+
+        $event = $this->provider->parseWebhook($payload);
+        $reference = $event->gatewayReference !== '' && $event->gatewayReference !== '0'
+            ? $event->gatewayReference
+            : ((string) ($payload['reference'] ?? $payload['gateway_reference'] ?? ''));
 
         if ($reference === '') {
-            return null;
+            Log::warning('Payment gateway webhook missing reference for intent');
+
+            throw new PaymentGatewayWebhookVerificationException('Invalid payment gateway webhook signature.');
         }
 
-        $status = strtoupper((string) ($payload['status'] ?? ''));
-
-        return $this->stateService->applyGatewayEvent($reference, $status, $payload, context: $context);
+        return $this->stateService->applyGatewayEvent(
+            $reference,
+            $event->status,
+            $event->rawPayload,
+            $event->amountMinor,
+            null,
+            $context,
+        );
     }
 
     /**
@@ -258,6 +245,10 @@ class PaymentGatewayService
      */
     public function createChargeInternal(CooperativePayment $payment, string $channel = 'QRIS'): array
     {
+        if (! $this->isSimulationAllowed()) {
+            throw new PaymentGatewayUnavailableException('Payment gateway simulation is not permitted.');
+        }
+
         $reference = 'PAY-'.Str::upper(Str::random(12));
         $expiresAt = now()->addDay()->toIso8601String();
         $amountMinor = MinorAmount::fromDecimal($payment->amount);
@@ -304,6 +295,10 @@ class PaymentGatewayService
      */
     public function createIntentChargeInternal(MemberPaymentIntent $intent): array
     {
+        if (! $this->isSimulationAllowed()) {
+            throw new PaymentGatewayUnavailableException('Payment gateway simulation is not permitted.');
+        }
+
         $attempt = (int) ($intent->charge_attempt ?: 1);
         $reference = sprintf('MPI-%d-%d', $intent->id, $attempt);
         $expiresAt = $intent->expires_at ?? now()->addMinutes(30);

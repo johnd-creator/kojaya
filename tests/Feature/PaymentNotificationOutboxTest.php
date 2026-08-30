@@ -59,20 +59,11 @@ class PaymentNotificationOutboxTest extends TestCase
         $reference = $response->json('data.charge.reference');
 
         // Duplicate PAID webhooks
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'settlement', 20000.0)->assertOk();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'settlement', 20000.0)->assertOk();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'settlement', 20000.0)->assertOk();
 
         // Assertions
         $this->assertSame(1, PosTransaction::count(), 'C5: exactly one transaction');

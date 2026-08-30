@@ -68,6 +68,16 @@ class SimulateMidtransWebhookCommandTest extends TestCase
         ]);
     }
 
+    public function test_refuses_to_run_in_production_environment(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+        config(['app.env' => 'production']);
+
+        $this->artisan('midtrans:simulate-webhook', ['paymentId' => $this->payment->id])
+            ->assertFailed()
+            ->expectsOutputToContain('production environment');
+    }
+
     public function test_refuses_to_run_in_production_mode(): void
     {
         config(['services.midtrans.is_production' => true]);
@@ -75,6 +85,15 @@ class SimulateMidtransWebhookCommandTest extends TestCase
         $this->artisan('midtrans:simulate-webhook', ['paymentId' => $this->payment->id])
             ->assertFailed()
             ->expectsOutputToContain('MIDTRANS_IS_PRODUCTION');
+    }
+
+    public function test_fails_when_server_key_is_empty(): void
+    {
+        config(['services.midtrans.server_key' => '']);
+
+        $this->artisan('midtrans:simulate-webhook', ['paymentId' => $this->payment->id])
+            ->assertFailed()
+            ->expectsOutputToContain('Midtrans server key is not configured');
     }
 
     public function test_fails_when_payment_not_found(): void

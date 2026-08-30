@@ -49,10 +49,11 @@ class CoffeeOrderWorkflowTest extends TestCase
 
         $this->assertDatabaseCount('coffee_orders', 0);
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => \App\Models\MemberPaymentIntent::query()->firstOrFail()->gateway_reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            \App\Models\MemberPaymentIntent::query()->firstOrFail()->gateway_reference,
+            'settlement',
+            18000.0,
+        )->assertOk();
 
         $order = CoffeeOrder::query()->with('transaction')->firstOrFail();
         $this->assertSame($member->id, $order->cooperative_member_id);
@@ -84,10 +85,11 @@ class CoffeeOrderWorkflowTest extends TestCase
             'client_reference' => 'COFFEE-TRACK-002',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            18000.0,
+        )->assertOk();
 
         $orderId = CoffeeOrder::query()->firstOrFail()->id;
         $admin = $this->posAdmin($organization);
@@ -125,10 +127,11 @@ class CoffeeOrderWorkflowTest extends TestCase
             'client_reference' => 'COFFEE-TRACK-003',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            18000.0,
+        )->assertOk();
 
         $orderId = CoffeeOrder::query()->firstOrFail()->id;
 

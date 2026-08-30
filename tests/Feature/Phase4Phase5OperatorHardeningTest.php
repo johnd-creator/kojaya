@@ -174,11 +174,12 @@ class Phase4Phase5OperatorHardeningTest extends TestCase
             ->assertJsonPath('data.status', 'PENDING')
             ->json('data');
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $charge['reference'],
-            'status' => 'PAID',
-            'reconciliation_reference' => 'GW-PAID-001',
-        ])
+        $this->postSignedMidtransWebhook(
+            orderId: $charge['reference'],
+            transactionStatus: 'settlement',
+            grossAmount: 100000.0,
+            extra: ['reconciliation_reference' => 'GW-PAID-001'],
+        )
             ->assertOk()
             ->assertJsonPath('data.status', 'APPROVED')
             ->assertJsonPath('data.reconciliation_reference', 'GW-PAID-001');

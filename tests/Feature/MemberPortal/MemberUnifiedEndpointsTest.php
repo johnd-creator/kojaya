@@ -487,10 +487,11 @@ class MemberUnifiedEndpointsTest extends TestCase
             ->assertJsonPath('data.payment_intent.amount', 460000)
             ->assertJsonPath('data.charge.provider', 'internal');
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk()
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            460000.0,
+        )->assertOk()
             ->assertJsonPath('data.gateway_status', 'PAID');
 
         $this->assertDatabaseHas('loan_payments', [

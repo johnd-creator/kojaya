@@ -164,15 +164,9 @@ class PaymentReservationStateMachineTest extends TestCase
 
         $reference = $response->json('data.charge.reference');
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'settlement', 20000.0)->assertOk();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'settlement', 20000.0)->assertOk();
 
         $this->assertDatabaseCount('pos_transactions', 1);
     }
@@ -189,15 +183,9 @@ class PaymentReservationStateMachineTest extends TestCase
 
         $reference = $response->json('data.charge.reference');
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'settlement', 20000.0)->assertOk();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $reference,
-            'status' => 'EXPIRED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook($reference, 'expire', 20000.0, statusCode: '407')->assertOk();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $this->assertSame('PAID', $intent->gateway_status);
@@ -218,10 +206,12 @@ class PaymentReservationStateMachineTest extends TestCase
             'client_reference' => 'TEST-CANCEL-001',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'CANCELLED',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'cancel',
+            30000.0,
+            statusCode: '410',
+        )->assertOk();
 
         $this->assertDatabaseHas('pos_inventory_stocks', [
             'pos_product_id' => $product->id,
@@ -262,10 +252,11 @@ class PaymentReservationStateMachineTest extends TestCase
             'client_reference' => 'TEST-SETTLE-OK-001',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            20000.0,
+        )->assertOk();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
 
@@ -333,10 +324,11 @@ class PaymentReservationStateMachineTest extends TestCase
             'client_reference' => 'TEST-EXPIRY-PAID-001',
         ])->assertCreated();
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            20000.0,
+        )->assertOk();
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
         $intent->forceFill(['expires_at' => now()->subMinute()])->save();

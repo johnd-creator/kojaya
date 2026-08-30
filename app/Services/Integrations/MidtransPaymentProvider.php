@@ -212,6 +212,12 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
      */
     public function verifyWebhook(array $payload, array $headers): bool
     {
+        if (! $this->isConfigured()) {
+            Log::warning('Midtrans webhook verification failed: provider is not configured');
+
+            return false;
+        }
+
         $signatureKey = (string) ($payload['signature_key'] ?? '');
 
         if ($signatureKey === '') {
@@ -228,6 +234,16 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
         $orderId = (string) ($payload['order_id'] ?? '');
         $statusCode = (string) ($payload['status_code'] ?? '');
         $grossAmount = (string) ($payload['gross_amount'] ?? '');
+
+        if ($orderId === '' || $statusCode === '' || $grossAmount === '') {
+            Log::warning('Midtrans webhook missing required signature fields', [
+                'order_id' => $orderId,
+                'status_code' => $statusCode,
+                'gross_amount' => $grossAmount,
+            ]);
+
+            return false;
+        }
 
         $computed = hash('sha512', $orderId.$statusCode.$grossAmount.$this->serverKey());
 
@@ -248,20 +264,23 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
     public function parseWebhook(array $payload): WebhookEvent
     {
         $transactionStatus = strtoupper((string) ($payload['transaction_status'] ?? 'UNKNOWN'));
-        $fraudStatus = strtoupper((string) ($payload['fraud_status'] ?? 'accept'));
+        $statusCode = (string) ($payload['status_code'] ?? '');
+        $fraudStatus = isset($payload['fraud_status']) ? strtoupper((string) $payload['fraud_status']) : 'ACCEPT';
 
-        if ($fraudStatus === 'CHALLENGE') {
-            $mappedStatus = 'PENDING';
-        } elseif (in_array($transactionStatus, ['CAPTURE', 'SETTLEMENT'], true)) {
-            $mappedStatus = 'PAID';
-        } elseif ($transactionStatus === 'EXPIRE') {
-            $mappedStatus = 'EXPIRED';
-        } elseif ($transactionStatus === 'CANCEL') {
-            $mappedStatus = 'CANCELLED';
-        } elseif (in_array($transactionStatus, ['DENY', 'FAILURE'], true)) {
+        if ($fraudStatus === 'DENY') {
             $mappedStatus = 'FAILED';
-        } elseif ($transactionStatus === 'PENDING') {
+        } elseif ($fraudStatus === 'CHALLENGE') {
             $mappedStatus = 'PENDING';
+        } elseif ($statusCode === '200' && in_array($transactionStatus, ['CAPTURE', 'SETTLEMENT'], true) && $fraudStatus === 'ACCEPT') {
+            $mappedStatus = 'PAID';
+        } elseif ($statusCode === '201' || $transactionStatus === 'PENDING') {
+            $mappedStatus = 'PENDING';
+        } elseif ($statusCode === '407' || $transactionStatus === 'EXPIRE') {
+            $mappedStatus = 'EXPIRED';
+        } elseif ($statusCode === '410' || $transactionStatus === 'CANCEL') {
+            $mappedStatus = 'CANCELLED';
+        } elseif (in_array($transactionStatus, ['DENY', 'FAILURE'], true) || $statusCode === '202') {
+            $mappedStatus = 'FAILED';
         } elseif ($transactionStatus === 'REFUND') {
             $mappedStatus = 'REFUNDED';
         } else {
@@ -575,26 +594,6 @@ class MidtransPaymentProvider implements PaymentGatewayProvider
 
         // For unknown channels, require at least a redirect_url or non-empty body
         return ! empty($body['redirect_url']) || $body !== [];
-    }
-
-    /**
-     * @return array{provider: string, reference: string, status: string, channel: string, amount: float, checkout_url: string|null, qr_string: string|null, expires_at?: string|null, instructions?: array<string, mixed>}
-     */
-    private function createChargeInternal(CooperativePayment $payment, string $channel): array
-    {
-        $orderId = $this->generateOrderId($payment);
-        $amountMinor = MinorAmount::fromDecimal($payment->amount);
-
-        return [
-            'provider' => 'midtrans',
-            'reference' => $orderId,
-            'status' => 'PENDING',
-            'channel' => $channel,
-            'amount' => MinorAmount::toDecimalString($amountMinor),
-            'amount_minor' => $amountMinor,
-            'checkout_url' => url("/api/payments/{$orderId}/checkout"),
-            'qr_string' => null,
-        ];
     }
 
     /**

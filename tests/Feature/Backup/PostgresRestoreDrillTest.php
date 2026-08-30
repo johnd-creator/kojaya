@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Backup;
 
-use App\DTOs\Backup\BackupManifestDTO;
 use App\Services\Backup\BackupDatabaseService;
+use App\Services\Backup\BackupManifest;
 use App\Services\Backup\BackupVerificationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -182,7 +182,7 @@ class PostgresRestoreDrillTest extends TestCase
             purpose: 'restore-drill'
         );
 
-        $this->assertInstanceOf(BackupManifestDTO::class, $result['manifest']);
+        $this->assertInstanceOf(BackupManifest::class, $result['manifest']);
         $this->assertSame('local', $result['disk']);
         $this->assertNotEmpty($result['path']);
         $this->assertArrayHasKey('offsite', $result);

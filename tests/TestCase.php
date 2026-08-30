@@ -28,7 +28,6 @@ abstract class TestCase extends BaseTestCase
         // Update application config to use SQLite
         app()->config->set('database.default', 'sqlite');
         app()->config->set('database.connections.sqlite.database', ':memory:');
-        config(['services.payment_gateway.allow_simulation' => true]);
         $this->artisan('migrate', ['--force' => true]);
         $this->withoutMiddleware(ValidateCsrfToken::class);
     }

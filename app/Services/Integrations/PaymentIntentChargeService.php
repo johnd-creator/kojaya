@@ -602,6 +602,15 @@ class PaymentIntentChargeService
             return null;
         }
 
+        $chargeProvider = (string) ($payload['provider'] ?? 'internal');
+        if ($chargeProvider === 'internal') {
+            if ($this->gateway->isConfigured() || ! $this->gateway->isSimulationAllowed()) {
+                return null;
+            }
+        } elseif (! $this->gateway->isConfigured()) {
+            return null;
+        }
+
         if (strtoupper((string) ($payload['status'] ?? 'PENDING')) !== 'PENDING') {
             return null;
         }

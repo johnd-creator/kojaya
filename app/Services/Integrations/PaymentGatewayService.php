@@ -382,6 +382,15 @@ class PaymentGatewayService
             $payload = $payload['presentation'];
         }
 
+        $chargeProvider = (string) ($payload['provider'] ?? 'internal');
+        if ($chargeProvider === 'internal') {
+            if ($this->provider->isConfigured() || ! $this->isSimulationAllowed()) {
+                return null;
+            }
+        } elseif (! $this->provider->isConfigured()) {
+            return null;
+        }
+
         if (($payload['channel'] ?? null) !== $channel || empty($payload['reference'])) {
             return null;
         }

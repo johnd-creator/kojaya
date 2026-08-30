@@ -31,7 +31,10 @@ class MemberUnifiedEndpointsTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.midtrans.server_key' => '']);
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => true,
+        ]);
     }
 
     public function test_profile_exposes_extended_personal_and_bank_fields(): void

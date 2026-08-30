@@ -24,7 +24,10 @@ class CoffeeOrderWorkflowTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
-        config(['services.midtrans.server_key' => '']);
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => true,
+        ]);
     }
 
     public function test_member_order_creates_trackable_coffee_order(): void

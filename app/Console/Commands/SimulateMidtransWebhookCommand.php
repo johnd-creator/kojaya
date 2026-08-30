@@ -45,6 +45,12 @@ class SimulateMidtransWebhookCommand extends Command
             return self::FAILURE;
         }
 
+        if (! (bool) config('services.payment_gateway.allow_simulation', false)) {
+            $this->error('Refusing to simulate a payment webhook while PAYMENT_GATEWAY_ALLOW_SIMULATION is disabled.');
+
+            return self::FAILURE;
+        }
+
         $serverKey = (string) config('services.midtrans.server_key');
 
         if ($serverKey === '') {

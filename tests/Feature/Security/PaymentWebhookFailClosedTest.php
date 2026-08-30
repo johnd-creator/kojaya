@@ -148,6 +148,148 @@ class PaymentWebhookFailClosedTest extends TestCase
         $this->assertSame('PENDING', $payment->status);
     }
 
+    public function test_legacy_cooperative_payment_internal_charge_not_reused_when_simulation_disabled(): void
+    {
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => false,
+        ]);
+
+        $payment = $this->createPayment(100000.0, 'PAY-LEGACY-001');
+        $payment->forceFill([
+            'payment_method' => 'QRIS',
+            'gateway_provider' => 'internal',
+            'gateway_reference' => 'PAY-LEGACY-001',
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'provider' => 'internal',
+                'reference' => 'PAY-LEGACY-001',
+                'status' => 'PENDING',
+                'channel' => 'QRIS',
+                'amount' => '100000.00',
+                'amount_minor' => 10000000,
+                'checkout_url' => url('/api/payments/PAY-LEGACY-001/checkout'),
+                'expires_at' => now()->addDay()->toIso8601String(),
+            ],
+        ])->save();
+
+        Sanctum::actingAs($this->memberUser, ['member:write']);
+
+        $this->postJson('/api/payments/charge', [
+            'cooperative_payment_id' => $payment->id,
+            'channel' => 'QRIS',
+        ])->assertStatus(503)
+            ->assertJsonPath('error_code', 'PAYMENT_GATEWAY_UNAVAILABLE');
+
+        $payment->refresh();
+        $this->assertSame('internal', $payment->gateway_provider);
+        $this->assertSame('PAY-LEGACY-001', $payment->gateway_reference);
+    }
+
+    public function test_legacy_member_payment_intent_internal_charge_not_reused_when_simulation_disabled(): void
+    {
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => false,
+        ]);
+
+        $product = $this->createProduct(price: 50000.0, stock: 10);
+
+        $intent = MemberPaymentIntent::query()->create([
+            'organization_id' => $this->organization->id,
+            'cooperative_member_id' => $this->member->id,
+            'payable_type' => PosProduct::class,
+            'payable_id' => $product->id,
+            'amount' => 100000.0,
+            'channel' => 'QRIS',
+            'gateway_provider' => 'internal',
+            'gateway_reference' => 'MPI-LEGACY-001',
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'provider' => 'internal',
+                'reference' => 'MPI-LEGACY-001',
+                'status' => 'PENDING',
+                'channel' => 'QRIS',
+                'amount' => '100000.00',
+                'amount_minor' => 10000000,
+                'checkout_url' => url('/api/payments/MPI-LEGACY-001/checkout'),
+                'expires_at' => now()->addDay()->toIso8601String(),
+            ],
+            'charge_attempt' => 1,
+            'reservation_status' => PaymentReservationStatus::Reserved->value,
+            'settlement_status' => PaymentSettlementStatus::NotSettled->value,
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $chargeService = app(\App\Services\Integrations\PaymentIntentChargeService::class);
+
+        $this->assertNull($chargeService->reusableCharge($intent));
+
+        $this->expectException(\App\Exceptions\PaymentGatewayUnavailableException::class);
+        $chargeService->ensureCharge($intent);
+    }
+
+    public function test_legacy_internal_charge_does_not_shadow_configured_trusted_provider(): void
+    {
+        config([
+            'services.midtrans.server_key' => self::SERVER_KEY,
+            'services.midtrans.is_production' => false,
+            'services.payment_gateway.allow_simulation' => false,
+        ]);
+
+        $payment = $this->createPayment(100000.0, 'PAY-LEGACY-001');
+        $payment->forceFill([
+            'payment_method' => 'QRIS',
+            'gateway_provider' => 'internal',
+            'gateway_reference' => 'PAY-LEGACY-001',
+            'gateway_status' => 'PENDING',
+            'gateway_payload' => [
+                'provider' => 'internal',
+                'reference' => 'PAY-LEGACY-001',
+                'status' => 'PENDING',
+                'channel' => 'QRIS',
+                'amount' => '100000.00',
+                'amount_minor' => 10000000,
+                'checkout_url' => url('/api/payments/PAY-LEGACY-001/checkout'),
+                'expires_at' => now()->addDay()->toIso8601String(),
+            ],
+        ])->save();
+
+        \Illuminate\Support\Facades\Http::fake(function ($request) {
+            $payload = $request->data();
+
+            return \Illuminate\Support\Facades\Http::response([
+                'status_code' => '201',
+                'transaction_status' => 'pending',
+                'order_id' => $payload['transaction_details']['order_id'],
+                'gross_amount' => '100000.00',
+                'actions' => [
+                    [
+                        'name' => 'generate-qr-code-v2',
+                        'method' => 'GET',
+                        'url' => 'https://api.sandbox.midtrans.com/v2/qris/qr-code',
+                    ],
+                ],
+                'expiry_time' => '2026-06-29 10:00:00',
+            ], 201);
+        });
+
+        Sanctum::actingAs($this->memberUser, ['member:write']);
+
+        $response = $this->postJson('/api/payments/charge', [
+            'cooperative_payment_id' => $payment->id,
+            'channel' => 'QRIS',
+        ])->assertCreated();
+
+        $response->assertJsonPath('data.provider', 'midtrans');
+        $this->assertNotSame('PAY-LEGACY-001', $response->json('data.reference'));
+        $this->assertStringStartsWith('KOJ-', $response->json('data.reference'));
+
+        $payment->refresh();
+        $this->assertSame('midtrans', $payment->gateway_provider);
+        $this->assertStringStartsWith('KOJ-', $payment->gateway_reference);
+    }
+
     public function test_charge_fails_closed_when_provider_not_configured_for_member_payment_intent(): void
     {
         config([

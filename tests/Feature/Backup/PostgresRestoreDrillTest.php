@@ -155,9 +155,10 @@ class PostgresRestoreDrillTest extends TestCase
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
 
+        $orgId = (string) \Illuminate\Support\Str::uuid();
         $pdoSource->exec("
-            INSERT INTO organizations (name, slug, is_active, created_at, updated_at)
-            VALUES ('Drill Source Org', 'drill-source-org', true, NOW(), NOW());
+            INSERT INTO organizations (id, code, name, level, type, is_active, created_at, updated_at)
+            VALUES ('{$orgId}', 'DRILL-ORG-1', 'Drill Source Org', 'L0', 'HEAD_OFFICE', true, NOW(), NOW());
         ");
 
         $pdoSource->exec("
@@ -247,10 +248,15 @@ class PostgresRestoreDrillTest extends TestCase
         $this->assertSame($sourceUserCount, $restoredUserCount);
         $this->assertSame($sourceOrgCount, $restoredOrgCount);
 
-        $stmt = $pdoTarget->prepare('SELECT name FROM organizations WHERE slug = :slug');
-        $stmt->execute(['slug' => 'drill-source-org']);
+        $stmt = $pdoTarget->prepare('SELECT name FROM organizations WHERE code = :code');
+        $stmt->execute(['code' => 'DRILL-ORG-1']);
         $restoredOrgName = $stmt->fetchColumn();
         $this->assertSame('Drill Source Org', $restoredOrgName);
+
+        $stmtUser = $pdoTarget->prepare('SELECT name FROM users WHERE email = :email');
+        $stmtUser->execute(['email' => 'drill.user@kojaya.local']);
+        $restoredUserName = $stmtUser->fetchColumn();
+        $this->assertSame('Drill Source User', $restoredUserName);
 
         unset($pdoTarget);
     }

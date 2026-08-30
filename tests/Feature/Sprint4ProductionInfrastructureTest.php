@@ -47,7 +47,14 @@ class Sprint4ProductionInfrastructureTest extends TestCase
         Storage::fake('local');
         $databasePath = storage_path('framework/testing-sprint4.sqlite');
         File::ensureDirectoryExists(dirname($databasePath));
-        File::put($databasePath, 'sqlite backup payload');
+        if (File::exists($databasePath)) {
+            File::delete($databasePath);
+        }
+
+        $sqlite = new \SQLite3($databasePath);
+        $sqlite->exec('CREATE TABLE test_table (id INTEGER PRIMARY KEY, val TEXT)');
+        $sqlite->exec("INSERT INTO test_table (val) VALUES ('test')");
+        $sqlite->close();
 
         config([
             'database.default' => 'sqlite',
@@ -60,9 +67,11 @@ class Sprint4ProductionInfrastructureTest extends TestCase
 
         $files = Storage::disk('local')->files('test-backups');
 
-        $this->assertCount(1, $files);
-        $this->assertStringEndsWith('.sqlite', $files[0]);
-        $this->assertSame('sqlite backup payload', Storage::disk('local')->get($files[0]));
+        $this->assertCount(3, $files);
+        $sqliteFiles = array_values(array_filter($files, fn (string $f): bool => str_ends_with($f, '.sqlite')));
+        $this->assertCount(1, $sqliteFiles);
+        $this->assertTrue(Storage::disk('local')->exists($sqliteFiles[0].'.json'));
+        $this->assertTrue(Storage::disk('local')->exists($sqliteFiles[0].'.sha256'));
 
         File::delete($databasePath);
     }
@@ -85,7 +94,7 @@ class Sprint4ProductionInfrastructureTest extends TestCase
             'path' => 'test-backups/valid.sqlite',
             '--disk' => 'local',
         ])
-            ->expectsOutput('Backup verified: local:test-backups/valid.sqlite')
+            ->expectsOutput('Backup verified successfully: local:test-backups/valid.sqlite')
             ->assertSuccessful();
 
         File::delete($databasePath);
@@ -104,7 +113,7 @@ class Sprint4ProductionInfrastructureTest extends TestCase
     {
         $schedule = file_get_contents(base_path('routes/console.php'));
         $this->assertStringContainsString("Schedule::command('operations:prune-retention')->dailyAt('01:30')", $schedule);
-        $this->assertStringContainsString("Schedule::command('backup:database --prune')->dailyAt('02:30')", $schedule);
+        $this->assertStringContainsString("Schedule::command('backup:database --purpose=scheduled --prune')->dailyAt('02:30')->withoutOverlapping()", $schedule);
         $this->assertStringContainsString('backup:verify', file_get_contents(base_path('app/Console/Commands/VerifyDatabaseBackupCommand.php')));
 
         $this->assertFileExists(base_path('bin/deploy.sh'));

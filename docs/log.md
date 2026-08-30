@@ -6,6 +6,18 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** July 17, 2026
 
+## 🎯 2026-08-29 - Backup & Disaster Recovery Safety V1 (KOJAYA-P0-BACKUP-DR-SAFETY-V1)
+
+- Built fail-closed native PostgreSQL logical backup system with `pg_dump --format=custom`.
+- Added cryptographic SHA-256 integrity metadata and versioned JSON backup manifests (`.json` and `.sha256`) capturing database engine, server version, environment, Git commit SHA, row counts, and off-site copy status.
+- Added in-line dump verification (`pg_restore --list` archive inspection and SQLite integrity checks) before marking backups as verified.
+- Added mandatory pre-deployment backup gate in `bin/deploy.sh` (`php artisan backup:database --purpose=pre-deploy`) that aborts deployments if backup or verification fails.
+- Added provider-neutral off-site replication to Laravel filesystem disks (`local`, `s3`, `r2`, `minio`) with configurable `BACKUP_REQUIRE_OFFSITE` enforcement.
+- Added safe retention architecture with default dry-run (`php artisan backup:prune`), minimum keep protection, and directory path traversal guards.
+- Added backup freshness and SLA health check command (`php artisan backup:status`).
+- Added real PostgreSQL backup and restore drill with isolated disposable database lifecycle (`kojaya_restore_test_*`) in CI.
+- Updated `docs/backup-runbook.md` with complete operational runbook, recovery objectives (RPO <= 15m, RTO <= 1h), and Layer 4 PITR / WAL archiving strategy.
+
 ## 🎯 2026-08-28 - Database Seeder Safety Hardening (KOJAYA-P0-SEED-SAFETY-HARDENING)
 
 - Separated reference/master seeders from demo fixture seeders in `DatabaseSeeder`.
@@ -1081,6 +1093,8 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 ---
 
 * Aug 25, 2026 | QA Authentication Inertia Proxy Hardening | Engineering | Identified HTTP-scheme downgrade in login/logout redirects behind Cloudflare Tunnel, added least-privilege trusted-proxy configuration and host-isolated session guidance, and made both logout entry points submit the same Inertia POST transition. QA deployment and browser acceptance remain operator steps. |
+* Aug 29, 2026 | Backup & Disaster Recovery Safety V1 | Engineering | Implemented comprehensive PostgreSQL-native logical backup tooling (pg_dump -Fc, pg_restore --list verification), cryptographic JSON manifests and SHA-256 checksums, mandatory pre-deployment backup gate in deploy script, fail-closed restore drills in isolated CI, provider-neutral off-site replication, and safe retention pruning. |
+* Aug 29, 2026 | Senior Backup DR Safety Fixes | Engineering | Hardened backup storage safety by rejecting public disks, public visibility, public roots, and public URLs; fixed require-offsite config fallback; implemented streaming SHA-256 verification of remote off-site copy; added stored primary artifact verification; protected verified valid backups during retention pruning; used authoritative manifest creation timestamp for SLA health monitoring; enforced ephemeral disposable source & target database lifecycles for restore drills; sanitized MySQL process environment to prevent argv password exposure; updated disaster recovery runbook to empty recovery database cutover model. |
 
 ## 🙏 Acknowledgments
 
@@ -1106,4 +1120,5 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Jul 29, 2026 | Admin Koperasi Payment Responsive Correction | Engineering | Contained the cooperative payment history table within its responsive grid column, added an accessible horizontal-scroll region for desktop/tablet, introduced mobile payment cards with selection and approval affordances, and added layout assertions plus focused mobile accessibility coverage. |
 * Jul 29, 2026 | Admin Koperasi Sidebar Active State | Engineering | Kept the Keuangan Anggota group open for payment and dues routes, normalized active navigation matching to ignore query strings, and added responsive Playwright coverage for active submenu behavior. |
 
-*This log is maintained throughout the project lifecycle. Last updated: July 29, 2026*
+*This log is maintained throughout the project lifecycle. Last updated: August 29, 2026*
+

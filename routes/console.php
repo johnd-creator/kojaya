@@ -37,4 +37,4 @@ Schedule::command('orders:recover-stale-charges --minutes=5 --limit=50')->everyF
 
 // Production operations hygiene
 Schedule::command('operations:prune-retention')->dailyAt('01:30');
-Schedule::command('backup:database --prune')->dailyAt('02:30');
+Schedule::command('backup:database --purpose=scheduled --prune')->dailyAt('02:30')->withoutOverlapping();

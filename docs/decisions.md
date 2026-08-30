@@ -1292,3 +1292,59 @@ Accidental execution of `php artisan db:seed` or destructive migration commands 
 | **Testing / Playwright** | ✅ Allowed | ✅ Allowed (Reference-only by default) | ✅ Allowed (In-memory/isolated test DB) | ✅ Allowed (Invoked explicitly per test) | Factories or `admin:create` |
 | **Local Development** | ✅ Allowed | ✅ Allowed (Seeds reference + demo fixtures) | ✅ Allowed | ✅ Allowed | Pre-seeded or `admin:create` |
 
+---
+
+## 🎯 ADR-034: Kojaya Backup & Disaster Recovery Safety V1
+
+**Status:** ✅ Accepted
+**Date:** August 29, 2026
+**Deciders:** Engineering Team
+
+### Context
+
+Production operations require verifiable data protection, disaster recovery, and pre-deployment backup guarantees. Previous gaps included:
+1. No mandatory pre-deployment backup gate.
+2. Lack of cryptographic checksums and structured manifests.
+3. Absence of in-line archive verification (`pg_restore --list`).
+4. Absence of automated restore drill validation in CI.
+5. Inadequate retention controls to protect against accidental backup deletion.
+
+### Decision
+
+1. **Native PostgreSQL Logical Backup Strategy:**
+   - Production backups use `pg_dump --format=custom` (`-Fc`), enabling selective table inspection, table-level restore, and archive listing (`pg_restore --list`).
+   - Backup execution is strictly read-only against the source database.
+2. **Cryptographic Checksums & Manifests:**
+   - Every backup generates a SHA-256 hash file (`.sha256`) and a versioned JSON manifest (`.json`) capturing environment, git commit SHA, database identity, server version, format, size, checksum, non-sensitive row count evidence, and off-site copy status.
+   - Manifests and logs strictly exclude credentials, `APP_KEY`, API tokens, or secrets.
+3. **Fail-Closed In-Line and Final Stored Verification:**
+   - Backups are only marked valid if `pg_dump` succeeds, file size > 0, SHA-256 matches, in-line archive inspection succeeds, AND the final written storage artifact on primary disk is cryptographically verified (size, streaming SHA-256, and archive integrity).
+4. **Mandatory Pre-Deployment Backup Gate & Provenance Fail-Closed:**
+   - Integrated `php artisan backup:database --purpose=pre-deploy` into `bin/deploy.sh` before entering maintenance mode or applying code/database changes. Any backup failure immediately aborts deployment.
+   - Pre-deploy backups in production/staging fail closed if exact Git commit SHA cannot be determined or if `BACKUP_ENABLED=false`.
+5. **Storage Security & Public Disk Rejection:**
+   - Primary and off-site backup disks must be private. Any disk configured as `public`, with public visibility, or rooted beneath `storage/app/public` or `public/` is strictly rejected.
+6. **Provider-Neutral Off-Site Replication with Streaming SHA-256:**
+   - Uses Laravel Filesystem disks (`local`, `s3`, `r2`, `minio`). Configurable fail-closed behavior via `BACKUP_REQUIRE_OFFSITE` (which cannot be silently overridden by absent CLI flags).
+   - Replicated off-site bytes are cryptographically validated using stream hashing before recording `sha256_verified=true`.
+7. **Verified-Backup Retention Architecture:**
+   - Pruning defaults to dry-run preview (`backup:prune`). Actual deletion requires `--execute`.
+   - Retention evaluates candidate backup integrity and guarantees that at least `min_keep` **verified valid** backups remain, preventing corrupt newest backups from causing pruning of the only valid older backup.
+   - Enforces strict path validation against path traversal and public directories.
+8. **Freshness & Health Monitoring:**
+   - `php artisan backup:status` evaluates latest backup age based on authoritative `manifest.created_at` against SLA (default 26 hours) and requires full cryptographic metadata (`.json` and `.sha256`) to report healthy status.
+9. **Automated CI Restore Drill with Disposable Source & Target:**
+   - GitHub Actions CI executes real PostgreSQL backup and restore drills into ephemeral disposable databases (`kojaya_restore_source_*` and `kojaya_restore_target_*`) with fixture validation and cleanup.
+10. **Empty Recovery Target Model for Production Disaster Recovery:**
+    - Production recovery procedures restore exclusively into fresh empty recovery database instances before controlled cutover. Restoring over populated live databases is strictly prohibited.
+
+### Consequences
+
+- Deployments cannot proceed without a verified database backup and verified Git commit SHA provenance.
+- Backups cannot be accidentally exposed via public storage disks or public URLs.
+- Storage retention is safe, predictable, and cannot delete valid backups.
+- Real restore capabilities are continuously validated in isolated CI with disposable databases.
+- Follow-up work will implement Layer 4 continuous WAL archiving (pgBackRest) for Point-in-Time Recovery (PITR).
+
+
+

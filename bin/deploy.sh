@@ -70,6 +70,12 @@ cleanup() {
 
 trap cleanup EXIT
 
+printf 'Executing pre-deployment database backup and verification...\n'
+if ! php artisan backup:database --purpose=pre-deploy; then
+    printf 'Pre-deployment backup failed! Aborting deployment before entering maintenance mode or modifying code/database.\n' >&2
+    exit 1
+fi
+
 php artisan down --retry=60
 maintenance_active=true
 

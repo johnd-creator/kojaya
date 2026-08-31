@@ -168,7 +168,7 @@ class SensitiveDataMaskPreventionTest extends TestCase
     public function test_api_rejects_masked_values_without_persisting_them(): void
     {
         [$admin, $member] = $this->setupMemberWithAdmin();
-        Sanctum::actingAs($admin, ['*']);
+        Sanctum::actingAs($admin, ['cooperative.member.read', 'cooperative.member.write']);
         $before = $member->only(['identity_number_enc', 'npwp_enc', 'no_rekening_enc']);
 
         foreach ([
@@ -187,7 +187,7 @@ class SensitiveDataMaskPreventionTest extends TestCase
     public function test_api_omitted_sensitive_values_are_preserved_and_explicit_clear_is_scoped(): void
     {
         [$admin, $member] = $this->setupMemberWithAdmin();
-        Sanctum::actingAs($admin, ['*']);
+        Sanctum::actingAs($admin, ['cooperative.member.read', 'cooperative.member.write']);
         $npwpBefore = $member->getRawOriginal('npwp_enc');
         $accountBefore = $member->getRawOriginal('no_rekening_enc');
 
@@ -239,7 +239,7 @@ class SensitiveDataMaskPreventionTest extends TestCase
             'identity_number' => '1601234567890001',
         ]);
         $before = $member->getRawOriginal('identity_number_enc');
-        Sanctum::actingAs($admin, ['*']);
+        Sanctum::actingAs($admin, ['cooperative.member.read', 'cooperative.member.write']);
 
         $this->patchJson("/api/v1/members/{$member->id}/sensitive-data", [
             'identity_number' => '3201234567890123',

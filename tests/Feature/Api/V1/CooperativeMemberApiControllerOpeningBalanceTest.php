@@ -30,7 +30,7 @@ class CooperativeMemberApiControllerOpeningBalanceTest extends TestCase
         );
         $user->assignRole($role);
 
-        Sanctum::actingAs($user, ['*']);
+        Sanctum::actingAs($user, ['cooperative.member.read', 'cooperative.member.write', 'cooperative.ledger.read']);
 
         return $user;
     }

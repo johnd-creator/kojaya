@@ -20,22 +20,27 @@ class EnsureCooperativeAbility
 
     public function handle(Request $request, Closure $next, string ...$abilities): Response
     {
-        if (! $request->user()?->currentAccessToken()) {
+        $user = $request->user();
+
+        if (! $user) {
             throw new \Illuminate\Auth\AuthenticationException;
         }
 
-        $phase = $this->cutover->phase();
-        $currentToken = $request->user()->currentAccessToken();
-        $tokenAbilities = is_object($currentToken) && is_array($currentToken->abilities ?? null)
-            ? $currentToken->abilities
-            : [];
+        $currentToken = $user->currentAccessToken();
 
-        if (in_array('*', $tokenAbilities, true)) {
-            throw new MissingAbilityException($abilities);
+        if (! ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken)) {
+            throw new MissingAbilityException($abilities, 'Cooperative API requires a valid bearer token.');
+        }
+
+        $phase = $this->cutover->phase();
+        $tokenAbilities = (array) ($currentToken->abilities ?? []);
+
+        if (in_array('*', $tokenAbilities, true) || $currentToken->can('*')) {
+            throw new MissingAbilityException($abilities, 'Wildcard token abilities are not permitted.');
         }
 
         foreach ($abilities as $ability) {
-            if (! $request->user()->tokenCan($ability)) {
+            if (! $currentToken->can($ability)) {
                 continue;
             }
 

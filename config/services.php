@@ -33,6 +33,10 @@ return [
         'endpoint' => env('FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
     ],
 
+    'payment_gateway' => [
+        'allow_simulation' => (bool) env('PAYMENT_GATEWAY_ALLOW_SIMULATION', false),
+    ],
+
     'midtrans' => [
         'merchant_id' => env('MIDTRANS_MERCHANT_ID'),
         'server_key' => env('MIDTRANS_SERVER_KEY'),

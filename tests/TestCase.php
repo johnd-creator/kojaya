@@ -40,4 +40,45 @@ abstract class TestCase extends BaseTestCase
             ->once()
             ->andReturnUsing(static fn (): CooperativeReceipt => new CooperativeReceipt);
     }
+
+    /**
+     * Post a signed Midtrans webhook payload for testing.
+     *
+     * @param  array<string, mixed>  $extra
+     * @param  array<string, string>  $headers
+     */
+    protected function postSignedMidtransWebhook(
+        string $orderId,
+        string $transactionStatus = 'settlement',
+        string|int|float $grossAmount = '100000.00',
+        string $statusCode = '200',
+        ?string $fraudStatus = 'accept',
+        string $serverKey = 'test-midtrans-server-key',
+        array $extra = [],
+        array $headers = [],
+    ): \Illuminate\Testing\TestResponse {
+        config([
+            'services.midtrans.server_key' => $serverKey,
+            'services.midtrans.is_production' => false,
+        ]);
+
+        $formattedAmount = is_numeric($grossAmount)
+            ? number_format((float) $grossAmount, 2, '.', '')
+            : (string) $grossAmount;
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $formattedAmount,
+            'transaction_status' => $transactionStatus,
+            'signature_key' => hash('sha512', $orderId.$statusCode.$formattedAmount.$serverKey),
+            ...$extra,
+        ];
+
+        if ($fraudStatus !== null) {
+            $payload['fraud_status'] = $fraudStatus;
+        }
+
+        return $this->postJson('/api/payments/webhook', $payload, $headers);
+    }
 }

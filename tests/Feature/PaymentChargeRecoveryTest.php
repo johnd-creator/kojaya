@@ -32,7 +32,10 @@ class PaymentChargeRecoveryTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
-        config(['services.midtrans.server_key' => '']);
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => true,
+        ]);
     }
 
     // ── P0-1: Provider Failure Classification ────────────────────────────

@@ -61,11 +61,13 @@ class AuditContextSourceTest extends TestCase
     {
         $intent = MemberPaymentIntent::factory()->create(['gateway_status' => 'PENDING']);
 
-        $this->withHeader('X-Correlation-ID', '22223333-4444-5555-6666-777788889999')
-            ->postJson('/api/payments/webhook', [
-                'reference' => $intent->gateway_reference,
-                'status' => 'CANCELLED',
-            ])->assertOk();
+        $this->postSignedMidtransWebhook(
+            orderId: $intent->gateway_reference,
+            transactionStatus: 'cancel',
+            grossAmount: $intent->amount,
+            statusCode: '410',
+            headers: ['X-Correlation-ID' => '22223333-4444-5555-6666-777788889999'],
+        )->assertOk();
 
         $audit = AuditLog::query()->where('action', 'gateway.CANCELLED')->latest('id')->firstOrFail();
         $this->assertSame('webhook', $audit->source);

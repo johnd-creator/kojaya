@@ -83,6 +83,17 @@ class PaymentConcurrencyTest extends TestCase
          */
         $this->refreshApplication();
 
+        $this->assertFalse(
+            (bool) config('services.payment_gateway.allow_simulation', false),
+            'Payment simulation must remain disabled in the ordinary application context.',
+        );
+
+        $this->enablePaymentSimulationForConcurrencyContext();
+        $this->assertTrue(
+            (bool) config('services.payment_gateway.allow_simulation', false),
+            'Payment concurrency explicitly opts into the synthetic provider.',
+        );
+
         // Re-assert pgsql env for this process and any child workers
         putenv('DB_CONNECTION=pgsql');
         putenv('DB_DATABASE='.$this->dbConfig['database']);
@@ -113,6 +124,8 @@ class PaymentConcurrencyTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->disablePaymentSimulationEnvironment();
+
         if ($this->workingDirectory !== '') {
             $resultDir = $this->workingDirectory.'/results';
             $this->cleanDir($resultDir);
@@ -125,6 +138,21 @@ class PaymentConcurrencyTest extends TestCase
         }
 
         parent::tearDown();
+    }
+
+    private function enablePaymentSimulationForConcurrencyContext(): void
+    {
+        putenv('PAYMENT_GATEWAY_ALLOW_SIMULATION=true');
+        $_ENV['PAYMENT_GATEWAY_ALLOW_SIMULATION'] = 'true';
+        $_SERVER['PAYMENT_GATEWAY_ALLOW_SIMULATION'] = 'true';
+        config()->set('services.payment_gateway.allow_simulation', true);
+    }
+
+    private function disablePaymentSimulationEnvironment(): void
+    {
+        putenv('PAYMENT_GATEWAY_ALLOW_SIMULATION=false');
+        $_ENV['PAYMENT_GATEWAY_ALLOW_SIMULATION'] = 'false';
+        $_SERVER['PAYMENT_GATEWAY_ALLOW_SIMULATION'] = 'false';
     }
 
     // ── C1: 8 parallel same-key same-payload → one intent ─────────────
@@ -643,6 +671,9 @@ class PaymentConcurrencyTest extends TestCase
             $this->finishWorker($processes[1], $resultDir, 'c6-b'),
         ];
 
+        $this->assertTrue($results[0]['simulation_allowed'] ?? false, 'C6: worker A explicitly enabled payment simulation');
+        $this->assertTrue($results[1]['simulation_allowed'] ?? false, 'C6: worker B explicitly enabled payment simulation');
+
         $intent->refresh();
 
         // Assert exact provider create-call count === 1
@@ -984,6 +1015,8 @@ class PaymentConcurrencyTest extends TestCase
         ];
 
         $this->assertCount(2, $results);
+        $this->assertTrue($results[0]['simulation_allowed'] ?? false, 'C9: worker 0 explicitly enabled payment simulation');
+        $this->assertTrue($results[1]['simulation_allowed'] ?? false, 'C9: worker 1 explicitly enabled payment simulation');
         $this->assertSame(1, MemberPaymentIntent::query()
             ->where('cooperative_member_id', $member->id)
             ->where('payable_type', MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT)
@@ -1056,6 +1089,7 @@ putenv("DB_DATABASE={$dbDatabase}");
 putenv("DB_USERNAME={$dbUsername}");
 putenv("DB_PASSWORD={$dbPassword}");
 putenv("APP_KEY={$appKey}");
+putenv('PAYMENT_GATEWAY_ALLOW_SIMULATION=true');
 
 \$_ENV['APP_ENV'] = 'testing';
 \$_ENV['CACHE_STORE'] = 'array';
@@ -1063,6 +1097,8 @@ putenv("APP_KEY={$appKey}");
 \$_ENV['QUEUE_CONNECTION'] = 'sync';
 \$_ENV['DB_CONNECTION'] = 'pgsql';
 \$_ENV['APP_KEY'] = '{$appKey}';
+\$_ENV['PAYMENT_GATEWAY_ALLOW_SIMULATION'] = 'true';
+\$_SERVER['PAYMENT_GATEWAY_ALLOW_SIMULATION'] = 'true';
 
 require \$repoPath.'/vendor/autoload.php';
 
@@ -1071,6 +1107,7 @@ require \$repoPath.'/vendor/autoload.php';
 
 config()->set('database.default', 'pgsql');
 config()->set('services.midtrans.server_key', '');
+config()->set('services.payment_gateway.allow_simulation', true);
 
 \$params = json_decode(\$paramsJson, true, 512, JSON_THROW_ON_ERROR);
 
@@ -1346,6 +1383,7 @@ try {
         'ok' => true,
         'reference' => $charge['reference'] ?? null,
         'status' => $charge['status'] ?? null,
+        'simulation_allowed' => app(PaymentGatewayService::class)->isSimulationAllowed(),
     ]));
     exit(0);
 } catch (Throwable $throwable) {
@@ -1353,6 +1391,7 @@ try {
         'ok' => false,
         'class' => $throwable::class,
         'message' => $throwable->getMessage(),
+        'simulation_allowed' => app(PaymentGatewayService::class)->isSimulationAllowed(),
     ]));
     exit(1);
 }
@@ -1471,6 +1510,7 @@ PHP;
         return <<<'PHP'
 use App\Models\CooperativeMember;
 use App\Services\Integrations\LoanPaymentIntentService;
+use App\Services\Integrations\PaymentGatewayService;
 use App\Services\Integrations\PaymentIntentChargeService;
 
 $member = CooperativeMember::query()->findOrFail((int) $params['member_id']);
@@ -1490,6 +1530,7 @@ try {
         'ok' => true,
         'intent_id' => $resolution->intent->id,
         'reference' => $charge['reference'] ?? null,
+        'simulation_allowed' => app(PaymentGatewayService::class)->isSimulationAllowed(),
     ]));
     exit(0);
 } catch (Throwable $throwable) {
@@ -1497,6 +1538,7 @@ try {
         'ok' => false,
         'class' => $throwable::class,
         'message' => $throwable->getMessage(),
+        'simulation_allowed' => app(PaymentGatewayService::class)->isSimulationAllowed(),
     ]));
     exit(1);
 }

@@ -31,7 +31,10 @@ class MemberUnifiedEndpointsTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.midtrans.server_key' => '']);
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => true,
+        ]);
     }
 
     public function test_profile_exposes_extended_personal_and_bank_fields(): void
@@ -487,10 +490,11 @@ class MemberUnifiedEndpointsTest extends TestCase
             ->assertJsonPath('data.payment_intent.amount', 460000)
             ->assertJsonPath('data.charge.provider', 'internal');
 
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk()
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            460000.0,
+        )->assertOk()
             ->assertJsonPath('data.gateway_status', 'PAID');
 
         $this->assertDatabaseHas('loan_payments', [

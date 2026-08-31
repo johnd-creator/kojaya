@@ -33,8 +33,28 @@ class SimulateMidtransWebhookCommand extends Command
 
     public function handle(): int
     {
+        if ($this->laravel->environment('production') || config('app.env') === 'production') {
+            $this->error('Refusing to simulate a payment webhook in production environment.');
+
+            return self::FAILURE;
+        }
+
         if (config('services.midtrans.is_production')) {
             $this->error('Refusing to simulate a Midtrans webhook while MIDTRANS_IS_PRODUCTION=true.');
+
+            return self::FAILURE;
+        }
+
+        if (! (bool) config('services.payment_gateway.allow_simulation', false)) {
+            $this->error('Refusing to simulate a payment webhook while PAYMENT_GATEWAY_ALLOW_SIMULATION is disabled.');
+
+            return self::FAILURE;
+        }
+
+        $serverKey = (string) config('services.midtrans.server_key');
+
+        if ($serverKey === '') {
+            $this->error('Cannot simulate webhook: Midtrans server key is not configured.');
 
             return self::FAILURE;
         }

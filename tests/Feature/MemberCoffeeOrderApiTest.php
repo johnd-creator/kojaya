@@ -26,7 +26,10 @@ class MemberCoffeeOrderApiTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
-        config(['services.midtrans.server_key' => '']);
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => true,
+        ]);
     }
 
     public function test_member_can_view_coffee_menu(): void
@@ -112,10 +115,11 @@ class MemberCoffeeOrderApiTest extends TestCase
         ]);
 
         $intent = MemberPaymentIntent::query()->firstOrFail();
-        $this->postJson('/api/payments/webhook', [
-            'reference' => $response->json('data.charge.reference'),
-            'status' => 'PAID',
-        ])->assertOk()
+        $this->postSignedMidtransWebhook(
+            $response->json('data.charge.reference'),
+            'settlement',
+            36000.0,
+        )->assertOk()
             ->assertJsonPath('data.gateway_status', 'PAID');
 
         $transaction = PosTransaction::query()->where('client_reference', 'MOBILE-COFFEE-001')->with(['items', 'payments'])->firstOrFail();

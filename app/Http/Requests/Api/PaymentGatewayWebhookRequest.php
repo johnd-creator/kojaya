@@ -43,16 +43,10 @@ class PaymentGatewayWebhookRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $payload = $this->all();
-                $looksLikeMidtrans = collect(['order_id', 'status_code', 'gross_amount', 'transaction_status', 'signature_key'])
-                    ->contains(fn (string $field): bool => $this->filled($field));
-
-                if (! $looksLikeMidtrans) {
-                    return;
-                }
 
                 foreach (['order_id', 'status_code', 'gross_amount', 'transaction_status'] as $field) {
                     if (! isset($payload[$field]) || $payload[$field] === '') {
-                        $validator->errors()->add($field, 'The '.$field.' field is required for signed Midtrans notifications.');
+                        $validator->errors()->add($field, 'The '.$field.' field is required for signed payment notifications.');
                     }
                 }
 
@@ -61,7 +55,7 @@ class PaymentGatewayWebhookRequest extends FormRequest
                     && ! $this->headers->has('x-midtrans-signature')
                     && ! $this->headers->has('signature-key')
                 ) {
-                    $validator->errors()->add('signature_key', 'The signature_key field or signature header is required for signed Midtrans notifications.');
+                    $validator->errors()->add('signature_key', 'The signature_key field or signature header is required for signed payment notifications.');
                 }
             },
         ];

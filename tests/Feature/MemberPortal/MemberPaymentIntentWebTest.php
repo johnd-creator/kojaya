@@ -28,7 +28,10 @@ class MemberPaymentIntentWebTest extends TestCase
     {
         parent::setUp();
 
-        config(['services.midtrans.server_key' => '']);
+        config([
+            'services.midtrans.server_key' => '',
+            'services.payment_gateway.allow_simulation' => true,
+        ]);
         $this->seed(RolePermissionSeeder::class);
 
         $this->memberUser = User::factory()->create();

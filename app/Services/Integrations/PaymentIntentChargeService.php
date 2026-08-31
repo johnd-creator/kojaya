@@ -67,6 +67,14 @@ class PaymentIntentChargeService
             $this->handleProviderChargeException($intent->id, $attempt, $exception);
 
             throw $exception;
+        } catch (\App\Exceptions\PaymentGatewayUnavailableException $exception) {
+            $this->handleProviderChargeException(
+                $intent->id,
+                $attempt,
+                ProviderChargeException::rejected($exception->getMessage(), 503, $exception),
+            );
+
+            throw $exception;
         } catch (RuntimeException $exception) {
             // Unclassified RuntimeException from unknown source — treat as Unknown
             $this->handleProviderChargeException(
@@ -591,6 +599,15 @@ class PaymentIntentChargeService
         }
 
         if (empty($payload['reference'])) {
+            return null;
+        }
+
+        $chargeProvider = (string) ($payload['provider'] ?? 'internal');
+        if ($chargeProvider === 'internal') {
+            if ($this->gateway->isConfigured() || ! $this->gateway->isSimulationAllowed()) {
+                return null;
+            }
+        } elseif (! $this->gateway->isConfigured()) {
             return null;
         }
 

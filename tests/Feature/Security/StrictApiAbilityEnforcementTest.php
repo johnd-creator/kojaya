@@ -3,9 +3,12 @@
 namespace Tests\Feature\Security;
 
 use App\Enums\ApiErrorCode;
+use App\Enums\TokenApp;
 use App\Models\CooperativeMember;
+use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Auth\TokenIssuanceService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -285,5 +288,193 @@ class StrictApiAbilityEnforcementTest extends TestCase
         $this->getJson('/api/v1/member/savings/ledger')
             ->assertForbidden()
             ->assertJsonPath('error_code', ApiErrorCode::MemberNotActive->value);
+    }
+
+    public function test_employee_document_read_issuance_and_access_via_token_issuance_service(): void
+    {
+        $hrUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        $hrUser->givePermissionTo('view_employee_all');
+
+        $employee = Employee::factory()->create(['organization_id' => $this->organization->id]);
+
+        $token = app(TokenIssuanceService::class)->issue(
+            $hrUser,
+            TokenApp::ADMIN,
+            'HR Device',
+        );
+
+        $this->assertContains('employee-documents:read', $token->accessToken->abilities);
+        $this->assertNotContains('employee-documents:write', $token->accessToken->abilities);
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token->plainTextToken);
+
+        $this->getJson("/api/employees/{$employee->id}/certificates")->assertOk();
+        $this->getJson("/api/employees/{$employee->id}/mcu")->assertOk();
+    }
+
+    public function test_employee_document_write_issuance_and_access_via_token_issuance_service(): void
+    {
+        $hrUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        $hrUser->givePermissionTo('edit_employee');
+
+        $employee = Employee::factory()->create(['organization_id' => $this->organization->id]);
+
+        $token = app(TokenIssuanceService::class)->issue(
+            $hrUser,
+            TokenApp::ADMIN,
+            'HR Device',
+        );
+
+        $this->assertContains('employee-documents:write', $token->accessToken->abilities);
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token->plainTextToken);
+
+        $this->postJson("/api/employees/{$employee->id}/certificates", [
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-2026-001',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ])->assertCreated();
+
+        $this->postJson("/api/employees/{$employee->id}/mcu", [
+            'checkup_date' => '2026-01-01',
+            'result' => 'FIT',
+        ])->assertCreated();
+    }
+
+    public function test_unauthorized_users_cannot_receive_or_use_employee_document_abilities(): void
+    {
+        $employee = Employee::factory()->create(['organization_id' => $this->organization->id]);
+
+        // 1. Member cannot receive employee document abilities via TokenIssuanceService
+        $memberToken = app(TokenIssuanceService::class)->issue(
+            $this->memberUser,
+            TokenApp::MEMBER,
+            'Member Device',
+        );
+        $this->assertNotContains('employee-documents:read', $memberToken->accessToken->abilities);
+        $this->assertNotContains('employee-documents:write', $memberToken->accessToken->abilities);
+
+        // 2. Member token cannot access employee document endpoints
+        $this->app['auth']->forgetGuards();
+        $this->withToken($memberToken->plainTextToken);
+        $this->getJson("/api/employees/{$employee->id}/certificates")->assertForbidden();
+        $this->postJson("/api/employees/{$employee->id}/certificates", [
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-UNAUTH',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ])->assertForbidden();
+
+        // 3. Web session cannot access employee document endpoints
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($this->adminUser, 'web');
+        $this->getJson("/api/employees/{$employee->id}/certificates")->assertForbidden();
+        $this->getJson("/api/employees/{$employee->id}/mcu")->assertForbidden();
+    }
+
+    public function test_all_token_required_ability_domains_are_issuable_via_token_issuance_service(): void
+    {
+        // 1. Member App Token
+        $memberToken = app(TokenIssuanceService::class)->issue($this->memberUser, TokenApp::MEMBER, 'Member Device');
+        $this->assertContains('profile:read', $memberToken->accessToken->abilities);
+        $this->assertContains('member:read', $memberToken->accessToken->abilities);
+        $this->assertContains('member:write', $memberToken->accessToken->abilities);
+        $this->app['auth']->forgetGuards();
+        $this->withToken($memberToken->plainTextToken);
+        $this->getJson('/api/v1/member/profile')->assertOk();
+
+        // 2. ESS App Token
+        $essUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        $essUser->givePermissionTo('access_ess_portal');
+        Employee::factory()->create([
+            'user_id' => $essUser->id,
+            'organization_id' => $this->organization->id,
+        ]);
+        $essToken = app(TokenIssuanceService::class)->issue($essUser, TokenApp::ESS, 'ESS Device');
+        $this->assertContains('ess:read', $essToken->accessToken->abilities);
+        $this->assertContains('ess:write', $essToken->accessToken->abilities);
+        $this->assertContains('attendance:read', $essToken->accessToken->abilities);
+        $this->assertContains('attendance:write', $essToken->accessToken->abilities);
+        $this->assertContains('payroll:read', $essToken->accessToken->abilities);
+        $this->app['auth']->forgetGuards();
+        $this->withToken($essToken->plainTextToken);
+        $this->getJson('/api/ess/dashboard')->assertOk();
+
+        // 3. Technician App Token
+        $techUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        $techUser->givePermissionTo('manage_work_order');
+        $techToken = app(TokenIssuanceService::class)->issue($techUser, TokenApp::TECHNICIAN, 'Tech Device');
+        $this->assertContains('work-orders:read', $techToken->accessToken->abilities);
+        $this->assertContains('work-orders:write', $techToken->accessToken->abilities);
+        $this->assertContains('work-orders:review', $techToken->accessToken->abilities);
+        $this->app['auth']->forgetGuards();
+        $this->withToken($techToken->plainTextToken);
+        $this->getJson('/api/technician/work-orders')->assertOk();
+
+        // 4. Admin App Token (with Cooperative, POS, Reports, Employee Documents)
+        $adminUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        $adminUser->assignRole('Admin Koperasi');
+        $adminUser->givePermissionTo([
+            'view_reports',
+            'view_employee_all',
+        ]);
+        $adminToken = app(TokenIssuanceService::class)->issue($adminUser, TokenApp::ADMIN, 'Admin Device');
+        $this->assertContains('cooperative.member.read', $adminToken->accessToken->abilities);
+        $this->assertContains('cooperative.member.write', $adminToken->accessToken->abilities);
+        $this->assertContains('pos:read', $adminToken->accessToken->abilities);
+        $this->assertContains('pos:write', $adminToken->accessToken->abilities);
+        $this->assertContains('reports:read', $adminToken->accessToken->abilities);
+        $this->assertContains('employee-documents:read', $adminToken->accessToken->abilities);
+        $this->app['auth']->forgetGuards();
+        $this->withToken($adminToken->plainTextToken);
+        $this->getJson('/api/v1/members')->assertOk();
+        $this->getJson('/api/v1/pos/products')->assertOk();
+        $this->getJson('/api/reports/certificate-compliance')->assertOk();
+    }
+
+    public function test_dual_mode_unknown_token_implementation_fails_closed(): void
+    {
+        $customTokenUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        $unknownToken = new class
+        {
+            public function can($ability)
+            {
+                return true;
+            }
+        };
+        $customTokenUser->withAccessToken($unknownToken);
+
+        $this->app['auth']->guard('sanctum')->setUser($customTokenUser);
+        $this->app['auth']->shouldUse('sanctum');
+
+        $this->getJson('/api/user')->assertForbidden();
+        $this->getJson('/api/auth/session')->assertForbidden();
+    }
+
+    public function test_mixed_web_session_and_bearer_token_authentication_precedence(): void
+    {
+        // Issue valid bearer token for member
+        $pat = $this->memberUser->createToken('bearer-token', ['profile:read', 'member:read', 'member:write']);
+
+        // Create active web session for memberUser
+        $this->actingAs($this->memberUser, 'web');
+
+        // Add Bearer token header in the same request
+        $this->withToken($pat->plainTextToken);
+
+        // Characterization: In Sanctum Guard, config('sanctum.guard', 'web') resolves first,
+        // resulting in TransientToken being assigned.
+        // 1. TOKEN_REQUIRED endpoint fails closed (403 Forbidden)
+        $this->getJson('/api/v1/member/dashboard')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'This endpoint requires an API bearer token with scoped abilities.');
+
+        // 2. SESSION_OK dual-mode endpoint succeeds under session identity (200 OK)
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('id', $this->memberUser->id);
     }
 }

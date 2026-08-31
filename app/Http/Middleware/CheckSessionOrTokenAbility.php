@@ -28,24 +28,30 @@ class CheckSessionOrTokenAbility
 
         $currentToken = $user->currentAccessToken();
 
-        // If authenticated via browser session (not PersonalAccessToken), allow access to session-safe identity endpoint
-        if (! ($currentToken instanceof PersonalAccessToken)) {
+        // 1. If authenticated via bearer PersonalAccessToken, enforce scoped abilities
+        if ($currentToken instanceof PersonalAccessToken) {
+            $tokenAbilities = (array) ($currentToken->abilities ?? []);
+
+            // If authenticated via bearer token, wildcard '*' is not permitted
+            if (in_array('*', $tokenAbilities, true) || $currentToken->can('*')) {
+                throw new MissingAbilityException($abilities, 'Wildcard token abilities are not permitted.');
+            }
+
+            foreach ($abilities as $ability) {
+                if ($currentToken->can($ability)) {
+                    return $next($request);
+                }
+            }
+
+            throw new MissingAbilityException($abilities);
+        }
+
+        // 2. If authenticated via Sanctum TransientToken (web session), allow access to session-safe endpoint
+        if ($currentToken instanceof \Laravel\Sanctum\TransientToken) {
             return $next($request);
         }
 
-        $tokenAbilities = (array) ($currentToken->abilities ?? []);
-
-        // If authenticated via bearer token, wildcard '*' is not permitted
-        if (in_array('*', $tokenAbilities, true) || $currentToken->can('*')) {
-            throw new MissingAbilityException($abilities, 'Wildcard token abilities are not permitted.');
-        }
-
-        foreach ($abilities as $ability) {
-            if ($currentToken->can($ability)) {
-                return $next($request);
-            }
-        }
-
-        throw new MissingAbilityException($abilities);
+        // 3. Null or unknown token implementation: fail closed
+        throw new MissingAbilityException($abilities, 'This endpoint requires a valid session or API token.');
     }
 }

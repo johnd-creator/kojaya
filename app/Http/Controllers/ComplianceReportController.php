@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Concerns\ResolvesApiPageSize;
+use App\Http\Resources\EmployeeCertificateResource;
+use App\Http\Resources\MedicalCheckupResource;
 use App\Models\EmployeeCertificate;
 use App\Models\MedicalCheckup;
 use Illuminate\Http\JsonResponse;

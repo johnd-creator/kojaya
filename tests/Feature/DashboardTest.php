@@ -15,12 +15,20 @@ use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
     use DatabaseMigrations;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_guests_are_redirected_to_the_login_page(): void
     {
@@ -39,6 +47,16 @@ class DashboardTest extends TestCase
 
     public function test_dashboard_renders_operational_cooperative_metrics(): void
     {
+        Carbon::setTestNow('2026-08-31 10:00:00');
+
+        $currentMonth = Carbon::now()->startOfMonth();
+        $previousMonth = $currentMonth->copy()->subMonth();
+        $twoMonthsAgo = $currentMonth->copy()->subMonths(2);
+
+        $this->assertSame('2026-08', $currentMonth->format('Y-m'));
+        $this->assertSame('2026-07', $previousMonth->format('Y-m'));
+        $this->assertSame('2026-06', $twoMonthsAgo->format('Y-m'));
+
         $user = User::factory()->create();
         $organization = Organization::factory()->create();
         $type = CooperativeContributionType::query()->create([
@@ -55,7 +73,7 @@ class DashboardTest extends TestCase
             'name' => 'Anggota Aktif',
             'email' => 'aktif@example.test',
             'status' => 'ACTIVE',
-            'joined_at' => now()->subMonths(2)->toDateString(),
+            'joined_at' => $twoMonthsAgo->toDateString(),
         ]);
 
         CooperativeMember::query()->create([
@@ -69,10 +87,10 @@ class DashboardTest extends TestCase
         CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $activeMember->id,
             'cooperative_contribution_type_id' => $type->id,
-            'period' => now()->format('Y-m'),
+            'period' => $currentMonth->format('Y-m'),
             'amount' => 100000,
             'paid_amount' => 25000,
-            'due_date' => now()->endOfMonth()->toDateString(),
+            'due_date' => $currentMonth->copy()->endOfMonth()->toDateString(),
             'status' => 'PARTIAL',
         ]);
 
@@ -82,16 +100,16 @@ class DashboardTest extends TestCase
             'name' => 'Anggota Terhapus',
             'email' => 'deleted@example.test',
             'status' => 'ACTIVE',
-            'joined_at' => now()->subMonths(2)->toDateString(),
+            'joined_at' => $twoMonthsAgo->toDateString(),
         ]);
 
         CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $deletedMember->id,
             'cooperative_contribution_type_id' => $type->id,
-            'period' => now()->format('Y-m'),
+            'period' => $currentMonth->format('Y-m'),
             'amount' => 900000,
             'paid_amount' => 0,
-            'due_date' => now()->endOfMonth()->toDateString(),
+            'due_date' => $currentMonth->copy()->endOfMonth()->toDateString(),
             'status' => 'UNPAID',
         ]);
 
@@ -100,19 +118,19 @@ class DashboardTest extends TestCase
         $paidInvoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $activeMember->id,
             'cooperative_contribution_type_id' => $type->id,
-            'period' => now()->startOfMonth()->subMonth()->format('Y-m'),
+            'period' => $previousMonth->format('Y-m'),
             'amount' => 50000,
             'paid_amount' => 50000,
-            'due_date' => now()->startOfMonth()->subMonth()->endOfMonth()->toDateString(),
+            'due_date' => $previousMonth->copy()->endOfMonth()->toDateString(),
             'status' => 'PAID',
         ]);
         CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $activeMember->id,
             'cooperative_contribution_type_id' => $type->id,
-            'period' => now()->subMonths(2)->format('Y-m'),
+            'period' => $twoMonthsAgo->format('Y-m'),
             'amount' => 40000,
             'paid_amount' => 0,
-            'due_date' => now()->subMonths(2)->endOfMonth()->toDateString(),
+            'due_date' => $twoMonthsAgo->copy()->endOfMonth()->toDateString(),
             'status' => 'UNPAID',
         ]);
 
@@ -178,7 +196,7 @@ class DashboardTest extends TestCase
             'cooperative_pool' => 1000000,
             'pos_profit_pool' => 500000,
             'status' => 'CLOSED',
-            'closed_at' => now()->subMonth(),
+            'closed_at' => $previousMonth,
             'closed_by' => $user->id,
         ]);
 

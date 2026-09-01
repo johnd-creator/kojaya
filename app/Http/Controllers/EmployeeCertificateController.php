@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateEmployeeCertificateRequest;
 use App\Http\Requests\UploadEmployeeDocumentRequest;
 use App\Http\Resources\EmployeeCertificateResource;
 use App\Models\Employee;
-use App\Models\EmployeeCertificate;
+use App\Services\Authorization\OrganizationScopeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +19,7 @@ class EmployeeCertificateController extends Controller
 
     public function index(Request $request, string $employeeId)
     {
-        $certificates = Employee::findOrFail($employeeId)
+        $certificates = $this->resolveEmployee($request, $employeeId)
             ->certificates()
             ->orderBy('created_at', 'desc')
             ->paginate($this->apiPageSize($request));
@@ -29,16 +29,17 @@ class EmployeeCertificateController extends Controller
 
     public function store(StoreEmployeeCertificateRequest $request, string $employeeId)
     {
-        $employee = Employee::findOrFail($employeeId);
+        $employee = $this->resolveEmployee($request, $employeeId);
 
         $certificate = $employee->certificates()->create($request->validated());
 
         return new EmployeeCertificateResource($certificate);
     }
 
-    public function show(string $employeeId, string $id)
+    public function show(Request $request, string $employeeId, string $id)
     {
-        $certificate = EmployeeCertificate::where('employee_id', $employeeId)
+        $certificate = $this->resolveEmployee($request, $employeeId)
+            ->certificates()
             ->findOrFail($id);
 
         return new EmployeeCertificateResource($certificate);
@@ -46,7 +47,8 @@ class EmployeeCertificateController extends Controller
 
     public function update(UpdateEmployeeCertificateRequest $request, string $employeeId, string $id)
     {
-        $certificate = EmployeeCertificate::where('employee_id', $employeeId)
+        $certificate = $this->resolveEmployee($request, $employeeId)
+            ->certificates()
             ->findOrFail($id);
 
         $certificate->update($request->validated());
@@ -54,9 +56,10 @@ class EmployeeCertificateController extends Controller
         return new EmployeeCertificateResource($certificate);
     }
 
-    public function destroy(string $employeeId, string $id): JsonResponse
+    public function destroy(Request $request, string $employeeId, string $id): JsonResponse
     {
-        $certificate = EmployeeCertificate::where('employee_id', $employeeId)
+        $certificate = $this->resolveEmployee($request, $employeeId)
+            ->certificates()
             ->findOrFail($id);
 
         // Delete document if exists
@@ -76,7 +79,8 @@ class EmployeeCertificateController extends Controller
     {
         $request->validated();
 
-        $certificate = EmployeeCertificate::where('employee_id', $employeeId)
+        $certificate = $this->resolveEmployee($request, $employeeId)
+            ->certificates()
             ->findOrFail($id);
 
         // Delete old document if exists
@@ -96,5 +100,12 @@ class EmployeeCertificateController extends Controller
                 'document_url' => Storage::disk('public')->url($path),
             ],
         ]);
+    }
+
+    protected function resolveEmployee(Request $request, string $employeeId): Employee
+    {
+        return app(OrganizationScopeService::class)
+            ->scopeVisibleTo(Employee::query(), $request->user())
+            ->findOrFail($employeeId);
     }
 }

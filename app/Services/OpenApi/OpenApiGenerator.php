@@ -776,10 +776,19 @@ class OpenApiGenerator
      */
     private function abilities(array $middleware): array
     {
-        return array_values(array_map(
-            fn (string $middleware): string => str($middleware)->after('ability:')->toString(),
-            array_filter($middleware, fn (mixed $middleware): bool => is_string($middleware) && str_starts_with($middleware, 'ability:')),
-        ));
+        $abilities = [];
+        foreach ($middleware as $m) {
+            if (! is_string($m)) {
+                continue;
+            }
+            if (str_starts_with($m, 'ability:')) {
+                $abilities[] = (string) str($m)->after('ability:');
+            } elseif (str_starts_with($m, 'ability.dual:')) {
+                $abilities[] = (string) str($m)->after('ability.dual:');
+            }
+        }
+
+        return array_values($abilities);
     }
 
     /**

@@ -153,6 +153,7 @@ class PosPhase6OfflineSyncTest extends TestCase
     {
         $user = User::factory()->create(['organization_id' => Organization::factory()]);
         $user->givePermissionTo('access_cooperative_pos');
+        \Laravel\Sanctum\Sanctum::actingAs($user, ['pos:read', 'pos:write']);
 
         return $user;
     }

@@ -32,7 +32,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/google/mobile', [AuthController::class, 'loginWithGoogle'])->middleware('throttle:login');
     Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
-        Route::get('/session', [AuthController::class, 'session'])->middleware('ability:profile:read');
+        Route::get('/session', [AuthController::class, 'session'])->middleware('ability.dual:profile:read');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('throttle:api-write');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->middleware('throttle:api-write');
     });
@@ -40,7 +40,7 @@ Route::prefix('auth')->group(function () {
 
 Route::get('/user', function (Request $request) {
     return $request->user();
-})->middleware(['auth:sanctum', 'ability:profile:read', 'throttle:api']);
+})->middleware(['auth:sanctum', 'ability.dual:profile:read', 'throttle:api']);
 
 Route::post('/token/rotate', [TokenController::class, 'rotate'])
     ->middleware(['auth:sanctum', 'throttle:api-write']);

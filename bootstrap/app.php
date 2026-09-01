@@ -1,6 +1,9 @@
 <?php
 
 use App\Exceptions\PaymentIntentConflictException;
+use App\Http\Middleware\CheckSessionOrTokenAbility;
+use App\Http\Middleware\CheckTokenAbilities;
+use App\Http\Middleware\CheckTokenForAnyAbility;
 use App\Http\Middleware\CorrelationIdMiddleware;
 use App\Http\Middleware\EnsureIdempotentWrite;
 use App\Http\Middleware\EnsureIsMember;
@@ -18,8 +21,6 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Laravel\Sanctum\Http\Middleware\CheckAbilities;
-use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -61,8 +62,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'abilities' => CheckAbilities::class,
-            'ability' => CheckForAnyAbility::class,
+            'abilities' => CheckTokenAbilities::class,
+            'ability' => CheckTokenForAnyAbility::class,
+            'ability.dual' => CheckSessionOrTokenAbility::class,
             'idempotent' => EnsureIdempotentWrite::class,
             'member' => EnsureIsMember::class,
             'member.active' => \App\Http\Middleware\EnsureMemberFullyActive::class,

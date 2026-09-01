@@ -84,6 +84,17 @@ class TokenAbilityResolver
         }
 
         if ($this->canAny($user, [
+            PermissionEnum::EMPLOYEE_VIEW_ALL->value,
+            PermissionEnum::EMPLOYEE_VIEW_UNIT->value,
+        ])) {
+            $abilities[] = 'employee-documents:read';
+        }
+
+        if ($user->can(PermissionEnum::EMPLOYEE_EDIT->value)) {
+            $abilities[] = 'employee-documents:write';
+        }
+
+        if ($this->canAny($user, [
             PermissionEnum::WORK_ORDER_VIEW_ALL->value,
             PermissionEnum::WORK_ORDER_VIEW_UNIT->value,
             PermissionEnum::WORK_ORDER_MANAGE->value,
@@ -100,6 +111,7 @@ class TokenAbilityResolver
             PermissionEnum::COOPERATIVE_REPORT_VIEW->value,
             PermissionEnum::COOPERATIVE_VIEW_ALL->value,
             PermissionEnum::POS_REPORTS_VIEW->value,
+            PermissionEnum::REPORTS_VIEW->value,
         ])) {
             $abilities[] = 'reports:read';
         }
@@ -273,7 +285,8 @@ class TokenAbilityResolver
                 || str_starts_with($ability, 'cooperative.')
                 || str_starts_with($ability, 'cooperative:')
                 || str_starts_with($ability, 'pos:')
-                || str_starts_with($ability, 'reports:');
+                || str_starts_with($ability, 'reports:')
+                || str_starts_with($ability, 'employee-documents:');
         }));
     }
 }

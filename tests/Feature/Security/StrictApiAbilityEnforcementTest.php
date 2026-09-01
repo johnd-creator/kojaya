@@ -13,6 +13,8 @@ use App\Models\User;
 use App\Services\Auth\TokenIssuanceService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class StrictApiAbilityEnforcementTest extends TestCase
@@ -517,6 +519,8 @@ class StrictApiAbilityEnforcementTest extends TestCase
 
     public function test_employee_documents_are_strictly_scoped_to_authorized_organization(): void
     {
+        Storage::fake('public');
+
         $orgA = Organization::factory()->create();
         $orgB = Organization::factory()->create();
 
@@ -526,18 +530,38 @@ class StrictApiAbilityEnforcementTest extends TestCase
         $employeeA = Employee::factory()->create(['organization_id' => $orgA->id]);
         $employeeB = Employee::factory()->create(['organization_id' => $orgB->id]);
 
+        $certA = EmployeeCertificate::query()->create([
+            'employee_id' => $employeeA->id,
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-A-001',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ]);
+
+        $mcuA = MedicalCheckup::query()->create([
+            'employee_id' => $employeeA->id,
+            'checkup_date' => '2026-01-01',
+            'result' => 'FIT',
+        ]);
+
+        $existingCertBPath = 'certificates/'.$employeeB->id.'/original_cert.pdf';
+        Storage::disk('public')->put($existingCertBPath, 'original cert content');
         $certB = EmployeeCertificate::query()->create([
             'employee_id' => $employeeB->id,
             'certificate_type' => 'TRAINING',
             'certificate_number' => 'CERT-B-001',
             'issue_date' => '2026-01-01',
             'status' => 'VALID',
+            'document_path' => $existingCertBPath,
         ]);
 
+        $existingMcuBPath = 'mcu/'.$employeeB->id.'/original_mcu.png';
+        Storage::disk('public')->put($existingMcuBPath, 'original mcu image content');
         $mcuB = MedicalCheckup::query()->create([
             'employee_id' => $employeeB->id,
             'checkup_date' => '2026-01-01',
             'result' => 'FIT',
+            'document_path' => $existingMcuBPath,
         ]);
 
         $token = app(TokenIssuanceService::class)->issue($hrUserA, TokenApp::ADMIN, 'HR Device A');
@@ -549,7 +573,7 @@ class StrictApiAbilityEnforcementTest extends TestCase
         $this->getJson("/api/employees/{$employeeA->id}/mcu")->assertOk();
         $this->postJson("/api/employees/{$employeeA->id}/certificates", [
             'certificate_type' => 'TRAINING',
-            'certificate_number' => 'CERT-A-001',
+            'certificate_number' => 'CERT-A-002',
             'issue_date' => '2026-01-01',
             'status' => 'VALID',
         ])->assertCreated();
@@ -557,6 +581,25 @@ class StrictApiAbilityEnforcementTest extends TestCase
             'checkup_date' => '2026-01-01',
             'result' => 'FIT',
         ])->assertCreated();
+
+        // Same-org upload positive control
+        $certAFile = UploadedFile::fake()->create('valid_cert_a.pdf', 100, 'application/pdf');
+        $uploadCertAResponse = $this->postJson("/api/employees/{$employeeA->id}/certificates/{$certA->id}/upload", [
+            'document' => $certAFile,
+        ]);
+        $uploadCertAResponse->assertOk();
+        $uploadedCertAPath = $certA->fresh()->document_path;
+        $this->assertNotNull($uploadedCertAPath);
+        Storage::disk('public')->assertExists($uploadedCertAPath);
+
+        $mcuAFile = UploadedFile::fake()->image('valid_mcu_a.png');
+        $uploadMcuAResponse = $this->postJson("/api/employees/{$employeeA->id}/mcu/{$mcuA->id}/upload", [
+            'document' => $mcuAFile,
+        ]);
+        $uploadMcuAResponse->assertOk();
+        $uploadedMcuAPath = $mcuA->fresh()->document_path;
+        $this->assertNotNull($uploadedMcuAPath);
+        Storage::disk('public')->assertExists($uploadedMcuAPath);
 
         // 2. Employee B (foreign org) read -> denied / 404 Not Found
         $this->getJson("/api/employees/{$employeeB->id}/certificates")->assertNotFound();
@@ -585,14 +628,32 @@ class StrictApiAbilityEnforcementTest extends TestCase
         ])->assertNotFound();
         $this->deleteJson("/api/employees/{$employeeB->id}/mcu/{$mcuB->id}")->assertNotFound();
 
-        // 4. Foreign records in Org B remain completely unchanged
+        // 4. Employee B (foreign org) upload file replacement -> denied / 404 Not Found
+        $maliciousCertFile = UploadedFile::fake()->create('malicious_cert.pdf', 100, 'application/pdf');
+        $this->postJson("/api/employees/{$employeeB->id}/certificates/{$certB->id}/upload", [
+            'document' => $maliciousCertFile,
+        ])->assertNotFound();
+
+        $maliciousMcuFile = UploadedFile::fake()->image('malicious_mcu.png');
+        $this->postJson("/api/employees/{$employeeB->id}/mcu/{$mcuB->id}/upload", [
+            'document' => $maliciousMcuFile,
+        ])->assertNotFound();
+
+        // 5. Foreign records in Org B remain completely unchanged in database & storage
         $this->assertDatabaseHas('employee_certificates', [
             'id' => $certB->id,
             'certificate_number' => 'CERT-B-001',
+            'document_path' => $existingCertBPath,
         ]);
         $this->assertDatabaseHas('medical_checkups', [
             'id' => $mcuB->id,
             'result' => 'FIT',
+            'document_path' => $existingMcuBPath,
         ]);
+
+        Storage::disk('public')->assertExists($existingCertBPath);
+        Storage::disk('public')->assertExists($existingMcuBPath);
+        $this->assertSame('original cert content', Storage::disk('public')->get($existingCertBPath));
+        $this->assertSame('original mcu image content', Storage::disk('public')->get($existingMcuBPath));
     }
 }

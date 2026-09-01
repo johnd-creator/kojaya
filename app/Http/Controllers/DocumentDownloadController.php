@@ -49,10 +49,23 @@ class DocumentDownloadController extends Controller
             abort(401, 'Link download tidak valid atau sudah kadaluarsa.');
         }
 
-        if (! $request->user()->can('view_employee_all')
-            && ! $request->user()->can('view_employee_unit')
+        if (! $request->user()?->can('view_employee_all')
+            && ! $request->user()?->can('view_employee_unit')
         ) {
             abort(403);
+        }
+
+        $employee = app(\App\Services\Authorization\OrganizationScopeService::class)
+            ->scopeVisibleTo(Employee::query(), $request->user())
+            ->where('id', $mcu->employee_id)
+            ->first();
+
+        if (! $employee) {
+            abort(404);
+        }
+
+        if ($mcu->employee_id !== $employee->id) {
+            abort(404);
         }
 
         if (! $mcu->document_path) {
@@ -61,10 +74,13 @@ class DocumentDownloadController extends Controller
 
         $this->logDownload($request, 'mcu', $mcu->id);
 
-        return Storage::disk('public')->download(
+        $ext = pathinfo($mcu->document_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $checkupDate = $mcu->checkup_date?->format('Y-m-d') ?? 'mcu';
+        $filename = "mcu-{$mcu->employee_id}-{$checkupDate}.{$ext}";
+
+        return app(\App\Services\Security\EmployeeDocumentStorage::class)->download(
             $mcu->document_path,
-            "mcu-{$mcu->employee_id}-{$mcu->checkup_date}.pdf",
-            ['Content-Type' => 'application/pdf']
+            $filename
         );
     }
 
@@ -74,14 +90,23 @@ class DocumentDownloadController extends Controller
             abort(401, 'Link download tidak valid atau sudah kadaluarsa.');
         }
 
-        if ($certificate->employee_id !== $employee->id) {
+        if (! $request->user()?->can('view_employee_all')
+            && ! $request->user()?->can('view_employee_unit')
+        ) {
+            abort(403);
+        }
+
+        $scopedEmployee = app(\App\Services\Authorization\OrganizationScopeService::class)
+            ->scopeVisibleTo(Employee::query(), $request->user())
+            ->where('id', $employee->id)
+            ->first();
+
+        if (! $scopedEmployee) {
             abort(404);
         }
 
-        if (! $request->user()->can('view_employee_all')
-            && ! $request->user()->can('view_employee_unit')
-        ) {
-            abort(403);
+        if ($certificate->employee_id !== $scopedEmployee->id) {
+            abort(404);
         }
 
         if (! $certificate->document_path) {
@@ -90,10 +115,13 @@ class DocumentDownloadController extends Controller
 
         $this->logDownload($request, 'certificate', $certificate->id);
 
-        return Storage::disk('public')->download(
+        $ext = pathinfo($certificate->document_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $type = $certificate->certificate_type?->value ?? 'certificate';
+        $filename = "cert-{$type}-{$scopedEmployee->id}.{$ext}";
+
+        return app(\App\Services\Security\EmployeeDocumentStorage::class)->download(
             $certificate->document_path,
-            "cert-{$certificate->certificate_type}-{$employee->id}.pdf",
-            ['Content-Type' => 'application/pdf']
+            $filename
         );
     }
 

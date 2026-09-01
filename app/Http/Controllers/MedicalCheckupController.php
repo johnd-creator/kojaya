@@ -7,11 +7,14 @@ use App\Http\Requests\StoreMedicalCheckupRequest;
 use App\Http\Requests\UpdateMedicalCheckupRequest;
 use App\Http\Requests\UploadEmployeeDocumentRequest;
 use App\Http\Resources\MedicalCheckupResource;
+use App\Models\DownloadLog;
 use App\Models\Employee;
 use App\Services\Authorization\OrganizationScopeService;
+use App\Services\Security\EmployeeDocumentStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MedicalCheckupController extends Controller
 {
@@ -62,9 +65,8 @@ class MedicalCheckupController extends Controller
             ->medicalCheckups()
             ->findOrFail($id);
 
-        // Delete document if exists
         if ($mcu->document_path) {
-            Storage::disk('public')->delete($mcu->document_path);
+            app(EmployeeDocumentStorage::class)->delete($mcu->document_path);
         }
 
         $mcu->delete();
@@ -79,27 +81,50 @@ class MedicalCheckupController extends Controller
     {
         $request->validated();
 
-        $mcu = $this->resolveEmployee($request, $employeeId)
-            ->medicalCheckups()
-            ->findOrFail($id);
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $mcu = $employee->medicalCheckups()->findOrFail($id);
 
-        // Delete old document if exists
-        if ($mcu->document_path) {
-            Storage::disk('public')->delete($mcu->document_path);
-        }
-
-        $path = $request->file('document')->store('mcu/'.$employeeId, 'public');
-
-        $mcu->update(['document_path' => $path]);
+        $storage = app(EmployeeDocumentStorage::class);
+        $path = $storage->replace(
+            $request->file('document'),
+            EmployeeDocumentStorage::PREFIX_MCU,
+            $employeeId,
+            $mcu->document_path,
+            function (string $newPath) use ($mcu) {
+                $mcu->update(['document_path' => $newPath]);
+            }
+        );
 
         return response()->json([
             'success' => true,
             'message' => 'Document uploaded successfully',
             'data' => [
                 'document_path' => $path,
-                'document_url' => Storage::disk('public')->url($path),
+                'has_document' => true,
+                'document_download_url' => route('api.employees.mcu.document', [
+                    'employeeId' => $employeeId,
+                    'id' => $id,
+                ]),
             ],
         ]);
+    }
+
+    public function downloadDocument(Request $request, string $employeeId, string $id): StreamedResponse|Response
+    {
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $mcu = $employee->medicalCheckups()->findOrFail($id);
+
+        if (! $mcu->document_path) {
+            abort(404, 'Medical checkup document not found.');
+        }
+
+        $ext = pathinfo($mcu->document_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $checkupDate = $mcu->checkup_date?->format('Y-m-d') ?? 'mcu';
+        $filename = "mcu-{$employee->id}-{$checkupDate}.{$ext}";
+
+        $this->logDownload($request, 'mcu', $mcu->id);
+
+        return app(EmployeeDocumentStorage::class)->download($mcu->document_path, $filename);
     }
 
     protected function resolveEmployee(Request $request, string $employeeId): Employee
@@ -107,5 +132,21 @@ class MedicalCheckupController extends Controller
         return app(OrganizationScopeService::class)
             ->scopeVisibleTo(Employee::query(), $request->user())
             ->findOrFail($employeeId);
+    }
+
+    protected function logDownload(Request $request, string $type, int|string $documentId): void
+    {
+        try {
+            if ($request->user()) {
+                DownloadLog::query()->create([
+                    'user_id' => $request->user()->id,
+                    'document_type' => $type,
+                    'document_id' => (int) $documentId,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+        } catch (\Throwable) {
+        }
     }
 }

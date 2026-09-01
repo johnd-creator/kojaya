@@ -11,7 +11,11 @@ import {
   File,
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { fetchCertificates, deleteCertificate } from "@/api/certificates.ts";
+import {
+  fetchCertificates,
+  deleteCertificate,
+  downloadCertificateDocument,
+} from "@/api/certificates.ts";
 import CertificateBadge from "@/components/Status/CertificateBadge.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
 const certificates = ref<EmployeeCertificate[]>([]);
 const loading = ref(false);
 const deletingId = ref<string | null>(null);
+const viewingId = ref<string | null>(null);
 const currentPage = ref(1);
 const perPage = ref(10);
 const total = ref(0);
@@ -108,7 +113,7 @@ const fetchList = async () => {
   try {
     const response = await fetchCertificates(props.employeeId);
     certificates.value = response.data;
-    total.value = response.meta.total;
+    total.value = response.meta?.total ?? response.data.length;
   } catch (error) {
     console.error("Failed to fetch certificates:", error);
   } finally {
@@ -128,6 +133,25 @@ const handleDelete = async (id: string) => {
   }
 };
 
+const handleViewDocument = async (certificate: EmployeeCertificate) => {
+  viewingId.value = certificate.id;
+  try {
+    const blob = await downloadCertificateDocument(
+      props.employeeId,
+      certificate.id,
+    );
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 60000);
+  } catch (error) {
+    console.error("Failed to download certificate document:", error);
+  } finally {
+    viewingId.value = null;
+  }
+};
+
 const openUpload = (certificateId: string) => {
   router.visit(
     `/employees/${props.employeeId}/certificates/${certificateId}/upload`,
@@ -142,18 +166,6 @@ const openEdit = (certificateId: string) => {
   router.visit(
     `/employees/${props.employeeId}/certificates/${certificateId}/edit`,
   );
-};
-
-const getDocumentUrl = (path: string | null): string | null => {
-  if (!path) return null;
-  return `/storage/${path}`;
-};
-
-const getDocumentIcon = (path: string | null): string => {
-  if (!path) return "FileText";
-  const ext = path.split(".").pop()?.toLowerCase();
-  if (ext === "pdf") return "File";
-  return "Image";
 };
 
 onMounted(() => {
@@ -278,13 +290,8 @@ onMounted(() => {
                 {{ certificate.document_path ? "Replace" : "Upload" }} Document
               </DropdownMenuItem>
               <DropdownMenuItem
-                v-if="certificate.document_path"
-                @click="
-                  window.open(
-                    getDocumentUrl(certificate.document_path),
-                    '_blank',
-                  )
-                "
+                v-if="certificate.document_path || certificate.has_document"
+                @click="handleViewDocument(certificate)"
               >
                 <File class="mr-2 h-4 w-4" />
                 View Document

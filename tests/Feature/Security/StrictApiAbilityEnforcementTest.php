@@ -520,6 +520,7 @@ class StrictApiAbilityEnforcementTest extends TestCase
     public function test_employee_documents_are_strictly_scoped_to_authorized_organization(): void
     {
         Storage::fake('public');
+        Storage::fake('employee_documents');
 
         $orgA = Organization::factory()->create();
         $orgB = Organization::factory()->create();
@@ -582,7 +583,7 @@ class StrictApiAbilityEnforcementTest extends TestCase
             'result' => 'FIT',
         ])->assertCreated();
 
-        // Same-org upload positive control
+        // Same-org upload positive control (stored on private employee_documents disk)
         $certAFile = UploadedFile::fake()->create('valid_cert_a.pdf', 100, 'application/pdf');
         $uploadCertAResponse = $this->postJson("/api/employees/{$employeeA->id}/certificates/{$certA->id}/upload", [
             'document' => $certAFile,
@@ -590,7 +591,8 @@ class StrictApiAbilityEnforcementTest extends TestCase
         $uploadCertAResponse->assertOk();
         $uploadedCertAPath = $certA->fresh()->document_path;
         $this->assertNotNull($uploadedCertAPath);
-        Storage::disk('public')->assertExists($uploadedCertAPath);
+        Storage::disk('employee_documents')->assertExists($uploadedCertAPath);
+        Storage::disk('public')->assertMissing($uploadedCertAPath);
 
         $mcuAFile = UploadedFile::fake()->image('valid_mcu_a.png');
         $uploadMcuAResponse = $this->postJson("/api/employees/{$employeeA->id}/mcu/{$mcuA->id}/upload", [
@@ -599,7 +601,8 @@ class StrictApiAbilityEnforcementTest extends TestCase
         $uploadMcuAResponse->assertOk();
         $uploadedMcuAPath = $mcuA->fresh()->document_path;
         $this->assertNotNull($uploadedMcuAPath);
-        Storage::disk('public')->assertExists($uploadedMcuAPath);
+        Storage::disk('employee_documents')->assertExists($uploadedMcuAPath);
+        Storage::disk('public')->assertMissing($uploadedMcuAPath);
 
         // 2. Employee B (foreign org) read -> denied / 404 Not Found
         $this->getJson("/api/employees/{$employeeB->id}/certificates")->assertNotFound();

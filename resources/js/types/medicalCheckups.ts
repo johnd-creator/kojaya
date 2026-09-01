@@ -9,6 +9,9 @@ export interface MedicalCheckup {
   fit_to_work: boolean;
   notes: string | null;
   document_path: string | null;
+  document_url?: string | null;
+  has_document?: boolean;
+  document_download_url?: string | null;
   doctor_name: string | null;
   clinic_name: string | null;
   created_at: string;

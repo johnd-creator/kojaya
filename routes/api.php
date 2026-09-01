@@ -234,6 +234,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('employees/{employee
     Route::get('/certificates', [EmployeeCertificateController::class, 'index'])->middleware('ability:employee-documents:read');
     Route::post('/certificates', [EmployeeCertificateController::class, 'store'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
     Route::get('/certificates/{id}', [EmployeeCertificateController::class, 'show'])->middleware('ability:employee-documents:read');
+    Route::get('/certificates/{id}/document', [EmployeeCertificateController::class, 'downloadDocument'])->name('api.employees.certificates.document')->middleware('ability:employee-documents:read');
     Route::put('/certificates/{id}', [EmployeeCertificateController::class, 'update'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
     Route::delete('/certificates/{id}', [EmployeeCertificateController::class, 'destroy'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
     Route::post('/certificates/{id}/upload', [EmployeeCertificateController::class, 'uploadDocument'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
@@ -244,6 +245,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('employees/{employee
     Route::get('/mcu', [MedicalCheckupController::class, 'index'])->middleware('ability:employee-documents:read');
     Route::post('/mcu', [MedicalCheckupController::class, 'store'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
     Route::get('/mcu/{id}', [MedicalCheckupController::class, 'show'])->middleware('ability:employee-documents:read');
+    Route::get('/mcu/{id}/document', [MedicalCheckupController::class, 'downloadDocument'])->name('api.employees.mcu.document')->middleware('ability:employee-documents:read');
     Route::put('/mcu/{id}', [MedicalCheckupController::class, 'update'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
     Route::delete('/mcu/{id}', [MedicalCheckupController::class, 'destroy'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);
     Route::post('/mcu/{id}/upload', [MedicalCheckupController::class, 'uploadDocument'])->middleware(['ability:employee-documents:write', 'throttle:api-write']);

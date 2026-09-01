@@ -208,12 +208,29 @@ class MemberTokenAbilityTest extends TestCase
         $this->assertContains('employee-documents:read', $readAbilities);
         $this->assertNotContains('employee-documents:write', $readAbilities);
 
-        $writeOnlyUser = User::factory()->create();
-        $writeOnlyUser->givePermissionTo('create_employee');
+        $editUser = User::factory()->create();
+        $editUser->givePermissionTo('edit_employee');
 
-        $writeAbilities = app(TokenAbilityResolver::class)->for($writeOnlyUser, 'admin');
-        $this->assertNotContains('employee-documents:read', $writeAbilities);
-        $this->assertContains('employee-documents:write', $writeAbilities);
+        $editAbilities = app(TokenAbilityResolver::class)->for($editUser, 'admin');
+        $this->assertNotContains('employee-documents:read', $editAbilities);
+        $this->assertContains('employee-documents:write', $editAbilities);
+    }
+
+    public function test_create_or_delete_employee_permissions_alone_do_not_grant_employee_documents_write(): void
+    {
+        $createUserOnly = User::factory()->create();
+        $createUserOnly->givePermissionTo('create_employee');
+
+        $createAbilities = app(TokenAbilityResolver::class)->for($createUserOnly, 'admin');
+        $this->assertNotContains('employee-documents:write', $createAbilities);
+        $this->assertNotContains('employee-documents:read', $createAbilities);
+
+        $deleteUserOnly = User::factory()->create();
+        $deleteUserOnly->givePermissionTo('delete_employee');
+
+        $deleteAbilities = app(TokenAbilityResolver::class)->for($deleteUserOnly, 'admin');
+        $this->assertNotContains('employee-documents:write', $deleteAbilities);
+        $this->assertNotContains('employee-documents:read', $deleteAbilities);
     }
 
     public function test_non_admin_token_apps_do_not_receive_employee_document_abilities(): void

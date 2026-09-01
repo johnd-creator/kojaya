@@ -90,11 +90,7 @@ class TokenAbilityResolver
             $abilities[] = 'employee-documents:read';
         }
 
-        if ($this->canAny($user, [
-            PermissionEnum::EMPLOYEE_EDIT->value,
-            PermissionEnum::EMPLOYEE_CREATE->value,
-            PermissionEnum::EMPLOYEE_DELETE->value,
-        ])) {
+        if ($user->can(PermissionEnum::EMPLOYEE_EDIT->value)) {
             $abilities[] = 'employee-documents:write';
         }
 

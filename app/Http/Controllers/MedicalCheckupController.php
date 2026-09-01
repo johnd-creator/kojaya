@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateMedicalCheckupRequest;
 use App\Http\Requests\UploadEmployeeDocumentRequest;
 use App\Http\Resources\MedicalCheckupResource;
 use App\Models\Employee;
-use App\Models\MedicalCheckup;
+use App\Services\Authorization\OrganizationScopeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +19,7 @@ class MedicalCheckupController extends Controller
 
     public function index(Request $request, string $employeeId)
     {
-        $mcuRecords = Employee::findOrFail($employeeId)
+        $mcuRecords = $this->resolveEmployee($request, $employeeId)
             ->medicalCheckups()
             ->orderBy('checkup_date', 'desc')
             ->paginate($this->apiPageSize($request));
@@ -29,16 +29,17 @@ class MedicalCheckupController extends Controller
 
     public function store(StoreMedicalCheckupRequest $request, string $employeeId)
     {
-        $employee = Employee::findOrFail($employeeId);
+        $employee = $this->resolveEmployee($request, $employeeId);
 
         $mcu = $employee->medicalCheckups()->create($request->validated());
 
         return new MedicalCheckupResource($mcu);
     }
 
-    public function show(string $employeeId, string $id)
+    public function show(Request $request, string $employeeId, string $id)
     {
-        $mcu = MedicalCheckup::where('employee_id', $employeeId)
+        $mcu = $this->resolveEmployee($request, $employeeId)
+            ->medicalCheckups()
             ->findOrFail($id);
 
         return new MedicalCheckupResource($mcu);
@@ -46,7 +47,8 @@ class MedicalCheckupController extends Controller
 
     public function update(UpdateMedicalCheckupRequest $request, string $employeeId, string $id)
     {
-        $mcu = MedicalCheckup::where('employee_id', $employeeId)
+        $mcu = $this->resolveEmployee($request, $employeeId)
+            ->medicalCheckups()
             ->findOrFail($id);
 
         $mcu->update($request->validated());
@@ -54,9 +56,10 @@ class MedicalCheckupController extends Controller
         return new MedicalCheckupResource($mcu);
     }
 
-    public function destroy(string $employeeId, string $id): JsonResponse
+    public function destroy(Request $request, string $employeeId, string $id): JsonResponse
     {
-        $mcu = MedicalCheckup::where('employee_id', $employeeId)
+        $mcu = $this->resolveEmployee($request, $employeeId)
+            ->medicalCheckups()
             ->findOrFail($id);
 
         // Delete document if exists
@@ -76,7 +79,8 @@ class MedicalCheckupController extends Controller
     {
         $request->validated();
 
-        $mcu = MedicalCheckup::where('employee_id', $employeeId)
+        $mcu = $this->resolveEmployee($request, $employeeId)
+            ->medicalCheckups()
             ->findOrFail($id);
 
         // Delete old document if exists
@@ -96,5 +100,12 @@ class MedicalCheckupController extends Controller
                 'document_url' => Storage::disk('public')->url($path),
             ],
         ]);
+    }
+
+    protected function resolveEmployee(Request $request, string $employeeId): Employee
+    {
+        return app(OrganizationScopeService::class)
+            ->scopeVisibleTo(Employee::query(), $request->user())
+            ->findOrFail($employeeId);
     }
 }

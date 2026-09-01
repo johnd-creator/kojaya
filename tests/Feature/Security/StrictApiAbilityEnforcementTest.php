@@ -6,6 +6,8 @@ use App\Enums\ApiErrorCode;
 use App\Enums\TokenApp;
 use App\Models\CooperativeMember;
 use App\Models\Employee;
+use App\Models\EmployeeCertificate;
+use App\Models\MedicalCheckup;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Auth\TokenIssuanceService;
@@ -476,5 +478,121 @@ class StrictApiAbilityEnforcementTest extends TestCase
         $this->getJson('/api/user')
             ->assertOk()
             ->assertJsonPath('id', $this->memberUser->id);
+    }
+
+    public function test_create_or_delete_employee_permissions_do_not_grant_document_write_ability(): void
+    {
+        $employee = Employee::factory()->create(['organization_id' => $this->organization->id]);
+
+        // 1. User with create_employee only
+        $createUserOnly = User::factory()->create(['organization_id' => $this->organization->id]);
+        $createUserOnly->givePermissionTo('create_employee');
+        $createToken = app(TokenIssuanceService::class)->issue($createUserOnly, TokenApp::ADMIN, 'Create Device');
+        $this->assertNotContains('employee-documents:write', $createToken->accessToken->abilities);
+        $this->assertNotContains('employee-documents:read', $createToken->accessToken->abilities);
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($createToken->plainTextToken);
+        $this->postJson("/api/employees/{$employee->id}/certificates", [
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-UNAUTH-1',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ])->assertForbidden();
+
+        // 2. User with delete_employee only
+        $deleteUserOnly = User::factory()->create(['organization_id' => $this->organization->id]);
+        $deleteUserOnly->givePermissionTo('delete_employee');
+        $deleteToken = app(TokenIssuanceService::class)->issue($deleteUserOnly, TokenApp::ADMIN, 'Delete Device');
+        $this->assertNotContains('employee-documents:write', $deleteToken->accessToken->abilities);
+        $this->assertNotContains('employee-documents:read', $deleteToken->accessToken->abilities);
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($deleteToken->plainTextToken);
+        $this->postJson("/api/employees/{$employee->id}/mcu", [
+            'checkup_date' => '2026-01-01',
+            'result' => 'FIT',
+        ])->assertForbidden();
+    }
+
+    public function test_employee_documents_are_strictly_scoped_to_authorized_organization(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+
+        $hrUserA = User::factory()->create(['organization_id' => $orgA->id]);
+        $hrUserA->givePermissionTo(['view_employee_unit', 'edit_employee']);
+
+        $employeeA = Employee::factory()->create(['organization_id' => $orgA->id]);
+        $employeeB = Employee::factory()->create(['organization_id' => $orgB->id]);
+
+        $certB = EmployeeCertificate::query()->create([
+            'employee_id' => $employeeB->id,
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-B-001',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ]);
+
+        $mcuB = MedicalCheckup::query()->create([
+            'employee_id' => $employeeB->id,
+            'checkup_date' => '2026-01-01',
+            'result' => 'FIT',
+        ]);
+
+        $token = app(TokenIssuanceService::class)->issue($hrUserA, TokenApp::ADMIN, 'HR Device A');
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token->plainTextToken);
+
+        // 1. Employee A (same org) read & write -> allowed
+        $this->getJson("/api/employees/{$employeeA->id}/certificates")->assertOk();
+        $this->getJson("/api/employees/{$employeeA->id}/mcu")->assertOk();
+        $this->postJson("/api/employees/{$employeeA->id}/certificates", [
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-A-001',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ])->assertCreated();
+        $this->postJson("/api/employees/{$employeeA->id}/mcu", [
+            'checkup_date' => '2026-01-01',
+            'result' => 'FIT',
+        ])->assertCreated();
+
+        // 2. Employee B (foreign org) read -> denied / 404 Not Found
+        $this->getJson("/api/employees/{$employeeB->id}/certificates")->assertNotFound();
+        $this->getJson("/api/employees/{$employeeB->id}/certificates/{$certB->id}")->assertNotFound();
+        $this->getJson("/api/employees/{$employeeB->id}/mcu")->assertNotFound();
+        $this->getJson("/api/employees/{$employeeB->id}/mcu/{$mcuB->id}")->assertNotFound();
+
+        // 3. Employee B (foreign org) write mutations -> denied / 404 Not Found
+        $this->postJson("/api/employees/{$employeeB->id}/certificates", [
+            'certificate_type' => 'TRAINING',
+            'certificate_number' => 'CERT-MALICIOUS',
+            'issue_date' => '2026-01-01',
+            'status' => 'VALID',
+        ])->assertNotFound();
+        $this->putJson("/api/employees/{$employeeB->id}/certificates/{$certB->id}", [
+            'certificate_number' => 'CERT-TAMPERED',
+        ])->assertNotFound();
+        $this->deleteJson("/api/employees/{$employeeB->id}/certificates/{$certB->id}")->assertNotFound();
+
+        $this->postJson("/api/employees/{$employeeB->id}/mcu", [
+            'checkup_date' => '2026-01-01',
+            'result' => 'UNFIT',
+        ])->assertNotFound();
+        $this->putJson("/api/employees/{$employeeB->id}/mcu/{$mcuB->id}", [
+            'result' => 'UNFIT',
+        ])->assertNotFound();
+        $this->deleteJson("/api/employees/{$employeeB->id}/mcu/{$mcuB->id}")->assertNotFound();
+
+        // 4. Foreign records in Org B remain completely unchanged
+        $this->assertDatabaseHas('employee_certificates', [
+            'id' => $certB->id,
+            'certificate_number' => 'CERT-B-001',
+        ]);
+        $this->assertDatabaseHas('medical_checkups', [
+            'id' => $mcuB->id,
+            'result' => 'FIT',
+        ]);
     }
 }

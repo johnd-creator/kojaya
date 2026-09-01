@@ -4,9 +4,32 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** July 17, 2026
+**Last Updated:** September 1, 2026
 
-## 🎯 2026-08-29 - Backup & Disaster Recovery Safety V1 (KOJAYA-P0-BACKUP-DR-SAFETY-V1)
+## 🎯 2026-09-01 - Sensitive Employee File Storage Hardening (SEC-P0-03)
+
+- Migrated employee certificates (SIO K3, training licenses) and medical checkup (MCU) documents to a dedicated private filesystem disk `employee_documents` located at `storage/app/private/employee-documents` (`visibility => private`).
+- Created `App\Services\Security\EmployeeDocumentStorage` to centralize all employee document write, replacement, deletion, and authorized download streaming with secure headers (`X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`).
+- Added authenticated, ability-enforced, organization-scoped API download endpoints (`GET /api/employees/{employeeId}/certificates/{id}/document` and `GET /api/employees/{employeeId}/mcu/{id}/document`) requiring `ability:employee-documents:read`.
+- Updated `EmployeeCertificateResource` and `MedicalCheckupResource` to eliminate unauthenticated `/storage/` URLs, returning `document_download_url` and `has_document`.
+- Updated Vue components (`CertificateList.vue`, `McuList.vue`) and API clients to fetch private documents via authenticated blob downloads.
+- Hardened web signed download routes (`DocumentDownloadController`) with `OrganizationScopeService` resolution and 404 on mismatched records.
+- Implemented safe, idempotent migration CLI command `php artisan security:migrate-employee-documents-private` with size and SHA-256 integrity verification.
+- Added comprehensive security test suite `SensitiveEmployeeFileStorageTest` covering 27 test scenarios.
+
+## 🎯 2026-09-01 - Strict API Token Ability Boundaries (SEC-P0-02)
+
+- Enforced strict token ability checks on all token-required API endpoints (`ability:NAME`), preventing browser sessions without token grants or wildcard tokens from executing scoped API operations.
+- Separated public, session-allowed (`/api/user`, `/api/auth/session`), and token-required API route groups.
+- Added multi-tenant organization scoping tests and regression coverage.
+
+## 🎯 2026-08-31 - Dashboard Month-Overflow Test Flake Fix (CI-HOTFIX-01)
+
+- Fixed Carbon month arithmetic overflow in `DashboardTest` on month-end dates by using explicit anchor dates (`now()->startOfMonth()`).
+
+## 🎯 2026-08-31 - Payment Webhook Fail-Closed Security (SEC-P0-01)
+
+- Hardened Midtrans payment gateway webhook handlers with fail-closed cryptographic signature verification and legacy simulation prevention.
 
 - Built fail-closed native PostgreSQL logical backup system with `pg_dump --format=custom`.
 - Added cryptographic SHA-256 integrity metadata and versioned JSON backup manifests (`.json` and `.sha256`) capturing database engine, server version, environment, Git commit SHA, row counts, and off-site copy status.

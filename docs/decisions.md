@@ -1346,5 +1346,48 @@ Production operations require verifiable data protection, disaster recovery, and
 - Real restore capabilities are continuously validated in isolated CI with disposable databases.
 - Follow-up work will implement Layer 4 continuous WAL archiving (pgBackRest) for Point-in-Time Recovery (PITR).
 
+---
+
+## 🎯 ADR-035: Sensitive Employee Document Private Storage and Authorized Download Boundary (SEC-P0-03)
+
+**Status:** ✅ Accepted
+**Date:** September 1, 2026
+**Deciders:** Security & Core Engineering Teams
+
+### Context
+
+Previously, employee certificates (SIO K3, training licenses) and medical check-up (MCU) reports were uploaded to the `public` storage disk and generated direct `/storage/*` URLs. Because the `public/storage` symlink exposes files without web application authentication or authorization, any actor knowing or guessing the storage file path could access sensitive employee documents, medical records, and PII.
+
+### Decision
+
+1. **Private Filesystem Disk Isolation:**
+   - Introduced a dedicated private filesystem disk `employee_documents` located at `storage_path('app/private/employee-documents')` with `'visibility' => 'private'`.
+   - Global default disk `FILESYSTEM_DISK` and the public storage symlink (`public/storage`) remain unchanged for non-sensitive public assets (such as product images).
+2. **Centralized Storage Service (`EmployeeDocumentStorage`):**
+   - All write, replace, read, delete, and download operations for employee certificates (`certificates/{employeeId}/...`) and medical check-ups (`mcu/{employeeId}/...`) are routed exclusively through `App\Services\Security\EmployeeDocumentStorage`.
+   - Disallows path traversal (`..`), absolute paths, and unauthorized directory prefixes.
+   - Enforces a 2-step safe replacement pattern (write to private disk, verify write, update DB, remove previous file only after DB success, delete newly created orphan on DB failure).
+3. **Authorized API Download Endpoints:**
+   - Added dedicated download endpoints:
+     - `GET /api/employees/{employeeId}/certificates/{id}/document`
+     - `GET /api/employees/{employeeId}/mcu/{id}/document`
+   - Requires `auth:sanctum` and `ability:employee-documents:read`.
+   - Scoped strictly to the employee's organization via `OrganizationScopeService`. Mismatched employee or child records return 404 (preventing resource enumeration).
+4. **Hardened Web Signed Downloads:**
+   - Web download routes (`download.certificate` and `download.mcu`) enforce signature validity, role/permission verification (`view_employee_all` or `view_employee_unit`), and organization scoping via `OrganizationScopeService` with 404 on mismatched records.
+5. **API Resources & Frontend Alignment:**
+   - `EmployeeCertificateResource` and `MedicalCheckupResource` remove direct `Storage::disk('public')->url(...)` (`'document_url' => null`), replacing it with `'has_document' => !empty($this->document_path)` and `'document_download_url' => route(...)`.
+   - Vue components (`CertificateList.vue` and `McuList.vue`) and TS API clients perform authenticated blob downloads rather than opening unauthenticated `/storage/*` links.
+6. **Safe, Idempotent Migration Command:**
+   - Implemented `php artisan security:migrate-employee-documents-private` (`--execute`, `--cleanup`, `--force`).
+   - Supports dry-run inspection by default, chunks records, verifies file size and SHA-256 checksums before copying or cleaning up legacy public copies.
+
+### Consequences
+
+- Sensitive employee documents and medical records are completely isolated from unauthenticated web access.
+- API and web downloads enforce strict authentication, ability checking, and tenant organizational isolation.
+- Existing legacy files can be safely migrated to private storage without downtime.
+
+
 
 

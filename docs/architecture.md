@@ -584,12 +584,31 @@ Backend didesain dari awal untuk mendukung mobile apps:
 
 ---
 
+## 🔒 Storage & Security Boundaries (SEC-P0-03)
+
+### Filesystem Disk Segmentation
+To protect sensitive employee documents and PII from unauthorized web access:
+- **`employee_documents` (Private Disk):**
+  - Path: `storage/app/private/employee-documents`
+  - Visibility: `private`
+  - Scope: Employee certificates (`certificates/{employeeId}/...`) and medical checkup records (`mcu/{employeeId}/...`).
+  - Access Model: Strictly authenticated through `EmployeeDocumentStorage`, requiring token ability `employee-documents:read`, organization scope resolution via `OrganizationScopeService`, and served via streaming binary responses with security headers (`X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`).
+- **`public` (Public Disk):**
+  - Path: `storage/app/public` (symlinked to `public/storage`)
+  - Visibility: `public`
+  - Scope: Non-sensitive public assets only (e.g., product catalog images, public branding).
+  - Rule: Sensitive ERP documents, payroll records, employee certificates, and medical records MUST NEVER be stored on or served via the public disk.
+
+---
+
 ## 🔮 Future Architecture Improvements
 
 ### **Short Term (3-6 months)**
-- [ ] Add OpenAPI/Swagger documentation
+- [x] Add OpenAPI/Swagger documentation (`bin/openapi.sh`)
 - [x] Implement rate limiting (3-tier: api 60/min, api-write 30/min, login 5/min)
 - [x] Add automated testing coverage (53 factories, 1000+ test methods)
+- [x] Strict API Token Ability Boundaries (SEC-P0-02)
+- [x] Sensitive Employee Document Private Storage Hardening (SEC-P0-03)
 - [ ] Database query optimization
 - [ ] Redis caching implementation
 - [x] **Kojayaku Architecture** - Flutter app architecture docs completed (see `docs/flutter/`)
@@ -601,7 +620,7 @@ Backend didesain dari awal untuk mendukung mobile apps:
 - [ ] Real-time notifications (WebSocket/SSE)
 - [ ] Advanced analytics dashboard
 - [ ] **Kojayaku Flutter App** - Native Android/iOS apps (architecture docs ready)
-- [ ] **Payment Gateway Integration** - Midtrans/Xendit untuk Kojayaku payments
+- [x] **Payment Gateway Integration** - Midtrans sandbox with fail-closed security (SEC-P0-01)
 - [ ] **Push Notifications** - Firebase/WhatsApp untuk member notifications
 - [ ] **ESS API** - Attendance clock-in/out, leave requests, overtime, payslips untuk mobile
 
@@ -614,4 +633,5 @@ Backend didesain dari awal untuk mendukung mobile apps:
 
 ---
 
-*Last Updated: May 17, 2026*
+*Last Updated: September 1, 2026*
+

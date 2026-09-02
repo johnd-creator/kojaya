@@ -109,13 +109,15 @@ class EmployeeDocumentStorage
 
         try {
             $onUpdateDb($newPath);
-        } catch (Throwable $e) {
-            try {
-                $this->deleteFileFromDisk(Storage::disk(self::DISK), $newPath);
-            } catch (Throwable) {
-                // Ignore deletion error of orphan
+        } catch (Throwable $dbUpdateException) {
+            $cleanResult = $this->deleteFileFromDisk(Storage::disk(self::DISK), $newPath);
+            if (! $cleanResult['state']->isConfirmedAbsent()) {
+                $orphanException = $cleanResult['exception'] ?? $dbUpdateException;
+                $orphanMessage = "Database update failed for new document [{$newPath}] and failed to verify deletion of discarded new document from private storage (unresolved private orphan).";
+                throw new RuntimeException($orphanMessage, previous: $dbUpdateException);
             }
-            throw $e;
+
+            throw $dbUpdateException;
         }
 
         if ($previousPath && $previousPath !== $newPath) {
@@ -128,7 +130,17 @@ class EmployeeDocumentStorage
             }
 
             // Cleanup failed or is ambiguous. Check if an old copy remains confirmed present, readable, and integrity-verified.
-            $oldConfirmed = $this->isConfirmedPresentAndReadable($previousPath, $prefix, $employeeIdStr, $previousEvidence);
+            // Mandatory evidence requirement: previousEvidence === null strictly prohibits DB rollback.
+            $oldConfirmed = false;
+            if ($previousEvidence !== null) {
+                $oldConfirmed = $this->isConfirmedPresentAndReadable(
+                    $previousPath,
+                    $prefix,
+                    $employeeIdStr,
+                    $previousEvidence,
+                    requireEvidence: true
+                );
+            }
 
             if ($oldConfirmed) {
                 $reverted = false;
@@ -246,34 +258,29 @@ class EmployeeDocumentStorage
         $privateDisk = Storage::disk(self::DISK);
         $publicDisk = Storage::disk(self::LEGACY_DISK);
 
-        // Pre-check existence on both disks
-        $hasPrivate = false;
+        // Pre-check presence on public disk: ConfirmedPresent, ConfirmedAbsent, or Unknown
+        $publicPresence = DocumentCleanupState::Unknown;
         try {
-            if ($privateDisk->exists($previousPath)) {
-                $privContent = $privateDisk->get($previousPath);
-                if (is_string($privContent) && strlen($privContent) > 0) {
-                    $hasPrivate = true;
-                }
-            }
+            $publicPresence = $publicDisk->exists($previousPath)
+                ? DocumentCleanupState::ConfirmedPresent
+                : DocumentCleanupState::ConfirmedAbsent;
         } catch (Throwable) {
-            $hasPrivate = false;
+            $publicPresence = DocumentCleanupState::Unknown;
         }
 
-        $hasPublic = false;
+        // Pre-check presence on private disk: ConfirmedPresent, ConfirmedAbsent, or Unknown
+        $privatePresence = DocumentCleanupState::Unknown;
         try {
-            if ($publicDisk->exists($previousPath)) {
-                $pubContent = $publicDisk->get($previousPath);
-                if (is_string($pubContent) && strlen($pubContent) > 0) {
-                    $hasPublic = true;
-                }
-            }
+            $privatePresence = $privateDisk->exists($previousPath)
+                ? DocumentCleanupState::ConfirmedPresent
+                : DocumentCleanupState::ConfirmedAbsent;
         } catch (Throwable) {
-            $hasPublic = false;
+            $privatePresence = DocumentCleanupState::Unknown;
         }
 
         // Materialize and verify a private safety copy of a legacy-only previous document before attempting public cleanup
         $materializedPrivate = false;
-        if ($hasPublic && ! $hasPrivate) {
+        if ($publicPresence !== DocumentCleanupState::ConfirmedAbsent && ! $privatePresence->isConfirmedPresent()) {
             try {
                 $content = $publicDisk->get($previousPath);
                 if (is_string($content) && strlen($content) > 0) {
@@ -281,27 +288,27 @@ class EmployeeDocumentStorage
                     if ($written && $privateDisk->exists($previousPath)) {
                         $readBack = $privateDisk->get($previousPath);
                         if ($readBack === $content) {
-                            $hasPrivate = true;
                             $materializedPrivate = true;
+                            $privatePresence = DocumentCleanupState::ConfirmedPresent;
                         }
                     }
                 }
             } catch (Throwable) {
-                // Materialization failed; $hasPrivate remains false
+                // Materialization failed; continue with independent cleanup
             }
         }
 
-        // 1. Delete from legacy public disk if present
+        // 1. Delete from legacy public disk if present or unknown
         $publicResult = [
             'state' => DocumentCleanupState::ConfirmedAbsent,
             'exception' => null,
         ];
-        if ($hasPublic) {
+        if ($publicPresence !== DocumentCleanupState::ConfirmedAbsent) {
             $publicResult = $this->deleteFileFromDisk($publicDisk, $previousPath);
         }
 
-        // 2. Delete from private disk ONLY if public cleanup succeeded (ConfirmedAbsent).
-        // If public cleanup failed (ConfirmedPresent or Unknown), preserve the private copy so rollback can use it!
+        // 2. Delete from private disk ONLY if public cleanup reached ConfirmedAbsent.
+        // If public cleanup failed or is unknown (ConfirmedPresent or Unknown), preserve the private copy!
         $privateResult = [
             'state' => DocumentCleanupState::ConfirmedAbsent,
             'exception' => null,
@@ -310,24 +317,21 @@ class EmployeeDocumentStorage
         $publicState = $publicResult['state'];
 
         if ($publicState->isConfirmedAbsent()) {
-            $shouldCleanPrivate = $hasPrivate || $materializedPrivate;
-            if (! $shouldCleanPrivate) {
-                try {
-                    $shouldCleanPrivate = (bool) $privateDisk->exists($previousPath);
-                } catch (Throwable) {
-                    $shouldCleanPrivate = true;
-                }
-            }
-
+            $shouldCleanPrivate = $materializedPrivate || $privatePresence !== DocumentCleanupState::ConfirmedAbsent;
             if ($shouldCleanPrivate) {
                 $privateResult = $this->deleteFileFromDisk($privateDisk, $previousPath);
             }
         } else {
             // Public cleanup failed or is unknown.
-            // Do NOT delete the private safety copy!
-            if ($hasPrivate || $materializedPrivate) {
+            // Preserve the private safety copy if it was present or materialized!
+            if ($materializedPrivate || $privatePresence->isConfirmedPresent()) {
                 $privateResult = [
                     'state' => DocumentCleanupState::ConfirmedPresent,
+                    'exception' => null,
+                ];
+            } else {
+                $privateResult = [
+                    'state' => $privatePresence,
                     'exception' => null,
                 ];
             }
@@ -466,8 +470,13 @@ class EmployeeDocumentStorage
         string $path,
         ?string $expectedPrefix = null,
         string|int|null $expectedEmployeeId = null,
-        ?array $expectedEvidence = null
+        ?array $expectedEvidence = null,
+        bool $requireEvidence = false
     ): bool {
+        if ($requireEvidence && $expectedEvidence === null) {
+            return false;
+        }
+
         try {
             if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
                 $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);

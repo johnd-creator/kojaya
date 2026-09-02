@@ -6,6 +6,22 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 2, 2026
 
+## 🎯 2026-09-02 - Fail-Closed Public Presence and Mandatory Rollback Evidence (SEC-P0-03 R6)
+
+- Separated physical file presence from content readability and non-zero size in `EmployeeDocumentStorage::cleanupPreviousDocument()`:
+  - Tracked presence independently (`exists() === true` => `ConfirmedPresent`, `exists() === false` => `ConfirmedAbsent`, `exists()` throws => `Unknown`).
+  - Required cleanup via `deleteFileFromDisk()` whenever public presence is `ConfirmedPresent` or `Unknown`, preventing premature `ConfirmedAbsent` claims due to read failures, empty content, or missing evidence.
+  - Guaranteed replacement never returns clean success while an old public file remains present or unverified.
+- Enforced mandatory pre-cleanup integrity evidence (`previousEvidence !== null`) before permitting database rollback, preventing rollback when pre-cleanup evidence could not be captured.
+- Verified orphan cleanup on initial database update failure (`$onUpdateDb($newPath)`): inspected `deleteFileFromDisk($newPath)` and surfaced explicit unresolved private orphans while preserving the original DB update exception as the root cause.
+- Expanded `SensitiveEmployeeFileStorageTest` with regression tests for:
+  - Public `exists() === true` with `get()` throwing (both delete success and delete failure cases).
+  - Public `exists() === true` with 0-byte content (both delete success and delete failure cases).
+  - Public existence pre-check throwing.
+  - Public content/readability modifying between evidence capture and cleanup.
+  - Rollback prohibition when evidence capture failed.
+  - Initial DB update failure orphan deletion returning false or throwing on post-delete check.
+
 ## 🎯 2026-09-02 - Complete Verified Rollback Safety (SEC-P0-03 R5)
 
 - Implemented pre-cleanup integrity evidence capture (`captureDocumentEvidence`) recording byte size and cryptographic SHA-256 hash of the previous document.

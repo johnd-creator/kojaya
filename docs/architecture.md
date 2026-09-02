@@ -599,6 +599,16 @@ To protect sensitive employee documents and PII from unauthorized web access:
   - Scope: Non-sensitive public assets only (e.g., product catalog images, public branding).
   - Rule: Sensitive ERP documents, payroll records, employee certificates, and medical records MUST NEVER be stored on or served via the public disk.
 
+### Operational Migration Lifecycle States
+The SEC-P0-03 hardening operates under six documented lifecycle states:
+1. **Code Deployed; New Uploads Private:** Code deployed; new files stored on `employee_documents`.
+2. **Legacy Fallback Active:** `EmployeeDocumentStorage` resolves existing public files during the migration window.
+3. **Copy Migration Verified:** `php artisan security:migrate-employee-documents-private --execute` copies legacy files with checksum verification.
+4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms absence.
+5. **Orphan Inventory Resolved:** Unreferenced public orphan files (accounting for soft-deleted records via `withTrashed()`) are inventoried and reconciled.
+6. **SEC-P0-03 Operationally Closed:** Zero unresolved legacy files or orphans remain, and migration command completes with success.
+
+
 ---
 
 ## 🔮 Future Architecture Improvements

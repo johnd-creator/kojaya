@@ -13,8 +13,10 @@ use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Security\EmployeeDocumentStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class EmployeeCertificateController extends Controller
 {
@@ -61,12 +63,27 @@ class EmployeeCertificateController extends Controller
 
     public function destroy(Request $request, string $employeeId, string $id): JsonResponse
     {
-        $certificate = $this->resolveEmployee($request, $employeeId)
-            ->certificates()
-            ->findOrFail($id);
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $certificate = $employee->certificates()->findOrFail($id);
 
         if ($certificate->document_path) {
-            app(EmployeeDocumentStorage::class)->delete($certificate->document_path);
+            try {
+                app(EmployeeDocumentStorage::class)->delete(
+                    $certificate->document_path,
+                    EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                    $employeeId
+                );
+            } catch (InvalidArgumentException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid document path or ownership mismatch.',
+                ], 400);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to securely delete document file. Please retry.',
+                ], 500);
+            }
         }
 
         $certificate->delete();
@@ -118,13 +135,36 @@ class EmployeeCertificateController extends Controller
             abort(404, 'Certificate document not found.');
         }
 
+        $storage = app(EmployeeDocumentStorage::class);
+
+        try {
+            $storage->validateOwnedPath(
+                $certificate->document_path,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employeeId
+            );
+        } catch (InvalidArgumentException) {
+            abort(404, 'Certificate document not found.');
+        }
+
+        if (! $storage->exists($certificate->document_path, EmployeeDocumentStorage::PREFIX_CERTIFICATES, $employeeId)) {
+            abort(404, 'Certificate document not found.');
+        }
+
         $ext = pathinfo($certificate->document_path, PATHINFO_EXTENSION) ?: 'pdf';
         $type = $certificate->certificate_type?->value ?? 'certificate';
         $filename = "cert-{$type}-{$employee->id}.{$ext}";
 
+        $response = $storage->download(
+            $certificate->document_path,
+            $filename,
+            EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+            $employeeId
+        );
+
         $this->logDownload($request, 'certificate', $certificate->id);
 
-        return app(EmployeeDocumentStorage::class)->download($certificate->document_path, $filename);
+        return $response;
     }
 
     protected function resolveEmployee(Request $request, string $employeeId): Employee
@@ -146,7 +186,7 @@ class EmployeeCertificateController extends Controller
                     'user_agent' => $request->userAgent(),
                 ]);
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
     }
 }

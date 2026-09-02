@@ -13,8 +13,10 @@ use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Security\EmployeeDocumentStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class MedicalCheckupController extends Controller
 {
@@ -61,12 +63,27 @@ class MedicalCheckupController extends Controller
 
     public function destroy(Request $request, string $employeeId, string $id): JsonResponse
     {
-        $mcu = $this->resolveEmployee($request, $employeeId)
-            ->medicalCheckups()
-            ->findOrFail($id);
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $mcu = $employee->medicalCheckups()->findOrFail($id);
 
         if ($mcu->document_path) {
-            app(EmployeeDocumentStorage::class)->delete($mcu->document_path);
+            try {
+                app(EmployeeDocumentStorage::class)->delete(
+                    $mcu->document_path,
+                    EmployeeDocumentStorage::PREFIX_MCU,
+                    $employeeId
+                );
+            } catch (InvalidArgumentException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid document path or ownership mismatch.',
+                ], 400);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to securely delete document file. Please retry.',
+                ], 500);
+            }
         }
 
         $mcu->delete();
@@ -118,13 +135,36 @@ class MedicalCheckupController extends Controller
             abort(404, 'Medical checkup document not found.');
         }
 
+        $storage = app(EmployeeDocumentStorage::class);
+
+        try {
+            $storage->validateOwnedPath(
+                $mcu->document_path,
+                EmployeeDocumentStorage::PREFIX_MCU,
+                $employeeId
+            );
+        } catch (InvalidArgumentException) {
+            abort(404, 'Medical checkup document not found.');
+        }
+
+        if (! $storage->exists($mcu->document_path, EmployeeDocumentStorage::PREFIX_MCU, $employeeId)) {
+            abort(404, 'Medical checkup document not found.');
+        }
+
         $ext = pathinfo($mcu->document_path, PATHINFO_EXTENSION) ?: 'pdf';
         $checkupDate = $mcu->checkup_date?->format('Y-m-d') ?? 'mcu';
         $filename = "mcu-{$employee->id}-{$checkupDate}.{$ext}";
 
+        $response = $storage->download(
+            $mcu->document_path,
+            $filename,
+            EmployeeDocumentStorage::PREFIX_MCU,
+            $employeeId
+        );
+
         $this->logDownload($request, 'mcu', $mcu->id);
 
-        return app(EmployeeDocumentStorage::class)->download($mcu->document_path, $filename);
+        return $response;
     }
 
     protected function resolveEmployee(Request $request, string $employeeId): Employee
@@ -146,7 +186,7 @@ class MedicalCheckupController extends Controller
                     'user_agent' => $request->userAgent(),
                 ]);
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
     }
 }

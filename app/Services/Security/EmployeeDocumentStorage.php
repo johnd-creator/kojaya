@@ -29,65 +29,73 @@ class EmployeeDocumentStorage
     ];
 
     /**
-     * Allowed mime types to extension mappings.
+     * Allowed MIME types for sensitive employee documents.
      */
-    public const MIME_MAP = [
-        'pdf' => 'application/pdf',
-        'jpg' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
+    public const ALLOWED_MIMES = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
     ];
 
     /**
      * Store a new certificate privately for an employee.
      */
-    public function storeCertificate(UploadedFile $file, string $employeeId): string
+    public function storeCertificate(UploadedFile $file, string|int $employeeId): string
     {
-        return $this->store($file, self::PREFIX_CERTIFICATES, $employeeId);
+        return $this->store($file, self::PREFIX_CERTIFICATES, (string) $employeeId);
     }
 
     /**
      * Store a new medical checkup document privately for an employee.
      */
-    public function storeMcu(UploadedFile $file, string $employeeId): string
+    public function storeMcu(UploadedFile $file, string|int $employeeId): string
     {
-        return $this->store($file, self::PREFIX_MCU, $employeeId);
+        return $this->store($file, self::PREFIX_MCU, (string) $employeeId);
     }
 
     /**
      * Store a file under the given prefix and employee directory on the private disk.
      */
-    public function store(UploadedFile $file, string $prefix, string $employeeId): string
+    public function store(UploadedFile $file, string $prefix, string|int $employeeId): string
     {
-        $this->validatePrefixAndEmployeeId($prefix, $employeeId);
+        $employeeIdStr = (string) $employeeId;
+        $this->validatePrefixAndEmployeeId($prefix, $employeeIdStr);
 
-        $path = $file->store($prefix.'/'.$employeeId, self::DISK);
+        $path = $file->store($prefix.'/'.$employeeIdStr, self::DISK);
 
         if (! $path || ! Storage::disk(self::DISK)->exists($path)) {
             throw new RuntimeException('Failed to write employee document to private storage.');
         }
+
+        $this->validateOwnedPath($path, $prefix, $employeeIdStr);
 
         return $path;
     }
 
     /**
      * Replace document safely:
-     * 1. write new file to private disk
-     * 2. verify the write
-     * 3. execute DB update callback ($onUpdateDb)
-     * 4. remove previous file only after DB update succeeds
-     * 5. remove newly created orphan if DB update fails
+     * 1. validate previous path ownership if provided
+     * 2. write new file to private disk
+     * 3. verify the write
+     * 4. execute DB update callback ($onUpdateDb)
+     * 5. remove previous file only after DB update succeeds
+     * 6. remove newly created orphan if DB update fails
      */
     public function replace(
         UploadedFile $file,
         string $prefix,
-        string $employeeId,
+        string|int $employeeId,
         ?string $previousPath,
         callable $onUpdateDb
     ): string {
-        $this->validatePrefixAndEmployeeId($prefix, $employeeId);
+        $employeeIdStr = (string) $employeeId;
+        $this->validatePrefixAndEmployeeId($prefix, $employeeIdStr);
 
-        $newPath = $this->store($file, $prefix, $employeeId);
+        if ($previousPath) {
+            $this->validateOwnedPath($previousPath, $prefix, $employeeIdStr);
+        }
+
+        $newPath = $this->store($file, $prefix, $employeeIdStr);
 
         try {
             $onUpdateDb($newPath);
@@ -97,7 +105,7 @@ class EmployeeDocumentStorage
         }
 
         if ($previousPath && $previousPath !== $newPath) {
-            $this->delete($previousPath);
+            $this->delete($previousPath, $prefix, $employeeIdStr);
         }
 
         return $newPath;
@@ -105,39 +113,76 @@ class EmployeeDocumentStorage
 
     /**
      * Safely delete a file from private storage (and legacy public storage if present).
+     * Validates ownership and fails closed if deletion cannot be confirmed absent.
      */
-    public function delete(?string $path): void
+    public function delete(?string $path, ?string $expectedPrefix = null, string|int|null $expectedEmployeeId = null): void
     {
         if (! $path) {
             return;
         }
 
-        $this->validatePath($path);
-
-        if (Storage::disk(self::DISK)->exists($path)) {
-            Storage::disk(self::DISK)->delete($path);
+        if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
+            $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);
+        } else {
+            $this->validatePath($path);
         }
 
-        if (Storage::disk(self::LEGACY_DISK)->exists($path)) {
-            Storage::disk(self::LEGACY_DISK)->delete($path);
+        // 1. Delete and verify legacy public copy first
+        $publicDisk = Storage::disk(self::LEGACY_DISK);
+        if ($publicDisk->exists($path)) {
+            $deletedPublic = $publicDisk->delete($path);
+            if (! $deletedPublic || $publicDisk->exists($path)) {
+                throw new RuntimeException("Failed to securely delete public document file for path [{$path}].");
+            }
+        }
+
+        // 2. Delete and verify private copy
+        $privateDisk = Storage::disk(self::DISK);
+        if ($privateDisk->exists($path)) {
+            $deletedPrivate = $privateDisk->delete($path);
+            if (! $deletedPrivate || $privateDisk->exists($path)) {
+                throw new RuntimeException("Failed to securely delete private document file for path [{$path}].");
+            }
         }
     }
 
     /**
-     * Resolve and return a download response with secure headers.
+     * Resolve and return a download response with secure headers and verified MIME.
      */
-    public function download(string $path, ?string $filename = null): StreamedResponse|Response
-    {
-        $this->validatePath($path);
+    public function download(
+        string $path,
+        ?string $filename = null,
+        ?string $expectedPrefix = null,
+        string|int|null $expectedEmployeeId = null
+    ): StreamedResponse|Response {
+        if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
+            $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);
+        } else {
+            $this->validatePath($path);
+        }
 
-        $disk = $this->resolveDiskForPath($path);
+        $disk = $this->resolveDiskForPath($path, $expectedPrefix, $expectedEmployeeId);
 
         if (! $disk) {
             abort(404, 'Document file not found.');
         }
 
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $mimeType = self::MIME_MAP[$extension] ?? (Storage::disk($disk)->mimeType($path) ?: 'application/octet-stream');
+        // MIME validation: inspect actual file magic bytes and allow only whitelisted types; otherwise fallback to application/octet-stream
+        $actualMime = null;
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $contents = Storage::disk($disk)->get($path);
+                $actualMime = finfo_buffer($finfo, (string) $contents);
+                finfo_close($finfo);
+            }
+        }
+
+        if (! $actualMime) {
+            $actualMime = Storage::disk($disk)->mimeType($path);
+        }
+
+        $mimeType = in_array($actualMime, self::ALLOWED_MIMES, true) ? $actualMime : 'application/octet-stream';
 
         $downloadFilename = $filename ?: basename($path);
 
@@ -152,12 +197,16 @@ class EmployeeDocumentStorage
     /**
      * Check if a document exists on private or legacy disk.
      */
-    public function exists(string $path): bool
+    public function exists(string $path, ?string $expectedPrefix = null, string|int|null $expectedEmployeeId = null): bool
     {
         try {
-            $this->validatePath($path);
+            if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
+                $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);
+            } else {
+                $this->validatePath($path);
+            }
 
-            return (bool) $this->resolveDiskForPath($path);
+            return (bool) $this->resolveDiskForPath($path, $expectedPrefix, $expectedEmployeeId);
         } catch (Throwable) {
             return false;
         }
@@ -166,9 +215,13 @@ class EmployeeDocumentStorage
     /**
      * Determine which disk contains the document (prefers private, falls back to legacy public during migration).
      */
-    public function resolveDiskForPath(string $path): ?string
+    public function resolveDiskForPath(string $path, ?string $expectedPrefix = null, string|int|null $expectedEmployeeId = null): ?string
     {
-        $this->validatePath($path);
+        if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
+            $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);
+        } else {
+            $this->validatePath($path);
+        }
 
         if (Storage::disk(self::DISK)->exists($path)) {
             return self::DISK;
@@ -182,7 +235,28 @@ class EmployeeDocumentStorage
     }
 
     /**
-     * Validate path for path traversal, absolute path, or invalid directory prefix.
+     * Ownership-aware validation.
+     */
+    public function validateOwnedPath(string $path, string $expectedPrefix, string|int $expectedEmployeeId): void
+    {
+        $this->validatePath($path);
+
+        $employeeIdStr = (string) $expectedEmployeeId;
+        $segments = explode('/', trim($path));
+
+        $prefix = $segments[0];
+        if ($prefix !== $expectedPrefix) {
+            throw new InvalidArgumentException("Document path prefix [{$prefix}] does not match expected prefix [{$expectedPrefix}].");
+        }
+
+        $employeeIdSegment = $segments[1];
+        if ($employeeIdSegment !== $employeeIdStr) {
+            throw new InvalidArgumentException("Document path employee ID [{$employeeIdSegment}] does not match expected employee ID [{$employeeIdStr}].");
+        }
+    }
+
+    /**
+     * Validate path for path traversal, absolute path, empty segments, or invalid directory prefix.
      */
     public function validatePath(string $path): void
     {
@@ -196,13 +270,27 @@ class EmployeeDocumentStorage
         }
 
         $segments = explode('/', $trimmed);
-        if (count($segments) < 3) {
+        if (count($segments) !== 3) {
             throw new InvalidArgumentException('Document path does not match required structure {prefix}/{employeeId}/{filename}.');
+        }
+
+        if (in_array('', $segments, true) || in_array('.', $segments, true) || in_array('..', $segments, true)) {
+            throw new InvalidArgumentException('Document path contains empty or invalid directory segments.');
         }
 
         $prefix = $segments[0];
         if (! in_array($prefix, self::ALLOWED_PREFIXES, true)) {
             throw new InvalidArgumentException("Prefix [{$prefix}] is not allowed for employee documents.");
+        }
+
+        $employeeId = $segments[1];
+        if ($employeeId === '' || str_contains($employeeId, '..') || str_contains($employeeId, '/') || str_contains($employeeId, '\\')) {
+            throw new InvalidArgumentException('Invalid employee ID in document path.');
+        }
+
+        $filename = $segments[2];
+        if ($filename === '' || str_contains($filename, '/') || str_contains($filename, '\\') || $filename === '.' || $filename === '..') {
+            throw new InvalidArgumentException('Invalid filename in document path.');
         }
     }
 

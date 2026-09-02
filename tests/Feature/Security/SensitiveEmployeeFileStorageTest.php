@@ -7,6 +7,7 @@ use App\Enums\McuResult;
 use App\Enums\TokenApp;
 use App\Http\Resources\EmployeeCertificateResource;
 use App\Http\Resources\MedicalCheckupResource;
+use App\Models\DownloadLog;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
 use App\Models\MedicalCheckup;
@@ -260,8 +261,8 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             'document_path' => "mcu/{$employeeB->id}/mcu_b.pdf",
         ]);
 
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($certB->document_path, 'secret B cert');
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($mcuB->document_path, 'secret B mcu');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certB->document_path, '%PDF-1.4 secret B cert');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($mcuB->document_path, '%PDF-1.4 secret B mcu');
 
         $token = app(TokenIssuanceService::class)->issue($userA, TokenApp::ADMIN, 'HR Device A');
         $this->withToken($token->plainTextToken);
@@ -282,7 +283,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $cert2 = $this->createCertificate($employee2->id, [
             'document_path' => "certificates/{$employee2->id}/cert2.pdf",
         ]);
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($cert2->document_path, 'cert2 content');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($cert2->document_path, '%PDF-1.4 cert2 content');
 
         $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Reader');
         $this->withToken($token->plainTextToken);
@@ -303,7 +304,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $mcu2 = $this->createMcu($employee2->id, [
             'document_path' => "mcu/{$employee2->id}/mcu2.pdf",
         ]);
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($mcu2->document_path, 'mcu2 content');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($mcu2->document_path, '%PDF-1.4 mcu2 content');
 
         $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Reader');
         $this->withToken($token->plainTextToken);
@@ -367,14 +368,16 @@ class SensitiveEmployeeFileStorageTest extends TestCase
 
         // 1. JPEG certificate
         $jpgPath = "certificates/{$employee->id}/photo.jpg";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($jpgPath, 'fake-jpg-bytes');
+        $jpgBytes = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xFF\xDB\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0C\x14\r\x0C\x0B\x0B\x0C\x19\x12\x13\x0F\x14\x1D\x1A\x1F\x1E\x1D\x1A\x1C\x1C $.\' \",#\x1C\x1C(7),01444\x1F\'9=82<.342\xFF\xC0\x00\x0B\x08\x00\x01\x00\x01\x01\x01\x11\x00\xFF\xDA\x00\x08\x01\x01\x00\x00?\x00\xBF\x00\xFF\xD9";
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($jpgPath, $jpgBytes);
         $cert = $this->createCertificate($employee->id, [
             'document_path' => $jpgPath,
         ]);
 
         // 2. PNG MCU
         $pngPath = "mcu/{$employee->id}/scan.png";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($pngPath, 'fake-png-bytes');
+        $pngBytes = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82";
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($pngPath, $pngBytes);
         $mcu = $this->createMcu($employee->id, [
             'document_path' => $pngPath,
         ]);
@@ -423,7 +426,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $employee = Employee::factory()->create(['organization_id' => $org->id]);
 
         $oldPath = "certificates/{$employee->id}/old_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, 'old content');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, '%PDF-1.4 old content');
 
         $cert = $this->createCertificate($employee->id, [
             'document_path' => $oldPath,
@@ -450,7 +453,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
     {
         $employeeId = '123';
         $oldPath = "certificates/{$employeeId}/existing.pdf";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, 'preserved content');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, '%PDF-1.4 preserved content');
 
         $storage = app(EmployeeDocumentStorage::class);
         $newFile = UploadedFile::fake()->create('new.pdf', 100, 'application/pdf');
@@ -472,7 +475,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
 
         $this->assertTrue($exceptionThrown);
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($oldPath));
-        $this->assertSame('preserved content', Storage::disk(EmployeeDocumentStorage::DISK)->get($oldPath));
+        $this->assertSame('%PDF-1.4 preserved content', Storage::disk(EmployeeDocumentStorage::DISK)->get($oldPath));
 
         // Check that any newly stored orphan file was cleaned up
         $allFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employeeId}");
@@ -487,7 +490,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $employee = Employee::factory()->create(['organization_id' => $org->id]);
 
         $certPath = "certificates/{$employee->id}/to_delete.pdf";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($certPath, 'to delete');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certPath, '%PDF-1.4 to delete');
         $cert = $this->createCertificate($employee->id, [
             'document_path' => $certPath,
         ]);
@@ -510,7 +513,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
 
         $employeeB = Employee::factory()->create(['organization_id' => $orgB->id]);
         $certPath = "certificates/{$employeeB->id}/b_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($certPath, 'intact B cert');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certPath, '%PDF-1.4 intact B cert');
         $certB = $this->createCertificate($employeeB->id, [
             'certificate_number' => 'CERT-B-ORIG',
             'document_path' => $certPath,
@@ -539,14 +542,14 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             'document_path' => $certPath,
         ]);
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($certPath));
-        $this->assertSame('intact B cert', Storage::disk(EmployeeDocumentStorage::DISK)->get($certPath));
+        $this->assertSame('%PDF-1.4 intact B cert', Storage::disk(EmployeeDocumentStorage::DISK)->get($certPath));
     }
 
     public function test_migration_dry_run_performs_no_copy_or_delete(): void
     {
         $employee = Employee::factory()->create();
         $path = "certificates/{$employee->id}/legacy_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, 'legacy content');
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 legacy content');
 
         $this->createCertificate($employee->id, [
             'document_path' => $path,
@@ -564,7 +567,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
     {
         $employee = Employee::factory()->create();
         $path = "certificates/{$employee->id}/legacy_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, 'legacy binary bytes');
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 legacy binary bytes');
 
         $this->createCertificate($employee->id, [
             'document_path' => $path,
@@ -574,7 +577,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             ->assertExitCode(0);
 
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
-        $this->assertSame('legacy binary bytes', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+        $this->assertSame('%PDF-1.4 legacy binary bytes', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
         // Source is preserved when --cleanup is not requested
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($path));
     }
@@ -583,7 +586,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
     {
         $employee = Employee::factory()->create();
         $path = "certificates/{$employee->id}/legacy_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, 'sample bytes');
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 sample bytes');
 
         $this->createCertificate($employee->id, [
             'document_path' => $path,
@@ -599,15 +602,15 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             ->assertExitCode(0);
 
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
-        $this->assertSame('sample bytes', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+        $this->assertSame('%PDF-1.4 sample bytes', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
     }
 
     public function test_migration_conflict_fails_closed_and_does_not_overwrite_or_delete_either_copy(): void
     {
         $employee = Employee::factory()->create();
         $path = "certificates/{$employee->id}/conflicting.pdf";
-        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, 'source content A');
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, 'different destination content B');
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 source content A');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, '%PDF-1.4 different destination content B');
 
         $this->createCertificate($employee->id, [
             'document_path' => $path,
@@ -616,15 +619,15 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $this->artisan('security:migrate-employee-documents-private', ['--execute' => true])
             ->assertExitCode(1);
 
-        $this->assertSame('source content A', Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->get($path));
-        $this->assertSame('different destination content B', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+        $this->assertSame('%PDF-1.4 source content A', Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->get($path));
+        $this->assertSame('%PDF-1.4 different destination content B', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
     }
 
     public function test_cleanup_deletes_only_a_verified_public_source(): void
     {
         $employee = Employee::factory()->create();
         $path = "certificates/{$employee->id}/cleanup_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, 'cleanup content');
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 cleanup content');
 
         $this->createCertificate($employee->id, [
             'document_path' => $path,
@@ -637,7 +640,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         ])->assertExitCode(0);
 
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
-        $this->assertSame('cleanup content', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+        $this->assertSame('%PDF-1.4 cleanup content', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
         $this->assertFalse(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($path));
     }
 
@@ -661,13 +664,14 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $employeeB = Employee::factory()->create(['organization_id' => $orgB->id]);
 
         $certAPath = "certificates/{$employeeA->id}/valid_cert.png";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($certAPath, 'png image bytes');
+        $pngBytes = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82";
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certAPath, $pngBytes);
         $certA = $this->createCertificate($employeeA->id, [
             'document_path' => $certAPath,
         ]);
 
         $certBPath = "certificates/{$employeeB->id}/foreign_cert.pdf";
-        Storage::disk(EmployeeDocumentStorage::DISK)->put($certBPath, 'pdf bytes');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certBPath, '%PDF-1.4 pdf bytes');
         $certB = $this->createCertificate($employeeB->id, [
             'document_path' => $certBPath,
         ]);
@@ -683,7 +687,7 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $responseA->assertOk();
         $responseA->assertHeader('Content-Type', 'image/png');
         $responseA->assertHeader('X-Content-Type-Options', 'nosniff');
-        $this->assertSame('png image bytes', $responseA->streamedContent());
+        $this->assertSame($pngBytes, $responseA->streamedContent());
 
         // 2. Foreign-organization signed download -> 404 Not Found
         $foreignSignedUrl = URL::temporarySignedRoute(
@@ -697,5 +701,379 @@ class SensitiveEmployeeFileStorageTest extends TestCase
 
         // 3. Invalid signature -> 403
         $this->actingAs($userA)->get("/download/certificate/{$employeeA->id}/{$certA->id}")->assertForbidden();
+    }
+
+    // ==========================================
+    // R2 MANDATORY TESTS
+    // ==========================================
+
+    public function test_certificate_for_employee_a_pointing_to_employee_b_path_is_rejected(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match expected employee ID');
+        $storage->validateOwnedPath('certificates/999/cert.pdf', EmployeeDocumentStorage::PREFIX_CERTIFICATES, '100');
+    }
+
+    public function test_mcu_for_employee_a_pointing_to_employee_b_path_is_rejected(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match expected employee ID');
+        $storage->validateOwnedPath('mcu/888/mcu.pdf', EmployeeDocumentStorage::PREFIX_MCU, '200');
+    }
+
+    public function test_certificate_pointing_to_mcu_prefix_is_rejected(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match expected prefix');
+        $storage->validateOwnedPath('mcu/100/cert.pdf', EmployeeDocumentStorage::PREFIX_CERTIFICATES, '100');
+    }
+
+    public function test_mcu_pointing_to_certificates_prefix_is_rejected(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('does not match expected prefix');
+        $storage->validateOwnedPath('certificates/200/mcu.pdf', EmployeeDocumentStorage::PREFIX_MCU, '200');
+    }
+
+    public function test_replacement_cannot_delete_another_employees_file(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $victimPath = 'certificates/victim-999/victim_cert.pdf';
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($victimPath, '%PDF-1.4 victim confidential file');
+
+        $attackerEmployeeId = 'attacker-111';
+        $file = UploadedFile::fake()->create('attacker.pdf', 100, 'application/pdf');
+
+        $this->expectException(InvalidArgumentException::class);
+
+        try {
+            $storage->replace(
+                $file,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $attackerEmployeeId,
+                $victimPath,
+                function (string $path) {}
+            );
+        } finally {
+            // Victim file must remain completely intact
+            $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($victimPath));
+            $this->assertSame('%PDF-1.4 victim confidential file', Storage::disk(EmployeeDocumentStorage::DISK)->get($victimPath));
+        }
+    }
+
+    public function test_destroy_cannot_delete_another_employees_file(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo(['edit_employee', 'view_employee_all']);
+
+        $employeeA = Employee::factory()->create(['organization_id' => $org->id]);
+        $employeeB = Employee::factory()->create(['organization_id' => $org->id]);
+
+        $victimPath = "certificates/{$employeeB->id}/victim_cert.pdf";
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($victimPath, '%PDF-1.4 victim cert content');
+
+        // Employee A's certificate is maliciously pointed to employee B's path
+        $certA = $this->createCertificate($employeeA->id, [
+            'document_path' => $victimPath,
+        ]);
+
+        $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Admin');
+        $this->withToken($token->plainTextToken);
+
+        $response = $this->deleteJson("/api/employees/{$employeeA->id}/certificates/{$certA->id}");
+        $response->assertStatus(400);
+
+        // Victim file must remain intact
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($victimPath));
+        // Database record for certA must still exist
+        $this->assertModelExists($certA);
+    }
+
+    public function test_failed_public_delete_keeps_database_record(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo(['edit_employee', 'view_employee_all']);
+
+        $employee = Employee::factory()->create(['organization_id' => $org->id]);
+        $certPath = "certificates/{$employee->id}/test_cert.pdf";
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($certPath, '%PDF-1.4 legacy cert');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certPath, '%PDF-1.4 private cert');
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $certPath,
+        ]);
+
+        // Mock public disk delete to fail
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('exists')->with($certPath)->andReturn(true);
+        $publicMock->shouldReceive('delete')->with($certPath)->andReturn(false);
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Admin');
+        $this->withToken($token->plainTextToken);
+
+        $response = $this->deleteJson("/api/employees/{$employee->id}/certificates/{$cert->id}");
+        $response->assertStatus(500);
+
+        $this->assertModelExists($cert);
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($certPath));
+    }
+
+    public function test_failed_private_delete_keeps_database_record(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo(['edit_employee', 'view_employee_all']);
+
+        $employee = Employee::factory()->create(['organization_id' => $org->id]);
+        $certPath = "certificates/{$employee->id}/test_cert.pdf";
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($certPath, '%PDF-1.4 private cert');
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $certPath,
+        ]);
+
+        // Mock private disk delete to fail
+        $privateMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::DISK))->makePartial();
+        $privateMock->shouldReceive('exists')->with($certPath)->andReturn(true);
+        $privateMock->shouldReceive('delete')->with($certPath)->andReturn(false);
+        Storage::set(EmployeeDocumentStorage::DISK, $privateMock);
+
+        $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Admin');
+        $this->withToken($token->plainTextToken);
+
+        $response = $this->deleteJson("/api/employees/{$employee->id}/certificates/{$cert->id}");
+        $response->assertStatus(500);
+
+        $this->assertModelExists($cert);
+    }
+
+    public function test_migration_delete_returning_false_produces_exit_code_1(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/cert.pdf";
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 content');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, '%PDF-1.4 content');
+
+        $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('exists')->with($path)->andReturn(true);
+        $publicMock->shouldReceive('delete')->with($path)->andReturn(false);
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $this->artisan('security:migrate-employee-documents-private', [
+            '--execute' => true,
+            '--cleanup' => true,
+            '--force' => true,
+        ])->assertExitCode(1);
+    }
+
+    public function test_public_source_still_existing_after_delete_produces_exit_code_1(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/cert.pdf";
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 content');
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, '%PDF-1.4 content');
+
+        $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        // Return true on delete but still exists
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('exists')->with($path)->andReturn(true);
+        $publicMock->shouldReceive('delete')->with($path)->andReturn(true);
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $this->artisan('security:migrate-employee-documents-private', [
+            '--execute' => true,
+            '--cleanup' => true,
+            '--force' => true,
+        ])->assertExitCode(1);
+    }
+
+    public function test_cleaned_count_increments_only_after_verified_absence(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/verified_clean.pdf";
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 clean content');
+
+        $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        $this->artisan('security:migrate-employee-documents-private', [
+            '--execute' => true,
+            '--cleanup' => true,
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Cleaned from Public Disk')
+            ->assertExitCode(0);
+
+        $this->assertFalse(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($path));
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
+    }
+
+    public function test_soft_deleted_certificate_public_file_is_inventoried(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/soft_deleted_cert.pdf";
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 soft deleted cert');
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+        $cert->delete(); // Soft-delete
+
+        $this->artisan('security:migrate-employee-documents-private', ['--execute' => true])
+            ->expectsOutputToContain('Soft-Deleted Records Inspected')
+            ->assertExitCode(0);
+
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
+        $this->assertSame('%PDF-1.4 soft deleted cert', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+    }
+
+    public function test_soft_deleted_mcu_public_file_is_inventoried(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "mcu/{$employee->id}/soft_deleted_mcu.pdf";
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, '%PDF-1.4 soft deleted mcu');
+
+        $mcu = $this->createMcu($employee->id, [
+            'document_path' => $path,
+        ]);
+        $mcu->delete(); // Soft-delete
+
+        $this->artisan('security:migrate-employee-documents-private', ['--execute' => true])
+            ->expectsOutputToContain('Soft-Deleted Records Inspected')
+            ->assertExitCode(0);
+
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
+        $this->assertSame('%PDF-1.4 soft deleted mcu', Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+    }
+
+    public function test_unreferenced_public_certificate_file_is_reported(): void
+    {
+        $orphanPath = 'certificates/999/unreferenced_cert.pdf';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($orphanPath, '%PDF-1.4 orphan cert');
+
+        $this->artisan('security:migrate-employee-documents-private')
+            ->expectsOutputToContain('Unreferenced public orphan file detected: [certificates/999/unreferenced_cert.pdf]')
+            ->assertExitCode(1);
+    }
+
+    public function test_unreferenced_public_mcu_file_is_reported(): void
+    {
+        $orphanPath = 'mcu/999/unreferenced_mcu.pdf';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($orphanPath, '%PDF-1.4 orphan mcu');
+
+        $this->artisan('security:migrate-employee-documents-private')
+            ->expectsOutputToContain('Unreferenced public orphan file detected: [mcu/999/unreferenced_mcu.pdf]')
+            ->assertExitCode(1);
+    }
+
+    public function test_unresolved_public_orphan_prevents_full_success(): void
+    {
+        $orphanPath = 'certificates/999/orphan.pdf';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($orphanPath, '%PDF-1.4 orphan bytes');
+
+        $this->artisan('security:migrate-employee-documents-private', ['--execute' => true])
+            ->assertExitCode(1);
+    }
+
+    public function test_missing_source_and_target_produces_non_zero_result(): void
+    {
+        $employee = Employee::factory()->create();
+        $this->createCertificate($employee->id, [
+            'document_path' => "certificates/{$employee->id}/non_existent.pdf",
+        ]);
+
+        $this->artisan('security:migrate-employee-documents-private', ['--execute' => true])
+            ->expectsOutputToContain('Missing Files (Source & Target Absent)')
+            ->assertExitCode(1);
+    }
+
+    public function test_missing_download_file_does_not_create_download_log(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo('view_employee_all');
+        $employee = Employee::factory()->create(['organization_id' => $org->id]);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => "certificates/{$employee->id}/missing.pdf",
+        ]);
+
+        $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Admin');
+        $this->withToken($token->plainTextToken);
+
+        $response = $this->get("/api/employees/{$employee->id}/certificates/{$cert->id}/document");
+        $response->assertNotFound();
+
+        $this->assertSame(0, DownloadLog::query()->where('document_type', 'certificate')->count());
+    }
+
+    public function test_successful_download_creates_exactly_one_download_log(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo('view_employee_all');
+        $employee = Employee::factory()->create(['organization_id' => $org->id]);
+
+        $path = "certificates/{$employee->id}/valid.pdf";
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, '%PDF-1.4 content');
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Admin');
+        $this->withToken($token->plainTextToken);
+
+        $response = $this->get("/api/employees/{$employee->id}/certificates/{$cert->id}/document");
+        $response->assertOk();
+
+        $logs = DownloadLog::query()
+            ->where('document_type', 'certificate')
+            ->where('document_id', $cert->id)
+            ->get();
+
+        $this->assertCount(1, $logs);
+        $this->assertSame($user->id, $logs->first()->user_id);
+    }
+
+    public function test_mismatched_actual_mime_does_not_receive_a_trusted_image_pdf_mime_solely_from_its_extension(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo('view_employee_all');
+        $employee = Employee::factory()->create(['organization_id' => $org->id]);
+
+        $path = "certificates/{$employee->id}/fake.pdf";
+        // Plain text script masquerading as PDF extension
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, 'PLAIN TEXT SCRIPT CONTENT');
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        $token = app(TokenIssuanceService::class)->issue($user, TokenApp::ADMIN, 'Admin');
+        $this->withToken($token->plainTextToken);
+
+        $response = $this->get("/api/employees/{$employee->id}/certificates/{$cert->id}/document");
+        $response->assertOk();
+        // Since detected mime is text/plain, it must NOT be trusted as application/pdf
+        $this->assertSame('application/octet-stream', $response->headers->get('Content-Type'));
     }
 }

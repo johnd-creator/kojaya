@@ -1382,12 +1382,12 @@ Previously, employee certificates (SIO K3, training licenses) and medical check-
    - Implemented `php artisan security:migrate-employee-documents-private` (`--execute`, `--cleanup`, `--force`).
    - Supports dry-run inspection by default, chunks records, verifies file size and SHA-256 checksums before copying or cleaning up legacy public copies.
 
-### Consequences
+### Consequences & Operational Rollout States
 
-- Sensitive employee documents and medical records are completely isolated from unauthenticated web access.
-- API and web downloads enforce strict authentication, ability checking, and tenant organizational isolation.
-- Existing legacy files can be safely migrated to private storage without downtime.
-
-
-
-
+The SEC-P0-03 remediation lifecycle progresses through six distinct operational states:
+1. **Code Deployed; New Uploads Private:** The application code is deployed. All newly uploaded certificates and MCU files are stored exclusively on the private `employee_documents` disk.
+2. **Legacy Fallback Active:** `EmployeeDocumentStorage` transparently resolves legacy public files for existing un-migrated records to maintain availability while preventing direct public URL exposure.
+3. **Copy Migration Verified:** `php artisan security:migrate-employee-documents-private --execute` safely copies legacy files from `public` to `employee_documents` with cryptographic SHA-256 and byte-size verification.
+4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms their complete absence from the public disk.
+5. **Orphan Inventory Resolved:** Unreferenced public orphan files under `public/certificates` and `public/mcu` (including soft-deleted records accounted for via `withTrashed()`) are inventoried, inspected, and reconciled by operators.
+6. **SEC-P0-03 Operationally Closed:** All legacy copies are removed, all orphans and missing files are resolved, and the migration command returns success with zero unresolved items.

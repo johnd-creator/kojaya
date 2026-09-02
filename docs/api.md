@@ -3080,3 +3080,11 @@ Content-Type: multipart/form-data
 - `has_document`: `boolean` (`true` if file exists)
 - `document_download_url`: fully-qualified URL pointing to the authenticated API download endpoint (or `null` if no file attached).
 
+### Migration & Operational Rollout States
+Production operations track six distinct operational states during the SEC-P0-03 migration window:
+1. **Code Deployed; New Uploads Private:** New uploads are stored directly on the private `employee_documents` disk.
+2. **Legacy Fallback Active:** `EmployeeDocumentStorage` resolves legacy public files for existing records during migration without exposing `/storage/*`.
+3. **Copy Migration Verified:** `php artisan security:migrate-employee-documents-private --execute` safely copies files to `employee_documents` with checksum and size verification.
+4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms their complete absence.
+5. **Orphan Inventory Resolved:** Unreferenced public orphan files (including soft-deleted records accounted for via `withTrashed()`) are inventoried and reconciled.
+6. **SEC-P0-03 Operationally Closed:** All legacy copies are removed, all orphans are resolved, and the migration tool verifies zero unresolved items.

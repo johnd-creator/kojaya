@@ -1366,7 +1366,12 @@ Previously, employee certificates (SIO K3, training licenses) and medical check-
 2. **Centralized Storage Service (`EmployeeDocumentStorage`):**
    - All write, replace, read, delete, and download operations for employee certificates (`certificates/{employeeId}/...`) and medical check-ups (`mcu/{employeeId}/...`) are routed exclusively through `App\Services\Security\EmployeeDocumentStorage`.
    - Strictly validates path ownership (`validateOwnedPath`) and safe filename regex (`^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$`), disallowing path traversal (`..`), absolute paths, null bytes, and unauthorized directory prefixes.
-   - Enforces a resilient replacement pattern with explicit compensating rollback: writes new file to private disk, updates DB, and attempts legacy deletion. If deletion fails or throws, DB reference is immediately rolled back to the previous path and the new file is deleted, ensuring database consistency and preventing public orphan creation while preserving at least one valid referenced document.
+   - Enforces a resilient replacement pattern with an explicit previous-file cleanup state machine (`DocumentCleanupState`: `confirmed_present`, `confirmed_absent`, `unknown`):
+     - Writes and verifies new file on private disk, then executes DB update.
+     - For legacy-only previous files, materializes and verifies a private copy prior to public cleanup to avoid relying on public storage during rollback.
+     - Compensating rollback (reverting DB to previous path and deleting the new file) is permitted ONLY when at least one valid old copy is positively confirmed to remain present and readable.
+     - If old-file existence is false or cannot be established (e.g. underlying deletion succeeded but post-delete exists check failed), the system preserves the DB reference on the new path, retains the new private file, never deletes the only confirmed valid document, and surfaces the unresolved cleanup state.
+     - If DB rollback callback itself fails, the new private file is preserved to prevent total document loss.
 3. **Authorized API Download Endpoints:**
    - Added dedicated download endpoints:
      - `GET /api/employees/{employeeId}/certificates/{id}/document`

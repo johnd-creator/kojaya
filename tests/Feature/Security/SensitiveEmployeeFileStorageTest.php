@@ -1180,11 +1180,11 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         $this->assertSame($content, Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
     }
 
-    public function test_replacement_compensates_when_legacy_public_delete_returns_false(): void
+    public function test_replacement_compensates_when_legacy_public_delete_returns_false_and_old_file_confirmed_present(): void
     {
         $storage = app(EmployeeDocumentStorage::class);
         $employee = Employee::factory()->create();
-        $oldPath = "certificates/{$employee->id}/old_cert.pdf";
+        $oldPath = "certificates/{$employee->id}/old_cert_pub_false.pdf";
         $oldContent = '%PDF-1.4 original public document';
         Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
 
@@ -1192,12 +1192,14 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             'document_path' => $oldPath,
         ]);
 
-        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
-        $publicMock->shouldReceive('exists')->with($oldPath)->andReturn(true);
+        $realPublicDisk = Storage::disk(EmployeeDocumentStorage::LEGACY_DISK);
+        $publicMock = \Mockery::mock($realPublicDisk)->makePartial();
         $publicMock->shouldReceive('delete')->with($oldPath)->andReturn(false);
+        $publicMock->shouldReceive('exists')->with($oldPath)->andReturn(true);
+        $publicMock->shouldReceive('get')->with($oldPath)->andReturn($oldContent);
         Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
 
-        $newFile = UploadedFile::fake()->create('new_replacement.pdf', 100, 'application/pdf');
+        $newFile = UploadedFile::fake()->createWithContent('new_replacement.pdf', '%PDF-1.4 new valid replacement');
 
         $caught = false;
         try {
@@ -1212,39 +1214,52 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             );
         } catch (\RuntimeException $e) {
             $caught = true;
-            $this->assertStringContainsString('Failed to securely delete public document file', $e->getMessage());
+            $this->assertStringContainsString('Storage driver returned false', $e->getMessage());
         }
 
         $this->assertTrue($caught, 'Expected replace() to throw RuntimeException on delete failure');
 
-        // Compensating assertions:
-        // 1. DB path is reverted to oldPath (not left pointing to newPath or orphaned)
+        // Compensating assertions (Requirement 7):
+        // 1. DB path safely rolls back to previousPath
         $this->assertSame($oldPath, $cert->fresh()->document_path);
-        // 2. Old public file still exists and is referenced by DB
+        // 2. Old file remains readable
         $this->assertTrue(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($oldPath));
-        // 3. New private file was cleaned up and does NOT remain on disk
+        $this->assertSame($oldContent, Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->get($oldPath));
+        // 3. New private file was removed and verified deleted
         $privateFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
-        $this->assertEmpty($privateFiles, 'New private file must be deleted during rollback');
+        $this->assertNotContains($newFile->hashName(), $privateFiles);
     }
 
-    public function test_replacement_compensates_when_legacy_public_delete_throws(): void
+    public function test_replacement_compensates_when_delete_throws_before_performing_deletion(): void
     {
         $storage = app(EmployeeDocumentStorage::class);
         $employee = Employee::factory()->create();
-        $oldPath = "certificates/{$employee->id}/old_cert_throw.pdf";
-        $oldContent = '%PDF-1.4 original public document throw';
-        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
+        $oldPath = "certificates/{$employee->id}/old_cert_throw_before_delete.pdf";
+        $oldContent = '%PDF-1.4 original persistent document before throw';
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, $oldContent);
 
         $cert = $this->createCertificate($employee->id, [
             'document_path' => $oldPath,
         ]);
 
-        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
-        $publicMock->shouldReceive('exists')->with($oldPath)->andReturn(true);
-        $publicMock->shouldReceive('delete')->with($oldPath)->andThrow(new \RuntimeException('S3 delete timeout'));
-        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+        $realPrivateDisk = Storage::disk(EmployeeDocumentStorage::DISK);
+        $privateMock = \Mockery::mock($realPrivateDisk)->makePartial();
+        $privateMock->shouldReceive('delete')->andReturnUsing(function ($path) use ($realPrivateDisk, $oldPath) {
+            if ($path === $oldPath) {
+                throw new \RuntimeException('S3 delete connection timeout before delete');
+            }
 
-        $newFile = UploadedFile::fake()->create('new_replacement2.pdf', 100, 'application/pdf');
+            return $realPrivateDisk->delete($path);
+        });
+        $privateMock->shouldReceive('exists')->andReturnUsing(function ($path) use ($realPrivateDisk) {
+            return $realPrivateDisk->exists($path);
+        });
+        $privateMock->shouldReceive('get')->andReturnUsing(function ($path) use ($realPrivateDisk) {
+            return $realPrivateDisk->get($path);
+        });
+        Storage::set(EmployeeDocumentStorage::DISK, $privateMock);
+
+        $newFile = UploadedFile::fake()->createWithContent('new_replacement2.pdf', '%PDF-1.4 new valid replacement 2');
 
         $caught = false;
         try {
@@ -1259,44 +1274,50 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             );
         } catch (\RuntimeException $e) {
             $caught = true;
-            $this->assertSame('S3 delete timeout', $e->getMessage());
+            $this->assertSame('S3 delete connection timeout before delete', $e->getMessage());
         }
 
         $this->assertTrue($caught);
 
-        // Compensating assertions:
+        // Compensating assertions (Requirement 7):
         $this->assertSame($oldPath, $cert->fresh()->document_path);
-        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($oldPath));
-        $privateFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
-        $this->assertEmpty($privateFiles);
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($oldPath));
+        $this->assertSame($oldContent, Storage::disk(EmployeeDocumentStorage::DISK)->get($oldPath));
+        $allFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
+        $this->assertEquals([$oldPath], $allFiles);
     }
 
-    public function test_replacement_compensates_when_legacy_public_post_delete_exists_throws(): void
+    public function test_replacement_handles_public_old_file_actually_deleted_then_post_delete_exists_throws(): void
     {
         $storage = app(EmployeeDocumentStorage::class);
         $employee = Employee::factory()->create();
-        $oldPath = "certificates/{$employee->id}/old_cert_post_exists_throw.pdf";
-        $oldContent = '%PDF-1.4 original public document post exists';
+        $oldPath = "certificates/{$employee->id}/old_cert_pub_actually_deleted_ambiguous.pdf";
+        $oldContent = '%PDF-1.4 original public doc to delete';
         Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
 
         $cert = $this->createCertificate($employee->id, [
             'document_path' => $oldPath,
         ]);
 
-        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
-        $publicMock->shouldReceive('delete')->with($oldPath)->andReturn(true);
-        $existsCalls = 0;
-        $publicMock->shouldReceive('exists')->with($oldPath)->andReturnUsing(function () use (&$existsCalls) {
-            $existsCalls++;
-            if ($existsCalls >= 2) {
-                throw new \RuntimeException('Network split on exists check');
+        $realPublicDisk = Storage::disk(EmployeeDocumentStorage::LEGACY_DISK);
+        $publicMock = \Mockery::mock($realPublicDisk)->makePartial();
+        // delete actually deletes the file
+        $publicMock->shouldReceive('delete')->with($oldPath)->andReturnUsing(function ($path) use ($realPublicDisk) {
+            return $realPublicDisk->delete($path);
+        });
+        // exists pre-checks work, post-delete check throws
+        $existsCount = 0;
+        $publicMock->shouldReceive('exists')->with($oldPath)->andReturnUsing(function ($path) use ($realPublicDisk, &$existsCount) {
+            $existsCount++;
+            if ($existsCount <= 2) {
+                return $realPublicDisk->exists($path);
             }
 
-            return true;
+            throw new \RuntimeException('Network split on public post-delete exists check');
         });
         Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
 
-        $newFile = UploadedFile::fake()->create('new_replacement3.pdf', 100, 'application/pdf');
+        $newFile = UploadedFile::fake()->createWithContent('new_replacement3.pdf', '%PDF-1.4 new valid replacement 3');
 
         $caught = false;
         try {
@@ -1311,15 +1332,218 @@ class SensitiveEmployeeFileStorageTest extends TestCase
             );
         } catch (\RuntimeException $e) {
             $caught = true;
-            $this->assertSame('Network split on exists check', $e->getMessage());
+            $this->assertStringContainsString('Ambiguous or incomplete cleanup', $e->getMessage());
+            $this->assertStringContainsString('Network split on public post-delete exists check', $e->getMessage());
         }
 
         $this->assertTrue($caught);
 
-        // Compensating assertions:
-        $this->assertSame($oldPath, $cert->fresh()->document_path);
-        $privateFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
-        $this->assertEmpty($privateFiles);
+        // Ambiguous assertions (Requirement 6):
+        // 1. DB remains on newPath (never rolled back to missing oldPath)
+        $currentDbPath = $cert->fresh()->document_path;
+        $this->assertNotSame($oldPath, $currentDbPath);
+        $this->assertStringStartsWith("certificates/{$employee->id}/", $currentDbPath);
+
+        // 2. New private file remains present and readable on private disk
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($currentDbPath));
+        $this->assertSame('%PDF-1.4 new valid replacement 3', Storage::disk(EmployeeDocumentStorage::DISK)->get($currentDbPath));
+
+        // 3. Old public file was actually removed
+        $this->assertFalse($realPublicDisk->exists($oldPath));
+    }
+
+    public function test_replacement_handles_private_old_file_actually_deleted_then_post_delete_exists_throws(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $employee = Employee::factory()->create();
+        $oldPath = "certificates/{$employee->id}/old_cert_priv_actually_deleted_ambiguous.pdf";
+        $oldContent = '%PDF-1.4 private doc to delete';
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, $oldContent);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $oldPath,
+        ]);
+
+        $realPrivateDisk = Storage::disk(EmployeeDocumentStorage::DISK);
+        $privateMock = \Mockery::mock($realPrivateDisk)->makePartial();
+        $privateMock->shouldReceive('delete')->andReturnUsing(function ($path) use ($realPrivateDisk) {
+            return $realPrivateDisk->delete($path);
+        });
+
+        $existsCount = 0;
+        $privateMock->shouldReceive('exists')->andReturnUsing(function ($path) use ($realPrivateDisk, $oldPath, &$existsCount) {
+            if ($path === $oldPath) {
+                $existsCount++;
+                if ($existsCount >= 2) {
+                    throw new \RuntimeException('Network timeout on private post-delete exists check');
+                }
+            }
+
+            return $realPrivateDisk->exists($path);
+        });
+        Storage::set(EmployeeDocumentStorage::DISK, $privateMock);
+
+        $newFile = UploadedFile::fake()->createWithContent('new_replacement4.pdf', '%PDF-1.4 new valid replacement 4');
+
+        $caught = false;
+        try {
+            $storage->replace(
+                $newFile,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employee->id,
+                $cert->document_path,
+                function (string $path) use ($cert) {
+                    $cert->update(['document_path' => $path]);
+                }
+            );
+        } catch (\RuntimeException $e) {
+            $caught = true;
+            $this->assertStringContainsString('Ambiguous or incomplete cleanup', $e->getMessage());
+        }
+
+        $this->assertTrue($caught);
+
+        // Ambiguous assertions (Requirement 6):
+        $currentDbPath = $cert->fresh()->document_path;
+        $this->assertNotSame($oldPath, $currentDbPath);
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($currentDbPath));
+        $this->assertSame('%PDF-1.4 new valid replacement 4', Storage::disk(EmployeeDocumentStorage::DISK)->get($currentDbPath));
+    }
+
+    public function test_replacement_handles_both_public_and_private_ambiguous_verification(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $employee = Employee::factory()->create();
+        $oldPath = "certificates/{$employee->id}/old_cert_both_ambiguous.pdf";
+        $oldContent = '%PDF-1.4 dual disk doc';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, $oldContent);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $oldPath,
+        ]);
+
+        $realPublicDisk = Storage::disk(EmployeeDocumentStorage::LEGACY_DISK);
+        $publicMock = \Mockery::mock($realPublicDisk)->makePartial();
+        $publicMock->shouldReceive('delete')->with($oldPath)->andReturnUsing(function ($path) use ($realPublicDisk) {
+            return $realPublicDisk->delete($path);
+        });
+        $pubExistsCount = 0;
+        $publicMock->shouldReceive('exists')->with($oldPath)->andReturnUsing(function ($path) use ($realPublicDisk, &$pubExistsCount) {
+            $pubExistsCount++;
+            if ($pubExistsCount >= 2) {
+                throw new \RuntimeException('Public exists verification failed');
+            }
+
+            return $realPublicDisk->exists($path);
+        });
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $realPrivateDisk = Storage::disk(EmployeeDocumentStorage::DISK);
+        $privateMock = \Mockery::mock($realPrivateDisk)->makePartial();
+        $privateMock->shouldReceive('delete')->andReturnUsing(function ($path) use ($realPrivateDisk) {
+            return $realPrivateDisk->delete($path);
+        });
+        $privExistsCount = 0;
+        $privateMock->shouldReceive('exists')->andReturnUsing(function ($path) use ($realPrivateDisk, $oldPath, &$privExistsCount) {
+            if ($path === $oldPath) {
+                $privExistsCount++;
+                if ($privExistsCount >= 2) {
+                    throw new \RuntimeException('Private exists verification failed');
+                }
+            }
+
+            return $realPrivateDisk->exists($path);
+        });
+        Storage::set(EmployeeDocumentStorage::DISK, $privateMock);
+
+        $newFile = UploadedFile::fake()->createWithContent('new_replacement5.pdf', '%PDF-1.4 new valid replacement 5');
+
+        $caught = false;
+        try {
+            $storage->replace(
+                $newFile,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employee->id,
+                $cert->document_path,
+                function (string $path) use ($cert) {
+                    $cert->update(['document_path' => $path]);
+                }
+            );
+        } catch (\RuntimeException $e) {
+            $caught = true;
+            $this->assertStringContainsString('Ambiguous or incomplete cleanup', $e->getMessage());
+        }
+
+        $this->assertTrue($caught);
+
+        // Ambiguous assertions (Requirement 6):
+        $currentDbPath = $cert->fresh()->document_path;
+        $this->assertNotSame($oldPath, $currentDbPath);
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($currentDbPath));
+        $this->assertSame('%PDF-1.4 new valid replacement 5', Storage::disk(EmployeeDocumentStorage::DISK)->get($currentDbPath));
+    }
+
+    public function test_replacement_preserves_new_file_when_rollback_callback_itself_fails(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $employee = Employee::factory()->create();
+        $oldPath = "certificates/{$employee->id}/old_cert_rollback_callback_fails.pdf";
+        $oldContent = '%PDF-1.4 persistent document';
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($oldPath, $oldContent);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $oldPath,
+        ]);
+
+        $realPrivateDisk = Storage::disk(EmployeeDocumentStorage::DISK);
+        $privateMock = \Mockery::mock($realPrivateDisk)->makePartial();
+        $privateMock->shouldReceive('delete')->andReturnUsing(function ($path) use ($realPrivateDisk, $oldPath) {
+            if ($path === $oldPath) {
+                return false;
+            }
+
+            return $realPrivateDisk->delete($path);
+        });
+        $privateMock->shouldReceive('exists')->andReturnUsing(function ($path) use ($realPrivateDisk) {
+            return $realPrivateDisk->exists($path);
+        });
+        $privateMock->shouldReceive('get')->andReturnUsing(function ($path) use ($realPrivateDisk) {
+            return $realPrivateDisk->get($path);
+        });
+        Storage::set(EmployeeDocumentStorage::DISK, $privateMock);
+
+        $newFile = UploadedFile::fake()->createWithContent('new_replacement6.pdf', '%PDF-1.4 new valid replacement 6');
+
+        $caught = false;
+        $newPathCaptured = null;
+        try {
+            $storage->replace(
+                $newFile,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employee->id,
+                $cert->document_path,
+                function (string $path) use ($cert, &$newPathCaptured) {
+                    $newPathCaptured = $path;
+                    $cert->update(['document_path' => $path]);
+                },
+                function (string $path) {
+                    throw new \RuntimeException('Database deadlock during rollback callback');
+                }
+            );
+        } catch (\RuntimeException $e) {
+            $caught = true;
+            $this->assertStringContainsString('Database deadlock during rollback callback', $e->getMessage());
+        }
+
+        $this->assertTrue($caught);
+
+        // Because rollback failed:
+        // 1. DB points to newPath (updated during onUpdateDb)
+        $this->assertSame($newPathCaptured, $cert->fresh()->document_path);
+        // 2. newPath was NOT deleted from disk (it is preserved)
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($newPathCaptured));
+        $this->assertSame('%PDF-1.4 new valid replacement 6', Storage::disk(EmployeeDocumentStorage::DISK)->get($newPathCaptured));
     }
 
     public function test_safe_filename_regex_accepts_valid_filenames(): void

@@ -4,7 +4,16 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 1, 2026
+**Last Updated:** September 2, 2026
+
+## 🎯 2026-09-02 - Close Ambiguous Replacement Delete Failure (SEC-P0-03 R4)
+
+- Hardened `EmployeeDocumentStorage::replace()` with an explicit previous-file cleanup state machine (`DocumentCleanupState`: `confirmed_present`, `confirmed_absent`, `unknown`).
+- Materialized and verified a private copy of legacy-only previous documents before attempting public cleanup, ensuring independent private availability during compensating rollbacks.
+- Enforced that DB rollback to `previousPath` and deletion of `newPath` are permitted only when at least one valid old copy is positively confirmed to remain readable.
+- For ambiguous-after-delete states (where deletion succeeded or cannot be established but post-delete verification threw), preserved the DB reference on `newPath` and kept `newPath` on private disk, preventing data loss and never referencing missing files.
+- Preserved `newPath` on private disk when the DB rollback callback itself fails.
+- Expanded `SensitiveEmployeeFileStorageTest` with comprehensive side-effect tests covering post-delete exists verification failures across public, private, and dual-disk scenarios, delete driver failure, delete throw before deletion, and rollback callback errors.
 
 ## 🎯 2026-09-01 - Sensitive Employee File Storage Hardening (SEC-P0-03)
 
@@ -16,8 +25,8 @@
 - Hardened web signed download routes (`DocumentDownloadController`) with `OrganizationScopeService` resolution and 404 on mismatched records.
 - Implemented safe, idempotent migration CLI command `php artisan security:migrate-employee-documents-private` with size and SHA-256 integrity verification, isolated copy and cleanup exception scopes, and unreferenced public orphan scanning.
 - Enforced strict safe path ownership (`validateOwnedPath`) and safe filename regex (`^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$`), preventing path traversal, null bytes, special characters, and cross-employee document access.
-- Hardened document replacement (`replace()`) with explicit compensating rollback ensuring database consistency and preventing public orphan creation if legacy deletion fails.
-- Added comprehensive security test suite `SensitiveEmployeeFileStorageTest` covering 56 test scenarios.
+- Hardened document replacement (`replace()`) with explicit previous-file cleanup states and safe rollback boundaries.
+- Added comprehensive security test suite `SensitiveEmployeeFileStorageTest`.
 
 ## 🎯 2026-09-01 - Strict API Token Ability Boundaries (SEC-P0-02)
 

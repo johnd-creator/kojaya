@@ -2,6 +2,7 @@
 
 namespace App\Services\Security;
 
+use App\Enums\DocumentCleanupState;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
@@ -74,13 +75,15 @@ class EmployeeDocumentStorage
 
     /**
      * Replace document safely:
-     * 1. validate previous path ownership if provided
-     * 2. write new file to private disk
-     * 3. verify the write
-     * 4. execute DB update callback ($onUpdateDb)
-     * 5. remove previous file only after DB update succeeds
-     * 6. remove newly created orphan if DB update fails
-     * 7. compensate (revert DB and remove new file) if previous file deletion fails
+     * 1. Validate previous path ownership if provided.
+     * 2. Write new file to private disk and verify write.
+     * 3. Execute DB update callback ($onUpdateDb).
+     * 4. If DB update fails, clean up new file and rethrow.
+     * 5. Clean up previous document with explicit cleanup states:
+     *    - confirmed_absent: clean success.
+     *    - confirmed_present: DB rollback to previousPath and deletion of newPath are performed
+     *      only when at least one valid old copy is positively confirmed to remain readable.
+     *    - unknown / ambiguous: DB remains on newPath and newPath is preserved on private disk.
      */
     public function replace(
         UploadedFile $file,
@@ -102,17 +105,27 @@ class EmployeeDocumentStorage
         try {
             $onUpdateDb($newPath);
         } catch (Throwable $e) {
-            Storage::disk(self::DISK)->delete($newPath);
+            try {
+                Storage::disk(self::DISK)->delete($newPath);
+            } catch (Throwable) {
+                // Ignore deletion error of orphan
+            }
             throw $e;
         }
 
         if ($previousPath && $previousPath !== $newPath) {
-            try {
-                $this->delete($previousPath, $prefix, $employeeIdStr);
-            } catch (Throwable $e) {
-                // Compensating action: revert DB reference back to previousPath
-                // so the record continues to own and reference the valid existing document,
-                // preventing the previous public file from becoming an unreferenced orphan.
+            $cleanupResult = $this->cleanupPreviousDocument($previousPath, $prefix, $employeeIdStr);
+            $cleanupState = $cleanupResult['state'];
+            $cleanupException = $cleanupResult['exception'];
+
+            if ($cleanupState->isConfirmedAbsent()) {
+                return $newPath;
+            }
+
+            // Cleanup failed or is ambiguous. Check if an old copy remains confirmed present and readable.
+            $oldConfirmed = $this->isConfirmedPresentAndReadable($previousPath, $prefix, $employeeIdStr);
+
+            if ($oldConfirmed) {
                 $reverted = false;
                 try {
                     if ($onRollbackDb) {
@@ -121,20 +134,202 @@ class EmployeeDocumentStorage
                         $onUpdateDb($previousPath);
                     }
                     $reverted = true;
-                } catch (Throwable) {
-                    // DB revert failed; keep newPath on disk to preserve at least one valid referenced document.
+                } catch (Throwable $rollbackException) {
+                    // DB rollback callback itself failed!
+                    // DB still points to newPath (or is in an error state).
+                    // Keep newPath on private disk to prevent total document loss.
+                    throw new RuntimeException("Failed to clean up previous document [{$previousPath}] and DB rollback failed: {$rollbackException->getMessage()}", previous: $rollbackException);
                 }
 
                 if ($reverted) {
-                    // Since DB is reverted to previousPath, safely clean up newPath from private disk.
-                    Storage::disk(self::DISK)->delete($newPath);
+                    try {
+                        Storage::disk(self::DISK)->delete($newPath);
+                    } catch (Throwable) {
+                        // Ignore deletion error of discarded new file
+                    }
+
+                    if ($cleanupException instanceof Throwable) {
+                        throw $cleanupException;
+                    }
+
+                    throw new RuntimeException("Failed to securely delete document file for path [{$previousPath}]. Database reference rolled back to previous document.");
+                }
+            } else {
+                // Old file existence is false or cannot be established.
+                // Keep DB reference on newPath, keep newPath on private disk.
+                // Never delete the only confirmed valid document copy.
+                $message = "Ambiguous or incomplete cleanup of previous document [{$previousPath}]. Retaining new document [{$newPath}] in database and private storage to prevent data loss.";
+                if ($cleanupException instanceof Throwable) {
+                    throw new RuntimeException($message.': '.$cleanupException->getMessage(), previous: $cleanupException);
                 }
 
-                throw $e;
+                throw new RuntimeException($message);
             }
         }
 
         return $newPath;
+    }
+
+    /**
+     * Clean up previous document across legacy public and private storage.
+     * Materializes and verifies a private copy of legacy-only files prior to public deletion.
+     *
+     * @return array{state: DocumentCleanupState, exception: ?Throwable}
+     */
+    public function cleanupPreviousDocument(string $previousPath, string $prefix, string $employeeIdStr): array
+    {
+        $this->validateOwnedPath($previousPath, $prefix, $employeeIdStr);
+
+        $privateDisk = Storage::disk(self::DISK);
+        $publicDisk = Storage::disk(self::LEGACY_DISK);
+
+        // Pre-check existence on both disks
+        $hasPrivate = false;
+        try {
+            $hasPrivate = (bool) $privateDisk->exists($previousPath);
+        } catch (Throwable) {
+            $hasPrivate = false;
+        }
+
+        $hasPublic = false;
+        try {
+            $hasPublic = (bool) $publicDisk->exists($previousPath);
+        } catch (Throwable) {
+            $hasPublic = false;
+        }
+
+        // Materialize and verify a private copy of a legacy-only previous document before attempting public cleanup
+        if ($hasPublic && ! $hasPrivate) {
+            try {
+                $content = $publicDisk->get($previousPath);
+                if ($content !== null && $content !== false) {
+                    $written = $privateDisk->put($previousPath, $content);
+                    if ($written && $privateDisk->exists($previousPath)) {
+                        $readBack = $privateDisk->get($previousPath);
+                        if ($readBack === $content) {
+                            $hasPrivate = true;
+                        }
+                    }
+                }
+            } catch (Throwable) {
+                // Materialization failed; $hasPrivate remains false
+            }
+        }
+
+        // 1. Delete from legacy public disk
+        $publicResult = $this->deleteFileFromDisk($publicDisk, $previousPath);
+
+        // 2. Delete from private disk
+        $privateResult = [
+            'state' => DocumentCleanupState::ConfirmedAbsent,
+            'exception' => null,
+        ];
+
+        $shouldCleanPrivate = $hasPrivate;
+        if (! $shouldCleanPrivate) {
+            try {
+                $shouldCleanPrivate = (bool) $privateDisk->exists($previousPath);
+            } catch (Throwable) {
+                $shouldCleanPrivate = true;
+            }
+        }
+
+        if ($shouldCleanPrivate) {
+            $privateResult = $this->deleteFileFromDisk($privateDisk, $previousPath);
+        }
+
+        $publicState = $publicResult['state'];
+        $privateState = $privateResult['state'];
+
+        if ($publicState->isConfirmedAbsent() && $privateState->isConfirmedAbsent()) {
+            return [
+                'state' => DocumentCleanupState::ConfirmedAbsent,
+                'exception' => null,
+            ];
+        }
+
+        $exception = $publicResult['exception'] ?? $privateResult['exception'];
+
+        if ($publicState->isAmbiguous() || $privateState->isAmbiguous()) {
+            return [
+                'state' => DocumentCleanupState::Unknown,
+                'exception' => $exception,
+            ];
+        }
+
+        return [
+            'state' => DocumentCleanupState::ConfirmedPresent,
+            'exception' => $exception,
+        ];
+    }
+
+    /**
+     * Delete a file from a specified disk and determine its explicit cleanup state.
+     *
+     * @return array{state: DocumentCleanupState, exception: ?Throwable}
+     */
+    public function deleteFileFromDisk(mixed $disk, string $path): array
+    {
+        // 1. Check if file exists before deletion
+        try {
+            if (! $disk->exists($path)) {
+                return [
+                    'state' => DocumentCleanupState::ConfirmedAbsent,
+                    'exception' => null,
+                ];
+            }
+        } catch (Throwable) {
+            // Pre-check failed; continue to attempt delete
+        }
+
+        // 2. Attempt deletion
+        $deleteException = null;
+        try {
+            $deleteSuccess = (bool) $disk->delete($path);
+            if (! $deleteSuccess) {
+                $deleteException = new RuntimeException("Storage driver returned false when deleting path [{$path}].");
+            }
+        } catch (Throwable $e) {
+            $deleteException = $e;
+        }
+
+        // 3. Post-delete verification
+        try {
+            $existsAfter = $disk->exists($path);
+            if (! $existsAfter) {
+                return [
+                    'state' => DocumentCleanupState::ConfirmedAbsent,
+                    'exception' => null,
+                ];
+            }
+
+            // File exists according to exists() check; verify readability
+            try {
+                $content = $disk->get($path);
+                if ($content !== false && $content !== null) {
+                    return [
+                        'state' => DocumentCleanupState::ConfirmedPresent,
+                        'exception' => $deleteException ?: new RuntimeException("Document file still exists after deletion attempt for path [{$path}]."),
+                    ];
+                }
+            } catch (Throwable) {
+                return [
+                    'state' => DocumentCleanupState::Unknown,
+                    'exception' => $deleteException,
+                ];
+            }
+
+            return [
+                'state' => DocumentCleanupState::ConfirmedPresent,
+                'exception' => $deleteException ?: new RuntimeException("Document file still exists after deletion attempt for path [{$path}]."),
+            ];
+        } catch (Throwable $postExistsException) {
+            // Post-delete verification threw: ambiguous state!
+            return [
+                'state' => DocumentCleanupState::Unknown,
+                'exception' => $postExistsException,
+            ];
+        }
     }
 
     /**
@@ -153,22 +348,63 @@ class EmployeeDocumentStorage
             $this->validatePath($path);
         }
 
-        // 1. Delete and verify legacy public copy first
         $publicDisk = Storage::disk(self::LEGACY_DISK);
-        if ($publicDisk->exists($path)) {
-            $deletedPublic = $publicDisk->delete($path);
-            if (! $deletedPublic || $publicDisk->exists($path)) {
-                throw new RuntimeException("Failed to securely delete public document file for path [{$path}].");
-            }
+        $publicResult = $this->deleteFileFromDisk($publicDisk, $path);
+        if (! $publicResult['state']->isConfirmedAbsent()) {
+            throw $publicResult['exception'] ?: new RuntimeException("Failed to securely delete public document file for path [{$path}].");
         }
 
-        // 2. Delete and verify private copy
         $privateDisk = Storage::disk(self::DISK);
-        if ($privateDisk->exists($path)) {
-            $deletedPrivate = $privateDisk->delete($path);
-            if (! $deletedPrivate || $privateDisk->exists($path)) {
-                throw new RuntimeException("Failed to securely delete private document file for path [{$path}].");
+        $privateResult = $this->deleteFileFromDisk($privateDisk, $path);
+        if (! $privateResult['state']->isConfirmedAbsent()) {
+            throw $privateResult['exception'] ?: new RuntimeException("Failed to securely delete private document file for path [{$path}].");
+        }
+    }
+
+    /**
+     * Positively confirm that at least one valid copy of the document remains present and readable.
+     */
+    public function isConfirmedPresentAndReadable(
+        string $path,
+        ?string $expectedPrefix = null,
+        string|int|null $expectedEmployeeId = null
+    ): bool {
+        try {
+            if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
+                $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);
+            } else {
+                $this->validatePath($path);
             }
+
+            // Check private disk first
+            $privateDisk = Storage::disk(self::DISK);
+            try {
+                if ($privateDisk->exists($path)) {
+                    $content = $privateDisk->get($path);
+                    if ($content !== null && $content !== false) {
+                        return true;
+                    }
+                }
+            } catch (Throwable) {
+                // Private check or read failed
+            }
+
+            // Check legacy public disk
+            $publicDisk = Storage::disk(self::LEGACY_DISK);
+            try {
+                if ($publicDisk->exists($path)) {
+                    $content = $publicDisk->get($path);
+                    if ($content !== null && $content !== false) {
+                        return true;
+                    }
+                }
+            } catch (Throwable) {
+                // Public check or read failed
+            }
+
+            return false;
+        } catch (Throwable) {
+            return false;
         }
     }
 

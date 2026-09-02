@@ -211,12 +211,18 @@ class MigrateEmployeeDocumentsToPrivateDisk extends Command
                     $stats['already_private']++;
                     if ($isCleanup) {
                         if ($isExecute) {
-                            $deleted = Storage::disk($sourceDisk)->delete($path);
-                            if ($deleted && Storage::disk($sourceDisk)->exists($path) === false) {
-                                $stats['cleaned']++;
-                            } else {
+                            try {
+                                $deleted = Storage::disk($sourceDisk)->delete($path);
+                                $postDeleteExists = Storage::disk($sourceDisk)->exists($path);
+                                if ($deleted && $postDeleteExists === false) {
+                                    $stats['cleaned']++;
+                                } else {
+                                    $stats['failed']++;
+                                    $this->error("Failed to delete public source after verification for {$recordType} #{$recordId}");
+                                }
+                            } catch (Throwable $e) {
                                 $stats['failed']++;
-                                $this->error("Failed to delete public source after verification for {$recordType} #{$recordId}");
+                                $this->error("Exception during public source cleanup for {$recordType} #{$recordId}: {$e->getMessage()}");
                             }
                         } else {
                             $stats['eligible_for_cleanup']++;
@@ -253,7 +259,8 @@ class MigrateEmployeeDocumentsToPrivateDisk extends Command
             return;
         }
 
-        // Execute copy
+        // Scope 1: Copy and verification of target
+        $targetVerified = false;
         try {
             $stream = Storage::disk($sourceDisk)->readStream($path);
             if (! is_resource($stream)) {
@@ -267,6 +274,9 @@ class MigrateEmployeeDocumentsToPrivateDisk extends Command
             }
 
             if (! $written || ! Storage::disk($targetDisk)->exists($path)) {
+                if (Storage::disk($targetDisk)->exists($path)) {
+                    Storage::disk($targetDisk)->delete($path);
+                }
                 $stats['failed']++;
                 $this->error("Failed writing destination file for {$recordType} #{$recordId}");
 
@@ -284,23 +294,34 @@ class MigrateEmployeeDocumentsToPrivateDisk extends Command
                 return;
             }
 
+            $targetVerified = true;
             $stats['copied']++;
-
-            if ($isCleanup) {
-                $deleted = Storage::disk($sourceDisk)->delete($path);
-                if ($deleted && Storage::disk($sourceDisk)->exists($path) === false) {
-                    $stats['cleaned']++;
-                } else {
-                    $stats['failed']++;
-                    $this->error("Failed to delete public source after copy verification for {$recordType} #{$recordId}");
-                }
-            }
         } catch (Throwable $e) {
             if (Storage::disk($targetDisk)->exists($path)) {
                 Storage::disk($targetDisk)->delete($path);
             }
             $stats['failed']++;
-            $this->error("Exception during document migration for {$recordType} #{$recordId}: {$e->getMessage()}");
+            $this->error("Exception during document copy/verification for {$recordType} #{$recordId}: {$e->getMessage()}");
+
+            return;
+        }
+
+        // Scope 2: Public source cleanup (executed only after private target is verified)
+        // Cleanup failure MUST NOT delete the verified private copy!
+        if ($isCleanup && $targetVerified) {
+            try {
+                $deleted = Storage::disk($sourceDisk)->delete($path);
+                $postDeleteExists = Storage::disk($sourceDisk)->exists($path);
+                if ($deleted && $postDeleteExists === false) {
+                    $stats['cleaned']++;
+                } else {
+                    $stats['failed']++;
+                    $this->error("Failed to delete public source after copy verification for {$recordType} #{$recordId}");
+                }
+            } catch (Throwable $e) {
+                $stats['failed']++;
+                $this->error("Exception during public source cleanup for {$recordType} #{$recordId}: {$e->getMessage()}");
+            }
         }
     }
 

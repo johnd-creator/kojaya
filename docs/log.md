@@ -14,8 +14,10 @@
 - Updated `EmployeeCertificateResource` and `MedicalCheckupResource` to eliminate unauthenticated `/storage/` URLs, returning `document_download_url` and `has_document`.
 - Updated Vue components (`CertificateList.vue`, `McuList.vue`) and API clients to fetch private documents via authenticated blob downloads.
 - Hardened web signed download routes (`DocumentDownloadController`) with `OrganizationScopeService` resolution and 404 on mismatched records.
-- Implemented safe, idempotent migration CLI command `php artisan security:migrate-employee-documents-private` with size and SHA-256 integrity verification.
-- Added comprehensive security test suite `SensitiveEmployeeFileStorageTest` covering 27 test scenarios.
+- Implemented safe, idempotent migration CLI command `php artisan security:migrate-employee-documents-private` with size and SHA-256 integrity verification, isolated copy and cleanup exception scopes, and unreferenced public orphan scanning.
+- Enforced strict safe path ownership (`validateOwnedPath`) and safe filename regex (`^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$`), preventing path traversal, null bytes, special characters, and cross-employee document access.
+- Hardened document replacement (`replace()`) with explicit compensating rollback ensuring database consistency and preventing public orphan creation if legacy deletion fails.
+- Added comprehensive security test suite `SensitiveEmployeeFileStorageTest` covering 56 test scenarios.
 
 ## 🎯 2026-09-01 - Strict API Token Ability Boundaries (SEC-P0-02)
 

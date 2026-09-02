@@ -1076,4 +1076,316 @@ class SensitiveEmployeeFileStorageTest extends TestCase
         // Since detected mime is text/plain, it must NOT be trusted as application/pdf
         $this->assertSame('application/octet-stream', $response->headers->get('Content-Type'));
     }
+
+    // ==========================================
+    // R3 MANDATORY DATA-SAFETY TESTS
+    // ==========================================
+
+    public function test_migration_cleanup_public_delete_throws_retains_verified_private_copy_and_returns_exit_code_1(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/throw_on_delete.pdf";
+        $content = '%PDF-1.4 verified content to retain';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, $content);
+
+        $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        // Mock public disk delete to throw
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('delete')->with($path)->andThrow(new \RuntimeException('Public disk deletion IO exception'));
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $this->artisan('security:migrate-employee-documents-private', [
+            '--execute' => true,
+            '--cleanup' => true,
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Exception during public source cleanup')
+            ->assertExitCode(1);
+
+        // Verified private copy MUST be retained and intact
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
+        $this->assertSame($content, Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+        // Legacy public file still exists because delete threw
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($path));
+    }
+
+    public function test_migration_cleanup_post_delete_exists_throws_retains_verified_private_copy_and_returns_exit_code_1(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/throw_on_post_exists.pdf";
+        $content = '%PDF-1.4 verified content to retain 2';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, $content);
+
+        $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        // Mock public disk: delete succeeds, but post-delete exists() verification throws
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('delete')->with($path)->andReturn(true);
+        // First exists() calls during scan and verification return true, but post-delete exists() call throws
+        $existsCallCount = 0;
+        $publicMock->shouldReceive('exists')->with($path)->andReturnUsing(function () use (&$existsCallCount) {
+            $existsCallCount++;
+            // During copy/verification (1st/2nd call) return actual, on post-delete verification throw
+            if ($existsCallCount >= 2) {
+                throw new \RuntimeException('Connection lost during post-delete verification');
+            }
+
+            return true;
+        });
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $this->artisan('security:migrate-employee-documents-private', [
+            '--execute' => true,
+            '--cleanup' => true,
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Exception during public source cleanup')
+            ->assertExitCode(1);
+
+        // Verified private copy MUST be retained
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
+        $this->assertSame($content, Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+    }
+
+    public function test_migration_already_private_cleanup_throws_retains_verified_private_copy_and_returns_exit_code_1(): void
+    {
+        $employee = Employee::factory()->create();
+        $path = "certificates/{$employee->id}/already_private_throw.pdf";
+        $content = '%PDF-1.4 already private bytes';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($path, $content);
+        Storage::disk(EmployeeDocumentStorage::DISK)->put($path, $content);
+
+        $this->createCertificate($employee->id, [
+            'document_path' => $path,
+        ]);
+
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('delete')->with($path)->andThrow(new \RuntimeException('Permission denied during delete'));
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $this->artisan('security:migrate-employee-documents-private', [
+            '--execute' => true,
+            '--cleanup' => true,
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Exception during public source cleanup')
+            ->assertExitCode(1);
+
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::DISK)->exists($path));
+        $this->assertSame($content, Storage::disk(EmployeeDocumentStorage::DISK)->get($path));
+    }
+
+    public function test_replacement_compensates_when_legacy_public_delete_returns_false(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $employee = Employee::factory()->create();
+        $oldPath = "certificates/{$employee->id}/old_cert.pdf";
+        $oldContent = '%PDF-1.4 original public document';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $oldPath,
+        ]);
+
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('exists')->with($oldPath)->andReturn(true);
+        $publicMock->shouldReceive('delete')->with($oldPath)->andReturn(false);
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $newFile = UploadedFile::fake()->create('new_replacement.pdf', 100, 'application/pdf');
+
+        $caught = false;
+        try {
+            $storage->replace(
+                $newFile,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employee->id,
+                $cert->document_path,
+                function (string $path) use ($cert) {
+                    $cert->update(['document_path' => $path]);
+                }
+            );
+        } catch (\RuntimeException $e) {
+            $caught = true;
+            $this->assertStringContainsString('Failed to securely delete public document file', $e->getMessage());
+        }
+
+        $this->assertTrue($caught, 'Expected replace() to throw RuntimeException on delete failure');
+
+        // Compensating assertions:
+        // 1. DB path is reverted to oldPath (not left pointing to newPath or orphaned)
+        $this->assertSame($oldPath, $cert->fresh()->document_path);
+        // 2. Old public file still exists and is referenced by DB
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($oldPath));
+        // 3. New private file was cleaned up and does NOT remain on disk
+        $privateFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
+        $this->assertEmpty($privateFiles, 'New private file must be deleted during rollback');
+    }
+
+    public function test_replacement_compensates_when_legacy_public_delete_throws(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $employee = Employee::factory()->create();
+        $oldPath = "certificates/{$employee->id}/old_cert_throw.pdf";
+        $oldContent = '%PDF-1.4 original public document throw';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $oldPath,
+        ]);
+
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('exists')->with($oldPath)->andReturn(true);
+        $publicMock->shouldReceive('delete')->with($oldPath)->andThrow(new \RuntimeException('S3 delete timeout'));
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $newFile = UploadedFile::fake()->create('new_replacement2.pdf', 100, 'application/pdf');
+
+        $caught = false;
+        try {
+            $storage->replace(
+                $newFile,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employee->id,
+                $cert->document_path,
+                function (string $path) use ($cert) {
+                    $cert->update(['document_path' => $path]);
+                }
+            );
+        } catch (\RuntimeException $e) {
+            $caught = true;
+            $this->assertSame('S3 delete timeout', $e->getMessage());
+        }
+
+        $this->assertTrue($caught);
+
+        // Compensating assertions:
+        $this->assertSame($oldPath, $cert->fresh()->document_path);
+        $this->assertTrue(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->exists($oldPath));
+        $privateFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
+        $this->assertEmpty($privateFiles);
+    }
+
+    public function test_replacement_compensates_when_legacy_public_post_delete_exists_throws(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+        $employee = Employee::factory()->create();
+        $oldPath = "certificates/{$employee->id}/old_cert_post_exists_throw.pdf";
+        $oldContent = '%PDF-1.4 original public document post exists';
+        Storage::disk(EmployeeDocumentStorage::LEGACY_DISK)->put($oldPath, $oldContent);
+
+        $cert = $this->createCertificate($employee->id, [
+            'document_path' => $oldPath,
+        ]);
+
+        $publicMock = \Mockery::mock(Storage::disk(EmployeeDocumentStorage::LEGACY_DISK))->makePartial();
+        $publicMock->shouldReceive('delete')->with($oldPath)->andReturn(true);
+        $existsCalls = 0;
+        $publicMock->shouldReceive('exists')->with($oldPath)->andReturnUsing(function () use (&$existsCalls) {
+            $existsCalls++;
+            if ($existsCalls >= 2) {
+                throw new \RuntimeException('Network split on exists check');
+            }
+
+            return true;
+        });
+        Storage::set(EmployeeDocumentStorage::LEGACY_DISK, $publicMock);
+
+        $newFile = UploadedFile::fake()->create('new_replacement3.pdf', 100, 'application/pdf');
+
+        $caught = false;
+        try {
+            $storage->replace(
+                $newFile,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employee->id,
+                $cert->document_path,
+                function (string $path) use ($cert) {
+                    $cert->update(['document_path' => $path]);
+                }
+            );
+        } catch (\RuntimeException $e) {
+            $caught = true;
+            $this->assertSame('Network split on exists check', $e->getMessage());
+        }
+
+        $this->assertTrue($caught);
+
+        // Compensating assertions:
+        $this->assertSame($oldPath, $cert->fresh()->document_path);
+        $privateFiles = Storage::disk(EmployeeDocumentStorage::DISK)->allFiles("certificates/{$employee->id}");
+        $this->assertEmpty($privateFiles);
+    }
+
+    public function test_safe_filename_regex_accepts_valid_filenames(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $validPaths = [
+            'certificates/123/cert1.pdf',
+            'certificates/emp-1/my_training-cert.pdf',
+            'certificates/EMP_99/cert.PDF',
+            'mcu/456/mcu_2026.png',
+            'mcu/1/0123456789abcdef0123456789abcdef.jpg',
+        ];
+
+        foreach ($validPaths as $path) {
+            // Should not throw
+            $storage->validatePath($path);
+        }
+
+        $this->assertTrue(true);
+    }
+
+    public function test_safe_filename_regex_rejects_invalid_characters_and_formats(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $invalidFilenames = [
+            'certificates/123/cert file.pdf',   // Space
+            'certificates/123/cert..pdf',       // Double dots
+            'certificates/123/cert',            // Missing extension
+            'certificates/123/cert.pdf.exe',    // Multiple extension dots
+            'certificates/123/cert@name.pdf',   // Special char @
+            'certificates/123/cert$1.pdf',      // Special char $
+            'certificates/123/cert;rm.pdf',     // Semicolon
+            "certificates/123/cert\0.pdf",      // Null byte
+            'certificates/123/.hidden.pdf',     // Leading dot
+        ];
+
+        foreach ($invalidFilenames as $invalidPath) {
+            try {
+                $storage->validatePath($invalidPath);
+                $this->fail("Expected validatePath to reject invalid path: [{$invalidPath}]");
+            } catch (InvalidArgumentException $e) {
+                $this->assertStringContainsString('Invalid', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_safe_employee_id_regex_rejects_invalid_characters(): void
+    {
+        $storage = app(EmployeeDocumentStorage::class);
+
+        $invalidEmployeeIds = [
+            'certificates/emp id/cert.pdf',     // Space
+            'certificates/emp@1/cert.pdf',      // Special char @
+            'certificates/emp#1/cert.pdf',      // Special char #
+            'certificates/../cert.pdf',         // Path traversal segment
+        ];
+
+        foreach ($invalidEmployeeIds as $invalidPath) {
+            try {
+                $storage->validatePath($invalidPath);
+                $this->fail("Expected validatePath to reject invalid employee ID in path: [{$invalidPath}]");
+            } catch (InvalidArgumentException $e) {
+                $this->assertStringContainsString('Invalid', $e->getMessage());
+            }
+        }
+    }
 }

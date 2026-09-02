@@ -80,13 +80,15 @@ class EmployeeDocumentStorage
      * 4. execute DB update callback ($onUpdateDb)
      * 5. remove previous file only after DB update succeeds
      * 6. remove newly created orphan if DB update fails
+     * 7. compensate (revert DB and remove new file) if previous file deletion fails
      */
     public function replace(
         UploadedFile $file,
         string $prefix,
         string|int $employeeId,
         ?string $previousPath,
-        callable $onUpdateDb
+        callable $onUpdateDb,
+        ?callable $onRollbackDb = null
     ): string {
         $employeeIdStr = (string) $employeeId;
         $this->validatePrefixAndEmployeeId($prefix, $employeeIdStr);
@@ -105,7 +107,31 @@ class EmployeeDocumentStorage
         }
 
         if ($previousPath && $previousPath !== $newPath) {
-            $this->delete($previousPath, $prefix, $employeeIdStr);
+            try {
+                $this->delete($previousPath, $prefix, $employeeIdStr);
+            } catch (Throwable $e) {
+                // Compensating action: revert DB reference back to previousPath
+                // so the record continues to own and reference the valid existing document,
+                // preventing the previous public file from becoming an unreferenced orphan.
+                $reverted = false;
+                try {
+                    if ($onRollbackDb) {
+                        $onRollbackDb($previousPath);
+                    } else {
+                        $onUpdateDb($previousPath);
+                    }
+                    $reverted = true;
+                } catch (Throwable) {
+                    // DB revert failed; keep newPath on disk to preserve at least one valid referenced document.
+                }
+
+                if ($reverted) {
+                    // Since DB is reverted to previousPath, safely clean up newPath from private disk.
+                    Storage::disk(self::DISK)->delete($newPath);
+                }
+
+                throw $e;
+            }
         }
 
         return $newPath;
@@ -284,12 +310,12 @@ class EmployeeDocumentStorage
         }
 
         $employeeId = $segments[1];
-        if ($employeeId === '' || str_contains($employeeId, '..') || str_contains($employeeId, '/') || str_contains($employeeId, '\\')) {
+        if ($employeeId === '' || ! preg_match('/^[a-zA-Z0-9_-]+$/', $employeeId)) {
             throw new InvalidArgumentException('Invalid employee ID in document path.');
         }
 
         $filename = $segments[2];
-        if ($filename === '' || str_contains($filename, '/') || str_contains($filename, '\\') || $filename === '.' || $filename === '..') {
+        if ($filename === '' || ! preg_match('/^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/', $filename)) {
             throw new InvalidArgumentException('Invalid filename in document path.');
         }
     }

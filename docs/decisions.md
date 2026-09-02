@@ -1365,8 +1365,8 @@ Previously, employee certificates (SIO K3, training licenses) and medical check-
    - Global default disk `FILESYSTEM_DISK` and the public storage symlink (`public/storage`) remain unchanged for non-sensitive public assets (such as product images).
 2. **Centralized Storage Service (`EmployeeDocumentStorage`):**
    - All write, replace, read, delete, and download operations for employee certificates (`certificates/{employeeId}/...`) and medical check-ups (`mcu/{employeeId}/...`) are routed exclusively through `App\Services\Security\EmployeeDocumentStorage`.
-   - Disallows path traversal (`..`), absolute paths, and unauthorized directory prefixes.
-   - Enforces a 2-step safe replacement pattern (write to private disk, verify write, update DB, remove previous file only after DB success, delete newly created orphan on DB failure).
+   - Strictly validates path ownership (`validateOwnedPath`) and safe filename regex (`^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$`), disallowing path traversal (`..`), absolute paths, null bytes, and unauthorized directory prefixes.
+   - Enforces a resilient replacement pattern with explicit compensating rollback: writes new file to private disk, updates DB, and attempts legacy deletion. If deletion fails or throws, DB reference is immediately rolled back to the previous path and the new file is deleted, ensuring database consistency and preventing public orphan creation while preserving at least one valid referenced document.
 3. **Authorized API Download Endpoints:**
    - Added dedicated download endpoints:
      - `GET /api/employees/{employeeId}/certificates/{id}/document`
@@ -1380,7 +1380,7 @@ Previously, employee certificates (SIO K3, training licenses) and medical check-
    - Vue components (`CertificateList.vue` and `McuList.vue`) and TS API clients perform authenticated blob downloads rather than opening unauthenticated `/storage/*` links.
 6. **Safe, Idempotent Migration Command:**
    - Implemented `php artisan security:migrate-employee-documents-private` (`--execute`, `--cleanup`, `--force`).
-   - Supports dry-run inspection by default, chunks records, verifies file size and SHA-256 checksums before copying or cleaning up legacy public copies.
+   - Supports dry-run inspection by default, chunks records (including soft-deleted records via `withTrashed()`), verifies file size and SHA-256 checksums, isolates copy/verification and cleanup into distinct failure scopes (so cleanup exceptions never delete verified private targets), and detects unreferenced public orphans.
 
 ### Consequences & Operational Rollout States
 

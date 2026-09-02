@@ -2993,3 +2993,98 @@ purchaser dan catatan pada entry pembelian/refund adalah snapshot immutable;
 transaksi. Checkout POS `MEMBER_STORE_ACCOUNT` tidak meminta password atau
 PIN; field request yang wajib adalah `purchaser_name` dan
 `purchase_note` opsional maksimal 500 karakter.
+
+---
+
+## 🔒 Employee Documents & Sensitive File Storage API (SEC-P0-03)
+
+Employee certificates (SIO K3, training licenses) and medical check-up (MCU) reports are stored on the private filesystem disk `employee_documents` and are strictly inaccessible via `/storage/*`.
+
+### Certificate Document Endpoints
+
+#### 1. Download Certificate Document
+```http
+GET /api/employees/{employeeId}/certificates/{id}/document
+Authorization: Bearer {token}
+```
+- **Ability Required:** `employee-documents:read`
+- **Permissions:** `view_employee_all` or `view_employee_unit` (organization-scoped)
+- **Response (200):** Streamed binary file with headers:
+  - `Content-Type`: `application/pdf`, `image/jpeg`, or `image/png`
+  - `X-Content-Type-Options`: `nosniff`
+  - `Cache-Control`: `private, no-store, max-age=0, must-revalidate`
+  - `Pragma`: `no-cache`
+- **Error Responses:**
+  - `401 Unauthorized`: Missing or invalid bearer token.
+  - `403 Forbidden`: Token lacks `employee-documents:read` ability.
+  - `404 Not Found`: Employee not visible in caller's organization, certificate not found, or employee/certificate mismatch.
+
+#### 2. Upload Certificate Document
+```http
+POST /api/employees/{employeeId}/certificates/{id}/upload
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+- **Ability Required:** `employee-documents:write`
+- **Permissions:** `edit_employee` (organization-scoped)
+- **Payload:** `document` (file, max 10MB, mime: pdf, jpg, jpeg, png)
+- **Response (200):**
+```json
+{
+  "success": true,
+  "message": "Document uploaded successfully",
+  "data": {
+    "document_path": "certificates/{employeeId}/{filename}.pdf",
+    "has_document": true,
+    "document_download_url": "https://api.kojaya.test/api/employees/{employeeId}/certificates/{id}/document"
+  }
+}
+```
+
+### Medical Check-Up (MCU) Document Endpoints
+
+#### 1. Download MCU Document
+```http
+GET /api/employees/{employeeId}/mcu/{id}/document
+Authorization: Bearer {token}
+```
+- **Ability Required:** `employee-documents:read`
+- **Permissions:** `view_employee_all` or `view_employee_unit` (organization-scoped)
+- **Response (200):** Streamed binary file with secure headers (`nosniff`, `no-store`).
+
+#### 2. Upload MCU Document
+```http
+POST /api/employees/{employeeId}/mcu/{id}/upload
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+- **Ability Required:** `employee-documents:write`
+- **Permissions:** `edit_employee` (organization-scoped)
+- **Payload:** `document` (file, max 10MB, mime: pdf, jpg, jpeg, png)
+- **Response (200):**
+```json
+{
+  "success": true,
+  "message": "Document uploaded successfully",
+  "data": {
+    "document_path": "mcu/{employeeId}/{filename}.png",
+    "has_document": true,
+    "document_download_url": "https://api.kojaya.test/api/employees/{employeeId}/mcu/{id}/document"
+  }
+}
+```
+
+### Resource Serialization Changes
+`EmployeeCertificateResource` and `MedicalCheckupResource` no longer return public `/storage/` URLs:
+- `document_url`: always `null`
+- `has_document`: `boolean` (`true` if file exists)
+- `document_download_url`: fully-qualified URL pointing to the authenticated API download endpoint (or `null` if no file attached).
+
+### Migration & Operational Rollout States
+Production operations track six distinct operational states during the SEC-P0-03 migration window:
+1. **Code Deployed; New Uploads Private:** New uploads are stored directly on the private `employee_documents` disk.
+2. **Legacy Fallback Active:** `EmployeeDocumentStorage` resolves legacy public files for existing records during migration without exposing `/storage/*`.
+3. **Copy Migration Verified:** `php artisan security:migrate-employee-documents-private --execute` safely copies files to `employee_documents` with checksum and size verification.
+4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms their complete absence.
+5. **Orphan Inventory Resolved:** Unreferenced public orphan files (including soft-deleted records accounted for via `withTrashed()`) are inventoried and reconciled.
+6. **SEC-P0-03 Operationally Closed:** All legacy copies are removed, all orphans are resolved, and the migration tool verifies zero unresolved items.

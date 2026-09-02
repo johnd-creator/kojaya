@@ -20,7 +20,12 @@ class MedicalCheckupResource extends JsonResource
             'fit_to_work' => $this->fit_to_work,
             'notes' => $this->notes,
             'document_path' => $this->document_path,
-            'document_url' => $this->document_path ? Storage::disk('public')->url($this->document_path) : null,
+            'document_url' => null,
+            'has_document' => ! empty($this->document_path),
+            'document_download_url' => $this->document_path ? route('api.employees.mcu.document', [
+                'employeeId' => $this->employee_id,
+                'id' => $this->id,
+            ]) : null,
             'doctor_name' => $this->doctor_name,
             'clinic_name' => $this->clinic_name,
             'is_due' => $this->isDue(),

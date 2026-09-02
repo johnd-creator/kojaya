@@ -19,7 +19,12 @@ class EmployeeCertificateResource extends JsonResource
             'expiry_date' => $this->expiry_date?->toDateString(),
             'issuing_authority' => $this->issuing_authority,
             'document_path' => $this->document_path,
-            'document_url' => $this->document_path ? Storage::disk('public')->url($this->document_path) : null,
+            'document_url' => null,
+            'has_document' => ! empty($this->document_path),
+            'document_download_url' => $this->document_path ? route('api.employees.certificates.document', [
+                'employeeId' => $this->employee_id,
+                'id' => $this->id,
+            ]) : null,
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'notes' => $this->notes,

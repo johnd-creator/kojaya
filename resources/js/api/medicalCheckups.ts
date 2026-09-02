@@ -1,87 +1,120 @@
 import axios from "axios";
 
 export interface MedicalCheckup {
-  id: number;
-  employee_id: number;
+  id: string | number;
+  employee_id: string | number;
   checkup_date: string;
-  checkup_type: string;
-  clinic_name: string;
-  doctor_name: string;
-  results: string;
   next_checkup_date: string | null;
-  status: "FIT" | "FIT_WITH_RESTRICTION" | "UNFIT";
+  result: "FIT" | "FIT_WITH_RESTRICTION" | "UNFIT";
+  fit_to_work: boolean;
   notes: string | null;
-  documents: string[];
+  document_path: string | null;
+  document_url?: string | null;
+  has_document?: boolean;
+  document_download_url?: string | null;
+  doctor_name: string | null;
+  clinic_name: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface McuFormData {
-  employee_id: number;
   checkup_date: string;
-  checkup_type: string;
-  clinic_name: string;
-  doctor_name: string;
-  results: string;
-  next_checkup_date?: string;
-  notes?: string;
+  next_checkup_date?: string | null;
+  result: "FIT" | "FIT_WITH_RESTRICTION" | "UNFIT";
+  fit_to_work: boolean;
+  notes?: string | null;
+  doctor_name?: string | null;
+  clinic_name?: string | null;
+  document?: File;
 }
 
 export interface PaginatedMedicalCheckups {
   data: MedicalCheckup[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
+  links?: Record<string, unknown>;
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
-export async function fetchMcuRecords(params?: {
-  employee_id?: number;
-  status?: string;
-  page?: number;
-  per_page?: number;
-}): Promise<PaginatedMedicalCheckups> {
-  const response = await axios.get("/api/mcu-records", { params });
+export async function fetchMcuRecords(
+  employeeId: string | number,
+  params?: {
+    status?: string;
+    page?: number;
+    per_page?: number;
+  },
+): Promise<PaginatedMedicalCheckups> {
+  const response = await axios.get(
+    `/api/employees/${employeeId}/mcu`,
+    { params },
+  );
   return response.data;
 }
 
-export async function createMcu(data: McuFormData): Promise<MedicalCheckup> {
-  const response = await axios.post("/api/mcu-records", data);
+export async function createMcu(
+  employeeId: string | number,
+  data: McuFormData,
+): Promise<MedicalCheckup> {
+  const response = await axios.post(
+    `/api/employees/${employeeId}/mcu`,
+    data,
+  );
   return response.data;
 }
 
 export async function updateMcu(
-  id: number,
+  employeeId: string | number,
+  id: string | number,
   data: Partial<McuFormData>,
 ): Promise<MedicalCheckup> {
-  const response = await axios.put(`/api/mcu-records/${id}`, data);
+  const response = await axios.put(
+    `/api/employees/${employeeId}/mcu/${id}`,
+    data,
+  );
   return response.data;
 }
 
-export async function deleteMcu(id: number): Promise<void> {
-  await axios.delete(`/api/mcu-records/${id}`);
+export async function deleteMcu(
+  employeeId: string | number,
+  id: string | number,
+): Promise<void> {
+  await axios.delete(`/api/employees/${employeeId}/mcu/${id}`);
 }
 
-export async function fetchUpcomingMcu(
-  days?: number,
-): Promise<MedicalCheckup[]> {
-  const response = await axios.get("/api/mcu-records/upcoming", {
-    params: { days },
-  });
+export async function uploadMcuDocument(
+  employeeId: string | number,
+  mcuId: string | number,
+  file: File,
+): Promise<{ document_path: string; has_document?: boolean; document_download_url?: string }> {
+  const formData = new FormData();
+  formData.append("document", file);
+
+  const response = await axios.post(
+    `/api/employees/${employeeId}/mcu/${mcuId}/upload`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
   return response.data;
 }
 
-export async function fetchDueForMcu(months?: number): Promise<
-  {
-    employee_id: number;
-    employee_name: string;
-    department: string;
-    last_checkup_date: string;
-    days_until_due: number;
-  }[]
-> {
-  const response = await axios.get("/api/mcu-records/due", {
-    params: { months },
-  });
+export async function downloadMcuDocument(
+  employeeId: string | number,
+  mcuId: string | number,
+): Promise<Blob> {
+  const response = await axios.get(
+    `/api/employees/${employeeId}/mcu/${mcuId}/document`,
+    {
+      responseType: "blob",
+    },
+  );
   return response.data;
 }
+

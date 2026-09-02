@@ -4,9 +4,68 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** July 17, 2026
+**Last Updated:** September 2, 2026
 
-## 🎯 2026-08-29 - Backup & Disaster Recovery Safety V1 (KOJAYA-P0-BACKUP-DR-SAFETY-V1)
+## 🎯 2026-09-02 - Fail-Closed Public Presence and Mandatory Rollback Evidence (SEC-P0-03 R6)
+
+- Separated physical file presence from content readability and non-zero size in `EmployeeDocumentStorage::cleanupPreviousDocument()`:
+  - Tracked presence independently (`exists() === true` => `ConfirmedPresent`, `exists() === false` => `ConfirmedAbsent`, `exists()` throws => `Unknown`).
+  - Required cleanup via `deleteFileFromDisk()` whenever public presence is `ConfirmedPresent` or `Unknown`, preventing premature `ConfirmedAbsent` claims due to read failures, empty content, or missing evidence.
+  - Guaranteed replacement never returns clean success while an old public file remains present or unverified.
+- Enforced mandatory pre-cleanup integrity evidence (`previousEvidence !== null`) before permitting database rollback, preventing rollback when pre-cleanup evidence could not be captured.
+- Verified orphan cleanup on initial database update failure (`$onUpdateDb($newPath)`): inspected `deleteFileFromDisk($newPath)` and surfaced explicit unresolved private orphans while preserving the original DB update exception as the root cause.
+- Expanded `SensitiveEmployeeFileStorageTest` with regression tests for:
+  - Public `exists() === true` with `get()` throwing (both delete success and delete failure cases).
+  - Public `exists() === true` with 0-byte content (both delete success and delete failure cases).
+  - Public existence pre-check throwing.
+  - Public content/readability modifying between evidence capture and cleanup.
+  - Rollback prohibition when evidence capture failed.
+  - Initial DB update failure orphan deletion returning false or throwing on post-delete check.
+
+## 🎯 2026-09-02 - Complete Verified Rollback Safety (SEC-P0-03 R5)
+
+- Implemented pre-cleanup integrity evidence capture (`captureDocumentEvidence`) recording byte size and cryptographic SHA-256 hash of the previous document.
+- Hardened `isConfirmedPresentAndReadable` to reject null, false, empty strings, 0-byte content, and integrity/hash mismatches, ensuring the database is never rolled back to a missing, empty, or corrupt file.
+- Preserved the materialized private safety copy on `employee_documents` whenever public cleanup results in `ConfirmedPresent` or `Unknown`, guaranteeing that compensating rollback uses the verified private copy without depending on continued public storage availability.
+- Enforced verified deletion of the new file (`deleteFileFromDisk`) after successful database rollback, requiring `ConfirmedAbsent` and explicitly reporting unresolved private orphans if new-file removal fails or remains ambiguous.
+- Updated replacement test assertions to capture the actual new path and assert `exists($newPath) === false` on the private disk.
+- Added comprehensive test coverage for zero-byte/corrupt old file rollback rejection, private safety copy preservation when public storage becomes unavailable, new-file delete failure, and new-file post-delete verification exceptions.
+
+## 🎯 2026-09-02 - Close Ambiguous Replacement Delete Failure (SEC-P0-03 R4)
+
+- Hardened `EmployeeDocumentStorage::replace()` with an explicit previous-file cleanup state machine (`DocumentCleanupState`: `confirmed_present`, `confirmed_absent`, `unknown`).
+- Materialized and verified a private copy of legacy-only previous documents before attempting public cleanup, ensuring independent private availability during compensating rollbacks.
+- Enforced that DB rollback to `previousPath` and deletion of `newPath` are permitted only when at least one valid old copy is positively confirmed to remain readable.
+- For ambiguous-after-delete states (where deletion succeeded or cannot be established but post-delete verification threw), preserved the DB reference on `newPath` and kept `newPath` on private disk, preventing data loss and never referencing missing files.
+- Preserved `newPath` on private disk when the DB rollback callback itself fails.
+- Expanded `SensitiveEmployeeFileStorageTest` with comprehensive side-effect tests covering post-delete exists verification failures across public, private, and dual-disk scenarios, delete driver failure, delete throw before deletion, and rollback callback errors.
+
+## 🎯 2026-09-01 - Sensitive Employee File Storage Hardening (SEC-P0-03)
+
+- Migrated employee certificates (SIO K3, training licenses) and medical checkup (MCU) documents to a dedicated private filesystem disk `employee_documents` located at `storage/app/private/employee-documents` (`visibility => private`).
+- Created `App\Services\Security\EmployeeDocumentStorage` to centralize all employee document write, replacement, deletion, and authorized download streaming with secure headers (`X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`).
+- Added authenticated, ability-enforced, organization-scoped API download endpoints (`GET /api/employees/{employeeId}/certificates/{id}/document` and `GET /api/employees/{employeeId}/mcu/{id}/document`) requiring `ability:employee-documents:read`.
+- Updated `EmployeeCertificateResource` and `MedicalCheckupResource` to eliminate unauthenticated `/storage/` URLs, returning `document_download_url` and `has_document`.
+- Updated Vue components (`CertificateList.vue`, `McuList.vue`) and API clients to fetch private documents via authenticated blob downloads.
+- Hardened web signed download routes (`DocumentDownloadController`) with `OrganizationScopeService` resolution and 404 on mismatched records.
+- Implemented safe, idempotent migration CLI command `php artisan security:migrate-employee-documents-private` with size and SHA-256 integrity verification, isolated copy and cleanup exception scopes, and unreferenced public orphan scanning.
+- Enforced strict safe path ownership (`validateOwnedPath`) and safe filename regex (`^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$`), preventing path traversal, null bytes, special characters, and cross-employee document access.
+- Hardened document replacement (`replace()`) with explicit previous-file cleanup states and safe rollback boundaries.
+- Added comprehensive security test suite `SensitiveEmployeeFileStorageTest`.
+
+## 🎯 2026-09-01 - Strict API Token Ability Boundaries (SEC-P0-02)
+
+- Enforced strict token ability checks on all token-required API endpoints (`ability:NAME`), preventing browser sessions without token grants or wildcard tokens from executing scoped API operations.
+- Separated public, session-allowed (`/api/user`, `/api/auth/session`), and token-required API route groups.
+- Added multi-tenant organization scoping tests and regression coverage.
+
+## 🎯 2026-08-31 - Dashboard Month-Overflow Test Flake Fix (CI-HOTFIX-01)
+
+- Fixed Carbon month arithmetic overflow in `DashboardTest` on month-end dates by using explicit anchor dates (`now()->startOfMonth()`).
+
+## 🎯 2026-08-31 - Payment Webhook Fail-Closed Security (SEC-P0-01)
+
+- Hardened Midtrans payment gateway webhook handlers with fail-closed cryptographic signature verification and legacy simulation prevention.
 
 - Built fail-closed native PostgreSQL logical backup system with `pg_dump --format=custom`.
 - Added cryptographic SHA-256 integrity metadata and versioned JSON backup manifests (`.json` and `.sha256`) capturing database engine, server version, environment, Git commit SHA, row counts, and off-site copy status.
@@ -1095,6 +1154,8 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Aug 25, 2026 | QA Authentication Inertia Proxy Hardening | Engineering | Identified HTTP-scheme downgrade in login/logout redirects behind Cloudflare Tunnel, added least-privilege trusted-proxy configuration and host-isolated session guidance, and made both logout entry points submit the same Inertia POST transition. QA deployment and browser acceptance remain operator steps. |
 * Aug 29, 2026 | Backup & Disaster Recovery Safety V1 | Engineering | Implemented comprehensive PostgreSQL-native logical backup tooling (pg_dump -Fc, pg_restore --list verification), cryptographic JSON manifests and SHA-256 checksums, mandatory pre-deployment backup gate in deploy script, fail-closed restore drills in isolated CI, provider-neutral off-site replication, and safe retention pruning. |
 * Aug 29, 2026 | Senior Backup DR Safety Fixes | Engineering | Hardened backup storage safety by rejecting public disks, public visibility, public roots, and public URLs; fixed require-offsite config fallback; implemented streaming SHA-256 verification of remote off-site copy; added stored primary artifact verification; protected verified valid backups during retention pruning; used authoritative manifest creation timestamp for SLA health monitoring; enforced ephemeral disposable source & target database lifecycles for restore drills; sanitized MySQL process environment to prevent argv password exposure; updated disaster recovery runbook to empty recovery database cutover model. |
+* Sep 1, 2026 | Sensitive Employee File Storage Hardening (SEC-P0-03) | Engineering | Hardened employee certificates and medical checkup storage by moving them to the private employee_documents filesystem disk, removing public storage URLs, adding authenticated/scoped API & web download endpoints, implementing fail-closed deletion, verified MIME inspection, withTrashed orphan inventory in migration tooling, and tracking the six operational migration lifecycle states. |
+
 
 ## 🙏 Acknowledgments
 

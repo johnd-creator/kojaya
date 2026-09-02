@@ -1346,5 +1346,57 @@ Production operations require verifiable data protection, disaster recovery, and
 - Real restore capabilities are continuously validated in isolated CI with disposable databases.
 - Follow-up work will implement Layer 4 continuous WAL archiving (pgBackRest) for Point-in-Time Recovery (PITR).
 
+---
 
+## 🎯 ADR-035: Sensitive Employee Document Private Storage and Authorized Download Boundary (SEC-P0-03)
 
+**Status:** ✅ Accepted
+**Date:** September 1, 2026
+**Deciders:** Security & Core Engineering Teams
+
+### Context
+
+Previously, employee certificates (SIO K3, training licenses) and medical check-up (MCU) reports were uploaded to the `public` storage disk and generated direct `/storage/*` URLs. Because the `public/storage` symlink exposes files without web application authentication or authorization, any actor knowing or guessing the storage file path could access sensitive employee documents, medical records, and PII.
+
+### Decision
+
+1. **Private Filesystem Disk Isolation:**
+   - Introduced a dedicated private filesystem disk `employee_documents` located at `storage_path('app/private/employee-documents')` with `'visibility' => 'private'`.
+   - Global default disk `FILESYSTEM_DISK` and the public storage symlink (`public/storage`) remain unchanged for non-sensitive public assets (such as product images).
+2. **Centralized Storage Service (`EmployeeDocumentStorage`):**
+   - All write, replace, read, delete, and download operations for employee certificates (`certificates/{employeeId}/...`) and medical check-ups (`mcu/{employeeId}/...`) are routed exclusively through `App\Services\Security\EmployeeDocumentStorage`.
+   - Strictly validates path ownership (`validateOwnedPath`) and safe filename regex (`^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$`), disallowing path traversal (`..`), absolute paths, null bytes, and unauthorized directory prefixes.
+   - Enforces a resilient replacement pattern with verified rollback safety, explicit presence tracking, and strict cleanup state transitions (`DocumentCleanupState`: `confirmed_present`, `confirmed_absent`, `unknown`):
+     - **Independent Presence Tracking:** File presence is tracked strictly via disk existence (`exists() === true` => `ConfirmedPresent`, `exists() === false` => `ConfirmedAbsent`, `exists()` throws => `Unknown`), cleanly separating physical presence from content readability or non-zero size.
+     - **Fail-Closed Public Cleanup:** If public presence is `ConfirmedPresent` or `Unknown`, cleanup is always attempted through `deleteFileFromDisk()`. Public cleanup is never assumed `ConfirmedAbsent` due to read errors, empty content, or missing evidence. A replacement never returns clean success while a public file remains present or unverified.
+     - **Pre-Cleanup Integrity Evidence:** Captures non-zero byte size and cryptographic SHA-256 hash of the previous document before cleanup.
+     - **Verified DB-Update Orphan Cleanup:** When the initial database update callback (`$onUpdateDb($newPath)`) fails, `deleteFileFromDisk($newPath)` is inspected. If `$newPath` deletion fails or is ambiguous, an explicit unresolved private orphan is reported while retaining the original database update exception as the root cause.
+     - **Materialized Private Safety Copy:** For legacy-only previous files, materializes and verifies a private safety copy on `employee_documents` prior to public cleanup. If public cleanup fails or is unknown, the private safety copy is preserved so rollback does not depend on continued public availability.
+     - **Mandatory Evidence for Rollback:** Compensating rollback (reverting DB to previous path) is permitted ONLY when trustworthy pre-cleanup evidence exists (`previousEvidence !== null`) and the old document copy is positively confirmed present, readable, non-empty (> 0 bytes), and matching the captured SHA-256 and byte-size evidence (`isConfirmedPresentAndReadable`).
+     - **Verified Discarded File Removal:** Following successful DB rollback, new-file removal is verified using `deleteFileFromDisk()`. If new-file deletion fails or is ambiguous, an unresolved private orphan is surfaced explicitly.
+     - **Data Loss Prevention:** If old-file existence is false, zero-byte, corrupted, or cannot be established, the system preserves the DB reference on the new path, retains the new private file, never deletes the only confirmed valid document, and surfaces the unresolved cleanup state.
+     - If DB rollback callback itself fails, the new private file is preserved to prevent total document loss.
+3. **Authorized API Download Endpoints:**
+   - Added dedicated download endpoints:
+     - `GET /api/employees/{employeeId}/certificates/{id}/document`
+     - `GET /api/employees/{employeeId}/mcu/{id}/document`
+   - Requires `auth:sanctum` and `ability:employee-documents:read`.
+   - Scoped strictly to the employee's organization via `OrganizationScopeService`. Mismatched employee or child records return 404 (preventing resource enumeration).
+4. **Hardened Web Signed Downloads:**
+   - Web download routes (`download.certificate` and `download.mcu`) enforce signature validity, role/permission verification (`view_employee_all` or `view_employee_unit`), and organization scoping via `OrganizationScopeService` with 404 on mismatched records.
+5. **API Resources & Frontend Alignment:**
+   - `EmployeeCertificateResource` and `MedicalCheckupResource` remove direct `Storage::disk('public')->url(...)` (`'document_url' => null`), replacing it with `'has_document' => !empty($this->document_path)` and `'document_download_url' => route(...)`.
+   - Vue components (`CertificateList.vue` and `McuList.vue`) and TS API clients perform authenticated blob downloads rather than opening unauthenticated `/storage/*` links.
+6. **Safe, Idempotent Migration Command:**
+   - Implemented `php artisan security:migrate-employee-documents-private` (`--execute`, `--cleanup`, `--force`).
+   - Supports dry-run inspection by default, chunks records (including soft-deleted records via `withTrashed()`), verifies file size and SHA-256 checksums, isolates copy/verification and cleanup into distinct failure scopes (so cleanup exceptions never delete verified private targets), and detects unreferenced public orphans.
+
+### Consequences & Operational Rollout States
+
+The SEC-P0-03 remediation lifecycle progresses through six distinct operational states:
+1. **Code Deployed; New Uploads Private:** The application code is deployed. All newly uploaded certificates and MCU files are stored exclusively on the private `employee_documents` disk.
+2. **Legacy Fallback Active:** `EmployeeDocumentStorage` transparently resolves legacy public files for existing un-migrated records to maintain availability while preventing direct public URL exposure.
+3. **Copy Migration Verified:** `php artisan security:migrate-employee-documents-private --execute` safely copies legacy files from `public` to `employee_documents` with cryptographic SHA-256 and byte-size verification.
+4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms their complete absence from the public disk.
+5. **Orphan Inventory Resolved:** Unreferenced public orphan files under `public/certificates` and `public/mcu` (including soft-deleted records accounted for via `withTrashed()`) are inventoried, inspected, and reconciled by operators.
+6. **SEC-P0-03 Operationally Closed:** All legacy copies are removed, all orphans and missing files are resolved, and the migration command returns success with zero unresolved items.

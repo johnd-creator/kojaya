@@ -10,6 +10,9 @@ export interface EmployeeCertificate {
   expiry_date: string | null;
   issuing_authority: string | null;
   document_path: string | null;
+  document_url?: string | null;
+  has_document?: boolean;
+  document_download_url?: string | null;
   status: CertificateStatus;
   notes: string | null;
   created_at: string;

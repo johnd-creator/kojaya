@@ -7,11 +7,16 @@ use App\Http\Requests\StoreEmployeeCertificateRequest;
 use App\Http\Requests\UpdateEmployeeCertificateRequest;
 use App\Http\Requests\UploadEmployeeDocumentRequest;
 use App\Http\Resources\EmployeeCertificateResource;
+use App\Models\DownloadLog;
 use App\Models\Employee;
 use App\Services\Authorization\OrganizationScopeService;
+use App\Services\Security\EmployeeDocumentStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class EmployeeCertificateController extends Controller
 {
@@ -58,13 +63,27 @@ class EmployeeCertificateController extends Controller
 
     public function destroy(Request $request, string $employeeId, string $id): JsonResponse
     {
-        $certificate = $this->resolveEmployee($request, $employeeId)
-            ->certificates()
-            ->findOrFail($id);
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $certificate = $employee->certificates()->findOrFail($id);
 
-        // Delete document if exists
         if ($certificate->document_path) {
-            Storage::disk('public')->delete($certificate->document_path);
+            try {
+                app(EmployeeDocumentStorage::class)->delete(
+                    $certificate->document_path,
+                    EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                    $employeeId
+                );
+            } catch (InvalidArgumentException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid document path or ownership mismatch.',
+                ], 400);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to securely delete document file. Please retry.',
+                ], 500);
+            }
         }
 
         $certificate->delete();
@@ -79,27 +98,73 @@ class EmployeeCertificateController extends Controller
     {
         $request->validated();
 
-        $certificate = $this->resolveEmployee($request, $employeeId)
-            ->certificates()
-            ->findOrFail($id);
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $certificate = $employee->certificates()->findOrFail($id);
 
-        // Delete old document if exists
-        if ($certificate->document_path) {
-            Storage::disk('public')->delete($certificate->document_path);
-        }
-
-        $path = $request->file('document')->store('certificates/'.$employeeId, 'public');
-
-        $certificate->update(['document_path' => $path]);
+        $storage = app(EmployeeDocumentStorage::class);
+        $path = $storage->replace(
+            $request->file('document'),
+            EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+            $employeeId,
+            $certificate->document_path,
+            function (string $newPath) use ($certificate) {
+                $certificate->update(['document_path' => $newPath]);
+            }
+        );
 
         return response()->json([
             'success' => true,
             'message' => 'Document uploaded successfully',
             'data' => [
                 'document_path' => $path,
-                'document_url' => Storage::disk('public')->url($path),
+                'has_document' => true,
+                'document_download_url' => route('api.employees.certificates.document', [
+                    'employeeId' => $employeeId,
+                    'id' => $id,
+                ]),
             ],
         ]);
+    }
+
+    public function downloadDocument(Request $request, string $employeeId, string $id): StreamedResponse|Response
+    {
+        $employee = $this->resolveEmployee($request, $employeeId);
+        $certificate = $employee->certificates()->findOrFail($id);
+
+        if (! $certificate->document_path) {
+            abort(404, 'Certificate document not found.');
+        }
+
+        $storage = app(EmployeeDocumentStorage::class);
+
+        try {
+            $storage->validateOwnedPath(
+                $certificate->document_path,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $employeeId
+            );
+        } catch (InvalidArgumentException) {
+            abort(404, 'Certificate document not found.');
+        }
+
+        if (! $storage->exists($certificate->document_path, EmployeeDocumentStorage::PREFIX_CERTIFICATES, $employeeId)) {
+            abort(404, 'Certificate document not found.');
+        }
+
+        $ext = pathinfo($certificate->document_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $type = $certificate->certificate_type?->value ?? 'certificate';
+        $filename = "cert-{$type}-{$employee->id}.{$ext}";
+
+        $response = $storage->download(
+            $certificate->document_path,
+            $filename,
+            EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+            $employeeId
+        );
+
+        $this->logDownload($request, 'certificate', $certificate->id);
+
+        return $response;
     }
 
     protected function resolveEmployee(Request $request, string $employeeId): Employee
@@ -107,5 +172,21 @@ class EmployeeCertificateController extends Controller
         return app(OrganizationScopeService::class)
             ->scopeVisibleTo(Employee::query(), $request->user())
             ->findOrFail($employeeId);
+    }
+
+    protected function logDownload(Request $request, string $type, int|string $documentId): void
+    {
+        try {
+            if ($request->user()) {
+                DownloadLog::query()->create([
+                    'user_id' => $request->user()->id,
+                    'document_type' => $type,
+                    'document_id' => (int) $documentId,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+        } catch (Throwable) {
+        }
     }
 }

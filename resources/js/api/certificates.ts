@@ -1,81 +1,117 @@
 import axios from "axios";
 
 export interface EmployeeCertificate {
-  id: number;
-  employee_id: number;
+  id: string | number;
+  employee_id: string | number;
   certificate_type: string;
   certificate_number: string;
   issue_date: string;
   expiry_date: string | null;
   issuing_authority: string;
-  status: "VALID" | "EXPIRING" | "EXPIRED";
+  status: "VALID" | "EXPIRING" | "EXPIRED" | "REVOKED";
   document_path: string | null;
+  document_url?: string | null;
+  has_document?: boolean;
+  document_download_url?: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface CertificateFormData {
-  employee_id: number;
   certificate_type: string;
   certificate_number: string;
   issue_date: string;
-  expiry_date?: string;
-  issuing_authority: string;
-  notes?: string;
+  expiry_date?: string | null;
+  issuing_authority?: string | null;
+  notes?: string | null;
+  document?: File;
 }
 
 export interface PaginatedCertificates {
   data: EmployeeCertificate[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
+  links?: Record<string, unknown>;
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
-export async function fetchCertificates(params?: {
-  employee_id?: number;
-  status?: string;
-  page?: number;
-  per_page?: number;
-}): Promise<PaginatedCertificates> {
-  const response = await axios.get("/api/certificates", { params });
+export async function fetchCertificates(
+  employeeId: string | number,
+  params?: {
+    status?: string;
+    page?: number;
+    per_page?: number;
+  },
+): Promise<PaginatedCertificates> {
+  const response = await axios.get(
+    `/api/employees/${employeeId}/certificates`,
+    { params },
+  );
   return response.data;
 }
 
 export async function createCertificate(
+  employeeId: string | number,
   data: CertificateFormData,
 ): Promise<EmployeeCertificate> {
-  const response = await axios.post("/api/certificates", data);
+  const response = await axios.post(
+    `/api/employees/${employeeId}/certificates`,
+    data,
+  );
   return response.data;
 }
 
 export async function updateCertificate(
-  id: number,
+  employeeId: string | number,
+  id: string | number,
   data: Partial<CertificateFormData>,
 ): Promise<EmployeeCertificate> {
-  const response = await axios.put(`/api/certificates/${id}`, data);
+  const response = await axios.put(
+    `/api/employees/${employeeId}/certificates/${id}`,
+    data,
+  );
   return response.data;
 }
 
-export async function deleteCertificate(id: number): Promise<void> {
-  await axios.delete(`/api/certificates/${id}`);
+export async function deleteCertificate(
+  employeeId: string | number,
+  id: string | number,
+): Promise<void> {
+  await axios.delete(`/api/employees/${employeeId}/certificates/${id}`);
 }
 
 export async function uploadCertificateDocument(
-  certificateId: number,
+  employeeId: string | number,
+  certificateId: string | number,
   file: File,
-): Promise<{ document_path: string }> {
+): Promise<{ document_path: string; has_document?: boolean; document_download_url?: string }> {
   const formData = new FormData();
   formData.append("document", file);
 
   const response = await axios.post(
-    `/api/certificates/${certificateId}/upload`,
+    `/api/employees/${employeeId}/certificates/${certificateId}/upload`,
     formData,
     {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+    },
+  );
+  return response.data;
+}
+
+export async function downloadCertificateDocument(
+  employeeId: string | number,
+  certificateId: string | number,
+): Promise<Blob> {
+  const response = await axios.get(
+    `/api/employees/${employeeId}/certificates/${certificateId}/document`,
+    {
+      responseType: "blob",
     },
   );
   return response.data;

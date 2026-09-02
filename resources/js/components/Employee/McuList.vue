@@ -12,7 +12,11 @@ import {
   File as FileIcon,
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { fetchMcuRecords, deleteMcu } from "@/api/medicalCheckups.ts";
+import {
+  fetchMcuRecords,
+  deleteMcu,
+  downloadMcuDocument,
+} from "@/api/medicalCheckups.ts";
 import McuBadge from "@/components/Status/McuBadge.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
 const mcuRecords = ref<MedicalCheckup[]>([]);
 const loading = ref(false);
 const deletingId = ref<string | null>(null);
+const viewingId = ref<string | null>(null);
 
 const hasRecords = computed(() => mcuRecords.value.length > 0);
 
@@ -54,7 +59,7 @@ const groupedRecords = computed(() => {
     fitWithRestriction: mcuRecords.value.filter(
       (m) => m.result === "FIT_WITH_RESTRICTION",
     ),
-    unfit: mcu.value.filter((m) => m.result === "UNFIT"),
+    unfit: mcuRecords.value.filter((m) => m.result === "UNFIT"),
   };
 });
 
@@ -124,17 +129,28 @@ const handleDelete = async (id: string) => {
   }
 };
 
+const handleViewDocument = async (mcu: MedicalCheckup) => {
+  viewingId.value = mcu.id;
+  try {
+    const blob = await downloadMcuDocument(props.employeeId, mcu.id);
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 60000);
+  } catch (error) {
+    console.error("Failed to download MCU document:", error);
+  } finally {
+    viewingId.value = null;
+  }
+};
+
 const openCreate = () => {
   router.visit(`/employees/${props.employeeId}/mcu/create`);
 };
 
 const openEdit = (id: string) => {
   router.visit(`/employees/${props.employeeId}/mcu/${id}/edit`);
-};
-
-const getDocumentUrl = (path: string | null): string | null => {
-  if (!path) return null;
-  return `/storage/${path}`;
 };
 
 onMounted(() => {
@@ -270,10 +286,8 @@ onMounted(() => {
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
-                v-if="mcu.document_path"
-                @click="
-                  window.open(getDocumentUrl(mcu.document_path), '_blank')
-                "
+                v-if="mcu.document_path || mcu.has_document"
+                @click="handleViewDocument(mcu)"
               >
                 <FileIcon class="mr-2 h-4 w-4" />
                 View Document

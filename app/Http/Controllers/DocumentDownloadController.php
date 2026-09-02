@@ -7,8 +7,12 @@ use App\Models\DownloadLog;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
 use App\Models\MedicalCheckup;
+use App\Services\Authorization\OrganizationScopeService;
+use App\Services\Security\EmployeeDocumentStorage;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 
 class DocumentDownloadController extends Controller
 {
@@ -38,7 +42,7 @@ class DocumentDownloadController extends Controller
 
         $this->logDownload($request, 'payslip', $payroll->id);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('payroll.paystub', compact('payroll'));
+        $pdf = Pdf::loadView('payroll.paystub', compact('payroll'));
 
         return $pdf->download("payslip-{$payroll->period}.pdf");
     }
@@ -49,23 +53,55 @@ class DocumentDownloadController extends Controller
             abort(401, 'Link download tidak valid atau sudah kadaluarsa.');
         }
 
-        if (! $request->user()->can('view_employee_all')
-            && ! $request->user()->can('view_employee_unit')
+        if (! $request->user()?->can('view_employee_all')
+            && ! $request->user()?->can('view_employee_unit')
         ) {
             abort(403);
+        }
+
+        $employee = app(OrganizationScopeService::class)
+            ->scopeVisibleTo(Employee::query(), $request->user())
+            ->where('id', $mcu->employee_id)
+            ->first();
+
+        if (! $employee || (int) $mcu->employee_id !== (int) $employee->id) {
+            abort(404);
         }
 
         if (! $mcu->document_path) {
             abort(404, 'Dokumen medical checkup tidak tersedia.');
         }
 
+        $storage = app(EmployeeDocumentStorage::class);
+
+        try {
+            $storage->validateOwnedPath(
+                $mcu->document_path,
+                EmployeeDocumentStorage::PREFIX_MCU,
+                $employee->id
+            );
+        } catch (InvalidArgumentException) {
+            abort(404, 'Dokumen medical checkup tidak tersedia.');
+        }
+
+        if (! $storage->exists($mcu->document_path, EmployeeDocumentStorage::PREFIX_MCU, $employee->id)) {
+            abort(404, 'Dokumen medical checkup tidak tersedia.');
+        }
+
+        $ext = pathinfo($mcu->document_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $checkupDate = $mcu->checkup_date?->format('Y-m-d') ?? 'mcu';
+        $filename = "mcu-{$mcu->employee_id}-{$checkupDate}.{$ext}";
+
+        $response = $storage->download(
+            $mcu->document_path,
+            $filename,
+            EmployeeDocumentStorage::PREFIX_MCU,
+            $employee->id
+        );
+
         $this->logDownload($request, 'mcu', $mcu->id);
 
-        return Storage::disk('public')->download(
-            $mcu->document_path,
-            "mcu-{$mcu->employee_id}-{$mcu->checkup_date}.pdf",
-            ['Content-Type' => 'application/pdf']
-        );
+        return $response;
     }
 
     public function certificate(Request $request, Employee $employee, EmployeeCertificate $certificate): mixed
@@ -74,27 +110,55 @@ class DocumentDownloadController extends Controller
             abort(401, 'Link download tidak valid atau sudah kadaluarsa.');
         }
 
-        if ($certificate->employee_id !== $employee->id) {
-            abort(404);
-        }
-
-        if (! $request->user()->can('view_employee_all')
-            && ! $request->user()->can('view_employee_unit')
+        if (! $request->user()?->can('view_employee_all')
+            && ! $request->user()?->can('view_employee_unit')
         ) {
             abort(403);
+        }
+
+        $scopedEmployee = app(OrganizationScopeService::class)
+            ->scopeVisibleTo(Employee::query(), $request->user())
+            ->where('id', $employee->id)
+            ->first();
+
+        if (! $scopedEmployee || (int) $certificate->employee_id !== (int) $scopedEmployee->id) {
+            abort(404);
         }
 
         if (! $certificate->document_path) {
             abort(404, 'Dokumen sertifikat tidak tersedia.');
         }
 
+        $storage = app(EmployeeDocumentStorage::class);
+
+        try {
+            $storage->validateOwnedPath(
+                $certificate->document_path,
+                EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+                $scopedEmployee->id
+            );
+        } catch (InvalidArgumentException) {
+            abort(404, 'Dokumen sertifikat tidak tersedia.');
+        }
+
+        if (! $storage->exists($certificate->document_path, EmployeeDocumentStorage::PREFIX_CERTIFICATES, $scopedEmployee->id)) {
+            abort(404, 'Dokumen sertifikat tidak tersedia.');
+        }
+
+        $ext = pathinfo($certificate->document_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $type = $certificate->certificate_type?->value ?? 'certificate';
+        $filename = "cert-{$type}-{$scopedEmployee->id}.{$ext}";
+
+        $response = $storage->download(
+            $certificate->document_path,
+            $filename,
+            EmployeeDocumentStorage::PREFIX_CERTIFICATES,
+            $scopedEmployee->id
+        );
+
         $this->logDownload($request, 'certificate', $certificate->id);
 
-        return Storage::disk('public')->download(
-            $certificate->document_path,
-            "cert-{$certificate->certificate_type}-{$employee->id}.pdf",
-            ['Content-Type' => 'application/pdf']
-        );
+        return $response;
     }
 
     public function kyc(Request $request, string $memberId, string $documentId): mixed

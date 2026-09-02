@@ -6,6 +6,15 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 2, 2026
 
+## 🎯 2026-09-02 - Complete Verified Rollback Safety (SEC-P0-03 R5)
+
+- Implemented pre-cleanup integrity evidence capture (`captureDocumentEvidence`) recording byte size and cryptographic SHA-256 hash of the previous document.
+- Hardened `isConfirmedPresentAndReadable` to reject null, false, empty strings, 0-byte content, and integrity/hash mismatches, ensuring the database is never rolled back to a missing, empty, or corrupt file.
+- Preserved the materialized private safety copy on `employee_documents` whenever public cleanup results in `ConfirmedPresent` or `Unknown`, guaranteeing that compensating rollback uses the verified private copy without depending on continued public storage availability.
+- Enforced verified deletion of the new file (`deleteFileFromDisk`) after successful database rollback, requiring `ConfirmedAbsent` and explicitly reporting unresolved private orphans if new-file removal fails or remains ambiguous.
+- Updated replacement test assertions to capture the actual new path and assert `exists($newPath) === false` on the private disk.
+- Added comprehensive test coverage for zero-byte/corrupt old file rollback rejection, private safety copy preservation when public storage becomes unavailable, new-file delete failure, and new-file post-delete verification exceptions.
+
 ## 🎯 2026-09-02 - Close Ambiguous Replacement Delete Failure (SEC-P0-03 R4)
 
 - Hardened `EmployeeDocumentStorage::replace()` with an explicit previous-file cleanup state machine (`DocumentCleanupState`: `confirmed_present`, `confirmed_absent`, `unknown`).

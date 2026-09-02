@@ -74,16 +74,19 @@ class EmployeeDocumentStorage
     }
 
     /**
-     * Replace document safely:
+     * Replace document safely with verified rollback safety:
      * 1. Validate previous path ownership if provided.
-     * 2. Write new file to private disk and verify write.
-     * 3. Execute DB update callback ($onUpdateDb).
-     * 4. If DB update fails, clean up new file and rethrow.
-     * 5. Clean up previous document with explicit cleanup states:
-     *    - confirmed_absent: clean success.
-     *    - confirmed_present: DB rollback to previousPath and deletion of newPath are performed
-     *      only when at least one valid old copy is positively confirmed to remain readable.
-     *    - unknown / ambiguous: DB remains on newPath and newPath is preserved on private disk.
+     * 2. Capture byte size and SHA-256 integrity evidence of previous document.
+     * 3. Write new file to private disk and verify write.
+     * 4. Execute DB update callback ($onUpdateDb).
+     * 5. If DB update fails, clean up new file using verified deletion and rethrow.
+     * 6. Clean up previous document:
+     *    - Materialize and verify a private safety copy for legacy-only documents before public cleanup.
+     *    - If public cleanup fails or is unknown, preserve the private safety copy so rollback does not depend on public availability.
+     *    - If cleanup is confirmed_absent: return newPath (clean success).
+     *    - If cleanup is confirmed_present or unknown: check if a valid old copy is positively confirmed present, readable, non-empty, and matching integrity evidence (size + SHA-256).
+     *    - When old copy is confirmed present and readable: roll DB back to previousPath, perform verified deletion of newPath, and report any unresolved orphan.
+     *    - When old copy integrity is invalid, 0-byte, corrupt, or missing: preserve DB on newPath and retain newPath on private disk to prevent document loss.
      */
     public function replace(
         UploadedFile $file,
@@ -96,8 +99,10 @@ class EmployeeDocumentStorage
         $employeeIdStr = (string) $employeeId;
         $this->validatePrefixAndEmployeeId($prefix, $employeeIdStr);
 
+        $previousEvidence = null;
         if ($previousPath) {
             $this->validateOwnedPath($previousPath, $prefix, $employeeIdStr);
+            $previousEvidence = $this->captureDocumentEvidence($previousPath, $prefix, $employeeIdStr);
         }
 
         $newPath = $this->store($file, $prefix, $employeeIdStr);
@@ -106,7 +111,7 @@ class EmployeeDocumentStorage
             $onUpdateDb($newPath);
         } catch (Throwable $e) {
             try {
-                Storage::disk(self::DISK)->delete($newPath);
+                $this->deleteFileFromDisk(Storage::disk(self::DISK), $newPath);
             } catch (Throwable) {
                 // Ignore deletion error of orphan
             }
@@ -122,8 +127,8 @@ class EmployeeDocumentStorage
                 return $newPath;
             }
 
-            // Cleanup failed or is ambiguous. Check if an old copy remains confirmed present and readable.
-            $oldConfirmed = $this->isConfirmedPresentAndReadable($previousPath, $prefix, $employeeIdStr);
+            // Cleanup failed or is ambiguous. Check if an old copy remains confirmed present, readable, and integrity-verified.
+            $oldConfirmed = $this->isConfirmedPresentAndReadable($previousPath, $prefix, $employeeIdStr, $previousEvidence);
 
             if ($oldConfirmed) {
                 $reverted = false;
@@ -142,10 +147,13 @@ class EmployeeDocumentStorage
                 }
 
                 if ($reverted) {
-                    try {
-                        Storage::disk(self::DISK)->delete($newPath);
-                    } catch (Throwable) {
-                        // Ignore deletion error of discarded new file
+                    // Verified deletion of newPath after successful DB rollback
+                    $newCleanResult = $this->deleteFileFromDisk(Storage::disk(self::DISK), $newPath);
+
+                    if (! $newCleanResult['state']->isConfirmedAbsent()) {
+                        $orphanException = $newCleanResult['exception'] ?? $cleanupException;
+                        $orphanMessage = "Document database reference safely rolled back to previous document [{$previousPath}], but failed to verify deletion of discarded new document [{$newPath}] from private storage (unresolved private orphan).";
+                        throw new RuntimeException($orphanMessage, previous: $orphanException);
                     }
 
                     if ($cleanupException instanceof Throwable) {
@@ -155,7 +163,7 @@ class EmployeeDocumentStorage
                     throw new RuntimeException("Failed to securely delete document file for path [{$previousPath}]. Database reference rolled back to previous document.");
                 }
             } else {
-                // Old file existence is false or cannot be established.
+                // Old file existence is false, 0-byte, corrupted, or cannot be established.
                 // Keep DB reference on newPath, keep newPath on private disk.
                 // Never delete the only confirmed valid document copy.
                 $message = "Ambiguous or incomplete cleanup of previous document [{$previousPath}]. Retaining new document [{$newPath}] in database and private storage to prevent data loss.";
@@ -171,8 +179,63 @@ class EmployeeDocumentStorage
     }
 
     /**
+     * Capture byte size and SHA-256 integrity evidence of an existing document before cleanup.
+     * Rejects 0-byte, empty, or unreadable files.
+     *
+     * @return array{size: int, sha256: string, disk: string}|null
+     */
+    public function captureDocumentEvidence(
+        string $path,
+        string $expectedPrefix,
+        string|int $expectedEmployeeId
+    ): ?array {
+        try {
+            $this->validateOwnedPath($path, $expectedPrefix, (string) $expectedEmployeeId);
+
+            // Check private disk first
+            $privateDisk = Storage::disk(self::DISK);
+            try {
+                if ($privateDisk->exists($path)) {
+                    $content = $privateDisk->get($path);
+                    if (is_string($content) && strlen($content) > 0) {
+                        return [
+                            'size' => strlen($content),
+                            'sha256' => hash('sha256', $content),
+                            'disk' => self::DISK,
+                        ];
+                    }
+                }
+            } catch (Throwable) {
+                // Private check or read failed
+            }
+
+            // Fall back to legacy public disk
+            $publicDisk = Storage::disk(self::LEGACY_DISK);
+            try {
+                if ($publicDisk->exists($path)) {
+                    $content = $publicDisk->get($path);
+                    if (is_string($content) && strlen($content) > 0) {
+                        return [
+                            'size' => strlen($content),
+                            'sha256' => hash('sha256', $content),
+                            'disk' => self::LEGACY_DISK,
+                        ];
+                    }
+                }
+            } catch (Throwable) {
+                // Public check or read failed
+            }
+
+            return null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * Clean up previous document across legacy public and private storage.
-     * Materializes and verifies a private copy of legacy-only files prior to public deletion.
+     * Materializes and verifies a private safety copy of legacy-only files prior to public deletion.
+     * Preserves the materialized private safety copy if public cleanup fails or is ambiguous.
      *
      * @return array{state: DocumentCleanupState, exception: ?Throwable}
      */
@@ -186,28 +249,40 @@ class EmployeeDocumentStorage
         // Pre-check existence on both disks
         $hasPrivate = false;
         try {
-            $hasPrivate = (bool) $privateDisk->exists($previousPath);
+            if ($privateDisk->exists($previousPath)) {
+                $privContent = $privateDisk->get($previousPath);
+                if (is_string($privContent) && strlen($privContent) > 0) {
+                    $hasPrivate = true;
+                }
+            }
         } catch (Throwable) {
             $hasPrivate = false;
         }
 
         $hasPublic = false;
         try {
-            $hasPublic = (bool) $publicDisk->exists($previousPath);
+            if ($publicDisk->exists($previousPath)) {
+                $pubContent = $publicDisk->get($previousPath);
+                if (is_string($pubContent) && strlen($pubContent) > 0) {
+                    $hasPublic = true;
+                }
+            }
         } catch (Throwable) {
             $hasPublic = false;
         }
 
-        // Materialize and verify a private copy of a legacy-only previous document before attempting public cleanup
+        // Materialize and verify a private safety copy of a legacy-only previous document before attempting public cleanup
+        $materializedPrivate = false;
         if ($hasPublic && ! $hasPrivate) {
             try {
                 $content = $publicDisk->get($previousPath);
-                if ($content !== null && $content !== false) {
+                if (is_string($content) && strlen($content) > 0) {
                     $written = $privateDisk->put($previousPath, $content);
                     if ($written && $privateDisk->exists($previousPath)) {
                         $readBack = $privateDisk->get($previousPath);
                         if ($readBack === $content) {
                             $hasPrivate = true;
+                            $materializedPrivate = true;
                         }
                     }
                 }
@@ -216,29 +291,48 @@ class EmployeeDocumentStorage
             }
         }
 
-        // 1. Delete from legacy public disk
-        $publicResult = $this->deleteFileFromDisk($publicDisk, $previousPath);
+        // 1. Delete from legacy public disk if present
+        $publicResult = [
+            'state' => DocumentCleanupState::ConfirmedAbsent,
+            'exception' => null,
+        ];
+        if ($hasPublic) {
+            $publicResult = $this->deleteFileFromDisk($publicDisk, $previousPath);
+        }
 
-        // 2. Delete from private disk
+        // 2. Delete from private disk ONLY if public cleanup succeeded (ConfirmedAbsent).
+        // If public cleanup failed (ConfirmedPresent or Unknown), preserve the private copy so rollback can use it!
         $privateResult = [
             'state' => DocumentCleanupState::ConfirmedAbsent,
             'exception' => null,
         ];
 
-        $shouldCleanPrivate = $hasPrivate;
-        if (! $shouldCleanPrivate) {
-            try {
-                $shouldCleanPrivate = (bool) $privateDisk->exists($previousPath);
-            } catch (Throwable) {
-                $shouldCleanPrivate = true;
+        $publicState = $publicResult['state'];
+
+        if ($publicState->isConfirmedAbsent()) {
+            $shouldCleanPrivate = $hasPrivate || $materializedPrivate;
+            if (! $shouldCleanPrivate) {
+                try {
+                    $shouldCleanPrivate = (bool) $privateDisk->exists($previousPath);
+                } catch (Throwable) {
+                    $shouldCleanPrivate = true;
+                }
+            }
+
+            if ($shouldCleanPrivate) {
+                $privateResult = $this->deleteFileFromDisk($privateDisk, $previousPath);
+            }
+        } else {
+            // Public cleanup failed or is unknown.
+            // Do NOT delete the private safety copy!
+            if ($hasPrivate || $materializedPrivate) {
+                $privateResult = [
+                    'state' => DocumentCleanupState::ConfirmedPresent,
+                    'exception' => null,
+                ];
             }
         }
 
-        if ($shouldCleanPrivate) {
-            $privateResult = $this->deleteFileFromDisk($privateDisk, $previousPath);
-        }
-
-        $publicState = $publicResult['state'];
         $privateState = $privateResult['state'];
 
         if ($publicState->isConfirmedAbsent() && $privateState->isConfirmedAbsent()) {
@@ -362,12 +456,17 @@ class EmployeeDocumentStorage
     }
 
     /**
-     * Positively confirm that at least one valid copy of the document remains present and readable.
+     * Positively confirm that at least one valid copy of the document remains present, readable, non-empty,
+     * and matches captured integrity evidence (SHA-256 and size) before rollback.
+     * Rejects null, false, empty string, zero-byte content, and hash mismatches.
+     *
+     * @param  array{size?: int, sha256?: string}|null  $expectedEvidence
      */
     public function isConfirmedPresentAndReadable(
         string $path,
         ?string $expectedPrefix = null,
-        string|int|null $expectedEmployeeId = null
+        string|int|null $expectedEmployeeId = null,
+        ?array $expectedEvidence = null
     ): bool {
         try {
             if ($expectedPrefix !== null && $expectedEmployeeId !== null) {
@@ -376,13 +475,25 @@ class EmployeeDocumentStorage
                 $this->validatePath($path);
             }
 
+            $expectedSha256 = $expectedEvidence['sha256'] ?? null;
+            $expectedSize = $expectedEvidence['size'] ?? null;
+
             // Check private disk first
             $privateDisk = Storage::disk(self::DISK);
             try {
                 if ($privateDisk->exists($path)) {
                     $content = $privateDisk->get($path);
-                    if ($content !== null && $content !== false) {
-                        return true;
+                    if (is_string($content) && strlen($content) > 0) {
+                        $valid = true;
+                        if ($expectedSize !== null && strlen($content) !== $expectedSize) {
+                            $valid = false;
+                        }
+                        if ($valid && $expectedSha256 !== null && hash('sha256', $content) !== $expectedSha256) {
+                            $valid = false;
+                        }
+                        if ($valid) {
+                            return true;
+                        }
                     }
                 }
             } catch (Throwable) {
@@ -394,8 +505,17 @@ class EmployeeDocumentStorage
             try {
                 if ($publicDisk->exists($path)) {
                     $content = $publicDisk->get($path);
-                    if ($content !== null && $content !== false) {
-                        return true;
+                    if (is_string($content) && strlen($content) > 0) {
+                        $valid = true;
+                        if ($expectedSize !== null && strlen($content) !== $expectedSize) {
+                            $valid = false;
+                        }
+                        if ($valid && $expectedSha256 !== null && hash('sha256', $content) !== $expectedSha256) {
+                            $valid = false;
+                        }
+                        if ($valid) {
+                            return true;
+                        }
                     }
                 }
             } catch (Throwable) {

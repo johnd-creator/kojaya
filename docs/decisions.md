@@ -1425,6 +1425,7 @@ A unified, robust, and mathematically sound organization isolation foundation wa
    - The canonical organization isolation boundary centers exclusively around `App\Services\Authorization\OrganizationScopeService` and its domain facade `OrganizationScopedQueryService`.
    - Ad-hoc, parallel tenant-scoping frameworks (such as standalone `TenantService` or `TenantResolver` classes) are prohibited.
    - Global Eloquent scopes (`static::addGlobalScope`) are strictly avoided.
+   - To prevent cross-domain permission confusion, `OrganizationScopedQueryService::scopeVisibleTo()` and `resolveVisible()` delegate directly to `OrganizationScopeService` without forcing cooperative global permissions on non-cooperative models (e.g. `view_cooperative_all` never satisfies an `Employee` boundary).
 
 3. **Canonical Primitives:**
    - **Query Scoping (`scopeVisibleTo`):** Filters queries to records belonging to the authenticated actor's organization or grants global visibility if the actor possesses the explicit domain global permission.
@@ -1443,11 +1444,13 @@ A unified, robust, and mathematically sound organization isolation foundation wa
    - **Rule H (Aggregates Are Tenant Data):** Analytical queries, counts, sums, and exports must be scoped by organization before calculation.
 
 5. **Fail-Closed Contract & Registry Integrity:**
-   - Models must either be registered in `OrganizationScopeService::REGISTERED_PATHS` or implement `App\Contracts\OrganizationScopedModel` (e.g. `Employee`, `CooperativeMember`, `RewardRedemption`).
+   - Exactly 38 models are registered in `OrganizationScopeService::REGISTERED_PATHS` or implement `App\Contracts\OrganizationScopedModel` (e.g. `Employee`, `CooperativeMember`, `RewardRedemption`).
+   - Global permissions remain strictly defined in the centralized `OrganizationScopeService::GLOBAL_PERMISSIONS` registry.
+   - Models not yet contracted or registered (e.g., POS transactions, products, categories, daily closings) are documented as known domain gaps to be remediated in later P1 tasks; they fail closed until explicitly registered.
    - Unregistered models, broken relationship methods, missing database columns, and null-resolved organization IDs throw `OrganizationScopeException` even for administrative actors.
 
 ### Consequences
 
 - **P1 Domain Remediation Readiness:** Provides the verified canonical primitives needed to systematically resolve known P1 domain issues (Reward Redemptions, POS Transactions, Cooperative Reports, POS Credit, POS Daily Closing, Points Admin, POS Catalogs) without architectural ambiguity.
 - **Zero Regressions:** Fully verified and backwards-compatible with SEC-P0-01 (Webhook Fail-Closed), SEC-P0-02 (Strict Token Abilities), and SEC-P0-03 (Sensitive File Storage).
-- **Test Coverage:** Backed by 16 dedicated security foundation tests in `OrganizationIsolationFoundationTest` covering direct ownership, relational ownership, global permissions, unit-only administrative restrictions, null-org fail-closed, unsupported model fail-closed, safe resolution, parent-child isolation, mutation denial with state preservation, forgery prevention, and full registry schema integrity.
+- **Test Coverage:** Backed by 20 dedicated security foundation tests in `OrganizationIsolationFoundationTest` covering direct ownership, relational ownership, global permissions, cross-domain isolation, unit-only administrative restrictions, null-org fail-closed, unsupported model fail-closed, safe resolution, parent-child isolation, mutation denial with state preservation, forgery prevention, and full registry schema integrity.

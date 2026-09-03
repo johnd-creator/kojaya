@@ -32,7 +32,7 @@ class OrganizationScopedQueryService
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return $this->scopeService->scopeVisibleTo($query, $user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        return $this->scopeService->scopeVisibleTo($query, $user);
     }
 
     /**
@@ -76,6 +76,6 @@ class OrganizationScopedQueryService
      */
     public function resolveVisible(Builder|string $queryOrClass, User $user, string|int $id): Model
     {
-        return $this->scopeService->resolveVisible($queryOrClass, $user, $id, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        return $this->scopeService->resolveVisible($queryOrClass, $user, $id);
     }
 }

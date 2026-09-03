@@ -637,7 +637,8 @@ authenticated identity + functional permission + organization visibility + objec
 3. **Ownership Paths & Contract:**
    - **Direct Ownership:** Model defines `'organization_id'` directly on its table.
    - **Relational Ownership:** Model derives ownership through relations (e.g., `RewardRedemption -> member.organization_id`, `CooperativeMemberSaving -> member.organization_id`).
-   - **Model Contract:** Models implement `App\Contracts\OrganizationScopedModel` declaring `organizationScopePath(): string` (and optionally `organizationGlobalPermission(): ?string`). Models implementing this contract take precedence over registry mappings.
+   - **Model Contract:** Models implement `App\Contracts\OrganizationScopedModel` declaring `organizationScopePath(): string` to specify their canonical ownership path. Global domain permissions remain explicitly defined in the centralized `OrganizationScopeService::GLOBAL_PERMISSIONS` registry. Models implementing this contract take precedence over registry path mappings.
+   - **Supported vs. Unresolved Models:** Exactly 38 models are currently registered or contracted in the foundation. Unregistered models (such as POS transaction, product, and category models) are recognized ownership candidates and domain gaps to be remediated in later P1 tasks; they fail closed until explicitly registered.
 
 4. **Rules of Isolation:**
    - **Rule A (Tenant Isolation):** Standard users are strictly isolated to their own organization.

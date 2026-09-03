@@ -535,16 +535,140 @@ class OrganizationIsolationFoundationTest extends TestCase
             $resolvedPath = $this->scopeService->pathFor($instance);
             $this->assertSame($path, $resolvedPath, "Path for [{$modelClass}] mismatch.");
         }
+
+        // Exact registered paths count verification
+        $this->assertCount(38, $registeredPaths);
     }
 
     /**
-     * Section 22 — Contract Precedence & Model-Level Global Permission:
+     * Section 6 & SEC-P1-01-R1 — Global Permission Registry Integrity & Domain Isolation:
+     * Proves explicit model-to-permission mappings, prevents cross-domain substitution,
+     * and validates every permission against PermissionEnum.
      */
-    public function test_model_contract_takes_precedence_over_registry_and_supports_custom_global_permission(): void
+    public function test_global_permission_registry_integrity_and_domain_isolation(): void
+    {
+        $orgA = Organization::factory()->create();
+
+        // 1. Minimum canonical mappings
+        $this->assertSame('view_employee_all', $this->scopeService->globalPermissionFor(new Employee));
+        $this->assertSame('view_cooperative_all', $this->scopeService->globalPermissionFor(new CooperativeMember));
+        $this->assertSame('view_cooperative_all', $this->scopeService->globalPermissionFor(new RewardRedemption));
+
+        // 2. Prove no permission-domain substitution
+        $userWithCoop = User::factory()->create(['organization_id' => $orgA->id]);
+        $userWithCoop->givePermissionTo(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        $this->assertFalse(
+            $userWithCoop->can($this->scopeService->globalPermissionFor(new Employee)),
+            'view_cooperative_all must never satisfy view_employee_all.'
+        );
+
+        $userWithHr = User::factory()->create(['organization_id' => $orgA->id]);
+        $userWithHr->givePermissionTo(PermissionEnum::EMPLOYEE_VIEW_ALL->value);
+        $this->assertFalse(
+            $userWithHr->can($this->scopeService->globalPermissionFor(new CooperativeMember)),
+            'view_employee_all must never satisfy view_cooperative_all.'
+        );
+
+        // 3. Validate every configured global permission against PermissionEnum
+        $validPermissions = PermissionEnum::values();
+        $registeredGlobals = $this->scopeService->registeredGlobalPermissions();
+        $this->assertNotEmpty($registeredGlobals);
+
+        foreach ($registeredGlobals as $modelClass => $permission) {
+            $this->assertTrue(class_exists($modelClass), "Model [{$modelClass}] in global permissions does not exist.");
+            $this->assertContains(
+                $permission,
+                $validPermissions,
+                "Global permission [{$permission}] for [{$modelClass}] is not defined in PermissionEnum."
+            );
+        }
+    }
+
+    /**
+     * SEC-P1-01-R1 Test A & B — Cooperative Global Permission Cannot Globally Scope or Resolve Foreign Employee:
+     */
+    public function test_cooperative_global_permission_cannot_globally_scope_or_resolve_foreign_employee(): void
     {
         $orgA = Organization::factory()->create();
         $orgB = Organization::factory()->create();
 
+        $userA = User::factory()->create(['organization_id' => $orgA->id]);
+        $userA->givePermissionTo(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        // Note: userA does NOT have view_employee_all
+
+        $employeeA = Employee::factory()->create(['organization_id' => $orgA->id]);
+        $employeeB = Employee::factory()->create(['organization_id' => $orgB->id]);
+
+        // A. scopeVisibleTo through cooperative facade does NOT grant Employee B visibility
+        $scopedQuery = Employee::query();
+        $this->scopedQueryService->scopeVisibleTo($scopedQuery, $userA);
+        $results = $scopedQuery->get();
+
+        $this->assertTrue($results->contains('id', $employeeA->id));
+        $this->assertFalse($results->contains('id', $employeeB->id));
+
+        // B. resolveVisible through cooperative facade fails closed with ModelNotFoundException (404)
+        $this->expectException(ModelNotFoundException::class);
+        $this->scopedQueryService->resolveVisible(Employee::class, $userA, $employeeB->id);
+    }
+
+    /**
+     * SEC-P1-01-R1 Test C — Employee Global Permission Resolves Foreign Employee Through Canonical Service:
+     */
+    public function test_employee_global_permission_resolves_foreign_employee_through_canonical_service(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+
+        $globalHrUser = User::factory()->create(['organization_id' => $orgA->id]);
+        $globalHrUser->givePermissionTo(PermissionEnum::EMPLOYEE_VIEW_ALL->value);
+
+        $employeeA = Employee::factory()->create(['organization_id' => $orgA->id]);
+        $employeeB = Employee::factory()->create(['organization_id' => $orgB->id]);
+
+        $resolvedA = $this->scopeService->resolveVisible(Employee::class, $globalHrUser, $employeeA->id);
+        $resolvedB = $this->scopeService->resolveVisible(Employee::class, $globalHrUser, $employeeB->id);
+
+        $this->assertSame($employeeA->id, $resolvedA->id);
+        $this->assertSame($employeeB->id, $resolvedB->id);
+    }
+
+    /**
+     * SEC-P1-01-R1 Test D — Cooperative Global Compatibility Remains Intact for Cooperative Domain:
+     */
+    public function test_cooperative_global_compatibility_remains_intact_for_cooperative_members(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+
+        $globalCoopUser = User::factory()->create(['organization_id' => $orgA->id]);
+        $globalCoopUser->givePermissionTo(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+
+        $memberA = CooperativeMember::factory()->create(['organization_id' => $orgA->id]);
+        $memberB = CooperativeMember::factory()->create(['organization_id' => $orgB->id]);
+
+        // Scoping through facade allows both members for user with view_cooperative_all
+        $query = CooperativeMember::query();
+        $this->scopedQueryService->scopeVisibleTo($query, $globalCoopUser);
+        $results = $query->get();
+
+        $this->assertTrue($results->contains('id', $memberA->id));
+        $this->assertTrue($results->contains('id', $memberB->id));
+
+        // Resolution through facade allows both members for user with view_cooperative_all
+        $resolvedA = $this->scopedQueryService->resolveVisible(CooperativeMember::class, $globalCoopUser, $memberA->id);
+        $resolvedB = $this->scopedQueryService->resolveVisible(CooperativeMember::class, $globalCoopUser, $memberB->id);
+
+        $this->assertSame($memberA->id, $resolvedA->id);
+        $this->assertSame($memberB->id, $resolvedB->id);
+    }
+
+    /**
+     * Section 22 — Contract Precedence:
+     * Proves that a model implementing OrganizationScopedModel resolves its path via contract.
+     */
+    public function test_model_contract_takes_precedence_over_registry(): void
+    {
         $customModel = new class extends Employee implements OrganizationScopedModel
         {
             protected $table = 'employees';
@@ -553,20 +677,9 @@ class OrganizationIsolationFoundationTest extends TestCase
             {
                 return 'organization_id';
             }
-
-            public function organizationGlobalPermission(): ?string
-            {
-                return 'custom_global_permission';
-            }
         };
 
         $this->assertSame('organization_id', $this->scopeService->pathFor($customModel));
-        $this->assertSame('custom_global_permission', $this->scopeService->globalPermissionFor($customModel));
-
-        $user = User::factory()->create(['organization_id' => $orgA->id]);
-        $visibility = $this->scopeService->visibilityFor($user, $this->scopeService->globalPermissionFor($customModel));
-        $this->assertFalse($visibility->global);
-        $this->assertSame($orgA->id, $visibility->organizationId);
     }
 
     /**

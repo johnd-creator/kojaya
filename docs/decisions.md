@@ -1444,9 +1444,10 @@ A unified, robust, and mathematically sound organization isolation foundation wa
    - **Rule H (Aggregates Are Tenant Data):** Analytical queries, counts, sums, and exports must be scoped by organization before calculation.
 
 5. **Fail-Closed Contract & Registry Integrity:**
-   - Exactly 38 models are registered in `OrganizationScopeService::REGISTERED_PATHS` or implement `App\Contracts\OrganizationScopedModel` (e.g. `Employee`, `CooperativeMember`, `RewardRedemption`).
+   - The central registry explicitly defines ownership paths for exactly 38 models (`OrganizationScopeService::registeredPaths()`), with 30 registered global permissions (`registeredGlobalPermissions()`).
+   - Representative models implement `App\Contracts\OrganizationScopedModel` declaring their canonical ownership path (`Employee`, `CooperativeMember`, `RewardRedemption`).
    - Global permissions remain strictly defined in the centralized `OrganizationScopeService::GLOBAL_PERMISSIONS` registry.
-   - Models not yet contracted or registered (e.g., POS transactions, products, categories, daily closings) are documented as known domain gaps to be remediated in later P1 tasks; they fail closed until explicitly registered.
+   - Models not yet contracted or registered (e.g., POS transactions, products, categories, daily closings, payments, transaction items) are documented as known domain gaps to be remediated in later P1 tasks; they fail closed (`OrganizationScopeException`) until explicitly registered.
    - Unregistered models, broken relationship methods, missing database columns, and null-resolved organization IDs throw `OrganizationScopeException` even for administrative actors.
 
 ### Consequences

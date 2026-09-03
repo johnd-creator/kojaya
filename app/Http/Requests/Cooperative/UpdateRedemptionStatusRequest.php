@@ -17,6 +17,7 @@ class UpdateRedemptionStatusRequest extends FormRequest
         return [
             'status' => ['required', 'string', Rule::in(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'organization_id' => ['prohibited'],
         ];
     }
 }

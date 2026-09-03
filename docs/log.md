@@ -6,6 +6,17 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 3, 2026
 
+## 🎯 2026-09-03 - Reward Redemption Cross-Organization Isolation (SEC-P1-02)
+
+- Adopted canonical organization isolation foundation in `RewardRedemptionController::show` and `updateStatus` using `resolveVisible(RewardRedemption::class, $request->user(), $redemptionId)` based on canonical relational ownership `member.organization_id`.
+- Eliminated cross-tenant object existence enumeration: foreign organization redemption detail and mutation attempts now consistently return 404 Not Found (via `ModelNotFoundException`) matching non-existent UUIDs instead of revealing existence via 403 Forbidden.
+- Enforced strict mutation execution ordering: authentication -> tenant-scoped resolution -> functional policy authorization (`manage_cooperative_redemption`) -> status validation -> domain mutation (`PointService::updateRedemptionStatus`).
+- Verified complete zero-side-effect guarantee on denied cross-tenant mutations: redemption status, notes, processed timestamp, reward stock, member points, point transactions, refund records, and notifications remain strictly unmodified.
+- Enforced Rule G (Client Forgery Prevention): added `'organization_id' => ['prohibited']` to `UpdateRedemptionStatusRequest`.
+- Preserved safe member self-service APIs (`/api/v1/member/reward-redemptions`, `/api/v1/rewards/{reward}/redeem`, `/member/rewards`, `/member/rewards/{reward}/redeem`) bounded strictly to the authenticated member context without administrative or global overrides.
+- Added dedicated security feature test suite `RewardRedemptionOrganizationIsolationTest` with 13 tests (98 assertions) covering admin list isolation, status filter isolation, foreign detail denial (404), foreign mutation denial with state preservation (404), route model binding regression, same-org positive controls, global staff positive controls, global without functional permission denial (403), functional permission without global visibility denial (404), null-org fail-closed (403), client forgery prevention, and member self-service isolation.
+- Verified zero regressions on SEC-P1-01 foundation tests (20 passed, 243 assertions), P0 security suites (115 passed, 545 assertions), and existing reward tests (5 passed, 90 assertions).
+
 ## 🎯 2026-09-03 - Canonical Organization Isolation Foundation (SEC-P1-01, R1 & R2)
 
 - Formalized the canonical multi-tenant isolation foundation centered on `App\Services\Authorization\OrganizationScopeService` and `App\Contracts\OrganizationScopedQueryService`.

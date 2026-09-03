@@ -31,28 +31,42 @@ class RewardRedemptionController extends Controller
         ]);
     }
 
-    public function show(Request $request, RewardRedemption $redemption): Response
-    {
-        $this->authorize('view', $redemption);
+    public function show(
+        Request $request,
+        RewardRedemption|string $redemption,
+        OrganizationScopedQueryService $scopeService
+    ): Response {
+        $redemptionId = $redemption instanceof RewardRedemption ? (string) $redemption->getKey() : $redemption;
 
-        $redemption->load(['reward', 'member', 'pointTransaction']);
+        /** @var RewardRedemption $redemptionModel */
+        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemptionId);
+
+        $this->authorize('view', $redemptionModel);
+
+        $redemptionModel->load(['reward', 'member', 'pointTransaction']);
 
         return Inertia::render('Cooperative/Redemptions/Show', [
-            'redemption' => $redemption,
+            'redemption' => $redemptionModel,
         ]);
     }
 
     public function updateStatus(
         UpdateRedemptionStatusRequest $request,
-        RewardRedemption $redemption,
-        PointService $pointService
+        RewardRedemption|string $redemption,
+        PointService $pointService,
+        OrganizationScopedQueryService $scopeService
     ): RedirectResponse {
-        $this->authorize('update', $redemption);
+        $redemptionId = $redemption instanceof RewardRedemption ? (string) $redemption->getKey() : $redemption;
+
+        /** @var RewardRedemption $redemptionModel */
+        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemptionId);
+
+        $this->authorize('update', $redemptionModel);
 
         $status = $request->validated('status');
 
         $pointService->updateRedemptionStatus(
-            redemption: $redemption,
+            redemption: $redemptionModel,
             status: $status,
             notes: $request->validated('notes'),
         );

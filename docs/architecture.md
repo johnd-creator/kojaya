@@ -639,6 +639,13 @@ authenticated identity + functional permission + organization visibility + objec
    - **Relational Ownership:** Model derives ownership through relations (e.g., `RewardRedemption -> member.organization_id`, `CooperativeMemberSaving -> member.organization_id`).
    - **Model Contract:** Models implement `App\Contracts\OrganizationScopedModel` declaring `organizationScopePath(): string` to specify their canonical ownership path. Global domain permissions remain explicitly defined in the centralized `OrganizationScopeService::GLOBAL_PERMISSIONS` registry. Models implementing this contract take precedence over registry path mappings.
    - **Registry Counts & Supported Models:** The central registry defines exactly 38 registered paths (`registeredPaths()`) and 30 registered global permissions (`registeredGlobalPermissions()`). Representative models implement `App\Contracts\OrganizationScopedModel` (`Employee`, `CooperativeMember`, `RewardRedemption`). Unregistered models (including POS transactions, products, categories, daily closings, payments, and transaction items) are documented domain gaps to be remediated in later P1 tasks; they fail closed (`OrganizationScopeException`) until explicitly registered.
+   - **Reward Redemption Domain Architecture (SEC-P1-02):**
+     - Canonical ownership path: `RewardRedemption -> member.organization_id` (relational ownership).
+     - List endpoint: Scoped using `scopeVisibleTo($query, $user)`; pagination totals and filters (`?status=...`) remain strictly isolated.
+     - Detail & Mutation endpoints: Explicitly resolved via `resolveVisible(RewardRedemption::class, $user, $redemptionId)` before functional authorization, returning 404 Not Found on cross-tenant requests to prevent resource enumeration.
+     - Policy & Execution ordering: Authentication -> tenant-scoped resolution -> functional policy check (`manage_cooperative_redemption`) -> validation -> domain mutation (`PointService::updateRedemptionStatus`), guaranteeing zero unintended side effects on foreign data.
+     - Client forgery prevention: `'organization_id' => ['prohibited']` in `UpdateRedemptionStatusRequest`.
+     - Member self-service: Strictly isolated to authenticated member via `$request->user()->cooperativeMember`.
 
 4. **Rules of Isolation:**
    - **Rule A (Tenant Isolation):** Standard users are strictly isolated to their own organization.

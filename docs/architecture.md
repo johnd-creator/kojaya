@@ -608,6 +608,46 @@ The SEC-P0-03 hardening operates under six documented lifecycle states:
 5. **Orphan Inventory Resolved:** Unreferenced public orphan files (accounting for soft-deleted records via `withTrashed()`) are inventoried and reconciled.
 6. **SEC-P0-03 Operationally Closed:** Zero unresolved legacy files or orphans remain, and migration command completes with success.
 
+---
+
+## 🏢 Multi-Tenant & Organization Isolation Architecture (SEC-P1-01)
+
+### Core Invariant
+All multi-tenant data access and operations in Kojaya must strictly enforce the following security invariant:
+```text
+authenticated identity + functional permission + organization visibility + object / parent ownership = authorized operation
+```
+
+### Canonical Foundation Architecture
+1. **Single Source of Truth (`OrganizationScopeService`):**
+   - The central service `App\Services\Authorization\OrganizationScopeService` defines all registered model paths, model-specific global permissions, query scoping, and visibility assertions.
+   - For the cooperative domain, `App\Contracts\OrganizationScopedQueryService` acts as the domain-focused facade.
+   - No ad-hoc scoping frameworks or global Eloquent scopes (`static::addGlobalScope`) are permitted.
+
+2. **Canonical Primitives:**
+   - **`scopeVisibleTo(Builder $query, User $user, ?string $globalPermission = null): Builder`**
+     Applies SQL `WHERE organization_id = ?` (for direct models) or `whereHas('relation', ...)` (for relational models) based on user's organization visibility.
+   - **`resolveVisible(Builder|string $queryOrClass, User $user, string|int $id, ?string $globalPermission = null): Model`**
+     Scopes query first, then executes `findOrFail($id)`. Throws `ModelNotFoundException` (404 Not Found) if the object belongs to another tenant, avoiding resource existence disclosure.
+   - **`assertVisible(User $user, Model $model): void`**
+     Enforces tenant visibility on an already-resolved model instance. Throws `AuthorizationException` (403 Forbidden) if outside user visibility.
+   - **`assertOrganizationIdentifier(string|int $organizationId): string`**
+     Validates organization ID existence in `organizations` table.
+
+3. **Ownership Paths & Contract:**
+   - **Direct Ownership:** Model defines `'organization_id'` directly on its table.
+   - **Relational Ownership:** Model derives ownership through relations (e.g., `RewardRedemption -> member.organization_id`, `CooperativeMemberSaving -> member.organization_id`).
+   - **Model Contract:** Models implement `App\Contracts\OrganizationScopedModel` declaring `organizationScopePath(): string` (and optionally `organizationGlobalPermission(): ?string`). Models implementing this contract take precedence over registry mappings.
+
+4. **Rules of Isolation:**
+   - **Rule A (Tenant Isolation):** Standard users are strictly isolated to their own organization.
+   - **Rule B (Explicit Global Authority):** Global visibility requires explicit domain permission (e.g. `view_cooperative_all`, `view_employee_all`), never role names, `is_admin`, null org, or wildcard tokens.
+   - **Rule C (Null Org Fails Closed):** User with `organization_id = null` and no global permission throws `AuthorizationException`.
+   - **Rule D (Direct Ownership):** Scoped via qualified `organization_id`.
+   - **Rule E (Relational Ownership):** Scoped via `whereHas` with verified relation path.
+   - **Rule F (Parent / Child Security):** Resolve parent via `resolveVisible`, then resolve child via parent relationship (`$parent->children()->findOrFail($childId)`).
+   - **Rule G (Client Forgery Prevention):** Prohibit client assignment of tenant identifiers (`'organization_id' => ['prohibited']`).
+   - **Rule H (Aggregates Are Tenant Data):** All counts, sums, averages, and group-by reports must be scoped to the tenant organization.
 
 ---
 

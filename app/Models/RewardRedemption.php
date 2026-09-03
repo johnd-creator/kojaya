@@ -2,15 +2,21 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RewardRedemption extends Model
+class RewardRedemption extends Model implements OrganizationScopedModel
 {
     /** @use HasFactory<\Database\Factories\RewardRedemptionFactory> */
     use HasFactory, HasUuids;
+
+    public function organizationScopePath(): string
+    {
+        return 'member.organization_id';
+    }
 
     protected $fillable = [
         'reward_id',

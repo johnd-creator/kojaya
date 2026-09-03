@@ -2,13 +2,19 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use App\Models\Traits\HasOrganizationScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Employee extends Model
+class Employee extends Model implements OrganizationScopedModel
 {
     use HasFactory, HasOrganizationScope;
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
 
     protected $fillable = [
         'user_id',

@@ -4,7 +4,18 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 2, 2026
+**Last Updated:** September 3, 2026
+
+## 🎯 2026-09-03 - Canonical Organization Isolation Foundation (SEC-P1-01)
+
+- Formalized the canonical multi-tenant isolation foundation centered on `App\Services\Authorization\OrganizationScopeService` and `App\Contracts\OrganizationScopedQueryService`.
+- Added canonical primitive `resolveVisible(Builder|string $queryOrClass, User $user, string|int $id, ?string $globalPermission = null): Model` to scope queries before finding IDs and fail with `ModelNotFoundException` (404 Not Found) on cross-tenant requests, preventing resource enumeration.
+- Enforced core security invariant: `authenticated identity + functional permission + organization visibility + object / parent ownership = authorized operation`.
+- Enforced Rules A through H: strict tenant isolation, explicit domain global authority (rejecting role-name or null-org bypasses), null-org fail-closed (`AuthorizationException`), direct ownership (`organization_id`), relational ownership (`whereHas` paths), parent-child isolation (`resolveVisible` parent -> child relation), client ownership forgery prevention (`'organization_id' => ['prohibited']`), and aggregate tenant scoping.
+- Implemented `OrganizationScopedModel` contract on representative models (`Employee`, `CooperativeMember`, `RewardRedemption`).
+- Hardened model-level global permission support (`organizationGlobalPermission`).
+- Added comprehensive test suite `OrganizationIsolationFoundationTest` with 16 tests (170 assertions) verifying all isolation rules, parent-child security, mutation denial with state preservation, forgery prevention, and full registry schema integrity.
+- Verified 100% passing across the full regression test suite (1,744 tests, 11,526 assertions) and all P0 security suites without regressions.
 
 ## 🎯 2026-09-02 - Fail-Closed Public Presence and Mandatory Rollback Evidence (SEC-P0-03 R6)
 

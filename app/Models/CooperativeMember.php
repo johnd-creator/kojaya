@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use App\Exceptions\PiiPlaintextRetiredException;
 use App\Services\Security\PiiCryptoService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,9 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CooperativeMember extends Model
+class CooperativeMember extends Model implements OrganizationScopedModel
 {
     use HasFactory, SoftDeletes;
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
 
     protected $fillable = [
         'organization_id',

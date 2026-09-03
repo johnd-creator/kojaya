@@ -158,8 +158,29 @@ class OrganizationScopeService
         }
 
         return $query->whereHas(implode('.', $segments), function (Builder $relatedQuery) use ($organizationColumn, $visibility): void {
-            $relatedQuery->where($organizationColumn, $visibility->organizationId);
+            $relatedQuery->where($relatedQuery->getModel()->qualifyColumn($organizationColumn), $visibility->organizationId);
         });
+    }
+
+    /**
+     * Resolve a model by ID within the user's visible organization scope.
+     * Scopes the query first, then finds the record or throws ModelNotFoundException (404).
+     *
+     * @template T of Model
+     *
+     * @param  Builder<T>|class-string<T>  $queryOrClass
+     * @return T
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws OrganizationScopeException
+     */
+    public function resolveVisible(Builder|string $queryOrClass, User $user, string|int $id, ?string $globalPermission = null): Model
+    {
+        $query = is_string($queryOrClass) ? $queryOrClass::query() : $queryOrClass;
+        $scopedQuery = $this->scopeVisibleTo($query, $user, $globalPermission);
+
+        return $scopedQuery->findOrFail($id);
     }
 
     public function assertUserHasOrganizationOrGlobal(User $user, ?string $globalPermission = null): void
@@ -304,6 +325,14 @@ class OrganizationScopeService
     public function globalPermissionFor(Model $model): ?string
     {
         return self::GLOBAL_PERMISSIONS[get_class($model)] ?? null;
+    }
+
+    /**
+     * @return array<class-string<Model>, string>
+     */
+    public function registeredGlobalPermissions(): array
+    {
+        return self::GLOBAL_PERMISSIONS;
     }
 
     /**

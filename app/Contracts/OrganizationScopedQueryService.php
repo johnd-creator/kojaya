@@ -32,7 +32,7 @@ class OrganizationScopedQueryService
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return $this->scopeService->scopeVisibleTo($query, $user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+        return $this->scopeService->scopeVisibleTo($query, $user);
     }
 
     /**
@@ -60,5 +60,22 @@ class OrganizationScopedQueryService
     public function assertVisible(User $user, Model $model): void
     {
         $this->scopeService->assertVisible($user, $model);
+    }
+
+    /**
+     * Resolve a cooperative model by ID within the user's visible organization scope.
+     *
+     * @template T of Model
+     *
+     * @param  Builder<T>|class-string<T>  $queryOrClass
+     * @return T
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws \App\Exceptions\OrganizationScopeException
+     */
+    public function resolveVisible(Builder|string $queryOrClass, User $user, string|int $id): Model
+    {
+        return $this->scopeService->resolveVisible($queryOrClass, $user, $id);
     }
 }

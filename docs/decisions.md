@@ -1400,3 +1400,58 @@ The SEC-P0-03 remediation lifecycle progresses through six distinct operational 
 4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms their complete absence from the public disk.
 5. **Orphan Inventory Resolved:** Unreferenced public orphan files under `public/certificates` and `public/mcu` (including soft-deleted records accounted for via `withTrashed()`) are inventoried, inspected, and reconciled by operators.
 6. **SEC-P0-03 Operationally Closed:** All legacy copies are removed, all orphans and missing files are resolved, and the migration command returns success with zero unresolved items.
+
+---
+
+## 🎯 ADR-036: Canonical Organization Isolation Foundation (SEC-P1-01)
+
+**Status:** ✅ Accepted
+**Date:** September 3, 2026
+**Deciders:** Security & Core Engineering Teams
+
+### Context
+
+Kojaya operates as a multi-tenant ERP and cooperative management platform where individual cooperatives and business units operate within distinct tenant organizations (`Organization`). Previously, organization scoping was applied inconsistently across different controllers and services—some used ad-hoc where-clauses, some relied on legacy traits, and others lacked tenant scoping entirely (enabling cross-tenant data leaks and unauthorized mutations in reports, reward redemptions, POS transactions, and administrative interfaces).
+
+A unified, robust, and mathematically sound organization isolation foundation was required without resorting to fragile global Eloquent scopes (`static::addGlobalScope`), which can be accidentally bypassed, cause hidden query regressions, or create unexpected side effects across background queues, seeders, and system administration workflows.
+
+### Decision
+
+1. **Security Invariant:**
+   All multi-tenant operations must satisfy the composite security invariant:
+   `authenticated identity + functional permission + organization visibility + object / parent ownership = authorized operation`.
+
+2. **Single Canonical Authority (`OrganizationScopeService`):**
+   - The canonical organization isolation boundary centers exclusively around `App\Services\Authorization\OrganizationScopeService` and its domain facade `OrganizationScopedQueryService`.
+   - Ad-hoc, parallel tenant-scoping frameworks (such as standalone `TenantService` or `TenantResolver` classes) are prohibited.
+   - Global Eloquent scopes (`static::addGlobalScope`) are strictly avoided.
+   - To prevent cross-domain permission confusion, `OrganizationScopedQueryService::scopeVisibleTo()` and `resolveVisible()` delegate directly to `OrganizationScopeService` without forcing cooperative global permissions on non-cooperative models (e.g. `view_cooperative_all` never satisfies an `Employee` boundary).
+
+3. **Canonical Primitives:**
+   - **Query Scoping (`scopeVisibleTo`):** Filters queries to records belonging to the authenticated actor's organization or grants global visibility if the actor possesses the explicit domain global permission.
+   - **Safe Visible Object Resolution (`resolveVisible`):** Formally introduced `resolveVisible(Builder|string $queryOrClass, User $user, string|int $id, ?string $globalPermission = null): Model`. Scopes the query first, then resolves the record or throws `ModelNotFoundException` (404 Not Found), preventing cross-tenant resource enumeration.
+   - **Existing Object Assertion (`assertVisible`):** Validates that an already-loaded model belongs to the actor's visible organization or throws `AuthorizationException` (403 Forbidden).
+   - **Organization Identifier Validation (`assertOrganizationIdentifier`):** Verifies that a target organization ID exists in the database and is non-empty before operations.
+
+4. **Explicit Rules Enforced:**
+   - **Rule A (Tenant Isolation):** Standard tenant users are restricted strictly to resources matching their assigned `organization_id`.
+   - **Rule B (Explicit Global Authority):** Cross-organization access requires an explicit domain-level global permission (e.g. `view_cooperative_all`, `view_employee_all`). Global access is NEVER granted based on administrative role names (e.g. `Admin Koperasi`), `is_admin` flags, null organization, or wildcard tokens.
+   - **Rule C (Null Organization Fails Closed):** If an authenticated actor has `organization_id = null` and lacks an explicit domain global permission, all scoping and assertion primitives fail closed by throwing `AuthorizationException`. Unfiltered queries are never returned.
+   - **Rule D (Direct Ownership):** Models with direct tenant ownership resolve via terminal `'organization_id'`.
+   - **Rule E (Relational Ownership):** Models whose ownership derives through associations (e.g. `RewardRedemption -> member.organization_id`) resolve via verified Eloquent relationship chains and `whereHas` constraints.
+   - **Rule F (Parent / Child Security):** Hierarchical endpoints must resolve the authorized parent object first via `resolveVisible`, then resolve the child through the parent relationship (`$parent->children()->findOrFail($childId)`), preventing cross-parent ID substitution attacks.
+   - **Rule G (Client Must Not Assign Tenant Ownership):** Normal tenant requests cannot assign or mutate tenant ownership. Creation/update FormRequests prohibit client-supplied `organization_id` (`'organization_id' => ['prohibited']`) or force ownership to the authenticated context.
+   - **Rule H (Aggregates Are Tenant Data):** Analytical queries, counts, sums, and exports must be scoped by organization before calculation.
+
+5. **Fail-Closed Contract & Registry Integrity:**
+   - The central registry explicitly defines ownership paths for exactly 38 models (`OrganizationScopeService::registeredPaths()`), with 30 registered global permissions (`registeredGlobalPermissions()`).
+   - Representative models implement `App\Contracts\OrganizationScopedModel` declaring their canonical ownership path (`Employee`, `CooperativeMember`, `RewardRedemption`).
+   - Global permissions remain strictly defined in the centralized `OrganizationScopeService::GLOBAL_PERMISSIONS` registry.
+   - Models not yet contracted or registered (e.g., POS transactions, products, categories, daily closings, payments, transaction items) are documented as known domain gaps to be remediated in later P1 tasks; they fail closed (`OrganizationScopeException`) until explicitly registered.
+   - Unregistered models, broken relationship methods, missing database columns, and null-resolved organization IDs throw `OrganizationScopeException` even for administrative actors.
+
+### Consequences
+
+- **P1 Domain Remediation Readiness:** Provides the verified canonical primitives needed to systematically resolve known P1 domain issues (Reward Redemptions, POS Transactions, Cooperative Reports, POS Credit, POS Daily Closing, Points Admin, POS Catalogs) without architectural ambiguity.
+- **Zero Regressions:** Fully verified and backwards-compatible with SEC-P0-01 (Webhook Fail-Closed), SEC-P0-02 (Strict Token Abilities), and SEC-P0-03 (Sensitive File Storage).
+- **Test Coverage:** Backed by 20 dedicated security foundation tests in `OrganizationIsolationFoundationTest` covering direct ownership, relational ownership, global permissions, cross-domain isolation, unit-only administrative restrictions, null-org fail-closed, unsupported model fail-closed, safe resolution, parent-child isolation, mutation denial with state preservation, forgery prevention, and full registry schema integrity.

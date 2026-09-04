@@ -15,6 +15,8 @@ class StorePosTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'organization_id' => ['prohibited'],
+            'pos_cashier_shift_id' => ['nullable', 'integer', 'exists:pos_cashier_shifts,id'],
             'client_reference' => ['nullable', 'string', 'max:80'],
             'cooperative_member_id' => ['nullable', 'exists:cooperative_members,id'],
             'payment_method' => ['required_without:payments', 'in:CASH,TRANSFER,QRIS,MEMBER_CREDIT,MEMBER_STORE_ACCOUNT'],

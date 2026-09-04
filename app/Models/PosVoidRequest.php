@@ -2,13 +2,19 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PosVoidRequest extends Model
+class PosVoidRequest extends Model implements OrganizationScopedModel
 {
     use HasFactory;
+
+    public function organizationScopePath(): string
+    {
+        return 'transaction.organization_id';
+    }
 
     public const STATUS_PENDING = 'PENDING';
 

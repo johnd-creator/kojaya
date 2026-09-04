@@ -192,12 +192,20 @@ class PosSyncService
         $payload = $syncRequest->payload;
         $payload['pos_cashier_shift_id'] = $syncRequest->pos_cashier_shift_id;
 
-        $existing = PosTransaction::query()->where('client_reference', $payload['client_reference'] ?? '')->first();
-        if ($existing) {
-            return $existing->toArray();
+        $user = $syncRequest->loadMissing('user')->user;
+        $clientReference = (string) ($payload['client_reference'] ?? '');
+
+        if ($clientReference !== '' && $user?->organization_id) {
+            $existing = PosTransaction::query()
+                ->where('organization_id', $user->organization_id)
+                ->where('client_reference', $clientReference)
+                ->first();
+            if ($existing) {
+                return $existing->toArray();
+            }
         }
 
-        return $this->transactionService->create($payload, $syncRequest->loadMissing('user')->user)->toArray();
+        return $this->transactionService->create($payload, $user)->toArray();
     }
 
     /**

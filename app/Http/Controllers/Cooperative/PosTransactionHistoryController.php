@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Models\CooperativeMember;
 use App\Models\PosTransaction;
@@ -12,11 +13,13 @@ use Inertia\Response;
 
 class PosTransactionHistoryController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
         $query = PosTransaction::query()
             ->with(['member', 'cashier', 'payments'])
             ->withCount('items');
+
+        $scopedQuery->scopeVisibleTo($query, $request->user());
 
         if ($request->filled('date_from')) {
             $query->whereDate('sold_at', '>=', $request->input('date_from'));
@@ -52,13 +55,15 @@ class PosTransactionHistoryController extends Controller
             'transactions' => $query->orderByDesc('sold_at')->paginate(20)->withQueryString(),
             'filters' => $request->only(['date_from', 'date_to', 'transaction_no', 'member_id', 'cashier_id', 'payment_method', 'status']),
             'cashiers' => User::query()
-                ->whereHas('posTransactions')
+                ->whereHas('posTransactions', fn ($q) => $scopedQuery->scopeVisibleTo($q, $request->user()))
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name])
                 ->values(),
-            'members' => CooperativeMember::query()
-                ->whereHas('posTransactions')
+            'members' => $scopedQuery->scopeVisibleTo(
+                CooperativeMember::query()->whereHas('posTransactions', fn ($q) => $scopedQuery->scopeVisibleTo($q, $request->user())),
+                $request->user()
+            )
                 ->orderBy('name')
                 ->get(['id', 'member_no', 'name'])
                 ->map(fn (CooperativeMember $member) => [
@@ -70,12 +75,17 @@ class PosTransactionHistoryController extends Controller
         ]);
     }
 
-    public function show(PosTransaction $transaction): Response
+    public function show(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
-        $transaction->load(['member', 'cashier', 'payments', 'items.product']);
+        /** @var PosTransaction $transactionModel */
+        $transactionModel = $scopedQuery->resolveVisible(
+            PosTransaction::query()->with(['member', 'cashier', 'payments', 'items.product']),
+            $request->user(),
+            $transaction
+        );
 
         return Inertia::render('Cooperative/Pos/Transactions/Show', [
-            'transaction' => $transaction,
+            'transaction' => $transactionModel,
         ]);
     }
 }

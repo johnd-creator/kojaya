@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\StorePosReturnRequest;
 use App\Models\PosTransaction;
 use App\Services\Cooperative\PosReturnService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,11 +16,16 @@ class PosReturnController extends Controller
 {
     public function __construct(private PosReturnService $service) {}
 
-    public function create(PosTransaction $transaction): Response
+    public function create(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
-        $transaction->load(['items.product', 'member', 'cashier']);
+        /** @var PosTransaction $transactionModel */
+        $transactionModel = $scopedQuery->resolveVisible(
+            PosTransaction::query()->with(['items.product', 'member', 'cashier']),
+            $request->user(),
+            $transaction
+        );
 
-        $existingReturns = $transaction->returns()->with('items')->get();
+        $existingReturns = $transactionModel->returns()->with('items')->get();
         $returnedQuantities = $existingReturns
             ->flatMap(fn ($return) => $return->items->map(fn ($item) => [
                 'pos_transaction_item_id' => $item->pos_transaction_item_id,
@@ -28,7 +35,7 @@ class PosReturnController extends Controller
             ->map(fn ($items) => $items->sum('quantity'))
             ->toArray();
 
-        $items = $transaction->items->map(fn ($item) => [
+        $items = $transactionModel->items->map(fn ($item) => [
             'id' => $item->id,
             'product' => $item->product?->name,
             'quantity' => $item->quantity,
@@ -38,20 +45,23 @@ class PosReturnController extends Controller
         ]);
 
         return Inertia::render('Cooperative/Pos/Returns/Create', [
-            'transaction' => $transaction,
+            'transaction' => $transactionModel,
             'items' => $items,
         ]);
     }
 
-    public function store(StorePosReturnRequest $request, PosTransaction $transaction): RedirectResponse
+    public function store(StorePosReturnRequest $request, string $transaction, OrganizationScopedQueryService $scopedQuery): RedirectResponse
     {
+        /** @var PosTransaction $transactionModel */
+        $transactionModel = $scopedQuery->resolveVisible(PosTransaction::class, $request->user(), $transaction);
+
         $this->service->create([
-            'pos_transaction_id' => $transaction->id,
+            'pos_transaction_id' => $transactionModel->id,
             'reason' => $request->validated('reason'),
             'items' => $request->validated('items'),
         ], $request->user());
 
-        return to_route('cooperative.pos.transactions.show', $transaction)
+        return to_route('cooperative.pos.transactions.show', $transactionModel)
             ->with('success', 'Retur POS berhasil dibuat.');
     }
 }

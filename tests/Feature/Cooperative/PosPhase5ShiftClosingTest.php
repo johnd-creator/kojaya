@@ -91,7 +91,7 @@ class PosPhase5ShiftClosingTest extends TestCase
     public function test_daily_closing_locks_day_and_posts_journal(): void
     {
         $cashier = $this->cashier();
-        $supervisor = $this->supervisor();
+        $supervisor = $this->supervisor($cashier);
         $supervisorMember = CooperativeMember::factory()->create([
             'organization_id' => $supervisor->organization_id,
             'user_id' => $supervisor->id,
@@ -250,9 +250,9 @@ class PosPhase5ShiftClosingTest extends TestCase
         return $user;
     }
 
-    private function supervisor(): User
+    private function supervisor(?User $cashier = null): User
     {
-        $user = User::factory()->create(['organization_id' => Organization::factory()]);
+        $user = User::factory()->create(['organization_id' => $cashier?->organization_id ?? Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'manage_pos_products', 'view_pos_reports']);
 
         return $user;

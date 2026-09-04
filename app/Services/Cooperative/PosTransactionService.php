@@ -4,10 +4,13 @@ namespace App\Services\Cooperative;
 
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\PosCashierShift;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\PosVoidRequest;
 use App\Models\User;
+use App\Services\Authorization\OrganizationScopeService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -29,8 +32,54 @@ class PosTransactionService
      */
     public function create(array $data, ?User $cashier = null): PosTransaction
     {
+        if ($cashier === null) {
+            throw new AuthorizationException('A cashier is required to create a POS transaction.');
+        }
+
+        $isGlobalCashier = $cashier->can('view_cooperative_all');
+
+        if (! $isGlobalCashier && empty($cashier->organization_id)) {
+            throw new AuthorizationException('A cooperative organization is required for this operation.');
+        }
+
+        if (empty($data['items']) || ! is_array($data['items'])) {
+            throw ValidationException::withMessages([
+                'items' => 'Item transaksi wajib diisi.',
+            ]);
+        }
+
+        $targetOrgId = $this->resolveTargetOrganization($data, $cashier);
+
+        $memberId = $data['cooperative_member_id'] ?? null;
+        if ($memberId) {
+            $member = CooperativeMember::query()->whereKey($memberId)->first();
+            if (! $member || empty($member->organization_id)) {
+                throw ValidationException::withMessages([
+                    'cooperative_member_id' => 'Anggota tidak memiliki organisasi yang valid.',
+                ]);
+            }
+
+            if ((string) $member->organization_id !== $targetOrgId) {
+                throw ValidationException::withMessages([
+                    'cooperative_member_id' => 'Anggota berada di luar organisasi transaksi.',
+                ]);
+            }
+        }
+
+        if (! empty($data['pos_cashier_shift_id'])) {
+            $shift = PosCashierShift::query()->with('cashier')->find($data['pos_cashier_shift_id']);
+            if ($shift && $shift->cashier && ! empty($shift->cashier->organization_id)) {
+                if ((string) $shift->cashier->organization_id !== $targetOrgId) {
+                    throw ValidationException::withMessages([
+                        'pos_cashier_shift_id' => 'Shift kasir berada di luar organisasi transaksi.',
+                    ]);
+                }
+            }
+        }
+
         if (! empty($data['client_reference'])) {
             $existing = PosTransaction::query()
+                ->where('organization_id', $targetOrgId)
                 ->where('client_reference', $data['client_reference'])
                 ->with(['items.product', 'payments', 'member'])
                 ->first();
@@ -49,7 +98,7 @@ class PosTransactionService
         $this->closingGuard->guardSale((string) $saleDate);
 
         try {
-            return DB::transaction(function () use ($data, $cashier, $saleDate): PosTransaction {
+            return DB::transaction(function () use ($data, $cashier, $saleDate, $targetOrgId): PosTransaction {
                 $memberId = $data['cooperative_member_id'] ?? null;
 
                 $subtotal = 0;
@@ -58,6 +107,16 @@ class PosTransactionService
 
                 foreach ($data['items'] as $item) {
                     $product = PosProduct::query()->lockForUpdate()->findOrFail($item['pos_product_id']);
+                    if (empty($product->organization_id)) {
+                        throw ValidationException::withMessages([
+                            'items' => "Produk {$product->name} tidak memiliki organisasi yang valid.",
+                        ]);
+                    }
+                    if ((string) $product->organization_id !== $targetOrgId) {
+                        throw ValidationException::withMessages([
+                            'items' => "Produk {$product->name} berada di luar organisasi transaksi.",
+                        ]);
+                    }
                     if ($cashier !== null) {
                         $this->productAccess->assertCanOperate($cashier, $product);
                     }
@@ -156,6 +215,7 @@ class PosTransactionService
                 }
 
                 $transaction = PosTransaction::query()->create([
+                    'organization_id' => $targetOrgId,
                     'transaction_no' => $this->nextTransactionNo(),
                     'client_reference' => $data['client_reference'] ?? null,
                     'cooperative_member_id' => $memberId,
@@ -244,6 +304,7 @@ class PosTransactionService
             if (! empty($data['client_reference'])) {
                 foreach (range(1, 10) as $_) {
                     $existing = PosTransaction::query()
+                        ->where('organization_id', $targetOrgId)
                         ->where('client_reference', $data['client_reference'])
                         ->with(['items.product', 'payments', 'member'])
                         ->first();
@@ -267,6 +328,8 @@ class PosTransactionService
 
     public function requestVoid(PosTransaction $transaction, User $requester, string $reason): PosVoidRequest
     {
+        app(OrganizationScopeService::class)->assertVisible($requester, $transaction);
+
         if ($transaction->isVoided()) {
             throw ValidationException::withMessages([
                 'transaction' => 'Transaksi sudah di-void sebelumnya.',
@@ -297,6 +360,8 @@ class PosTransactionService
 
     public function approveVoid(PosVoidRequest $request, User $supervisor): PosTransaction
     {
+        app(OrganizationScopeService::class)->assertVisible($supervisor, $request);
+
         if (! $request->isPending()) {
             throw ValidationException::withMessages([
                 'request' => 'Pengajuan void sudah diproses.',
@@ -304,6 +369,7 @@ class PosTransactionService
         }
 
         $transaction = $request->transaction()->lockForUpdate()->with('payments')->firstOrFail();
+        app(OrganizationScopeService::class)->assertVisible($supervisor, $transaction);
 
         $this->closingGuard->guardVoid($transaction);
 
@@ -390,6 +456,8 @@ class PosTransactionService
 
     public function rejectVoid(PosVoidRequest $request, User $supervisor, ?string $reason = null): PosVoidRequest
     {
+        app(OrganizationScopeService::class)->assertVisible($supervisor, $request);
+
         if (! $request->isPending()) {
             throw ValidationException::withMessages([
                 'request' => 'Pengajuan void sudah diproses.',
@@ -404,13 +472,68 @@ class PosTransactionService
         ]);
 
         $transaction = $request->transaction()->first();
-        $transaction?->update(['status' => 'COMPLETED']);
+        if ($transaction) {
+            app(OrganizationScopeService::class)->assertVisible($supervisor, $transaction);
+            $transaction->update(['status' => 'COMPLETED']);
+        }
 
         if ($transaction) {
             $this->notificationDispatcher->posVoidRejected($transaction, $request, $supervisor);
         }
 
         return $request;
+    }
+
+    private function resolveTargetOrganization(array $data, User $cashier): string
+    {
+        $productIds = array_values(array_filter(array_map(fn ($item) => $item['pos_product_id'] ?? null, $data['items'] ?? [])));
+        if ($productIds === []) {
+            throw ValidationException::withMessages([
+                'items' => 'Item transaksi tidak memiliki produk yang valid.',
+            ]);
+        }
+
+        $products = PosProduct::query()->whereIn('id', $productIds)->get();
+        if ($products->count() !== count(array_unique($productIds))) {
+            throw ValidationException::withMessages([
+                'items' => 'Satu atau lebih produk tidak ditemukan.',
+            ]);
+        }
+
+        foreach ($products as $product) {
+            if (empty($product->organization_id)) {
+                throw ValidationException::withMessages([
+                    'items' => "Produk {$product->name} tidak memiliki organisasi yang valid.",
+                ]);
+            }
+        }
+
+        $distinctOrgIds = $products->pluck('organization_id')->map(fn ($id) => (string) $id)->unique()->values();
+        if ($distinctOrgIds->count() > 1) {
+            throw ValidationException::withMessages([
+                'items' => 'Semua produk dalam transaksi harus berasal dari organisasi yang sama.',
+            ]);
+        }
+
+        $productOrgId = (string) $distinctOrgIds->first();
+
+        if ($cashier->can('view_cooperative_all')) {
+            $activeOrg = session('active_organization_id');
+            if (! empty($activeOrg) && (string) $activeOrg !== $productOrgId) {
+                throw ValidationException::withMessages([
+                    'items' => 'Produk tidak sesuai dengan konteks organisasi aktif.',
+                ]);
+            }
+
+            return $productOrgId;
+        }
+
+        $cashierOrgId = (string) $cashier->organization_id;
+        if ($cashierOrgId === '' || $cashierOrgId !== $productOrgId) {
+            throw new AuthorizationException('The product is outside the cashier organization.');
+        }
+
+        return $cashierOrgId;
     }
 
     /**

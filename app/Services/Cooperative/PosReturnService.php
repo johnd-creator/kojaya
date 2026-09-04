@@ -33,6 +33,9 @@ class PosReturnService
         $transactionId = (int) $data['pos_transaction_id'];
         $transaction = PosTransaction::query()->find($transactionId);
         if ($transaction) {
+            if ($cashier !== null) {
+                app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
+            }
             $this->closingGuard->guardReturn($transaction, (string) $returnDate);
         }
 
@@ -41,6 +44,10 @@ class PosReturnService
                 ->with(['items', 'payments', 'member'])
                 ->lockForUpdate()
                 ->findOrFail($data['pos_transaction_id']);
+
+            if ($cashier !== null) {
+                app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
+            }
 
             if ($transaction->status !== 'COMPLETED') {
                 throw ValidationException::withMessages([

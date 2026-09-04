@@ -156,7 +156,7 @@ class PosPhase2MemberCreditTest extends TestCase
     public function test_void_credit_transaction_reduces_outstanding(): void
     {
         $cashier = $this->cashier();
-        $supervisor = $this->supervisor();
+        $supervisor = $this->supervisor($cashier);
         $member = CooperativeMember::factory()->create([
             'organization_id' => $cashier->organization_id,
             'status' => 'ACTIVE',
@@ -205,9 +205,9 @@ class PosPhase2MemberCreditTest extends TestCase
         return $user;
     }
 
-    private function supervisor(): User
+    private function supervisor(?User $cashier = null): User
     {
-        $user = User::factory()->create(['organization_id' => Organization::factory()]);
+        $user = User::factory()->create(['organization_id' => $cashier?->organization_id ?? Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;

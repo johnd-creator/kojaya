@@ -4,7 +4,26 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 4, 2026
+**Last Updated:** September 5, 2026
+
+## 🎯 2026-09-05 - POS Transaction and Void Organization Isolation (SEC-P1-03)
+
+- Added direct foreign key `organization_id` (UUID nullable) to `pos_transactions` with foreign key constraint, composite index on `['organization_id', 'sold_at']`, and composite unique constraint on `['organization_id', 'client_reference']` (dropping global client reference uniqueness).
+- Implemented deterministic migration backfill resolving legacy transaction organizations when items unanimously belong to a single non-null product organization and agree with member organization when present; unresolved/ambiguous records remain null (fail closed).
+- Implemented `OrganizationScopedModel` on `PosTransaction` (`organization_id`) and `PosVoidRequest` (`transaction.organization_id`).
+- Registered canonical global permissions in `OrganizationScopeService::GLOBAL_PERMISSIONS`: `PosTransaction::class => 'view_cooperative_all'` and `PosVoidRequest::class => 'view_cooperative_all'`. Maintained centralized registry truth (`registeredPaths: 38`, `registeredGlobalPermissions: 33`).
+- Prevented client tenant forgery in `StorePosTransactionRequest` (`'organization_id' => ['prohibited']`) and added validation rule for `'pos_cashier_shift_id'`.
+- Hardened `PosTransactionService::create()`: enforced authenticated unit cashier organization matching, authoritative cart organization resolution, single-organization cart invariant (rejecting mixed carts), member organization agreement, shift cashier organization agreement, authoritative stamping of `organization_id`, and tenant-scoped `client_reference` idempotency checks.
+- Hardened `PosSyncService::dispatchTransaction`: scoped client reference deduplication lookup to the authenticated user's organization, preventing cross-tenant transaction data leakage.
+- Eliminated cross-tenant object existence enumeration across POS controllers using raw string route identifiers and canonical `resolveVisible()`:
+  - `PosTransactionHistoryController::show` (returns 404 Not Found on foreign IDs).
+  - `PosTransactionReceiptController::show` and `pdf` (returns 404 Not Found on foreign IDs).
+  - `PosVoidController::store` and `process` (returns 404 Not Found on foreign IDs).
+  - `PosReturnController::create` and `store` (returns 404 Not Found on foreign IDs).
+- Applied `scopeVisibleTo()` to `PosTransactionHistoryController::index` and `PosVoidController::index`, and scoped filter dropdowns (`cashiers` and `members`) strictly to entities with transactions within the authorized organization.
+- Added service defense-in-depth: `assertVisible` checks in `PosTransactionService::requestVoid()`, `approveVoid()`, `rejectVoid()`, and `PosReturnService::create()`.
+- Created comprehensive security test suite `PosTransactionVoidOrganizationIsolationTest` with 45 tests (180 assertions) covering creation, idempotency, history/detail, receipts, void request, void processing, return parent routes, and legacy null-org edge cases.
+- Full regression pass clean across existing POS feature tests and foundation security suites.
 
 ## 🎯 2026-09-04 - Restore Canonical Permission Registry and Fail-Closed Reward Tenant Protection (SEC-P1-02 R2)
 

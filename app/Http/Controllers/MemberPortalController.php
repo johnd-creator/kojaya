@@ -523,7 +523,7 @@ class MemberPortalController extends Controller
         PointService $pointService,
         MemberStatusJourneyService $journeyService,
     ): Response {
-        $member = $this->memberOrAbort($request);
+        $member = $this->memberWithOrganizationOrAbort($request);
 
         return Inertia::render('Kojayaku/Rewards', [
             'summary' => $pointService->balanceSummary($member),
@@ -543,7 +543,7 @@ class MemberPortalController extends Controller
         string $reward,
         PointService $pointService
     ): RedirectResponse {
-        $member = $this->memberOrAbort($request);
+        $member = $this->memberWithOrganizationOrAbort($request);
 
         /** @var Reward $rewardModel */
         $rewardModel = Reward::query()
@@ -872,6 +872,14 @@ class MemberPortalController extends Controller
     {
         $member = $request->user()?->cooperativeMember;
         abort_unless($member, 404, 'Anda belum terdaftar sebagai anggota koperasi.');
+
+        return $member;
+    }
+
+    private function memberWithOrganizationOrAbort(Request $request): CooperativeMember
+    {
+        $member = $this->memberOrAbort($request);
+        abort_if(blank($member->organization_id), 403, 'Anggota belum terdaftar pada unit koperasi.');
 
         return $member;
     }

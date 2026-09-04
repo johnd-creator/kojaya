@@ -19,11 +19,6 @@ class Reward extends Model implements OrganizationScopedModel
         return 'organization_id';
     }
 
-    public function organizationScopeGlobalPermission(): ?string
-    {
-        return 'view_cooperative_all';
-    }
-
     protected $fillable = [
         'organization_id',
         'name',

@@ -66,6 +66,10 @@ class RewardApiController extends Controller
 
         abort_unless($user && $user->cooperativeMember, 403);
 
-        return $user->cooperativeMember;
+        $member = $user->cooperativeMember;
+
+        abort_if(blank($member->organization_id), 403, 'Member is not assigned to an organization.');
+
+        return $member;
     }
 }

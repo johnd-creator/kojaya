@@ -4,7 +4,16 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 3, 2026
+**Last Updated:** September 4, 2026
+
+## 🎯 2026-09-04 - Restore Canonical Permission Registry and Fail-Closed Reward Tenant Protection (SEC-P1-02 R2)
+
+- Restored centralized global permission authority in `OrganizationScopeService::globalPermissionFor()`: removed model-level `organizationScopeGlobalPermission()` magic method so global authorization resolves exclusively from `OrganizationScopeService::GLOBAL_PERMISSIONS` (`Reward::class => 'view_cooperative_all'`).
+- Enforced strict execution ordering in `PointService::redeem()`: introduced cheap tenant check (`assertSameOrganization()`) preceding `syncPosPoints($member)`, preventing unintended point accrual or notifications on cross-tenant attempts, coupled with post-lock authoritative re-verification inside the transaction.
+- Hardened domain invariant in `PointService`: asserted that both `member.organization_id` and `reward.organization_id` must be non-null and non-empty, and `(string) reward.organization_id === (string) member.organization_id`. Prohibited `null == null` from ever evaluating as a valid organization match.
+- Enforced fail-closed member check on Reward self-service: `RewardApiController::resolveMember` and `MemberPortalController::memberWithOrganizationOrAbort` reject members with null or blank `organization_id` with 403 Forbidden prior to catalog queries or point sync.
+- Guarded administrative Reward creation against orphan rewards: `StoreRewardRequest` and `RewardController::store()` require an explicit target organization for global actors without an organization assignment, rejecting requests with 422 Unprocessable Content if omitted.
+- Expanded `RewardRedemptionOrganizationIsolationTest` to 35 tests (232 assertions), adding behavioral regression tests for centralized permission authority, unsynced POS points side-effect prevention, null-org member/reward API and web portal flows, and global admin store orphan prevention.
 
 ## 🎯 2026-09-04 - Reward Ownership and Self-Service Cross-Organization Hardening (SEC-P1-02 R1)
 

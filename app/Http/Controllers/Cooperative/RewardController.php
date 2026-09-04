@@ -49,6 +49,10 @@ class RewardController extends Controller
             ? ($request->validated('organization_id') ?? $visibility->organizationId ?? $request->user()?->organization_id)
             : $visibility->organizationId;
 
+        if (blank($organizationId)) {
+            abort(422, 'An organization must be specified for the reward.');
+        }
+
         Reward::query()->create([
             ...$request->safe()->except('organization_id'),
             'organization_id' => $organizationId,

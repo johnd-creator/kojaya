@@ -6,6 +6,8 @@ use App\Enums\PermissionEnum;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\PointTransaction;
+use App\Models\PosMemberPoint;
+use App\Models\PosTransaction;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\User;
@@ -14,6 +16,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -609,19 +612,31 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
     /**
      * Helper to create a cooperative member with associated user.
      */
-    private function createMember(Organization $organization): CooperativeMember
+    private function createMember(?Organization $organization = null, int $points = 0): CooperativeMember
     {
         $user = User::factory()->create([
-            'organization_id' => $organization->id,
+            'organization_id' => $organization?->id,
             'email_verified_at' => now(),
         ]);
         $user->assignRole('Anggota');
 
-        return CooperativeMember::factory()->active()->create([
-            'organization_id' => $organization->id,
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization?->id,
             'user_id' => $user->id,
             'email' => $user->email,
         ]);
+
+        if ($points > 0) {
+            PointTransaction::factory()->create([
+                'cooperative_member_id' => $member->id,
+                'transaction_type' => 'EARNED',
+                'points' => $points,
+                'balance_before' => 0,
+                'balance_after' => $points,
+            ]);
+        }
+
+        return $member;
     }
 
     /**
@@ -1091,5 +1106,351 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
 
         $this->assertSame('Authorized Global Update', $rewardB->fresh()->name);
         $this->assertSame(350, $rewardB->fresh()->points_required);
+    }
+
+    /**
+     * R2 Blocker A: globalPermissionFor resolves only from OrganizationScopeService::GLOBAL_PERMISSIONS.
+     * Model-level method overrides (e.g. organizationScopeGlobalPermission) must not be recognized.
+     */
+    public function test_global_permission_for_model_resolves_only_from_centralized_registry(): void
+    {
+        $scopeService = app(\App\Services\Authorization\OrganizationScopeService::class);
+
+        // 1. Reward model is explicitly mapped in GLOBAL_PERMISSIONS
+        $this->assertSame('view_cooperative_all', $scopeService->globalPermissionFor(new Reward));
+        $this->assertArrayHasKey(Reward::class, $scopeService->registeredGlobalPermissions());
+        $this->assertSame('view_cooperative_all', $scopeService->registeredGlobalPermissions()[Reward::class]);
+
+        // 2. A model defining organizationScopeGlobalPermission() MUST NOT be recognized unless in GLOBAL_PERMISSIONS
+        $dummyModel = new class extends \Illuminate\Database\Eloquent\Model implements \App\Contracts\OrganizationScopedModel
+        {
+            public function organizationScopePath(): string
+            {
+                return 'organization_id';
+            }
+
+            public function organizationScopeGlobalPermission(): ?string
+            {
+                return 'malicious_global_permission';
+            }
+        };
+
+        $this->assertNull(
+            $scopeService->globalPermissionFor($dummyModel),
+            'Model-level organizationScopeGlobalPermission() must not be recognized; permissions must resolve only from centralized registry.'
+        );
+
+        // 3. User with malicious_global_permission does NOT receive global visibility for this model
+        [$orgA] = $this->createOrganizations();
+        $user = User::factory()->create(['organization_id' => $orgA->id]);
+        $visibility = $scopeService->visibilityFor($user, $scopeService->globalPermissionFor($dummyModel));
+        $this->assertFalse($visibility->global, 'User without a registered global permission must not receive global visibility.');
+    }
+
+    /**
+     * R2 Blocker B: Tenant check must precede syncPosPoints().
+     * An unsynced POS points source must not have any mutations or notifications executed.
+     */
+    public function test_unsynced_pos_points_side_effects_prevented_when_foreign_reward_redeemed(): void
+    {
+        Notification::fake();
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        $memberA = $this->createMember($orgA, 0);
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'points_required' => 50,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $transaction = PosTransaction::query()->create([
+            'transaction_no' => 'POS-SEC-001',
+            'cooperative_member_id' => $memberA->id,
+            'cashier_id' => $memberA->user_id,
+            'subtotal' => 100000,
+            'discount_amount' => 0,
+            'total_amount' => 100000,
+            'gross_profit' => 40000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+
+        $posPoint = PosMemberPoint::query()->create([
+            'cooperative_member_id' => $memberA->id,
+            'pos_transaction_id' => $transaction->id,
+            'year' => (int) now()->format('Y'),
+            'profit_amount' => 100000.00,
+            'points' => 0,
+            'posted_at' => now()->toDateString(),
+        ]);
+
+        $pointService = app(PointService::class);
+
+        $beforePointsCount = PointTransaction::count();
+        $beforeEarnedCount = PointTransaction::where('transaction_type', 'EARNED')->count();
+        $beforeRedeemedCount = PointTransaction::where('transaction_type', 'REDEEMED')->count();
+        $beforeRedemptionCount = RewardRedemption::count();
+
+        $this->assertSame(0, $beforePointsCount);
+        $this->assertSame(0, $beforeEarnedCount);
+        $this->assertSame(0, $beforeRedeemedCount);
+        $this->assertSame(0, $beforeRedemptionCount);
+        $this->assertSame(0, (int) $posPoint->points);
+        $this->assertSame(10, $rewardB->stock);
+
+        try {
+            $pointService->redeem($memberA, $rewardB, 1);
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('The reward does not belong to the member organization.', $e->getMessage());
+        }
+
+        $this->assertSame(0, (int) $posPoint->fresh()->points, 'POS point record must remain unsynced');
+        $this->assertSame(0, PointTransaction::count(), 'No PointTransaction must be created');
+        $this->assertSame(0, PointTransaction::where('transaction_type', 'EARNED')->count(), 'No EARNED PointTransaction created');
+        $this->assertSame(0, (int) $memberA->pointTransactions()->count(), 'No PointTransaction created for member');
+        $this->assertSame(0, RewardRedemption::count(), 'No RewardRedemption created');
+        $this->assertSame(10, $rewardB->fresh()->stock, 'Reward stock must remain unchanged');
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * R2 Blocker C: Null-org member cannot browse catalog or redeem rewards via API (fails closed).
+     */
+    public function test_null_organization_member_cannot_view_or_redeem_rewards_via_api(): void
+    {
+        Notification::fake();
+        [$orgA] = $this->createOrganizations();
+
+        $memberNullOrg = $this->createMember($orgA, 500);
+        $memberNullOrg->organization_id = null;
+        $userNullOrg = $memberNullOrg->user;
+        $userNullOrg->setRelation('cooperativeMember', $memberNullOrg);
+        Sanctum::actingAs($userNullOrg, ['member:write']);
+
+        $rewardNullOrg = Reward::factory()->create([
+            'organization_id' => null,
+            'points_required' => 100,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        // A. GET /api/v1/rewards fails closed (403)
+        $this->getJson('/api/v1/rewards')
+            ->assertForbidden();
+
+        // B. POST /api/v1/rewards/{reward}/redeem fails closed (403)
+        $this->postJson('/api/v1/rewards/'.$rewardNullOrg->id.'/redeem', ['quantity' => 1])
+            ->assertForbidden();
+
+        $this->assertSame(0, RewardRedemption::count());
+        $this->assertSame(0, PointTransaction::where('transaction_type', 'REDEEMED')->count());
+        $this->assertSame(10, $rewardNullOrg->fresh()->stock);
+        $this->assertSame(500, (int) $memberNullOrg->pointTransactions()->latest('id')->value('balance_after'));
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * R2 Blocker C: Normal member cannot redeem a null-organization reward via API (fails closed).
+     */
+    public function test_normal_member_cannot_redeem_null_organization_reward_via_api(): void
+    {
+        Notification::fake();
+        [$orgA] = $this->createOrganizations();
+
+        $memberA = $this->createMember($orgA, 500);
+        Sanctum::actingAs($memberA->user, ['member:write']);
+
+        $rewardNullOrg = Reward::factory()->create([
+            'organization_id' => null,
+            'points_required' => 100,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        // C. POST /api/v1/rewards/{reward}/redeem fails closed (404)
+        $this->postJson('/api/v1/rewards/'.$rewardNullOrg->id.'/redeem', ['quantity' => 1])
+            ->assertNotFound();
+
+        $this->assertSame(0, RewardRedemption::count());
+        $this->assertSame(0, PointTransaction::where('transaction_type', 'REDEEMED')->count());
+        $this->assertSame(10, $rewardNullOrg->fresh()->stock);
+        $this->assertSame(500, (int) $memberA->pointTransactions()->latest('id')->value('balance_after'));
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * R2 Blocker C: Null-org member cannot browse catalog or redeem rewards via Web Portal.
+     */
+    public function test_null_organization_member_cannot_view_or_redeem_rewards_via_web_portal(): void
+    {
+        Notification::fake();
+        [$orgA] = $this->createOrganizations();
+
+        $memberNullOrg = $this->createMember($orgA, 500);
+        $memberNullOrg->organization_id = null;
+        $userNullOrg = $memberNullOrg->user;
+        $userNullOrg->setRelation('cooperativeMember', $memberNullOrg);
+
+        $rewardNullOrg = Reward::factory()->create([
+            'organization_id' => null,
+            'points_required' => 100,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        // GET member reward catalog fails closed (403)
+        $this->actingAs($userNullOrg)
+            ->get('/member/rewards')
+            ->assertForbidden();
+
+        // POST member reward redemption fails closed (403)
+        $this->actingAs($userNullOrg)
+            ->post('/member/rewards/'.$rewardNullOrg->id.'/redeem', ['quantity' => 1])
+            ->assertForbidden();
+
+        $this->assertSame(0, RewardRedemption::count());
+        $this->assertSame(0, PointTransaction::where('transaction_type', 'REDEEMED')->count());
+        $this->assertSame(10, $rewardNullOrg->fresh()->stock);
+        $this->assertSame(500, (int) $memberNullOrg->pointTransactions()->latest('id')->value('balance_after'));
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * R2 Blocker C: Normal member cannot redeem a null-org reward via Web Portal.
+     */
+    public function test_normal_member_cannot_redeem_null_organization_reward_via_web_portal(): void
+    {
+        Notification::fake();
+        [$orgA] = $this->createOrganizations();
+
+        $memberA = $this->createMember($orgA, 500);
+
+        $rewardNullOrg = Reward::factory()->create([
+            'organization_id' => null,
+            'points_required' => 100,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($memberA->user)
+            ->post('/member/rewards/'.$rewardNullOrg->id.'/redeem', ['quantity' => 1])
+            ->assertNotFound();
+
+        $this->assertSame(0, RewardRedemption::count());
+        $this->assertSame(0, PointTransaction::where('transaction_type', 'REDEEMED')->count());
+        $this->assertSame(10, $rewardNullOrg->fresh()->stock);
+        $this->assertSame(500, (int) $memberA->pointTransactions()->latest('id')->value('balance_after'));
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * R2: PointService must reject Member A / valid Org A + Reward organization_id = null
+     * and Member organization_id = null + Reward organization_id = null (fails closed).
+     */
+    public function test_point_service_rejects_null_organization_member_and_null_organization_reward(): void
+    {
+        Notification::fake();
+        [$orgA] = $this->createOrganizations();
+
+        $memberA = $this->createMember($orgA, 500);
+        $memberNullOrg = $this->createMember($orgA, 500);
+        $memberNullOrg->organization_id = null;
+
+        $rewardNullOrg = Reward::factory()->create([
+            'organization_id' => null,
+            'points_required' => 100,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $pointService = app(PointService::class);
+
+        // Case 1: Member A / Org A + Reward organization_id = null
+        try {
+            $pointService->redeem($memberA, $rewardNullOrg, 1);
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('The reward does not belong to the member organization.', $e->getMessage());
+        }
+
+        // Case 2: Member organization_id = null + Reward organization_id = null
+        try {
+            $pointService->redeem($memberNullOrg, $rewardNullOrg, 1);
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('The reward does not belong to the member organization.', $e->getMessage());
+        }
+
+        $this->assertSame(0, RewardRedemption::count());
+        $this->assertSame(0, PointTransaction::where('transaction_type', 'REDEEMED')->count());
+        $this->assertSame(10, $rewardNullOrg->fresh()->stock);
+        $this->assertSame(500, (int) $memberA->pointTransactions()->latest('id')->value('balance_after'));
+        $this->assertSame(500, (int) $memberNullOrg->pointTransactions()->latest('id')->value('balance_after'));
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * R2: Global admin with organization_id = null cannot create orphan reward when omitting target organization_id.
+     */
+    public function test_global_admin_with_null_org_cannot_create_orphan_reward_without_target_org(): void
+    {
+        $globalNullOrgUser = User::factory()->create([
+            'organization_id' => null,
+            'email_verified_at' => now(),
+        ]);
+        $globalNullOrgUser->givePermissionTo([
+            PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+            PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value,
+        ]);
+
+        $beforeCount = Reward::count();
+
+        $this->actingAs($globalNullOrgUser)
+            ->post('/cooperative/rewards', [
+                'name' => 'Orphan Reward Attempt',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame($beforeCount, Reward::count());
+        $this->assertDatabaseMissing('rewards', ['name' => 'Orphan Reward Attempt']);
+    }
+
+    /**
+     * R2: Global admin with organization_id = null can create reward when explicitly specifying target organization_id.
+     */
+    public function test_global_admin_with_null_org_can_create_reward_when_specifying_target_org(): void
+    {
+        [$orgA] = $this->createOrganizations();
+
+        $globalNullOrgUser = User::factory()->create([
+            'organization_id' => null,
+            'email_verified_at' => now(),
+        ]);
+        $globalNullOrgUser->givePermissionTo([
+            PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+            PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value,
+        ]);
+
+        $this->actingAs($globalNullOrgUser)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $orgA->id,
+                'name' => 'Targeted Global Reward',
+                'category' => 'BARANG',
+                'points_required' => 150,
+                'stock' => 10,
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('rewards', [
+            'name' => 'Targeted Global Reward',
+            'organization_id' => $orgA->id,
+        ]);
     }
 }

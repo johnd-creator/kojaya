@@ -326,10 +326,6 @@ class OrganizationScopeService
 
     public function globalPermissionFor(Model $model): ?string
     {
-        if (method_exists($model, 'organizationScopeGlobalPermission')) {
-            return $model->organizationScopeGlobalPermission();
-        }
-
         return self::GLOBAL_PERMISSIONS[get_class($model)] ?? null;
     }
 

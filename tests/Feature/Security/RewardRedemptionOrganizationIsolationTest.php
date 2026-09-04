@@ -9,7 +9,9 @@ use App\Models\PointTransaction;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\User;
+use App\Services\Cooperative\PointService;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -620,5 +622,474 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
             'user_id' => $user->id,
             'email' => $user->email,
         ]);
+    }
+
+    /**
+     * Helper to create a staff member with manage_cooperative_rewards (without view_cooperative_all).
+     */
+    private function createRewardStaff(Organization $organization): User
+    {
+        $staff = User::factory()->create([
+            'organization_id' => $organization->id,
+            'email_verified_at' => now(),
+        ]);
+        $staff->givePermissionTo(PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value);
+
+        return $staff;
+    }
+
+    // ==========================================
+    // R1 NEW SCENARIOS (PHASE 10: 1 to 20)
+    // ==========================================
+
+    /**
+     * Scenario 1: Member A API catalog excludes Reward B.
+     */
+    public function test_member_api_catalog_excludes_foreign_organization_rewards(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+
+        $rewardA = Reward::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => 'Reward A Org A',
+            'is_active' => true,
+        ]);
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Reward B Org B',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($memberA->user, ['member:read']);
+
+        $response = $this->getJson('/api/v1/rewards')
+            ->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($rewardA->id, $ids);
+        $this->assertNotContains($rewardB->id, $ids);
+    }
+
+    /**
+     * Scenario 2: Member A web catalog excludes Reward B.
+     */
+    public function test_member_web_catalog_excludes_foreign_organization_rewards(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+
+        $rewardA = Reward::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => 'Reward A Org A',
+            'is_active' => true,
+        ]);
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Reward B Org B',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($memberA->user)
+            ->get('/member/rewards')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Kojayaku/Rewards')
+                ->has('rewards.data', 1)
+                ->where('rewards.data.0.id', $rewardA->id)
+            );
+    }
+
+    /**
+     * Scenario 3, 4, 5, 6, 7, 8: Member A API cannot redeem foreign Reward B.
+     * Foreign API redemption leaves Reward B stock unchanged, Member A points unchanged,
+     * creates no RewardRedemption, creates no REDEEMED transaction, creates no notification/outbox side effect.
+     */
+    public function test_member_api_cannot_redeem_foreign_reward_and_preserves_all_state(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+
+        PointTransaction::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'transaction_type' => 'EARNED',
+            'points' => 2000,
+            'balance_before' => 0,
+            'balance_after' => 2000,
+        ]);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'points_required' => 500,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $initialStockB = $rewardB->stock;
+        $initialBalanceA = 2000;
+        $initialRedemptionCount = RewardRedemption::query()->count();
+        $initialPointTxCount = PointTransaction::query()->count();
+        $initialNotificationCount = DB::table('notifications')->count();
+
+        Sanctum::actingAs($memberA->user, ['member:write']);
+
+        $this->postJson('/api/v1/rewards/'.$rewardB->id.'/redeem', [
+            'quantity' => 1,
+            'delivery_address' => 'Jl. Serang No. 1',
+        ])->assertNotFound();
+
+        $this->assertSame($initialStockB, $rewardB->fresh()->stock);
+        $this->assertSame($initialBalanceA, (int) $memberA->pointTransactions()->latest('id')->value('balance_after'));
+        $this->assertSame($initialRedemptionCount, RewardRedemption::query()->count());
+        $this->assertSame($initialPointTxCount, PointTransaction::query()->count());
+        $this->assertSame(0, PointTransaction::query()->where('transaction_type', 'REDEEMED')->count());
+        $this->assertSame($initialNotificationCount, DB::table('notifications')->count());
+    }
+
+    /**
+     * Scenario 9: Member A web cannot redeem Reward B.
+     */
+    public function test_member_web_cannot_redeem_foreign_reward_returns_404(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+
+        PointTransaction::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'transaction_type' => 'EARNED',
+            'points' => 2000,
+            'balance_before' => 0,
+            'balance_after' => 2000,
+        ]);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'points_required' => 500,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($memberA->user)
+            ->post('/member/rewards/'.$rewardB->id.'/redeem', [
+                'quantity' => 1,
+                'delivery_address' => 'Jl. Serang No. 1',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame(10, $rewardB->fresh()->stock);
+        $this->assertSame(0, RewardRedemption::query()->where('reward_id', $rewardB->id)->count());
+    }
+
+    /**
+     * Scenario 10: Direct PointService redeem(Member A, Reward B) fails closed with AuthorizationException.
+     */
+    public function test_direct_point_service_redeem_with_mismatched_organizations_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+
+        PointTransaction::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'transaction_type' => 'EARNED',
+            'points' => 2000,
+            'balance_before' => 0,
+            'balance_after' => 2000,
+        ]);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'points_required' => 500,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $pointService = app(PointService::class);
+
+        $initialRedemptionCount = RewardRedemption::query()->count();
+        $initialPointTxCount = PointTransaction::query()->count();
+        $initialNotificationCount = DB::table('notifications')->count();
+
+        $this->expectException(AuthorizationException::class);
+
+        try {
+            $pointService->redeem(
+                member: $memberA,
+                reward: $rewardB,
+                quantity: 1,
+                deliveryAddress: 'Jl. Bypass No. 99',
+            );
+        } finally {
+            $this->assertSame(10, $rewardB->fresh()->stock);
+            $this->assertSame(2000, (int) $memberA->pointTransactions()->latest('id')->value('balance_after'));
+            $this->assertSame($initialRedemptionCount, RewardRedemption::query()->count());
+            $this->assertSame($initialPointTxCount, PointTransaction::query()->count());
+            $this->assertSame($initialNotificationCount, DB::table('notifications')->count());
+        }
+    }
+
+    /**
+     * Scenario 11, 12, 13: Same-org API and web redemptions succeed, and matching tenant ownership is verified.
+     */
+    public function test_same_org_api_and_web_redemption_succeed_and_verify_matching_ownership(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+
+        PointTransaction::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'transaction_type' => 'EARNED',
+            'points' => 3000,
+            'balance_before' => 0,
+            'balance_after' => 3000,
+        ]);
+
+        $rewardA = Reward::factory()->create([
+            'organization_id' => $orgA->id,
+            'points_required' => 500,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        // 1. Same-org API redemption succeeds
+        Sanctum::actingAs($memberA->user, ['member:write']);
+        $apiResponse = $this->postJson('/api/v1/rewards/'.$rewardA->id.'/redeem', [
+            'quantity' => 1,
+            'delivery_address' => 'Jl. Mawar No. 1',
+        ])->assertStatus(201);
+
+        $apiRedemption = RewardRedemption::query()->findOrFail($apiResponse->json('data.id'));
+        $this->assertSame($memberA->organization_id, $apiRedemption->member->organization_id);
+        $this->assertSame($memberA->organization_id, $apiRedemption->reward->organization_id);
+        $this->assertSame(9, $rewardA->fresh()->stock);
+
+        // 2. Same-org Web redemption succeeds
+        $this->actingAs($memberA->user)
+            ->post('/member/rewards/'.$rewardA->id.'/redeem', [
+                'quantity' => 2,
+                'delivery_address' => 'Jl. Mawar No. 2',
+            ])
+            ->assertRedirect();
+
+        $webRedemption = RewardRedemption::query()->latest('id')->firstOrFail();
+        $this->assertSame($memberA->organization_id, $webRedemption->member->organization_id);
+        $this->assertSame($memberA->organization_id, $webRedemption->reward->organization_id);
+        $this->assertSame(7, $rewardA->fresh()->stock);
+    }
+
+    /**
+     * Scenario 14: Org A staff reward list excludes Reward B.
+     */
+    public function test_staff_reward_list_excludes_foreign_organization_rewards(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $staffA = $this->createRewardStaff($orgA);
+
+        $rewardA = Reward::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => 'Reward A Org A',
+        ]);
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Reward B Org B',
+        ]);
+
+        $this->actingAs($staffA)
+            ->get('/cooperative/rewards')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Rewards/Index')
+                ->has('rewards.data', 1)
+                ->where('rewards.data.0.id', $rewardA->id)
+            );
+    }
+
+    /**
+     * Scenario 15: Org A reward manager cannot update Reward B (returns 404).
+     */
+    public function test_reward_manager_cannot_update_foreign_reward_returns_404(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $staffA = $this->createRewardStaff($orgA);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Original Reward B',
+            'category' => 'BARANG',
+            'points_required' => 400,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($staffA)
+            ->put('/cooperative/rewards/'.$rewardB->id, [
+                'name' => 'Hacked Reward B',
+                'category' => 'BARANG',
+                'points_required' => 10,
+                'stock' => 999,
+                'is_active' => true,
+            ])
+            ->assertNotFound();
+
+        $this->assertSame('Original Reward B', $rewardB->fresh()->name);
+        $this->assertSame(400, $rewardB->fresh()->points_required);
+    }
+
+    /**
+     * Scenario 16: Org A reward manager cannot delete Reward B (returns 404).
+     */
+    public function test_reward_manager_cannot_delete_foreign_reward_returns_404(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $staffA = $this->createRewardStaff($orgA);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Indestructible Reward B',
+        ]);
+
+        $this->actingAs($staffA)
+            ->delete('/cooperative/rewards/'.$rewardB->id)
+            ->assertNotFound();
+
+        $this->assertModelExists($rewardB);
+    }
+
+    /**
+     * Scenario 17: Unit actor cannot create Reward assigned to foreign organization.
+     */
+    public function test_unit_actor_cannot_create_reward_for_foreign_organization(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $staffA = $this->createRewardStaff($orgA);
+
+        $this->actingAs($staffA)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $orgB->id,
+                'name' => 'Illicit Org B Reward',
+                'category' => 'BARANG',
+                'points_required' => 500,
+                'stock' => 20,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame(0, Reward::query()->where('name', 'Illicit Org B Reward')->count());
+        $this->assertSame(0, Reward::query()->where('organization_id', $orgB->id)->count());
+    }
+
+    /**
+     * Scenario 18: Unit actor cannot transfer Reward ownership to foreign organization.
+     */
+    public function test_unit_actor_cannot_transfer_reward_ownership_to_foreign_organization(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $staffA = $this->createRewardStaff($orgA);
+
+        $rewardA = Reward::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => 'Reward Org A',
+            'category' => 'BARANG',
+            'points_required' => 200,
+            'stock' => 5,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($staffA)
+            ->put('/cooperative/rewards/'.$rewardA->id, [
+                'organization_id' => $orgB->id,
+                'name' => 'Transferred Reward',
+                'category' => 'BARANG',
+                'points_required' => 200,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame($orgA->id, $rewardA->fresh()->organization_id);
+    }
+
+    /**
+     * Scenario 19: Null-org non-global actor fails closed.
+     */
+    public function test_null_organization_actor_fails_closed_on_reward_management(): void
+    {
+        $nullOrgUser = User::factory()->create([
+            'organization_id' => null,
+            'email_verified_at' => now(),
+        ]);
+        $nullOrgUser->givePermissionTo(PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value);
+
+        $reward = Reward::factory()->create();
+
+        $this->actingAs($nullOrgUser)->get('/cooperative/rewards')->assertForbidden();
+        $this->actingAs($nullOrgUser)->put('/cooperative/rewards/'.$reward->id, [
+            'name' => 'Forbidden Update',
+            'category' => 'BARANG',
+            'points_required' => 100,
+            'stock' => 1,
+            'is_active' => true,
+        ])->assertForbidden();
+        $this->actingAs($nullOrgUser)->delete('/cooperative/rewards/'.$reward->id)->assertForbidden();
+    }
+
+    /**
+     * Scenario 20: Global actor requires BOTH global visibility and functional reward-management permission.
+     */
+    public function test_global_actor_requires_both_global_visibility_and_functional_reward_management_permission(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        // Actor 1: view_cooperative_all ONLY (no manage_cooperative_rewards) -> DENIED
+        $globalReadOnly = User::factory()->create([
+            'organization_id' => $orgA->id,
+            'email_verified_at' => now(),
+        ]);
+        $globalReadOnly->givePermissionTo([
+            PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+        ]);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Foreign Reward B',
+            'category' => 'BARANG',
+            'points_required' => 300,
+            'stock' => 5,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($globalReadOnly)
+            ->put('/cooperative/rewards/'.$rewardB->id, [
+                'name' => 'Attempted Update',
+                'category' => 'BARANG',
+                'points_required' => 300,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Foreign Reward B', $rewardB->fresh()->name);
+
+        // Actor 2: BOTH view_cooperative_all AND manage_cooperative_rewards -> SUCCEEDS
+        $globalAdmin = User::factory()->create([
+            'organization_id' => $orgA->id,
+            'email_verified_at' => now(),
+        ]);
+        $globalAdmin->givePermissionTo([
+            PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+            PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value,
+        ]);
+
+        $this->actingAs($globalAdmin)
+            ->put('/cooperative/rewards/'.$rewardB->id, [
+                'name' => 'Authorized Global Update',
+                'category' => 'BARANG',
+                'points_required' => 350,
+                'stock' => 8,
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('Authorized Global Update', $rewardB->fresh()->name);
+        $this->assertSame(350, $rewardB->fresh()->points_required);
     }
 }

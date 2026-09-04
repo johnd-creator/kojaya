@@ -6,6 +6,18 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 3, 2026
 
+## 🎯 2026-09-04 - Reward Ownership and Self-Service Cross-Organization Hardening (SEC-P1-02 R1)
+
+- Formalized canonical `Reward` ownership via `organization_id` by implementing `OrganizationScopedModel` contract declaring `organizationScopePath(): string { return 'organization_id'; }`.
+- Enforced core invariant: `reward.organization_id == member.organization_id` for every redemption.
+- Closed member self-service catalog leak: `RewardApiController::index` (`GET /api/v1/rewards`) and `MemberPortalController::rewards` (`GET /member/rewards`) strictly filter rewards to the authenticated member's organization.
+- Hardened self-service redemption target resolution: replaced route-model binding with raw string IDs and explicit organization-scoped queries (`where('organization_id', $member->organization_id)->findOrFail($reward)`), returning 404 Not Found on foreign or non-existent rewards.
+- Implemented domain service defense-in-depth: `PointService::redeem()` re-locks the target reward within the database transaction and asserts `lockedReward.organization_id == member.organization_id`, failing closed with `AuthorizationException` before any stock, point, redemption, or notification mutations.
+- Hardened administrative `RewardController` (`index`, `store`, `update`, `destroy`): applied `scopeVisibleTo()` to listing, resolved update and delete targets via `resolveVisible()` with raw string IDs, and added `RewardPolicy` enforcing `manage_cooperative_rewards` and `sameOrganization()`.
+- Prevented client tenant forgery: added `'organization_id' => ['prohibited']` to `UpdateRewardRequest` and prohibited client `organization_id` for unit-scoped actors in `StoreRewardRequest`.
+- Simplified `RewardRedemptionController` (`show`, `updateStatus`) parameter types to raw `string $redemption` route identifiers, eliminating union types.
+- Expanded `RewardRedemptionOrganizationIsolationTest` to 26 tests (173 assertions), covering all 20 required R1 scenarios.
+
 ## 🎯 2026-09-03 - Reward Redemption Cross-Organization Isolation (SEC-P1-02)
 
 - Adopted canonical organization isolation foundation in `RewardRedemptionController::show` and `updateStatus` using `resolveVisible(RewardRedemption::class, $request->user(), $redemptionId)` based on canonical relational ownership `member.organization_id`.

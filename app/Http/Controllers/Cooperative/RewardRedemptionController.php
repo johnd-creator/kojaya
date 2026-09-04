@@ -33,13 +33,11 @@ class RewardRedemptionController extends Controller
 
     public function show(
         Request $request,
-        RewardRedemption|string $redemption,
+        string $redemption,
         OrganizationScopedQueryService $scopeService
     ): Response {
-        $redemptionId = $redemption instanceof RewardRedemption ? (string) $redemption->getKey() : $redemption;
-
         /** @var RewardRedemption $redemptionModel */
-        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemptionId);
+        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemption);
 
         $this->authorize('view', $redemptionModel);
 
@@ -52,14 +50,12 @@ class RewardRedemptionController extends Controller
 
     public function updateStatus(
         UpdateRedemptionStatusRequest $request,
-        RewardRedemption|string $redemption,
+        string $redemption,
         PointService $pointService,
         OrganizationScopedQueryService $scopeService
     ): RedirectResponse {
-        $redemptionId = $redemption instanceof RewardRedemption ? (string) $redemption->getKey() : $redemption;
-
         /** @var RewardRedemption $redemptionModel */
-        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemptionId);
+        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemption);
 
         $this->authorize('update', $redemptionModel);
 

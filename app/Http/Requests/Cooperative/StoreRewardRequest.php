@@ -13,8 +13,13 @@ class StoreRewardRequest extends FormRequest
 
     public function rules(): array
     {
+        $user = $this->user();
+        $isGlobal = $user && $user->can('view_cooperative_all');
+
         return [
-            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
+            'organization_id' => $isGlobal
+                ? ['nullable', 'uuid', 'exists:organizations,id']
+                : ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:BARANG,DISKON,LAYANAN'],
             'description' => ['nullable', 'string'],

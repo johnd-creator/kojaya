@@ -371,8 +371,14 @@ class P5MemberPortalTest extends TestCase
 
     public function test_rewards_returns_ok_with_active_rewards(): void
     {
-        Reward::factory()->create(['is_active' => true]);
-        Reward::factory()->create(['is_active' => false]);
+        Reward::factory()->create([
+            'organization_id' => $this->member->organization_id,
+            'is_active' => true,
+        ]);
+        Reward::factory()->create([
+            'organization_id' => $this->member->organization_id,
+            'is_active' => false,
+        ]);
 
         $response = $this->actingAs($this->memberUser)->get(route('member.rewards'));
 
@@ -388,6 +394,7 @@ class P5MemberPortalTest extends TestCase
     public function test_redeem_reward_succeeds_with_sufficient_points(): void
     {
         $reward = Reward::factory()->create([
+            'organization_id' => $this->member->organization_id,
             'points_required' => 500,
             'stock' => 10,
             'is_active' => true,
@@ -422,6 +429,7 @@ class P5MemberPortalTest extends TestCase
     public function test_redeem_reward_fails_with_insufficient_points(): void
     {
         $reward = Reward::factory()->create([
+            'organization_id' => $this->member->organization_id,
             'points_required' => 5000,
             'stock' => 10,
             'is_active' => true,

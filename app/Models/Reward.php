@@ -2,16 +2,27 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Reward extends Model
+class Reward extends Model implements OrganizationScopedModel
 {
     /** @use HasFactory<\Database\Factories\RewardFactory> */
     use HasFactory, HasUuids;
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
+
+    public function organizationScopeGlobalPermission(): ?string
+    {
+        return 'view_cooperative_all';
+    }
 
     protected $fillable = [
         'organization_id',

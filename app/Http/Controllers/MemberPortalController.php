@@ -528,6 +528,7 @@ class MemberPortalController extends Controller
         return Inertia::render('Kojayaku/Rewards', [
             'summary' => $pointService->balanceSummary($member),
             'rewards' => Reward::query()
+                ->where('organization_id', $member->organization_id)
                 ->where('is_active', true)
                 ->orderBy('points_required')
                 ->paginate(12)
@@ -539,14 +540,19 @@ class MemberPortalController extends Controller
 
     public function redeemReward(
         RedeemRewardRequest $request,
-        Reward $reward,
+        string $reward,
         PointService $pointService
     ): RedirectResponse {
         $member = $this->memberOrAbort($request);
 
+        /** @var Reward $rewardModel */
+        $rewardModel = Reward::query()
+            ->where('organization_id', $member->organization_id)
+            ->findOrFail($reward);
+
         $pointService->redeem(
             member: $member,
-            reward: $reward,
+            reward: $rewardModel,
             quantity: (int) $request->validated('quantity'),
             deliveryAddress: $request->validated('delivery_address'),
         );

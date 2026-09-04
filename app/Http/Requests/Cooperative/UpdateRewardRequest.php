@@ -14,6 +14,7 @@ class UpdateRewardRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'organization_id' => ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:BARANG,DISKON,LAYANAN'],
             'description' => ['nullable', 'string'],

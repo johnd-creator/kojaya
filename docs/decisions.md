@@ -1467,7 +1467,7 @@ Administrative and staff reward redemption workflows previously relied on implic
 ### Decision
 
 1. **Explicit Organization-Scoped Resolution via `resolveVisible`:**
-   - Replaced implicit route model binding in `RewardRedemptionController::show` and `updateStatus` with canonical `resolveVisible(RewardRedemption::class, $request->user(), $redemptionId)`.
+   - Replaced implicit route model binding in `RewardRedemptionController::show` and `updateStatus` with canonical `resolveVisible(RewardRedemption::class, $request->user(), $redemption)`.
    - Query is scoped to the actor's authorized organizations using relational path `member.organization_id` prior to executing `findOrFail($id)`.
    - Foreign organization UUIDs and non-existent UUIDs return an identical 404 Not Found response, completely eliminating cross-tenant existence enumeration.
 
@@ -1481,15 +1481,27 @@ Administrative and staff reward redemption workflows previously relied on implic
    - Guaranteed that cross-organization mutation attempts are blocked before `PointService` is reached, preventing unintended point refunds, point balance alterations, reward stock restorations, or notification dispatches.
 
 3. **Client Ownership Forgery Prevention (Rule G):**
-   - Added `'organization_id' => ['prohibited']` to `UpdateRedemptionStatusRequest` to prevent client-supplied tenant reassignment.
+   - Added `'organization_id' => ['prohibited']` to `UpdateRedemptionStatusRequest` and `UpdateRewardRequest`.
+   - In `StoreRewardRequest`, restricted client-supplied `'organization_id'` strictly to users holding explicit global cooperative authority (`view_cooperative_all`); prohibited for all unit-scoped actors.
 
-4. **Preserved Safe Member Self-Service:**
-   - Retained member self-service endpoints (`MemberSelfServiceController::rewardRedemptions`, `RewardApiController::redeem`, `MemberPortalController::rewards`, `MemberPortalController::redeemReward`) deriving the active member strictly from `$request->user()->cooperativeMember`.
-   - No administrative or global scoping primitives are introduced into member self-service flows.
+4. **Reward Ownership Formalization & Admin Catalog Hardening (R1):**
+   - Formalized `Reward` canonical ownership via `organization_id` by implementing `OrganizationScopedModel` declaring `organizationScopePath(): string { return 'organization_id'; }`.
+   - Mapped `Reward::class => 'view_cooperative_all'` in `OrganizationScopeService::GLOBAL_PERMISSIONS` and registered `RewardPolicy` enforcing `manage_cooperative_rewards` and `sameOrganization()`.
+   - Hardened `RewardController` (`index`, `store`, `update`, `destroy`) with `scopeVisibleTo()` on listing and `resolveVisible()` on update/delete using raw string route parameters, preventing unscoped hydration and cross-tenant mutation.
+
+5. **Member Self-Service Catalog & Target Scoping (R1):**
+   - Closed cross-tenant reward selection vulnerability: both `GET /api/v1/rewards` and `GET /member/rewards` strictly filter rewards by `where('organization_id', $member->organization_id)`.
+   - In `RewardApiController::redeem` and `MemberPortalController::redeemReward`, replaced route-model binding with raw string identifiers and explicit query scoping (`where('organization_id', $member->organization_id)->findOrFail($reward)`), returning 404 Not Found on foreign rewards.
+   - Enforced invariant: `reward.organization_id == member.organization_id`.
+
+6. **Domain Service Defense-in-Depth (R1):**
+   - In `PointService::redeem()`, after row-level locking of the reward record, asserted `lockedReward.organization_id == member.organization_id`.
+   - Throws `AuthorizationException` before any stock decrement, point deduction, `RewardRedemption` creation, or notification dispatch, guaranteeing that direct service calls cannot bypass organization boundaries.
 
 ### Consequences
 
-- **Anti-Enumeration Enforced:** Unauthorized cross-tenant detail and mutation requests return 404 Not Found without leaking record existence.
-- **Side-Effect Safety Verified:** Denied cross-org cancellation attempts leave redemption status, notes, processed timestamp, member point balance, point transactions, refund transactions, and notification tables strictly untouched.
-- **Global Visibility Separation:** Confirmed that `view_cooperative_all` grants read/update access only when paired with valid functional permission (`manage_cooperative_redemption`); global actors without functional permissions are denied (403 Forbidden).
-- **Test Coverage:** Backed by 13 comprehensive tests (98 assertions) in `tests/Feature/Security/RewardRedemptionOrganizationIsolationTest.php`.
+- **Anti-Enumeration Enforced:** Unauthorized cross-tenant detail, update, and redeem requests return 404 Not Found without leaking record existence.
+- **Tenant Integrity Guaranteed:** Reward redemptions can never connect members and rewards from different organizations.
+- **Side-Effect Safety Verified:** Denied cross-org cancellation and redemption attempts leave redemption status, notes, processed timestamp, reward stock, member point balance, point transactions, refund transactions, and notification tables strictly untouched.
+- **Global Visibility Separation:** Confirmed that `view_cooperative_all` grants read/update access only when paired with valid functional permission (`manage_cooperative_redemption` or `manage_cooperative_rewards`); global actors without functional permissions are denied (403 Forbidden).
+- **Test Coverage:** Backed by 26 comprehensive tests (173 assertions) in `tests/Feature/Security/RewardRedemptionOrganizationIsolationTest.php`.

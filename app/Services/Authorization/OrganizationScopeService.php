@@ -36,6 +36,7 @@ use App\Models\Project;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\Reimbursement;
+use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\SalaryStructure;
 use App\Models\SavingsWithdrawal;
@@ -115,6 +116,7 @@ class OrganizationScopeService
         MemberResignationRequest::class => 'view_cooperative_all',
         SavingsWithdrawal::class => 'view_cooperative_all',
         RewardRedemption::class => 'view_cooperative_all',
+        Reward::class => 'view_cooperative_all',
         PosMemberCreditPayment::class => 'view_cooperative_all',
         Attendance::class => 'view_attendance_all',
         AttendanceCorrection::class => 'view_attendance_all',
@@ -324,6 +326,10 @@ class OrganizationScopeService
 
     public function globalPermissionFor(Model $model): ?string
     {
+        if (method_exists($model, 'organizationScopeGlobalPermission')) {
+            return $model->organizationScopeGlobalPermission();
+        }
+
         return self::GLOBAL_PERMISSIONS[get_class($model)] ?? null;
     }
 

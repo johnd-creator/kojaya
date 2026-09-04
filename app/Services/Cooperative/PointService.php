@@ -8,6 +8,7 @@ use App\Models\PosMemberPoint;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +155,11 @@ class PointService
 
         return DB::transaction(function () use ($deliveryAddress, $member, $quantity, $reward): RewardRedemption {
             $lockedReward = Reward::query()->lockForUpdate()->findOrFail($reward->id);
+
+            if ((string) $lockedReward->organization_id !== (string) $member->organization_id) {
+                throw new AuthorizationException('The reward does not belong to the member organization.');
+            }
+
             $summary = $this->balanceSummary($member);
             $pointsRequired = (int) $lockedReward->points_required * $quantity;
 

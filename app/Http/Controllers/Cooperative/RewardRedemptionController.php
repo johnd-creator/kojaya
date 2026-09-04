@@ -31,28 +31,38 @@ class RewardRedemptionController extends Controller
         ]);
     }
 
-    public function show(Request $request, RewardRedemption $redemption): Response
-    {
-        $this->authorize('view', $redemption);
+    public function show(
+        Request $request,
+        string $redemption,
+        OrganizationScopedQueryService $scopeService
+    ): Response {
+        /** @var RewardRedemption $redemptionModel */
+        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemption);
 
-        $redemption->load(['reward', 'member', 'pointTransaction']);
+        $this->authorize('view', $redemptionModel);
+
+        $redemptionModel->load(['reward', 'member', 'pointTransaction']);
 
         return Inertia::render('Cooperative/Redemptions/Show', [
-            'redemption' => $redemption,
+            'redemption' => $redemptionModel,
         ]);
     }
 
     public function updateStatus(
         UpdateRedemptionStatusRequest $request,
-        RewardRedemption $redemption,
-        PointService $pointService
+        string $redemption,
+        PointService $pointService,
+        OrganizationScopedQueryService $scopeService
     ): RedirectResponse {
-        $this->authorize('update', $redemption);
+        /** @var RewardRedemption $redemptionModel */
+        $redemptionModel = $scopeService->resolveVisible(RewardRedemption::class, $request->user(), $redemption);
+
+        $this->authorize('update', $redemptionModel);
 
         $status = $request->validated('status');
 
         $pointService->updateRedemptionStatus(
-            redemption: $redemption,
+            redemption: $redemptionModel,
             status: $status,
             notes: $request->validated('notes'),
         );

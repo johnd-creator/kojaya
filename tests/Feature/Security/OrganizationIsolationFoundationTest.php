@@ -384,8 +384,8 @@ class OrganizationIsolationFoundationTest extends TestCase
         $this->actingAs($adminA)->get(route('cooperative.members.show', $memberA))->assertOk();
         $this->actingAs($adminA)->get(route('cooperative.members.show', $memberB))->assertForbidden();
 
-        // Reading redemption of Org B returns 403
-        $this->actingAs($adminA)->get(route('cooperative.redemptions.show', $redemptionB))->assertForbidden();
+        // Reading redemption of Org B returns 404 (anti-enumeration via resolveVisible)
+        $this->actingAs($adminA)->get(route('cooperative.redemptions.show', $redemptionB))->assertNotFound();
     }
 
     /**

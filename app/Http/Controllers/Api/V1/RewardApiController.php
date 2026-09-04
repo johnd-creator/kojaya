@@ -17,9 +17,11 @@ class RewardApiController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $this->resolveMember($request);
+        $member = $this->resolveMember($request);
 
-        $query = Reward::query()->where('is_active', true);
+        $query = Reward::query()
+            ->where('organization_id', $member->organization_id)
+            ->where('is_active', true);
 
         if ($request->filled('category')) {
             $query->where('category', $request->input('category'));
@@ -34,14 +36,19 @@ class RewardApiController extends Controller
 
     public function redeem(
         RedeemRewardRequest $request,
-        Reward $reward,
+        string $reward,
         PointService $pointService
     ): JsonResponse {
         $member = $this->resolveMember($request);
 
+        /** @var Reward $rewardModel */
+        $rewardModel = Reward::query()
+            ->where('organization_id', $member->organization_id)
+            ->findOrFail($reward);
+
         $redemption = $pointService->redeem(
             member: $member,
-            reward: $reward,
+            reward: $rewardModel,
             quantity: (int) $request->validated('quantity'),
             deliveryAddress: $request->validated('delivery_address'),
         );
@@ -59,6 +66,10 @@ class RewardApiController extends Controller
 
         abort_unless($user && $user->cooperativeMember, 403);
 
-        return $user->cooperativeMember;
+        $member = $user->cooperativeMember;
+
+        abort_if(blank($member->organization_id), 403, 'Member is not assigned to an organization.');
+
+        return $member;
     }
 }

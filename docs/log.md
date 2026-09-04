@@ -4,7 +4,39 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 3, 2026
+**Last Updated:** September 4, 2026
+
+## 🎯 2026-09-04 - Restore Canonical Permission Registry and Fail-Closed Reward Tenant Protection (SEC-P1-02 R2)
+
+- Restored centralized global permission authority in `OrganizationScopeService::globalPermissionFor()`: removed model-level `organizationScopeGlobalPermission()` magic method so global authorization resolves exclusively from `OrganizationScopeService::GLOBAL_PERMISSIONS` (`Reward::class => 'view_cooperative_all'`).
+- Enforced strict execution ordering in `PointService::redeem()`: introduced cheap tenant check (`assertSameOrganization()`) preceding `syncPosPoints($member)`, preventing unintended point accrual or notifications on cross-tenant attempts, coupled with post-lock authoritative re-verification inside the transaction.
+- Hardened domain invariant in `PointService`: asserted that both `member.organization_id` and `reward.organization_id` must be non-null and non-empty, and `(string) reward.organization_id === (string) member.organization_id`. Prohibited `null == null` from ever evaluating as a valid organization match.
+- Enforced fail-closed member check on Reward self-service: `RewardApiController::resolveMember` and `MemberPortalController::memberWithOrganizationOrAbort` reject members with null or blank `organization_id` with 403 Forbidden prior to catalog queries or point sync.
+- Guarded administrative Reward creation against orphan rewards: `StoreRewardRequest` and `RewardController::store()` require an explicit target organization for global actors without an organization assignment, rejecting requests with 422 Unprocessable Content if omitted.
+- Expanded `RewardRedemptionOrganizationIsolationTest` to 35 tests (232 assertions), adding behavioral regression tests for centralized permission authority, unsynced POS points side-effect prevention, null-org member/reward API and web portal flows, and global admin store orphan prevention.
+
+## 🎯 2026-09-04 - Reward Ownership and Self-Service Cross-Organization Hardening (SEC-P1-02 R1)
+
+- Formalized canonical `Reward` ownership via `organization_id` by implementing `OrganizationScopedModel` contract declaring `organizationScopePath(): string { return 'organization_id'; }`.
+- Enforced core invariant: `reward.organization_id == member.organization_id` for every redemption.
+- Closed member self-service catalog leak: `RewardApiController::index` (`GET /api/v1/rewards`) and `MemberPortalController::rewards` (`GET /member/rewards`) strictly filter rewards to the authenticated member's organization.
+- Hardened self-service redemption target resolution: replaced route-model binding with raw string IDs and explicit organization-scoped queries (`where('organization_id', $member->organization_id)->findOrFail($reward)`), returning 404 Not Found on foreign or non-existent rewards.
+- Implemented domain service defense-in-depth: `PointService::redeem()` re-locks the target reward within the database transaction and asserts `lockedReward.organization_id == member.organization_id`, failing closed with `AuthorizationException` before any stock, point, redemption, or notification mutations.
+- Hardened administrative `RewardController` (`index`, `store`, `update`, `destroy`): applied `scopeVisibleTo()` to listing, resolved update and delete targets via `resolveVisible()` with raw string IDs, and added `RewardPolicy` enforcing `manage_cooperative_rewards` and `sameOrganization()`.
+- Prevented client tenant forgery: added `'organization_id' => ['prohibited']` to `UpdateRewardRequest` and prohibited client `organization_id` for unit-scoped actors in `StoreRewardRequest`.
+- Simplified `RewardRedemptionController` (`show`, `updateStatus`) parameter types to raw `string $redemption` route identifiers, eliminating union types.
+- Expanded `RewardRedemptionOrganizationIsolationTest` to 26 tests (173 assertions), covering all 20 required R1 scenarios.
+
+## 🎯 2026-09-03 - Reward Redemption Cross-Organization Isolation (SEC-P1-02)
+
+- Adopted canonical organization isolation foundation in `RewardRedemptionController::show` and `updateStatus` using `resolveVisible(RewardRedemption::class, $request->user(), $redemptionId)` based on canonical relational ownership `member.organization_id`.
+- Eliminated cross-tenant object existence enumeration: foreign organization redemption detail and mutation attempts now consistently return 404 Not Found (via `ModelNotFoundException`) matching non-existent UUIDs instead of revealing existence via 403 Forbidden.
+- Enforced strict mutation execution ordering: authentication -> tenant-scoped resolution -> functional policy authorization (`manage_cooperative_redemption`) -> status validation -> domain mutation (`PointService::updateRedemptionStatus`).
+- Verified complete zero-side-effect guarantee on denied cross-tenant mutations: redemption status, notes, processed timestamp, reward stock, member points, point transactions, refund records, and notifications remain strictly unmodified.
+- Enforced Rule G (Client Forgery Prevention): added `'organization_id' => ['prohibited']` to `UpdateRedemptionStatusRequest`.
+- Preserved safe member self-service APIs (`/api/v1/member/reward-redemptions`, `/api/v1/rewards/{reward}/redeem`, `/member/rewards`, `/member/rewards/{reward}/redeem`) bounded strictly to the authenticated member context without administrative or global overrides.
+- Added dedicated security feature test suite `RewardRedemptionOrganizationIsolationTest` with 13 tests (98 assertions) covering admin list isolation, status filter isolation, foreign detail denial (404), foreign mutation denial with state preservation (404), route model binding regression, same-org positive controls, global staff positive controls, global without functional permission denial (403), functional permission without global visibility denial (404), null-org fail-closed (403), client forgery prevention, and member self-service isolation.
+- Verified zero regressions on SEC-P1-01 foundation tests (20 passed, 243 assertions), P0 security suites (115 passed, 545 assertions), and existing reward tests (5 passed, 90 assertions).
 
 ## 🎯 2026-09-03 - Canonical Organization Isolation Foundation (SEC-P1-01, R1 & R2)
 

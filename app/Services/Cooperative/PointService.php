@@ -8,6 +8,7 @@ use App\Models\PosMemberPoint;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -150,10 +151,15 @@ class PointService
         int $quantity,
         ?string $deliveryAddress = null
     ): RewardRedemption {
+        $this->assertSameOrganization($member, $reward);
+
         $this->syncPosPoints($member);
 
         return DB::transaction(function () use ($deliveryAddress, $member, $quantity, $reward): RewardRedemption {
             $lockedReward = Reward::query()->lockForUpdate()->findOrFail($reward->id);
+
+            $this->assertSameOrganization($member, $lockedReward);
+
             $summary = $this->balanceSummary($member);
             $pointsRequired = (int) $lockedReward->points_required * $quantity;
 
@@ -379,6 +385,16 @@ class PointService
 
         if ($redemption->reward->stock !== null) {
             $redemption->reward->increment('stock', (int) $redemption->quantity);
+        }
+    }
+
+    private function assertSameOrganization(CooperativeMember $member, Reward $reward): void
+    {
+        $memberOrg = (string) $member->organization_id;
+        $rewardOrg = (string) $reward->organization_id;
+
+        if ($memberOrg === '' || $rewardOrg === '' || $memberOrg !== $rewardOrg) {
+            throw new AuthorizationException('The reward does not belong to the member organization.');
         }
     }
 }

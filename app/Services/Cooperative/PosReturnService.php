@@ -10,6 +10,7 @@ use App\Models\PosReturnItem;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -29,13 +30,15 @@ class PosReturnService
      */
     public function create(array $data, ?User $cashier = null): PosReturn
     {
+        if ($cashier === null) {
+            throw new AuthorizationException('Kasir terautentikasi wajib diisi untuk retur POS.');
+        }
+
         $returnDate = ($data['returned_at'] ?? null) ?: now()->toDateString();
         $transactionId = (int) $data['pos_transaction_id'];
         $transaction = PosTransaction::query()->find($transactionId);
         if ($transaction) {
-            if ($cashier !== null) {
-                app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
-            }
+            app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
             $this->closingGuard->guardReturn($transaction, (string) $returnDate);
         }
 
@@ -45,9 +48,7 @@ class PosReturnService
                 ->lockForUpdate()
                 ->findOrFail($data['pos_transaction_id']);
 
-            if ($cashier !== null) {
-                app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
-            }
+            app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
 
             if ($transaction->status !== 'COMPLETED') {
                 throw ValidationException::withMessages([

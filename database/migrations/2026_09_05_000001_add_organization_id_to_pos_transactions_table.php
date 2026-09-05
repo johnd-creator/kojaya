@@ -89,6 +89,18 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasColumn('pos_transactions', 'organization_id')) {
+            $duplicateCount = DB::table('pos_transactions')
+                ->whereNotNull('client_reference')
+                ->select('client_reference')
+                ->groupBy('client_reference')
+                ->havingRaw('COUNT(*) > 1')
+                ->get()
+                ->count();
+
+            if ($duplicateCount > 0) {
+                throw new \LogicException("Cannot rollback migration: found {$duplicateCount} duplicate client_reference records across organizations that would violate global unique constraint.");
+            }
+
             Schema::table('pos_transactions', function (Blueprint $table): void {
                 $table->dropUnique(['organization_id', 'client_reference']);
                 $table->unique(['client_reference']);

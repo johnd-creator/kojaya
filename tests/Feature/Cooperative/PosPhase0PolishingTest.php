@@ -138,9 +138,11 @@ class PosPhase0PolishingTest extends TestCase
 
     public function test_discount_amount_cannot_exceed_subtotal(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -161,9 +163,11 @@ class PosPhase0PolishingTest extends TestCase
 
     public function test_cash_received_must_cover_total(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,
@@ -215,9 +219,11 @@ class PosPhase0PolishingTest extends TestCase
 
     public function test_quantity_exceeding_stock_is_rejected(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 2,
@@ -238,9 +244,11 @@ class PosPhase0PolishingTest extends TestCase
 
     public function test_discontinued_product_cannot_be_sold(): void
     {
-        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->discontinued()->create([
+            'organization_id' => $organization->id,
             'cost_price' => 1000,
             'sale_price' => 5000,
             'stock' => 10,

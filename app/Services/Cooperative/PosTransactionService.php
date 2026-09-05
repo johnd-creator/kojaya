@@ -68,12 +68,16 @@ class PosTransactionService
 
         if (! empty($data['pos_cashier_shift_id'])) {
             $shift = PosCashierShift::query()->with('cashier')->find($data['pos_cashier_shift_id']);
-            if ($shift && $shift->cashier && ! empty($shift->cashier->organization_id)) {
-                if ((string) $shift->cashier->organization_id !== $targetOrgId) {
-                    throw ValidationException::withMessages([
-                        'pos_cashier_shift_id' => 'Shift kasir berada di luar organisasi transaksi.',
-                    ]);
-                }
+            if (! $shift || ! $shift->cashier || empty($shift->cashier->organization_id)) {
+                throw ValidationException::withMessages([
+                    'pos_cashier_shift_id' => 'Shift kasir tidak valid atau tidak memiliki organisasi.',
+                ]);
+            }
+
+            if ((string) $shift->cashier->organization_id !== (string) $targetOrgId) {
+                throw ValidationException::withMessages([
+                    'pos_cashier_shift_id' => 'Shift kasir berada di luar organisasi transaksi.',
+                ]);
             }
         }
 
@@ -146,7 +150,21 @@ class PosTransactionService
 
                 $payments = $this->normalizePayments($data, $total);
 
-                $member = $memberId ? CooperativeMember::query()->whereKey($memberId)->first() : null;
+                $member = null;
+                if ($memberId) {
+                    $member = CooperativeMember::query()->lockForUpdate()->find($memberId);
+                    if (! $member || empty($member->organization_id)) {
+                        throw ValidationException::withMessages([
+                            'cooperative_member_id' => 'Anggota tidak memiliki organisasi yang valid.',
+                        ]);
+                    }
+
+                    if ((string) $member->organization_id !== (string) $targetOrgId) {
+                        throw ValidationException::withMessages([
+                            'cooperative_member_id' => 'Anggota berada di luar organisasi transaksi.',
+                        ]);
+                    }
+                }
                 if ($this->paymentsRequireMember($payments) && (! $member || $member->status !== 'ACTIVE')) {
                     throw ValidationException::withMessages([
                         'cooperative_member_id' => 'Pembayaran kredit anggota membutuhkan anggota aktif.',
@@ -382,8 +400,11 @@ class PosTransactionService
 
             foreach ($transaction->items as $item) {
                 $product = PosProduct::query()->lockForUpdate()->find($item->pos_product_id);
-                if (! $product) {
-                    continue;
+                if (! $product || empty($product->organization_id) || (string) $product->organization_id !== (string) $transaction->organization_id) {
+                    $productName = $product?->name ?? 'ID '.$item->pos_product_id;
+                    throw ValidationException::withMessages([
+                        'items' => "Produk {$productName} tidak valid atau berada di luar organisasi transaksi.",
+                    ]);
                 }
                 $location = $this->inventory->resolveLocationFor($transaction->pos_cashier_shift_id);
                 $this->inventory->restoreSaleStock(

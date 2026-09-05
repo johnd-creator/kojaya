@@ -1571,3 +1571,33 @@ POS transaction creation, transaction history/detail, receipts, void requests, v
 - **Multi-Tenant Idempotency:** Distinct organizations can safely use overlapping client references without collision or leakage.
 - **Side-Effect Safety Verified:** Failed or unauthorized transactions leave product stock, member credit balances, and accounting ledgers completely untouched.
 - **Test Coverage:** Verified by 45 dedicated feature tests (180 assertions) in `tests/Feature/Security/PosTransactionVoidOrganizationIsolationTest.php` and full backward regression pass across all POS suites.
+
+### R1 Addendum (Blockers Resolution & CI Hardening):
+
+1. **Offline Sync Idempotency (Blocker A):**
+   - Removed divergent early `PosTransaction` lookup in `PosSyncService::dispatchTransaction()` that inspected `$user->organization_id`.
+   - Delegated execution directly to `PosTransactionService::create()`, which authoritatively resolves `targetOrgId` from cart items and enforces tenant-scoped idempotency (`where('organization_id', $targetOrgId)->where('client_reference', $ref)`). This guarantees global operators submitting transactions for foreign organizations receive the correct tenant-scoped transaction rather than leaking or colliding with their home organization.
+
+2. **Inner Lock & Anti-TOCTOU Member Verification (Blocker B):**
+   - Re-fetched and locked `CooperativeMember` with `lockForUpdate()->find($memberId)` inside the `PosTransactionService::create()` database transaction.
+   - Asserted `!empty($member->organization_id)` and `(string)$member->organization_id === (string)$targetOrgId` immediately after locking, preventing race conditions (TOCTOU) where a member's organization changes concurrently before ledger, credit, or point mutations occur.
+
+3. **Fail-Closed Unauthenticated Cashier in Return Service (Blocker C):**
+   - In `PosReturnService::create()`, explicitly throw `AuthorizationException` when `$cashier === null`, ensuring unauthenticated return attempts fail closed before any economic mutations.
+
+4. **Migration Down Guard Against Duplicate References (Blocker D):**
+   - In `2026_09_05_000001_add_organization_id_to_pos_transactions_table.php` `down()`, added a pre-flight query checking for cross-organization duplicate non-null `client_reference` values (`HAVING COUNT(*) > 1`).
+   - If duplicates exist across tenants, throws `\LogicException` before executing any DDL, preventing migration rollback from corrupting or breaking under global unique constraint violations.
+
+5. **Shift Tenant Validation Matrix (Blocker E):**
+   - In `PosTransactionService::create()`, enforced a 4-case fail-closed validation on `'pos_cashier_shift_id'`: requires that the shift exists, the shift has an assigned cashier, the cashier has a non-null `organization_id`, and `shift.cashier.organization_id === targetOrgId`. Throws `ValidationException` (422) for missing, orphan, null-org, or foreign shifts.
+
+6. **Void Product Tenant Integrity (Blocker F):**
+   - In `PosTransactionService::approveVoid()`, locked products are verified to belong to `transaction.organization_id` before stock restoration or financial mutations (`!empty($product->organization_id) && (string)$product->organization_id === (string)$transaction->organization_id`). Throws `ValidationException` if corrupted or mismatched.
+
+7. **CI Regression Repairs in Legacy Tests:**
+   - Repaired `PosPhase0PolishingTest` fixtures to provide valid same-org tenant setups (`User` and `PosProduct` with matching `organization_id`), allowing intended business validation tests (discount exceeding subtotal, cash received covering total, stock limits, discontinued products) to run without tripping tenant precondition checks.
+   - Repaired `PosSprint3ClosingLockTest` supervisor helper to inherit the cashier's organization (`$supervisor = $this->supervisor($cashier)`), reaching the closing lock validation guard.
+
+8. **Expanded Test Suite:**
+   - Expanded `PosTransactionVoidOrganizationIsolationTest.php` to 52 tests (208 assertions), adding regression tests for all 6 blockers (A through F).

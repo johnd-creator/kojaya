@@ -6,6 +6,18 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 5, 2026
 
+## 🎯 2026-09-05 - POS Organization Isolation R1 & CI Regression Hardening (SEC-P1-03 R1)
+
+- Repaired GitHub CI #272 legacy failures in `PosPhase0PolishingTest` (`test_discount_amount_cannot_exceed_subtotal`, `test_cash_received_must_cover_total`, `test_quantity_exceeding_stock_is_rejected`, `test_discontinued_product_cannot_be_sold`) by assigning valid same-organization fixtures without weakening production isolation rules.
+- Repaired `PosSprint3ClosingLockTest::test_void_on_locked_origin_date_is_rejected` by ensuring supervisor fixture belongs to the cashier's organization (`supervisor($cashier)`), properly reaching the closing lock guard.
+- Blocker A (Offline Sync Idempotency): removed divergent early user-org transaction lookup in `PosSyncService::dispatchTransaction()`, delegating directly to `PosTransactionService::create()`, which authoritatively resolves target organization from cart items and enforces tenant-scoped idempotency.
+- Blocker B (Authoritative Member Recheck Anti-TOCTOU): locked `CooperativeMember` with `lockForUpdate()->find($memberId)` inside `PosTransactionService::create()` DB transaction and re-verified non-null `organization_id` matching `targetOrgId` before mutating member credit, store account, points, or ledger.
+- Blocker C (PosReturnService Null Actor Fail-Closed): threw `AuthorizationException` when `$cashier === null` in `PosReturnService::create()`, preventing unauthenticated execution with verified zero side effects.
+- Blocker D (Migration Down Safety): added pre-flight guard in `down()` checking for cross-organization duplicate non-null `client_reference` values (`HAVING COUNT(*) > 1`), throwing `\LogicException` before any DDL to prevent rollback failures or corruption.
+- Blocker E (Shift Tenant Validation): enforced 4-case fail-closed validation on `pos_cashier_shift_id` in `PosTransactionService::create()`, requiring shift existence, assigned cashier, cashier non-null `organization_id`, and organization equality.
+- Blocker F (Void Product Tenant Integrity): verified locked products in `PosTransactionService::approveVoid()` belong to `transaction.organization_id` before stock restoration or financial reversals.
+- Expanded `PosTransactionVoidOrganizationIsolationTest.php` from 45 to 52 tests (208 assertions) covering all blockers and rollback cases.
+
 ## 🎯 2026-09-05 - POS Transaction and Void Organization Isolation (SEC-P1-03)
 
 - Added direct foreign key `organization_id` (UUID nullable) to `pos_transactions` with foreign key constraint, composite index on `['organization_id', 'sold_at']`, and composite unique constraint on `['organization_id', 'client_reference']` (dropping global client reference uniqueness).

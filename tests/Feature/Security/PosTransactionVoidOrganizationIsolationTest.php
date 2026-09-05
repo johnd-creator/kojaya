@@ -10,6 +10,7 @@ use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosSyncRequest;
 use App\Models\PosTransaction;
+use App\Models\PosVoidRequest;
 use App\Models\User;
 use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\PosReturnService;
@@ -18,6 +19,8 @@ use App\Services\Cooperative\PosTransactionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -957,6 +960,252 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
 
         $this->assertSame(1, $backfilledCount);
         $this->assertSame($orgA->id, $tx->fresh()->organization_id);
+    }
+
+    // ==========================================
+    // GROUP 6: R1 SENIOR REVIEW REGRESSIONS & BLOCKERS
+    // ==========================================
+
+    public function test_sync_idempotency_resolves_target_organization_authoritatively_for_global_operator(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        // Global operator whose home organization is Org A
+        $operator = $this->createCashier($orgA, ['access_cooperative_pos', 'view_cooperative_all'], 'Global Operator');
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000]);
+        $productB = $this->createProduct($orgB, ['sale_price' => 20000]);
+
+        // Pre-existing transaction in Org A with client_reference 'SYNC-SHARED-REF'
+        $txA = $this->createTransaction($orgA, $operator, $productA, ['client_reference' => 'SYNC-SHARED-REF']);
+        $this->assertSame($orgA->id, $txA->organization_id);
+
+        // Operator submits offline sync request for Product in Org B using identical client_reference
+        $syncRequest = PosSyncRequest::query()->create([
+            'client_id' => 'client-global-sync-b',
+            'user_id' => $operator->id,
+            'device_id' => 'device-global-pos',
+            'idempotency_key' => 'idemp-global-sync-b',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-SHARED-REF',
+                'items' => [
+                    ['pos_product_id' => $productB->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 20000, 'cash_received' => 20000],
+                ],
+            ],
+            'status' => PosSyncRequest::STATUS_PENDING,
+        ]);
+
+        $result = app(PosSyncService::class)->process($syncRequest);
+
+        $this->assertSame(201, $result['status']);
+        $this->assertNotSame($txA->id, $result['data']['id']);
+        $this->assertSame($orgB->id, $result['data']['organization_id']);
+        $this->assertSame('SYNC-SHARED-REF', $result['data']['client_reference']);
+
+        // Replaying the sync request returns the Org B transaction, not Org A
+        $replay = app(PosSyncService::class)->process($syncRequest->fresh());
+        $this->assertTrue($replay['replay']);
+        $this->assertSame($result['data']['id'], $replay['data']['id']);
+    }
+
+    public function test_member_toctou_ownership_change_fails_closed_with_zero_side_effects(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $memberA = $this->createMember($orgA);
+
+        $toctouTriggered = false;
+        PosProduct::retrieved(function (PosProduct $p) use (&$toctouTriggered, $memberA, $orgB): void {
+            if (! $toctouTriggered) {
+                $toctouTriggered = true;
+                DB::table('cooperative_members')->where('id', $memberA->id)->update(['organization_id' => $orgB->id]);
+            }
+        });
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosTransactionService::class)->create([
+                'client_reference' => 'TOCTOU-MEMBER-TEST',
+                'cooperative_member_id' => $memberA->id,
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000],
+                ],
+            ], $cashierA);
+        } finally {
+            // Verify fail-closed zero side effects
+            $this->assertSame(10, (int) $productA->fresh()->stock);
+            $this->assertDatabaseMissing('pos_transactions', ['client_reference' => 'TOCTOU-MEMBER-TEST']);
+        }
+    }
+
+    public function test_pos_return_service_throws_authorization_exception_when_cashier_is_null(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $tx = $this->createTransaction($orgA, $cashierA, $productA, ['quantity' => 2]);
+        $this->assertSame(8, (int) $productA->fresh()->stock);
+
+        $this->expectException(AuthorizationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $tx->id,
+                'reason' => 'Retur tanpa kasir terautentikasi',
+                'items' => [
+                    ['pos_transaction_item_id' => $tx->items->first()->id, 'quantity' => 1],
+                ],
+            ], null);
+        } finally {
+            // Assert zero side effects
+            $this->assertDatabaseCount('pos_returns', 0);
+            $this->assertSame(8, (int) $productA->fresh()->stock);
+        }
+    }
+
+    public function test_shift_tenant_validation_matrix_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Kasir Org B');
+        $globalCashier = $this->createGlobalCashier();
+        $productA = $this->createProduct($orgA);
+
+        $shiftForeign = $this->createShift($cashierB);
+        $shiftNullOrg = $this->createShift($globalCashier);
+        $shiftValid = $this->createShift($cashierA);
+
+        $service = app(PosTransactionService::class);
+
+        // Case A: Foreign shift (Org B shift with Org A transaction) -> 422 pos_cashier_shift_id
+        try {
+            $service->create([
+                'client_reference' => 'SHIFT-TEST-A',
+                'pos_cashier_shift_id' => $shiftForeign->id,
+                'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+            ], $cashierA);
+            $this->fail('Expected foreign shift validation exception.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('pos_cashier_shift_id', $e->errors());
+        }
+
+        // Case B: Shift cashier null org -> 422 pos_cashier_shift_id
+        try {
+            $service->create([
+                'client_reference' => 'SHIFT-TEST-B',
+                'pos_cashier_shift_id' => $shiftNullOrg->id,
+                'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+            ], $cashierA);
+            $this->fail('Expected null org shift validation exception.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('pos_cashier_shift_id', $e->errors());
+        }
+
+        // Case C: Nonexistent shift -> 422 pos_cashier_shift_id
+        try {
+            $service->create([
+                'client_reference' => 'SHIFT-TEST-C',
+                'pos_cashier_shift_id' => 999999,
+                'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+            ], $cashierA);
+            $this->fail('Expected nonexistent shift validation exception.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('pos_cashier_shift_id', $e->errors());
+        }
+
+        // Case D: Same-org valid shift -> succeeds
+        $validTx = $service->create([
+            'client_reference' => 'SHIFT-TEST-D',
+            'pos_cashier_shift_id' => $shiftValid->id,
+            'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+            'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+        ], $cashierA);
+        $this->assertSame($shiftValid->id, $validTx->pos_cashier_shift_id);
+        $this->assertSame($orgA->id, $validTx->organization_id);
+    }
+
+    public function test_void_approval_fails_closed_if_product_organization_is_corrupted_or_mismatched(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $supervisorA = $this->createSupervisor($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+
+        $tx = $this->createTransaction($orgA, $cashierA, $productA, ['quantity' => 2]);
+        $this->assertSame(8, (int) $productA->fresh()->stock);
+
+        $voidRequest = PosVoidRequest::query()->create([
+            'pos_transaction_id' => $tx->id,
+            'requested_by' => $cashierA->id,
+            'reason' => 'Void reason test',
+            'status' => PosVoidRequest::STATUS_PENDING,
+        ]);
+
+        // Corrupt product organization to foreign org (or null)
+        $productA->forceFill(['organization_id' => $orgB->id])->saveQuietly();
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosTransactionService::class)->approveVoid($voidRequest, $supervisorA);
+        } finally {
+            // Verify fail-closed zero side effects: stock not restored, tx still COMPLETED, void request still PENDING
+            $this->assertSame(8, (int) $productA->fresh()->stock);
+            $this->assertSame('COMPLETED', $tx->fresh()->status);
+            $this->assertSame(PosVoidRequest::STATUS_PENDING, $voidRequest->fresh()->status);
+        }
+    }
+
+    public function test_migration_rollback_fails_if_duplicate_client_references_exist_across_organizations(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Kasir B');
+        $productA = $this->createProduct($orgA);
+        $productB = $this->createProduct($orgB);
+
+        // Same client_reference across 2 distinct organizations
+        $this->createTransaction($orgA, $cashierA, $productA, ['client_reference' => 'DUP-REF-ROLLBACK']);
+        $this->createTransaction($orgB, $cashierB, $productB, ['client_reference' => 'DUP-REF-ROLLBACK']);
+
+        $migration = require database_path('migrations/2026_09_05_000001_add_organization_id_to_pos_transactions_table.php');
+
+        $this->expectException(\LogicException::class);
+
+        try {
+            $migration->down();
+        } finally {
+            $this->assertTrue(Schema::hasColumn('pos_transactions', 'organization_id'));
+        }
+    }
+
+    public function test_migration_rollback_succeeds_when_client_references_are_unique(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA);
+
+        $this->createTransaction($orgA, $cashierA, $productA, ['client_reference' => 'UNIQUE-REF-ROLLBACK']);
+
+        $migration = require database_path('migrations/2026_09_05_000001_add_organization_id_to_pos_transactions_table.php');
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('pos_transactions', 'organization_id'));
+
+        // Restore schema for subsequent test isolation
+        $migration->up();
+        $this->assertTrue(Schema::hasColumn('pos_transactions', 'organization_id'));
     }
 
     // ==========================================

@@ -25,9 +25,12 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\NplTrackingService;
 use App\Services\Cooperative\PosSalesReportService;
+use App\Support\ReportAuthorizationScope;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -1157,6 +1160,587 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
                 "File [{$file}] contains unexpected direct 'view_cooperative_all' permission reference."
             );
         }
+    }
+
+    // =========================================================================
+    // GROUP 6: R2 BACKGROUND REPORT SCOPE BINDING & REAUTHORIZATION (Tests 60 - 79)
+    // =========================================================================
+
+    public function test_r2_01_enqueued_unit_report_stores_canonical_org_a_scope(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf', [
+            'from' => '2026-06-01',
+            'to' => '2026-06-30',
+        ]);
+
+        $response->assertStatus(202);
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $this->assertSame([
+            'version' => 1,
+            'mode' => 'organization',
+            'organization_id' => (string) $orgA->id,
+        ], $job->metadata['report_scope']);
+    }
+
+    public function test_r2_02_client_cannot_inject_org_b_as_report_scope(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf', [
+            'from' => '2026-06-01',
+            'to' => '2026-06-30',
+            'organization_id' => $orgB->id,
+            'report_scope' => [
+                'version' => 1,
+                'mode' => 'organization',
+                'organization_id' => (string) $orgB->id,
+            ],
+            'filters' => [
+                'organization_id' => $orgB->id,
+                'report_scope' => ['mode' => 'global'],
+            ],
+        ]);
+
+        $response->assertStatus(202);
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $this->assertSame((string) $orgA->id, $job->metadata['report_scope']['organization_id']);
+        $this->assertSame('organization', $job->metadata['report_scope']['mode']);
+        $this->assertArrayNotHasKey('organization_id', $job->metadata['filters']);
+    }
+
+    public function test_r2_03_unit_a_remains_unit_a_before_execution_pdf_succeeds_and_is_org_a_only(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 10000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 50000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf', [
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]);
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Completed, $job->status);
+        Storage::disk($job->disk)->assertExists($job->file_path);
+
+        $service = app(PosSalesReportService::class)->setScopeCeiling(
+            ReportAuthorizationScope::fromArray($job->metadata['report_scope'])
+        );
+        $summary = $service->summaryForPeriod($userA, $job->metadata['from'], $job->metadata['to']);
+        $this->assertSame(10000.0, (float) $summary['gross_sales']);
+    }
+
+    public function test_r2_04_unit_a_becomes_global_before_execution_pdf_remains_org_a_only_no_widening(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 10000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 50000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf', [
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]);
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $userA->givePermissionTo('view_cooperative_all');
+
+        (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Completed, $job->status);
+        $this->assertSame('organization', $job->metadata['report_scope']['mode']);
+        $this->assertSame((string) $orgA->id, $job->metadata['report_scope']['organization_id']);
+
+        $service = app(PosSalesReportService::class)->setScopeCeiling(
+            ReportAuthorizationScope::fromArray($job->metadata['report_scope'])
+        );
+        $summary = $service->summaryForPeriod($userA, $job->metadata['from'], $job->metadata['to']);
+        $this->assertSame(10000.0, (float) $summary['gross_sales']);
+    }
+
+    public function test_r2_05_unit_a_reassigned_to_org_b_before_execution_fails_closed_no_pdf(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf');
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $userA->update(['organization_id' => $orgB->id]);
+
+        try {
+            (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('Stored report organization scope does not match current user organization', $e->getMessage());
+        }
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Failed, $job->status);
+        $this->assertNull($job->file_path);
+    }
+
+    public function test_r2_06_unit_a_null_org_non_global_before_execution_fails_closed(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf');
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $userA->update(['organization_id' => null]);
+
+        try {
+            (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            // Expected
+        }
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Failed, $job->status);
+        $this->assertNull($job->file_path);
+    }
+
+    public function test_r2_07_global_remains_global_pdf_succeeds(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 10000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 50000]);
+
+        $globalUser = $this->createGlobalReportUser(['view_pos_reports', 'view_cooperative_all', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($globalUser)->postJson('/cooperative/pos/reports/export.pdf', [
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]);
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $this->assertSame('global', $job->metadata['report_scope']['mode']);
+        $this->assertNull($job->metadata['report_scope']['organization_id']);
+
+        (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Completed, $job->status);
+        Storage::disk($job->disk)->assertExists($job->file_path);
+
+        $service = app(PosSalesReportService::class)->setScopeCeiling(
+            ReportAuthorizationScope::fromArray($job->metadata['report_scope'])
+        );
+        $summary = $service->summaryForPeriod($globalUser, $job->metadata['from'], $job->metadata['to']);
+        $this->assertSame(60000.0, (float) $summary['gross_sales']);
+    }
+
+    public function test_r2_08_global_loses_view_cooperative_all_before_execution_fails_closed(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $globalUser = $this->createGlobalReportUser(['view_pos_reports', 'view_cooperative_all', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($globalUser)->postJson('/cooperative/pos/reports/export.pdf');
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $globalUser->revokePermissionTo('view_cooperative_all');
+        $globalUser->update(['organization_id' => $orgA->id]);
+
+        try {
+            (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('Stored global report scope exceeds current organization scope', $e->getMessage());
+        }
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Failed, $job->status);
+        $this->assertNull($job->file_path);
+    }
+
+    public function test_r2_09_user_loses_view_pos_reports_before_worker_execution_fails_closed(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf');
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+
+        $userA->revokePermissionTo('view_pos_reports');
+
+        try {
+            (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('Owning user lacks view_pos_reports permission', $e->getMessage());
+        }
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Failed, $job->status);
+        $this->assertNull($job->file_path);
+    }
+
+    public function test_r2_10_completed_org_a_pdf_and_owner_still_org_a_download_succeeds(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $userA->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'organization',
+                    'organization_id' => (string) $orgA->id,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertOk();
+    }
+
+    public function test_r2_11_completed_org_a_pdf_and_owner_becomes_global_download_succeeds(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $userA->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'organization',
+                    'organization_id' => (string) $orgA->id,
+                ],
+            ],
+        ]);
+
+        $userA->givePermissionTo('view_cooperative_all');
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertOk();
+    }
+
+    public function test_r2_12_completed_org_a_pdf_and_owner_reassigned_org_b_download_denied(): void
+    {
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $userA->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'organization',
+                    'organization_id' => (string) $orgA->id,
+                ],
+            ],
+        ]);
+
+        $userA->update(['organization_id' => $orgB->id]);
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertNotFound();
+
+        $this->actingAs($userA)
+            ->getJson(route('cooperative.pos.reports.export.pdf.status', $job))
+            ->assertNotFound();
+    }
+
+    public function test_r2_13_completed_global_pdf_and_owner_still_global_download_succeeds(): void
+    {
+        Storage::fake('local');
+        $globalUser = $this->createGlobalReportUser(['view_pos_reports', 'view_cooperative_all', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-global-{$globalUser->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $globalUser->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'global',
+                    'organization_id' => null,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($globalUser)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertOk();
+    }
+
+    public function test_r2_14_completed_global_pdf_and_owner_loses_global_visibility_download_denied(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $globalUser = $this->createGlobalReportUser(['view_pos_reports', 'view_cooperative_all', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-global-{$globalUser->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $globalUser->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'global',
+                    'organization_id' => null,
+                ],
+            ],
+        ]);
+
+        $globalUser->revokePermissionTo('view_cooperative_all');
+        $globalUser->update(['organization_id' => $orgA->id]);
+
+        $this->actingAs($globalUser)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertNotFound();
+
+        $this->actingAs($globalUser)
+            ->getJson(route('cooperative.pos.reports.export.pdf.status', $job))
+            ->assertNotFound();
+    }
+
+    public function test_r2_15_user_loses_view_pos_reports_after_completion_status_and_download_denied(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $userA->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'organization',
+                    'organization_id' => (string) $orgA->id,
+                ],
+            ],
+        ]);
+
+        $userA->revokePermissionTo('view_pos_reports');
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertForbidden();
+
+        $this->actingAs($userA)
+            ->getJson(route('cooperative.pos.reports.export.pdf.status', $job))
+            ->assertForbidden();
+    }
+
+    public function test_r2_16_missing_report_scope_metadata_download_fails_closed(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-missing-scope-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()
+            ->withoutReportScope()
+            ->completed($relativePath)
+            ->create([
+                'user_id' => $userA->id,
+                'metadata' => [
+                    'from' => '2026-06-01',
+                    'to' => '2026-06-30',
+                    '__omit_report_scope__' => true,
+                ],
+            ]);
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertNotFound();
+
+        $this->actingAs($userA)
+            ->getJson(route('cooperative.pos.reports.export.pdf.status', $job))
+            ->assertNotFound();
+    }
+
+    public function test_r2_17_malformed_report_scope_metadata_download_fails_closed(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-malformed-scope-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $userA->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 999,
+                    'mode' => 'corrupted_mode',
+                ],
+            ],
+        ]);
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertNotFound();
+
+        $this->actingAs($userA)
+            ->getJson(route('cooperative.pos.reports.export.pdf.status', $job))
+            ->assertNotFound();
+    }
+
+    public function test_r2_18_foreign_owner_still_404_denied(): void
+    {
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+        $userB = $this->createReportUser($orgB, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $relativePath = "reports/test-{$userA->id}.pdf";
+        Storage::disk('local')->put($relativePath, '%PDF-1.4 fake test');
+
+        $job = BackgroundJob::factory()->completed($relativePath)->create([
+            'user_id' => $userA->id,
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'organization',
+                    'organization_id' => (string) $orgA->id,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($userB)
+            ->get(route('cooperative.pos.reports.export.pdf.download', $job))
+            ->assertNotFound();
+
+        $this->actingAs($userB)
+            ->getJson(route('cooperative.pos.reports.export.pdf.status', $job))
+            ->assertNotFound();
+    }
+
+    public function test_r2_19_crafted_filters_organization_id_cannot_influence_artifact_scope(): void
+    {
+        Queue::fake();
+        Storage::fake('local');
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 20000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 80000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->postJson('/cooperative/pos/reports/export.pdf', [
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+            'filters' => [
+                'organization_id' => $orgB->id,
+            ],
+        ]);
+
+        $job = BackgroundJob::query()->where('uuid', $response->json('job_id'))->firstOrFail();
+        $this->assertSame((string) $orgA->id, $job->metadata['report_scope']['organization_id']);
+
+        (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Completed, $job->status);
+
+        $service = app(PosSalesReportService::class)->setScopeCeiling(
+            ReportAuthorizationScope::fromArray($job->metadata['report_scope'])
+        );
+        $summary = $service->summaryForPeriod($userA, $job->metadata['from'], $job->metadata['to']);
+        $this->assertSame(20000.0, (float) $summary['gross_sales']);
+    }
+
+    public function test_r2_20_unexpected_background_job_type_fails_closed(): void
+    {
+        Storage::fake('local');
+        [$orgA] = $this->createOrganizations();
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $job = BackgroundJob::factory()->create([
+            'user_id' => $userA->id,
+            'type' => 'payroll.export',
+            'metadata' => [
+                'from' => '2026-06-01',
+                'to' => '2026-06-30',
+                'report_scope' => [
+                    'version' => 1,
+                    'mode' => 'organization',
+                    'organization_id' => (string) $orgA->id,
+                ],
+            ],
+        ]);
+
+        try {
+            (new GeneratePosReportPdf($job->id))->handle(app(PosSalesReportService::class));
+            $this->fail('Expected AuthorizationException was not thrown.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('Invalid job type [payroll.export]', $e->getMessage());
+        }
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Failed, $job->status);
+        $this->assertNull($job->file_path);
     }
 
     // =========================================================================

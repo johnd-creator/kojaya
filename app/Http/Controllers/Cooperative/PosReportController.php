@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosSalesReportService;
 use App\Services\Export\PosReportCsvExport;
+use App\Support\ReportAuthorizationScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -84,7 +85,8 @@ class PosReportController extends Controller
         $user = $request->user();
         abort_unless($user?->can('view_pos_reports'), 403);
 
-        $this->scopeService->visibilityFor($user);
+        $visibility = $this->scopeService->visibilityFor($user);
+        $reportScope = ReportAuthorizationScope::forVisibility($visibility);
 
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
@@ -101,6 +103,13 @@ class PosReportController extends Controller
         $to = $validated['to'] ?? now()->toDateString();
         $filters = array_filter($validated['filters'] ?? [], fn ($v) => $v !== null && $v !== '');
 
+        unset(
+            $filters['organization_id'],
+            $filters['report_scope'],
+            $filters['authorization_scope'],
+            $filters['tenant_scope'],
+        );
+
         $job = BackgroundJob::query()->create([
             'user_id' => $user->id,
             'type' => 'pos.report.pdf',
@@ -110,6 +119,7 @@ class PosReportController extends Controller
                 'from' => $from,
                 'to' => $to,
                 'filters' => $filters,
+                'report_scope' => $reportScope->toArray(),
             ],
         ]);
 
@@ -124,7 +134,12 @@ class PosReportController extends Controller
 
     public function pdfStatus(Request $request, BackgroundJob $job): JsonResponse
     {
-        abort_unless($job->isOwnedBy($request->user()->id), 404);
+        $user = $request->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+        abort_unless($job->isOwnedBy($user->id), 404);
+        abort_unless($job->type === 'pos.report.pdf', 404);
+
+        $this->authorizeJobReportScope($user, $job);
 
         return response()->json([
             'job_id' => $job->uuid,
@@ -143,7 +158,12 @@ class PosReportController extends Controller
 
     public function pdfDownload(Request $request, BackgroundJob $job): StreamedResponse|RedirectResponse
     {
-        abort_unless($job->isOwnedBy($request->user()->id), 404);
+        $user = $request->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+        abort_unless($job->isOwnedBy($user->id), 404);
+        abort_unless($job->type === 'pos.report.pdf', 404);
+
+        $this->authorizeJobReportScope($user, $job);
 
         if ($job->status !== BackgroundJobStatus::Completed) {
             abort(409, 'File belum siap diunduh.');
@@ -157,6 +177,25 @@ class PosReportController extends Controller
         return $disk->download($job->file_path, $job->original_name ?? basename($job->file_path), [
             'Content-Type' => $job->mime_type ?? 'application/pdf',
         ]);
+    }
+
+    private function authorizeJobReportScope(User $user, BackgroundJob $job): void
+    {
+        $metadata = $job->metadata ?? [];
+        if (! is_array($metadata) || ! isset($metadata['report_scope'])) {
+            abort(404);
+        }
+
+        try {
+            $reportScope = ReportAuthorizationScope::fromArray($metadata['report_scope']);
+            $visibility = $this->scopeService->visibilityFor($user);
+
+            if (! $reportScope->isAuthorized($visibility)) {
+                abort(404);
+            }
+        } catch (\Throwable) {
+            abort(404);
+        }
     }
 
     /**

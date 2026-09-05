@@ -7,14 +7,58 @@ use App\Models\PosReturn;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
+use App\Support\OrganizationVisibility;
+use App\Support\ReportAuthorizationScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class PosSalesReportService
 {
+    private ?ReportAuthorizationScope $scopeCeiling = null;
+
     public function __construct(
         private readonly OrganizationScopedQueryService $scopeService,
     ) {}
+
+    public function setScopeCeiling(ReportAuthorizationScope|OrganizationVisibility|null $scopeCeiling): self
+    {
+        if ($scopeCeiling instanceof OrganizationVisibility) {
+            $scopeCeiling = ReportAuthorizationScope::forVisibility($scopeCeiling);
+        }
+
+        $this->scopeCeiling = $scopeCeiling;
+
+        return $this;
+    }
+
+    public function withScopeCeiling(ReportAuthorizationScope|OrganizationVisibility|null $scopeCeiling): static
+    {
+        $clone = clone $this;
+        $clone->setScopeCeiling($scopeCeiling);
+
+        return $clone;
+    }
+
+    public function getScopeCeiling(): ?ReportAuthorizationScope
+    {
+        return $this->scopeCeiling;
+    }
+
+    public function resolveEffectiveVisibility(User $actor, ReportAuthorizationScope|OrganizationVisibility|null $scopeCeiling = null): OrganizationVisibility
+    {
+        $ceiling = $scopeCeiling ?? $this->scopeCeiling;
+        if ($ceiling instanceof OrganizationVisibility) {
+            $ceiling = ReportAuthorizationScope::forVisibility($ceiling);
+        }
+
+        $currentVisibility = $this->scopeService->visibilityFor($actor);
+
+        if ($ceiling === null) {
+            return $currentVisibility;
+        }
+
+        return $ceiling->intersect($currentVisibility);
+    }
 
     /**
      * @param  array<string, mixed>  $filters
@@ -72,11 +116,13 @@ class PosSalesReportService
      */
     public function productSalesForPeriod(User $actor, string $from, string $to, array $filters = []): Collection
     {
+        $visibility = $this->resolveEffectiveVisibility($actor);
+
         return PosTransactionItem::query()
             ->selectRaw('pos_product_id, sum(quantity) as quantity, sum(line_total) as revenue, sum(line_profit) as gross_profit')
             ->with('product.category')
-            ->whereHas('transaction', function (Builder $query) use ($actor, $from, $to, $filters): void {
-                $this->scopeService->scopeVisibleTo($query, $actor)
+            ->whereHas('transaction', function (Builder $query) use ($visibility, $from, $to, $filters): void {
+                $this->scopeService->applyVisibility($query, $visibility)
                     ->where('status', 'COMPLETED')
                     ->whereDate('sold_at', '>=', $from)
                     ->whereDate('sold_at', '<=', $to);
@@ -191,7 +237,9 @@ class PosSalesReportService
      */
     private function baseTransactionQuery(User $actor, string $from, string $to, array $filters = []): Builder
     {
-        $query = $this->scopeService->scopeVisibleTo(PosTransaction::query(), $actor)
+        $visibility = $this->resolveEffectiveVisibility($actor);
+
+        $query = $this->scopeService->applyVisibility(PosTransaction::query(), $visibility)
             ->whereDate('sold_at', '>=', $from)
             ->whereDate('sold_at', '<=', $to);
 
@@ -249,11 +297,13 @@ class PosSalesReportService
      */
     private function baseReturnQuery(User $actor, string $from, string $to, array $filters = []): Builder
     {
+        $visibility = $this->resolveEffectiveVisibility($actor);
+
         $query = PosReturn::query()
             ->whereDate('returned_at', '>=', $from)
             ->whereDate('returned_at', '<=', $to)
-            ->whereHas('transaction', function (Builder $txQuery) use ($actor): void {
-                $this->scopeService->scopeVisibleTo($txQuery, $actor);
+            ->whereHas('transaction', function (Builder $txQuery) use ($visibility): void {
+                $this->scopeService->applyVisibility($txQuery, $visibility);
             });
 
         if (! empty($filters['pos_product_id'])) {

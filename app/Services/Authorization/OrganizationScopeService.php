@@ -32,6 +32,8 @@ use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PettyCashAccount;
 use App\Models\PosMemberCreditPayment;
+use App\Models\PosTransaction;
+use App\Models\PosVoidRequest;
 use App\Models\Project;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
@@ -118,6 +120,8 @@ class OrganizationScopeService
         RewardRedemption::class => 'view_cooperative_all',
         Reward::class => 'view_cooperative_all',
         PosMemberCreditPayment::class => 'view_cooperative_all',
+        PosTransaction::class => 'view_cooperative_all',
+        PosVoidRequest::class => 'view_cooperative_all',
         Attendance::class => 'view_attendance_all',
         AttendanceCorrection::class => 'view_attendance_all',
         Asset::class => 'view_asset_all',

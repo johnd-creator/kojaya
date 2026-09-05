@@ -106,7 +106,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_void_request_approval_restores_stock_and_marks_voided(): void
     {
         $cashier = $this->cashier();
-        $supervisor = $this->supervisor();
+        $supervisor = $this->supervisor($cashier);
         $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -159,7 +159,7 @@ class PosPhase1FeatureTest extends TestCase
     public function test_void_request_rejection_restores_transaction_status(): void
     {
         $cashier = $this->cashier();
-        $supervisor = $this->supervisor();
+        $supervisor = $this->supervisor($cashier);
         $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -382,9 +382,9 @@ class PosPhase1FeatureTest extends TestCase
         ]);
     }
 
-    private function supervisor(): User
+    private function supervisor(?User $cashier = null): User
     {
-        $user = User::factory()->create(['organization_id' => Organization::factory()]);
+        $user = User::factory()->create(['organization_id' => $cashier?->organization_id ?? Organization::factory()]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;

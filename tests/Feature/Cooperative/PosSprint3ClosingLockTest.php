@@ -103,7 +103,7 @@ class PosSprint3ClosingLockTest extends TestCase
     public function test_void_on_locked_origin_date_is_rejected(): void
     {
         $cashier = $this->cashier();
-        $supervisor = $this->supervisor();
+        $supervisor = $this->supervisor($cashier);
         $product = $this->product($cashier, [
             'cost_price' => 1000,
             'sale_price' => 5000,
@@ -156,9 +156,11 @@ class PosSprint3ClosingLockTest extends TestCase
         return $user;
     }
 
-    private function supervisor(): User
+    private function supervisor(?User $cashier = null): User
     {
-        $user = User::factory()->create(['organization_id' => Organization::factory()]);
+        $user = User::factory()->create([
+            'organization_id' => $cashier?->organization_id ?? Organization::factory(),
+        ]);
         $user->givePermissionTo(['access_cooperative_pos', 'approve_pos_void']);
 
         return $user;

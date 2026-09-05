@@ -1517,3 +1517,87 @@ Administrative and staff reward redemption workflows previously relied on implic
 - **Global Visibility Separation:** Confirmed that `view_cooperative_all` grants read/update access only when paired with valid functional permission (`manage_cooperative_redemption` or `manage_cooperative_rewards`); global actors without functional permissions are denied (403 Forbidden).
 - **Centralized Permission Registry Protected:** Regression tests prove that model-level methods like `organizationScopeGlobalPermission()` cannot alter global authorization; authority resides exclusively in `OrganizationScopeService::GLOBAL_PERMISSIONS`.
 - **Test Coverage:** Backed by 35 comprehensive feature tests (232 assertions) in `tests/Feature/Security/RewardRedemptionOrganizationIsolationTest.php`.
+
+## ADR-038: POS Transaction and Void Organization Isolation (SEC-P1-03)
+
+### Context
+
+POS transaction creation, transaction history/detail, receipts, void requests, void approvals/rejections, and transaction-parent return entry points previously operated with implicit route model binding or unscoped queries across tenant boundaries. Transactions lacked an explicit `organization_id` column, and client reference uniqueness (`client_reference`) was globally enforced rather than scoped per tenant organization. Furthermore, cross-tenant transactions and void workflows exposed object existence enumeration risks (returning 403 Forbidden on foreign IDs instead of 404 Not Found), allowed cross-organization cart mixtures, permitted foreign member credit or transactions, and risked executing stock adjustments or ledger side effects across tenant boundaries.
+
+### Decision
+
+1. **Database Schema & Composite Tenant Idempotency:**
+   - Added `organization_id` (UUID nullable, foreign key to `organizations.id` with `nullOnDelete()`, composite index on `['organization_id', 'sold_at']`) to `pos_transactions`.
+   - Relaxed global uniqueness constraint on `client_reference` to composite unique `['organization_id', 'client_reference']`, allowing multiple cooperative units to use identical client reference counters or offline numbering schemes without collisions.
+   - Deterministic backfill: safely resolved legacy transactions by requiring unanimous non-null `organization_id` across all cart items and agreement with member organization when present; unresolved/ambiguous records remain `NULL` (fail closed).
+
+2. **Model Contracts & Centralized Permission Registry:**
+   - Implemented `OrganizationScopedModel` on `PosTransaction` with direct column path `organizationScopePath(): string { return 'organization_id'; }`.
+   - Implemented `OrganizationScopedModel` on `PosVoidRequest` with relational path `organizationScopePath(): string { return 'transaction.organization_id'; }`.
+   - Registered canonical global permissions exclusively in `OrganizationScopeService::GLOBAL_PERMISSIONS`:
+     - `PosTransaction::class => 'view_cooperative_all'`
+     - `PosVoidRequest::class => 'view_cooperative_all'`
+   - Preserved centralized registry truth: `registeredPaths(): 38`, `registeredGlobalPermissions(): 33`.
+
+3. **Strict Validation & Tenant Target Resolution (`PosTransactionService`):**
+   - Added `'organization_id' => ['prohibited']` and validated `'pos_cashier_shift_id'` in `StorePosTransactionRequest`, preventing client tenant forgery.
+   - Enforced strict fail-closed checks in `PosTransactionService::create()`:
+     - Cashier must be authenticated and assigned to an organization (or hold explicit `view_cooperative_all` global authority).
+     - Target organization resolved authoritatively from cart items: all items must have non-null, matching `pos_products.organization_id`. Mixed carts are rejected (422 Unprocessable Content).
+     - Cashier unit organization must match product organization.
+     - Cooperative member organization must match target organization (or rejected with 422).
+     - Cashier shift must belong to a cashier within the target organization.
+     - Transactions stamped authoritatively with resolved `organization_id`.
+     - Idempotency checks on `client_reference` strictly scoped to `where('organization_id', $targetOrgId)`.
+
+4. **Offline Sync Hardening (`PosSyncService`):**
+   - Scoped `dispatchTransaction` existing transaction lookups by `client_reference` to the authenticated user's `organization_id`, eliminating cross-tenant transaction data leakage on duplicate client references.
+
+5. **Anti-Enumeration via `resolveVisible` on Detail, Receipts, Voids, and Returns:**
+   - Replaced route model binding in `PosTransactionHistoryController::show`, `PosTransactionReceiptController::show` and `pdf`, `PosVoidController::store` and `process`, and `PosReturnController::create` and `store` with raw string route parameters and canonical `resolveVisible()`.
+   - Scoped listings with `scopeVisibleTo()` in `PosTransactionHistoryController::index` and `PosVoidController::index`.
+   - Scoped filter dropdowns in transaction history (`cashiers` and `members`) strictly to entities with transactions within the actor's authorized organization.
+   - Cross-tenant requests return 404 Not Found (via `ModelNotFoundException`), completely eliminating object existence enumeration.
+
+6. **Defense-in-Depth in Service Layer:**
+   - `PosTransactionService::requestVoid()` enforces `assertVisible($requester, $transaction)`.
+   - `PosTransactionService::approveVoid()` and `rejectVoid()` enforce `assertVisible($supervisor, $request)` and `assertVisible($supervisor, $transaction)`.
+   - `PosReturnService::create()` enforces `assertVisible($cashier, $transaction)` inside and outside transaction locks.
+
+### Consequences
+
+- **Tenant Isolation Enforced:** Cross-organization transactions, void requests, void approvals/rejections, and returns are strictly blocked.
+- **Anti-Enumeration Guaranteed:** Detail, receipt, void, and return endpoints return 404 Not Found for foreign tenant IDs, identical to non-existent records.
+- **Multi-Tenant Idempotency:** Distinct organizations can safely use overlapping client references without collision or leakage.
+- **Side-Effect Safety Verified:** Failed or unauthorized transactions leave product stock, member credit balances, and accounting ledgers completely untouched.
+- **Test Coverage:** Verified by 45 dedicated feature tests (180 assertions) in `tests/Feature/Security/PosTransactionVoidOrganizationIsolationTest.php` and full backward regression pass across all POS suites.
+
+### R1 Addendum (Blockers Resolution & CI Hardening):
+
+1. **Offline Sync Idempotency (Blocker A):**
+   - Removed divergent early `PosTransaction` lookup in `PosSyncService::dispatchTransaction()` that inspected `$user->organization_id`.
+   - Delegated execution directly to `PosTransactionService::create()`, which authoritatively resolves `targetOrgId` from cart items and enforces tenant-scoped idempotency (`where('organization_id', $targetOrgId)->where('client_reference', $ref)`). This guarantees global operators submitting transactions for foreign organizations receive the correct tenant-scoped transaction rather than leaking or colliding with their home organization.
+
+2. **Inner Lock & Anti-TOCTOU Member Verification (Blocker B):**
+   - Re-fetched and locked `CooperativeMember` with `lockForUpdate()->find($memberId)` inside the `PosTransactionService::create()` database transaction.
+   - Asserted `!empty($member->organization_id)` and `(string)$member->organization_id === (string)$targetOrgId` immediately after locking, preventing race conditions (TOCTOU) where a member's organization changes concurrently before ledger, credit, or point mutations occur.
+
+3. **Fail-Closed Unauthenticated Cashier in Return Service (Blocker C):**
+   - In `PosReturnService::create()`, explicitly throw `AuthorizationException` when `$cashier === null`, ensuring unauthenticated return attempts fail closed before any economic mutations.
+
+4. **Migration Down Guard Against Duplicate References (Blocker D):**
+   - In `2026_09_05_000001_add_organization_id_to_pos_transactions_table.php` `down()`, added a pre-flight query checking for cross-organization duplicate non-null `client_reference` values (`HAVING COUNT(*) > 1`).
+   - If duplicates exist across tenants, throws `\LogicException` before executing any DDL, preventing migration rollback from corrupting or breaking under global unique constraint violations.
+
+5. **Shift Tenant Validation Matrix (Blocker E):**
+   - In `PosTransactionService::create()`, enforced a 4-case fail-closed validation on `'pos_cashier_shift_id'`: requires that the shift exists, the shift has an assigned cashier, the cashier has a non-null `organization_id`, and `shift.cashier.organization_id === targetOrgId`. Throws `ValidationException` (422) for missing, orphan, null-org, or foreign shifts.
+
+6. **Void Product Tenant Integrity (Blocker F):**
+   - In `PosTransactionService::approveVoid()`, locked products are verified to belong to `transaction.organization_id` before stock restoration or financial mutations (`!empty($product->organization_id) && (string)$product->organization_id === (string)$transaction->organization_id`). Throws `ValidationException` if corrupted or mismatched.
+
+7. **CI Regression Repairs in Legacy Tests:**
+   - Repaired `PosPhase0PolishingTest` fixtures to provide valid same-org tenant setups (`User` and `PosProduct` with matching `organization_id`), allowing intended business validation tests (discount exceeding subtotal, cash received covering total, stock limits, discontinued products) to run without tripping tenant precondition checks.
+   - Repaired `PosSprint3ClosingLockTest` supervisor helper to inherit the cashier's organization (`$supervisor = $this->supervisor($cashier)`), reaching the closing lock validation guard.
+
+8. **Expanded Test Suite:**
+   - Expanded `PosTransactionVoidOrganizationIsolationTest.php` to 52 tests (208 assertions), adding regression tests for all 6 blockers (A through F).

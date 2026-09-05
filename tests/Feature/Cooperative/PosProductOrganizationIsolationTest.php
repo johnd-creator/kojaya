@@ -154,7 +154,7 @@ class PosProductOrganizationIsolationTest extends TestCase
     public function test_pos_reports_only_expose_the_active_organization(): void
     {
         $this->admin->givePermissionTo('view_pos_reports');
-        $product = $this->product($this->organization, ['name' => 'Laporan Organisasi A', 'sale_price' => 1000]);
+        $product = $this->product($this->organization, ['name' => 'Laporan Organisasi A', 'sale_price' => 1000, 'stock' => 10]);
         $otherProduct = $this->product($this->otherOrganization, ['name' => 'Laporan Organisasi B', 'sale_price' => 9000, 'stock' => 1]);
 
         app(PosTransactionService::class)->create([

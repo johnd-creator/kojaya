@@ -3,7 +3,6 @@
 namespace App\Services\Cooperative;
 
 use App\Models\PosSyncRequest;
-use App\Models\PosTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -192,12 +191,9 @@ class PosSyncService
         $payload = $syncRequest->payload;
         $payload['pos_cashier_shift_id'] = $syncRequest->pos_cashier_shift_id;
 
-        $existing = PosTransaction::query()->where('client_reference', $payload['client_reference'] ?? '')->first();
-        if ($existing) {
-            return $existing->toArray();
-        }
+        $user = $syncRequest->loadMissing('user')->user;
 
-        return $this->transactionService->create($payload, $syncRequest->loadMissing('user')->user)->toArray();
+        return $this->transactionService->create($payload, $user)->toArray();
     }
 
     /**

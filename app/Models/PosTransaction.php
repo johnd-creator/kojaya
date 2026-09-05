@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class PosTransaction extends Model
+class PosTransaction extends Model implements OrganizationScopedModel
 {
     protected $fillable = [
+        'organization_id',
         'transaction_no',
         'client_reference',
         'cooperative_member_id',
@@ -27,6 +29,16 @@ class PosTransaction extends Model
         'voided_by',
         'void_reason',
     ];
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
 
     protected function casts(): array
     {

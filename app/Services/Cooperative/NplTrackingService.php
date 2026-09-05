@@ -2,6 +2,7 @@
 
 namespace App\Services\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanRiskRating;
 use App\Enums\LoanStatus;
@@ -13,6 +14,10 @@ use Illuminate\Support\Carbon;
 
 class NplTrackingService
 {
+    public function __construct(
+        private readonly OrganizationScopedQueryService $scopeService,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -41,14 +46,7 @@ class NplTrackingService
      */
     private function computeAgingReport(User $actor, CarbonInterface $asOf): array
     {
-        if ($actor->organization_id === null && ! $actor->can('view_cooperative_all')) {
-            throw new \Illuminate\Auth\Access\AuthorizationException('Actor does not belong to an organization.');
-        }
-
-        $scopedLoanQuery = Loan::query();
-        if (! $actor->can('view_cooperative_all')) {
-            $scopedLoanQuery->where('organization_id', $actor->organization_id);
-        }
+        $scopedLoanQuery = $this->scopeService->scopeVisibleTo(Loan::query(), $actor);
 
         $activeOutstanding = (float) (clone $scopedLoanQuery)
             ->where('status', LoanStatus::Active->value)

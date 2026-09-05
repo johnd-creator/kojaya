@@ -60,17 +60,26 @@ class GeneratePosReportPdf implements ShouldQueue
         try {
             $job->updateProgress(10);
 
+            $user = $job->user;
+            if (! $user) {
+                throw new \Illuminate\Auth\Access\AuthorizationException('Owning user not found for background job.');
+            }
+
+            $scopeService = app(\App\Contracts\OrganizationScopedQueryService::class);
+            $scopeService->visibilityFor($user);
+
             $metadata = $job->metadata ?? [];
             $from = (string) ($metadata['from'] ?? now()->startOfMonth()->toDateString());
             $to = (string) ($metadata['to'] ?? now()->toDateString());
             $filters = is_array($metadata['filters'] ?? null) ? $metadata['filters'] : [];
+            unset($filters['organization_id']);
 
             $job->updateProgress(25);
 
-            $summary = $service->summaryForPeriod($from, $to, $filters);
-            $paymentReconciliation = $service->paymentReconciliation($from, $to, $filters);
-            $topProducts = $service->productSalesForPeriod($from, $to, $filters)->take(15)->values()->all();
-            $dailyTrend = $service->dailyTrend($from, $to, $filters);
+            $summary = $service->summaryForPeriod($user, $from, $to, $filters);
+            $paymentReconciliation = $service->paymentReconciliation($user, $from, $to, $filters);
+            $topProducts = $service->productSalesForPeriod($user, $from, $to, $filters)->take(15)->values()->all();
+            $dailyTrend = $service->dailyTrend($user, $from, $to, $filters);
 
             $job->updateProgress(60);
 

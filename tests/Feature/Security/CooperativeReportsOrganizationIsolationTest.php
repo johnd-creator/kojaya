@@ -2,17 +2,29 @@
 
 namespace Tests\Feature\Security;
 
+use App\Contracts\OrganizationScopedQueryService;
+use App\Enums\Co\Pos\BackgroundJobStatus;
+use App\Enums\CooperativeShuPeriodStatus;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
+use App\Jobs\GeneratePosReportPdf;
+use App\Models\BackgroundJob;
 use App\Models\CooperativeMember;
+use App\Models\CooperativeShuPeriod;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanType;
 use App\Models\Organization;
 use App\Models\PointTransaction;
+use App\Models\PosCategory;
+use App\Models\PosProduct;
+use App\Models\PosReturn;
 use App\Models\PosTransaction;
+use App\Models\PosTransactionItem;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\Cooperative\NplTrackingService;
+use App\Services\Cooperative\PosSalesReportService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +45,7 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
         Permission::firstOrCreate(['name' => 'view_pos_reports']);
         Permission::firstOrCreate(['name' => 'view_loan_report']);
         Permission::firstOrCreate(['name' => 'view_cooperative_all']);
+        Permission::firstOrCreate(['name' => 'access_cooperative_pos']);
     }
 
     // =========================================================================
@@ -846,6 +859,304 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
 
         $this->assertSame($memberCountBefore, CooperativeMember::query()->count());
         $this->assertSame($txCountBefore, PosTransaction::query()->count());
+    }
+
+    // =========================================================================
+    // GROUP 6: REVISION 1 CANONICAL SCOPE & REMAINING ISOLATION (Tests 47 - 59)
+    // =========================================================================
+
+    public function test_pos_report_page_does_not_expose_category_used_only_by_org_b_products_to_org_a(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $catA = PosCategory::factory()->create(['name' => 'Kategori Org A']);
+        $catB = PosCategory::factory()->create(['name' => 'Kategori Org B']);
+
+        PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $catA->id]);
+        PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catB->id]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->get(route('cooperative.pos.reports.index'));
+        $response->assertOk();
+
+        $categories = $response->viewData('page')['props']['categories'];
+        $categoryIds = collect($categories)->pluck('id')->all();
+
+        $this->assertContains($catA->id, $categoryIds);
+        $this->assertNotContains($catB->id, $categoryIds);
+    }
+
+    public function test_category_shared_by_an_org_a_product_remains_visible_to_org_a(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $sharedCat = PosCategory::factory()->create(['name' => 'Kategori Bersama']);
+        $catBOnly = PosCategory::factory()->create(['name' => 'Kategori Org B Khusus']);
+
+        PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $sharedCat->id]);
+        PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $sharedCat->id]);
+        PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catBOnly->id]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->get(route('cooperative.pos.reports.index'));
+        $response->assertOk();
+
+        $categories = $response->viewData('page')['props']['categories'];
+        $categoryIds = collect($categories)->pluck('id')->all();
+
+        $this->assertContains($sharedCat->id, $categoryIds);
+        $this->assertNotContains($catBOnly->id, $categoryIds);
+    }
+
+    public function test_direct_pos_sales_report_service_invocation_as_org_a_cannot_include_org_b_transactions(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 100000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 300000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        $service = app(PosSalesReportService::class);
+
+        $summary = $service->summaryForPeriod($userA, now()->toDateString(), now()->toDateString());
+        $this->assertSame(1, $summary['transactions']);
+        $this->assertSame(100000.0, (float) $summary['gross_sales']);
+    }
+
+    public function test_direct_pos_sales_report_service_yearly_summary_cannot_become_global(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 120000, 'sold_at' => now()]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 450000, 'sold_at' => now()]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        $service = app(PosSalesReportService::class);
+
+        $yearlySummary = $service->summaryForYear($userA, now()->year);
+        $this->assertSame(1, $yearlySummary['transactions']);
+        $this->assertSame(120000.0, (float) $yearlySummary['gross_sales']);
+    }
+
+    public function test_direct_product_sales_for_year_cannot_become_global(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $catA = PosCategory::factory()->create();
+        $catB = PosCategory::factory()->create();
+        $pA = PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $catA->id, 'sale_price' => 5000]);
+        $pB = PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catB->id, 'sale_price' => 10000]);
+
+        $txA = $this->createCompletedTransaction($orgA, null, ['total_amount' => 10000, 'sold_at' => now()]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $txA->id,
+            'pos_product_id' => $pA->id,
+            'quantity' => 2,
+            'unit_price' => 5000,
+            'cost_price' => 1000,
+            'unit_profit' => 4000,
+            'line_total' => 10000,
+            'line_profit' => 8000,
+        ]);
+
+        $txB = $this->createCompletedTransaction($orgB, null, ['total_amount' => 30000, 'sold_at' => now()]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $txB->id,
+            'pos_product_id' => $pB->id,
+            'quantity' => 3,
+            'unit_price' => 10000,
+            'cost_price' => 2000,
+            'unit_profit' => 8000,
+            'line_total' => 30000,
+            'line_profit' => 24000,
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        $service = app(PosSalesReportService::class);
+
+        $yearlyProductSales = $service->productSalesForYear($userA, now()->year);
+        $productIds = $yearlyProductSales->pluck('pos_product_id')->all();
+
+        $this->assertContains($pA->id, $productIds);
+        $this->assertNotContains($pB->id, $productIds);
+    }
+
+    public function test_caller_supplied_foreign_organization_id_cannot_override_actor_scope(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 100000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 400000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        $service = app(PosSalesReportService::class);
+
+        $summary = $service->summaryForPeriod($userA, now()->toDateString(), now()->toDateString(), [
+            'organization_id' => $orgB->id,
+        ]);
+
+        $this->assertSame(1, $summary['transactions']);
+        $this->assertSame(100000.0, (float) $summary['gross_sales']);
+    }
+
+    public function test_unit_actor_returns_report_remains_scoped_through_pos_transaction_organization_id(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $txA = $this->createCompletedTransaction($orgA, null, ['total_amount' => 20000]);
+        $txB = $this->createCompletedTransaction($orgB, null, ['total_amount' => 30000]);
+
+        PosReturn::query()->create([
+            'return_no' => 'RET-A-'.uniqid(),
+            'pos_transaction_id' => $txA->id,
+            'status' => 'COMPLETED',
+            'total_amount' => 10000,
+            'returned_at' => now(),
+        ]);
+
+        PosReturn::query()->create([
+            'return_no' => 'RET-B-'.uniqid(),
+            'pos_transaction_id' => $txB->id,
+            'status' => 'COMPLETED',
+            'total_amount' => 20000,
+            'returned_at' => now(),
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        $service = app(PosSalesReportService::class);
+
+        $summary = $service->summaryForPeriod($userA, now()->toDateString(), now()->toDateString());
+        $this->assertSame(1, $summary['returns']['count']);
+        $this->assertSame(10000.0, (float) $summary['returns']['total']);
+    }
+
+    public function test_csv_export_cannot_cross_organization(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 50000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 80000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $response = $this->actingAs($userA)->get(route('cooperative.pos.reports.export.csv'));
+        $response->assertOk();
+
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('50000', $content);
+        $this->assertStringNotContainsString('80000', $content);
+    }
+
+    public function test_pdf_queue_execution_cannot_trust_crafted_foreign_organization_id_from_metadata(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $this->createCompletedTransaction($orgA, null, ['total_amount' => 15000]);
+        $this->createCompletedTransaction($orgB, null, ['total_amount' => 95000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+
+        $job = BackgroundJob::factory()->create([
+            'user_id' => $userA->id,
+            'type' => 'pos.report.pdf',
+            'metadata' => [
+                'from' => now()->startOfMonth()->toDateString(),
+                'to' => now()->toDateString(),
+                'filters' => [
+                    'organization_id' => $orgB->id,
+                ],
+            ],
+        ]);
+
+        $serviceSpy = \Mockery::spy(app(PosSalesReportService::class));
+
+        (new GeneratePosReportPdf($job->id))->handle(
+            $serviceSpy,
+            app(AuditLogService::class)
+        );
+
+        $job->refresh();
+        $this->assertSame(BackgroundJobStatus::Completed, $job->status);
+
+        $serviceSpy->shouldHaveReceived('summaryForPeriod')->with(
+            \Mockery::on(fn ($u) => $u->id === $userA->id && (int) $u->organization_id === (int) $orgA->id),
+            \Mockery::any(),
+            \Mockery::any(),
+            \Mockery::on(fn ($f) => ! isset($f['organization_id']))
+        );
+    }
+
+    public function test_pdf_queue_fails_closed_if_owning_actor_cannot_establish_authorized_organization_scope(): void
+    {
+        $nullOrgUser = User::factory()->create(['organization_id' => null]);
+        $job = BackgroundJob::factory()->create([
+            'user_id' => $nullOrgUser->id,
+            'type' => 'pos.report.pdf',
+            'metadata' => [
+                'from' => now()->startOfMonth()->toDateString(),
+                'to' => now()->toDateString(),
+            ],
+        ]);
+
+        $this->expectException(AuthorizationException::class);
+
+        (new GeneratePosReportPdf($job->id))->handle(
+            app(PosSalesReportService::class),
+            app(AuditLogService::class),
+            app(OrganizationScopedQueryService::class)
+        );
+    }
+
+    public function test_unit_cooperative_summary_does_not_expose_unsupported_global_cooperative_shu_period_values(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        CooperativeShuPeriod::query()->create([
+            'year' => 2025,
+            'status' => CooperativeShuPeriodStatus::Closed,
+            'cooperative_pool' => 50000000,
+            'pos_profit_pool' => 25000000,
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_cooperative_report']);
+        Sanctum::actingAs($userA, ['reports:read']);
+
+        $response = $this->getJson('/api/v1/reports/cooperative-summary')
+            ->assertOk()
+            ->assertJsonPath('data.latest_shu_year', null);
+
+        $this->assertSame(0.0, (float) $response->json('data.latest_shu_total'));
+    }
+
+    public function test_global_actor_with_correct_functional_permission_sees_global_cooperative_shu_period_values(): void
+    {
+        CooperativeShuPeriod::query()->create([
+            'year' => 2025,
+            'status' => CooperativeShuPeriodStatus::Closed,
+            'cooperative_pool' => 50000000,
+            'pos_profit_pool' => 25000000,
+        ]);
+
+        $globalUser = $this->createGlobalReportUser(['view_cooperative_report', 'view_cooperative_all']);
+        Sanctum::actingAs($globalUser, ['reports:read']);
+
+        $response = $this->getJson('/api/v1/reports/cooperative-summary')
+            ->assertOk()
+            ->assertJsonPath('data.latest_shu_year', 2025);
+
+        $this->assertSame(75000000.0, (float) $response->json('data.latest_shu_total'));
+    }
+
+    public function test_production_report_files_do_not_contain_direct_view_cooperative_all_checks(): void
+    {
+        $files = [
+            app_path('Http/Controllers/Cooperative/CooperativeReportController.php'),
+            app_path('Http/Controllers/Cooperative/PosReportController.php'),
+            app_path('Services/Cooperative/NplTrackingService.php'),
+            app_path('Services/Cooperative/PosSalesReportService.php'),
+            app_path('Jobs/GeneratePosReportPdf.php'),
+        ];
+
+        foreach ($files as $file) {
+            $content = (string) file_get_contents($file);
+            $this->assertStringNotContainsString(
+                'view_cooperative_all',
+                $content,
+                "File [{$file}] contains unexpected direct 'view_cooperative_all' permission reference."
+            );
+        }
     }
 
     // =========================================================================

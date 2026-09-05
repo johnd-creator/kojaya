@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\Co\Pos\BackgroundJobStatus;
 use App\Http\Controllers\Controller;
 use App\Jobs\GeneratePosReportPdf;
@@ -25,6 +26,7 @@ class PosReportController extends Controller
     public function __construct(
         private PosSalesReportService $service,
         private PosProductAccessService $productAccess,
+        private OrganizationScopedQueryService $scopeService,
     ) {}
 
     public function index(): Response
@@ -32,9 +34,7 @@ class PosReportController extends Controller
         $user = request()->user();
         abort_unless($user?->can('view_pos_reports'), 403);
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
+        $visibility = $this->scopeService->visibilityFor($user);
 
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
@@ -45,18 +45,21 @@ class PosReportController extends Controller
             'to' => $to,
             'filters' => $filters,
             'analytics' => Inertia::defer(fn (): array => [
-                'summary' => $this->service->summaryForPeriod($from, $to, $filters),
-                'payment_reconciliation' => $this->service->paymentReconciliation($from, $to, $filters),
-                'daily_trend' => $this->service->dailyTrend($from, $to, $filters),
-                'top_products' => $this->service->productSalesForPeriod($from, $to, $filters)->take(20)->values()->all(),
-                'top_members' => $this->service->topMembers($from, $to, $filters),
-                'cashier_performance' => $this->service->cashierPerformance($from, $to, $filters),
+                'summary' => $this->service->summaryForPeriod($user, $from, $to, $filters),
+                'payment_reconciliation' => $this->service->paymentReconciliation($user, $from, $to, $filters),
+                'daily_trend' => $this->service->dailyTrend($user, $from, $to, $filters),
+                'top_products' => $this->service->productSalesForPeriod($user, $from, $to, $filters)->take(20)->values()->all(),
+                'top_members' => $this->service->topMembers($user, $from, $to, $filters),
+                'cashier_performance' => $this->service->cashierPerformance($user, $from, $to, $filters),
             ], 'analytics'),
             'products' => $this->productAccess->scopeVisibleTo(PosProduct::query(), $user)
                 ->where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'categories' => PosCategory::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => PosCategory::query()
+                ->when(! $visibility->global, fn ($q) => $q->whereHas('products', fn ($pq) => $pq->where('organization_id', $visibility->organizationId)))
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'cashiers' => User::query()
-                ->when(! $user->can('view_cooperative_all'), fn ($q) => $q->where('organization_id', $user->organization_id))
+                ->when(! $visibility->global, fn ($q) => $q->where('organization_id', $visibility->organizationId))
                 ->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -66,16 +69,14 @@ class PosReportController extends Controller
         $user = request()->user();
         abort_unless($user?->can('view_pos_reports'), 403);
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
+        $this->scopeService->visibilityFor($user);
 
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
         $filters = $this->filters();
         $exporter = new PosReportCsvExport;
 
-        return $exporter->stream($this->service, $from, $to, $filters);
+        return $exporter->stream($this->service, $user, $from, $to, $filters);
     }
 
     public function enqueuePdf(Request $request): JsonResponse
@@ -83,9 +84,7 @@ class PosReportController extends Controller
         $user = $request->user();
         abort_unless($user?->can('view_pos_reports'), 403);
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
+        $this->scopeService->visibilityFor($user);
 
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
@@ -101,9 +100,6 @@ class PosReportController extends Controller
         $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
         $to = $validated['to'] ?? now()->toDateString();
         $filters = array_filter($validated['filters'] ?? [], fn ($v) => $v !== null && $v !== '');
-        if (! $user->can('view_cooperative_all')) {
-            $filters['organization_id'] = $user->organization_id;
-        }
 
         $job = BackgroundJob::query()->create([
             'user_id' => $user->id,
@@ -168,19 +164,12 @@ class PosReportController extends Controller
      */
     private function filters(): array
     {
-        $user = request()->user();
-        $filters = array_filter([
+        return array_filter([
             'pos_product_id' => request()->input('pos_product_id'),
             'category_id' => request()->input('category_id'),
             'cashier_id' => request()->input('cashier_id'),
             'cooperative_member_id' => request()->input('cooperative_member_id'),
             'payment_method' => request()->input('payment_method'),
         ], fn ($v) => $v !== null && $v !== '');
-
-        if (! $user->can('view_cooperative_all')) {
-            $filters['organization_id'] = $user->organization_id;
-        }
-
-        return $filters;
     }
 }

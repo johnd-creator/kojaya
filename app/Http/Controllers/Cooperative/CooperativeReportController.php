@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\CooperativeShuPeriodStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CooperativeDuesInvoice;
@@ -21,14 +22,16 @@ use Inertia\Response;
 
 class CooperativeReportController extends Controller
 {
+    public function __construct(
+        private OrganizationScopedQueryService $scopeService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
         abort_unless($user?->can('view_cooperative_report'), 403);
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
+        $this->scopeService->visibilityFor($user);
 
         return Inertia::render('Cooperative/Reports', [
             'summary' => Inertia::defer(fn (): array => $this->summaryData($user), 'summary'),
@@ -40,9 +43,7 @@ class CooperativeReportController extends Controller
         $user = $request->user();
         abort_unless($user?->can('view_cooperative_report'), 403);
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
+        $this->scopeService->visibilityFor($user);
 
         return response()->json(['data' => $this->summaryData($user)]);
     }
@@ -52,16 +53,10 @@ class CooperativeReportController extends Controller
         $user = $request->user();
         abort_unless($user?->can('view_pos_reports'), 403);
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
-
-        $query = PosTransaction::query()
-            ->where('status', 'COMPLETED');
-
-        if (! $user->can('view_cooperative_all')) {
-            $query->where('organization_id', $user->organization_id);
-        }
+        $query = $this->scopeService->scopeVisibleTo(
+            PosTransaction::query()->where('status', 'COMPLETED'),
+            $user
+        );
 
         if ($request->filled('cashier_id')) {
             $query->where('cashier_id', $request->input('cashier_id'));
@@ -126,9 +121,7 @@ class CooperativeReportController extends Controller
             403
         );
 
-        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
-            abort(403, 'User does not belong to an organization.');
-        }
+        $this->scopeService->visibilityFor($user);
 
         $asOf = $request->filled('as_of')
             ? \Illuminate\Support\Carbon::parse($request->input('as_of'))
@@ -144,14 +137,12 @@ class CooperativeReportController extends Controller
      */
     private function summaryData(User $actor): array
     {
-        $isGlobal = $actor->can('view_cooperative_all');
-        $orgId = $actor->organization_id;
+        $visibility = $this->scopeService->visibilityFor($actor);
+        $isGlobal = $visibility->global;
+        $orgId = $visibility->organizationId;
         $year = now()->year;
 
-        $memberQuery = CooperativeMember::query();
-        if (! $isGlobal) {
-            $memberQuery->where('organization_id', $orgId);
-        }
+        $memberQuery = $this->scopeService->scopeVisibleTo(CooperativeMember::query(), $actor);
 
         $activeMembers = (int) (clone $memberQuery)->where('status', 'ACTIVE')->count();
         $totalOutstanding = (float) (clone $memberQuery)->sum('outstanding_balance');
@@ -170,25 +161,16 @@ class CooperativeReportController extends Controller
         }
         $returningCustomers = (int) $returningCustomersQuery->count();
 
-        $ledgerQuery = CooperativeLedgerEntry::query();
-        if (! $isGlobal) {
-            $ledgerQuery->where('organization_id', $orgId);
-        }
+        $ledgerQuery = $this->scopeService->scopeVisibleTo(CooperativeLedgerEntry::query(), $actor);
         $savingBalance = (float) (clone $ledgerQuery)->sum('credit');
         $memberCreditBalance = (float) (clone $ledgerQuery)->sum('debit');
 
-        $duesQuery = CooperativeDuesInvoice::query()
+        $duesQuery = $this->scopeService->scopeVisibleTo(CooperativeDuesInvoice::query(), $actor)
             ->whereIn('status', ['UNPAID', 'PARTIAL']);
-        if (! $isGlobal) {
-            $duesQuery->whereHas('member', fn ($q) => $q->where('organization_id', $orgId));
-        }
         $unpaidDues = (float) $duesQuery->sum('amount');
 
-        $posTxQuery = PosTransaction::query()
+        $posTxQuery = $this->scopeService->scopeVisibleTo(PosTransaction::query(), $actor)
             ->where('status', 'COMPLETED');
-        if (! $isGlobal) {
-            $posTxQuery->where('organization_id', $orgId);
-        }
 
         $todaySales = (float) (clone $posTxQuery)->whereDate('sold_at', today())->sum('total_amount');
         $monthlySales = (float) (clone $posTxQuery)->whereBetween('sold_at', [now()->startOfMonth(), now()->endOfMonth()])->sum('total_amount');
@@ -197,22 +179,16 @@ class CooperativeReportController extends Controller
         $grossProfit = (float) (clone $posTxQuery)->sum('gross_profit');
 
         $productQuery = PosProduct::query()
-            ->whereColumn('stock', '<=', 'minimum_stock');
-        if (! $isGlobal) {
-            $productQuery->where('organization_id', $orgId);
-        }
+            ->whereColumn('stock', '<=', 'minimum_stock')
+            ->when(! $isGlobal, fn ($q) => $q->where('organization_id', $orgId));
         $lowStockProducts = (int) $productQuery->count();
 
-        $pointsQuery = PosMemberPoint::query();
-        if (! $isGlobal) {
-            $pointsQuery->whereHas('member', fn ($q) => $q->where('organization_id', $orgId));
-        }
+        $pointsQuery = PosMemberPoint::query()
+            ->when(! $isGlobal, fn ($q) => $q->whereHas('member', fn ($mq) => $mq->where('organization_id', $orgId)));
         $annualPosPoints = (int) (clone $pointsQuery)->where('year', $year)->sum('points');
 
-        $pointTxQuery = PointTransaction::query();
-        if (! $isGlobal) {
-            $pointTxQuery->whereHas('member', fn ($q) => $q->where('organization_id', $orgId));
-        }
+        $pointTxQuery = PointTransaction::query()
+            ->when(! $isGlobal, fn ($q) => $q->whereHas('member', fn ($mq) => $mq->where('organization_id', $orgId)));
         $earnedPoints = (int) (clone $pointTxQuery)->where('transaction_type', 'EARNED')->sum('points');
         if ($earnedPoints === 0) {
             $earnedPoints = (int) (clone $pointsQuery)->sum('points');
@@ -225,10 +201,19 @@ class CooperativeReportController extends Controller
                 ->orWhereHas('posMemberPoints');
         })->count();
 
-        $latestClosedShu = CooperativeShuPeriod::query()
-            ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
-            ->latest('year')
-            ->first();
+        if ($isGlobal) {
+            $latestClosedShu = CooperativeShuPeriod::query()
+                ->whereIn('status', [CooperativeShuPeriodStatus::Closed->value, CooperativeShuPeriodStatus::ClosedRevised->value])
+                ->latest('year')
+                ->first();
+            $latestShuYear = $latestClosedShu?->year;
+            $latestShuTotal = $latestClosedShu
+                ? (float) ($latestClosedShu->cooperative_pool + $latestClosedShu->pos_profit_pool)
+                : 0.0;
+        } else {
+            $latestShuYear = null;
+            $latestShuTotal = 0.0;
+        }
 
         return [
             'active_members' => $activeMembers,
@@ -240,10 +225,8 @@ class CooperativeReportController extends Controller
             'low_stock_products' => $lowStockProducts,
             'annual_pos_profit' => $annualPosProfit,
             'annual_pos_points' => $annualPosPoints,
-            'latest_shu_year' => $latestClosedShu?->year,
-            'latest_shu_total' => $latestClosedShu
-                ? (float) ($latestClosedShu->cooperative_pool + $latestClosedShu->pos_profit_pool)
-                : 0.0,
+            'latest_shu_year' => $latestShuYear,
+            'latest_shu_total' => $latestShuTotal,
             'returning_customers' => $returningCustomers,
             'members' => [
                 'count' => $activeMembers,

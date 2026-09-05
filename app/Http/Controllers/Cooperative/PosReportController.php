@@ -30,6 +30,12 @@ class PosReportController extends Controller
     public function index(): Response
     {
         $user = request()->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+
+        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
+            abort(403, 'User does not belong to an organization.');
+        }
+
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
         $filters = $this->filters();
@@ -49,12 +55,21 @@ class PosReportController extends Controller
             'products' => $this->productAccess->scopeVisibleTo(PosProduct::query(), $user)
                 ->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'categories' => PosCategory::query()->orderBy('name')->get(['id', 'name']),
-            'cashiers' => User::query()->orderBy('name')->get(['id', 'name']),
+            'cashiers' => User::query()
+                ->when(! $user->can('view_cooperative_all'), fn ($q) => $q->where('organization_id', $user->organization_id))
+                ->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     public function exportCsv(): StreamedResponse
     {
+        $user = request()->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+
+        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
+            abort(403, 'User does not belong to an organization.');
+        }
+
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
         $filters = $this->filters();
@@ -65,6 +80,13 @@ class PosReportController extends Controller
 
     public function enqueuePdf(Request $request): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+
+        if ($user->organization_id === null && ! $user->can('view_cooperative_all')) {
+            abort(403, 'User does not belong to an organization.');
+        }
+
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
@@ -79,10 +101,12 @@ class PosReportController extends Controller
         $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
         $to = $validated['to'] ?? now()->toDateString();
         $filters = array_filter($validated['filters'] ?? [], fn ($v) => $v !== null && $v !== '');
-        $filters['organization_id'] = $request->user()->organization_id;
+        if (! $user->can('view_cooperative_all')) {
+            $filters['organization_id'] = $user->organization_id;
+        }
 
         $job = BackgroundJob::query()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => 'pos.report.pdf',
             'status' => BackgroundJobStatus::Pending,
             'progress' => 0,
@@ -144,13 +168,19 @@ class PosReportController extends Controller
      */
     private function filters(): array
     {
-        return array_filter([
-            'organization_id' => request()->user()->organization_id,
+        $user = request()->user();
+        $filters = array_filter([
             'pos_product_id' => request()->input('pos_product_id'),
             'category_id' => request()->input('category_id'),
             'cashier_id' => request()->input('cashier_id'),
             'cooperative_member_id' => request()->input('cooperative_member_id'),
             'payment_method' => request()->input('payment_method'),
         ], fn ($v) => $v !== null && $v !== '');
+
+        if (! $user->can('view_cooperative_all')) {
+            $filters['organization_id'] = $user->organization_id;
+        }
+
+        return $filters;
     }
 }

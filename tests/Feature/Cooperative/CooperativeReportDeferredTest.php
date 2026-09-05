@@ -21,10 +21,14 @@ class CooperativeReportDeferredTest extends TestCase
 
     public function test_cooperative_reports_page_has_deferred_summary(): void
     {
-        $user = User::factory()->create();
+        $org = \App\Models\Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
         $user->givePermissionTo('view_cooperative_report');
 
-        CooperativeMember::factory()->count(3)->create(['status' => 'ACTIVE']);
+        CooperativeMember::factory()->count(3)->create([
+            'organization_id' => $org->id,
+            'status' => 'ACTIVE',
+        ]);
 
         $this->actingAs($user)
             ->get(route('cooperative.reports.index'))
@@ -36,10 +40,14 @@ class CooperativeReportDeferredTest extends TestCase
 
     public function test_cooperative_reports_loads_deferred_summary_data(): void
     {
-        $user = User::factory()->create();
+        $org = \App\Models\Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
         $user->givePermissionTo('view_cooperative_report');
 
-        CooperativeMember::factory()->count(3)->create(['status' => 'ACTIVE']);
+        CooperativeMember::factory()->count(3)->create([
+            'organization_id' => $org->id,
+            'status' => 'ACTIVE',
+        ]);
 
         $this->actingAs($user)
             ->get(route('cooperative.reports.index'))

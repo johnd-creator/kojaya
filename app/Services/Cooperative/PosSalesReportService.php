@@ -196,7 +196,7 @@ class PosSalesReportService
     private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, array $filters): void
     {
         if (array_key_exists('organization_id', $filters) && $filters['organization_id'] !== null) {
-            $query->whereHas('items.product', fn ($q) => $q->where('organization_id', $filters['organization_id']));
+            $query->where('pos_transactions.organization_id', $filters['organization_id']);
         }
 
         if (! empty($filters['pos_product_id'])) {
@@ -263,7 +263,7 @@ class PosSalesReportService
         }
 
         if (array_key_exists('organization_id', $filters) && $filters['organization_id'] !== null) {
-            $query->whereHas('items.transactionItem.product', fn ($q) => $q->where('organization_id', $filters['organization_id']));
+            $query->whereHas('transaction', fn ($q) => $q->where('organization_id', $filters['organization_id']));
         }
 
         return $query;

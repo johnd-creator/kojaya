@@ -18,6 +18,7 @@ use App\Services\Cooperative\PosSyncService;
 use App\Services\Cooperative\PosTransactionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -134,10 +135,48 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
     {
         [$orgA] = $this->createOrganizations();
         $cashierA = $this->createCashier($orgA);
-        $productA = $this->createProduct($orgA, ['sale_price' => 10000]);
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000, 'stock' => 10]);
+
+        Schema::table('cooperative_members', function (Blueprint $table): void {
+            $table->uuid('organization_id')->nullable()->change();
+        });
+
+        $member = $this->createMember($orgA);
+        $member->forceFill(['organization_id' => null])->saveQuietly();
+
+        $this->assertDatabaseHas('cooperative_members', [
+            'id' => $member->id,
+            'organization_id' => null,
+        ]);
 
         $response = $this->actingAs($cashierA)->post(route('cooperative.pos.transactions.store'), [
-            'client_reference' => 'TX-NULL-MEMBER',
+            'client_reference' => 'TX-NULL-ORG-MEMBER',
+            'cooperative_member_id' => $member->id,
+            'items' => [
+                ['pos_product_id' => $productA->id, 'quantity' => 1],
+            ],
+            'payments' => [
+                ['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('cooperative_member_id');
+        $this->assertDatabaseMissing('pos_transactions', ['client_reference' => 'TX-NULL-ORG-MEMBER']);
+        $this->assertSame(10, (int) $productA->fresh()->stock);
+        $this->assertDatabaseCount('pos_transactions', 0);
+        $this->assertDatabaseCount('pos_transaction_items', 0);
+        $this->assertDatabaseCount('pos_payments', 0);
+        $this->assertDatabaseCount('pos_stock_movements', 0);
+    }
+
+    public function test_cashier_cannot_transact_with_nonexistent_member(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000, 'stock' => 10]);
+
+        $response = $this->actingAs($cashierA)->post(route('cooperative.pos.transactions.store'), [
+            'client_reference' => 'TX-NONEXISTENT-MEMBER',
             'cooperative_member_id' => 999999,
             'items' => [
                 ['pos_product_id' => $productA->id, 'quantity' => 1],
@@ -148,6 +187,12 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('cooperative_member_id');
+        $this->assertDatabaseMissing('pos_transactions', ['client_reference' => 'TX-NONEXISTENT-MEMBER']);
+        $this->assertSame(10, (int) $productA->fresh()->stock);
+        $this->assertDatabaseCount('pos_transactions', 0);
+        $this->assertDatabaseCount('pos_transaction_items', 0);
+        $this->assertDatabaseCount('pos_payments', 0);
+        $this->assertDatabaseCount('pos_stock_movements', 0);
     }
 
     public function test_cashier_cannot_use_shift_from_other_organization(): void

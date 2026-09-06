@@ -50,6 +50,8 @@ class PosReturnService
 
             app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
 
+            $this->closingGuard->assertAndLockReturn($transaction, (string) $returnDate);
+
             if ($transaction->status !== 'COMPLETED') {
                 throw ValidationException::withMessages([
                     'pos_transaction_id' => 'Hanya transaksi selesai yang bisa diretur.',

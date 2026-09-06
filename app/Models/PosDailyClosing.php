@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PosDailyClosing extends Model
+class PosDailyClosing extends Model implements OrganizationScopedModel
 {
     protected $fillable = [
+        'organization_id',
         'closing_date',
         'closed_by',
         'closed_at',
@@ -37,6 +39,16 @@ class PosDailyClosing extends Model
             'payment_summary' => 'array',
             'is_locked' => 'boolean',
         ];
+    }
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function closedBy(): BelongsTo

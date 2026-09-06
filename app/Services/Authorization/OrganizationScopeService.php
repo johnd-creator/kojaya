@@ -31,6 +31,7 @@ use App\Models\MemberStoreLedgerEntry;
 use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PettyCashAccount;
+use App\Models\PosDailyClosing;
 use App\Models\PosMemberCreditPayment;
 use App\Models\PosTransaction;
 use App\Models\PosVoidRequest;
@@ -99,6 +100,7 @@ class OrganizationScopeService
         MemberStoreLedgerEntry::class => 'organization_id',
         MemberStoreFundingRequest::class => 'organization_id',
         MemberStoreDelegate::class => 'organization_id',
+        PosDailyClosing::class => 'organization_id',
     ];
 
     /**
@@ -122,6 +124,7 @@ class OrganizationScopeService
         PosMemberCreditPayment::class => 'view_cooperative_all',
         PosTransaction::class => 'view_cooperative_all',
         PosVoidRequest::class => 'view_cooperative_all',
+        PosDailyClosing::class => 'view_cooperative_all',
         Attendance::class => 'view_attendance_all',
         AttendanceCorrection::class => 'view_attendance_all',
         Asset::class => 'view_asset_all',

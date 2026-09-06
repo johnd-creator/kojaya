@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\PosMemberCreditPayment;
 use App\Models\User;
 use App\Services\Cooperative\MemberCreditService;
+use App\Services\Integrations\MemberPaymentSettlementService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
@@ -699,7 +700,7 @@ class PosMemberCreditOrganizationIsolationTest extends TestCase
     }
 
     // ==========================================
-    // SETTLEMENT WORKFLOW TESTS (38 - 39)
+    // SETTLEMENT WORKFLOW TESTS (38 - 51)
     // ==========================================
 
     public function test_38_settlement_payment_records_with_gateway_reference_and_ledger_stamping(): void
@@ -712,20 +713,21 @@ class PosMemberCreditOrganizationIsolationTest extends TestCase
             'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
             'payable_id' => $memberA->id,
             'amount' => 30000,
+            'gateway_status' => 'PAID',
             'gateway_reference' => 'GW-INTENT-POS-01',
         ]);
 
         $payment = $this->service->recordSettlementPayment(
-            member: $memberA,
-            amount: 30000,
             intent: $intent,
-            referenceNo: $intent->gateway_reference,
             notes: 'Settlement test',
         );
 
-        $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
-        $this->assertNull($payment->received_by);
+        $this->assertSame($memberA->id, $payment->cooperative_member_id);
+        $this->assertSame('30000.00', (string) $payment->amount);
         $this->assertSame('GW-INTENT-POS-01', $payment->reference_no);
+        $this->assertNull($payment->received_by);
+
+        $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
 
         $ledger = CooperativeLedgerEntry::query()
             ->where('source_type', PosMemberCreditPayment::class)
@@ -735,6 +737,11 @@ class PosMemberCreditOrganizationIsolationTest extends TestCase
         $this->assertSame($orgA->id, $ledger->organization_id);
         $this->assertSame($memberA->id, $ledger->cooperative_member_id);
         $this->assertSame(30000.0, (float) $ledger->credit);
+
+        $freshIntent = $intent->fresh();
+        $this->assertSame('SETTLED', $freshIntent->settlement_status);
+        $this->assertNotNull($freshIntent->settled_at);
+        $this->assertSame('pos_member_credit_payment:'.$payment->id, $freshIntent->settled_by_service);
     }
 
     public function test_39_settlement_payment_fails_closed_on_null_org_member(): void
@@ -753,15 +760,325 @@ class PosMemberCreditOrganizationIsolationTest extends TestCase
             'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
             'payable_id' => $nullOrgMember->id,
             'amount' => 10000,
+            'gateway_status' => 'PAID',
         ]);
 
         $this->expectException(OrganizationScopeException::class);
 
-        $this->service->recordSettlementPayment(
-            member: $nullOrgMember,
-            amount: 10000,
-            intent: $intent,
-        );
+        $this->service->recordSettlementPayment(intent: $intent);
+    }
+
+    public function test_40_unpaid_or_pending_intent_cannot_settle_member_credit(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 20000,
+            'gateway_status' => 'PENDING',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(0, PosMemberCreditPayment::count());
+            $this->assertSame(0, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_41_wrong_payable_type_cannot_settle_member_credit(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_LOAN_INSTALLMENT,
+            'payable_id' => $memberA->id,
+            'amount' => 20000,
+            'gateway_status' => 'PAID',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(0, PosMemberCreditPayment::count());
+            $this->assertSame(0, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_42_intent_for_member_a_cannot_settle_member_b(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+        $memberB = $this->createMember($orgB, outstandingBalance: 40000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 20000,
+            'gateway_status' => 'PAID',
+            'gateway_reference' => 'GW-MEMBER-A',
+        ]);
+
+        $payment = $this->service->recordSettlementPayment(intent: $intent);
+
+        $this->assertSame($memberA->id, $payment->cooperative_member_id);
+        $this->assertSame(30000.0, (float) $memberA->fresh()->outstanding_balance);
+        $this->assertSame(40000.0, (float) $memberB->fresh()->outstanding_balance);
+    }
+
+    public function test_43_payable_id_mismatch_is_denied(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => 999999,
+            'amount' => 20000,
+            'gateway_status' => 'PAID',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(0, PosMemberCreditPayment::count());
+            $this->assertSame(0, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_44_cooperative_member_id_mismatch_or_nonexistent_is_denied(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+        $memberB = $this->createMember($orgB, outstandingBalance: 40000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberB->id,
+            'amount' => 20000,
+            'gateway_status' => 'PAID',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(40000.0, (float) $memberB->fresh()->outstanding_balance);
+            $this->assertSame(0, PosMemberCreditPayment::count());
+            $this->assertSame(0, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_45_settlement_api_derives_amount_exclusively_from_intent(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 60000);
+
+        $reflection = new ReflectionMethod($this->service, 'recordSettlementPayment');
+        $paramNames = array_map(fn ($p) => $p->getName(), $reflection->getParameters());
+        $this->assertNotContains('amount', $paramNames);
+        $this->assertNotContains('member', $paramNames);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 15000,
+            'gateway_status' => 'PAID',
+        ]);
+
+        $payment = $this->service->recordSettlementPayment(intent: $intent);
+
+        $this->assertSame('15000.00', (string) $payment->amount);
+        $this->assertSame(45000.0, (float) $memberA->fresh()->outstanding_balance);
+    }
+
+    public function test_46_settlement_api_derives_gateway_reference_exclusively_from_intent(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 60000);
+
+        $reflection = new ReflectionMethod($this->service, 'recordSettlementPayment');
+        $paramNames = array_map(fn ($p) => $p->getName(), $reflection->getParameters());
+        $this->assertNotContains('referenceNo', $paramNames);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 15000,
+            'gateway_status' => 'PAID',
+            'gateway_reference' => 'AUTH-REF-EXCLUSIVE-999',
+        ]);
+
+        $payment = $this->service->recordSettlementPayment(intent: $intent);
+
+        $this->assertSame('AUTH-REF-EXCLUSIVE-999', $payment->reference_no);
+    }
+
+    public function test_47_already_settled_intent_cannot_create_another_payment(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 20000,
+            'gateway_status' => 'PAID',
+            'settlement_status' => 'SETTLED',
+            'settled_at' => now(),
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(0, PosMemberCreditPayment::count());
+            $this->assertSame(0, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_48_reusing_same_intent_cannot_create_duplicate_payment_or_ledger_effects(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 20000,
+            'gateway_status' => 'PAID',
+        ]);
+
+        $this->service->recordSettlementPayment(intent: $intent);
+        $this->assertSame(30000.0, (float) $memberA->fresh()->outstanding_balance);
+        $this->assertSame(1, PosMemberCreditPayment::count());
+        $this->assertSame(1, CooperativeLedgerEntry::count());
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(30000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(1, PosMemberCreditPayment::count());
+            $this->assertSame(1, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_49_failed_settlement_leaves_outstanding_balance_unchanged_with_zero_records(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 50000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 20000,
+            'gateway_status' => 'DENIED',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->service->recordSettlementPayment(intent: $intent);
+        } finally {
+            $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+            $this->assertSame(0, PosMemberCreditPayment::count());
+            $this->assertSame(0, CooperativeLedgerEntry::count());
+        }
+    }
+
+    public function test_50_production_settlement_service_coordinator_settles_pos_credit(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 75000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 25000,
+            'gateway_status' => 'PAID',
+            'gateway_reference' => 'GW-PROD-COORD-01',
+        ]);
+
+        $settlementService = app(MemberPaymentSettlementService::class);
+        $settledIntent = $settlementService->settle($intent);
+
+        $this->assertSame('SETTLED', $settledIntent->settlement_status);
+        $this->assertNotNull($settledIntent->settled_at);
+        $this->assertStringStartsWith('pos_member_credit_payment:', $settledIntent->settled_by_service);
+
+        $payment = PosMemberCreditPayment::query()->firstOrFail();
+        $this->assertSame($memberA->id, $payment->cooperative_member_id);
+        $this->assertSame('25000.00', (string) $payment->amount);
+        $this->assertSame('GW-PROD-COORD-01', $payment->reference_no);
+
+        $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+
+        $ledger = CooperativeLedgerEntry::query()->where('source_id', $payment->id)->firstOrFail();
+        $this->assertSame($orgA->id, $ledger->organization_id);
+        $this->assertSame($memberA->id, $ledger->cooperative_member_id);
+        $this->assertSame(25000.0, (float) $ledger->credit);
+    }
+
+    public function test_51_production_settlement_service_coordinator_idempotency_on_repeated_settle(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA, outstandingBalance: 75000);
+
+        $intent = MemberPaymentIntent::factory()->create([
+            'cooperative_member_id' => $memberA->id,
+            'payable_type' => MemberPaymentIntent::PAYABLE_POS_CREDIT,
+            'payable_id' => $memberA->id,
+            'amount' => 25000,
+            'gateway_status' => 'PAID',
+            'gateway_reference' => 'GW-PROD-IDEMP-01',
+        ]);
+
+        $settlementService = app(MemberPaymentSettlementService::class);
+
+        // First settle call
+        $firstResult = $settlementService->settle($intent);
+        $this->assertSame('SETTLED', $firstResult->settlement_status);
+        $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+        $this->assertSame(1, PosMemberCreditPayment::count());
+        $this->assertSame(1, CooperativeLedgerEntry::count());
+
+        // Second settle call (idempotent replay)
+        $secondResult = $settlementService->settle($firstResult);
+        $this->assertSame('SETTLED', $secondResult->settlement_status);
+
+        // Verifikasi tidak ada double charge atau duplikasi record
+        $this->assertSame(50000.0, (float) $memberA->fresh()->outstanding_balance);
+        $this->assertSame(1, PosMemberCreditPayment::count());
+        $this->assertSame(1, CooperativeLedgerEntry::count());
     }
 
     // ==========================================

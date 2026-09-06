@@ -68,7 +68,7 @@ class PosDailyClosingController extends Controller
             return (string) $visibility->organizationId;
         }
 
-        $targetOrgId = $requestedOrgId ?? session('active_organization_id');
+        $targetOrgId = $requestedOrgId ?? session('active_organization_id') ?? $user->organization_id;
         if (empty($targetOrgId)) {
             abort(403, 'Target organisasi wajib ditentukan untuk pengguna global.');
         }

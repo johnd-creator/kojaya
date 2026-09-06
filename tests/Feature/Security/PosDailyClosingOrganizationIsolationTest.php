@@ -901,18 +901,34 @@ class PosDailyClosingOrganizationIsolationTest extends TestCase
 
     public function test_global_user_with_no_determinable_target_fails_closed(): void
     {
+        $this->createOrganizations();
+        $globalUserNoOrg = User::factory()->create(['organization_id' => null]);
+        $globalUserNoOrg->givePermissionTo(['access_cooperative_pos', 'view_pos_reports', 'view_cooperative_all']);
+        $today = now()->toDateString();
+
+        // No organization_id in request, no active_organization_id in session, no home org
+        $this->actingAs($globalUserNoOrg)
+            ->get(route('cooperative.pos.closings.index', ['date' => $today]))
+            ->assertForbidden();
+
+        $this->actingAs($globalUserNoOrg)
+            ->post(route('cooperative.pos.closings.close'), ['date' => $today])
+            ->assertForbidden();
+    }
+
+    public function test_global_user_with_home_organization_defaults_to_home_org(): void
+    {
         [$orgA] = $this->createOrganizations();
         $globalUser = $this->createGlobalOperator($orgA);
         $today = now()->toDateString();
 
-        // No organization_id in request, no active_organization_id in session
         $this->actingAs($globalUser)
             ->get(route('cooperative.pos.closings.index', ['date' => $today]))
-            ->assertForbidden();
-
-        $this->actingAs($globalUser)
-            ->post(route('cooperative.pos.closings.close'), ['date' => $today])
-            ->assertForbidden();
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Cooperative/Pos/Closings/Index')
+                ->where('organization_id', (string) $orgA->id)
+            );
     }
 
     // =========================================================================

@@ -163,10 +163,10 @@ class MemberPaymentSettlementService
 
         $intentAmount = MinorAmount::toDecimalString(MinorAmount::fromDecimal($intent->amount));
 
-        $payment = $this->memberCreditService->recordPayment(
+        $payment = $this->memberCreditService->recordSettlementPayment(
             member: $member,
             amount: $intentAmount,
-            receiver: null,
+            intent: $intent,
             referenceNo: $intent->gateway_reference,
             notes: 'Settlement gateway anggota untuk kredit POS.',
             paidAt: now()->toDateString(),

@@ -1,384 +1,123 @@
-<laravel-boost-guidelines>
-=== foundation rules ===
-
-# Laravel Boost Guidelines
-
-The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
-
-## Foundational Context
-
-This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
-
-## Related Flutter App
-
-- The Kojayaku Flutter mobile app lives at `/home/john-d/Videos/kojaya-app`.
-- When Laravel API or member-facing behavior must match the mobile app, inspect that Flutter project first and align endpoint contracts, menu names, payload fields, and screen expectations before changing this Laravel app.
-- Treat the Laravel application in this repository as the source of truth for persistence, authorization, validation, and accounting/POS side effects. Flutter screens may prototype UX locally before matching backend endpoints exist.
-
-## Cooperative Role Hierarchy
-
-- Global highest role: `System Admin` as superadmin.
-- Cooperative hierarchy: `Pengurus Koperasi` is the highest cooperative role, followed by `Manajer Koperasi`, then `Admin Koperasi`, then operational roles such as `Kasir Koperasi`.
-- For the loan workflow, `Manajer Koperasi` performs the first review, and `Pengurus Koperasi` performs final approval. `Admin Koperasi` may manage operational loan data but must not be treated as a loan approver.
-
-## Midtrans Sandbox
-
-- Local sandbox config uses `MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_MERCHANT_ID=`, `MIDTRANS_CLIENT_KEY=`, and `MIDTRANS_VA_BANK=` see .env, unless another sandbox VA bank is intentionally being tested.
-- `MIDTRANS_SERVER_KEY` is a secret and must stay in local `.env` or the deployment secret manager only. Do not commit or repeat the full server key in docs, tests, source, logs, or prompts; the sandbox key currently configured locally ends with `TdE4`.
-- Midtrans config is read through `config/services.php` under `services.midtrans`.
-
-- php - 8.5.6
-- inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
-- laravel/fortify (FORTIFY) - v1
-- laravel/framework (LARAVEL) - v12
-- laravel/prompts (PROMPTS) - v0
-- laravel/sanctum (SANCTUM) - v4
-- laravel/socialite (SOCIALITE) - v5
-- laravel/wayfinder (WAYFINDER) - v0
-- laravel/boost (BOOST) - v2
-- laravel/breeze (BREEZE) - v2
-- laravel/mcp (MCP) - v0
-- laravel/pail (PAIL) - v1
-- laravel/pint (PINT) - v1
-- laravel/sail (SAIL) - v1
-- phpunit/phpunit (PHPUNIT) - v11
-- @inertiajs/vue3 (INERTIA_VUE) - v2
-- tailwindcss (TAILWINDCSS) - v4
-- vue (VUE) - v3
-- @laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0
-- eslint (ESLINT) - v9
-- prettier (PRETTIER) - v3
-
-## 📚 MANDATORY: Read Project Documentation First
-
-**CRITICAL:** Before starting ANY task, you MUST read the relevant documentation in the `/docs/` folder to understand project context, architecture, and requirements.
-
-**Required Reading Order (for every task):**
-1. **`docs/project.md`** - Project overview, business context, goals (START HERE)
-2. **`docs/architecture.md`** - System design, tech stack, patterns
-3. **Task-Specific Docs:**
-   - API work? → Read `docs/api.md`
-   - Adding features? → Read `docs/plan.md` and `docs/decisions.md`
-   - Debugging? → Read `docs/log.md` for known issues
-
-**When to Read Documentation:**
-- ✅ **ALWAYS** read before making architectural decisions
-- ✅ **ALWAYS** read before adding new features/modules
-- ✅ **ALWAYS** read `docs/api.md` before working with API endpoints
-- ✅ **ALWAYS** read `docs/decisions.md` before changing existing patterns
-- ✅ **READ FIRST, CODE SECOND** - Documentation prevents mistakes
-
-**Documentation is Authority:**
-- If code conflicts with docs, the docs are likely outdated - **UPDATE THE DOCS**
-- All architecture decisions are documented in `docs/decisions.md`
-- Project roadmap is in `docs/plan.md`
-- API contracts are in `docs/api.md`
-
-**How to Read Documentation Efficiently:**
-```bash
-# Quick overview
-cat docs/project.md
-
-# Check architecture before coding
-cat docs/architecture.md
-
-# Read API docs before touching endpoints
-cat docs/api.md
-
-# Check decisions before changing patterns
-cat docs/decisions.md
-
-# See development history
-cat docs/log.md
-```
-
-## Skills Activation
-
-This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
-
-- `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
-- `inertia-vue-development` — Develops Inertia.js v2 Vue client-side applications. Activates when creating Vue pages, forms, or navigation; using &lt;Link&gt;, &lt;Form&gt;, useForm, or router; working with deferred props, prefetching, or polling; or when user mentions Vue with Inertia, Vue pages, Vue forms, or Vue navigation.
-- `tailwindcss-development` — Styles applications using Tailwind CSS v4 utilities. Activates when adding styles, restyling components, working with gradients, spacing, layout, flex, grid, responsive design, dark mode, colors, typography, or borders; or when the user mentions CSS, styling, classes, Tailwind, restyle, hero section, cards, buttons, or any visual/UI changes.
-
-## Conventions
-
-- **READ DOCUMENTATION FIRST:** Always read relevant `/docs/` files before coding
-- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
-- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
-- Check for existing components to reuse before writing a new one.
-- **Document Your Changes:** If you make architectural decisions, update `docs/decisions.md`
-- **Log Significant Changes:** Add entries to `docs/log.md` for major features
-
-## Database Safety - Do Not Reset Local Data
-
-**CRITICAL:** The local development database may contain working demo data, login users, roles, permissions, and manually prepared QA state. Do not destroy or reseed it while implementing or testing a feature.
-
-- **NEVER** run destructive database commands against the default `.env` database (`DB_DATABASE=kojaya_erp`) unless the user explicitly asks for a reset in the current conversation.
-- Forbidden without explicit user approval:
-  - `php artisan migrate:fresh`
-  - `php artisan migrate:refresh`
-  - `php artisan migrate:reset`
-  - `php artisan db:wipe`
-  - `php artisan db:seed` or any broad seeder such as `DatabaseSeeder`, `DemoDataSeeder`, `CooperativeSeeder`, or `RolePermissionSeeder`
-  - raw SQL that drops/truncates tables, drops schemas/databases, deletes all rows, or rewrites login/role/permission data
-- Running `php artisan migrate` is allowed only for applying new forward migrations. Before running it, inspect `php artisan migrate:status` and confirm the connection/database name is the intended local app database.
-- If seed data is needed for a feature test, create it inside the PHPUnit test using factories. Do not seed the shared local app database just to make a test pass.
-- If a one-off local recovery is needed, state exactly which database, tables, users, and seeders will be affected, then wait for explicit user approval before writing anything.
-- If you accidentally run a destructive command, stop immediately and report the exact command, timestamp, database name, and observed damage. Do not try to hide or "fix" it with additional resets.
-
-## Verification Scripts
-
-- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
-
-## Application Structure & Architecture
-
-- Stick to existing directory structure; don't create new base folders without approval.
-- Do not change the application's dependencies without approval.
-
-## Frontend Bundling
-
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
-
-## Documentation Files
-
-- You must only create documentation files if explicitly requested by the user.
-
-## Replies
-
-- Be concise in your explanations - focus on what's important rather than explaining obvious details.
-
-=== boost rules ===
-
-# Laravel Boost
-
-- Laravel Boost is an MCP server that comes with powerful tools designed specifically for this application. Use them.
-
-## Artisan
-
-- Use the `list-artisan-commands` tool when you need to call an Artisan command to double-check the available parameters.
-
-## URLs
-
-- Whenever you share a project URL with the user, you should use the `get-absolute-url` tool to ensure you're using the correct scheme, domain/IP, and port.
-
-## Tinker / Debugging
-
-- You should use the `tinker` tool when you need to execute PHP to debug code or query Eloquent models directly.
-- Use the `database-query` tool when you only need to read from the database.
-- Use the `database-schema` tool to inspect table structure before writing migrations or models.
-
-## Reading Browser Logs With the `browser-logs` Tool
-
-- You can read browser logs, errors, and exceptions using the `browser-logs` tool from Boost.
-- Only recent browser logs will be useful - ignore old logs.
-
-## Searching Documentation (Critically Important)
-
-- Boost comes with a powerful `search-docs` tool you should use before trying other approaches when working with Laravel or Laravel ecosystem packages. This tool automatically passes a list of installed packages and their versions to the remote Boost API, so it returns only version-specific documentation for the user's circumstance. You should pass an array of packages to filter on if you know you need docs for particular packages.
-- Search the documentation before making code changes to ensure we are taking the correct approach.
-- Use multiple, broad, simple, topic-based queries at once. For example: `['rate limiting', 'routing rate limiting', 'routing']`. The most relevant results will be returned first.
-- Do not add package names to queries; package information is already shared. For example, use `test resource table`, not `filament 4 test resource table`.
-
-### Available Search Syntax
-
-1. Simple Word Searches with auto-stemming - query=authentication - finds 'authenticate' and 'auth'.
-2. Multiple Words (AND Logic) - query=rate limit - finds knowledge containing both "rate" AND "limit".
-3. Quoted Phrases (Exact Position) - query="infinite scroll" - words must be adjacent and in that order.
-4. Mixed Queries - query=middleware "rate limit" - "middleware" AND exact phrase "rate limit".
-5. Multiple Queries - queries=["authentication", "middleware"] - ANY of these terms.
-
-=== php rules ===
-
-# PHP
-
-- Always use curly braces for control structures, even for single-line bodies.
-
-## Constructors
-
-- Use PHP 8 constructor property promotion in `__construct()`.
-    - `public function __construct(public GitHub $github) { }`
-- Do not allow empty `__construct()` methods with zero parameters unless the constructor is private.
-
-## Type Declarations
-
-- Always use explicit return type declarations for methods and functions.
-- Use appropriate PHP type hints for method parameters.
-
-<!-- Explicit Return Types and Method Params -->
-```php
-protected function isAccessible(User $user, ?string $path = null): bool
-{
-    ...
-}
-```
-
-## Enums
-
-- Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
-
-## Comments
-
-- Prefer PHPDoc blocks over inline comments. Never use comments within the code itself unless the logic is exceptionally complex.
-
-## PHPDoc Blocks
-
-- Add useful array shape type definitions when appropriate.
-
-=== tests rules ===
-
-# Test Enforcement
-
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
-- Tests must not mutate the shared `.env` database. PHPUnit must run with the testing environment/database configured by `phpunit.xml` or explicit `APP_ENV=testing`/test DB variables.
-- Before running tests that use database traits or migrations, verify they target a test database, not `DB_DATABASE=kojaya_erp`. If unsure, run a read-only check of `APP_ENV` and database name first.
-- Do not use `migrate:fresh`, `db:wipe`, broad seeders, or manual truncation as part of test setup. Use Laravel testing traits, factories, and per-test setup data instead.
-
-=== inertia-laravel/core rules ===
-
-# Inertia
-
-- Inertia creates fully client-side rendered SPAs without modern SPA complexity, leveraging existing server-side patterns.
-- Components live in `resources/js/pages` (unless specified in `vite.config.js`). Use `Inertia::render()` for server-side routing instead of Blade views.
-- ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
-- IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
-
-# Inertia v2
-
-- Use all Inertia features from v1 and v2. Check the documentation before making changes to ensure the correct approach.
-- New features: deferred props, infinite scroll, merging props, polling, prefetching, once props, flash data.
-- When using deferred props, add an empty state with a pulsing or animated skeleton.
-
-=== laravel/core rules ===
-
-# Do Things the Laravel Way
-
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
-- If you're creating a generic PHP class, use `php artisan make:class`.
-- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
-
-## Database
-
-- Always use proper Eloquent relationship methods with return type hints. Prefer relationship methods over raw queries or manual joins.
-- Use Eloquent models and relationships before suggesting raw database queries.
-- Avoid `DB::`; prefer `Model::query()`. Generate code that leverages Laravel's ORM capabilities rather than bypassing them.
-- Generate code that prevents N+1 query problems by using eager loading.
-- Use Laravel's query builder for very complex database operations.
-
-### Model Creation
-
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
-
-### APIs & Eloquent Resources
-
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
-
-## Controllers & Validation
-
-- Always create Form Request classes for validation rather than inline validation in controllers. Include both validation rules and custom error messages.
-- Check sibling Form Requests to see if the application uses array or string based validation rules.
-
-## Authentication & Authorization
-
-- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
-
-## URL Generation
-
-- When generating links to other pages, prefer named routes and the `route()` function.
-
-## Queues
-
-- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
-
-## Configuration
-
-- Use environment variables only in configuration files - never use the `env()` function directly outside of config files. Always use `config('app.name')`, not `env('APP_NAME')`.
-
-## Testing
-
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
-
-## Vite Error
-
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
-
-=== laravel/v12 rules ===
-
-# Laravel 12
-
-- CRITICAL: ALWAYS use `search-docs` tool for version-specific Laravel documentation and updated code examples.
-- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
-
-## Laravel 12 Structure
-
-- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
-- Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
-- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
-- `bootstrap/providers.php` contains application specific service providers.
-- The `app\Console\Kernel.php` file no longer exists; use `bootstrap/app.php` or `routes/console.php` for console configuration.
-- Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
-
-## Database
-
-- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
-- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
-
-### Models
-
-- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
-
-=== wayfinder/core rules ===
-
-# Laravel Wayfinder
-
-Wayfinder generates TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
-
-- IMPORTANT: Activate `wayfinder-development` skill whenever referencing backend routes in frontend components.
-- Invokable Controllers: `import StorePost from '@/actions/.../StorePostController'; StorePost()`.
-- Parameter Binding: Detects route keys (`{post:slug}`) — `show({ slug: "my-post" })`.
-- Query Merging: `show(1, { mergeQuery: { page: 2, sort: null } })` merges with current URL, `null` removes params.
-- Inertia: Use `.form()` with `<Form>` component or `form.submit(store())` with useForm.
-
-=== pint/core rules ===
-
-# Laravel Pint Code Formatter
-
-- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
-
-=== phpunit/core rules ===
-
-# PHPUnit
-
-- This application uses PHPUnit for testing. All tests must be written as PHPUnit classes. Use `php artisan make:test --phpunit {name}` to create a new test.
-- If you see a test using "Pest", convert it to PHPUnit.
-- Every time a test has been updated, run that singular test.
-- When the tests relating to your feature are passing, ask the user if they would like to also run the entire test suite to make sure everything is still passing.
-- Tests should cover all happy paths, failure paths, and edge cases.
-- You must not remove any tests or test files from the tests directory without approval. These are not temporary or helper files; these are core to the application.
-
-## Running Tests
-
-- Run the minimal number of tests, using an appropriate filter, before finalizing.
-- To run all tests: `php artisan test --compact`.
-- To run all tests in a file: `php artisan test --compact tests/Feature/ExampleTest.php`.
-- To filter on a particular test name: `php artisan test --compact --filter=testName` (recommended after making a change to a related file).
-
-=== inertia-vue/core rules ===
-
-# Inertia + Vue
-
-Vue components must have a single root element.
-- IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
-
-=== tailwindcss/core rules ===
-
-# Tailwind CSS
-
-- Always use existing Tailwind conventions; check project patterns before adding new ones.
-- IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
-- IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
-
-</laravel-boost-guidelines>
+# Kojaya — Agent Working Agreement
+
+Repository instructions for implementing, reviewing, and maintaining KojayaPro and Kojayaku. Keep this file focused on durable project rules; use linked documentation and skills for detailed procedures.
+
+## Working style and scope
+
+- Respond in concise Indonesian unless the user requests another language. Explain the outcome, relevant evidence, and remaining limitations.
+- For implementation requests, continue through discovery, changes, and verification. Make reasonable, reversible implementation choices within scope without repeatedly asking permission.
+- For questions, reviews, or diagnosis, inspect and report findings; do not infer permission for unrelated fixes.
+- Ask only when a missing decision materially changes business behavior, requires new authority, or makes proceeding unsafe. Complete independent, authorized work first.
+- Inspect `git status --short` before editing. Preserve existing user changes; avoid unrelated refactors, formatting, and dependency changes.
+- Keep the existing directory structure. Obtain approval before adding dependencies or new top-level folders.
+- Do not commit, push, deploy, or send external messages unless authorized by the user.
+- Give brief progress updates during sustained work. Report blockers concretely; never claim a check passed unless it ran successfully.
+
+## Read the right context
+
+- Read `docs/project.md`, then relevant sections of `docs/architecture.md` before implementation. Reuse context already read in this session unless it changed.
+- Read task-specific documentation before changing behavior:
+
+| Task | Documentation |
+| --- | --- |
+| API or mobile contract | `docs/api.md` |
+| New feature | Relevant sections of `docs/plan.md` and `docs/decisions.md` |
+| Existing architectural pattern | Relevant decisions in `docs/decisions.md` |
+| Debugging | Relevant recent entries in `docs/log.md` |
+| Documentation-only change | Target document and the sources supporting the changed claims |
+
+- Search headings and read relevant sections of large documents. Do not load unrelated history for every small task.
+- Documentation records intended behavior; code and tests show implemented behavior. When they disagree, establish which matches the accepted requirement before changing either. Do not automatically assume one is correct.
+- Update existing API documentation when contracts change, `docs/decisions.md` for architectural decisions, and `docs/log.md` for significant features. Create new documentation files only when explicitly requested.
+- Check instructions in the target directory and existing sibling implementations before editing.
+
+## Code discovery and evidence
+
+- Prefer codebase-memory-mcp for structural code discovery. At session start or after compaction, confirm the nearest project and generation with `list_projects` or `index_status`.
+- Default to Tier 2 verification: `search_graph` for symbols, `trace_path` for relevant callers/callees, and `get_code_snippet` for material implementation details. Use `query_graph` or `get_architecture` for broader relationships.
+- Once candidate paths are known, call `check_index_coverage` with every evidence path. Include bounded scopes for negative or exhaustive claims and complete relevant pagination.
+- Clean coverage means no recorded gap, not proof of completeness. For partial, skipped, excluded, stale, pending, or unknown coverage, read the source and reported missed ranges before relying on results.
+- Use `rg` for literals, errors, configuration, non-code files, and source verification. If graph tools are unavailable or insufficient, use focused source searches and disclose the limitation.
+- Tier 1 scout results are provisional positive findings. Tier 3 audits require complete relevant pagination, freshness checks, both call directions where material, and disclosed limitations.
+- If delegation is authorized, first collect parent graph and coverage evidence. Assign bounded ownership and pass project/generation, tier, symbols, paths, pagination, missed ranges, source checks, and unresolved questions. Agents must preserve others' changes and must not claim unavailable MCP access.
+
+## Project and domain invariants
+
+- KojayaPro is the cooperative ERP/POS backend and staff web application; Kojayaku serves members.
+- Stack: Laravel 12, PHP, PostgreSQL, Inertia v2, Vue 3 with TypeScript, Tailwind CSS v4, Wayfinder, and PHPUnit.
+- Use `composer.json` / `package.json` for supported constraints, lockfiles for resolved versions, and installed tools for actual runtime versions. Do not rely on hard-coded patch versions in this file.
+- Related mobile app: native Android with Kotlin at `/home/john-d/Videos/KojayaApp`. This replaces the previous Flutter app as the mobile integration reference. When changing shared API or member-facing behavior, read that repository's applicable instructions and inspect the relevant Kotlin flow first; align endpoints, menu names, payload fields, and screen expectations. If unavailable, disclose the compatibility gap.
+- Laravel is authoritative for persistence, authorization, validation, and accounting/POS side effects. A mobile prototype does not establish backend behavior or authorize editing that separate repository. Older documentation referring to Flutter is historical; use the current Kotlin app for mobile compatibility checks.
+- Global highest role: `System Admin`. Cooperative hierarchy: `Pengurus Koperasi` → `Manajer Koperasi` → `Admin Koperasi` → operational roles such as `Kasir Koperasi`.
+- Loan approval requires manager review first and final Pengurus approval. Admin Koperasi manages operational loan data but is not a loan approver.
+- Preserve organization isolation and object/parent ownership checks. Reuse the canonical organization scoping described in `docs/architecture.md`; role hierarchy alone does not grant cross-organization access.
+- For financial/POS changes, verify affected balances, inventory, transaction boundaries, duplicate/retry behavior, and audit records. Keep business side effects in the established service flow.
+
+## Database and secret safety
+
+- The shared local database `kojaya_erp` contains valuable demo, login, role, permission, and QA data. Never reset or broadly reseed it without explicit approval in the current conversation.
+- Forbidden against the shared database without that approval: `migrate:fresh`, `migrate:refresh`, `migrate:reset`, `db:wipe`, `db:seed`, broad seeders, dropping/truncating tables or schemas, deleting all rows, and bulk rewriting login/role/permission data.
+- Apply only new forward migrations with `php artisan migrate`. First confirm the intended connection/database and inspect `php artisan migrate:status`; review pending migrations for destructive operations.
+- Before one-off recovery, identify the exact database, tables, users, seeders, and effects, then wait for explicit approval.
+- Tests must use an isolated testing database. Inspect the selected PHPUnit configuration and effective connection before database traits or migrations run. `APP_ENV=testing` alone is not proof of isolation.
+- Default `phpunit.xml` configures SQLite `:memory:`. Alternate suites and browser tests need their own verified isolation. Never redirect them to `kojaya_erp` to make tests pass.
+- Use Laravel testing traits, factories, and per-test fixtures. Do not manually reset databases, run broad seeders, or truncate tables to repair test failures.
+- If a destructive command runs accidentally, stop and report the command, timestamp, database, and observed damage. Do not attempt further resets or recovery without approval.
+- Never dump `.env` or expose credentials, tokens, payment keys, or private member data in outputs, source, tests, or documentation.
+- Midtrans uses `services.midtrans` in `config/services.php`. Local testing uses `MIDTRANS_IS_PRODUCTION=false`; inspect only necessary non-secret settings. Keep `MIDTRANS_SERVER_KEY` in local environment/deployment secrets and use fake values in tests.
+- Inspect package scripts before running setup commands: they may generate keys, run migrations, seed data, or start workers with side effects.
+
+## Tools and skills
+
+- Use Laravel Boost when available. Before Laravel/Inertia/Tailwind code changes, use `search-docs` with broad topic queries and relevant package filters for version-matched guidance.
+- If Boost is unavailable, use installed source and official documentation matching installed versions. State the limitation without blocking work that can be verified safely.
+- Use `list-artisan-commands` to check command options; fall back to command help. Generate Laravel classes with `php artisan make:*` and `--no-interaction`.
+- Use `database-schema` before schema/model changes and `database-query` for read-only queries. Use `tinker` only when Eloquent/runtime inspection is needed; prefer existing tests when they cover the question.
+- Use recent `browser-logs` for browser failures. Resolve shared project URLs with `get-absolute-url`; if unavailable, verify the running server/configuration rather than guessing.
+- Read and apply relevant skills before domain work: `inertia-vue-development` for Inertia Vue pages/forms/navigation, `tailwindcss-development` for styling, and `wayfinder-development` for backend routes in frontend code. Announce first use.
+- Do not load unrelated skills or perform broad audits solely because tools are available.
+
+## Implementation conventions
+
+### Laravel and PHP
+
+- Follow sibling conventions and reuse services, components, factories, and request classes before adding abstractions.
+- Use descriptive names, explicit parameter/return types, curly braces, and constructor property promotion where appropriate. Avoid empty public constructors.
+- Prefer useful PHPDoc types, including array shapes; comment non-obvious intent rather than narrating code. Follow existing enum naming, normally TitleCase.
+- Use Form Requests with validation rules and custom messages; keep validation and business side effects out of controllers where existing services own them.
+- Use Eloquent relationships with return types, eager loading, and appropriate pagination. Prefer model queries; use query builder or transactions where required by the operation.
+- Use Laravel authorization, policies/gates, and Sanctum consistently with existing organization scoping.
+- Keep API versioning and API Resources consistent with existing contracts. Generate links from named routes.
+- Read environment variables only in configuration files; use `config()` in application code.
+- Use existing queue patterns and `ShouldQueue` for expensive background work; preserve transaction/dispatch ordering.
+- In Laravel 12, register middleware/exceptions/routing in `bootstrap/app.php` and providers in `bootstrap/providers.php`. Follow sibling model cast conventions.
+- Column modifications must preserve existing attributes that should remain. Create useful factories for new models; add seeders only when the feature actually needs them.
+
+### Vue, Inertia, and Tailwind
+
+- Use existing Vue 3/TypeScript conventions and a single root element. Pages live in `resources/js/pages`; render them with `Inertia::render()`.
+- Reuse existing UI components and Tailwind v4 patterns. Handle relevant loading, empty, validation, and error states; deferred props need an appropriate loading placeholder.
+- Use Wayfinder imports from `@/actions` or `@/routes`, preserving binding and query semantics. Use supported Inertia form helpers.
+- Regenerate generated route bindings using the project's workflow; do not hand-edit generated files.
+- Verify changed UI flows at relevant viewport sizes and roles, including accessibility and browser errors where applicable.
+- If frontend changes are not visible, inspect the Vite server/build state. Run the appropriate scoped build or explain the exact missing prerequisite.
+
+## Verification and completion
+
+- Select checks by affected behavior and risk. Fixes and behavior changes require meaningful regression coverage; include relevant success, validation, authorization, and edge cases.
+- Write PHPUnit classes for new PHP tests. Use `php artisan make:test --phpunit --no-interaction` with `--unit` only for isolated unit tests. Do not convert unrelated tests or delete tests without approval.
+- Run every changed test and the smallest affected suite, for example `php artisan test --compact tests/Feature/ExampleTest.php` or `php artisan test --compact --filter=testName`.
+- Formatting-only and documentation-only changes need appropriate formatting, link/content checks, and diff review; do not create artificial application tests for prose.
+- After PHP edits, run `vendor/bin/pint --dirty --format agent`. In a dirty worktree, ensure formatting does not overwrite unrelated user changes.
+- For frontend changes, run targeted ESLint/Prettier checks, type checking, a build, or relevant Playwright tests as appropriate. Inspect `package.json` first: `npm run lint` applies fixes across the repository and `npm run format` writes throughout `resources/`.
+- Do not refresh visual baselines merely to hide a failing comparison; inspect and explain intended visual differences.
+- Inspect suite exclusions and alternate test configurations before claiming broad coverage. A default PHPUnit pass does not include every test in the repository.
+- Broaden testing for shared infrastructure, high-risk side effects, unresolved failures, or a user request. Do not rerun passing checks without a reason.
+- Finish by reviewing `git diff --check` and the actual diff for unintended changes. Report what changed, checks run/results, and material unverified behavior. If blocked, distinguish completed work from the exact remaining dependency.
+
+## Maintaining this file
+
+- Update this file when explicitly requested or when an authorized task changes a documented repository rule. Prefer a small correction over accumulating instructions.
+- Keep durable project constraints here; keep task progress, temporary workarounds, secrets, and changing package inventories elsewhere.
+- Remove duplication and resolve conflicting rules without weakening database safety, authorization, or verification.
+- When regenerating Laravel Boost guidance, review the diff and preserve these project-specific rules.

@@ -6,6 +6,7 @@
 >
     <testsuites>
         <testsuite name="PostgreSQLConcurrency">
+            <file>tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php</file>
             <file>tests/Feature/PaymentConcurrencyTest.php</file>
             <file>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</file>
             <file>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</file>

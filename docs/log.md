@@ -4,7 +4,13 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 5, 2026
+**Last Updated:** September 6, 2026
+
+## 2026-09-06 - Canonical POS Closing Target and PostgreSQL Serialization (SEC-P1-06 R1)
+
+- Removed controller/service target-policy duplication and all implicit global session/home targets. Added HTTP and direct-service regressions for explicit targeting, invalid targets, authoritative unit scope, and organization attribution on both closing and journal.
+- Added `PosDailyClosingConcurrencyTest` to the existing `PostgreSQLConcurrency` CI suite. Independent PHP worker sessions synchronize via pipes; `pg_blocking_pids()` and fresh `pg_stat_activity` snapshots prove the competing session waits before the parent commits. Covers sale-first and closing-first orderings for existing mutex rows and concurrent creation of previously absent placeholders, plus cross-organization same-date progress.
+- Local PostgreSQL 18.6 (`pgsql`, READ COMMITTED), isolated `kojaya_test`: five cases passed with 117 assertions. CI uses PostgreSQL 16. SQLite explicitly skips this proof. The mutex algorithm, mutation transaction boundaries, migration, and legacy null-org isolation remain unchanged. The closing page preserves the server-validated target on date filtering and submission; the UI audit uses an explicit organization fixture and exercises both actions without changing visual baselines.
 
 ## 🎯 2026-09-05 - POS Organization Isolation R1 & CI Regression Hardening (SEC-P1-03 R1)
 
@@ -1258,4 +1264,3 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Jul 29, 2026 | Admin Koperasi Sidebar Active State | Engineering | Kept the Keuangan Anggota group open for payment and dues routes, normalized active navigation matching to ignore query strings, and added responsive Playwright coverage for active submenu behavior. |
 
 *This log is maintained throughout the project lifecycle. Last updated: August 29, 2026*
-

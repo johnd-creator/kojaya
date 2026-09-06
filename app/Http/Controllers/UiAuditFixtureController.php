@@ -40,6 +40,7 @@ class UiAuditFixtureController extends Controller
             'store-credit-empty-ledger' => MemberStoreAccount::query()->whereHas('member', fn (Builder $query): Builder => $query->where('member_no', 'AUD-005'))->value('id'),
             'loan-applied' => Loan::query()->where('reference_no', 'UI-AUDIT-LOAN-001')->value('id'),
             'product-primary' => PosProduct::query()->where('sku', 'UI-AUD-001')->value('id'),
+            'pos-organization' => PosProduct::query()->where('sku', 'UI-AUD-001')->value('organization_id'),
             'pos-transaction-completed' => PosTransaction::query()->where('transaction_no', 'UI-AUDIT-POS-001')->value('id'),
             'stock-count-draft' => PosStockCount::query()->where('count_no', 'UI-AUDIT-COUNT-001')->value('id'),
             'redemption-pending' => RewardRedemption::query()->whereKey('00000000-0000-0000-0000-000000000023')->value('id'),

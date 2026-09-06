@@ -393,6 +393,9 @@ class PosDailyClosingOrganizationIsolationTest extends TestCase
         $globalUser = $this->createGlobalOperator($orgA);
         $today = now()->toDateString();
 
+        $this->createCompletedSale($orgB, 15000, $today);
+        $this->withSession(['active_organization_id' => $orgA->id]);
+
         $response = $this->actingAs($globalUser)
             ->post(route('cooperative.pos.closings.close'), [
                 'date' => $today,
@@ -409,6 +412,13 @@ class PosDailyClosingOrganizationIsolationTest extends TestCase
         $this->assertNotNull($closingB);
         $this->assertSame($orgB->id, $closingB->organization_id);
         $this->assertSame($globalUser->id, $closingB->closed_by);
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'source_type' => PosDailyClosing::class,
+            'source_id' => $closingB->id,
+            'entry_type' => 'POS_DAILY_CLOSING',
+            'organization_id' => $orgB->id,
+            'credit' => 15000,
+        ]);
     }
 
     // =========================================================================
@@ -899,43 +909,104 @@ class PosDailyClosingOrganizationIsolationTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_global_user_with_no_determinable_target_fails_closed(): void
+    public function test_global_without_explicit_target_rejects_home_and_session_in_http_and_service(): void
     {
-        $this->createOrganizations();
-        $globalUserNoOrg = User::factory()->create(['organization_id' => null]);
-        $globalUserNoOrg->givePermissionTo(['access_cooperative_pos', 'view_pos_reports', 'view_cooperative_all']);
+        [$orgA, $orgB] = $this->createOrganizations();
+        $global = $this->createGlobalOperator($orgA);
         $today = now()->toDateString();
 
-        // No organization_id in request, no active_organization_id in session, no home org
-        $this->actingAs($globalUserNoOrg)
-            ->get(route('cooperative.pos.closings.index', ['date' => $today]))
-            ->assertForbidden();
+        foreach ([null, $orgA->id] as $home) {
+            $global->forceFill(['organization_id' => $home])->save();
+            foreach ([null, $orgB->id] as $active) {
+                $this->withSession(['active_organization_id' => $active])->actingAs($global);
+                $this->getJson(route('cooperative.pos.closings.index', ['date' => $today]))
+                    ->assertUnprocessable()->assertJsonValidationErrors('organization_id');
+                $this->postJson(route('cooperative.pos.closings.close'), ['date' => $today])
+                    ->assertUnprocessable()->assertJsonValidationErrors('organization_id');
 
-        $this->actingAs($globalUserNoOrg)
-            ->post(route('cooperative.pos.closings.close'), ['date' => $today])
-            ->assertForbidden();
+                try {
+                    $this->service->closeDay($today, $global);
+                    $this->fail('Direct closing must require an explicit global target.');
+                } catch (ValidationException $exception) {
+                    $this->assertArrayHasKey('organization_id', $exception->errors());
+                }
+            }
+        }
+
+        $this->assertDatabaseCount('pos_daily_closings', 0);
+        $this->assertDatabaseCount('cooperative_ledger_entries', 0);
     }
 
-    public function test_global_user_with_home_organization_defaults_to_home_org(): void
+    public function test_unit_scope_ignores_foreign_session_for_http_and_direct_closing(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $actor = $this->createClosingUser($orgA);
+        $this->withSession(['active_organization_id' => $orgB->id])->actingAs($actor);
+
+        foreach ([null, $orgA->id] as $index => $target) {
+            $date = now()->subDays($index)->toDateString();
+            $this->getJson(route('cooperative.pos.closings.index', ['date' => $date, 'organization_id' => $target]))
+                ->assertOk();
+            $this->postJson(route('cooperative.pos.closings.close'), ['date' => $date, 'organization_id' => $target])
+                ->assertRedirect(route('cooperative.pos.closings.index', ['date' => $date, 'organization_id' => $orgA->id]));
+            $closing = $this->service->closeDay(now()->subDays($index + 2)->toDateString(), $actor, $target);
+            $this->assertSame($orgA->id, $closing->organization_id);
+        }
+
+        $this->assertDatabaseMissing('pos_daily_closings', ['organization_id' => $orgB->id]);
+        $this->postJson(route('cooperative.pos.closings.close'), [
+            'date' => now()->toDateString(), 'organization_id' => $orgB->id,
+        ])->assertForbidden();
+        $this->expectException(AuthorizationException::class);
+        $this->service->closeDay(now()->toDateString(), $actor, $orgB->id);
+    }
+
+    public function test_closing_uses_authoritative_visibility_even_when_actor_home_differs(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $actor = $this->createClosingUser($orgB);
+        // A controlled authority seam proves the domain never adds a home-org fallback.
+        $this->mock(OrganizationScopeService::class)->shouldReceive('visibilityFor')
+            ->with($actor, 'view_cooperative_all')
+            ->andReturn(\App\Support\OrganizationVisibility::organization($orgA->id));
+        $this->withSession(['active_organization_id' => $orgB->id]);
+
+        $closing = $this->service->closeDay(now()->toDateString(), $actor);
+        $this->assertSame($orgA->id, $closing->organization_id);
+        $this->expectException(AuthorizationException::class);
+        $this->service->closeDay(now()->toDateString(), $actor, $orgB->id);
+    }
+
+    public function test_invalid_explicit_global_targets_never_fall_back_in_http_or_service(): void
     {
         [$orgA] = $this->createOrganizations();
-        $globalUser = $this->createGlobalOperator($orgA);
+        $actor = $this->createGlobalOperator($orgA);
+        $this->withSession(['active_organization_id' => $orgA->id])->actingAs($actor);
         $today = now()->toDateString();
 
-        $this->actingAs($globalUser)
-            ->get(route('cooperative.pos.closings.index', ['date' => $today]))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Cooperative/Pos/Closings/Index')
-                ->where('organization_id', (string) $orgA->id)
-            );
+        foreach (['', 'invalid-id', (string) \Illuminate\Support\Str::uuid()] as $target) {
+            $this->getJson(route('cooperative.pos.closings.index', ['date' => $today, 'organization_id' => $target]))
+                ->assertUnprocessable()->assertJsonValidationErrors('organization_id');
+            $this->postJson(route('cooperative.pos.closings.close'), ['date' => $today, 'organization_id' => $target])
+                ->assertUnprocessable()->assertJsonValidationErrors('organization_id');
+            try {
+                $this->service->closeDay($today, $actor, $target);
+                $this->fail('Invalid target must not resolve to home or session.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('organization_id', $exception->errors());
+            }
+        }
+
+        $this->getJson(route('cooperative.pos.closings.index', ['organization_id' => [$orgA->id]]))
+            ->assertUnprocessable()->assertJsonValidationErrors('organization_id');
+        $this->assertDatabaseCount('pos_daily_closings', 0);
     }
 
     // =========================================================================
     // GROUP 8: CONCURRENCY & SERIALIZATION
     // =========================================================================
 
-    public function test_deterministic_concurrency_sale_after_closing_committed_is_rejected(): void
+    public function test_sequential_sale_after_closing_committed_is_rejected(): void
     {
         [$orgA] = $this->createOrganizations();
         $cashierA = $this->createCashier($orgA);
@@ -956,7 +1027,7 @@ class PosDailyClosingOrganizationIsolationTest extends TestCase
         ], $cashierA);
     }
 
-    public function test_deterministic_concurrency_sale_committed_before_closing_is_included_in_snapshot(): void
+    public function test_sequential_sale_committed_before_closing_is_included_in_snapshot(): void
     {
         [$orgA] = $this->createOrganizations();
         $cashierA = $this->createCashier($orgA);

@@ -9,6 +9,7 @@ use App\Models\PosTransaction;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class PosDailyClosingService
@@ -133,16 +134,21 @@ class PosDailyClosingService
             return (string) $visibility->organizationId;
         }
 
-        $resolved = $targetOrgId ?? session('active_organization_id');
-        if (empty($resolved)) {
+        if ($targetOrgId === null || $targetOrgId === '') {
             throw ValidationException::withMessages([
                 'organization_id' => 'Target organisasi wajib ditentukan untuk pengguna global.',
             ]);
         }
 
+        if (! Str::isUuid($targetOrgId)) {
+            throw ValidationException::withMessages([
+                'organization_id' => 'Organisasi target tidak ditemukan.',
+            ]);
+        }
+
         try {
-            return $scopeService->assertOrganizationIdentifier($resolved);
-        } catch (\Throwable) {
+            return $scopeService->assertOrganizationIdentifier($targetOrgId);
+        } catch (AuthorizationException) {
             throw ValidationException::withMessages([
                 'organization_id' => 'Organisasi target tidak ditemukan.',
             ]);

@@ -149,11 +149,29 @@ class OrganizationScopeService
     public function scopeVisibleTo(Builder $query, User $user, ?string $globalPermission = null): Builder
     {
         $model = $query->getModel();
-        $path = $this->pathFor($model);
+        $this->pathFor($model);
         $visibility = $this->visibilityFor($user, $globalPermission ?? $this->globalPermissionFor($model));
+
+        return $this->applyVisibility($query, $visibility);
+    }
+
+    /**
+     * Apply an explicit OrganizationVisibility value object to a query builder.
+     *
+     * @param  Builder<Model>  $query
+     * @return Builder<Model>
+     */
+    public function applyVisibility(Builder $query, OrganizationVisibility $visibility): Builder
+    {
+        $model = $query->getModel();
+        $path = $this->pathFor($model);
 
         if ($visibility->state === OrganizationVisibilityState::GLOBAL) {
             return $query;
+        }
+
+        if ($visibility->state === OrganizationVisibilityState::DENIED) {
+            throw new AuthorizationException('Organization visibility is denied.');
         }
 
         $segments = explode('.', $path);

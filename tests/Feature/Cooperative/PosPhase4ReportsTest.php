@@ -54,7 +54,7 @@ class PosPhase4ReportsTest extends TestCase
 
         $service = app(PosSalesReportService::class);
         $today = now()->toDateString();
-        $summary = $service->summaryForPeriod($today, $today);
+        $summary = $service->summaryForPeriod($cashier, $today, $today);
 
         $this->assertSame(2, $summary['transactions']);
         $this->assertSame(25000.0, $summary['gross_sales']);
@@ -87,7 +87,7 @@ class PosPhase4ReportsTest extends TestCase
         ], $cashier);
 
         $service = app(PosSalesReportService::class);
-        $rows = $service->paymentReconciliation(now()->toDateString(), now()->toDateString());
+        $rows = $service->paymentReconciliation($cashier, now()->toDateString(), now()->toDateString());
 
         $this->assertCount(2, $rows);
         $methods = collect($rows)->pluck('method')->all();
@@ -114,7 +114,7 @@ class PosPhase4ReportsTest extends TestCase
         ], $cashier);
 
         $service = app(PosSalesReportService::class);
-        $trend = $service->dailyTrend(now()->toDateString(), now()->toDateString());
+        $trend = $service->dailyTrend($cashier, now()->toDateString(), now()->toDateString());
 
         $this->assertCount(1, $trend);
         $this->assertSame(5000.0, $trend[0]['revenue']);
@@ -150,7 +150,7 @@ class PosPhase4ReportsTest extends TestCase
         ], $cashier);
 
         $report = app(PosSalesReportService::class);
-        $top = $report->topMembers(now()->toDateString(), now()->toDateString());
+        $top = $report->topMembers($cashier, now()->toDateString(), now()->toDateString());
 
         $this->assertSame($m1->id, $top[0]['cooperative_member_id']);
         $this->assertSame(20000.0, $top[0]['total']);
@@ -175,7 +175,7 @@ class PosPhase4ReportsTest extends TestCase
         ], $cashier);
 
         $report = app(PosSalesReportService::class);
-        $rows = $report->productSalesForPeriod(now()->toDateString(), now()->toDateString());
+        $rows = $report->productSalesForPeriod($cashier, now()->toDateString(), now()->toDateString());
 
         $this->assertCount(2, $rows);
         $p1Row = $rows->firstWhere('pos_product_id', $p1->id);

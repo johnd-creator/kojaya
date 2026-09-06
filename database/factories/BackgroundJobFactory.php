@@ -60,4 +60,47 @@ class BackgroundJobFactory extends Factory
             'finished_at' => now(),
         ]);
     }
+
+    public function withoutReportScope(): static
+    {
+        return $this->state(function (array $attributes) {
+            $metadata = $attributes['metadata'] ?? [];
+            $metadata['__omit_report_scope__'] = true;
+
+            return ['metadata' => $metadata];
+        });
+    }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (\App\Models\BackgroundJob $job) {
+            $metadata = $job->metadata ?? [];
+            if (! is_array($metadata)) {
+                return;
+            }
+
+            if (! empty($metadata['__omit_report_scope__'])) {
+                unset($metadata['__omit_report_scope__'], $metadata['report_scope']);
+                $job->metadata = $metadata;
+
+                return;
+            }
+
+            if (array_key_exists('report_scope', $metadata)) {
+                return;
+            }
+
+            if ($job->type === 'pos.report.pdf') {
+                $user = $job->user ?? ($job->user_id ? User::find($job->user_id) : null);
+                if ($user) {
+                    $metadata['report_scope'] = [
+                        'version' => 1,
+                        'mode' => $user->organization_id ? 'organization' : 'global',
+                        'organization_id' => $user->organization_id ? (string) $user->organization_id : null,
+                    ];
+                    $job->metadata = $metadata;
+                }
+            }
+        });
+    }
 }

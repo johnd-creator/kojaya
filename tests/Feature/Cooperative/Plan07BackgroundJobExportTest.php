@@ -258,7 +258,7 @@ class Plan07BackgroundJobExportTest extends TestCase
         {
             public function __construct() {}
 
-            public function summaryForPeriod(string $from, string $to, array $filters = []): array
+            public function summaryForPeriod(User $actor, string $from, string $to, array $filters = []): array
             {
                 throw new \RuntimeException('forced failure for test');
             }
@@ -302,7 +302,11 @@ class Plan07BackgroundJobExportTest extends TestCase
 
     private function cashier(?string $name = null): User
     {
-        $user = User::factory()->create(['name' => $name ?? 'cashier']);
+        $org = \App\Models\Organization::factory()->create();
+        $user = User::factory()->create([
+            'name' => $name ?? 'cashier',
+            'organization_id' => $org->id,
+        ]);
         $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
 
         return $user;

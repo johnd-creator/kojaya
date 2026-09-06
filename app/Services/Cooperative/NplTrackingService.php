@@ -2,37 +2,67 @@
 
 namespace App\Services\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanRiskRating;
 use App\Enums\LoanStatus;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 class NplTrackingService
 {
+    public function __construct(
+        private readonly OrganizationScopedQueryService $scopeService,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
-    public function agingReport(?Carbon $asOf = null): array
+    public function agingReport(User $actor, ?Carbon $asOf = null): array
     {
         $asOf ??= today();
 
-        return $this->computeAgingReport($asOf);
+        return $this->computeAgingReport($actor, $asOf);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function agingBuckets(User $actor, ?Carbon $asOf = null): array
+    {
+        return $this->agingReport($actor, $asOf)['buckets'];
+    }
+
+    public function nplRatio(User $actor, ?Carbon $asOf = null): float
+    {
+        return $this->agingReport($actor, $asOf)['npl_ratio'];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function computeAgingReport(CarbonInterface $asOf): array
+    private function computeAgingReport(User $actor, CarbonInterface $asOf): array
     {
-        $activeOutstanding = (float) Loan::query()
+        $scopedLoanQuery = $this->scopeService->scopeVisibleTo(Loan::query(), $actor);
+
+        $activeOutstanding = (float) (clone $scopedLoanQuery)
             ->where('status', LoanStatus::Active->value)
             ->sum('outstanding_amount');
 
+        $eligibleLoanIds = (clone $scopedLoanQuery)
+            ->whereIn('status', [
+                LoanStatus::Active->value,
+                LoanStatus::Approved->value,
+                LoanStatus::Defaulted->value,
+            ])
+            ->pluck('id');
+
         $rows = LoanInstallment::query()
             ->with('loan.loanType', 'loan.member')
+            ->whereIn('loan_id', $eligibleLoanIds)
             ->whereDate('due_date', '<', $asOf->toDateString())
             ->whereIn('status', [
                 InstallmentStatus::Pending->value,

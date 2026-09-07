@@ -1759,6 +1759,8 @@ class CooperativeFeatureTest extends TestCase
             'points' => 8,
         ]);
 
+        Carbon::setTestNow('2026-05-15 10:00:01');
+
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
             'client_reference' => 'POINT-002',
             'payment_method' => 'CASH',
@@ -1978,6 +1980,8 @@ class CooperativeFeatureTest extends TestCase
                 ['pos_product_id' => $firstProduct->id, 'quantity' => 2],
             ],
         ])->assertRedirect();
+
+        Carbon::setTestNow('2026-05-15 10:00:01');
 
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
             'client_reference' => 'POS-SHU-002',

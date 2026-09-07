@@ -40,7 +40,7 @@ class PosPhase6OfflineSyncTest extends TestCase
     public function test_process_dispatches_to_transaction_service_with_replay(): void
     {
         $user = $this->cashier();
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $user->organization_id]);
         $product = PosProduct::factory()->create([
             'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,
@@ -75,7 +75,7 @@ class PosPhase6OfflineSyncTest extends TestCase
     public function test_batch_processing_handles_multiple_keys(): void
     {
         $user = $this->cashier();
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $user->organization_id]);
         $product = PosProduct::factory()->create([
             'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,
@@ -131,7 +131,7 @@ class PosPhase6OfflineSyncTest extends TestCase
     public function test_catalog_endpoint_returns_active_products(): void
     {
         $user = $this->cashier();
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $user->organization_id]);
         PosProduct::factory()->count(3)->create([
             'organization_id' => $user->organization_id,
             'pos_category_id' => $category->id,

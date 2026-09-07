@@ -63,7 +63,7 @@ class PosTransactionConcurrencyTest extends TestCase
     {
         $organization = Organization::factory()->create();
         $cashier = User::factory()->create(['organization_id' => $organization->id]);
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $organization->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $organization->id,
             'cost_price' => 6000,

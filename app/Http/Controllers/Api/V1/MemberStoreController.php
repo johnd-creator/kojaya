@@ -17,9 +17,21 @@ class MemberStoreController extends Controller
 {
     public function catalog(Request $request): JsonResponse
     {
+        $member = $request->user()?->cooperativeMember()->active()->first();
+        abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
+
+        $organizationId = $member->organization_id ?? $request->user()?->organization_id;
+        abort_if(empty($organizationId), 403, 'Organisasi koperasi tidak ditemukan.');
+
         $products = PosProduct::query()
+            ->where('organization_id', $organizationId)
             ->sellable()
-            ->with('category')
+            ->with(['category' => function ($query) use ($organizationId): void {
+                $query->where(function ($q) use ($organizationId): void {
+                    $q->where('organization_id', $organizationId)
+                        ->orWhereNull('organization_id');
+                });
+            }])
             ->when($request->filled('search'), function (Builder $query) use ($request): void {
                 $search = $request->string('search')->toString();
                 $query->where(function (Builder $query) use ($search): void {
@@ -28,10 +40,16 @@ class MemberStoreController extends Controller
                         ->orWhere('brand', 'like', "%{$search}%");
                 });
             })
-            ->when($request->filled('category'), function (Builder $query) use ($request): void {
-                $query->whereHas('category', function (Builder $query) use ($request): void {
-                    $category = $request->string('category')->toString();
-                    $query->where('name', $category)->orWhere('slug', $category);
+            ->when($request->filled('category'), function (Builder $query) use ($request, $organizationId): void {
+                $category = $request->string('category')->toString();
+                $query->whereHas('category', function (Builder $query) use ($category, $organizationId): void {
+                    $query->where(function ($q) use ($organizationId): void {
+                        $q->where('organization_id', $organizationId)
+                            ->orWhereNull('organization_id');
+                    })
+                        ->where(function ($q) use ($category): void {
+                            $q->where('name', $category)->orWhere('slug', $category);
+                        });
                 });
             })
             ->orderBy('name')
@@ -62,9 +80,12 @@ class MemberStoreController extends Controller
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
+        $organizationId = $member->organization_id ?? $request->user()?->organization_id;
+        abort_if(empty($organizationId), 403, 'Organisasi koperasi tidak ditemukan.');
+
         $clientReference = (string) ($request->validated('client_reference')
             ?: 'STORE-'.$member->id.'-'.now()->format('YmdHisv'));
-        $items = $this->validatedItems($request);
+        $items = $this->validatedItems($request, (string) $organizationId);
         $subtotal = array_sum(array_map(fn (array $item): float => (float) $item['line_total'], $items));
         abort_if($subtotal <= 0, 422, 'Total belanja harus lebih dari nol.');
 
@@ -133,12 +154,13 @@ class MemberStoreController extends Controller
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function validatedItems(StoreMemberStoreOrderRequest $request): array
+    private function validatedItems(StoreMemberStoreOrderRequest $request, string $organizationId): array
     {
         $items = [];
 
         foreach ($request->validated('items') as $item) {
             $product = PosProduct::query()
+                ->where('organization_id', $organizationId)
                 ->sellable()
                 ->whereKey($item['pos_product_id'])
                 ->firstOrFail();

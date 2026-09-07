@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
@@ -12,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class PosCategoryOrganizationIsolationTest extends TestCase
@@ -899,5 +901,185 @@ class PosCategoryOrganizationIsolationTest extends TestCase
             'name' => 'Model Hook Test',
             'sale_price' => 1000,
         ]);
+    }
+
+    /**
+     * API Catalog: Member store catalog is strictly scoped to member organization.
+     */
+    public function test_api_member_store_catalog_is_strictly_scoped_to_member_organization(): void
+    {
+        $userA = User::factory()->create(['organization_id' => $this->organization->id]);
+        $memberA = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => $userA->id,
+        ]);
+
+        $catA = PosCategory::factory()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Kategori API A',
+            'slug' => 'kategori-api-a',
+        ]);
+        $prodA = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => $catA->id,
+            'name' => 'Produk Toko A',
+            'is_active' => true,
+            'stock' => 10,
+        ]);
+
+        $catB = PosCategory::factory()->create([
+            'organization_id' => $this->otherOrganization->id,
+            'name' => 'Kategori API B',
+            'slug' => 'kategori-api-b',
+        ]);
+        $prodB = PosProduct::factory()->create([
+            'organization_id' => $this->otherOrganization->id,
+            'pos_category_id' => $catB->id,
+            'name' => 'Produk Toko B',
+            'is_active' => true,
+            'stock' => 10,
+        ]);
+
+        Sanctum::actingAs($userA, ['member:read']);
+
+        $response = $this->getJson('/api/v1/member/store/catalog');
+        $response->assertOk();
+
+        $items = collect($response->json('data.items'));
+        $this->assertTrue($items->pluck('id')->contains((string) $prodA->id));
+        $this->assertFalse($items->pluck('id')->contains((string) $prodB->id));
+
+        $categories = $response->json('data.categories');
+        $this->assertContains('Kategori API A', $categories);
+        $this->assertNotContains('Kategori API B', $categories);
+
+        // Filtering by foreign category yields empty
+        $filteredResponse = $this->getJson('/api/v1/member/store/catalog?category=kategori-api-b');
+        $filteredResponse->assertOk();
+        $this->assertEmpty($filteredResponse->json('data.items'));
+    }
+
+    /**
+     * API Store Order: Member store order rejects purchasing foreign organization products.
+     */
+    public function test_api_member_store_order_rejects_foreign_organization_products(): void
+    {
+        $userA = User::factory()->create(['organization_id' => $this->organization->id]);
+        $memberA = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => $userA->id,
+        ]);
+
+        $prodB = PosProduct::factory()->create([
+            'organization_id' => $this->otherOrganization->id,
+            'name' => 'Produk B Terlarang',
+            'is_active' => true,
+            'sale_price' => 20000,
+            'stock' => 10,
+        ]);
+
+        Sanctum::actingAs($userA, ['member:read', 'member:write']);
+
+        $response = $this->postJson('/api/v1/member/store/orders', [
+            'items' => [
+                ['pos_product_id' => $prodB->id, 'quantity' => 1],
+            ],
+            'client_reference' => 'ATTACK-CROSS-ORG-001',
+        ]);
+
+        // Validation rule Rule::exists rejects foreign product, returning 422
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('member_payment_intents', [
+            'client_reference' => 'ATTACK-CROSS-ORG-001',
+        ]);
+    }
+
+    /**
+     * API POS Sync Catalog: Pos sync catalog is strictly scoped to cashier organization.
+     */
+    public function test_api_pos_sync_catalog_is_strictly_scoped_to_cashier_organization(): void
+    {
+        $cashierA = User::factory()->create(['organization_id' => $this->organization->id]);
+        $cashierA->givePermissionTo('access_cooperative_pos');
+
+        $prodA = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Sync Prod A',
+            'is_active' => true,
+            'is_discontinued' => false,
+        ]);
+        $prodB = PosProduct::factory()->create([
+            'organization_id' => $this->otherOrganization->id,
+            'name' => 'Sync Prod B',
+            'is_active' => true,
+            'is_discontinued' => false,
+        ]);
+
+        Sanctum::actingAs($cashierA, ['pos:read']);
+
+        $response = $this->getJson('/api/v1/pos/sync/catalog');
+        $response->assertOk();
+
+        $data = collect($response->json('data'));
+        $this->assertTrue($data->pluck('id')->contains($prodA->id));
+        $this->assertFalse($data->pluck('id')->contains($prodB->id));
+    }
+
+    /**
+     * API POS Products: Products listing endpoint is strictly scoped to user organization.
+     */
+    public function test_api_pos_products_endpoint_is_strictly_scoped_to_user_organization(): void
+    {
+        $cashierA = User::factory()->create(['organization_id' => $this->organization->id]);
+        $cashierA->givePermissionTo('access_cooperative_pos');
+
+        $catA = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'Cat A']);
+        $catB = PosCategory::factory()->create(['organization_id' => $this->otherOrganization->id, 'name' => 'Cat B']);
+
+        $prodA = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => $catA->id,
+            'name' => 'API Prod A',
+            'is_active' => true,
+        ]);
+        $prodB = PosProduct::factory()->create([
+            'organization_id' => $this->otherOrganization->id,
+            'pos_category_id' => $catB->id,
+            'name' => 'API Prod B',
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($cashierA, ['pos:read']);
+
+        $response = $this->getJson('/api/v1/pos/products');
+        $response->assertOk();
+
+        $data = collect($response->json('data'));
+        $this->assertTrue($data->pluck('id')->contains($prodA->id));
+        $this->assertFalse($data->pluck('id')->contains($prodB->id));
+
+        // Foreign category is not eager loaded
+        $productRow = $data->firstWhere('id', $prodA->id);
+        $this->assertSame('Cat A', $productRow['category']['name']);
+    }
+
+    /**
+     * API Fail-Closed: API endpoints fail closed when actor organization context is missing.
+     */
+    public function test_api_endpoints_fail_closed_when_actor_organization_is_missing(): void
+    {
+        $unscopedUser = User::factory()->create(['organization_id' => null]);
+        $unscopedUser->givePermissionTo('access_cooperative_pos');
+
+        // POS Sync Catalog without organization fails closed
+        Sanctum::actingAs($unscopedUser, ['pos:read']);
+        $this->getJson('/api/v1/pos/sync/catalog')->assertForbidden();
+
+        // POS Products without organization fails closed
+        $this->getJson('/api/v1/pos/products')->assertForbidden();
+
+        // Member Store Catalog without active member/organization fails closed
+        Sanctum::actingAs($unscopedUser, ['member:read']);
+        $this->getJson('/api/v1/member/store/catalog')->assertForbidden();
     }
 }

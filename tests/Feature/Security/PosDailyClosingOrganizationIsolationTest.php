@@ -966,9 +966,13 @@ class PosDailyClosingOrganizationIsolationTest extends TestCase
         [$orgA, $orgB] = $this->createOrganizations();
         $actor = $this->createClosingUser($orgB);
         // A controlled authority seam proves the domain never adds a home-org fallback.
-        $this->mock(OrganizationScopeService::class)->shouldReceive('visibilityFor')
-            ->with($actor, 'view_cooperative_all')
-            ->andReturn(\App\Support\OrganizationVisibility::organization($orgA->id));
+        $scopeMock = $this->mock(OrganizationScopeService::class);
+        $scopeMock->shouldReceive('resolveTargetOrganization')
+            ->with($actor, null, 'view_cooperative_all')
+            ->andReturn($orgA->id);
+        $scopeMock->shouldReceive('resolveTargetOrganization')
+            ->with($actor, $orgB->id, 'view_cooperative_all')
+            ->andThrow(new AuthorizationException('Pengguna tidak diizinkan mengakses organisasi lain.'));
         $this->withSession(['active_organization_id' => $orgB->id]);
 
         $closing = $this->service->closeDay(now()->toDateString(), $actor);

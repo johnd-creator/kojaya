@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         failOnSkipped="true"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -10,9 +11,10 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
-            <exclude>tests/Feature/LegacyErp</exclude>
-            <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Backup/PostgresRestoreDrillTest.php</exclude>
         </testsuite>
     </testsuites>

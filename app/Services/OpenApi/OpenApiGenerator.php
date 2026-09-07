@@ -824,6 +824,42 @@ class OpenApiGenerator
             str_ends_with($uri, 'api/devices/push-token') => ['$ref' => '#/components/schemas/RegisterDeviceTokenRequest'],
             str_ends_with($uri, 'api/token/rotate') => ['$ref' => '#/components/schemas/RotateTokenRequest'],
             str_ends_with($uri, 'api/v1/member/onboarding/steps') => ['$ref' => '#/components/schemas/MemberOnboardingStepRequest'],
+            str_ends_with($uri, 'api/v1/pos/returns') => [
+                'type' => 'object',
+                'required' => ['pos_transaction_id', 'reason', 'items'],
+                'properties' => [
+                    'pos_transaction_id' => ['type' => 'integer', 'example' => 1],
+                    'reason' => ['type' => 'string', 'example' => 'Barang rusak'],
+                    'items' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'required' => ['pos_transaction_item_id', 'quantity'],
+                            'properties' => [
+                                'pos_transaction_item_id' => ['type' => 'integer', 'example' => 1],
+                                'quantity' => ['type' => 'integer', 'example' => 1],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            str_ends_with($uri, 'api/v1/pos/sync/enqueue') => [
+                'type' => 'object',
+                'required' => ['idempotency_key', 'endpoint', 'method', 'payload'],
+                'properties' => [
+                    'idempotency_key' => ['type' => 'string', 'example' => 'sync-12345'],
+                    'client_id' => ['type' => 'string', 'nullable' => true],
+                    'device_id' => ['type' => 'string', 'nullable' => true],
+                    'pos_cashier_shift_id' => ['type' => 'integer', 'nullable' => true],
+                    'endpoint' => [
+                        'type' => 'string',
+                        'enum' => ['pos.transactions.store'],
+                        'example' => 'pos.transactions.store',
+                    ],
+                    'method' => ['type' => 'string', 'example' => 'POST'],
+                    'payload' => ['type' => 'object'],
+                ],
+            ],
             default => null,
         };
     }

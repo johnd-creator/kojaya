@@ -16,7 +16,7 @@ class StorePosCategoryRequest extends FormRequest
         }
 
         try {
-            app(\App\Services\Cooperative\PosCategoryAccessService::class)->assertCanCreate($user, $this->input('organization_id'));
+            app(\App\Services\Cooperative\PosCategoryAccessService::class)->assertCanCreate($user);
 
             return true;
         } catch (\Illuminate\Auth\Access\AuthorizationException) {
@@ -46,7 +46,7 @@ class StorePosCategoryRequest extends FormRequest
         }
 
         if ($user->can('view_cooperative_all')) {
-            return $this->input('organization_id') ?? session('active_organization_id') ?? ($user->organization_id ? (string) $user->organization_id : null);
+            return session('active_organization_id') ?? ($user->organization_id ? (string) $user->organization_id : null);
         }
 
         return $user->organization_id ? (string) $user->organization_id : null;

@@ -1328,7 +1328,7 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
      */
     private function createProduct(Organization $org, array $attrs = []): PosProduct
     {
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
 
         return PosProduct::factory()->create([
             'organization_id' => $org->id,

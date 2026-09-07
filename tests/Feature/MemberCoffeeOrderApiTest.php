@@ -36,6 +36,7 @@ class MemberCoffeeOrderApiTest extends TestCase
     {
         $member = $this->actingMember(['member:read']);
         $category = PosCategory::factory()->create([
+            'organization_id' => $member->organization_id,
             'name' => 'Signature',
             'slug' => 'signature',
         ]);
@@ -76,6 +77,7 @@ class MemberCoffeeOrderApiTest extends TestCase
     {
         $member = $this->actingMember(['member:write']);
         $category = PosCategory::factory()->create([
+            'organization_id' => $member->organization_id,
             'name' => 'Espresso',
             'slug' => 'espresso',
         ]);
@@ -140,7 +142,7 @@ class MemberCoffeeOrderApiTest extends TestCase
     public function test_coffee_order_does_not_reuse_client_reference_for_a_different_amount(): void
     {
         $this->actingMember(['member:write']);
-        $category = PosCategory::factory()->create(['name' => 'Espresso', 'slug' => 'espresso-amount']);
+        $category = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'Espresso', 'slug' => 'espresso-amount']);
         $product = PosProduct::factory()->create([
             'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,

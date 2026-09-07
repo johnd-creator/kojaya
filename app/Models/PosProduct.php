@@ -53,7 +53,7 @@ class PosProduct extends Model
                     ->whereKey($product->pos_category_id)
                     ->value('organization_id');
 
-                if ($categoryOrg !== null && (string) $categoryOrg !== (string) $product->organization_id) {
+                if ($categoryOrg === null || (string) $categoryOrg !== (string) $product->organization_id) {
                     throw new \InvalidArgumentException('Cross-organization product category association is prohibited.');
                 }
             }

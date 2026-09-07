@@ -40,14 +40,11 @@ class UpdatePosProductRequest extends FormRequest
             'pos_category_id' => [
                 'nullable',
                 Rule::exists('pos_categories', 'id')->where(function ($query) use ($productOrgId): void {
-                    $query->where(function ($q) use ($productOrgId): void {
-                        if ($productOrgId !== null) {
-                            $q->where('organization_id', $productOrgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    });
+                    if ($productOrgId !== null) {
+                        $query->where('organization_id', $productOrgId);
+                    } else {
+                        $query->whereNull('organization_id');
+                    }
                 }),
             ],
             'sku' => ['required', 'string', 'max:60', Rule::unique('pos_products', 'sku')->ignore($product?->id)],

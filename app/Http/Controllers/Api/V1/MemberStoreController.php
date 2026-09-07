@@ -27,10 +27,7 @@ class MemberStoreController extends Controller
             ->where('organization_id', $organizationId)
             ->sellable()
             ->with(['category' => function ($query) use ($organizationId): void {
-                $query->where(function ($q) use ($organizationId): void {
-                    $q->where('organization_id', $organizationId)
-                        ->orWhereNull('organization_id');
-                });
+                $query->where('organization_id', $organizationId);
             }])
             ->when($request->filled('search'), function (Builder $query) use ($request): void {
                 $search = $request->string('search')->toString();
@@ -43,10 +40,7 @@ class MemberStoreController extends Controller
             ->when($request->filled('category'), function (Builder $query) use ($request, $organizationId): void {
                 $category = $request->string('category')->toString();
                 $query->whereHas('category', function (Builder $query) use ($category, $organizationId): void {
-                    $query->where(function ($q) use ($organizationId): void {
-                        $q->where('organization_id', $organizationId)
-                            ->orWhereNull('organization_id');
-                    })
+                    $query->where('organization_id', $organizationId)
                         ->where(function ($q) use ($category): void {
                             $q->where('name', $category)->orWhere('slug', $category);
                         });

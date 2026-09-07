@@ -714,14 +714,16 @@ class PosCategoryOrganizationIsolationTest extends TestCase
             'name' => 'Legacy Cat A Only',
             'slug' => 'legacy-cat-a-only',
         ]);
-        PosProduct::factory()->create([
-            'organization_id' => $this->organization->id,
-            'pos_category_id' => $category->id,
-        ]);
-        PosProduct::factory()->create([
-            'organization_id' => $this->organization->id,
-            'pos_category_id' => $category->id,
-        ]);
+        PosProduct::withoutEvents(function () use ($category): void {
+            PosProduct::factory()->create([
+                'organization_id' => $this->organization->id,
+                'pos_category_id' => $category->id,
+            ]);
+            PosProduct::factory()->create([
+                'organization_id' => $this->organization->id,
+                'pos_category_id' => $category->id,
+            ]);
+        });
 
         $migration = require database_path('migrations/2026_09_07_000001_add_organization_id_to_pos_categories_table.php');
         $result = $migration->backfillOrganizationIds();
@@ -740,10 +742,12 @@ class PosCategoryOrganizationIsolationTest extends TestCase
             'name' => 'Legacy Cat B Only',
             'slug' => 'legacy-cat-b-only',
         ]);
-        PosProduct::factory()->create([
-            'organization_id' => $this->otherOrganization->id,
-            'pos_category_id' => $category->id,
-        ]);
+        PosProduct::withoutEvents(function () use ($category): void {
+            PosProduct::factory()->create([
+                'organization_id' => $this->otherOrganization->id,
+                'pos_category_id' => $category->id,
+            ]);
+        });
 
         $migration = require database_path('migrations/2026_09_07_000001_add_organization_id_to_pos_categories_table.php');
         $result = $migration->backfillOrganizationIds();
@@ -762,14 +766,16 @@ class PosCategoryOrganizationIsolationTest extends TestCase
             'name' => 'Shared Legacy Cat M03',
             'slug' => 'shared-legacy-cat-m03',
         ]);
-        $prodA = PosProduct::factory()->create([
-            'organization_id' => $this->organization->id,
-            'pos_category_id' => $category->id,
-        ]);
-        $prodB = PosProduct::factory()->create([
-            'organization_id' => $this->otherOrganization->id,
-            'pos_category_id' => $category->id,
-        ]);
+        PosProduct::withoutEvents(function () use ($category, &$prodA, &$prodB): void {
+            $prodA = PosProduct::factory()->create([
+                'organization_id' => $this->organization->id,
+                'pos_category_id' => $category->id,
+            ]);
+            $prodB = PosProduct::factory()->create([
+                'organization_id' => $this->otherOrganization->id,
+                'pos_category_id' => $category->id,
+            ]);
+        });
 
         $initialCategoryCount = PosCategory::count();
         $initialProductCount = PosProduct::count();
@@ -1081,5 +1087,340 @@ class PosCategoryOrganizationIsolationTest extends TestCase
         // Member Store Catalog without active member/organization fails closed
         Sanctum::actingAs($unscopedUser, ['member:read']);
         $this->getJson('/api/v1/member/store/catalog')->assertForbidden();
+    }
+
+    /**
+     * R1-A: Product create via HTTP rejects orphan PosCategory rows with organization_id NULL.
+     */
+    public function test_r1_a_product_create_rejects_orphan_pos_category(): void
+    {
+        $orphanCat = PosCategory::factory()->create(['organization_id' => null, 'name' => 'Orphan Cat R1-A']);
+
+        $response = $this->actingAs($this->admin)->post(route('cooperative.pos-products.store'), [
+            'pos_category_id' => $orphanCat->id,
+            'sku' => 'SKU-R1A-ORPHAN',
+            'name' => 'Product R1-A Orphan Cat',
+            'sale_price' => 15000,
+        ]);
+
+        $response->assertSessionHasErrors(['pos_category_id']);
+        $this->assertDatabaseMissing('pos_products', [
+            'sku' => 'SKU-R1A-ORPHAN',
+        ]);
+    }
+
+    /**
+     * R1-B: Product update via HTTP rejects orphan PosCategory rows with organization_id NULL.
+     */
+    public function test_r1_b_product_update_rejects_orphan_pos_category(): void
+    {
+        $product = PosProduct::factory()->create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => null,
+            'sku' => 'SKU-R1B-TEST',
+            'name' => 'Product R1-B Initial',
+            'sale_price' => 20000,
+        ]);
+        $orphanCat = PosCategory::factory()->create(['organization_id' => null, 'name' => 'Orphan Cat R1-B']);
+
+        $response = $this->actingAs($this->admin)->put(route('cooperative.pos-products.update', $product), [
+            'pos_category_id' => $orphanCat->id,
+            'sku' => 'SKU-R1B-TEST',
+            'name' => 'Product R1-B Attempted Update',
+            'sale_price' => 22000,
+        ]);
+
+        $response->assertSessionHasErrors(['pos_category_id']);
+        $product->refresh();
+        $this->assertNull($product->pos_category_id);
+    }
+
+    /**
+     * R1-C: Direct model save rejects orphan PosCategory rows with organization_id NULL.
+     */
+    public function test_r1_c_direct_model_save_rejects_orphan_pos_category(): void
+    {
+        $orphanCat = PosCategory::factory()->create(['organization_id' => null, 'name' => 'Orphan Cat R1-C']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Cross-organization product category association is prohibited.');
+
+        PosProduct::create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => $orphanCat->id,
+            'sku' => 'SKU-R1C-DIRECT',
+            'name' => 'Direct Save Orphan Test',
+            'sale_price' => 30000,
+        ]);
+    }
+
+    /**
+     * R1-D: Direct model save rejects cross-tenant PosCategory rows.
+     */
+    public function test_r1_d_direct_model_save_rejects_cross_tenant_pos_category(): void
+    {
+        $catB = PosCategory::factory()->create(['organization_id' => $this->otherOrganization->id, 'name' => 'Org B Cat R1-D']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Cross-organization product category association is prohibited.');
+
+        PosProduct::create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => $catB->id,
+            'sku' => 'SKU-R1D-DIRECT',
+            'name' => 'Direct Save Cross Tenant Test',
+            'sale_price' => 35000,
+        ]);
+    }
+
+    /**
+     * R1-E: Same-organization product category assignment succeeds across create, update, and direct save.
+     */
+    public function test_r1_e_same_organization_category_association_succeeds(): void
+    {
+        $catA1 = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'Org A Cat 1']);
+        $catA2 = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'Org A Cat 2']);
+
+        // 1. HTTP Create
+        $responseCreate = $this->actingAs($this->admin)->post(route('cooperative.pos-products.store'), [
+            'pos_category_id' => $catA1->id,
+            'sku' => 'SKU-R1E-HTTP',
+            'name' => 'Same Org Product',
+            'sale_price' => 12000,
+        ]);
+        $responseCreate->assertRedirect();
+        $product = PosProduct::where('sku', 'SKU-R1E-HTTP')->firstOrFail();
+        $this->assertSame($catA1->id, $product->pos_category_id);
+        $this->assertSame($this->organization->id, $product->organization_id);
+
+        // 2. HTTP Update
+        $responseUpdate = $this->actingAs($this->admin)->put(route('cooperative.pos-products.update', $product), [
+            'pos_category_id' => $catA2->id,
+            'sku' => 'SKU-R1E-HTTP',
+            'name' => 'Same Org Product Updated',
+            'sale_price' => 14000,
+        ]);
+        $responseUpdate->assertRedirect();
+        $product->refresh();
+        $this->assertSame($catA2->id, $product->pos_category_id);
+
+        // 3. Direct Model Save
+        $directProduct = PosProduct::create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => $catA1->id,
+            'sku' => 'SKU-R1E-MODEL',
+            'name' => 'Same Org Direct Product',
+            'sale_price' => 18000,
+        ]);
+        $this->assertSame($catA1->id, $directProduct->pos_category_id);
+    }
+
+    /**
+     * R1-F: Nullable category assignment succeeds across create, update, and direct save.
+     */
+    public function test_r1_f_nullable_category_association_succeeds(): void
+    {
+        $catA = PosCategory::factory()->create(['organization_id' => $this->organization->id]);
+
+        // 1. HTTP Create with null category
+        $responseCreate = $this->actingAs($this->admin)->post(route('cooperative.pos-products.store'), [
+            'pos_category_id' => null,
+            'sku' => 'SKU-R1F-NULLCAT',
+            'name' => 'Null Cat Product',
+            'sale_price' => 10000,
+        ]);
+        $responseCreate->assertRedirect();
+        $product = PosProduct::where('sku', 'SKU-R1F-NULLCAT')->firstOrFail();
+        $this->assertNull($product->pos_category_id);
+
+        // Assign category
+        $product->pos_category_id = $catA->id;
+        $product->save();
+        $this->assertSame($catA->id, $product->fresh()->pos_category_id);
+
+        // 2. HTTP Update clearing category to null
+        $responseUpdate = $this->actingAs($this->admin)->put(route('cooperative.pos-products.update', $product), [
+            'pos_category_id' => null,
+            'sku' => 'SKU-R1F-NULLCAT',
+            'name' => 'Null Cat Product Cleared',
+            'sale_price' => 10000,
+        ]);
+        $responseUpdate->assertRedirect();
+        $this->assertNull($product->fresh()->pos_category_id);
+
+        // 3. Direct Model Save with null category
+        $directProduct = PosProduct::create([
+            'organization_id' => $this->organization->id,
+            'pos_category_id' => null,
+            'sku' => 'SKU-R1F-DIRECT-NULL',
+            'name' => 'Direct Null Cat Product',
+            'sale_price' => 11000,
+        ]);
+        $this->assertNull($directProduct->pos_category_id);
+    }
+
+    /**
+     * R1-G: Category create by global operator uses only trusted server-side active organization context and ignores payload spoof.
+     */
+    public function test_r1_g_category_create_by_global_operator_ignores_payload_spoof_and_uses_trusted_session(): void
+    {
+        $globalUser = User::factory()->create(['organization_id' => null]);
+        $globalUser->givePermissionTo(['view_cooperative_all', 'manage_pos_categories']);
+
+        $response = $this->actingAs($globalUser)
+            ->withSession(['active_organization_id' => $this->organization->id])
+            ->post(route('cooperative.pos-categories.store'), [
+                'organization_id' => $this->otherOrganization->id,
+                'name' => 'Global Created Trusted Category',
+                'slug' => 'global-trusted-category',
+                'is_active' => true,
+            ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('pos_categories', [
+            'name' => 'Global Created Trusted Category',
+            'organization_id' => $this->organization->id,
+        ]);
+        $this->assertDatabaseMissing('pos_categories', [
+            'name' => 'Global Created Trusted Category',
+            'organization_id' => $this->otherOrganization->id,
+        ]);
+    }
+
+    /**
+     * R1-H: Category create by global operator fails closed when trusted server-side context is missing.
+     */
+    public function test_r1_h_category_create_by_global_operator_fails_closed_without_trusted_context(): void
+    {
+        $globalUser = User::factory()->create(['organization_id' => null]);
+        $globalUser->givePermissionTo(['view_cooperative_all', 'manage_pos_categories']);
+
+        // No active_organization_id session and user has no organization_id; even if payload passes organization_id, must fail closed.
+        $response = $this->actingAs($globalUser)
+            ->post(route('cooperative.pos-categories.store'), [
+                'organization_id' => $this->organization->id,
+                'name' => 'Should Fail Closed',
+                'slug' => 'should-fail-closed',
+                'is_active' => true,
+            ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('pos_categories', [
+            'name' => 'Should Fail Closed',
+        ]);
+    }
+
+    /**
+     * R1-I: Category create by tenant user ignores client request organization_id payload spoof.
+     */
+    public function test_r1_i_category_create_by_tenant_user_ignores_payload_spoof(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('cooperative.pos-categories.store'), [
+            'organization_id' => $this->otherOrganization->id,
+            'name' => 'Tenant Spoof Attempt',
+            'slug' => 'tenant-spoof-attempt',
+            'is_active' => true,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('pos_categories', [
+            'name' => 'Tenant Spoof Attempt',
+            'organization_id' => $this->organization->id,
+        ]);
+        $this->assertDatabaseMissing('pos_categories', [
+            'name' => 'Tenant Spoof Attempt',
+            'organization_id' => $this->otherOrganization->id,
+        ]);
+    }
+
+    /**
+     * R1-J: Category update ownership is immutable via HTTP and direct model save.
+     */
+    public function test_r1_j_category_update_ownership_is_immutable(): void
+    {
+        $category = PosCategory::factory()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Immutability Test Cat',
+            'slug' => 'immutability-test-cat',
+        ]);
+
+        // 1. HTTP PUT attempt with foreign organization_id in payload
+        $response = $this->actingAs($this->admin)->put(route('cooperative.pos-categories.update', $category), [
+            'organization_id' => $this->otherOrganization->id,
+            'name' => 'Immutability Test Cat Renamed',
+            'slug' => 'immutability-test-cat-renamed',
+            'is_active' => true,
+        ]);
+        $response->assertRedirect();
+        $category->refresh();
+        $this->assertSame('Immutability Test Cat Renamed', $category->name);
+        $this->assertSame($this->organization->id, $category->organization_id);
+
+        // 2. Direct model update attempt
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Organization ownership of a POS category is immutable.');
+        $category->update(['organization_id' => $this->otherOrganization->id]);
+    }
+
+    /**
+     * Orphan Visibility: Orphan PosCategory rows (organization_id NULL) remain invisible across all catalog surfaces.
+     */
+    public function test_orphan_pos_category_remains_invisible_across_all_surfaces(): void
+    {
+        $orphanCat = PosCategory::factory()->create([
+            'organization_id' => null,
+            'name' => 'Orphan Phantom Category',
+            'slug' => 'orphan-phantom-category',
+            'is_active' => true,
+        ]);
+
+        // 1. Category Index: Org A admin does not see orphan category
+        $responseCategories = $this->actingAs($this->admin)->get(route('cooperative.pos-categories.index'));
+        $responseCategories->assertOk();
+        $responseCategories->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Cooperative/Inventory/Categories/Index')
+            ->where('categories', fn ($cats) => ! collect($cats)->pluck('id')->contains($orphanCat->id))
+        );
+
+        // 2. Product Categories Dropdown: Org A admin does not see orphan category
+        $responseProducts = $this->actingAs($this->admin)->get(route('cooperative.pos-products.index'));
+        $responseProducts->assertOk();
+        $responseProducts->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Cooperative/Inventory/Products/Index')
+            ->where('categories', fn ($cats) => ! collect($cats)->pluck('id')->contains($orphanCat->id))
+        );
+
+        // 3. POS Register: Cashier does not see orphan category
+        $cashier = User::factory()->create(['organization_id' => $this->organization->id]);
+        $cashier->givePermissionTo('access_cooperative_pos');
+        $responseRegister = $this->actingAs($cashier)->get(route('cooperative.pos.index'));
+        $responseRegister->assertOk();
+        $responseRegister->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Cooperative/Pos/Register')
+            ->where('categories', fn ($cats) => ! collect($cats)->pluck('id')->contains($orphanCat->id))
+        );
+
+        // 4. Member Store Catalog API: Active member does not see orphan category
+        $memberUser = User::factory()->create(['organization_id' => $this->organization->id]);
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => $memberUser->id,
+        ]);
+        Sanctum::actingAs($memberUser, ['member:read']);
+        $responseMemberStore = $this->getJson('/api/v1/member/store/catalog');
+        $responseMemberStore->assertOk();
+        $catNames = collect($responseMemberStore->json('data.categories'));
+        $this->assertFalse($catNames->contains('Orphan Phantom Category'));
+
+        // 5. POS Products API: Cashier does not see orphan category
+        Sanctum::actingAs($cashier, ['pos:read']);
+        $responsePosApi = $this->getJson('/api/v1/pos/products');
+        $responsePosApi->assertOk();
+        $data = collect($responsePosApi->json('data'));
+        foreach ($data as $item) {
+            if (isset($item['category'])) {
+                $this->assertNotSame($orphanCat->id, $item['category']['id'] ?? null);
+            }
+        }
     }
 }

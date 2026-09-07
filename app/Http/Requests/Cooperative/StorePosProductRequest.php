@@ -26,14 +26,11 @@ class StorePosProductRequest extends FormRequest
                 'nullable',
                 Rule::exists('pos_categories', 'id')->where(function ($query): void {
                     $orgId = $this->targetOrganizationId();
-                    $query->where(function ($q) use ($orgId): void {
-                        if ($orgId !== null) {
-                            $q->where('organization_id', $orgId)
-                                ->orWhereNull('organization_id');
-                        } else {
-                            $q->whereNull('organization_id');
-                        }
-                    });
+                    if ($orgId !== null) {
+                        $query->where('organization_id', $orgId);
+                    } else {
+                        $query->whereRaw('1 = 0');
+                    }
                 }),
             ],
             'sku' => ['required', 'string', 'max:60', 'unique:pos_products,sku'],

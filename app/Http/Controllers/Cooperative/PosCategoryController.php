@@ -29,7 +29,7 @@ class PosCategoryController extends Controller
     public function store(StorePosCategoryRequest $request, PosCategoryAccessService $categoryAccess): RedirectResponse
     {
         $data = $request->validated();
-        $data['organization_id'] = $categoryAccess->assertCanCreate($request->user(), $request->input('organization_id'));
+        $data['organization_id'] = $categoryAccess->assertCanCreate($request->user());
 
         PosCategory::query()->create($data);
 

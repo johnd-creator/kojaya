@@ -416,6 +416,7 @@ class PaymentReservationStateMachineTest extends TestCase
     private function createProduct(string $name, float $price, int $stock): PosProduct
     {
         $category = PosCategory::factory()->create([
+            'organization_id' => $this->organization->id,
             'name' => 'Test',
             'slug' => 'test-'.uniqid(),
         ]);

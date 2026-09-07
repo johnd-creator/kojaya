@@ -27,11 +27,12 @@ class PosPhase0PolishingTest extends TestCase
     public function test_pos_product_can_be_created_with_brand_variant_unit_and_image(): void
     {
         Storage::fake('public');
+        $org = Organization::factory()->create();
         $user = User::factory()->create([
-            'organization_id' => Organization::factory()->create()->id,
+            'organization_id' => $org->id,
         ]);
         $user->assignRole('System Admin');
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
 
         $image = UploadedFile::fake()->image('product.jpg', 400, 400);
 
@@ -67,9 +68,11 @@ class PosPhase0PolishingTest extends TestCase
     public function test_image_can_be_removed_from_pos_product(): void
     {
         Storage::fake('public');
-        $user = User::factory()->create();
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->create([
+            'organization_id' => $org->id,
             'image_path' => 'pos-products/existing.jpg',
         ]);
         Storage::disk('public')->put('pos-products/existing.jpg', 'fake');
@@ -92,9 +95,11 @@ class PosPhase0PolishingTest extends TestCase
     public function test_image_can_be_updated_from_inventory_form_payload(): void
     {
         Storage::fake('public');
-        $user = User::factory()->create();
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
         $user->assignRole('System Admin');
         $product = PosProduct::factory()->create([
+            'organization_id' => $org->id,
             'image_path' => 'pos-products/old.jpg',
         ]);
         Storage::disk('public')->put('pos-products/old.jpg', 'fake');

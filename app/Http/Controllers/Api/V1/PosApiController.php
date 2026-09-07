@@ -25,10 +25,7 @@ class PosApiController extends Controller
             'data' => PosProduct::query()
                 ->where('organization_id', $organizationId)
                 ->with(['category' => function ($query) use ($organizationId): void {
-                    $query->where(function ($q) use ($organizationId): void {
-                        $q->where('organization_id', $organizationId)
-                            ->orWhereNull('organization_id');
-                    });
+                    $query->where('organization_id', $organizationId);
                 }])
                 ->where('is_active', true)
                 ->when($request->filled('search'), function ($query) use ($request): void {

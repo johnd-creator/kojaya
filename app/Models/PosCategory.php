@@ -27,6 +27,17 @@ class PosCategory extends Model implements OrganizationScopedModel
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::updating(function (PosCategory $category): void {
+            if ($category->isDirty('organization_id') && $category->getOriginal('organization_id') !== null) {
+                if ((string) $category->organization_id !== (string) $category->getOriginal('organization_id')) {
+                    throw new \InvalidArgumentException('Organization ownership of a POS category is immutable.');
+                }
+            }
+        });
+    }
+
     public function organizationScopePath(): string
     {
         return 'organization_id';

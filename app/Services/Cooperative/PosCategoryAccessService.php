@@ -53,13 +53,13 @@ class PosCategoryAccessService
         $this->resolveVisible($category, $user);
     }
 
-    public function assertCanCreate(User $user, ?string $requestOrgId = null): string
+    public function assertCanCreate(User $user): string
     {
         if (! $this->isGlobalOperator($user)) {
             return $this->organizationIdFor($user);
         }
 
-        $organizationId = $requestOrgId ?? session('active_organization_id') ?? $user->organization_id;
+        $organizationId = session('active_organization_id') ?? ($user->organization_id ? (string) $user->organization_id : null);
 
         if ($organizationId === null || $organizationId === '') {
             throw new AuthorizationException('An explicit target organization is required to create a POS category.');
@@ -86,7 +86,7 @@ class PosCategoryAccessService
             ]);
         }
 
-        if ($category->organization_id !== null && (string) $category->organization_id !== (string) $organizationId) {
+        if ($category->organization_id === null || (string) $category->organization_id !== (string) $organizationId) {
             throw ValidationException::withMessages([
                 'pos_category_id' => 'The selected category does not belong to the product organization.',
             ]);

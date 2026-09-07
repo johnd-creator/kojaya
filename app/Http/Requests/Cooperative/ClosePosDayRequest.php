@@ -18,6 +18,7 @@ class ClosePosDayRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date'],
+            'organization_id' => ['nullable', 'uuid'],
         ];
     }
 }

@@ -80,6 +80,24 @@ for (const authState of authStates) {
                         await assertNoHorizontalOverflow(page);
                     }
                     await captureScreen(page, testInfo, definition);
+                    if (definition.id === "pos-closings-index-default") {
+                        const organizationId = new URL(page.url()).searchParams.get("organization_id");
+                        expect(organizationId).toBeTruthy();
+                        const date = { desktop: "2099-01-01", tablet: "2099-01-02", mobile: "2099-01-03" }[testInfo.project.name];
+                        expect(date).toBeDefined();
+                        await page.locator('input[type="date"]').fill(date!);
+                        await page.getByRole("button", { name: "Terapkan", exact: true }).click();
+                        await expect(page).toHaveURL((url) => url.searchParams.get("date") === date
+                            && url.searchParams.get("organization_id") === organizationId);
+
+                        const closingRequest = page.waitForRequest((request) => request.method() === "POST"
+                            && new URL(request.url()).pathname === "/cooperative/pos/closings");
+                        await page.getByRole("button", { name: "Tutup Hari Ini", exact: true }).click();
+                        expect((await closingRequest).postDataJSON()).toMatchObject({ date, organization_id: organizationId });
+                        await expect(page.getByRole("button", { name: "Sudah Ditutup", exact: true })).toBeDisabled();
+                        await page.reload();
+                        await expect(page.getByRole("button", { name: "Sudah Ditutup", exact: true })).toBeDisabled();
+                    }
                 } finally {
                     await writeRuntimeReport(runtime, testInfo);
                 }

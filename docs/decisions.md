@@ -1432,6 +1432,7 @@ A unified, robust, and mathematically sound organization isolation foundation wa
    - **Safe Visible Object Resolution (`resolveVisible`):** Formally introduced `resolveVisible(Builder|string $queryOrClass, User $user, string|int $id, ?string $globalPermission = null): Model`. Scopes the query first, then resolves the record or throws `ModelNotFoundException` (404 Not Found), preventing cross-tenant resource enumeration.
    - **Existing Object Assertion (`assertVisible`):** Validates that an already-loaded model belongs to the actor's visible organization or throws `AuthorizationException` (403 Forbidden).
    - **Organization Identifier Validation (`assertOrganizationIdentifier`):** Verifies that a target organization ID exists in the database and is non-empty before operations.
+   - **POS Daily Closing Target (SEC-P1-06 R1):** `PosDailyClosingService::resolveClosingOrganization()` is the shared HTTP/domain target policy using `visibilityFor(user, 'view_cooperative_all')`. Unit actors use the authoritative visible organization and cannot override it. Global actors must explicitly select a valid organization for both closing queries and mutations; session and home organization are never implicit targets. Missing/invalid global targets raise `ValidationException` (422 for JSON); foreign unit targets raise `AuthorizationException` (403).
 
 4. **Explicit Rules Enforced:**
    - **Rule A (Tenant Isolation):** Standard tenant users are restricted strictly to resources matching their assigned `organization_id`.

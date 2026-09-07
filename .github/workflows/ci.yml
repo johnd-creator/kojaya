@@ -207,6 +207,12 @@ jobs:
           APP_ENV: local
       - run: npm run build
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - uses: actions/upload-artifact@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          name: frontend-build-assets
+          path: public/build
+          retention-days: 1
 
   generated-drift:
     name: Generated Drift
@@ -254,16 +260,15 @@ jobs:
       - run: npm run build
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
-  unit-feature-tests:
-    name: PHPUnit Parallel
-    needs: changes
+  phpunit-shard:
+    name: PHPUnit Shard (${{ matrix.shard }}/4)
+    needs: [changes, frontend-build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    services:
-      selenium:
-        image: selenium/standalone-chrome:latest
-        ports:
-          - 4444:4444
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - name: Fail closed when change classification fails
         if: needs.changes.result != 'success'
@@ -271,7 +276,15 @@ jobs:
 
       - name: Docs-only success path
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
-        run: printf 'PHPUnit Parallel skipped for documentation-only changes.\n'
+        run: printf 'PHPUnit Shard skipped for documentation-only changes.\n'
+
+      - name: Fail closed if frontend build failed
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: |
+          if [[ "${{ needs.frontend-build.result }}" != "success" ]]; then
+            echo "::error::Frontend build dependency failed!"
+            exit 1
+          fi
 
       - uses: actions/checkout@v4
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
@@ -283,33 +296,86 @@ jobs:
           coverage: xdebug
       - run: composer install --no-interaction --prefer-dist --no-progress
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-      - run: npm ci --prefer-offline --no-audit
+      - uses: actions/download-artifact@v4
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          name: frontend-build-assets
+          path: public/build
+      - name: Verify frontend build assets
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: test -f public/build/manifest.json
       - run: cp .env.example .env
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-      - run: php artisan wayfinder:generate
+      - name: Verify shard partition integrity
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        env:
-          APP_ENV: local
-      - run: npm run build
-        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-      # Required evidence command (profile is enabled through Collision below because
-      # ParaTest 7 does not accept Laravel's --profile option as a CLI argument).
-      # php artisan test --compact --parallel --profile --coverage --min=70
-      - run: php artisan test --compact --parallel --coverage --min=60
-        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        env:
-          COLLISION_PRINTER_PROFILE: 'true'
-      - name: Legacy ERP Recovery Wave 1
+        run: php bin/ci/phpunit-shard verify --total=4
+      - name: Generate shard configuration
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: >-
-          php artisan test --compact
-          tests/Feature/LegacyErp/EmployeeScopeTest.php
-          tests/Feature/LegacyErp/BudgetImportTest.php
-          tests/Feature/LegacyErp/BankIntegrationTest.php
-          tests/Feature/LegacyErp/InvoiceFlowTest.php
+          php bin/ci/phpunit-shard generate-config
+          --shard=${{ matrix.shard }}
+          --total=4
+          --output=phpunit.shard.xml
+          --coverage-file=build/artifacts/shard-${{ matrix.shard }}.cov
+          --junit-file=build/artifacts/shard-${{ matrix.shard }}.xml
+      - name: Run PHPUnit Shard ${{ matrix.shard }}/4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: php artisan test --compact --parallel --configuration=phpunit.shard.xml
+        env:
+          COLLISION_PRINTER_PROFILE: 'true'
+          XDEBUG_MODE: coverage
+      - uses: actions/upload-artifact@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          name: phpunit-shard-${{ matrix.shard }}
+          path: |
+            build/artifacts/shard-${{ matrix.shard }}.cov
+            build/artifacts/shard-${{ matrix.shard }}.xml
+          retention-days: 1
+
+  unit-feature-tests:
+    name: PHPUnit Parallel
+    needs: [changes, phpunit-shard]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'PHPUnit Parallel skipped for documentation-only changes.\n'
+
+      - name: Fail closed if any PHPUnit shard failed
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: |
+          if [[ "${{ needs.phpunit-shard.result }}" != "success" ]]; then
+            echo "::error::One or more PHPUnit shards failed! Shard matrix status: ${{ needs.phpunit-shard.result }}"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+      - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - uses: actions/download-artifact@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          pattern: phpunit-shard-*
+          path: build/artifacts
+          merge-multiple: true
+      - name: Aggregate Shard Results & Enforce Quality Gates
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: php bin/ci/phpunit-aggregate --total=4 --artifacts-dir=build/artifacts --min-coverage=60 --min-tests=2211
+
 
   migration-seed:
     name: Migration and Seed

@@ -1650,3 +1650,53 @@ Cooperative points, point adjustments, point history, and reward redemption work
 - Unit actors remain strictly confined to their own organization.
 - Backward compatibility preserved with existing zero-skip CI suites and legacy ERP test discoveries.
 - Test coverage: Backed by 36 tests in `PointsAdminOrganizationIsolationTest`, 35 tests in `RewardRedemptionOrganizationIsolationTest`, and full regression across `P5PointsRewardsTest`.
+
+---
+
+## 🎯 ADR-040: PHPUnit 4-Way Sharding & CI Runtime Optimization (CI-PERF-01)
+
+**Status:** ✅ Accepted
+**Date:** September 7, 2026
+**Deciders:** Core Engineering Team
+
+### Context
+
+The canonical `PHPUnit Parallel` CI workflow had grown to 253 test files (2,211 tests: 2,092 Feature + 119 Unit) with zero skips and a strict `>= 60%` line coverage gate. On GitHub Actions single-runner execution, this workflow consumed ~63 minutes of wall-clock time, creating severe CI throughput bottlenecks.
+
+Audits of the CI pipeline revealed several optimization opportunities:
+1. **Redundant Services:** A `selenium/standalone-chrome` container service was initialized despite zero Dusk or Selenium WebDriver tests in the PHPUnit suite.
+2. **Duplicate Test Execution:** `Legacy ERP Recovery Wave 1` tests (4 test files) were explicitly re-executed after the full parallel suite had already executed them.
+3. **Repeated Frontend Builds:** Each PHPUnit runner spent minutes running `npm ci`, `wayfinder:generate`, and `npm run build` merely to provide `public/build/manifest.json` for Inertia view tests.
+4. **Monolithic Suite:** All 253 canonical test files were executed sequentially on a single runner instead of leveraging parallel GitHub Actions runners.
+
+### Decision
+
+1. **Deterministic 4-Way Test Sharding (`bin/ci/phpunit-shard`):**
+   - Partition the canonical 253 SQLite test files across 4 runners using deterministic Greedy Longest Processing Time (LPT) balancing.
+   - Weight heuristic: `weight = lineCount + (testMethodCount * 25)`.
+   - Results in balanced shards: Shard 1 (63 files, 519 tests, 29,137 weight), Shard 2 (63 files, 531 tests, 29,137 weight), Shard 3 (63 files, 542 tests, 29,142 weight), Shard 4 (64 files, 543 tests, 29,143 weight).
+   - Enforce Mutually Exclusive & Collectively Exhaustive (MECE) validation before execution (`php bin/ci/phpunit-shard verify --total=4`).
+   - Generate dynamic per-shard `phpunit.shard.xml` with dedicated `<coverage>` and `<logging>` outputs.
+
+2. **Frontend Asset Sharing & Service Cleanup:**
+   - Eliminate the unused `selenium` service container from CI runners.
+   - Eliminate redundant post-suite execution of `Legacy ERP Recovery Wave 1` tests.
+   - Upload compiled `public/build` assets from the `frontend-build` job and download them into shard runners, eliminating redundant Node.js dependency installs and Vite builds across the 4 shard runners.
+
+3. **Fail-Closed Aggregation & Branch Protection Gate (`bin/ci/phpunit-aggregate`):**
+   - Preserve the exact required check name `PHPUnit Parallel` for branch-protection compatibility.
+   - Aggregate results from all 4 shards: download JUnit XML and `.cov` raw coverage artifacts.
+   - Enforce fail-closed quality gates:
+     - 4/4 JUnit XML files and 4/4 `.cov` files present and readable.
+     - Total tests executed `>= 2211`.
+     - Zero test failures, zero test errors, and zero skipped tests (`failOnSkipped="true"` preserved).
+     - Merge coverage via `SebastianBergmann\CodeCoverage\CodeCoverage::merge()`.
+     - Combined line coverage `>= 60.0%`.
+
+### Consequences
+
+- **Wall-Clock Reduction:** Shards run concurrently on 4 GitHub Actions runners, reducing execution time toward the target of `<= 25 minutes`.
+- **Zero Production Risk:** Zero modifications to `app/` application source code.
+- **Coverage & Quality Preservation:** Zero skips enforced; combined code coverage gate enforced at `>= 60.0%`.
+- **Deterministic CI:** Sharding is purely deterministic and reproducible locally via CLI commands.
+- **Seamless Branch Protection:** Required status check `PHPUnit Parallel` remains intact and acts as the authoritative gatekeeper.

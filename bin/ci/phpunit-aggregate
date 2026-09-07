@@ -1,0 +1,306 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Deterministic PHPUnit Coverage & Test Result Aggregator (CI-PERF-01)
+ *
+ * Responsibilities:
+ * 1. Validate that exactly N/N shard results and coverage artifacts are present.
+ * 2. Parse JUnit XML reports across all shards:
+ *    - Enforce zero errors (errors == 0).
+ *    - Enforce zero failures (failures == 0).
+ *    - Enforce zero skipped tests (skipped == 0).
+ *    - Enforce total test count meets the authoritative baseline (>= 2211).
+ * 3. Merge raw CodeCoverage (.cov) artifacts using SebastianBergmann\CodeCoverage\CodeCoverage::merge().
+ * 4. Generate coverage summary and enforce the combined coverage gate (>= 60%).
+ * 5. Fail closed on any missing artifact, regression, or threshold breach.
+ */
+$root = dirname(__DIR__, 2);
+
+require_once $root.'/vendor/autoload.php';
+
+use SebastianBergmann\CodeCoverage\CodeCoverage;
+use SebastianBergmann\CodeCoverage\Report\Clover;
+
+function printHelp(): void
+{
+    echo <<<'HELP'
+Usage: php bin/ci/phpunit-aggregate [options]
+
+Options:
+  --total=<int>             Expected number of shards (default: 4).
+  --artifacts-dir=<path>    Directory containing shard artifacts (default: build/artifacts).
+  --min-coverage=<float>    Minimum required coverage percentage (default: 60.0).
+  --min-tests=<int>         Minimum expected canonical test count (default: 2211).
+  --clover=<path>           Optional path to export merged Clover XML report.
+
+HELP;
+}
+
+// --- Parse CLI Options ---
+$args = array_slice($argv, 1);
+$options = [
+    'total' => 4,
+    'artifacts-dir' => 'build/artifacts',
+    'min-coverage' => 60.0,
+    'min-tests' => 2211,
+    'clover' => null,
+];
+
+foreach ($args as $arg) {
+    if (! str_starts_with($arg, '--')) {
+        continue;
+    }
+    $clean = substr($arg, 2);
+    if (str_contains($clean, '=')) {
+        [$key, $val] = explode('=', $clean, 2);
+        $options[$key] = $val;
+    } else {
+        $options[$clean] = true;
+    }
+}
+
+if (isset($options['help'])) {
+    printHelp();
+    exit(0);
+}
+
+$totalShards = max(1, (int) $options['total']);
+$rawArtifactsDir = (string) $options['artifacts-dir'];
+$artifactsDir = str_starts_with($rawArtifactsDir, '/') ? $rawArtifactsDir : ($root.'/'.ltrim($rawArtifactsDir, '/'));
+$minCoverage = (float) $options['min-coverage'];
+$minTests = (int) $options['min-tests'];
+
+$rawClover = ! empty($options['clover']) ? (string) $options['clover'] : null;
+$cloverPath = null;
+if ($rawClover !== null) {
+    $cloverPath = str_starts_with($rawClover, '/') ? $rawClover : ($root.'/'.ltrim($rawClover, '/'));
+}
+
+echo "===============================================================\n";
+echo " PHPUnit 4-Way Shard Aggregator & Quality Gate (CI-PERF-01)\n";
+echo "===============================================================\n";
+echo sprintf("Expected Shards:      %d\n", $totalShards);
+echo sprintf("Artifacts Directory:  %s\n", $artifactsDir);
+echo sprintf("Coverage Gate:        >= %.1f%%\n", $minCoverage);
+echo sprintf("Minimum Test Count:   >= %d\n", $minTests);
+echo "---------------------------------------------------------------\n";
+
+if (! is_dir($artifactsDir)) {
+    fwrite(STDERR, sprintf("[FAIL-CLOSED] Artifacts directory does not exist: %s\n", $artifactsDir));
+    exit(1);
+}
+
+// --- 1. Validate Artifact Completeness ---
+$coverageFiles = [];
+$junitFiles = [];
+$missingArtifacts = false;
+
+for ($s = 1; $s <= $totalShards; $s++) {
+    // Check coverage file
+    $covCandidate = $artifactsDir."/shard-{$s}.cov";
+    if (! file_exists($covCandidate)) {
+        // Also check nested or alternate patterns
+        $found = glob($artifactsDir."/**/shard-{$s}.cov");
+        if (! empty($found)) {
+            $covCandidate = $found[0];
+        }
+    }
+
+    if (! file_exists($covCandidate) || filesize($covCandidate) === 0) {
+        fwrite(STDERR, sprintf("[FAIL-CLOSED] Missing or empty coverage artifact for Shard %d/%d (expected %s)\n", $s, $totalShards, $covCandidate));
+        $missingArtifacts = true;
+    } else {
+        $coverageFiles[$s] = $covCandidate;
+        echo sprintf("  [OK] Found Shard %d/%d Coverage: %s (%d bytes)\n", $s, $totalShards, basename($covCandidate), filesize($covCandidate));
+    }
+
+    // Check JUnit XML file
+    $junitCandidate = $artifactsDir."/shard-{$s}.xml";
+    if (! file_exists($junitCandidate)) {
+        $found = glob($artifactsDir."/**/shard-{$s}.xml");
+        if (! empty($found)) {
+            $junitCandidate = $found[0];
+        }
+    }
+
+    if (! file_exists($junitCandidate) || filesize($junitCandidate) === 0) {
+        fwrite(STDERR, sprintf("[FAIL-CLOSED] Missing or empty JUnit artifact for Shard %d/%d (expected %s)\n", $s, $totalShards, $junitCandidate));
+        $missingArtifacts = true;
+    } else {
+        $junitFiles[$s] = $junitCandidate;
+        echo sprintf("  [OK] Found Shard %d/%d JUnit XML: %s (%d bytes)\n", $s, $totalShards, basename($junitCandidate), filesize($junitCandidate));
+    }
+}
+
+if ($missingArtifacts) {
+    fwrite(STDERR, "\n[FATAL] One or more required shard artifacts are missing. Failing closed.\n");
+    exit(1);
+}
+
+echo "---------------------------------------------------------------\n";
+echo " 1. JUnit Results Aggregation & Zero-Skip Verification\n";
+echo "---------------------------------------------------------------\n";
+
+$aggregateTests = 0;
+$aggregateAssertions = 0;
+$aggregateErrors = 0;
+$aggregateFailures = 0;
+$aggregateSkipped = 0;
+$skippedDetails = [];
+
+for ($s = 1; $s <= $totalShards; $s++) {
+    $xmlContent = file_get_contents($junitFiles[$s]);
+    if ($xmlContent === false) {
+        fwrite(STDERR, sprintf("[FAIL-CLOSED] Unable to read JUnit XML for Shard %d\n", $s));
+        exit(1);
+    }
+
+    $xml = @simplexml_load_string($xmlContent);
+    if ($xml === false) {
+        fwrite(STDERR, sprintf("[FAIL-CLOSED] Malformed JUnit XML for Shard %d\n", $s));
+        exit(1);
+    }
+
+    $shardTests = 0;
+    $shardAssertions = 0;
+    $shardErrors = 0;
+    $shardFailures = 0;
+    $shardSkipped = 0;
+
+    // Handle root testsuites or single testsuite element
+    $testsuites = $xml->xpath('//testsuite');
+    foreach ($testsuites as $suite) {
+        // Attribute counts
+        $shardTests += (int) ($suite['tests'] ?? 0);
+        $shardAssertions += (int) ($suite['assertions'] ?? 0);
+        $shardErrors += (int) ($suite['errors'] ?? 0);
+        $shardFailures += (int) ($suite['failures'] ?? 0);
+        $shardSkipped += (int) ($suite['skipped'] ?? 0);
+    }
+
+    // Inspect individual testcases for skipped elements
+    $testcases = $xml->xpath('//testcase');
+    $explicitTestCount = count($testcases);
+    if ($explicitTestCount > 0 && $shardTests === 0) {
+        $shardTests = $explicitTestCount;
+    }
+
+    foreach ($testcases as $case) {
+        if (isset($case->skipped)) {
+            $caseName = (string) ($case['class'] ?? '').'::'.(string) ($case['name'] ?? '');
+            $skippedDetails[] = sprintf('Shard %d: %s', $s, $caseName);
+        }
+    }
+
+    echo sprintf(
+        "  Shard %d/%d: %4d tests | %5d assertions | %d errors | %d failures | %d skipped\n",
+        $s,
+        $totalShards,
+        $shardTests,
+        $shardAssertions,
+        $shardErrors,
+        $shardFailures,
+        $shardSkipped
+    );
+
+    $aggregateTests += $shardTests;
+    $aggregateAssertions += $shardAssertions;
+    $aggregateErrors += $shardErrors;
+    $aggregateFailures += $shardFailures;
+    $aggregateSkipped += $shardSkipped;
+}
+
+echo "---------------------------------------------------------------\n";
+echo sprintf(
+    " COMBINED:   %4d tests | %5d assertions | %d errors | %d failures | %d skipped\n",
+    $aggregateTests,
+    $aggregateAssertions,
+    $aggregateErrors,
+    $aggregateFailures,
+    $aggregateSkipped
+);
+echo "---------------------------------------------------------------\n";
+
+// Enforce Zero Skipped Tests
+if ($aggregateSkipped > 0 || ! empty($skippedDetails)) {
+    fwrite(STDERR, sprintf("\n[FAIL-CLOSED] Quality Gate Failed: Found %d skipped tests! Zero-skip contract violated.\n", count($skippedDetails)));
+    foreach ($skippedDetails as $sd) {
+        fwrite(STDERR, "  - {$sd}\n");
+    }
+    exit(1);
+}
+
+// Enforce Zero Errors and Zero Failures
+if ($aggregateErrors > 0 || $aggregateFailures > 0) {
+    fwrite(STDERR, sprintf("\n[FAIL-CLOSED] Quality Gate Failed: %d errors, %d failures encountered across shards.\n", $aggregateErrors, $aggregateFailures));
+    exit(1);
+}
+
+// Enforce Test Count Threshold
+if ($aggregateTests < $minTests) {
+    fwrite(STDERR, sprintf("\n[FAIL-CLOSED] Quality Gate Failed: Total tests (%d) is less than expected minimum (%d).\n", $aggregateTests, $minTests));
+    exit(1);
+}
+
+echo " [PASS] Zero skipped tests verified.\n";
+echo " [PASS] Zero test failures/errors verified.\n";
+echo sprintf(" [PASS] Test count (%d >= %d) verified.\n", $aggregateTests, $minTests);
+
+echo "---------------------------------------------------------------\n";
+echo " 2. Code Coverage Aggregation & Merge\n";
+echo "---------------------------------------------------------------\n";
+
+/** @var CodeCoverage $mergedCoverage */
+$mergedCoverage = require $coverageFiles[1];
+if (! $mergedCoverage instanceof CodeCoverage) {
+    fwrite(STDERR, "[FAIL-CLOSED] Shard 1 coverage artifact does not return a CodeCoverage instance.\n");
+    exit(1);
+}
+
+for ($s = 2; $s <= $totalShards; $s++) {
+    $cov = require $coverageFiles[$s];
+    if (! $cov instanceof CodeCoverage) {
+        fwrite(STDERR, sprintf("[FAIL-CLOSED] Shard %d coverage artifact does not return a CodeCoverage instance.\n", $s));
+        exit(1);
+    }
+    $mergedCoverage->merge($cov);
+    echo sprintf("  [MERGE] Merged Shard %d coverage data into combined model.\n", $s);
+}
+
+$report = $mergedCoverage->getReport();
+$percentage = $report->percentageOfExecutedLines()->asFloat();
+$executedLines = $report->numberOfExecutedLines();
+$executableLines = $report->numberOfExecutableLines();
+
+echo sprintf("\n  Combined Executed Lines:   %d / %d\n", $executedLines, $executableLines);
+echo sprintf("  Combined Line Coverage:    %.2f%%\n", $percentage);
+echo sprintf("  Minimum Required Coverage: %.2f%%\n", $minCoverage);
+
+// Optional Clover Export
+if ($cloverPath !== null) {
+    $cloverDir = dirname($cloverPath);
+    if (! is_dir($cloverDir)) {
+        mkdir($cloverDir, 0777, true);
+    }
+    (new Clover)->process($mergedCoverage, $cloverPath);
+    echo sprintf("  [EXPORT] Exported merged Clover XML report to %s\n", $cloverPath);
+}
+
+echo "---------------------------------------------------------------\n";
+if ($percentage < $minCoverage) {
+    fwrite(STDERR, sprintf(
+        "\n[FAIL-CLOSED] Combined coverage (%.2f%%) is below the minimum required threshold (%.2f%%)!\n",
+        $percentage,
+        $minCoverage
+    ));
+    exit(1);
+}
+
+echo sprintf(" [PASS] Combined code coverage (%.2f%% >= %.2f%%) passed gate!\n", $percentage, $minCoverage);
+echo "===============================================================\n";
+echo " ALL QUALITY GATES PASSED (PHPUnit Parallel Shard Aggregation)\n";
+echo "===============================================================\n";
+exit(0);

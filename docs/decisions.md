@@ -1602,3 +1602,51 @@ POS transaction creation, transaction history/detail, receipts, void requests, v
 
 8. **Expanded Test Suite:**
    - Expanded `PosTransactionVoidOrganizationIsolationTest.php` to 52 tests (208 assertions), adding regression tests for all 6 blockers (A through F).
+
+---
+
+## 🎯 ADR-039: Points Admin Organization Isolation and Explicit Tenant Targeting (SEC-P1-07)
+
+**Status:** ✅ Accepted
+**Date:** September 7, 2026
+**Deciders:** Security & Core Engineering Teams
+
+### Context
+
+Cooperative points, point adjustments, point history, and reward redemption workflows previously lacked consistent organization isolation across administrative surfaces. Global administrative actors performing mutations on tenant-owned resources (Rewards and Reward Redemptions) could implicitly fall back to the actor's home organization (`user.organization_id`), session context (`active_organization_id`), or object identity alone. This created operational ambiguity and cross-tenant mutation risks when a global actor administered rewards or redemptions across multiple cooperative units. Furthermore, unit-scoped actors attempting to target foreign organizations required consistent fail-closed handling (403 Forbidden) rather than implicit assignment or validation bypass.
+
+### Decision
+
+1. **Explicit Global Tenant Targeting for Reward & Redemption Mutations:**
+   - Global actors (holding `view_cooperative_all`) must explicitly provide `organization_id` on all tenant-owned Reward and RewardRedemption mutations:
+     - `POST /cooperative/rewards` (`StoreRewardRequest`)
+     - `PUT /cooperative/rewards/{reward}` (`UpdateRewardRequest`)
+     - `DELETE /cooperative/rewards/{reward}` (`RewardController::destroy`)
+     - `PUT /cooperative/redemptions/{redemption}/status` (`UpdateRedemptionStatusRequest`, `RewardRedemptionController::updateStatus`, and `PointService::updateRedemptionStatus`)
+   - Eliminated all implicit fallback to `user.organization_id`, session `active_organization_id`, or object identity alone.
+   - Global requests missing `organization_id` or providing invalid/non-existent UUIDs fail closed with validation errors (422 Unprocessable Content).
+   - Global requests where explicit `organization_id` differs from the target resource's authoritative tenant fail closed with `AuthorizationException` (403 Forbidden).
+
+2. **Authoritative Unit Actor Scoping:**
+   - For unit-scoped actors, the target tenant is authoritatively bound to the actor's visible organization (`OrganizationScopeService::resolveTargetOrganization`).
+   - Unit actors may omit `organization_id` or supply an `organization_id` matching their own organization.
+   - If a unit actor explicitly supplies a foreign `organization_id`, the request immediately fails closed with `AuthorizationException` (403 Forbidden).
+
+3. **Domain Service Defense-in-Depth (`PointService::updateRedemptionStatus`):**
+   - Added `?string $targetOrgId = null` and `?User $actor = null` parameters to `PointService::updateRedemptionStatus`.
+   - Within the database transaction and under pessimistic row lock (`lockForUpdate()`), authoritatively resolves the target organization and asserts `(string)$redemption->member->organization_id === (string)$resolvedTargetOrgId`. Mismatches throw `AuthorizationException`, preventing direct service invocation bypasses.
+
+4. **Canonical Tenant Query Helper (`OrganizationScopedQueryService`):**
+   - Formalized `organizationIdForModel(Model $model): ?string` to extract authoritative tenant IDs from direct or relational ownership paths without duplicating reflection or relationship logic.
+   - Added `resolveTargetOrganization(User $user, ?string $targetOrgId = null): string` to centralize actor scoping and permission checks across controllers and services.
+
+5. **Anti-Enumeration and Side-Effect Safety:**
+   - Unauthorized or foreign read/update attempts resolve via `resolveVisible()`, returning 404 Not Found to prevent resource existence enumeration.
+   - Denied cross-tenant mutation attempts leave database records, point transactions, member balances, reward stock, and transactional notification outbox completely untouched.
+
+### Consequences
+
+- Eliminates multi-tenant ambiguity for global actors: all Reward and Redemption writes require conscious, explicit tenant declaration.
+- Unit actors remain strictly confined to their own organization.
+- Backward compatibility preserved with existing zero-skip CI suites and legacy ERP test discoveries.
+- Test coverage: Backed by 36 tests in `PointsAdminOrganizationIsolationTest`, 35 tests in `RewardRedemptionOrganizationIsolationTest`, and full regression across `P5PointsRewardsTest`.

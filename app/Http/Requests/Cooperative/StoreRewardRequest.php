@@ -15,12 +15,11 @@ class StoreRewardRequest extends FormRequest
     {
         $user = $this->user();
         $isGlobal = $user && $user->can('view_cooperative_all');
-        $hasActorOrg = $user && filled($user->organization_id);
 
         return [
             'organization_id' => $isGlobal
-                ? ($hasActorOrg ? ['nullable', 'uuid', 'exists:organizations,id'] : ['required', 'uuid', 'exists:organizations,id'])
-                : ['prohibited'],
+                ? ['required', 'uuid', 'exists:organizations,id']
+                : ['nullable', 'uuid'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:BARANG,DISKON,LAYANAN'],
             'description' => ['nullable', 'string'],

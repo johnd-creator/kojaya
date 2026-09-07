@@ -247,9 +247,15 @@ class PointService
     public function updateRedemptionStatus(
         RewardRedemption $redemption,
         string $status,
-        ?string $notes = null
+        ?string $notes = null,
+        ?string $targetOrgId = null,
+        ?User $actor = null,
     ): RewardRedemption {
-        return DB::transaction(function () use ($notes, $redemption, $status): RewardRedemption {
+        $resolvedTarget = $actor !== null
+            ? $this->resolveTargetOrganization($actor, $targetOrgId)
+            : $targetOrgId;
+
+        return DB::transaction(function () use ($notes, $redemption, $resolvedTarget, $status): RewardRedemption {
             $lockedRedemption = RewardRedemption::query()
                 ->with(['member', 'reward'])
                 ->lockForUpdate()
@@ -260,6 +266,13 @@ class PointService
             }
 
             $this->assertSameOrganization($lockedRedemption->member, $lockedRedemption->reward);
+
+            if ($resolvedTarget !== null) {
+                $authoritativeOrgId = (string) $this->scopeService->organizationIdForModel($lockedRedemption);
+                if ($authoritativeOrgId !== $resolvedTarget) {
+                    throw new AuthorizationException('Target organization does not match redemption organization.');
+                }
+            }
 
             if ($lockedRedemption->status === 'DELIVERED' && $status === 'CANCELLED') {
                 abort(422, 'Delivered redemptions cannot be cancelled.');

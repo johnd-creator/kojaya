@@ -4,7 +4,16 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 6, 2026
+**Last Updated:** September 7, 2026
+
+## 2026-09-07 - Global Reward & Redemption Explicit Tenant Targeting (SEC-P1-07 R2)
+
+- Enforced explicit organization targeting for all tenant-owned Reward and RewardRedemption mutations performed by global actors (`StoreRewardRequest`, `UpdateRewardRequest`, `UpdateRedemptionStatusRequest`, `RewardController`, `RewardRedemptionController`, and `PointService`).
+- Removed implicit fallbacks to `user.organization_id`, session `active_organization_id`, or object identity alone.
+- Unit actors use authoritative scoped tenant from `OrganizationScopeService`; mismatched explicit target fails closed with `AuthorizationException` (403).
+- Global actors must provide explicit `organization_id`; missing/invalid target fails closed with `ValidationException` (422), mismatched target fails closed with `AuthorizationException` (403).
+- Domain/service layer enforcement: `PointService::updateRedemptionStatus` validates `targetOrgId` against the locked redemption model within the database transaction.
+- Added comprehensive security regression coverage (tests 29-36) in `PointsAdminOrganizationIsolationTest.php` covering R2-01 through R2-13, home/session fallback misdirection, invalid/non-existent UUIDs, and direct service-layer authority.
 
 ## 2026-09-06 - Canonical POS Closing Target and PostgreSQL Serialization (SEC-P1-06 R1)
 

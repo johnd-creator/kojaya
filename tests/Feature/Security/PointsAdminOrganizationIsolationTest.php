@@ -20,6 +20,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -755,5 +756,526 @@ class PointsAdminOrganizationIsolationTest extends TestCase
             'status' => 'COMPLETED',
             'sold_at' => now(),
         ]);
+    }
+
+    /**
+     * Helper to create reward staff with manage_cooperative_rewards and manage_cooperative_redemption.
+     */
+    private function createRewardStaff(Organization $organization): User
+    {
+        $staff = User::factory()->create([
+            'organization_id' => $organization->id,
+            'email_verified_at' => now(),
+        ]);
+        $staff->givePermissionTo([
+            PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value,
+            PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value,
+        ]);
+
+        return $staff;
+    }
+
+    /**
+     * Helper to create global reward staff with view_cooperative_all and reward management permissions.
+     */
+    private function createGlobalRewardStaff(?Organization $organization = null): User
+    {
+        $staff = User::factory()->create([
+            'organization_id' => $organization?->id,
+            'email_verified_at' => now(),
+        ]);
+        $staff->givePermissionTo([
+            PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+            PermissionEnum::COOPERATIVE_REWARDS_MANAGE->value,
+            PermissionEnum::COOPERATIVE_REDEMPTION_MANAGE->value,
+            PermissionEnum::COOPERATIVE_POINTS_MANAGE->value,
+        ]);
+
+        return $staff;
+    }
+
+    /**
+     * Test 29: R2-01, R2-02, R2-03: Reward create explicit tenant targeting and fail-closed rules.
+     */
+    public function test_29_reward_create_explicit_tenant_targeting(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+        $unitStaffA = $this->createRewardStaff($orgA);
+
+        // R2-01: Global actor with home Org A omits organization_id -> validation failure (422), no reward created.
+        $this->actingAs($globalStaffA)
+            ->post('/cooperative/rewards', [
+                'name' => 'Reward Omitted Org',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 10,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertDatabaseMissing('rewards', ['name' => 'Reward Omitted Org']);
+
+        // R2-02: Global actor with home Org A specifies explicit target Org B -> Reward created in Org B.
+        $this->actingAs($globalStaffA)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $orgB->id,
+                'name' => 'Reward Target Org B',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 10,
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('rewards', [
+            'name' => 'Reward Target Org B',
+            'organization_id' => $orgB->id,
+        ]);
+
+        // R2-03: Unit actor in Org A attempts explicit Org B -> 403 Forbidden / fail closed, no reward created.
+        $this->actingAs($unitStaffA)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $orgB->id,
+                'name' => 'Reward Illicit Target',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 10,
+                'is_active' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('rewards', ['name' => 'Reward Illicit Target']);
+    }
+
+    /**
+     * Test 30: R2-04, R2-05, R2-06: Reward update explicit tenant targeting and match enforcement.
+     */
+    public function test_30_reward_update_explicit_tenant_targeting(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+
+        $rewardB = Reward::factory()->create([
+            'organization_id' => $orgB->id,
+            'name' => 'Original Reward B',
+            'points_required' => 100,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        // R2-04: Global actor updates Reward Org B with no explicit tenant -> fail closed (422), unchanged.
+        $this->actingAs($globalStaffA)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'name' => 'Updated Without Org',
+                'category' => 'BARANG',
+                'points_required' => 150,
+                'stock' => 10,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame('Original Reward B', $rewardB->fresh()->name);
+
+        // R2-05: Global actor updates Reward Org B with mismatched target Org A -> fail closed (403), unchanged.
+        $this->actingAs($globalStaffA)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $orgA->id,
+                'name' => 'Updated Mismatched Org',
+                'category' => 'BARANG',
+                'points_required' => 150,
+                'stock' => 10,
+                'is_active' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Original Reward B', $rewardB->fresh()->name);
+
+        // R2-06: Global actor updates Reward Org B with matching target Org B -> success, updated, remains Org B.
+        $this->actingAs($globalStaffA)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $orgB->id,
+                'name' => 'Updated Correct Org',
+                'category' => 'BARANG',
+                'points_required' => 150,
+                'stock' => 15,
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $freshReward = $rewardB->fresh();
+        $this->assertSame('Updated Correct Org', $freshReward->name);
+        $this->assertSame(150, $freshReward->points_required);
+        $this->assertSame(15, $freshReward->stock);
+        $this->assertSame($orgB->id, $freshReward->organization_id);
+    }
+
+    /**
+     * Test 31: R2-07, R2-08, R2-09: Reward delete explicit tenant targeting and match enforcement.
+     */
+    public function test_31_reward_delete_explicit_tenant_targeting(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+
+        $rewardB1 = Reward::factory()->create(['organization_id' => $orgB->id, 'name' => 'Reward B1']);
+        $rewardB2 = Reward::factory()->create(['organization_id' => $orgB->id, 'name' => 'Reward B2']);
+        $rewardB3 = Reward::factory()->create(['organization_id' => $orgB->id, 'name' => 'Reward B3']);
+
+        // R2-07: Global actor deletes Reward Org B without explicit target -> fail closed (422), still exists.
+        $this->actingAs($globalStaffA)
+            ->delete("/cooperative/rewards/{$rewardB1->id}")
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertModelExists($rewardB1);
+
+        // R2-08: Global actor deletes Reward Org B with mismatched target Org A -> fail closed (403), still exists.
+        $this->actingAs($globalStaffA)
+            ->delete("/cooperative/rewards/{$rewardB2->id}", [
+                'organization_id' => $orgA->id,
+            ])
+            ->assertForbidden();
+
+        $this->assertModelExists($rewardB2);
+
+        // R2-09: Global actor deletes Reward Org B with correct explicit target Org B -> success, deleted.
+        $this->actingAs($globalStaffA)
+            ->delete("/cooperative/rewards/{$rewardB3->id}", [
+                'organization_id' => $orgB->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertModelMissing($rewardB3);
+    }
+
+    /**
+     * Test 32: R2-10, R2-11, R2-12, R2-13: Redemption status mutation explicit tenant targeting.
+     */
+    public function test_32_redemption_status_mutation_explicit_tenant_targeting(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+        $unitStaffA = $this->createRewardStaff($orgA);
+
+        $memberB = $this->createMember($orgB, 500);
+        $rewardB = Reward::factory()->create(['organization_id' => $orgB->id]);
+
+        $redemptionB = RewardRedemption::factory()->create([
+            'cooperative_member_id' => $memberB->id,
+            'reward_id' => $rewardB->id,
+            'status' => 'PENDING',
+        ]);
+
+        // R2-10: Unit actor Org A tries to mutate Redemption Org B -> 404 (IDOR protection), status unchanged.
+        $this->actingAs($unitStaffA)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'status' => 'PROCESSING',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame('PENDING', $redemptionB->fresh()->status);
+
+        // R2-11: Global actor with home Org A mutates Redemption Org B without organization_id -> fail closed (422), status unchanged.
+        $this->actingAs($globalStaffA)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'status' => 'PROCESSING',
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame('PENDING', $redemptionB->fresh()->status);
+
+        // R2-12: Global actor mutates Redemption Org B with mismatched target Org A -> fail closed (403), status unchanged.
+        $this->actingAs($globalStaffA)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'organization_id' => $orgA->id,
+                'status' => 'PROCESSING',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('PENDING', $redemptionB->fresh()->status);
+
+        // R2-13: Global actor mutates Redemption Org B with correct target Org B -> success, status updated.
+        $this->actingAs($globalStaffA)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'organization_id' => $orgB->id,
+                'status' => 'SHIPPED',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('SHIPPED', $redemptionB->fresh()->status);
+    }
+
+    /**
+     * Test 33: Section 8: Home and session active_organization_id cannot silently determine tenant target.
+     */
+    public function test_33_home_and_session_fallback_cannot_silently_determine_tenant_target(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+
+        // Deliberately establish misleading fallback context: home org = Org A, session active_organization_id = Org A
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+
+        $memberB = $this->createMember($orgB, 500);
+        $rewardB = Reward::factory()->create(['organization_id' => $orgB->id, 'name' => 'Fallback Test Reward']);
+        $redemptionB = RewardRedemption::factory()->create([
+            'cooperative_member_id' => $memberB->id,
+            'reward_id' => $rewardB->id,
+            'status' => 'PENDING',
+        ]);
+
+        $sessionContext = ['active_organization_id' => $orgA->id];
+
+        // 1. Reward Create: missing explicit target is rejected (never falls back to home/session Org A)
+        $this->actingAs($globalStaffA)
+            ->withSession($sessionContext)
+            ->post('/cooperative/rewards', [
+                'name' => 'Session Fallback Reward',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertDatabaseMissing('rewards', ['name' => 'Session Fallback Reward']);
+
+        // Explicit Org B succeeds against Org B despite misleading session/home Org A
+        $this->actingAs($globalStaffA)
+            ->withSession($sessionContext)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $orgB->id,
+                'name' => 'Session Explicit Org B Reward',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('rewards', [
+            'name' => 'Session Explicit Org B Reward',
+            'organization_id' => $orgB->id,
+        ]);
+
+        // 2. Reward Update: missing explicit target is rejected
+        $this->actingAs($globalStaffA)
+            ->withSession($sessionContext)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'name' => 'Session Update Attempt',
+                'category' => 'BARANG',
+                'points_required' => 120,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame('Fallback Test Reward', $rewardB->fresh()->name);
+
+        // Explicit Org B succeeds against Org B
+        $this->actingAs($globalStaffA)
+            ->withSession($sessionContext)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $orgB->id,
+                'name' => 'Session Updated Reward B',
+                'category' => 'BARANG',
+                'points_required' => 120,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('Session Updated Reward B', $rewardB->fresh()->name);
+
+        // 3. Redemption Status: missing explicit target is rejected
+        $this->actingAs($globalStaffA)
+            ->withSession($sessionContext)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'status' => 'PROCESSING',
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame('PENDING', $redemptionB->fresh()->status);
+
+        // Explicit Org B succeeds against Org B
+        $this->actingAs($globalStaffA)
+            ->withSession($sessionContext)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'organization_id' => $orgB->id,
+                'status' => 'PROCESSING',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('PROCESSING', $redemptionB->fresh()->status);
+    }
+
+    /**
+     * Test 34: Section 9: Invalid target UUID and nonexistent organization fail closed.
+     */
+    public function test_34_invalid_target_organization_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $globalStaff = $this->createGlobalRewardStaff($orgA);
+
+        $memberB = $this->createMember($orgB, 500);
+        $rewardB = Reward::factory()->create(['organization_id' => $orgB->id]);
+        $redemptionB = RewardRedemption::factory()->create([
+            'cooperative_member_id' => $memberB->id,
+            'reward_id' => $rewardB->id,
+            'status' => 'PENDING',
+        ]);
+
+        $invalidUuid = 'invalid-not-a-uuid';
+        $nonexistentUuid = '00000000-0000-0000-0000-000000000000';
+
+        // Reward create with invalid UUID and nonexistent UUID
+        $this->actingAs($globalStaff)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $invalidUuid,
+                'name' => 'Bad UUID Reward',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->actingAs($globalStaff)
+            ->post('/cooperative/rewards', [
+                'organization_id' => $nonexistentUuid,
+                'name' => 'Ghost Org Reward',
+                'category' => 'BARANG',
+                'points_required' => 100,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        // Reward update with invalid UUID and nonexistent UUID
+        $this->actingAs($globalStaff)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $invalidUuid,
+                'name' => 'Bad UUID Update',
+                'category' => 'BARANG',
+                'points_required' => 120,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->actingAs($globalStaff)
+            ->put("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $nonexistentUuid,
+                'name' => 'Ghost Org Update',
+                'category' => 'BARANG',
+                'points_required' => 120,
+                'stock' => 5,
+                'is_active' => true,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        // Reward delete with invalid UUID and nonexistent UUID
+        $this->actingAs($globalStaff)
+            ->delete("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $invalidUuid,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->actingAs($globalStaff)
+            ->delete("/cooperative/rewards/{$rewardB->id}", [
+                'organization_id' => $nonexistentUuid,
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertModelExists($rewardB);
+
+        // Redemption status update with invalid UUID and nonexistent UUID
+        $this->actingAs($globalStaff)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'organization_id' => $invalidUuid,
+                'status' => 'PROCESSING',
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->actingAs($globalStaff)
+            ->put("/cooperative/redemptions/{$redemptionB->id}/status", [
+                'organization_id' => $nonexistentUuid,
+                'status' => 'PROCESSING',
+            ])
+            ->assertSessionHasErrors(['organization_id']);
+
+        $this->assertSame('PENDING', $redemptionB->fresh()->status);
+    }
+
+    /**
+     * Test 35: Section 5: PointService domain-level authority prevents tenant mismatch on direct call.
+     */
+    public function test_35_point_service_domain_level_authority_prevents_tenant_mismatch(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+
+        $memberB = $this->createMember($orgB, 500);
+        $rewardB = Reward::factory()->create(['organization_id' => $orgB->id]);
+        $redemptionB = RewardRedemption::factory()->create([
+            'cooperative_member_id' => $memberB->id,
+            'reward_id' => $rewardB->id,
+            'status' => 'PENDING',
+        ]);
+
+        // 1. Direct service call with global actor omitting targetOrgId throws ValidationException
+        $threwValidation = false;
+        try {
+            $this->pointService->updateRedemptionStatus(
+                redemption: $redemptionB,
+                status: 'SHIPPED',
+                targetOrgId: null,
+                actor: $globalStaffA,
+            );
+        } catch (ValidationException $e) {
+            $threwValidation = true;
+            $this->assertArrayHasKey('organization_id', $e->errors());
+        }
+        $this->assertTrue($threwValidation, 'Expected ValidationException when global actor omits targetOrgId on direct service call.');
+        $this->assertSame('PENDING', $redemptionB->fresh()->status);
+
+        // 2. Direct service call with global actor and mismatched targetOrgId throws AuthorizationException
+        $this->expectException(AuthorizationException::class);
+        $this->pointService->updateRedemptionStatus(
+            redemption: $redemptionB,
+            status: 'SHIPPED',
+            targetOrgId: $orgA->id,
+            actor: $globalStaffA,
+        );
+    }
+
+    /**
+     * Test 36: Direct service call with matching targetOrgId succeeds.
+     */
+    public function test_36_point_service_direct_call_with_matching_target_succeeds(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $globalStaffA = $this->createGlobalRewardStaff($orgA);
+
+        $memberB = $this->createMember($orgB, 500);
+        $rewardB = Reward::factory()->create(['organization_id' => $orgB->id]);
+        $redemptionB = RewardRedemption::factory()->create([
+            'cooperative_member_id' => $memberB->id,
+            'reward_id' => $rewardB->id,
+            'status' => 'PENDING',
+        ]);
+
+        $updated = $this->pointService->updateRedemptionStatus(
+            redemption: $redemptionB,
+            status: 'SHIPPED',
+            targetOrgId: $orgB->id,
+            actor: $globalStaffA,
+        );
+
+        $this->assertSame('SHIPPED', $updated->status);
+        $this->assertSame('SHIPPED', $redemptionB->fresh()->status);
     }
 }

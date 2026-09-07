@@ -333,6 +333,7 @@ jobs:
           path: |
             build/artifacts/shard-${{ matrix.shard }}.cov
             build/artifacts/shard-${{ matrix.shard }}.xml
+          if-no-files-found: error
           retention-days: 1
 
   unit-feature-tests:

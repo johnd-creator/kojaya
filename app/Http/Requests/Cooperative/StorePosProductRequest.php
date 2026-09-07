@@ -2,19 +2,37 @@
 
 namespace App\Http\Requests\Cooperative;
 
+use App\Services\Cooperative\PosProductAccessService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePosProductRequest extends FormRequest
 {
-    public function authorize(): bool
+    public function authorize(PosProductAccessService $productAccess): bool
     {
-        return $this->user() !== null;
+        if ($this->user() === null) {
+            return false;
+        }
+
+        $productAccess->assertCanCreate($this->user());
+
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'pos_category_id' => ['nullable', 'exists:pos_categories,id'],
+            'pos_category_id' => [
+                'nullable',
+                Rule::exists('pos_categories', 'id')->where(function ($query): void {
+                    $orgId = $this->targetOrganizationId();
+                    if ($orgId !== null) {
+                        $query->where('organization_id', $orgId);
+                    } else {
+                        $query->whereRaw('1 = 0');
+                    }
+                }),
+            ],
             'sku' => ['required', 'string', 'max:60', 'unique:pos_products,sku'],
             'barcode' => ['nullable', 'string', 'max:80', 'unique:pos_products,barcode'],
             'name' => ['required', 'string', 'max:255'],
@@ -31,6 +49,20 @@ class StorePosProductRequest extends FormRequest
             'is_active' => ['boolean'],
             'is_discontinued' => ['boolean'],
         ];
+    }
+
+    public function targetOrganizationId(): ?string
+    {
+        $user = $this->user();
+        if ($user === null) {
+            return null;
+        }
+
+        if ($user->can('view_cooperative_all')) {
+            return session('active_organization_id') ?? ($user->organization_id ? (string) $user->organization_id : null);
+        }
+
+        return $user->organization_id ? (string) $user->organization_id : null;
     }
 
     protected function prepareForValidation(): void

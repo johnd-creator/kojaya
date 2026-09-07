@@ -153,13 +153,15 @@ class CoffeeOrderWorkflowTest extends TestCase
 
     private function coffeeProduct(?Organization $organization = null): PosProduct
     {
+        $org = $organization ?? $this->organization;
         $category = PosCategory::factory()->create([
+            'organization_id' => $org->id,
             'name' => 'Espresso',
-            'slug' => 'espresso',
+            'slug' => 'espresso-'.uniqid(),
         ]);
 
         return PosProduct::factory()->create([
-            'organization_id' => ($organization ?? $this->organization)->id,
+            'organization_id' => $org->id,
             'pos_category_id' => $category->id,
             'name' => 'Espresso Kojaya',
             'cost_price' => 8000,

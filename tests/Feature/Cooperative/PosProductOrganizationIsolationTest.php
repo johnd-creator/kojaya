@@ -87,7 +87,7 @@ class PosProductOrganizationIsolationTest extends TestCase
 
     public function test_new_products_take_the_active_organization_and_ignore_client_ownership(): void
     {
-        $category = \App\Models\PosCategory::factory()->create();
+        $category = \App\Models\PosCategory::factory()->create(['organization_id' => $this->organization->id]);
 
         $this->actingAs($this->admin)
             ->post(route('cooperative.pos-products.store'), [
@@ -133,7 +133,7 @@ class PosProductOrganizationIsolationTest extends TestCase
     {
         $globalUser = User::factory()->create(['organization_id' => null]);
         $globalUser->assignRole('System Admin');
-        $category = \App\Models\PosCategory::factory()->create();
+        $category = \App\Models\PosCategory::factory()->create(['organization_id' => $this->otherOrganization->id]);
 
         $this->actingAs($globalUser)
             ->withSession(['active_organization_id' => $this->otherOrganization->id])

@@ -166,7 +166,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -242,7 +242,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -317,7 +317,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -392,7 +392,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -492,7 +492,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -608,7 +608,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -710,7 +710,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $productA = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -718,7 +718,7 @@ class PaymentConcurrencyTest extends TestCase
             'stock' => 20,
         ]);
 
-        $category2 = PosCategory::factory()->create();
+        $category2 = PosCategory::factory()->create(['organization_id' => $org->id]);
         $productB = PosProduct::factory()->for($category2, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 7500,
@@ -803,7 +803,7 @@ class PaymentConcurrencyTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,

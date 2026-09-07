@@ -539,7 +539,7 @@ class OrganizationIsolationFoundationTest extends TestCase
         }
 
         // Exact registered paths count verification
-        $this->assertCount(41, $registeredPaths);
+        $this->assertCount(42, $registeredPaths);
     }
 
     /**

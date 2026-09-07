@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PosMemberPoint extends Model
+class PosMemberPoint extends Model implements OrganizationScopedModel
 {
+    public function organizationScopePath(): string
+    {
+        return 'member.organization_id';
+    }
+
     protected $fillable = [
         'cooperative_member_id',
         'pos_transaction_id',

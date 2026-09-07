@@ -7,20 +7,33 @@ use App\Models\PointTransaction;
 use App\Models\PosMemberPoint;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
+use App\Models\User;
+use App\Services\Authorization\OrganizationScopeService;
 use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PointService
 {
+    private OrganizationScopeService $scopeService;
+
     public function __construct(
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
-    ) {}
+        ?OrganizationScopeService $scopeService = null,
+    ) {
+        $this->scopeService = $scopeService ?? app(OrganizationScopeService::class);
+    }
 
     public function syncPosPoints(CooperativeMember $member): void
     {
+        if (blank($member->organization_id)) {
+            throw new AuthorizationException('Member does not belong to a valid organization.');
+        }
+
         $points = $member->posMemberPoints()
             ->with('transaction')
             ->orderBy('posted_at')
@@ -30,6 +43,10 @@ class PointService
         $shouldRebuildBalances = false;
 
         foreach ($points as $point) {
+            if ($point->transaction && (string) $point->transaction->organization_id !== (string) $member->organization_id) {
+                continue;
+            }
+
             $expectedPoints = MemberPointService::pointsForProfit((float) $point->profit_amount);
 
             if ((int) $point->points !== $expectedPoints) {
@@ -86,6 +103,10 @@ class PointService
 
     public function balanceSummary(CooperativeMember $member): array
     {
+        if (blank($member->organization_id)) {
+            throw new AuthorizationException('Member does not belong to a valid organization.');
+        }
+
         $this->syncPosPoints($member);
 
         $latestBalance = (int) $member->pointTransactions()
@@ -137,6 +158,10 @@ class PointService
 
     public function historyQuery(CooperativeMember $member): Builder
     {
+        if (blank($member->organization_id)) {
+            throw new AuthorizationException('Member does not belong to a valid organization.');
+        }
+
         $this->syncPosPoints($member);
 
         return PointTransaction::query()
@@ -157,10 +182,11 @@ class PointService
 
         return DB::transaction(function () use ($deliveryAddress, $member, $quantity, $reward): RewardRedemption {
             $lockedReward = Reward::query()->lockForUpdate()->findOrFail($reward->id);
+            $lockedMember = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
 
-            $this->assertSameOrganization($member, $lockedReward);
+            $this->assertSameOrganization($lockedMember, $lockedReward);
 
-            $summary = $this->balanceSummary($member);
+            $summary = $this->balanceSummary($lockedMember);
             $pointsRequired = (int) $lockedReward->points_required * $quantity;
 
             if (! $lockedReward->is_active) {
@@ -185,7 +211,7 @@ class PointService
 
             $redemption = RewardRedemption::query()->create([
                 'reward_id' => $lockedReward->id,
-                'cooperative_member_id' => $member->id,
+                'cooperative_member_id' => $lockedMember->id,
                 'point_transaction_id' => null,
                 'quantity' => $quantity,
                 'points_used' => $pointsRequired,
@@ -195,7 +221,7 @@ class PointService
             ]);
 
             $transaction = $this->recordTransaction(
-                member: $member,
+                member: $lockedMember,
                 transactionType: 'REDEEMED',
                 points: $pointsRequired * -1,
                 description: 'Penukaran reward: '.$lockedReward->name,
@@ -212,7 +238,7 @@ class PointService
 
             $redemption->forceFill(['point_transaction_id' => $transaction->id])->save();
 
-            DB::afterCommit(fn () => $this->notificationDispatcher->pointsRedeemed($member, $transaction));
+            DB::afterCommit(fn () => $this->notificationDispatcher->pointsRedeemed($lockedMember, $transaction));
 
             return $redemption->refresh();
         });
@@ -228,6 +254,12 @@ class PointService
                 ->with(['member', 'reward'])
                 ->lockForUpdate()
                 ->findOrFail($redemption->id);
+
+            if (! $lockedRedemption->member || ! $lockedRedemption->reward) {
+                throw new AuthorizationException('Redemption member or reward cannot be resolved.');
+            }
+
+            $this->assertSameOrganization($lockedRedemption->member, $lockedRedemption->reward);
 
             if ($lockedRedemption->status === 'DELIVERED' && $status === 'CANCELLED') {
                 abort(422, 'Delivered redemptions cannot be cancelled.');
@@ -258,6 +290,10 @@ class PointService
 
     public function expire(CooperativeMember $member, Carbon $asOf): int
     {
+        if (blank($member->organization_id)) {
+            throw new AuthorizationException('Member does not belong to a valid organization.');
+        }
+
         $this->syncPosPoints($member);
 
         $expired = 0;
@@ -311,6 +347,10 @@ class PointService
         ?CarbonInterface $expiresAt = null,
         ?array $metadata = null
     ): PointTransaction {
+        if (blank($member->organization_id)) {
+            throw new AuthorizationException('Member does not belong to a valid organization.');
+        }
+
         $latestBalance = (int) PointTransaction::query()
             ->where('cooperative_member_id', $member->id)
             ->latest('posted_at')
@@ -337,6 +377,10 @@ class PointService
 
     public function rebuildBalances(CooperativeMember $member): void
     {
+        if (blank($member->organization_id)) {
+            throw new AuthorizationException('Member does not belong to a valid organization.');
+        }
+
         $balance = 0;
 
         $member->pointTransactions()
@@ -353,6 +397,69 @@ class PointService
                     'balance_after' => $balance,
                 ])->save();
             });
+    }
+
+    public function resolveTargetOrganization(User $user, ?string $targetOrgId = null): string
+    {
+        return $this->scopeService->resolveTargetOrganization($user, $targetOrgId, 'view_cooperative_all');
+    }
+
+    public function adjust(
+        User $actor,
+        CooperativeMember $member,
+        int $points,
+        string $description,
+        ?string $targetOrgId = null
+    ): PointTransaction {
+        if ($points === 0) {
+            throw ValidationException::withMessages(['points' => 'Jumlah penyesuaian poin tidak boleh 0.']);
+        }
+
+        $resolvedOrgId = $this->resolveTargetOrganization($actor, $targetOrgId);
+
+        if (blank($member->organization_id) || (string) $member->organization_id !== $resolvedOrgId) {
+            throw new AuthorizationException('Member does not belong to the target organization.');
+        }
+
+        return DB::transaction(function () use ($actor, $description, $member, $points, $resolvedOrgId): PointTransaction {
+            $lockedMember = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
+
+            if (blank($lockedMember->organization_id) || (string) $lockedMember->organization_id !== $resolvedOrgId) {
+                throw new AuthorizationException('Member does not belong to the target organization.');
+            }
+
+            $this->syncPosPoints($lockedMember);
+
+            $latestBalance = (int) PointTransaction::query()
+                ->where('cooperative_member_id', $lockedMember->id)
+                ->latest('posted_at')
+                ->latest('created_at')
+                ->lockForUpdate()
+                ->value('balance_after');
+
+            if ($points < 0 && ($latestBalance + $points) < 0) {
+                throw ValidationException::withMessages([
+                    'points' => 'Saldo poin anggota tidak mencukupi untuk pengurangan ini.',
+                ]);
+            }
+
+            return $this->recordTransaction(
+                member: $lockedMember,
+                transactionType: 'ADJUSTMENT',
+                points: $points,
+                description: $description,
+                postedAt: now(),
+                sourceType: User::class,
+                sourceId: (string) $actor->id,
+                referenceNumber: 'ADJ-'.now()->format('YmdHis').'-'.strtoupper(Str::random(4)),
+                metadata: [
+                    'adjusted_by' => $actor->id,
+                    'adjusted_by_name' => $actor->name,
+                    'organization_id' => $resolvedOrgId,
+                    'reason' => $description,
+                ],
+            );
+        });
     }
 
     private function refundRedemption(RewardRedemption $redemption): void

@@ -4,6 +4,7 @@ namespace App\Services\Cooperative;
 
 use App\Models\PosMemberPoint;
 use App\Models\PosTransaction;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class MemberPointService
 {
@@ -24,6 +25,20 @@ class MemberPointService
     {
         if (! $transaction->cooperative_member_id) {
             return null;
+        }
+
+        $transaction->loadMissing('member');
+
+        if (! $transaction->member) {
+            return null;
+        }
+
+        if (blank($transaction->organization_id) || blank($transaction->member->organization_id)) {
+            throw new AuthorizationException('Transaction or member is missing a valid organization.');
+        }
+
+        if ((string) $transaction->organization_id !== (string) $transaction->member->organization_id) {
+            throw new AuthorizationException('Transaction organization does not match member organization.');
         }
 
         $profit = (float) $transaction->gross_profit;

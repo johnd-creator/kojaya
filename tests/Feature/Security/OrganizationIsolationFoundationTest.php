@@ -10,6 +10,8 @@ use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
 use App\Models\Organization;
+use App\Models\PointTransaction;
+use App\Models\PosMemberPoint;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\User;
@@ -537,7 +539,7 @@ class OrganizationIsolationFoundationTest extends TestCase
         }
 
         // Exact registered paths count verification
-        $this->assertCount(39, $registeredPaths);
+        $this->assertCount(41, $registeredPaths);
     }
 
     /**
@@ -553,6 +555,8 @@ class OrganizationIsolationFoundationTest extends TestCase
         $this->assertSame('view_employee_all', $this->scopeService->globalPermissionFor(new Employee));
         $this->assertSame('view_cooperative_all', $this->scopeService->globalPermissionFor(new CooperativeMember));
         $this->assertSame('view_cooperative_all', $this->scopeService->globalPermissionFor(new RewardRedemption));
+        $this->assertSame('view_cooperative_all', $this->scopeService->globalPermissionFor(new PointTransaction));
+        $this->assertSame('view_cooperative_all', $this->scopeService->globalPermissionFor(new PosMemberPoint));
 
         // 2. Prove no permission-domain substitution
         $userWithCoop = User::factory()->create(['organization_id' => $orgA->id]);

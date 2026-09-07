@@ -298,9 +298,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('loans/{loan}/payments', [\App\Http\Controllers\Cooperative\LoanController::class, 'pay'])->name('loans.pay');
         });
 
-        Route::get('points', [\App\Http\Controllers\Cooperative\PointController::class, 'index'])
-            ->middleware('can:manage_cooperative_points')
-            ->name('points.index');
+        Route::middleware('can:manage_cooperative_points')->group(function () {
+            Route::get('points', [\App\Http\Controllers\Cooperative\PointController::class, 'index'])->name('points.index');
+            Route::post('points/{member}/adjust', [\App\Http\Controllers\Cooperative\PointController::class, 'adjust'])->name('points.adjust');
+        });
 
         Route::middleware('can:manage_cooperative_rewards')->group(function () {
             Route::get('rewards', [\App\Http\Controllers\Cooperative\RewardController::class, 'index'])->name('rewards.index');

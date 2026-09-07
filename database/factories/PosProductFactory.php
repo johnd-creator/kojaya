@@ -18,7 +18,9 @@ class PosProductFactory extends Factory
     public function definition(): array
     {
         return [
-            'pos_category_id' => PosCategory::factory(),
+            'pos_category_id' => fn (array $attributes) => PosCategory::factory()->create([
+                'organization_id' => $attributes['organization_id'] ?? null,
+            ])->id,
             'sku' => 'SKU-'.fake()->unique()->numerify('######'),
             'barcode' => fake()->optional()->ean13(),
             'name' => fake()->words(3, true),

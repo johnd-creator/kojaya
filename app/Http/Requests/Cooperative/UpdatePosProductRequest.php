@@ -2,22 +2,54 @@
 
 namespace App\Http\Requests\Cooperative;
 
+use App\Models\PosProduct;
+use App\Services\Cooperative\PosProductAccessService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdatePosProductRequest extends FormRequest
 {
-    public function authorize(): bool
+    public function authorize(PosProductAccessService $productAccess): bool
     {
-        return $this->user() !== null;
+        if ($this->user() === null) {
+            return false;
+        }
+
+        $product = $this->route('product');
+        if ($product) {
+            $productModel = $product instanceof PosProduct
+                ? $product
+                : PosProduct::query()->find($product);
+
+            if ($productModel) {
+                $productAccess->assertCanOperate($this->user(), $productModel);
+            }
+        }
+
+        return true;
     }
 
     public function rules(): array
     {
         $product = $this->route('product');
+        $productOrgId = $product instanceof PosProduct
+            ? $product->organization_id
+            : PosProduct::query()->whereKey($product)->value('organization_id');
 
         return [
-            'pos_category_id' => ['nullable', 'exists:pos_categories,id'],
+            'pos_category_id' => [
+                'nullable',
+                Rule::exists('pos_categories', 'id')->where(function ($query) use ($productOrgId): void {
+                    $query->where(function ($q) use ($productOrgId): void {
+                        if ($productOrgId !== null) {
+                            $q->where('organization_id', $productOrgId)
+                                ->orWhereNull('organization_id');
+                        } else {
+                            $q->whereNull('organization_id');
+                        }
+                    });
+                }),
+            ],
             'sku' => ['required', 'string', 'max:60', Rule::unique('pos_products', 'sku')->ignore($product?->id)],
             'barcode' => ['nullable', 'string', 'max:80', Rule::unique('pos_products', 'barcode')->ignore($product?->id)],
             'name' => ['required', 'string', 'max:255'],

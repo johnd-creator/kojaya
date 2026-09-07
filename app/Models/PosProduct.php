@@ -45,6 +45,21 @@ class PosProduct extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (PosProduct $product): void {
+            if ($product->pos_category_id !== null && $product->organization_id !== null) {
+                $categoryOrg = PosCategory::query()
+                    ->whereKey($product->pos_category_id)
+                    ->value('organization_id');
+
+                if ($categoryOrg !== null && (string) $categoryOrg !== (string) $product->organization_id) {
+                    throw new \InvalidArgumentException('Cross-organization product category association is prohibited.');
+                }
+            }
+        });
+    }
+
     public function getImageUrlAttribute(): ?string
     {
         if (! $this->image_path) {

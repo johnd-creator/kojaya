@@ -215,7 +215,10 @@ class UiAuditSeeder extends Seeder
 
     private function seedPos(Organization $organization): void
     {
-        $category = PosCategory::query()->updateOrCreate(['slug' => 'ui-audit-grocery'], ['name' => 'Audit Grocery', 'is_active' => true]);
+        $category = PosCategory::query()->updateOrCreate(
+            ['slug' => 'ui-audit-grocery', 'organization_id' => $organization->id],
+            ['name' => 'Audit Grocery', 'is_active' => true, 'organization_id' => $organization->id]
+        );
         $products = [
             ['UI-AUD-001', 'Beras Audit 5kg', 78000, 24, 4, null],
             ['UI-AUD-002', 'Produk Tanpa Gambar', 12000, 2, 5, null],

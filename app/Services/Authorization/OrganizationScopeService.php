@@ -32,6 +32,7 @@ use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PettyCashAccount;
 use App\Models\PointTransaction;
+use App\Models\PosCategory;
 use App\Models\PosDailyClosing;
 use App\Models\PosMemberCreditPayment;
 use App\Models\PosMemberPoint;
@@ -104,6 +105,7 @@ class OrganizationScopeService
         MemberStoreLedgerEntry::class => 'organization_id',
         MemberStoreFundingRequest::class => 'organization_id',
         MemberStoreDelegate::class => 'organization_id',
+        PosCategory::class => 'organization_id',
         PosDailyClosing::class => 'organization_id',
         PointTransaction::class => 'member.organization_id',
         PosMemberPoint::class => 'member.organization_id',
@@ -128,6 +130,7 @@ class OrganizationScopeService
         RewardRedemption::class => 'view_cooperative_all',
         Reward::class => 'view_cooperative_all',
         PosMemberCreditPayment::class => 'view_cooperative_all',
+        PosCategory::class => 'view_cooperative_all',
         PosTransaction::class => 'view_cooperative_all',
         PosVoidRequest::class => 'view_cooperative_all',
         PosDailyClosing::class => 'view_cooperative_all',

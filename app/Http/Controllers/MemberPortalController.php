@@ -509,7 +509,7 @@ class MemberPortalController extends Controller
 
     public function points(Request $request, PointService $pointService): Response
     {
-        $member = $this->memberOrAbort($request);
+        $member = $this->memberWithOrganizationOrAbort($request);
 
         return Inertia::render('Kojayaku/Points', [
             'summary' => $pointService->balanceSummary($member),

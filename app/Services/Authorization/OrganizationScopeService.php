@@ -31,8 +31,10 @@ use App\Models\MemberStoreLedgerEntry;
 use App\Models\Organization;
 use App\Models\Payroll;
 use App\Models\PettyCashAccount;
+use App\Models\PointTransaction;
 use App\Models\PosDailyClosing;
 use App\Models\PosMemberCreditPayment;
+use App\Models\PosMemberPoint;
 use App\Models\PosTransaction;
 use App\Models\PosVoidRequest;
 use App\Models\Project;
@@ -55,6 +57,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\RelationNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class OrganizationScopeService
 {
@@ -101,6 +105,8 @@ class OrganizationScopeService
         MemberStoreFundingRequest::class => 'organization_id',
         MemberStoreDelegate::class => 'organization_id',
         PosDailyClosing::class => 'organization_id',
+        PointTransaction::class => 'member.organization_id',
+        PosMemberPoint::class => 'member.organization_id',
     ];
 
     /**
@@ -125,6 +131,8 @@ class OrganizationScopeService
         PosTransaction::class => 'view_cooperative_all',
         PosVoidRequest::class => 'view_cooperative_all',
         PosDailyClosing::class => 'view_cooperative_all',
+        PointTransaction::class => 'view_cooperative_all',
+        PosMemberPoint::class => 'view_cooperative_all',
         Attendance::class => 'view_attendance_all',
         AttendanceCorrection::class => 'view_attendance_all',
         Asset::class => 'view_asset_all',
@@ -377,5 +385,42 @@ class OrganizationScopeService
         }
 
         return (string) $organizationId;
+    }
+
+    public function resolveTargetOrganization(User $user, ?string $targetOrgId = null, string $globalPermission = 'view_cooperative_all'): string
+    {
+        $visibility = $this->visibilityFor($user, $globalPermission);
+
+        if ($visibility->state === OrganizationVisibilityState::DENIED) {
+            throw new AuthorizationException('Pengguna tanpa organisasi tidak diizinkan mengakses operasi ini.');
+        }
+
+        if (! $visibility->global) {
+            if ($targetOrgId !== null && $targetOrgId !== '' && (string) $targetOrgId !== (string) $visibility->organizationId) {
+                throw new AuthorizationException('Pengguna tidak diizinkan mengakses organisasi lain.');
+            }
+
+            return (string) $visibility->organizationId;
+        }
+
+        if ($targetOrgId === null || $targetOrgId === '') {
+            throw ValidationException::withMessages([
+                'organization_id' => 'Target organisasi wajib ditentukan untuk pengguna global.',
+            ]);
+        }
+
+        if (! Str::isUuid($targetOrgId)) {
+            throw ValidationException::withMessages([
+                'organization_id' => 'Organisasi target tidak ditemukan.',
+            ]);
+        }
+
+        try {
+            return $this->assertOrganizationIdentifier($targetOrgId);
+        } catch (AuthorizationException) {
+            throw ValidationException::withMessages([
+                'organization_id' => 'Organisasi target tidak ditemukan.',
+            ]);
+        }
     }
 }

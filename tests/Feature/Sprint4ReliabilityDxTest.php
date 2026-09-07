@@ -108,8 +108,13 @@ class Sprint4ReliabilityDxTest extends TestCase
         $workflow = file_get_contents(base_path('.github/workflows/ci.yml'));
 
         $this->assertStringContainsString('bin/openapi.sh check', $workflow);
-        $this->assertStringContainsString('php artisan test --compact --parallel --profile --coverage --min=70', $workflow);
+        $this->assertStringContainsString('shard: [1, 2, 3, 4]', $workflow);
+        $this->assertStringContainsString('php bin/ci/phpunit-shard verify --total=4', $workflow);
+        $this->assertStringContainsString('php artisan test --compact --parallel --configuration=phpunit.shard.xml', $workflow);
         $this->assertStringContainsString('coverage: xdebug', $workflow);
+        $this->assertStringContainsString('phpunit-aggregate', $workflow);
+        $this->assertStringContainsString('--min-coverage=60', $workflow);
+        $this->assertStringContainsString('--min-tests=2211', $workflow);
 
         $this->assertStringContainsString(
             "Schedule::command('notifications:outbox:process --limit=100')->everyThirtySeconds()",

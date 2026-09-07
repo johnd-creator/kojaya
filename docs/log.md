@@ -6,6 +6,14 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 7, 2026
 
+## 2026-09-07 - PHPUnit 4-Way Sharding & CI Runtime Optimization (CI-PERF-01)
+
+- Implemented deterministic 4-way distributed test sharding script (`bin/ci/phpunit-shard`) using Greedy Longest Processing Time (LPT) balancing heuristic across 253 canonical SQLite test files.
+- Implemented fail-closed test & coverage aggregator (`bin/ci/phpunit-aggregate`) verifying all 4 shard JUnit XMLs and `.cov` files, validating zero test errors, zero test failures, zero skipped tests (`tests >= 2211`), merging raw coverage via `SebastianBergmann\CodeCoverage\CodeCoverage::merge()`, and enforcing `>= 60.0%` combined line coverage.
+- Updated `.github/workflows/ci.yml`: partitioned PHPUnit into 4 parallel matrix shards (`phpunit-shard`), eliminated redundant `selenium` container service, eliminated duplicate execution of `Legacy ERP Recovery Wave 1` tests, and shared compiled frontend build assets (`public/build`) from `frontend-build` across shard runners.
+- Preserved canonical required check name `PHPUnit Parallel` as the aggregator job for seamless branch protection.
+- Documented architecture decisions in ADR-040.
+
 ## 2026-09-07 - Global Reward & Redemption Explicit Tenant Targeting (SEC-P1-07 R2)
 
 - Enforced explicit organization targeting for all tenant-owned Reward and RewardRedemption mutations performed by global actors (`StoreRewardRequest`, `UpdateRewardRequest`, `UpdateRedemptionStatusRequest`, `RewardController`, `RewardRedemptionController`, and `PointService`).

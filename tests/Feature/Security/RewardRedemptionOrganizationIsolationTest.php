@@ -367,9 +367,10 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
                 ->where('redemption.id', $redemptionB->id)
             );
 
-        // Global staff can update foreign redemption
+        // Global staff can update foreign redemption with explicit organization_id
         $this->actingAs($globalStaff)
             ->put('/cooperative/redemptions/'.$redemptionB->id.'/status', [
+                'organization_id' => $orgB->id,
                 'status' => 'PROCESSING',
                 'notes' => 'Diproses oleh admin pusat',
             ])
@@ -505,7 +506,7 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
                 'status' => 'PROCESSING',
                 'organization_id' => $orgB->id,
             ])
-            ->assertSessionHasErrors(['organization_id']);
+            ->assertForbidden();
 
         $this->assertSame('PENDING', $redemptionA->fresh()->status);
     }
@@ -986,7 +987,7 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
                 'stock' => 20,
                 'is_active' => true,
             ])
-            ->assertSessionHasErrors(['organization_id']);
+            ->assertForbidden();
 
         $this->assertSame(0, Reward::query()->where('name', 'Illicit Org B Reward')->count());
         $this->assertSame(0, Reward::query()->where('organization_id', $orgB->id)->count());
@@ -1018,7 +1019,7 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
                 'stock' => 5,
                 'is_active' => true,
             ])
-            ->assertSessionHasErrors(['organization_id']);
+            ->assertForbidden();
 
         $this->assertSame($orgA->id, $rewardA->fresh()->organization_id);
     }
@@ -1096,6 +1097,7 @@ class RewardRedemptionOrganizationIsolationTest extends TestCase
 
         $this->actingAs($globalAdmin)
             ->put('/cooperative/rewards/'.$rewardB->id, [
+                'organization_id' => $orgB->id,
                 'name' => 'Authorized Global Update',
                 'category' => 'BARANG',
                 'points_required' => 350,

@@ -89,4 +89,14 @@ class OrganizationScopedQueryService
     {
         return $this->scopeService->resolveVisible($queryOrClass, $user, $id);
     }
+
+    public function organizationIdForModel(Model $model): string|int|null
+    {
+        return $this->scopeService->organizationIdForModel($model);
+    }
+
+    public function resolveTargetOrganization(User $user, ?string $targetOrgId = null): string
+    {
+        return $this->scopeService->resolveTargetOrganization($user, $targetOrgId, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+    }
 }

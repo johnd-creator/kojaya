@@ -13,6 +13,7 @@ use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\CooperativePeriodLockService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -141,7 +142,30 @@ class Phase4Phase5OperatorHardeningTest extends TestCase
 
     public function test_member_can_register_push_token_create_charge_and_receive_webhook_notification(): void
     {
-        $this->markTestSkipped('Menunggu aktivasi Midtrans (review pending). Hapus skip saat payment work-stream dilanjutkan.');
+        config([
+            'services.midtrans.server_key' => 'midtrans-server-key',
+            'services.midtrans.is_production' => false,
+            'services.midtrans.qris_acquirer' => 'gopay',
+        ]);
+
+        Http::fake(function ($request) {
+            $payload = $request->data();
+
+            return Http::response([
+                'status_code' => '201',
+                'transaction_status' => 'pending',
+                'order_id' => $payload['transaction_details']['order_id'],
+                'gross_amount' => '100000.00',
+                'actions' => [
+                    [
+                        'name' => 'generate-qr-code-v2',
+                        'method' => 'GET',
+                        'url' => 'https://api.sandbox.midtrans.com/v2/qris/qr-code',
+                    ],
+                ],
+                'expiry_time' => '2026-06-29 10:00:00',
+            ], 201);
+        });
 
         Sanctum::actingAs($this->member->user, ['profile:read', 'member:write']);
 

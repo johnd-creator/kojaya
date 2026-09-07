@@ -32,7 +32,7 @@ class PosDailyClosingConcurrencyTest extends TestCase
     protected function beforeTruncatingDatabase(): void
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('Requires independent PostgreSQL sessions; SQLite cannot prove row-lock serialization. Run phpunit.pgsql.xml.');
+            self::fail('PosDailyClosingConcurrencyTest REQUIRES independent PostgreSQL sessions (DB_CONNECTION=pgsql). Run phpunit.pgsql.xml.');
         }
 
         // Check the effective database BEFORE the Laravel fixture trait may migrate/truncate.

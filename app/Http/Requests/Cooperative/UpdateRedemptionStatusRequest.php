@@ -14,10 +14,15 @@ class UpdateRedemptionStatusRequest extends FormRequest
 
     public function rules(): array
     {
+        $user = $this->user();
+        $isGlobal = $user && $user->can('view_cooperative_all');
+
         return [
             'status' => ['required', 'string', Rule::in(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'organization_id' => ['prohibited'],
+            'organization_id' => $isGlobal
+                ? ['required', 'uuid', 'exists:organizations,id']
+                : ['nullable', 'uuid'],
         ];
     }
 }

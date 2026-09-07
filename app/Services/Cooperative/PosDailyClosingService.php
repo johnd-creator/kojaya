@@ -9,7 +9,6 @@ use App\Models\PosTransaction;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class PosDailyClosingService
@@ -119,40 +118,8 @@ class PosDailyClosingService
 
     public function resolveClosingOrganization(User $user, ?string $targetOrgId = null): string
     {
-        $scopeService = app(\App\Services\Authorization\OrganizationScopeService::class);
-        $visibility = $scopeService->visibilityFor($user, 'view_cooperative_all');
-
-        if ($visibility->state === \App\Enums\OrganizationVisibilityState::DENIED) {
-            throw new AuthorizationException('Pengguna tanpa organisasi tidak diizinkan melakukan closing.');
-        }
-
-        if (! $visibility->global) {
-            if ($targetOrgId !== null && (string) $targetOrgId !== (string) $visibility->organizationId) {
-                throw new AuthorizationException('Pengguna tidak diizinkan mengakses organisasi lain.');
-            }
-
-            return (string) $visibility->organizationId;
-        }
-
-        if ($targetOrgId === null || $targetOrgId === '') {
-            throw ValidationException::withMessages([
-                'organization_id' => 'Target organisasi wajib ditentukan untuk pengguna global.',
-            ]);
-        }
-
-        if (! Str::isUuid($targetOrgId)) {
-            throw ValidationException::withMessages([
-                'organization_id' => 'Organisasi target tidak ditemukan.',
-            ]);
-        }
-
-        try {
-            return $scopeService->assertOrganizationIdentifier($targetOrgId);
-        } catch (AuthorizationException) {
-            throw ValidationException::withMessages([
-                'organization_id' => 'Organisasi target tidak ditemukan.',
-            ]);
-        }
+        return app(\App\Services\Authorization\OrganizationScopeService::class)
+            ->resolveTargetOrganization($user, $targetOrgId, 'view_cooperative_all');
     }
 
     /**

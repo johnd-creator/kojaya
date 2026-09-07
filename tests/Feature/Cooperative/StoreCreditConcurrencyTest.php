@@ -44,10 +44,10 @@ class StoreCreditConcurrencyTest extends TestCase
     protected function setUp(): void
     {
         if (self::$requiredConnection !== 'pgsql') {
-            parent::setUp();
-            $this->markTestSkipped('StoreCreditConcurrencyTest requires PostgreSQL (DB_CONNECTION=pgsql).');
-
-            return;
+            self::fail(
+                'StoreCreditConcurrencyTest REQUIRES PostgreSQL. Got DB_CONNECTION='.self::$requiredConnection
+                .'. Use: vendor/bin/phpunit --configuration phpunit.pgsql.xml tests/Feature/Cooperative/StoreCreditConcurrencyTest.php'
+            );
         }
 
         $this->dbConfig = [

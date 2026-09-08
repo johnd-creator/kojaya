@@ -2,7 +2,10 @@
 
 namespace App\Services\Cooperative;
 
+use App\Models\CooperativeMember;
+use App\Models\MemberStoreAccount;
 use App\Models\PointTransaction;
+use App\Models\PosCashierShift;
 use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
 use App\Models\PosReturn;
@@ -34,24 +37,28 @@ class PosReturnService
             throw new AuthorizationException('Kasir terautentikasi wajib diisi untuk retur POS.');
         }
 
-        if ($cashier->can('view_cooperative_all') && ! $cashier->can('access_cooperative_pos')) {
+        if (! $cashier->can('access_cooperative_pos')) {
             throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk retur POS.');
         }
 
         $returnDate = ($data['returned_at'] ?? null) ?: now()->toDateString();
         $transactionId = (int) $data['pos_transaction_id'];
-        $transaction = PosTransaction::query()->find($transactionId);
-        if ($transaction) {
-            app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
-            $this->closingGuard->guardReturn($transaction, (string) $returnDate);
+
+        $initialTransaction = PosTransaction::query()->find($transactionId);
+        if ($initialTransaction) {
+            app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $initialTransaction);
+            $this->closingGuard->guardReturn($initialTransaction, (string) $returnDate);
         }
 
-        return DB::transaction(function () use ($cashier, $data, $returnDate): PosReturn {
+        return DB::transaction(function () use ($cashier, $data, $returnDate, $transactionId): PosReturn {
+            // STEP 1: Lock parent transaction
+            /** @var PosTransaction $transaction */
             $transaction = PosTransaction::query()
-                ->with(['items', 'payments', 'member'])
+                ->with(['payments'])
                 ->lockForUpdate()
-                ->findOrFail($data['pos_transaction_id']);
+                ->findOrFail($transactionId);
 
+            // STEP 2: Authorize transaction visibility
             app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
 
             if ($cashier->can('view_cooperative_all')) {
@@ -63,6 +70,14 @@ class PosReturnService
                 }
             }
 
+            // STEP 3: Establish transaction organization
+            $targetOrgId = $transaction->organization_id ? (string) $transaction->organization_id : null;
+            if (empty($targetOrgId)) {
+                throw ValidationException::withMessages([
+                    'pos_transaction_id' => 'Transaksi tidak memiliki organisasi yang valid.',
+                ]);
+            }
+
             $this->closingGuard->assertAndLockReturn($transaction, (string) $returnDate);
 
             if ($transaction->status !== 'COMPLETED') {
@@ -71,21 +86,14 @@ class PosReturnService
                 ]);
             }
 
-            $return = PosReturn::query()->create([
-                'pos_transaction_id' => $transaction->id,
-                'cooperative_member_id' => $transaction->cooperative_member_id,
-                'cashier_id' => $cashier?->id,
-                'return_no' => $this->nextReturnNo(),
-                'status' => 'APPROVED',
-                'total_amount' => 0,
-                'points_reversed' => 0,
-                'reason' => $data['reason'] ?? null,
-                'returned_at' => $returnDate,
-            ]);
+            // PREFLIGHT: VALIDATE EVERYTHING FIRST BEFORE ANY MUTATIONS!
 
+            // STEP 4, 5, 6: Transaction items and product integrity
+            $itemsToReturn = [];
             $total = 0.0;
 
             foreach ($data['items'] as $index => $item) {
+                /** @var PosTransactionItem|null $transactionItem */
                 $transactionItem = PosTransactionItem::query()
                     ->where('pos_transaction_id', $transaction->id)
                     ->lockForUpdate()
@@ -108,36 +116,140 @@ class PosReturnService
                     ]);
                 }
 
+                /** @var PosProduct|null $product */
+                $product = PosProduct::query()->lockForUpdate()->find($transactionItem->pos_product_id);
+
+                if ($product === null) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.pos_product_id" => 'Produk transaksi tidak ditemukan.',
+                    ]);
+                }
+
+                if (empty($product->organization_id)) {
+                    throw ValidationException::withMessages([
+                        'items' => "Produk {$product->name} tidak memiliki organisasi yang valid.",
+                    ]);
+                }
+
+                // Strictly enforce product.organization_id === transaction.organization_id (even for global operators!)
+                if ((string) $product->organization_id !== $targetOrgId) {
+                    throw ValidationException::withMessages([
+                        'items' => "Produk {$product->name} berada di luar organisasi transaksi.",
+                    ]);
+                }
+
+                $this->productAccess->assertCanOperate($cashier, $product);
+
                 $lineTotal = round((float) $transactionItem->unit_price * $quantity, 2);
                 $total = round($total + $lineTotal, 2);
 
-                $return->items()->create([
-                    'pos_transaction_item_id' => $transactionItem->id,
-                    'pos_product_id' => $transactionItem->pos_product_id,
+                $itemsToReturn[] = [
+                    'transaction_item' => $transactionItem,
+                    'product' => $product,
                     'quantity' => $quantity,
                     'unit_price' => $transactionItem->unit_price,
                     'line_total' => $lineTotal,
-                ]);
+                ];
+            }
 
-                $location = $this->inventory->resolveLocationFor($transaction->pos_cashier_shift_id);
+            // STEP 7, 8: Member integrity
+            $member = null;
+            if (! empty($transaction->cooperative_member_id)) {
+                $member = CooperativeMember::query()->lockForUpdate()->find($transaction->cooperative_member_id);
+                if ($member === null || empty($member->organization_id) || (string) $member->organization_id !== $targetOrgId) {
+                    throw ValidationException::withMessages([
+                        'pos_transaction_id' => 'Anggota transaksi tidak valid atau berada di luar organisasi transaksi.',
+                    ]);
+                }
+            }
 
-                $product = PosProduct::query()->lockForUpdate()->findOrFail($transactionItem->pos_product_id);
-                if ($cashier !== null) {
-                    $this->productAccess->assertCanOperate($cashier, $product);
+            // STEP 9, 10: Store account integrity
+            $storeAccountPayment = $transaction->payments->firstWhere('payment_method', 'MEMBER_STORE_ACCOUNT');
+            $storeAccount = null;
+            if ($storeAccountPayment !== null && $total > 0) {
+                if (empty($transaction->cooperative_member_id) || $member === null) {
+                    throw ValidationException::withMessages([
+                        'pos_transaction_id' => 'Transaksi kredit toko tidak memiliki anggota yang valid.',
+                    ]);
                 }
 
+                $storeAccount = MemberStoreAccount::query()
+                    ->where('cooperative_member_id', $member->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($storeAccount === null || empty($storeAccount->organization_id) || (string) $storeAccount->organization_id !== $targetOrgId) {
+                    throw ValidationException::withMessages([
+                        'pos_transaction_id' => 'Akun simpanan/kredit toko tidak valid atau berada di luar organisasi transaksi.',
+                    ]);
+                }
+            }
+
+            // STEP 11: Points integrity
+            if (! empty($transaction->cooperative_member_id)) {
+                $point = PosMemberPoint::query()
+                    ->where('pos_transaction_id', $transaction->id)
+                    ->first();
+
+                if ($point !== null) {
+                    $pointMember = CooperativeMember::query()->find($point->cooperative_member_id);
+                    if ($pointMember === null || empty($pointMember->organization_id) || (string) $pointMember->organization_id !== $targetOrgId) {
+                        throw ValidationException::withMessages([
+                            'pos_transaction_id' => 'Poin anggota transaksi berada di luar organisasi transaksi.',
+                        ]);
+                    }
+                    if ((int) $point->cooperative_member_id !== (int) $transaction->cooperative_member_id) {
+                        throw ValidationException::withMessages([
+                            'pos_transaction_id' => 'Poin anggota transaksi tidak cocok dengan anggota transaksi.',
+                        ]);
+                    }
+                }
+            }
+
+            // STEP 12: Shift / inventory location integrity
+            $location = $this->inventory->resolveLocationFor($transaction->pos_cashier_shift_id);
+            if (! empty($transaction->pos_cashier_shift_id)) {
+                $shift = PosCashierShift::query()->with('cashier')->find($transaction->pos_cashier_shift_id);
+                if ($shift && $shift->cashier && ! empty($shift->cashier->organization_id) && (string) $shift->cashier->organization_id !== $targetOrgId) {
+                    throw ValidationException::withMessages([
+                        'pos_transaction_id' => 'Shift kasir transaksi berada di luar organisasi transaksi.',
+                    ]);
+                }
+            }
+
+            // PREFLIGHT COMPLETE! NOW AND ONLY NOW PERFORM MUTATIONS!
+
+            $return = PosReturn::query()->create([
+                'pos_transaction_id' => $transaction->id,
+                'cooperative_member_id' => $transaction->cooperative_member_id,
+                'cashier_id' => $cashier->id,
+                'return_no' => $this->nextReturnNo(),
+                'status' => 'APPROVED',
+                'total_amount' => $total,
+                'points_reversed' => 0,
+                'reason' => $data['reason'] ?? null,
+                'returned_at' => $returnDate,
+            ]);
+
+            foreach ($itemsToReturn as $itemData) {
+                $return->items()->create([
+                    'pos_transaction_item_id' => $itemData['transaction_item']->id,
+                    'pos_product_id' => $itemData['product']->id,
+                    'quantity' => $itemData['quantity'],
+                    'unit_price' => $itemData['unit_price'],
+                    'line_total' => $itemData['line_total'],
+                ]);
+
                 $this->inventory->restoreSaleStock(
-                    product: $product,
+                    product: $itemData['product'],
                     location: $location,
-                    quantity: $quantity,
+                    quantity: $itemData['quantity'],
                     sourceType: PosReturn::class,
                     sourceId: $return->id,
                     referenceNo: $return->return_no,
                     movementType: 'RETURN',
                 );
             }
-
-            $return->forceFill(['total_amount' => $total])->save();
 
             $pointsReversed = $this->reversePoints($transaction, $return->refresh());
 
@@ -147,27 +259,16 @@ class PosReturnService
 
             $this->journal->postReturn($return->refresh());
 
-            $storeAccountPayment = $transaction->payments->firstWhere('payment_method', 'MEMBER_STORE_ACCOUNT');
-            if ($transaction->cooperative_member_id && $storeAccountPayment !== null && $total > 0) {
-                $member = $transaction->member;
-                $storeAccount = $member !== null
-                    ? \App\Models\MemberStoreAccount::query()
-                        ->where('organization_id', $member->organization_id)
-                        ->where('cooperative_member_id', $member->id)
-                        ->first()
-                    : null;
+            if ($storeAccount !== null && $total > 0) {
+                $refundAmount = $this->storeCheckout->cappedStoreCreditRefund($storeAccount, $transaction, (int) $total);
 
-                if ($storeAccount !== null) {
-                    $refundAmount = $this->storeCheckout->cappedStoreCreditRefund($storeAccount, $transaction, (int) $total);
-
-                    if ($refundAmount > 0) {
-                        $this->storeCheckout->postReturnRefund(
-                            return: $return->refresh(),
-                            account: $storeAccount,
-                            amount: $refundAmount,
-                            cashier: $cashier,
-                        );
-                    }
+                if ($refundAmount > 0) {
+                    $this->storeCheckout->postReturnRefund(
+                        return: $return->refresh(),
+                        account: $storeAccount,
+                        amount: $refundAmount,
+                        cashier: $cashier,
+                    );
                 }
             }
 
@@ -189,6 +290,11 @@ class PosReturnService
             return 0;
         }
 
+        $member = $point->member;
+        if (! $member || empty($member->organization_id) || (string) $member->organization_id !== (string) $transaction->organization_id) {
+            return 0;
+        }
+
         $alreadyReversed = PointTransaction::query()
             ->where('transaction_type', 'REVERSED')
             ->where('source_type', PosReturn::class)
@@ -201,12 +307,12 @@ class PosReturnService
 
         $points = (int) floor(((float) $return->total_amount / max((float) $transaction->total_amount, 1)) * (int) $point->points);
 
-        if ($points <= 0 || ! $point->member) {
+        if ($points <= 0) {
             return 0;
         }
 
         $this->pointService->recordTransaction(
-            member: $point->member,
+            member: $member,
             transactionType: 'REVERSED',
             points: $points * -1,
             description: 'Pembalikan poin karena retur POS',

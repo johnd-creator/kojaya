@@ -30,7 +30,7 @@ class PosTransactionService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data, ?User $cashier = null): PosTransaction
+    public function create(array $data, ?User $cashier = null, ?string $targetOrganizationId = null): PosTransaction
     {
         if ($cashier === null) {
             throw new AuthorizationException('A cashier is required to create a POS transaction.');
@@ -52,7 +52,7 @@ class PosTransactionService
             ]);
         }
 
-        $targetOrgId = $this->resolveTargetOrganization($data, $cashier);
+        $targetOrgId = $this->resolveTargetOrganization($data, $cashier, $targetOrganizationId);
 
         $memberId = $data['cooperative_member_id'] ?? null;
         if ($memberId) {
@@ -553,7 +553,7 @@ class PosTransactionService
         });
     }
 
-    private function resolveTargetOrganization(array $data, User $cashier): string
+    private function resolveTargetOrganization(array $data, User $cashier, ?string $explicitTargetOrgId = null): string
     {
         $productIds = array_values(array_filter(array_map(fn ($item) => $item['pos_product_id'] ?? null, $data['items'] ?? [])));
         if ($productIds === []) {
@@ -566,7 +566,7 @@ class PosTransactionService
         $uniqueProductIdsCount = count(array_unique($productIds));
 
         if ($cashier->can('view_cooperative_all')) {
-            $activeOrg = session('active_organization_id') ?? ($cashier->organization_id ? (string) $cashier->organization_id : null);
+            $activeOrg = $explicitTargetOrgId ?? session('active_organization_id') ?? ($cashier->organization_id ? (string) $cashier->organization_id : null);
             if (empty($activeOrg)) {
                 throw new AuthorizationException('An explicit target organization is required for POS transaction mutation.');
             }
@@ -598,6 +598,10 @@ class PosTransactionService
         $cashierOrgId = (string) $cashier->organization_id;
         if ($cashierOrgId === '') {
             throw new AuthorizationException('A cooperative organization is required for this operation.');
+        }
+
+        if ($explicitTargetOrgId !== null && (string) $explicitTargetOrgId !== $cashierOrgId) {
+            throw new AuthorizationException('The target organization does not match the cashier organization.');
         }
 
         if ($products->count() !== $uniqueProductIdsCount) {

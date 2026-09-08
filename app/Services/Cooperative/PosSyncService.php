@@ -3,6 +3,7 @@
 namespace App\Services\Cooperative;
 
 use App\Models\PosSyncRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -22,9 +23,9 @@ class PosSyncService
 
     /**
      * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
      *
      * @throws ValidationException
+     * @throws AuthorizationException
      */
     public function enqueue(Request $request, string $endpoint, string $method, array $payload, string $idempotencyKey, ?string $clientId = null): PosSyncRequest
     {
@@ -34,9 +35,40 @@ class PosSyncService
             ]);
         }
 
-        $payloadHash = $this->hashPayload($payload);
-        $userId = $request->user()?->id;
+        $user = $request->user();
+        if ($user === null) {
+            throw new AuthorizationException('Pengguna terautentikasi diperlukan untuk sinkronisasi POS.');
+        }
+
+        if (! $user->can('access_cooperative_pos')) {
+            throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk sinkronisasi POS.');
+        }
+
+        $userId = $user->id;
         $deviceId = $request->input('device_id') ?? $request->header('X-Device-Id');
+
+        // Resolve authoritative organization from trusted server-side context
+        if ($user->can('view_cooperative_all')) {
+            $trustedOrgId = session('active_organization_id') ?? ($user->organization_id ? (string) $user->organization_id : null);
+        } else {
+            $trustedOrgId = $user->organization_id ? (string) $user->organization_id : null;
+        }
+
+        if (empty($trustedOrgId)) {
+            throw new AuthorizationException('An explicit target organization is required for POS sync operation.');
+        }
+
+        app(\App\Services\Authorization\OrganizationScopeService::class)->assertOrganizationIdentifier($trustedOrgId);
+
+        // Client headers cannot define or override tenant (Option A: use trusted server context only)
+
+        if (isset($payload['organization_id']) && (string) $payload['organization_id'] !== (string) $trustedOrgId) {
+            throw ValidationException::withMessages([
+                'organization_id' => 'Organisasi pada payload tidak sesuai dengan konteks organisasi aktif.',
+            ]);
+        }
+
+        $payloadHash = $this->hashPayload($payload);
 
         $existing = PosSyncRequest::query()
             ->where('idempotency_key', $idempotencyKey)
@@ -73,6 +105,7 @@ class PosSyncService
             'client_id' => $clientId ?? $idempotencyKey,
             'device_id' => $deviceId,
             'user_id' => $userId,
+            'organization_id' => (string) $trustedOrgId,
             'pos_cashier_shift_id' => $request->input('pos_cashier_shift_id'),
             'endpoint' => $endpoint,
             'method' => strtoupper($method),
@@ -99,6 +132,42 @@ class PosSyncService
         }
 
         try {
+            // Revalidate actor and tenant (Section 11)
+            $user = $syncRequest->loadMissing('user')->user;
+            if ($user === null) {
+                throw ValidationException::withMessages([
+                    'user_id' => 'Pengguna sinkronisasi tidak ditemukan.',
+                ]);
+            }
+
+            if (! $user->can('access_cooperative_pos')) {
+                throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk memproses sinkronisasi POS.');
+            }
+
+            $trustedOrgId = $syncRequest->organization_id;
+            if (empty($trustedOrgId)) {
+                // Section 8: Historical sync requests without provable organization:
+                // fail closed UNLESS deterministically derived from an existing immutable relationship.
+                // An ordinary user's non-null organization_id is an immutable relationship.
+                // Global users or users with null org cannot be deterministically derived -> fail closed.
+                if (! empty($user->organization_id) && ! $user->can('view_cooperative_all')) {
+                    $trustedOrgId = (string) $user->organization_id;
+                    $syncRequest->forceFill(['organization_id' => $trustedOrgId])->save();
+                } else {
+                    throw ValidationException::withMessages([
+                        'organization_id' => 'Sync request tidak memiliki organisasi yang valid.',
+                    ]);
+                }
+            }
+
+            app(\App\Services\Authorization\OrganizationScopeService::class)->assertOrganizationIdentifier($trustedOrgId);
+
+            if (! $user->can('view_cooperative_all')) {
+                if (empty($user->organization_id) || (string) $user->organization_id !== (string) $trustedOrgId) {
+                    throw new AuthorizationException('Pengguna tidak memiliki akses ke organisasi transaksi sinkronisasi.');
+                }
+            }
+
             $syncRequest->forceFill(['status' => PosSyncRequest::STATUS_PROCESSING])->save();
 
             $result = $this->dispatch($syncRequest);
@@ -132,6 +201,21 @@ class PosSyncService
                 'data' => ['errors' => $e->errors()],
                 'replay' => false,
             ];
+        } catch (AuthorizationException $e) {
+            $syncRequest->forceFill([
+                'status' => PosSyncRequest::STATUS_FAILED,
+                'response_status' => 403,
+                'response_body' => ['error' => $e->getMessage()],
+                'error_message' => substr($e->getMessage(), 0, 250),
+                'processed_at' => now(),
+            ])->save();
+
+            return [
+                'idempotency_key' => $syncRequest->idempotency_key,
+                'status' => 403,
+                'data' => ['error' => $e->getMessage()],
+                'replay' => false,
+            ];
         } catch (\Throwable $e) {
             Log::error('POS sync failed', [
                 'idempotency_key' => $syncRequest->idempotency_key,
@@ -140,6 +224,7 @@ class PosSyncService
 
             $syncRequest->forceFill([
                 'status' => PosSyncRequest::STATUS_FAILED,
+                'response_status' => 500,
                 'error_message' => substr($e->getMessage(), 0, 250),
             ])->save();
 
@@ -193,15 +278,11 @@ class PosSyncService
 
         $user = $syncRequest->loadMissing('user')->user;
 
-        $activeOrg = $syncRequest->headers['x-active-organization-id']
-            ?? $syncRequest->headers['X-Active-Organization-Id']
-            ?? null;
-
-        if ($activeOrg !== null) {
-            session(['active_organization_id' => (string) $activeOrg]);
-        }
-
-        return $this->transactionService->create($payload, $user)->toArray();
+        return $this->transactionService->create(
+            $payload,
+            $user,
+            (string) $syncRequest->organization_id
+        )->toArray();
     }
 
     /**
@@ -250,7 +331,7 @@ class PosSyncService
      */
     private function captureHeaders(Request $request): array
     {
-        $whitelisted = ['x-device-id', 'x-shift-id', 'x-location-id', 'x-active-organization-id'];
+        $whitelisted = ['x-device-id', 'x-shift-id', 'x-location-id'];
         $headers = [];
         foreach ($whitelisted as $key) {
             if ($request->headers->has($key)) {

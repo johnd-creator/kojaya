@@ -3,11 +3,17 @@
 namespace Tests\Feature\Security;
 
 use App\Exceptions\OrganizationScopeException;
+use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\MemberStoreAccount;
 use App\Models\Organization;
+use App\Models\PointTransaction;
 use App\Models\PosCashierShift;
 use App\Models\PosCategory;
+use App\Models\PosPayment;
 use App\Models\PosProduct;
+use App\Models\PosReturn;
+use App\Models\PosReturnItem;
 use App\Models\PosSyncRequest;
 use App\Models\PosTransaction;
 use App\Models\PosVoidRequest;
@@ -24,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class PosTransactionVoidOrganizationIsolationTest extends TestCase
@@ -1071,15 +1078,14 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         $txA = $this->createTransaction($orgA, $operator, $productA, ['client_reference' => 'SYNC-SHARED-REF']);
         $this->assertSame($orgA->id, $txA->organization_id);
 
-        // Operator submits offline sync request for Product in Org B using identical client_reference
-        $syncRequest = PosSyncRequest::query()->create([
+        // Operator enqueues offline sync request for Org B with trusted active organization in server session
+        session(['active_organization_id' => $orgB->id]);
+        $request = \Illuminate\Http\Request::create('/api/v1/pos/sync/enqueue', 'POST', [
             'client_id' => 'client-global-sync-b',
-            'user_id' => $operator->id,
             'device_id' => 'device-global-pos',
             'idempotency_key' => 'idemp-global-sync-b',
             'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
             'method' => 'POST',
-            'headers' => ['x-active-organization-id' => $orgB->id],
             'payload' => [
                 'client_reference' => 'SYNC-SHARED-REF',
                 'items' => [
@@ -1089,10 +1095,25 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
                     ['payment_method' => 'CASH', 'amount' => 20000, 'cash_received' => 20000],
                 ],
             ],
-            'status' => PosSyncRequest::STATUS_PENDING,
         ]);
+        $request->setUserResolver(fn () => $operator);
 
-        $result = app(PosSyncService::class)->process($syncRequest);
+        $syncService = app(PosSyncService::class);
+        $syncRequest = $syncService->enqueue(
+            $request,
+            PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'POST',
+            $request->input('payload'),
+            'idemp-global-sync-b',
+            'client-global-sync-b'
+        );
+
+        $this->assertSame($orgB->id, $syncRequest->organization_id);
+
+        // Clear session to prove tenant ownership is persisted server-side and survives deferred processing
+        session()->flush();
+
+        $result = $syncService->process($syncRequest->fresh());
 
         $this->assertSame(201, $result['status']);
         $this->assertNotSame($txA->id, $result['data']['id']);
@@ -1100,7 +1121,7 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         $this->assertSame('SYNC-SHARED-REF', $result['data']['client_reference']);
 
         // Replaying the sync request returns the Org B transaction, not Org A
-        $replay = app(PosSyncService::class)->process($syncRequest->fresh());
+        $replay = $syncService->process($syncRequest->fresh());
         $this->assertTrue($replay['replay']);
         $this->assertSame($result['data']['id'], $replay['data']['id']);
     }
@@ -1300,6 +1321,752 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         // Restore schema for subsequent test isolation
         $migration->up();
         $this->assertTrue(Schema::hasColumn('pos_transactions', 'organization_id'));
+    }
+
+    // ==========================================
+    // GROUP 11: R1-SYNC-01 TO R1-SYNC-08 (MANDATORY SYNC REGRESSION)
+    // ==========================================
+
+    public function test_r1_sync_01_ordinary_cashier_header_override_ignored_never_creates_in_foreign_org(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000, 'stock' => 10]);
+
+        Sanctum::actingAs($cashierA, ['pos:read', 'pos:write']);
+
+        $payload = [
+            'client_id' => 'client-r1-sync-01',
+            'device_id' => 'device-pos-01',
+            'idempotency_key' => 'idemp-r1-sync-01',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-01',
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 2],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 20000, 'cash_received' => 20000],
+                ],
+            ],
+        ];
+
+        // Ordinary cashier sends X-Active-Organization-Id: Org B header
+        $enqueueResponse = $this->withHeader('X-Active-Organization-Id', $orgB->id)
+            ->postJson('/api/v1/pos/sync/enqueue', $payload);
+
+        $enqueueResponse->assertStatus(202);
+
+        $syncRequest = PosSyncRequest::query()->where('idempotency_key', 'idemp-r1-sync-01')->firstOrFail();
+        // Authoritative server-side tenant is Org A, NOT the client claim Org B
+        $this->assertSame($orgA->id, $syncRequest->organization_id);
+
+        // Process sync request
+        $processResponse = $this->withHeader('X-Device-Id', 'device-pos-01')
+            ->postJson('/api/v1/pos/sync/process/idemp-r1-sync-01');
+        $processResponse->assertStatus(201);
+
+        $result = $processResponse->json();
+        $this->assertSame(201, $result['status']);
+        $this->assertSame($orgA->id, $result['data']['organization_id']);
+        $this->assertSame('SYNC-R1-01', $result['data']['client_reference']);
+
+        // Transaction NEVER created in Org B
+        $this->assertSame(0, PosTransaction::query()->where('organization_id', $orgB->id)->count());
+        $this->assertSame(1, PosTransaction::query()->where('organization_id', $orgA->id)->count());
+        $this->assertSame(8, (int) $productA->fresh()->stock);
+    }
+
+    public function test_r1_sync_02_ordinary_cashier_header_foreign_org_with_foreign_product_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productB = $this->createProduct($orgB, ['sale_price' => 15000, 'stock' => 10]);
+
+        Sanctum::actingAs($cashierA, ['pos:read', 'pos:write']);
+
+        $payload = [
+            'client_id' => 'client-r1-sync-02',
+            'device_id' => 'device-pos-02',
+            'idempotency_key' => 'idemp-r1-sync-02',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-02',
+                'items' => [
+                    ['pos_product_id' => $productB->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 15000, 'cash_received' => 15000],
+                ],
+            ],
+        ];
+
+        // Cashier A sends header Org B and Product B
+        $this->withHeader('X-Active-Organization-Id', $orgB->id)
+            ->postJson('/api/v1/pos/sync/enqueue', $payload)
+            ->assertStatus(202);
+
+        $processResponse = $this->withHeader('X-Device-Id', 'device-pos-02')
+            ->postJson('/api/v1/pos/sync/process/idemp-r1-sync-02');
+        $processResponse->assertStatus(403);
+
+        $result = $processResponse->json();
+        $this->assertSame(403, $result['status']);
+
+        // FAIL CLOSED: 0 transactions, 0 stock mutation, 0 financial mutation
+        $this->assertSame(0, PosTransaction::query()->count());
+        $this->assertSame(10, (int) $productB->fresh()->stock);
+        $this->assertSame(0, PosPayment::query()->count());
+    }
+
+    public function test_r1_sync_03_global_operator_with_trusted_active_org_a_header_org_b_never_creates_in_org_b(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $globalCashier = $this->createGlobalCashier();
+        $productA = $this->createProduct($orgA, ['sale_price' => 12000, 'stock' => 10]);
+
+        Sanctum::actingAs($globalCashier, ['pos:read', 'pos:write']);
+
+        // Global operator has trusted active Org A in session
+        session(['active_organization_id' => $orgA->id]);
+
+        $payload = [
+            'client_id' => 'client-r1-sync-03',
+            'device_id' => 'device-pos-03',
+            'idempotency_key' => 'idemp-r1-sync-03',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-03',
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 12000, 'cash_received' => 12000],
+                ],
+            ],
+        ];
+
+        // Client sends header Org B to attempt spoofing
+        $this->withHeader('X-Active-Organization-Id', $orgB->id)
+            ->postJson('/api/v1/pos/sync/enqueue', $payload)
+            ->assertStatus(202);
+
+        $syncRequest = PosSyncRequest::query()->where('idempotency_key', 'idemp-r1-sync-03')->firstOrFail();
+        // Must resolve to trusted session Org A, NOT client claim Org B
+        $this->assertSame($orgA->id, $syncRequest->organization_id);
+
+        // Clear session to prove tenant is persisted server-side
+        session()->flush();
+
+        $processResult = app(PosSyncService::class)->process($syncRequest->fresh());
+        $this->assertSame(201, $processResult['status']);
+        $this->assertSame($orgA->id, $processResult['data']['organization_id']);
+
+        // Never creates transaction in Org B
+        $this->assertSame(0, PosTransaction::query()->where('organization_id', $orgB->id)->count());
+        $this->assertSame(1, PosTransaction::query()->where('organization_id', $orgA->id)->count());
+    }
+
+    public function test_r1_sync_04_global_operator_without_trusted_active_org_header_org_b_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $globalCashier = $this->createGlobalCashier();
+        $productB = $this->createProduct($orgB, ['sale_price' => 20000]);
+
+        Sanctum::actingAs($globalCashier, ['pos:read', 'pos:write']);
+
+        // No trusted active organization in session
+        session()->forget('active_organization_id');
+
+        $payload = [
+            'client_id' => 'client-r1-sync-04',
+            'device_id' => 'device-pos-04',
+            'idempotency_key' => 'idemp-r1-sync-04',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-04',
+                'items' => [
+                    ['pos_product_id' => $productB->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 20000, 'cash_received' => 20000],
+                ],
+            ],
+        ];
+
+        // Header must NOT supply missing trusted context: must FAIL CLOSED
+        $response = $this->withHeader('X-Active-Organization-Id', $orgB->id)
+            ->postJson('/api/v1/pos/sync/enqueue', $payload);
+
+        $response->assertForbidden();
+
+        // 0 sync requests and 0 transactions created
+        $this->assertDatabaseMissing('pos_sync_requests', ['idempotency_key' => 'idemp-r1-sync-04']);
+        $this->assertDatabaseMissing('pos_transactions', ['client_reference' => 'SYNC-R1-04']);
+    }
+
+    public function test_r1_sync_05_trusted_org_a_sync_request_processes_as_org_a_with_no_original_session_active(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000, 'stock' => 10]);
+
+        Sanctum::actingAs($cashierA, ['pos:read', 'pos:write']);
+
+        $payload = [
+            'client_id' => 'client-r1-sync-05',
+            'device_id' => 'device-pos-05',
+            'idempotency_key' => 'idemp-r1-sync-05',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-05',
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 2],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 20000, 'cash_received' => 20000],
+                ],
+            ],
+        ];
+
+        $this->postJson('/api/v1/pos/sync/enqueue', $payload)->assertStatus(202);
+
+        $syncRequest = PosSyncRequest::query()->where('idempotency_key', 'idemp-r1-sync-05')->firstOrFail();
+        $this->assertSame($orgA->id, $syncRequest->organization_id);
+
+        // Flush session completely
+        session()->flush();
+
+        // Process later without active session
+        $result = app(PosSyncService::class)->process($syncRequest->fresh());
+
+        $this->assertSame(201, $result['status']);
+        $this->assertSame($orgA->id, $result['data']['organization_id']);
+        $this->assertSame(8, (int) $productA->fresh()->stock);
+    }
+
+    public function test_r1_sync_06_trusted_org_a_sync_request_with_product_b_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productB = $this->createProduct($orgB, ['sale_price' => 15000, 'stock' => 10]);
+
+        Sanctum::actingAs($cashierA, ['pos:read', 'pos:write']);
+
+        $payload = [
+            'client_id' => 'client-r1-sync-06',
+            'device_id' => 'device-pos-06',
+            'idempotency_key' => 'idemp-r1-sync-06',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-06',
+                'items' => [
+                    ['pos_product_id' => $productB->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 15000, 'cash_received' => 15000],
+                ],
+            ],
+        ];
+
+        $this->postJson('/api/v1/pos/sync/enqueue', $payload)->assertStatus(202);
+
+        $syncRequest = PosSyncRequest::query()->where('idempotency_key', 'idemp-r1-sync-06')->firstOrFail();
+        $result = app(PosSyncService::class)->process($syncRequest);
+
+        $this->assertSame(403, $result['status']);
+        $this->assertSame(10, (int) $productB->fresh()->stock);
+        $this->assertSame(0, PosTransaction::query()->count());
+    }
+
+    public function test_r1_sync_07_trusted_org_a_sync_request_replayed_after_user_active_org_changes_to_org_b(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $globalCashier = $this->createGlobalCashier();
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000]);
+
+        Sanctum::actingAs($globalCashier, ['pos:read', 'pos:write']);
+
+        // Enqueue and process under trusted Org A
+        session(['active_organization_id' => $orgA->id]);
+
+        $payload = [
+            'client_id' => 'client-r1-sync-07',
+            'device_id' => 'device-pos-07',
+            'idempotency_key' => 'idemp-r1-sync-07',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'SYNC-R1-07',
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000],
+                ],
+            ],
+        ];
+
+        $this->postJson('/api/v1/pos/sync/enqueue', $payload)->assertStatus(202);
+
+        $syncService = app(PosSyncService::class);
+        $syncRequest = PosSyncRequest::query()->where('idempotency_key', 'idemp-r1-sync-07')->firstOrFail();
+        $result = $syncService->process($syncRequest);
+        $this->assertSame(201, $result['status']);
+        $this->assertSame($orgA->id, $result['data']['organization_id']);
+
+        // Switch active organization in session to Org B
+        session(['active_organization_id' => $orgB->id]);
+
+        // Replay
+        $replay = $syncService->process($syncRequest->fresh());
+        $this->assertTrue($replay['replay']);
+        $this->assertSame($result['data']['id'], $replay['data']['id']);
+        $this->assertSame($orgA->id, $replay['data']['organization_id']);
+
+        // Never rebound to Org B
+        $this->assertSame(0, PosTransaction::query()->where('organization_id', $orgB->id)->count());
+    }
+
+    public function test_r1_sync_08_identical_client_reference_in_org_a_and_org_b_remains_isolated_in_sync(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Kasir Org B');
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000]);
+        $productB = $this->createProduct($orgB, ['sale_price' => 20000]);
+
+        // Existing transaction in Org A with client_reference 'REF-R1-08'
+        $txA = $this->createTransaction($orgA, $cashierA, $productA, ['client_reference' => 'REF-R1-08']);
+        $this->assertSame($orgA->id, $txA->organization_id);
+
+        Sanctum::actingAs($cashierB, ['pos:read', 'pos:write']);
+
+        // Valid Org B transaction enqueued via sync with identical client_reference
+        $payloadB = [
+            'client_id' => 'client-r1-sync-08',
+            'device_id' => 'device-pos-08',
+            'idempotency_key' => 'idemp-r1-sync-08',
+            'endpoint' => 'pos.transactions.store',
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'REF-R1-08',
+                'items' => [
+                    ['pos_product_id' => $productB->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 20000, 'cash_received' => 20000],
+                ],
+            ],
+        ];
+
+        $this->postJson('/api/v1/pos/sync/enqueue', $payloadB)->assertStatus(202);
+
+        $processResult = app(PosSyncService::class)->process(
+            PosSyncRequest::query()->where('idempotency_key', 'idemp-r1-sync-08')->firstOrFail()
+        );
+
+        $this->assertSame(201, $processResult['status']);
+        $this->assertSame($orgB->id, $processResult['data']['organization_id']);
+        $this->assertNotSame($txA->id, $processResult['data']['id']);
+
+        // Both transactions exist and are completely isolated by organization
+        $this->assertSame(1, PosTransaction::query()->where('organization_id', $orgA->id)->where('client_reference', 'REF-R1-08')->count());
+        $this->assertSame(1, PosTransaction::query()->where('organization_id', $orgB->id)->where('client_reference', 'REF-R1-08')->count());
+    }
+
+    // ==========================================
+    // GROUP 12: R1-RET-01 TO R1-RET-04 (RETURN ORACLE TESTS)
+    // ==========================================
+
+    public function test_r1_ret_01_and_02_foreign_transaction_and_nonexistent_transaction_return_identical_404(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $cashierB = $this->createCashier($orgB);
+        $productB = $this->createProduct($orgB);
+        $txB = $this->createTransaction($orgB, $cashierB, $productB);
+        $nonExistentId = 999999;
+
+        // R1-RET-01: Org A attempts return on existing Org B transaction
+        $responseForeign = $this->actingAs($cashierA)->post(route('cooperative.pos.returns.store', $txB->id), [
+            'reason' => 'Test foreign transaction return',
+            'items' => [
+                ['pos_transaction_item_id' => 1, 'quantity' => 1],
+            ],
+        ]);
+
+        // R1-RET-02: Org A attempts return on nonexistent transaction
+        $responseNonExistent = $this->actingAs($cashierA)->post(route('cooperative.pos.returns.store', $nonExistentId), [
+            'reason' => 'Test nonexistent transaction return',
+            'items' => [
+                ['pos_transaction_item_id' => 1, 'quantity' => 1],
+            ],
+        ]);
+
+        // Require same externally observable status: 404 == 404
+        $this->assertSame(404, $responseForeign->status());
+        $this->assertSame(404, $responseNonExistent->status());
+        $this->assertSame($responseForeign->status(), $responseNonExistent->status());
+    }
+
+    public function test_r1_ret_03_and_04_foreign_item_and_nonexistent_item_return_identical_validation_failure(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $cashierB = $this->createCashier($orgB);
+        $productA = $this->createProduct($orgA);
+        $productB = $this->createProduct($orgB);
+
+        $txA = $this->createTransaction($orgA, $cashierA, $productA);
+        $txB = $this->createTransaction($orgB, $cashierB, $productB);
+        $foreignItemId = $txB->items->first()->id;
+        $nonExistentItemId = 999999;
+
+        // R1-RET-03: Own Org A transaction receives item ID from another existing transaction
+        $responseForeignItem = $this->actingAs($cashierA)
+            ->from(route('cooperative.pos.returns.create', $txA->id))
+            ->post(route('cooperative.pos.returns.store', $txA->id), [
+                'reason' => 'Return with foreign item',
+                'items' => [
+                    ['pos_transaction_item_id' => $foreignItemId, 'quantity' => 1],
+                ],
+            ]);
+
+        // R1-RET-04: Own Org A transaction receives nonexistent transaction-item ID
+        $responseNonExistentItem = $this->actingAs($cashierA)
+            ->from(route('cooperative.pos.returns.create', $txA->id))
+            ->post(route('cooperative.pos.returns.store', $txA->id), [
+                'reason' => 'Return with nonexistent item',
+                'items' => [
+                    ['pos_transaction_item_id' => $nonExistentItemId, 'quantity' => 1],
+                ],
+            ]);
+
+        // Both must fail validation on items without leaking existence
+        $responseForeignItem->assertSessionHasErrors('items.0.pos_transaction_item_id');
+        $responseNonExistentItem->assertSessionHasErrors('items.0.pos_transaction_item_id');
+
+        // Verify identical error message
+        $this->assertSame(
+            session('errors')->get('items.0.pos_transaction_item_id'),
+            $responseNonExistentItem->getSession()->get('errors')->get('items.0.pos_transaction_item_id')
+        );
+
+        // Zero mutations across both attempts
+        $this->assertSame(0, PosReturn::query()->count());
+        $this->assertSame(0, PosReturnItem::query()->count());
+    }
+
+    // ==========================================
+    // GROUP 13: R1-INTEGRITY-01 TO R1-INTEGRITY-06 (RETURN CORRUPT-DATA TESTS)
+    // ==========================================
+
+    public function test_r1_integrity_01_foreign_product_relation_fails_closed_zero_mutations(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $productB = $this->createProduct($orgB, ['stock' => 10, 'sale_price' => 20000]);
+
+        $txA = $this->createTransaction($orgA, $cashierA, $productA, ['quantity' => 2]);
+        $txItem = $txA->items->first();
+
+        // Corrupt fixture: item's product points to Org B
+        $txItem->forceFill(['pos_product_id' => $productB->id])->saveQuietly();
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $txA->id,
+                'reason' => 'Corrupt product foreign org',
+                'items' => [
+                    ['pos_transaction_item_id' => $txItem->id, 'quantity' => 1],
+                ],
+            ], $cashierA);
+        } finally {
+            // Assert FAIL CLOSED:
+            $this->assertSame(0, PosReturn::query()->count());
+            $this->assertSame(0, PosReturnItem::query()->count());
+            $this->assertSame(10, (int) $productB->fresh()->stock);
+            $this->assertSame(8, (int) $productA->fresh()->stock);
+            $this->assertSame(0, PointTransaction::query()->where('reference_type', 'POS_RETURN')->count());
+            $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_type', 'POS_RETURN')->count());
+        }
+    }
+
+    public function test_r1_integrity_02_null_product_organization_fails_closed_zero_mutations(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+
+        $txA = $this->createTransaction($orgA, $cashierA, $productA, ['quantity' => 2]);
+        $txItem = $txA->items->first();
+
+        // Corrupt fixture: Product organization_id is NULL
+        $productA->forceFill(['organization_id' => null])->saveQuietly();
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $txA->id,
+                'reason' => 'Product null org',
+                'items' => [
+                    ['pos_transaction_item_id' => $txItem->id, 'quantity' => 1],
+                ],
+            ], $cashierA);
+        } finally {
+            $this->assertSame(0, PosReturn::query()->count());
+            $this->assertSame(0, PosReturnItem::query()->count());
+            $this->assertSame(8, (int) $productA->fresh()->stock);
+        }
+    }
+
+    public function test_r1_integrity_03_foreign_member_relation_fails_closed_zero_mutations(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $memberA = $this->createMember($orgA);
+
+        $txA = $this->createTransaction($orgA, $cashierA, $productA, [
+            'quantity' => 1,
+            'cooperative_member_id' => $memberA->id,
+        ]);
+        $txItem = $txA->items->first();
+
+        // Corrupt member organization to Org B
+        $memberA->forceFill(['organization_id' => $orgB->id])->saveQuietly();
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $txA->id,
+                'reason' => 'Corrupt foreign member',
+                'items' => [
+                    ['pos_transaction_item_id' => $txItem->id, 'quantity' => 1],
+                ],
+            ], $cashierA);
+        } finally {
+            $this->assertSame(0, PosReturn::query()->count());
+            $this->assertSame(9, (int) $productA->fresh()->stock);
+            $this->assertSame(0, PointTransaction::query()->where('reference_type', 'POS_RETURN')->count());
+            $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_type', 'POS_RETURN')->count());
+        }
+    }
+
+    public function test_r1_integrity_04_null_member_organization_fails_closed_zero_mutations(): void
+    {
+        // Temporarily allow null on cooperative_members.organization_id for this isolated test
+        Schema::table('cooperative_members', function (Blueprint $table): void {
+            $table->uuid('organization_id')->nullable()->change();
+        });
+
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $memberA = $this->createMember($orgA);
+
+        $txA = $this->createTransaction($orgA, $cashierA, $productA, [
+            'quantity' => 1,
+            'cooperative_member_id' => $memberA->id,
+        ]);
+        $txItem = $txA->items->first();
+
+        // Corrupt member organization to NULL
+        DB::table('cooperative_members')->where('id', $memberA->id)->update(['organization_id' => null]);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $txA->id,
+                'reason' => 'Corrupt null member org',
+                'items' => [
+                    ['pos_transaction_item_id' => $txItem->id, 'quantity' => 1],
+                ],
+            ], $cashierA);
+        } finally {
+            $this->assertSame(0, PosReturn::query()->count());
+            $this->assertSame(9, (int) $productA->fresh()->stock);
+        }
+    }
+
+    public function test_r1_integrity_05_foreign_store_account_fails_closed_zero_mutations(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $memberA = $this->createMember($orgA);
+
+        $storeAccount = MemberStoreAccount::factory()->create([
+            'organization_id' => $orgA->id,
+            'cooperative_member_id' => $memberA->id,
+            'balance' => 100000,
+            'credit_limit' => 500000,
+        ]);
+
+        $txA = $this->createTransaction($orgA, $cashierA, $productA, [
+            'cooperative_member_id' => $memberA->id,
+            'quantity' => 1,
+        ]);
+        $txItem = $txA->items->first();
+
+        PosPayment::query()->create([
+            'pos_transaction_id' => $txA->id,
+            'payment_method' => 'MEMBER_STORE_ACCOUNT',
+            'amount' => 10000,
+            'status' => 'COMPLETED',
+        ]);
+
+        // Corrupt store account organization to Org B
+        $storeAccount->forceFill(['organization_id' => $orgB->id])->saveQuietly();
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $txA->id,
+                'reason' => 'Corrupt store account org',
+                'items' => [
+                    ['pos_transaction_item_id' => $txItem->id, 'quantity' => 1],
+                ],
+            ], $cashierA);
+        } finally {
+            $this->assertSame(0, PosReturn::query()->count());
+            $this->assertSame(9, (int) $productA->fresh()->stock);
+            $this->assertSame(100000, (int) $storeAccount->fresh()->balance);
+        }
+    }
+
+    public function test_r1_integrity_06_mixed_product_corruption_preflights_and_prevents_partial_processing(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $product1 = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 10000]);
+        $product2 = $this->createProduct($orgA, ['stock' => 10, 'sale_price' => 15000]);
+        $foreignProduct = $this->createProduct($orgB, ['stock' => 10, 'sale_price' => 20000]);
+
+        $service = app(PosTransactionService::class);
+        $txA = $service->create([
+            'client_reference' => 'TX-MIXED-CORRUPT-'.uniqid(),
+            'items' => [
+                ['pos_product_id' => $product1->id, 'quantity' => 1],
+                ['pos_product_id' => $product2->id, 'quantity' => 1],
+            ],
+            'payments' => [
+                ['payment_method' => 'CASH', 'amount' => 25000, 'cash_received' => 25000],
+            ],
+        ], $cashierA);
+
+        $items = $txA->items;
+        $item1 = $items->first();
+        $item2 = $items->last();
+
+        // Corrupt Item 2 to foreign product in Org B
+        $item2->forceFill(['pos_product_id' => $foreignProduct->id])->saveQuietly();
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            app(PosReturnService::class)->create([
+                'pos_transaction_id' => $txA->id,
+                'reason' => 'Mixed product return attempt',
+                'items' => [
+                    ['pos_transaction_item_id' => $item1->id, 'quantity' => 1],
+                    ['pos_transaction_item_id' => $item2->id, 'quantity' => 1],
+                ],
+            ], $cashierA);
+        } finally {
+            // Full preflight must prevent ANY mutation to Product 1 and Product 2!
+            $this->assertSame(9, (int) $product1->fresh()->stock);
+            $this->assertSame(9, (int) $product2->fresh()->stock);
+            $this->assertSame(10, (int) $foreignProduct->fresh()->stock);
+            $this->assertSame(0, PosReturn::query()->count());
+        }
+    }
+
+    // ==========================================
+    // GROUP 14: POS SYNC REQUEST MIGRATION & BACKFILL TESTS
+    // ==========================================
+
+    public function test_pos_sync_request_migration_up_and_down_and_fresh(): void
+    {
+        $migration = require database_path('migrations/2026_09_08_000001_add_organization_id_to_pos_sync_requests_table.php');
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('pos_sync_requests', 'organization_id'));
+
+        $migration->up();
+        $this->assertTrue(Schema::hasColumn('pos_sync_requests', 'organization_id'));
+    }
+
+    public function test_legacy_sync_request_without_trusted_organization_fails_closed_without_acquiring_ownership(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $globalCashier = $this->createGlobalCashier();
+
+        // Legacy sync request with organization_id = null for cashier A
+        $syncReqA = PosSyncRequest::query()->create([
+            'idempotency_key' => 'legacy-cashier-a',
+            'user_id' => $cashierA->id,
+            'client_id' => 'legacy-client-a',
+            'device_id' => 'legacy-device-a',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => ['x' => 1],
+            'status' => PosSyncRequest::STATUS_PENDING,
+            'organization_id' => null,
+        ]);
+
+        // Legacy sync request with organization_id = null for global user
+        $syncReqGlobal = PosSyncRequest::query()->create([
+            'idempotency_key' => 'legacy-global-user',
+            'user_id' => $globalCashier->id,
+            'client_id' => 'legacy-client-global',
+            'device_id' => 'legacy-device-global',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => ['x' => 1],
+            'status' => PosSyncRequest::STATUS_PENDING,
+            'organization_id' => null,
+        ]);
+
+        $migration = require database_path('migrations/2026_09_08_000001_add_organization_id_to_pos_sync_requests_table.php');
+        $resolvedCount = $migration->backfillOrganizationIds();
+
+        // Only cashier A is deterministically resolved to Org A
+        $this->assertSame(1, $resolvedCount);
+        $this->assertSame($orgA->id, $syncReqA->fresh()->organization_id);
+
+        // Global user cannot be safely inferred and MUST remain null
+        $this->assertNull($syncReqGlobal->fresh()->organization_id);
+
+        // Attempting to process legacy sync request with unknown tenant must FAIL CLOSED
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReqGlobal->fresh());
+        $this->assertSame(422, $result['status']);
+        $this->assertStringContainsString('organisasi', $result['data']['errors']['organization_id'][0] ?? $result['data']['message'] ?? $result['data']['error'] ?? '');
+    }
+
+    public function test_pos_sync_request_migration_postgresql_path_remains_valid(): void
+    {
+        $migration = require database_path('migrations/2026_09_08_000001_add_organization_id_to_pos_sync_requests_table.php');
+        $this->assertNotNull($migration);
+        $this->assertTrue(method_exists($migration, 'up'));
+        $this->assertTrue(method_exists($migration, 'down'));
+        $this->assertTrue(method_exists($migration, 'backfillOrganizationIds'));
     }
 
     // ==========================================

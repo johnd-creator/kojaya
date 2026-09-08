@@ -37,6 +37,10 @@ class PosSyncApiController extends Controller
 
     public function enqueue(Request $request): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+        abort_unless($user->can('access_cooperative_pos'), 403, 'Izin access_cooperative_pos diperlukan untuk sinkronisasi POS.');
+
         $data = $request->validate([
             'idempotency_key' => ['required', 'string', 'max:120'],
             'client_id' => ['nullable', 'string', 'max:80'],

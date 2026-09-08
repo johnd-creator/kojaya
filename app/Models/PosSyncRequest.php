@@ -20,6 +20,7 @@ class PosSyncRequest extends Model
         'device_id',
         'user_id',
         'pos_cashier_shift_id',
+        'organization_id',
         'endpoint',
         'method',
         'payload',
@@ -46,5 +47,10 @@ class PosSyncRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 }

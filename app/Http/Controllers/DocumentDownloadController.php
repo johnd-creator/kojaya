@@ -31,12 +31,18 @@ class DocumentDownloadController extends Controller
             abort(403, 'Anda tidak memiliki izin mengunduh payslip ini.');
         }
 
-        if ($request->user()->hasPermissionTo('view_own_payslip')
-            && ! $request->user()->hasAnyPermission(['view_payroll_all', 'view_payroll_unit'])
-        ) {
-            $employee = Employee::query()->where('user_id', $request->user()->id)->first();
-            if (! $employee || $payroll->employee_id !== $employee->id) {
-                abort(403, 'Anda hanya bisa mengunduh payslip sendiri.');
+        if (! $request->user()->can('view_payroll_all')) {
+            if ($request->user()->hasPermissionTo('view_own_payslip')
+                && ! $request->user()->hasAnyPermission(['view_payroll_all', 'view_payroll_unit'])
+            ) {
+                $employee = Employee::query()->where('user_id', $request->user()->id)->first();
+                if (! $employee || $payroll->employee_id !== $employee->id) {
+                    abort(403, 'Anda hanya bisa mengunduh payslip sendiri.');
+                }
+            } elseif ($request->user()->can('view_payroll_unit')) {
+                if (empty($request->user()->organization_id) || (string) $payroll->organization_id !== (string) $request->user()->organization_id) {
+                    abort(403, 'Anda tidak memiliki izin mengunduh payslip organisasi lain.');
+                }
             }
         }
 

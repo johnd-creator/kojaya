@@ -30,6 +30,7 @@ use App\Models\MemberStoreFundingRequest;
 use App\Models\MemberStoreLedgerEntry;
 use App\Models\Organization;
 use App\Models\Payroll;
+use App\Models\PayrollApproval;
 use App\Models\PettyCashAccount;
 use App\Models\PointTransaction;
 use App\Models\PosCategory;
@@ -109,6 +110,7 @@ class OrganizationScopeService
         PosDailyClosing::class => 'organization_id',
         PointTransaction::class => 'member.organization_id',
         PosMemberPoint::class => 'member.organization_id',
+        PayrollApproval::class => 'payroll.organization_id',
     ];
 
     /**
@@ -144,6 +146,8 @@ class OrganizationScopeService
         GoodsReceiveNote::class => 'view_grn_all',
         Invoice::class => 'view_invoice_all',
         Payroll::class => 'view_payroll_all',
+        PayrollApproval::class => 'view_payroll_all',
+        SalaryStructure::class => 'view_payroll_all',
         ThrEntitlement::class => 'view_payroll_all',
         Project::class => 'view_project_all',
         PurchaseOrder::class => 'view_po_all',

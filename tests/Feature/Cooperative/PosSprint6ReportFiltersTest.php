@@ -47,6 +47,7 @@ class PosSprint6ReportFiltersTest extends TestCase
 
         $service = app(PosSalesReportService::class);
         $summary = $service->summaryForPeriod(
+            $cashierA,
             now()->toDateString(),
             now()->toDateString(),
             ['cashier_id' => $cashierA->id],
@@ -75,6 +76,7 @@ class PosSprint6ReportFiltersTest extends TestCase
 
         $service = app(PosSalesReportService::class);
         $summary = $service->summaryForPeriod(
+            $cashier,
             now()->toDateString(),
             now()->toDateString(),
             ['cooperative_member_id' => $memberA->id],
@@ -102,6 +104,7 @@ class PosSprint6ReportFiltersTest extends TestCase
 
         $service = app(PosSalesReportService::class);
         $summary = $service->summaryForPeriod(
+            $cashier,
             now()->toDateString(),
             now()->toDateString(),
             ['payment_method' => 'CASH'],
@@ -136,6 +139,7 @@ class PosSprint6ReportFiltersTest extends TestCase
 
         $service = app(PosSalesReportService::class);
         $summary = $service->summaryForPeriod(
+            $cashierA,
             now()->toDateString(),
             now()->toDateString(),
             ['cashier_id' => $cashierA->id],
@@ -166,6 +170,7 @@ class PosSprint6ReportFiltersTest extends TestCase
 
         $service = app(PosSalesReportService::class);
         $summary = $service->summaryForPeriod(
+            $cashier,
             now()->toDateString(),
             now()->toDateString(),
             ['cooperative_member_id' => $memberA->id],

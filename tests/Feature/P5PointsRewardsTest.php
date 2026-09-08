@@ -263,6 +263,7 @@ class P5PointsRewardsTest extends TestCase
 
         $this->actingAs($admin)
             ->put('/cooperative/redemptions/'.$redemption->id.'/status', [
+                'organization_id' => $organization->id,
                 'status' => 'CANCELLED',
                 'notes' => 'Stok diganti dengan refund poin',
             ])
@@ -292,6 +293,7 @@ class P5PointsRewardsTest extends TestCase
 
         $this->actingAs($admin)
             ->put('/cooperative/redemptions/'.$redemption->id.'/status', [
+                'organization_id' => $organization->id,
                 'status' => 'CANCELLED',
                 'notes' => 'Retry cancel',
             ])
@@ -325,6 +327,7 @@ class P5PointsRewardsTest extends TestCase
 
         $this->actingAs($admin)
             ->put('/cooperative/redemptions/'.$redemption->id.'/status', [
+                'organization_id' => $organization->id,
                 'status' => 'CANCELLED',
             ])
             ->assertUnprocessable();

@@ -75,16 +75,16 @@ class Sprint2BusinessCriticalFlowsTest extends TestCase
 
     public function test_npl_aging_report_uses_threshold_and_aging_buckets(): void
     {
-        $user = User::factory()->create();
-        Permission::firstOrCreate(['name' => 'view_cooperative_report']);
-        $user->givePermissionTo('view_cooperative_report');
-
         $loanType = LoanType::factory()->create(['npl_threshold_days' => 90]);
         $loan = Loan::factory()->active()->create([
             'loan_type_id' => $loanType->id,
             'outstanding_amount' => 1000000,
             'status' => LoanStatus::Active,
         ]);
+
+        $user = User::factory()->create(['organization_id' => $loan->organization_id]);
+        Permission::firstOrCreate(['name' => 'view_cooperative_report']);
+        $user->givePermissionTo('view_cooperative_report');
         LoanInstallment::factory()->create([
             'loan_id' => $loan->id,
             'due_date' => today()->subDays(100)->toDateString(),

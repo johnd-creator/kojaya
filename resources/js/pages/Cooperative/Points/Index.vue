@@ -13,10 +13,11 @@ import { formatNumber } from "@/lib/formatters";
 defineProps<{
   members: {
     data: Array<{
-      id: number;
+      id: string | number;
       member_no: string;
       name: string;
       status: string;
+      organization_id?: string | null;
       total_points: number;
       points_earned: number;
       points_redeemed: number;
@@ -28,6 +29,11 @@ defineProps<{
   stats: {
     active_members: number;
     total_balance: number;
+  };
+  filters?: {
+    search?: string;
+    status?: string;
+    organization_id?: string;
   };
 }>();
 

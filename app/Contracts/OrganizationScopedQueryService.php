@@ -36,6 +36,17 @@ class OrganizationScopedQueryService
     }
 
     /**
+     * Apply explicit OrganizationVisibility to a cooperative query builder.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @return Builder<\Illuminate\Database\Eloquent\Model>
+     */
+    public function applyVisibility(Builder $query, OrganizationVisibility $visibility): Builder
+    {
+        return $this->scopeService->applyVisibility($query, $visibility);
+    }
+
+    /**
      * Determine whether the user can see all organizations.
      */
     public function canViewAllOrganizations(User $user): bool
@@ -77,5 +88,15 @@ class OrganizationScopedQueryService
     public function resolveVisible(Builder|string $queryOrClass, User $user, string|int $id): Model
     {
         return $this->scopeService->resolveVisible($queryOrClass, $user, $id);
+    }
+
+    public function organizationIdForModel(Model $model): string|int|null
+    {
+        return $this->scopeService->organizationIdForModel($model);
+    }
+
+    public function resolveTargetOrganization(User $user, ?string $targetOrgId = null): string
+    {
+        return $this->scopeService->resolveTargetOrganization($user, $targetOrgId, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
     }
 }

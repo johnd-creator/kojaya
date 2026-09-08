@@ -486,7 +486,7 @@ class PaymentCanonicalItemTest extends TestCase
         ]);
         Sanctum::actingAs($user, ['member:write']);
 
-        $category = PosCategory::factory()->create(['name' => 'Signature']);
+        $category = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'Signature']);
         $product = PosProduct::factory()->create([
             'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
@@ -687,6 +687,7 @@ class PaymentCanonicalItemTest extends TestCase
     private function createProduct(string $name, float $price, int $stock): PosProduct
     {
         $category = PosCategory::factory()->create([
+            'organization_id' => $this->organization->id,
             'name' => 'Test',
             'slug' => 'test-'.uniqid(),
         ]);

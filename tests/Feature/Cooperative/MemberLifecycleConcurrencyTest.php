@@ -34,10 +34,10 @@ class MemberLifecycleConcurrencyTest extends TestCase
         $originalConnection = getenv('DB_CONNECTION') ?: 'sqlite';
 
         if ($originalConnection !== 'pgsql') {
-            parent::setUp();
-            $this->markTestSkipped('MemberLifecycleConcurrencyTest requires PostgreSQL (DB_CONNECTION=pgsql).');
-
-            return;
+            self::fail(
+                'MemberLifecycleConcurrencyTest REQUIRES PostgreSQL. Got DB_CONNECTION='.$originalConnection
+                .'. Use: vendor/bin/phpunit --configuration phpunit.pgsql.xml tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php'
+            );
         }
 
         // Capture full pgsql config from environment before parent overrides.
@@ -53,7 +53,16 @@ class MemberLifecycleConcurrencyTest extends TestCase
             'search_path' => 'public',
         ];
 
-        parent::setUp();
+        // Avoid Tests\TestCase::setUp() which forces putenv('DB_CONNECTION=sqlite')
+        // and clobbers the pgsql env for this process and child worker processes.
+        $this->refreshApplication();
+
+        putenv('DB_CONNECTION=pgsql');
+        putenv('DB_DATABASE='.$this->dbConfig['database']);
+        $_ENV['DB_CONNECTION'] = 'pgsql';
+        $_ENV['DB_DATABASE'] = $this->dbConfig['database'];
+        $_SERVER['DB_CONNECTION'] = 'pgsql';
+        $_SERVER['DB_DATABASE'] = $this->dbConfig['database'];
 
         // Override the database config to use PostgreSQL after parent forced SQLite.
         config()->set('database.default', 'pgsql');

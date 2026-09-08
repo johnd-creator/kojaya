@@ -127,8 +127,10 @@ class AuditContextSourceTest extends TestCase
     {
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->givePermissionTo('view_pos_reports');
         $job = BackgroundJob::factory()->create(['user_id' => $user->id]);
         $service = \Mockery::mock(PosSalesReportService::class);
+        $service->shouldReceive('setScopeCeiling')->byDefault();
         $service->shouldReceive('summaryForPeriod')->andThrow(new \RuntimeException('simulated report failure'));
 
         try {

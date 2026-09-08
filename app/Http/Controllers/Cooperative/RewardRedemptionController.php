@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\UpdateRedemptionStatusRequest;
 use App\Models\RewardRedemption;
 use App\Services\Cooperative\PointService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -59,12 +60,21 @@ class RewardRedemptionController extends Controller
 
         $this->authorize('update', $redemptionModel);
 
+        $targetOrgId = $pointService->resolveTargetOrganization($request->user(), $request->input('organization_id'));
+        $redemptionOrgId = (string) $scopeService->organizationIdForModel($redemptionModel);
+
+        if ($redemptionOrgId !== $targetOrgId) {
+            throw new AuthorizationException('Target organization does not match redemption organization.');
+        }
+
         $status = $request->validated('status');
 
         $pointService->updateRedemptionStatus(
             redemption: $redemptionModel,
             status: $status,
             notes: $request->validated('notes'),
+            targetOrgId: $targetOrgId,
+            actor: $request->user(),
         );
 
         $messages = [

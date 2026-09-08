@@ -215,7 +215,10 @@ class UiAuditSeeder extends Seeder
 
     private function seedPos(Organization $organization): void
     {
-        $category = PosCategory::query()->updateOrCreate(['slug' => 'ui-audit-grocery'], ['name' => 'Audit Grocery', 'is_active' => true]);
+        $category = PosCategory::query()->updateOrCreate(
+            ['slug' => 'ui-audit-grocery', 'organization_id' => $organization->id],
+            ['name' => 'Audit Grocery', 'is_active' => true, 'organization_id' => $organization->id]
+        );
         $products = [
             ['UI-AUD-001', 'Beras Audit 5kg', 78000, 24, 4, null],
             ['UI-AUD-002', 'Produk Tanpa Gambar', 12000, 2, 5, null],
@@ -252,7 +255,7 @@ class UiAuditSeeder extends Seeder
         $product = PosProduct::query()->where('sku', 'UI-AUD-001')->firstOrFail();
         $transaction = PosTransaction::query()->updateOrCreate(
             ['transaction_no' => 'UI-AUDIT-POS-001'],
-            ['cooperative_member_id' => $members['positive']->id, 'cashier_id' => $users['kasir']->id, 'subtotal' => 78000, 'discount_amount' => 0, 'total_amount' => 78000, 'gross_profit' => 10000, 'cash_received' => 100000, 'cash_change' => 22000, 'status' => 'COMPLETED', 'sold_at' => self::FIXED_DATE.' 10:00:00'],
+            ['organization_id' => $organizations['pusat']->id, 'cooperative_member_id' => $members['positive']->id, 'cashier_id' => $users['kasir']->id, 'subtotal' => 78000, 'discount_amount' => 0, 'total_amount' => 78000, 'gross_profit' => 10000, 'cash_received' => 100000, 'cash_change' => 22000, 'status' => 'COMPLETED', 'sold_at' => self::FIXED_DATE.' 10:00:00'],
         );
         PosTransactionItem::query()->updateOrCreate(
             ['pos_transaction_id' => $transaction->id, 'pos_product_id' => $product->id],

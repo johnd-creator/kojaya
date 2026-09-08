@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\StoreRewardRequest;
 use App\Http\Requests\Cooperative\UpdateRewardRequest;
 use App\Models\Reward;
 use App\Services\Authorization\OrganizationScopeService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -44,14 +45,7 @@ class RewardController extends Controller
     ): RedirectResponse {
         $this->authorize('create', Reward::class);
 
-        $visibility = $scopeService->visibilityFor($request->user(), 'view_cooperative_all');
-        $organizationId = $visibility->global
-            ? ($request->validated('organization_id') ?? $visibility->organizationId ?? $request->user()?->organization_id)
-            : $visibility->organizationId;
-
-        if (blank($organizationId)) {
-            abort(422, 'An organization must be specified for the reward.');
-        }
+        $organizationId = $scopeService->resolveTargetOrganization($request->user(), $request->input('organization_id'));
 
         Reward::query()->create([
             ...$request->safe()->except('organization_id'),
@@ -72,6 +66,13 @@ class RewardController extends Controller
 
         $this->authorize('update', $rewardModel);
 
+        $targetOrgId = $scopeService->resolveTargetOrganization($request->user(), $request->input('organization_id'));
+        $authoritativeOrgId = (string) $scopeService->organizationIdForModel($rewardModel);
+
+        if ($authoritativeOrgId !== $targetOrgId) {
+            throw new AuthorizationException('Target organization does not match reward organization.');
+        }
+
         $rewardModel->update($request->safe()->except('organization_id'));
 
         return back()->with('success', 'Reward berhasil diperbarui.');
@@ -86,6 +87,13 @@ class RewardController extends Controller
         $rewardModel = $scopeService->resolveVisible(Reward::class, $request->user(), $reward);
 
         $this->authorize('delete', $rewardModel);
+
+        $targetOrgId = $scopeService->resolveTargetOrganization($request->user(), $request->input('organization_id'));
+        $authoritativeOrgId = (string) $scopeService->organizationIdForModel($rewardModel);
+
+        if ($authoritativeOrgId !== $targetOrgId) {
+            throw new AuthorizationException('Target organization does not match reward organization.');
+        }
 
         $rewardModel->delete();
 

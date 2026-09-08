@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use App\Enums\PayrollApprovalStatus;
 use App\Models\Traits\HasApprovalLog;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,9 +11,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PayrollApproval extends Model
+class PayrollApproval extends Model implements OrganizationScopedModel
 {
     use HasApprovalLog, HasFactory, HasUuids;
+
+    public function organizationScopePath(): string
+    {
+        return 'payroll.organization_id';
+    }
 
     protected $fillable = [
         'id',

@@ -2,12 +2,15 @@
 
 namespace App\Jobs;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\Co\Pos\BackgroundJobStatus;
 use App\Models\BackgroundJob;
 use App\Services\AuditLogService;
 use App\Services\Cooperative\PosSalesReportService;
 use App\Support\AuditContext;
+use App\Support\ReportAuthorizationScope;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
@@ -46,9 +49,13 @@ class GeneratePosReportPdf implements ShouldQueue
         ];
     }
 
-    public function handle(PosSalesReportService $service, ?AuditLogService $audit = null): void
-    {
+    public function handle(
+        PosSalesReportService $service,
+        ?AuditLogService $audit = null,
+        ?OrganizationScopedQueryService $scopeService = null,
+    ): void {
         $audit ??= app(AuditLogService::class);
+        $scopeService ??= app(OrganizationScopedQueryService::class);
         $job = $this->claimJob();
 
         if (! $job) {
@@ -60,17 +67,47 @@ class GeneratePosReportPdf implements ShouldQueue
         try {
             $job->updateProgress(10);
 
+            if ($job->type !== 'pos.report.pdf') {
+                throw new AuthorizationException("Invalid job type [{$job->type}] for POS report PDF generation.");
+            }
+
+            $user = \App\Models\User::query()->find($job->user_id);
+            if (! $user) {
+                throw new AuthorizationException('Owning user not found for background job.');
+            }
+
+            if (! $user->can('view_pos_reports')) {
+                throw new AuthorizationException('Owning user lacks view_pos_reports permission.');
+            }
+
+            $currentVisibility = $scopeService->visibilityFor($user);
+
             $metadata = $job->metadata ?? [];
+            if (! is_array($metadata) || ! isset($metadata['report_scope'])) {
+                throw new AuthorizationException('Background job is missing trusted report_scope metadata.');
+            }
+
+            $storedScope = ReportAuthorizationScope::fromArray($metadata['report_scope']);
+            $effectiveVisibility = $storedScope->intersect($currentVisibility);
+
+            $service->setScopeCeiling($storedScope);
+
             $from = (string) ($metadata['from'] ?? now()->startOfMonth()->toDateString());
             $to = (string) ($metadata['to'] ?? now()->toDateString());
             $filters = is_array($metadata['filters'] ?? null) ? $metadata['filters'] : [];
+            unset(
+                $filters['organization_id'],
+                $filters['report_scope'],
+                $filters['authorization_scope'],
+                $filters['tenant_scope'],
+            );
 
             $job->updateProgress(25);
 
-            $summary = $service->summaryForPeriod($from, $to, $filters);
-            $paymentReconciliation = $service->paymentReconciliation($from, $to, $filters);
-            $topProducts = $service->productSalesForPeriod($from, $to, $filters)->take(15)->values()->all();
-            $dailyTrend = $service->dailyTrend($from, $to, $filters);
+            $summary = $service->summaryForPeriod($user, $from, $to, $filters);
+            $paymentReconciliation = $service->paymentReconciliation($user, $from, $to, $filters);
+            $topProducts = $service->productSalesForPeriod($user, $from, $to, $filters)->take(15)->values()->all();
+            $dailyTrend = $service->dailyTrend($user, $from, $to, $filters);
 
             $job->updateProgress(60);
 
@@ -106,7 +143,7 @@ class GeneratePosReportPdf implements ShouldQueue
                     'file_size' => $size,
                 ],
                 'reason' => 'POS report PDF queue job completed.',
-            ], AuditContext::forQueue($job->user?->organization_id));
+            ], AuditContext::forQueue($effectiveVisibility->organizationId));
         } catch (Throwable $exception) {
             if ($relativePath !== null) {
                 Storage::disk($job->disk)->delete($relativePath);

@@ -7,27 +7,29 @@ use Illuminate\Support\Collection;
 
 class BankExportService
 {
-    public function exportPayrollToBank(string $payrollBatchId, string $bankCode)
+    public function exportPayrollToBank(string $payrollBatchId, string $bankCode, ?Collection $payrolls = null): string
     {
-        $payrolls = Payroll::where('payroll_batch_id', $payrollBatchId)
-            ->with('employee')
-            ->get();
+        $payrolls ??= Payroll::whereHas('approvals', function ($q) use ($payrollBatchId) {
+            $q->where('payroll_batch_id', $payrollBatchId);
+        })->with('employee')->get();
 
-        return match ($bankCode) {
-            'bni' => $this->exportToBNI($payrolls),
+        return match (strtolower($bankCode)) {
+            'bni' => $this->exportToBNI($payrolls, $payrollBatchId),
             'mandiri' => $this->exportToMandiri($payrolls),
+            'bca' => $this->exportToBCA($payrolls, $payrollBatchId),
+            'bri' => $this->exportToBRI($payrolls, $payrollBatchId),
             default => throw new \InvalidArgumentException("Unsupported bank code: {$bankCode}"),
         };
     }
 
-    private function exportToBNI(Collection $payrolls): string
+    private function exportToBNI(Collection $payrolls, string $payrollBatchId): string
     {
         $lines = [];
 
         foreach ($payrolls as $payroll) {
             $employee = $payroll->employee;
 
-            if (! $employee->bank_account_number || $employee->bank_name !== 'BNI') {
+            if (! $employee || ! $employee->bank_account_number || strtoupper($employee->bank_name ?? '') !== 'BNI') {
                 continue;
             }
 
@@ -36,7 +38,7 @@ class BankExportService
                 $employee->bank_account_holder ?? $employee->first_name.' '.$employee->last_name,
                 number_format($payroll->net_salary, 2, '.', ''),
                 now()->format('Ymd'),
-                'PAYROLL-'.$payroll->payroll_batch_id,
+                'PAYROLL-'.$payrollBatchId,
             ]);
         }
 
@@ -52,7 +54,7 @@ class BankExportService
         foreach ($payrolls as $payroll) {
             $employee = $payroll->employee;
 
-            if (! $employee->bank_account_number || $employee->bank_name !== 'MANDIRI') {
+            if (! $employee || ! $employee->bank_account_number || strtoupper($employee->bank_name ?? '') !== 'MANDIRI') {
                 continue;
             }
 
@@ -62,6 +64,52 @@ class BankExportService
                 str_pad(($employee->bank_account_holder ?? $employee->first_name.' '.$employee->last_name), 50, ' '),
                 str_pad(number_format($payroll->net_salary, 0, '', ''), 15, '0', STR_PAD_LEFT),
                 'IDR',
+            ]);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function exportToBCA(Collection $payrolls, string $payrollBatchId): string
+    {
+        $lines = [];
+
+        foreach ($payrolls as $payroll) {
+            $employee = $payroll->employee;
+
+            if (! $employee || ! $employee->bank_account_number || strtoupper($employee->bank_name ?? '') !== 'BCA') {
+                continue;
+            }
+
+            $lines[] = implode(',', [
+                $employee->bank_account_number,
+                $employee->bank_account_holder ?? $employee->first_name.' '.$employee->last_name,
+                number_format($payroll->net_salary, 2, '.', ''),
+                now()->format('Ymd'),
+                'PAYROLL-'.$payrollBatchId,
+            ]);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function exportToBRI(Collection $payrolls, string $payrollBatchId): string
+    {
+        $lines = [];
+
+        foreach ($payrolls as $payroll) {
+            $employee = $payroll->employee;
+
+            if (! $employee || ! $employee->bank_account_number || strtoupper($employee->bank_name ?? '') !== 'BRI') {
+                continue;
+            }
+
+            $lines[] = implode(',', [
+                $employee->bank_account_number,
+                $employee->bank_account_holder ?? $employee->first_name.' '.$employee->last_name,
+                number_format($payroll->net_salary, 2, '.', ''),
+                now()->format('Ymd'),
+                'PAYROLL-'.$payrollBatchId,
             ]);
         }
 

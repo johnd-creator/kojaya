@@ -25,7 +25,7 @@ class GeneratePayrollRequest extends FormRequest
     {
         return [
             'period' => ['required', 'date_format:Y-m'],
-            'organization_id' => ['required', 'uuid', 'exists:organizations,id'],
+            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
         ];
     }
 

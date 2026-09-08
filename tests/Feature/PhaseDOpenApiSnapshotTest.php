@@ -129,7 +129,11 @@ class PhaseDOpenApiSnapshotTest extends TestCase
         $this->assertStringContainsString('php artisan test', $content);
         $this->assertStringContainsString('bin/openapi.sh check', $content);
         $this->assertStringContainsString('--parallel', $content);
-        $this->assertStringContainsString('--coverage --min=70', $content);
+        $this->assertStringContainsString('shard: [1, 2, 3, 4]', $content);
+        $this->assertStringContainsString('php bin/ci/phpunit-shard verify --total=4', $content);
+        $this->assertStringContainsString('phpunit-aggregate', $content);
+        $this->assertStringContainsString('--min-coverage=60', $content);
+        $this->assertStringContainsString('--min-tests=2211', $content);
         $this->assertStringContainsString('Pint', $content);
         $this->assertStringContainsString('wayfinder:generate', $content);
         $this->assertStringContainsString('npm run build', $content);

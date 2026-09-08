@@ -1432,6 +1432,7 @@ A unified, robust, and mathematically sound organization isolation foundation wa
    - **Safe Visible Object Resolution (`resolveVisible`):** Formally introduced `resolveVisible(Builder|string $queryOrClass, User $user, string|int $id, ?string $globalPermission = null): Model`. Scopes the query first, then resolves the record or throws `ModelNotFoundException` (404 Not Found), preventing cross-tenant resource enumeration.
    - **Existing Object Assertion (`assertVisible`):** Validates that an already-loaded model belongs to the actor's visible organization or throws `AuthorizationException` (403 Forbidden).
    - **Organization Identifier Validation (`assertOrganizationIdentifier`):** Verifies that a target organization ID exists in the database and is non-empty before operations.
+   - **POS Daily Closing Target (SEC-P1-06 R1):** `PosDailyClosingService::resolveClosingOrganization()` is the shared HTTP/domain target policy using `visibilityFor(user, 'view_cooperative_all')`. Unit actors use the authoritative visible organization and cannot override it. Global actors must explicitly select a valid organization for both closing queries and mutations; session and home organization are never implicit targets. Missing/invalid global targets raise `ValidationException` (422 for JSON); foreign unit targets raise `AuthorizationException` (403).
 
 4. **Explicit Rules Enforced:**
    - **Rule A (Tenant Isolation):** Standard tenant users are restricted strictly to resources matching their assigned `organization_id`.
@@ -1601,3 +1602,101 @@ POS transaction creation, transaction history/detail, receipts, void requests, v
 
 8. **Expanded Test Suite:**
    - Expanded `PosTransactionVoidOrganizationIsolationTest.php` to 52 tests (208 assertions), adding regression tests for all 6 blockers (A through F).
+
+---
+
+## 🎯 ADR-039: Points Admin Organization Isolation and Explicit Tenant Targeting (SEC-P1-07)
+
+**Status:** ✅ Accepted
+**Date:** September 7, 2026
+**Deciders:** Security & Core Engineering Teams
+
+### Context
+
+Cooperative points, point adjustments, point history, and reward redemption workflows previously lacked consistent organization isolation across administrative surfaces. Global administrative actors performing mutations on tenant-owned resources (Rewards and Reward Redemptions) could implicitly fall back to the actor's home organization (`user.organization_id`), session context (`active_organization_id`), or object identity alone. This created operational ambiguity and cross-tenant mutation risks when a global actor administered rewards or redemptions across multiple cooperative units. Furthermore, unit-scoped actors attempting to target foreign organizations required consistent fail-closed handling (403 Forbidden) rather than implicit assignment or validation bypass.
+
+### Decision
+
+1. **Explicit Global Tenant Targeting for Reward & Redemption Mutations:**
+   - Global actors (holding `view_cooperative_all`) must explicitly provide `organization_id` on all tenant-owned Reward and RewardRedemption mutations:
+     - `POST /cooperative/rewards` (`StoreRewardRequest`)
+     - `PUT /cooperative/rewards/{reward}` (`UpdateRewardRequest`)
+     - `DELETE /cooperative/rewards/{reward}` (`RewardController::destroy`)
+     - `PUT /cooperative/redemptions/{redemption}/status` (`UpdateRedemptionStatusRequest`, `RewardRedemptionController::updateStatus`, and `PointService::updateRedemptionStatus`)
+   - Eliminated all implicit fallback to `user.organization_id`, session `active_organization_id`, or object identity alone.
+   - Global requests missing `organization_id` or providing invalid/non-existent UUIDs fail closed with validation errors (422 Unprocessable Content).
+   - Global requests where explicit `organization_id` differs from the target resource's authoritative tenant fail closed with `AuthorizationException` (403 Forbidden).
+
+2. **Authoritative Unit Actor Scoping:**
+   - For unit-scoped actors, the target tenant is authoritatively bound to the actor's visible organization (`OrganizationScopeService::resolveTargetOrganization`).
+   - Unit actors may omit `organization_id` or supply an `organization_id` matching their own organization.
+   - If a unit actor explicitly supplies a foreign `organization_id`, the request immediately fails closed with `AuthorizationException` (403 Forbidden).
+
+3. **Domain Service Defense-in-Depth (`PointService::updateRedemptionStatus`):**
+   - Added `?string $targetOrgId = null` and `?User $actor = null` parameters to `PointService::updateRedemptionStatus`.
+   - Within the database transaction and under pessimistic row lock (`lockForUpdate()`), authoritatively resolves the target organization and asserts `(string)$redemption->member->organization_id === (string)$resolvedTargetOrgId`. Mismatches throw `AuthorizationException`, preventing direct service invocation bypasses.
+
+4. **Canonical Tenant Query Helper (`OrganizationScopedQueryService`):**
+   - Formalized `organizationIdForModel(Model $model): ?string` to extract authoritative tenant IDs from direct or relational ownership paths without duplicating reflection or relationship logic.
+   - Added `resolveTargetOrganization(User $user, ?string $targetOrgId = null): string` to centralize actor scoping and permission checks across controllers and services.
+
+5. **Anti-Enumeration and Side-Effect Safety:**
+   - Unauthorized or foreign read/update attempts resolve via `resolveVisible()`, returning 404 Not Found to prevent resource existence enumeration.
+   - Denied cross-tenant mutation attempts leave database records, point transactions, member balances, reward stock, and transactional notification outbox completely untouched.
+
+### Consequences
+
+- Eliminates multi-tenant ambiguity for global actors: all Reward and Redemption writes require conscious, explicit tenant declaration.
+- Unit actors remain strictly confined to their own organization.
+- Backward compatibility preserved with existing zero-skip CI suites and legacy ERP test discoveries.
+- Test coverage: Backed by 36 tests in `PointsAdminOrganizationIsolationTest`, 35 tests in `RewardRedemptionOrganizationIsolationTest`, and full regression across `P5PointsRewardsTest`.
+
+---
+
+## 🎯 ADR-040: PHPUnit 4-Way Sharding & CI Runtime Optimization (CI-PERF-01)
+
+**Status:** ✅ Accepted
+**Date:** September 7, 2026
+**Deciders:** Core Engineering Team
+
+### Context
+
+The canonical `PHPUnit Parallel` CI workflow had grown to 253 test files (2,211 tests: 2,092 Feature + 119 Unit) with zero skips and a strict `>= 60%` line coverage gate. On GitHub Actions single-runner execution, this workflow consumed ~63 minutes of wall-clock time, creating severe CI throughput bottlenecks.
+
+Audits of the CI pipeline revealed several optimization opportunities:
+1. **Redundant Services:** A `selenium/standalone-chrome` container service was initialized despite zero Dusk or Selenium WebDriver tests in the PHPUnit suite.
+2. **Duplicate Test Execution:** `Legacy ERP Recovery Wave 1` tests (4 test files) were explicitly re-executed after the full parallel suite had already executed them.
+3. **Repeated Frontend Builds:** Each PHPUnit runner spent minutes running `npm ci`, `wayfinder:generate`, and `npm run build` merely to provide `public/build/manifest.json` for Inertia view tests.
+4. **Monolithic Suite:** All 253 canonical test files were executed sequentially on a single runner instead of leveraging parallel GitHub Actions runners.
+
+### Decision
+
+1. **Deterministic 4-Way Test Sharding (`bin/ci/phpunit-shard`):**
+   - Partition the canonical 253 SQLite test files across 4 runners using deterministic Greedy Longest Processing Time (LPT) balancing.
+   - Weight heuristic: `weight = lineCount + (testMethodCount * 25)`.
+   - Results in balanced shards: Shard 1 (63 files, 519 tests, 29,137 weight), Shard 2 (63 files, 531 tests, 29,137 weight), Shard 3 (63 files, 542 tests, 29,142 weight), Shard 4 (64 files, 543 tests, 29,143 weight).
+   - Enforce Mutually Exclusive & Collectively Exhaustive (MECE) validation before execution (`php bin/ci/phpunit-shard verify --total=4`).
+   - Generate dynamic per-shard `phpunit.shard.xml` with dedicated `<coverage>` and `<logging>` outputs.
+
+2. **Frontend Asset Sharing & Service Cleanup:**
+   - Eliminate the unused `selenium` service container from CI runners.
+   - Eliminate redundant post-suite execution of `Legacy ERP Recovery Wave 1` tests.
+   - Upload compiled `public/build` assets from the `frontend-build` job and download them into shard runners, eliminating redundant Node.js dependency installs and Vite builds across the 4 shard runners.
+
+3. **Fail-Closed Aggregation & Branch Protection Gate (`bin/ci/phpunit-aggregate`):**
+   - Preserve the exact required check name `PHPUnit Parallel` for branch-protection compatibility.
+   - Aggregate results from all 4 shards: download JUnit XML and `.cov` raw coverage artifacts.
+   - Enforce fail-closed quality gates:
+     - 4/4 JUnit XML files and 4/4 `.cov` files present and readable.
+     - Total tests executed `>= 2211`.
+     - Zero test failures, zero test errors, and zero skipped tests (`failOnSkipped="true"` preserved).
+     - Merge coverage via `SebastianBergmann\CodeCoverage\CodeCoverage::merge()`.
+     - Combined line coverage `>= 60.0%`.
+
+### Consequences
+
+- **Wall-Clock Reduction:** Shards run concurrently on 4 GitHub Actions runners, reducing execution time toward the target of `<= 25 minutes`.
+- **Zero Production Risk:** Zero modifications to `app/` application source code.
+- **Coverage & Quality Preservation:** Zero skips enforced; combined code coverage gate enforced at `>= 60.0%`.
+- **Deterministic CI:** Sharding is purely deterministic and reproducible locally via CLI commands.
+- **Seamless Branch Protection:** Required status check `PHPUnit Parallel` remains intact and acts as the authoritative gatekeeper.

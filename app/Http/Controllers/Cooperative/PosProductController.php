@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\StorePosStockAdjustmentRequest;
 use App\Http\Requests\Cooperative\UpdatePosProductRequest;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
+use App\Services\Cooperative\PosCategoryAccessService;
 use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosProductImageService;
 use App\Services\Cooperative\PosStockAdjustmentService;
@@ -18,8 +19,11 @@ use Inertia\Response;
 
 class PosProductController extends Controller
 {
-    public function index(Request $request, PosProductAccessService $productAccess): Response
-    {
+    public function index(
+        Request $request,
+        PosProductAccessService $productAccess,
+        PosCategoryAccessService $categoryAccess,
+    ): Response {
         $query = $productAccess->scopeVisibleTo(PosProduct::query(), $request->user())->with('category');
 
         if ($request->filled('search')) {
@@ -33,7 +37,12 @@ class PosProductController extends Controller
         }
 
         if ($request->filled('category_id')) {
-            $query->where('pos_category_id', $request->input('category_id'));
+            $categoryId = $request->input('category_id');
+            if (! $categoryAccess->isVisibleId($categoryId, $request->user())) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where('pos_category_id', $categoryId);
+            }
         }
 
         if ($request->boolean('low_stock')) {
@@ -46,7 +55,10 @@ class PosProductController extends Controller
 
         return Inertia::render('Cooperative/Inventory/Products/Index', [
             'products' => $query->orderBy('name')->paginate(15)->withQueryString(),
-            'categories' => PosCategory::query()->where('is_active', true)->orderBy('name')->get(),
+            'categories' => $categoryAccess->scopeVisibleTo(
+                PosCategory::query()->where('is_active', true),
+                $request->user()
+            )->orderBy('name')->get(),
             'filters' => $request->only(['search', 'category_id', 'low_stock', 'discontinued']),
         ]);
     }
@@ -55,9 +67,15 @@ class PosProductController extends Controller
         StorePosProductRequest $request,
         PosProductImageService $imageService,
         PosProductAccessService $productAccess,
+        PosCategoryAccessService $categoryAccess,
     ): RedirectResponse {
         $data = $request->validated();
-        $data['organization_id'] = $productAccess->assertCanCreate($request->user());
+        $targetOrgId = $productAccess->assertCanCreate($request->user());
+        $data['organization_id'] = $targetOrgId;
+
+        if (! empty($data['pos_category_id'])) {
+            $categoryAccess->assertBelongsToOrganization((int) $data['pos_category_id'], $targetOrgId);
+        }
 
         if ($request->hasFile('image')) {
             $data['image_path'] = $imageService->storeImage(
@@ -87,9 +105,16 @@ class PosProductController extends Controller
         PosProduct $product,
         PosProductImageService $imageService,
         PosProductAccessService $productAccess,
+        PosCategoryAccessService $categoryAccess,
     ): RedirectResponse {
         $productAccess->assertCanOperate($request->user(), $product);
         $data = $request->validated();
+
+        if (! empty($data['pos_category_id'])) {
+            $categoryAccess->assertBelongsToOrganization((int) $data['pos_category_id'], (string) $product->organization_id);
+        }
+
+        unset($data['organization_id']);
 
         if ($request->boolean('remove_image')) {
             $imageService->deleteImage($product->image_path);

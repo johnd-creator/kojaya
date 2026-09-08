@@ -17,7 +17,14 @@ class PosSyncApiController extends Controller
 
     public function catalog(Request $request): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+
+        $organizationId = $user->organization_id;
+        abort_if(empty($organizationId), 403, 'A cooperative organization is required for this operation.');
+
         $products = PosProduct::query()
+            ->where('organization_id', $organizationId)
             ->where('is_active', true)
             ->where('is_discontinued', false)
             ->get(['id', 'sku', 'barcode', 'name', 'cost_price', 'sale_price', 'stock', 'image_path', 'brand', 'variant', 'unit']);

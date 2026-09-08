@@ -49,7 +49,7 @@ class PosPhase5ShiftClosingTest extends TestCase
     public function test_shift_difference_is_calculated_from_cash_sales(): void
     {
         $cashier = $this->cashier();
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $cashier->organization_id]);
         $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
@@ -97,7 +97,7 @@ class PosPhase5ShiftClosingTest extends TestCase
             'user_id' => $supervisor->id,
             'status' => 'ACTIVE',
         ]);
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $cashier->organization_id]);
         $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
@@ -149,7 +149,7 @@ class PosPhase5ShiftClosingTest extends TestCase
             'credit_limit' => 50000,
             'status' => 'ACTIVE',
         ]);
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $cashier->organization_id]);
         $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,
@@ -186,7 +186,7 @@ class PosPhase5ShiftClosingTest extends TestCase
             'credit_limit' => 50000,
             'status' => 'ACTIVE',
         ]);
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $cashier->organization_id]);
         $product = $this->product($cashier, [
             'pos_category_id' => $category->id,
             'cost_price' => 1000,

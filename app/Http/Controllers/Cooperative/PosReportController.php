@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Cooperative;
 
+use App\Contracts\OrganizationScopedQueryService;
 use App\Enums\Co\Pos\BackgroundJobStatus;
 use App\Http\Controllers\Controller;
 use App\Jobs\GeneratePosReportPdf;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosSalesReportService;
 use App\Services\Export\PosReportCsvExport;
+use App\Support\ReportAuthorizationScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,11 +27,16 @@ class PosReportController extends Controller
     public function __construct(
         private PosSalesReportService $service,
         private PosProductAccessService $productAccess,
+        private OrganizationScopedQueryService $scopeService,
     ) {}
 
     public function index(): Response
     {
         $user = request()->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+
+        $visibility = $this->scopeService->visibilityFor($user);
+
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
         $filters = $this->filters();
@@ -39,32 +46,48 @@ class PosReportController extends Controller
             'to' => $to,
             'filters' => $filters,
             'analytics' => Inertia::defer(fn (): array => [
-                'summary' => $this->service->summaryForPeriod($from, $to, $filters),
-                'payment_reconciliation' => $this->service->paymentReconciliation($from, $to, $filters),
-                'daily_trend' => $this->service->dailyTrend($from, $to, $filters),
-                'top_products' => $this->service->productSalesForPeriod($from, $to, $filters)->take(20)->values()->all(),
-                'top_members' => $this->service->topMembers($from, $to, $filters),
-                'cashier_performance' => $this->service->cashierPerformance($from, $to, $filters),
+                'summary' => $this->service->summaryForPeriod($user, $from, $to, $filters),
+                'payment_reconciliation' => $this->service->paymentReconciliation($user, $from, $to, $filters),
+                'daily_trend' => $this->service->dailyTrend($user, $from, $to, $filters),
+                'top_products' => $this->service->productSalesForPeriod($user, $from, $to, $filters)->take(20)->values()->all(),
+                'top_members' => $this->service->topMembers($user, $from, $to, $filters),
+                'cashier_performance' => $this->service->cashierPerformance($user, $from, $to, $filters),
             ], 'analytics'),
             'products' => $this->productAccess->scopeVisibleTo(PosProduct::query(), $user)
                 ->where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'categories' => PosCategory::query()->orderBy('name')->get(['id', 'name']),
-            'cashiers' => User::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => PosCategory::query()
+                ->when(! $visibility->global, fn ($q) => $q->whereHas('products', fn ($pq) => $pq->where('organization_id', $visibility->organizationId)))
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'cashiers' => User::query()
+                ->when(! $visibility->global, fn ($q) => $q->where('organization_id', $visibility->organizationId))
+                ->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     public function exportCsv(): StreamedResponse
     {
+        $user = request()->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+
+        $this->scopeService->visibilityFor($user);
+
         $from = request()->input('from', now()->startOfMonth()->toDateString());
         $to = request()->input('to', now()->toDateString());
         $filters = $this->filters();
         $exporter = new PosReportCsvExport;
 
-        return $exporter->stream($this->service, $from, $to, $filters);
+        return $exporter->stream($this->service, $user, $from, $to, $filters);
     }
 
     public function enqueuePdf(Request $request): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+
+        $visibility = $this->scopeService->visibilityFor($user);
+        $reportScope = ReportAuthorizationScope::forVisibility($visibility);
+
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
@@ -79,10 +102,16 @@ class PosReportController extends Controller
         $from = $validated['from'] ?? now()->startOfMonth()->toDateString();
         $to = $validated['to'] ?? now()->toDateString();
         $filters = array_filter($validated['filters'] ?? [], fn ($v) => $v !== null && $v !== '');
-        $filters['organization_id'] = $request->user()->organization_id;
+
+        unset(
+            $filters['organization_id'],
+            $filters['report_scope'],
+            $filters['authorization_scope'],
+            $filters['tenant_scope'],
+        );
 
         $job = BackgroundJob::query()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => 'pos.report.pdf',
             'status' => BackgroundJobStatus::Pending,
             'progress' => 0,
@@ -90,6 +119,7 @@ class PosReportController extends Controller
                 'from' => $from,
                 'to' => $to,
                 'filters' => $filters,
+                'report_scope' => $reportScope->toArray(),
             ],
         ]);
 
@@ -104,7 +134,12 @@ class PosReportController extends Controller
 
     public function pdfStatus(Request $request, BackgroundJob $job): JsonResponse
     {
-        abort_unless($job->isOwnedBy($request->user()->id), 404);
+        $user = $request->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+        abort_unless($job->isOwnedBy($user->id), 404);
+        abort_unless($job->type === 'pos.report.pdf', 404);
+
+        $this->authorizeJobReportScope($user, $job);
 
         return response()->json([
             'job_id' => $job->uuid,
@@ -123,7 +158,12 @@ class PosReportController extends Controller
 
     public function pdfDownload(Request $request, BackgroundJob $job): StreamedResponse|RedirectResponse
     {
-        abort_unless($job->isOwnedBy($request->user()->id), 404);
+        $user = $request->user();
+        abort_unless($user?->can('view_pos_reports'), 403);
+        abort_unless($job->isOwnedBy($user->id), 404);
+        abort_unless($job->type === 'pos.report.pdf', 404);
+
+        $this->authorizeJobReportScope($user, $job);
 
         if ($job->status !== BackgroundJobStatus::Completed) {
             abort(409, 'File belum siap diunduh.');
@@ -139,13 +179,31 @@ class PosReportController extends Controller
         ]);
     }
 
+    private function authorizeJobReportScope(User $user, BackgroundJob $job): void
+    {
+        $metadata = $job->metadata ?? [];
+        if (! is_array($metadata) || ! isset($metadata['report_scope'])) {
+            abort(404);
+        }
+
+        try {
+            $reportScope = ReportAuthorizationScope::fromArray($metadata['report_scope']);
+            $visibility = $this->scopeService->visibilityFor($user);
+
+            if (! $reportScope->isAuthorized($visibility)) {
+                abort(404);
+            }
+        } catch (\Throwable) {
+            abort(404);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
     private function filters(): array
     {
         return array_filter([
-            'organization_id' => request()->user()->organization_id,
             'pos_product_id' => request()->input('pos_product_id'),
             'category_id' => request()->input('category_id'),
             'cashier_id' => request()->input('cashier_id'),

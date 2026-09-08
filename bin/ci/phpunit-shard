@@ -1,0 +1,445 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Deterministic PHPUnit Test Sharding Utility (CI-PERF-01)
+ *
+ * Responsibilities:
+ * 1. Discover all canonical SQLite-compatible test files in tests/Feature and tests/Unit.
+ * 2. Exclude designated PostgreSQL/environment-specific suites defined in phpunit.xml.
+ * 3. Partition test files into N mutually exclusive and collectively exhaustive shards
+ *    using deterministic Greedy LPT (Longest Processing Time) load balancing.
+ * 4. Verify partition integrity (zero duplicates, zero missing, union == canonical).
+ * 5. Generate shard-specific PHPUnit XML configurations with optional coverage and JUnit logging.
+ */
+$root = dirname(__DIR__, 2);
+
+function printHelp(): void
+{
+    echo <<<'HELP'
+Usage: php bin/ci/phpunit-shard <command> [options]
+
+Commands:
+  verify             Verify that all shards form a valid partition (union == canonical, disjoint).
+  list               List test files assigned to a specific shard.
+  generate-config    Generate a PHPUnit XML configuration file for a specific shard.
+  summary            Print test file count and estimated weight distribution across shards.
+
+Options:
+  --total=<int>            Total number of shards (default: 4).
+  --shard=<int>            Target shard index (1-based, required for list and generate-config).
+  --output=<path>          Destination path for generated XML (required for generate-config).
+  --coverage-file=<path>   Optional coverage PHP serialize path to embed in XML.
+  --junit-file=<path>      Optional JUnit XML report path to embed in XML.
+  --config=<path>          Base PHPUnit XML template (default: phpunit.xml).
+
+HELP;
+}
+
+/**
+ * Extract excluded test files from base phpunit.xml.
+ *
+ * @return list<string>
+ */
+function getExcludedFiles(string $baseXmlPath, string $root): array
+{
+    $excluded = [];
+    if (file_exists($baseXmlPath)) {
+        $content = file_get_contents($baseXmlPath);
+        if ($content !== false && preg_match_all('/<exclude>([^<]+)<\/exclude>/', $content, $matches)) {
+            foreach ($matches[1] as $excludePath) {
+                $trimmed = trim($excludePath);
+                $clean = str_replace('\\', '/', $trimmed);
+                $excluded[] = $clean;
+            }
+        }
+    }
+
+    // Fallback safe list matching phpunit.xml
+    $defaultExcludes = [
+        'tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php',
+        'tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php',
+        'tests/Feature/Cooperative/StoreCreditConcurrencyTest.php',
+        'tests/Feature/PaymentConcurrencyTest.php',
+        'tests/Feature/Backup/PostgresRestoreDrillTest.php',
+    ];
+
+    return array_values(array_unique(array_merge($excluded, $defaultExcludes)));
+}
+
+/**
+ * Discover canonical SQLite-compatible test files.
+ *
+ * @return list<string>
+ */
+function getCanonicalTestFiles(string $root, array $excluded): array
+{
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root.'/tests', FilesystemIterator::SKIP_DOTS)
+    );
+
+    $files = [];
+    $excludedMap = array_flip($excluded);
+
+    foreach ($iterator as $file) {
+        if (! $file->isFile() || ! str_ends_with($file->getFilename(), 'Test.php')) {
+            continue;
+        }
+
+        $relativePath = substr($file->getPathname(), strlen($root) + 1);
+        $relativePath = str_replace('\\', '/', $relativePath);
+
+        // Only include tests/Unit and tests/Feature
+        if (! str_starts_with($relativePath, 'tests/Unit/') && ! str_starts_with($relativePath, 'tests/Feature/')) {
+            continue;
+        }
+
+        if (isset($excludedMap[$relativePath])) {
+            continue;
+        }
+
+        $files[] = $relativePath;
+    }
+
+    sort($files);
+
+    return $files;
+}
+
+/**
+ * Calculate deterministic weight for a test file based on lines of code and test method count.
+ */
+function calculateFileWeight(string $fullPath): array
+{
+    $content = file_get_contents($fullPath);
+    if ($content === false) {
+        return ['lines' => 1, 'tests' => 1, 'weight' => 26];
+    }
+
+    $lines = substr_count($content, "\n") + 1;
+
+    // Count public function test* methods
+    preg_match_all('/public\s+function\s+(test\w+|[a-zA-Z0-9_]+)\s*\(/', $content, $matches);
+    $testCount = 0;
+    if (isset($matches[1])) {
+        foreach ($matches[1] as $name) {
+            if (str_starts_with($name, 'test')) {
+                $testCount++;
+            }
+        }
+    }
+
+    // Count @test annotations in docblocks
+    preg_match_all('/@test\b/', $content, $docMatches);
+    $testCount += count($docMatches[0] ?? []);
+
+    if ($testCount === 0) {
+        $testCount = 1;
+    }
+
+    // Weight formula: 1 point per line + 25 points per test method (reflecting setup/migration overhead)
+    $weight = $lines + ($testCount * 25);
+
+    return [
+        'lines' => $lines,
+        'tests' => $testCount,
+        'weight' => $weight,
+    ];
+}
+
+/**
+ * Partition canonical files across N shards using deterministic Greedy LPT.
+ *
+ * @param  list<string>  $canonicalFiles
+ * @return array<int, array{files: list<string>, weight: int, tests: int, lines: int}>
+ */
+function partitionFiles(array $canonicalFiles, int $totalShards, string $root): array
+{
+    $items = [];
+    foreach ($canonicalFiles as $relativePath) {
+        $stats = calculateFileWeight($root.'/'.$relativePath);
+        $items[] = [
+            'file' => $relativePath,
+            'weight' => $stats['weight'],
+            'tests' => $stats['tests'],
+            'lines' => $stats['lines'],
+        ];
+    }
+
+    // Sort descending by weight. Deterministic tie-break by file path ascending.
+    usort($items, function (array $a, array $b): int {
+        if ($b['weight'] === $a['weight']) {
+            return strcmp($a['file'], $b['file']);
+        }
+
+        return $b['weight'] <=> $a['weight'];
+    });
+
+    $shards = [];
+    for ($s = 1; $s <= $totalShards; $s++) {
+        $shards[$s] = [
+            'files' => [],
+            'weight' => 0,
+            'tests' => 0,
+            'lines' => 0,
+        ];
+    }
+
+    foreach ($items as $item) {
+        // Find shard with minimum total weight. Deterministic tie-break: lowest shard index.
+        $targetShard = 1;
+        $minWeight = $shards[1]['weight'];
+
+        for ($s = 2; $s <= $totalShards; $s++) {
+            if ($shards[$s]['weight'] < $minWeight) {
+                $minWeight = $shards[$s]['weight'];
+                $targetShard = $s;
+            }
+        }
+
+        $shards[$targetShard]['files'][] = $item['file'];
+        $shards[$targetShard]['weight'] += $item['weight'];
+        $shards[$targetShard]['tests'] += $item['tests'];
+        $shards[$targetShard]['lines'] += $item['lines'];
+    }
+
+    // Sort files within each shard alphabetically for stable XML output
+    for ($s = 1; $s <= $totalShards; $s++) {
+        sort($shards[$s]['files']);
+    }
+
+    return $shards;
+}
+
+// --- CLI Parsing ---
+$args = array_slice($argv, 1);
+$command = null;
+$options = [
+    'total' => 4,
+    'shard' => null,
+    'output' => null,
+    'coverage-file' => null,
+    'junit-file' => null,
+    'config' => 'phpunit.xml',
+];
+
+foreach ($args as $arg) {
+    if (! str_starts_with($arg, '--')) {
+        if ($command === null) {
+            $command = $arg;
+        }
+
+        continue;
+    }
+
+    $clean = substr($arg, 2);
+    if (str_contains($clean, '=')) {
+        [$key, $val] = explode('=', $clean, 2);
+        $options[$key] = $val;
+    } else {
+        $options[$clean] = true;
+    }
+}
+
+if ($command === null || in_array($command, ['help', '-h', '--help'], true)) {
+    printHelp();
+    exit(0);
+}
+
+$totalShards = max(1, (int) $options['total']);
+$baseConfigPath = $root.'/'.ltrim((string) $options['config'], '/');
+$excluded = getExcludedFiles($baseConfigPath, $root);
+$canonical = getCanonicalTestFiles($root, $excluded);
+$shards = partitionFiles($canonical, $totalShards, $root);
+
+switch ($command) {
+    case 'verify':
+        $allAssigned = [];
+        $hasErrors = false;
+
+        for ($s = 1; $s <= $totalShards; $s++) {
+            $allAssigned = array_merge($allAssigned, $shards[$s]['files']);
+        }
+        sort($allAssigned);
+
+        echo sprintf("=== Shard Partition Verification (Total Shards: %d) ===\n", $totalShards);
+        echo sprintf("Canonical eligible test files: %d\n", count($canonical));
+        echo sprintf("Total assigned test files:    %d\n", count($allAssigned));
+
+        // Missing check
+        $missing = array_values(array_diff($canonical, $allAssigned));
+        if (! empty($missing)) {
+            echo sprintf("[ERROR] Missing %d test files:\n", count($missing));
+            foreach ($missing as $m) {
+                echo '  - '.$m."\n";
+            }
+            $hasErrors = true;
+        }
+
+        // Duplicates check
+        $counts = array_count_values($allAssigned);
+        $duplicates = array_keys(array_filter($counts, fn (int $c): bool => $c > 1));
+        if (! empty($duplicates)) {
+            echo sprintf("[ERROR] Found %d duplicate test files across shards:\n", count($duplicates));
+            foreach ($duplicates as $d) {
+                echo '  - '.$d."\n";
+            }
+            $hasErrors = true;
+        }
+
+        // Pairwise disjoint check
+        for ($i = 1; $i <= $totalShards; $i++) {
+            for ($j = $i + 1; $j <= $totalShards; $j++) {
+                $intersection = array_intersect($shards[$i]['files'], $shards[$j]['files']);
+                if (! empty($intersection)) {
+                    echo sprintf("[ERROR] Shard %d and Shard %d share %d files!\n", $i, $j, count($intersection));
+                    $hasErrors = true;
+                }
+            }
+        }
+
+        if (! $hasErrors) {
+            echo "[OK] Partition verification passed: 100% mutually exclusive & collectively exhaustive.\n";
+            echo "\nShard Distribution Summary:\n";
+            for ($s = 1; $s <= $totalShards; $s++) {
+                echo sprintf(
+                    "  Shard %d/%d: %3d files | %4d tests | %6d lines | estimated weight: %6d\n",
+                    $s,
+                    $totalShards,
+                    count($shards[$s]['files']),
+                    $shards[$s]['tests'],
+                    $shards[$s]['lines'],
+                    $shards[$s]['weight']
+                );
+            }
+            exit(0);
+        }
+
+        exit(1);
+
+    case 'summary':
+        echo sprintf("=== Shard Distribution Summary (Total: %d) ===\n", $totalShards);
+        for ($s = 1; $s <= $totalShards; $s++) {
+            echo sprintf(
+                "Shard %d/%d: %3d files, %4d tests, %6d lines, weight: %6d\n",
+                $s,
+                $totalShards,
+                count($shards[$s]['files']),
+                $shards[$s]['tests'],
+                $shards[$s]['lines'],
+                $shards[$s]['weight']
+            );
+        }
+        exit(0);
+
+    case 'list':
+        $targetShard = (int) $options['shard'];
+        if ($targetShard < 1 || $targetShard > $totalShards) {
+            fwrite(STDERR, sprintf("Error: --shard must be between 1 and %d\n", $totalShards));
+            exit(1);
+        }
+
+        foreach ($shards[$targetShard]['files'] as $file) {
+            echo $file."\n";
+        }
+        exit(0);
+
+    case 'generate-config':
+        $targetShard = (int) $options['shard'];
+        if ($targetShard < 1 || $targetShard > $totalShards) {
+            fwrite(STDERR, sprintf("Error: --shard must be between 1 and %d\n", $totalShards));
+            exit(1);
+        }
+
+        $outputPath = $options['output'];
+        if (empty($outputPath)) {
+            fwrite(STDERR, "Error: --output path is required for generate-config\n");
+            exit(1);
+        }
+
+        if (! file_exists($baseConfigPath)) {
+            fwrite(STDERR, sprintf("Error: Base config not found at %s\n", $baseConfigPath));
+            exit(1);
+        }
+
+        $baseXml = file_get_contents($baseConfigPath);
+        if ($baseXml === false) {
+            fwrite(STDERR, "Error: Unable to read base config\n");
+            exit(1);
+        }
+
+        // Build shard testsuite XML
+        $testsuiteLines = [];
+        $testsuiteLines[] = sprintf('    <testsuites>');
+        $testsuiteLines[] = sprintf('        <testsuite name="Shard_%d_of_%d">', $targetShard, $totalShards);
+        foreach ($shards[$targetShard]['files'] as $f) {
+            $testsuiteLines[] = sprintf('            <file>%s</file>', htmlspecialchars($f, ENT_XML1));
+        }
+        $testsuiteLines[] = sprintf('        </testsuite>');
+        $testsuiteLines[] = sprintf('    </testsuites>');
+        $shardTestsuitesXml = implode("\n", $testsuiteLines);
+
+        // Replace <testsuites>...</testsuites>
+        $modifiedXml = preg_replace(
+            '/<testsuites>.*?<\/testsuites>/s',
+            $shardTestsuitesXml,
+            $baseXml
+        );
+
+        // Ensure cacheDirectory attribute exists on <phpunit> root element
+        if (! preg_match('/<phpunit\b[^>]*\bcacheDirectory=/s', $modifiedXml)) {
+            $modifiedXml = preg_replace(
+                '/<phpunit\b/s',
+                '<phpunit cacheDirectory=".phpunit.cache"',
+                $modifiedXml,
+                1
+            );
+        }
+
+        // Inject coverage block if coverage-file option is given
+        if (! empty($options['coverage-file'])) {
+            $covFile = htmlspecialchars((string) $options['coverage-file'], ENT_XML1);
+            $covBlock = <<<XML
+    <coverage>
+        <report>
+            <php outputFile="{$covFile}"/>
+        </report>
+    </coverage>
+XML;
+            if (str_contains($modifiedXml, '<php>')) {
+                $modifiedXml = str_replace('<php>', $covBlock."\n    <php>", $modifiedXml);
+            } else {
+                $modifiedXml = str_replace('</phpunit>', $covBlock."\n</phpunit>", $modifiedXml);
+            }
+        }
+
+        // Inject logging block if junit-file option is given
+        if (! empty($options['junit-file'])) {
+            $junitFile = htmlspecialchars((string) $options['junit-file'], ENT_XML1);
+            $loggingBlock = <<<XML
+    <logging>
+        <junit outputFile="{$junitFile}"/>
+    </logging>
+XML;
+            if (str_contains($modifiedXml, '<php>')) {
+                $modifiedXml = str_replace('<php>', $loggingBlock."\n    <php>", $modifiedXml);
+            } else {
+                $modifiedXml = str_replace('</phpunit>', $loggingBlock."\n</phpunit>", $modifiedXml);
+            }
+        }
+
+        $destDir = dirname($outputPath);
+        if (! is_dir($destDir)) {
+            mkdir($destDir, 0777, true);
+        }
+
+        file_put_contents($outputPath, $modifiedXml);
+        echo sprintf("Generated shard %d/%d config at %s with %d test files.\n", $targetShard, $totalShards, $outputPath, count($shards[$targetShard]['files']));
+        exit(0);
+
+    default:
+        fwrite(STDERR, sprintf("Unknown command '%s'. Run with --help for usage.\n", $command));
+        exit(1);
+}

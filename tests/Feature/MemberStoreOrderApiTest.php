@@ -35,6 +35,7 @@ class MemberStoreOrderApiTest extends TestCase
     {
         $this->actingMember(['member:read']);
         $category = PosCategory::factory()->create([
+            'organization_id' => $this->organization->id,
             'name' => 'Sembako',
             'slug' => 'sembako',
         ]);
@@ -57,7 +58,7 @@ class MemberStoreOrderApiTest extends TestCase
     public function test_member_can_place_store_order(): void
     {
         $member = $this->actingMember(['member:read', 'member:write']);
-        $category = PosCategory::factory()->create(['name' => 'Sembako', 'slug' => 'sembako']);
+        $category = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'Sembako', 'slug' => 'sembako-place']);
         $product = PosProduct::factory()->create([
             'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
@@ -135,7 +136,7 @@ class MemberStoreOrderApiTest extends TestCase
     public function test_store_order_is_idempotent_via_client_reference(): void
     {
         $this->actingMember(['member:write']);
-        $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk']);
+        $category = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'ATK', 'slug' => 'atk-idempotent']);
         $product = PosProduct::factory()->create([
             'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
@@ -160,7 +161,7 @@ class MemberStoreOrderApiTest extends TestCase
     public function test_store_order_does_not_reuse_client_reference_for_a_different_amount(): void
     {
         $this->actingMember(['member:write']);
-        $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk-amount']);
+        $category = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'ATK', 'slug' => 'atk-amount']);
         $product = PosProduct::factory()->create([
             'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,
@@ -190,7 +191,7 @@ class MemberStoreOrderApiTest extends TestCase
     public function test_store_order_rejects_insufficient_stock(): void
     {
         $this->actingMember(['member:write']);
-        $category = PosCategory::factory()->create(['name' => 'ATK', 'slug' => 'atk']);
+        $category = PosCategory::factory()->create(['organization_id' => $this->organization->id, 'name' => 'ATK', 'slug' => 'atk-stock']);
         $product = PosProduct::factory()->create([
             'organization_id' => $this->organization->id,
             'pos_category_id' => $category->id,

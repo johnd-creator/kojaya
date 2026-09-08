@@ -2,6 +2,7 @@
 
 namespace App\Services\Export;
 
+use App\Models\User;
 use App\Services\Cooperative\PosSalesReportService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -10,17 +11,17 @@ class PosReportCsvExport
     /**
      * @param  array<string, mixed>  $filters
      */
-    public function stream(PosSalesReportService $service, string $from, string $to, array $filters = []): StreamedResponse
+    public function stream(PosSalesReportService $service, User $actor, string $from, string $to, array $filters = []): StreamedResponse
     {
         $fileName = "laporan-pos-{$from}-sd-{$to}.csv";
 
-        return response()->streamDownload(function () use ($service, $from, $to, $filters): void {
+        return response()->streamDownload(function () use ($service, $actor, $from, $to, $filters): void {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, ['Laporan POS', "Periode: {$from} sd {$to}"]);
             fputcsv($handle, []);
 
             fputcsv($handle, ['RINGKASAN']);
-            $summary = $service->summaryForPeriod($from, $to, $filters);
+            $summary = $service->summaryForPeriod($actor, $from, $to, $filters);
             fputcsv($handle, ['Transaksi', $summary['transactions']]);
             fputcsv($handle, ['Void', $summary['voided_transactions']]);
             fputcsv($handle, ['Penjualan Kotor', $summary['gross_sales']]);
@@ -33,14 +34,14 @@ class PosReportCsvExport
 
             fputcsv($handle, ['REKONSILIASI PEMBAYARAN']);
             fputcsv($handle, ['Metode', 'Jumlah', 'Total']);
-            foreach ($service->paymentReconciliation($from, $to, $filters) as $row) {
+            foreach ($service->paymentReconciliation($actor, $from, $to, $filters) as $row) {
                 fputcsv($handle, [$row['method'], $row['count'], $row['total']]);
             }
             fputcsv($handle, []);
 
             fputcsv($handle, ['PENJUALAN PRODUK']);
             fputcsv($handle, ['Produk', 'Kategori', 'Qty', 'Pendapatan', 'Laba Kotor', 'Margin %']);
-            foreach ($service->productSalesForPeriod($from, $to, $filters) as $row) {
+            foreach ($service->productSalesForPeriod($actor, $from, $to, $filters) as $row) {
                 fputcsv($handle, [
                     $row['product_name'],
                     $row['category'] ?? '-',
@@ -54,7 +55,7 @@ class PosReportCsvExport
 
             fputcsv($handle, ['TREN HARIAN']);
             fputcsv($handle, ['Tanggal', 'Transaksi', 'Pendapatan']);
-            foreach ($service->dailyTrend($from, $to, $filters) as $row) {
+            foreach ($service->dailyTrend($actor, $from, $to, $filters) as $row) {
                 fputcsv($handle, [$row['date'], $row['transactions'], $row['revenue']]);
             }
 

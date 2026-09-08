@@ -5,12 +5,13 @@ import { ref } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
+import { close, index } from "@/routes/cooperative/pos/closings";
 
 const props = defineProps<{
     date: string;
+    organization_id: string;
     summary: {
         transaction_count: number;
         gross_sales: number;
@@ -25,15 +26,16 @@ const props = defineProps<{
 }>();
 
 const localDate = ref(props.date);
-const closeForm = useForm({ date: props.date });
+const closeForm = useForm({ date: props.date, organization_id: props.organization_id });
 
 function applyDate(): void {
-    router.get("/cooperative/pos/closings", { date: localDate.value });
+    router.get(index.url(), { date: localDate.value, organization_id: props.organization_id });
 }
 
 function closeDay(): void {
     closeForm.date = localDate.value;
-    closeForm.post("/cooperative/pos/closings", { preserveScroll: true });
+    closeForm.organization_id = props.organization_id;
+    closeForm.post(close.url(), { preserveScroll: true });
 }
 </script>
 
@@ -43,7 +45,7 @@ function closeDay(): void {
         :breadcrumbs="[
             { title: 'Koperasi', href: '/cooperative' },
             { title: 'POS', href: '/cooperative/pos' },
-            { title: 'Closing Harian', href: '/cooperative/pos/closings' },
+            { title: 'Closing Harian', href: index.url({ query: { organization_id: props.organization_id } }) },
         ]"
     >
         <PageContainer>

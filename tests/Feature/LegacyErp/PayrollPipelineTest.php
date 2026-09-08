@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\LegacyErp;
 
 use App\Enums\PayrollApprovalStatus;
 use App\Enums\PayrollStatus;

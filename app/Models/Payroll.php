@@ -2,12 +2,21 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Payroll extends Model
+class Payroll extends Model implements OrganizationScopedModel
 {
     use HasFactory;
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
 
     protected $fillable = [
         'employee_id',
@@ -33,19 +42,29 @@ class Payroll extends Model
         'bpjs_calculation_breakdown',
     ];
 
-    public function employee(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    public function organization(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    public function components(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function components(): HasMany
     {
         return $this->hasMany(PayrollComponent::class);
+    }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(PayrollApproval::class);
+    }
+
+    public function approval(): HasOne
+    {
+        return $this->hasOne(PayrollApproval::class)->latestOfMany();
     }
 
     protected function casts(): array

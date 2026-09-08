@@ -99,10 +99,12 @@ class PosTransactionService
         }
 
         $saleDate = ($data['sold_at'] ?? null) ?: now()->toDateString();
-        $this->closingGuard->guardSale((string) $saleDate);
+        $this->closingGuard->guardSale((string) $saleDate, $targetOrgId);
 
         try {
             return DB::transaction(function () use ($data, $cashier, $saleDate, $targetOrgId): PosTransaction {
+                $this->closingGuard->assertAndLockSale($targetOrgId, (string) $saleDate);
+
                 $memberId = $data['cooperative_member_id'] ?? null;
 
                 $subtotal = 0;
@@ -392,6 +394,8 @@ class PosTransactionService
         $this->closingGuard->guardVoid($transaction);
 
         return DB::transaction(function () use ($request, $supervisor, $transaction): PosTransaction {
+            $this->closingGuard->assertAndLockVoid($transaction);
+
             if ($transaction->isVoided()) {
                 throw ValidationException::withMessages([
                     'transaction' => 'Transaksi sudah di-void.',

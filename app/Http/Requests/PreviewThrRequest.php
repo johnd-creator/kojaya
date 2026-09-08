@@ -15,7 +15,7 @@ class PreviewThrRequest extends FormRequest
     {
         return [
             'year' => ['required', 'integer', 'min:2020', 'max:2099'],
-            'organization_id' => ['required', 'uuid', 'exists:organizations,id'],
+            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
         ];
     }
 }

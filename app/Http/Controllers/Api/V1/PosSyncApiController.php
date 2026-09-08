@@ -73,6 +73,10 @@ class PosSyncApiController extends Controller
 
     public function process(Request $request, string $idempotencyKey): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+        abort_unless($user->can('access_cooperative_pos'), 403, 'Izin access_cooperative_pos diperlukan untuk memproses sinkronisasi POS.');
+
         $syncRequest = $this->locateRequest($request, $idempotencyKey);
 
         $result = $this->service->process($syncRequest);
@@ -82,6 +86,10 @@ class PosSyncApiController extends Controller
 
     public function processBatch(Request $request): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+        abort_unless($user->can('access_cooperative_pos'), 403, 'Izin access_cooperative_pos diperlukan untuk memproses sinkronisasi POS.');
+
         $data = $request->validate([
             'idempotency_keys' => ['required', 'array', 'min:1', 'max:100'],
             'idempotency_keys.*' => ['string', 'max:120'],
@@ -96,6 +104,10 @@ class PosSyncApiController extends Controller
 
     public function status(Request $request, string $idempotencyKey): JsonResponse
     {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+        abort_unless($user->can('access_cooperative_pos'), 403, 'Izin access_cooperative_pos diperlukan untuk melihat status sinkronisasi POS.');
+
         $syncRequest = $this->locateRequest($request, $idempotencyKey, allowNotFound: true);
 
         if (! $syncRequest) {
@@ -114,13 +126,27 @@ class PosSyncApiController extends Controller
 
     private function locateRequest(Request $request, string $idempotencyKey, bool $allowNotFound = false): ?PosSyncRequest
     {
-        $userId = $request->user()?->id;
+        $user = $request->user();
+        $userId = $user?->id;
         $deviceId = $request->input('device_id') ?? $request->header('X-Device-Id');
 
         $query = PosSyncRequest::query()
             ->where('idempotency_key', $idempotencyKey)
             ->where('user_id', $userId)
             ->where('device_id', $deviceId);
+
+        if (! $user || ! $user->can('view_cooperative_all')) {
+            if (empty($user?->organization_id)) {
+                if (! $allowNotFound) {
+                    throw new NotFoundHttpException('Sync request tidak ditemukan atau bukan milik Anda.');
+                }
+
+                return null;
+            }
+            $query->where('organization_id', $user->organization_id);
+        } else {
+            $query->whereNotNull('organization_id');
+        }
 
         $syncRequest = $query->first();
 

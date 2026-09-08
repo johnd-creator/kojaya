@@ -81,6 +81,12 @@ class PosSyncService
                 ]);
             }
 
+            if (empty($existing->organization_id) || (string) $existing->organization_id !== (string) $trustedOrgId) {
+                throw ValidationException::withMessages([
+                    'idempotency_key' => 'Idempotency key sudah digunakan organisasi lain.',
+                ]);
+            }
+
             if ($existing->payload_hash !== null && $existing->payload_hash !== $payloadHash) {
                 throw ValidationException::withMessages([
                     'idempotency_key' => 'Idempotency key dipakai dengan payload berbeda.',
@@ -122,22 +128,18 @@ class PosSyncService
      */
     public function process(PosSyncRequest $syncRequest): array
     {
-        if ($syncRequest->status === PosSyncRequest::STATUS_DONE) {
-            return [
-                'idempotency_key' => $syncRequest->idempotency_key,
-                'status' => $syncRequest->response_status,
-                'data' => $syncRequest->response_body,
-                'replay' => true,
-            ];
-        }
-
         try {
-            // Revalidate actor and tenant (Section 11)
-            $user = $syncRequest->loadMissing('user')->user;
+            // Revalidate actor and tenant (Sections 12-14)
+            $user = request()->user()?->fresh() ?? $syncRequest->user()->first() ?? $syncRequest->user;
             if ($user === null) {
                 throw ValidationException::withMessages([
                     'user_id' => 'Pengguna sinkronisasi tidak ditemukan.',
                 ]);
+            }
+
+            $requestUser = request()->user();
+            if ($requestUser !== null && $requestUser->id !== $syncRequest->user_id && ! $requestUser->can('view_cooperative_all')) {
+                throw new AuthorizationException('Permintaan sinkronisasi bukan milik pengguna aktif.');
             }
 
             if (! $user->can('access_cooperative_pos')) {
@@ -146,18 +148,11 @@ class PosSyncService
 
             $trustedOrgId = $syncRequest->organization_id;
             if (empty($trustedOrgId)) {
-                // Section 8: Historical sync requests without provable organization:
-                // fail closed UNLESS deterministically derived from an existing immutable relationship.
-                // An ordinary user's non-null organization_id is an immutable relationship.
-                // Global users or users with null org cannot be deterministically derived -> fail closed.
-                if (! empty($user->organization_id) && ! $user->can('view_cooperative_all')) {
-                    $trustedOrgId = (string) $user->organization_id;
-                    $syncRequest->forceFill(['organization_id' => $trustedOrgId])->save();
-                } else {
-                    throw ValidationException::withMessages([
-                        'organization_id' => 'Sync request tidak memiliki organisasi yang valid.',
-                    ]);
-                }
+                // Sections 6-8: Legacy PosSyncRequest with unknown historical tenant must FAIL CLOSED.
+                // Do NOT infer or backfill from current user.organization_id.
+                throw ValidationException::withMessages([
+                    'organization_id' => 'Sync request tidak memiliki organisasi yang valid.',
+                ]);
             }
 
             app(\App\Services\Authorization\OrganizationScopeService::class)->assertOrganizationIdentifier($trustedOrgId);
@@ -166,6 +161,16 @@ class PosSyncService
                 if (empty($user->organization_id) || (string) $user->organization_id !== (string) $trustedOrgId) {
                     throw new AuthorizationException('Pengguna tidak memiliki akses ke organisasi transaksi sinkronisasi.');
                 }
+            }
+
+            // Section 13: ONLY AFTER authorization revalidation passes, if DONE return stored response
+            if ($syncRequest->status === PosSyncRequest::STATUS_DONE) {
+                return [
+                    'idempotency_key' => $syncRequest->idempotency_key,
+                    'status' => $syncRequest->response_status,
+                    'data' => $syncRequest->response_body,
+                    'replay' => true,
+                ];
             }
 
             $syncRequest->forceFill(['status' => PosSyncRequest::STATUS_PROCESSING])->save();
@@ -187,13 +192,15 @@ class PosSyncService
 
             return $response;
         } catch (ValidationException $e) {
-            $syncRequest->forceFill([
-                'status' => PosSyncRequest::STATUS_FAILED,
-                'response_status' => 422,
-                'response_body' => ['errors' => $e->errors()],
-                'error_message' => 'validation_failed',
-                'processed_at' => now(),
-            ])->save();
+            if ($syncRequest->status !== PosSyncRequest::STATUS_DONE) {
+                $syncRequest->forceFill([
+                    'status' => PosSyncRequest::STATUS_FAILED,
+                    'response_status' => 422,
+                    'response_body' => ['errors' => $e->errors()],
+                    'error_message' => 'validation_failed',
+                    'processed_at' => now(),
+                ])->save();
+            }
 
             return [
                 'idempotency_key' => $syncRequest->idempotency_key,
@@ -202,13 +209,15 @@ class PosSyncService
                 'replay' => false,
             ];
         } catch (AuthorizationException $e) {
-            $syncRequest->forceFill([
-                'status' => PosSyncRequest::STATUS_FAILED,
-                'response_status' => 403,
-                'response_body' => ['error' => $e->getMessage()],
-                'error_message' => substr($e->getMessage(), 0, 250),
-                'processed_at' => now(),
-            ])->save();
+            if ($syncRequest->status !== PosSyncRequest::STATUS_DONE) {
+                $syncRequest->forceFill([
+                    'status' => PosSyncRequest::STATUS_FAILED,
+                    'response_status' => 403,
+                    'response_body' => ['error' => $e->getMessage()],
+                    'error_message' => substr($e->getMessage(), 0, 250),
+                    'processed_at' => now(),
+                ])->save();
+            }
 
             return [
                 'idempotency_key' => $syncRequest->idempotency_key,
@@ -222,11 +231,13 @@ class PosSyncService
                 'error' => $e->getMessage(),
             ]);
 
-            $syncRequest->forceFill([
-                'status' => PosSyncRequest::STATUS_FAILED,
-                'response_status' => 500,
-                'error_message' => substr($e->getMessage(), 0, 250),
-            ])->save();
+            if ($syncRequest->status !== PosSyncRequest::STATUS_DONE) {
+                $syncRequest->forceFill([
+                    'status' => PosSyncRequest::STATUS_FAILED,
+                    'response_status' => 500,
+                    'error_message' => substr($e->getMessage(), 0, 250),
+                ])->save();
+            }
 
             return [
                 'idempotency_key' => $syncRequest->idempotency_key,
@@ -243,16 +254,30 @@ class PosSyncService
      */
     public function processBatch(Request $request, array $idempotencyKeys): array
     {
-        $userId = $request->user()?->id;
+        $user = $request->user();
+        if ($user === null || ! $user->can('access_cooperative_pos')) {
+            throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk memproses sinkronisasi POS.');
+        }
+
+        $userId = $user->id;
         $deviceId = $request->input('device_id') ?? $request->header('X-Device-Id');
 
-        $requests = PosSyncRequest::query()
+        $query = PosSyncRequest::query()
             ->with('user')
             ->whereIn('idempotency_key', $idempotencyKeys)
             ->where('user_id', $userId)
-            ->where('device_id', $deviceId)
-            ->orderBy('id')
-            ->get();
+            ->where('device_id', $deviceId);
+
+        if (! $user->can('view_cooperative_all')) {
+            if (empty($user->organization_id)) {
+                return [];
+            }
+            $query->where('organization_id', $user->organization_id);
+        } else {
+            $query->whereNotNull('organization_id');
+        }
+
+        $requests = $query->orderBy('id')->get();
 
         return $requests->map(fn (PosSyncRequest $r): array => $this->process($r))->all();
     }

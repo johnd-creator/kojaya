@@ -26,6 +26,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -466,6 +467,7 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
             'client_id' => 'device-b-sync-1',
             'device_id' => 'DEV-B-001',
             'user_id' => $cashierB->id,
+            'organization_id' => $orgB->id,
             'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
             'method' => 'POST',
             'payload' => [
@@ -2046,18 +2048,516 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         $migration = require database_path('migrations/2026_09_08_000001_add_organization_id_to_pos_sync_requests_table.php');
         $resolvedCount = $migration->backfillOrganizationIds();
 
-        // Only cashier A is deterministically resolved to Org A
-        $this->assertSame(1, $resolvedCount);
-        $this->assertSame($orgA->id, $syncReqA->fresh()->organization_id);
-
-        // Global user cannot be safely inferred and MUST remain null
+        // SEC-P1-03 R2: Legacy NULL stays NULL and fails closed for both ordinary cashier and global user
+        $this->assertSame(0, $resolvedCount);
+        $this->assertNull($syncReqA->fresh()->organization_id);
         $this->assertNull($syncReqGlobal->fresh()->organization_id);
 
         // Attempting to process legacy sync request with unknown tenant must FAIL CLOSED
         $syncService = app(PosSyncService::class);
-        $result = $syncService->process($syncReqGlobal->fresh());
+        $resultA = $syncService->process($syncReqA->fresh());
+        $this->assertSame(422, $resultA['status']);
+        $this->assertStringContainsString('organisasi', $resultA['data']['errors']['organization_id'][0] ?? $resultA['data']['message'] ?? $resultA['data']['error'] ?? '');
+
+        $resultGlobal = $syncService->process($syncReqGlobal->fresh());
+        $this->assertSame(422, $resultGlobal['status']);
+        $this->assertStringContainsString('organisasi', $resultGlobal['data']['errors']['organization_id'][0] ?? $resultGlobal['data']['message'] ?? $resultGlobal['data']['error'] ?? '');
+    }
+
+    // ==========================================
+    // GROUP 15: R2 LEGACY UNKNOWN SYNC TENANT TESTS
+    // ==========================================
+
+    public function test_r2_legacy_01_ordinary_user_legacy_null_stays_null(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+
+        $syncReq = PosSyncRequest::query()->create([
+            'idempotency_key' => 'legacy-r2-01',
+            'user_id' => $cashierA->id,
+            'client_id' => 'legacy-client-r2-01',
+            'device_id' => 'legacy-device-r2-01',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => ['client_reference' => 'REF-R2-01'],
+            'status' => PosSyncRequest::STATUS_PENDING,
+            'organization_id' => null,
+        ]);
+
+        $migration = require database_path('migrations/2026_09_08_000001_add_organization_id_to_pos_sync_requests_table.php');
+        $resolvedCount = $migration->backfillOrganizationIds();
+
+        $this->assertSame(0, $resolvedCount);
+        $this->assertNull($syncReq->fresh()->organization_id);
+    }
+
+    public function test_r2_legacy_02_legacy_request_fails_closed_zero_mutations(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        $syncReq = PosSyncRequest::query()->create([
+            'idempotency_key' => 'legacy-r2-02',
+            'user_id' => $cashierA->id,
+            'client_id' => 'legacy-client-r2-02',
+            'device_id' => 'legacy-device-r2-02',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'REF-R2-02',
+                'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+            ],
+            'status' => PosSyncRequest::STATUS_PENDING,
+            'organization_id' => null,
+        ]);
+
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReq);
+
         $this->assertSame(422, $result['status']);
-        $this->assertStringContainsString('organisasi', $result['data']['errors']['organization_id'][0] ?? $result['data']['message'] ?? $result['data']['error'] ?? '');
+        $this->assertSame(0, PosTransaction::query()->count());
+        $this->assertSame(0, PosPayment::query()->count());
+        $this->assertSame(50, (int) $productA->fresh()->stock);
+        $this->assertNull($syncReq->fresh()->organization_id);
+    }
+
+    public function test_r2_legacy_03_user_moved_org_legacy_request_fails_closed(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $user = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+        $productB = $this->createProduct($orgB, ['stock' => 30, 'sale_price' => 15000]);
+
+        $syncReq = PosSyncRequest::query()->create([
+            'idempotency_key' => 'legacy-r2-03',
+            'user_id' => $user->id,
+            'client_id' => 'legacy-client-r2-03',
+            'device_id' => 'legacy-device-r2-03',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'REF-R2-03',
+                'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+            ],
+            'status' => PosSyncRequest::STATUS_PENDING,
+            'organization_id' => null,
+        ]);
+
+        // User later moved to Org B
+        $user->forceFill(['organization_id' => $orgB->id])->save();
+
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReq);
+
+        $this->assertSame(422, $result['status']);
+        $this->assertNull($syncReq->fresh()->organization_id);
+        $this->assertSame(0, PosTransaction::query()->where('organization_id', $orgA->id)->count());
+        $this->assertSame(0, PosTransaction::query()->where('organization_id', $orgB->id)->count());
+        $this->assertSame(50, (int) $productA->fresh()->stock);
+        $this->assertSame(30, (int) $productB->fresh()->stock);
+    }
+
+    public function test_r2_legacy_04_global_user_legacy_request_fails_closed(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $globalCashier = $this->createGlobalCashier();
+        $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        $syncReq = PosSyncRequest::query()->create([
+            'idempotency_key' => 'legacy-r2-04',
+            'user_id' => $globalCashier->id,
+            'client_id' => 'legacy-client-r2-04',
+            'device_id' => 'legacy-device-r2-04',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => [
+                'client_reference' => 'REF-R2-04',
+                'items' => [],
+            ],
+            'status' => PosSyncRequest::STATUS_PENDING,
+            'organization_id' => null,
+        ]);
+
+        session(['active_organization_id' => $orgA->id]);
+
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReq);
+
+        $this->assertSame(422, $result['status']);
+        $this->assertNull($syncReq->fresh()->organization_id);
+        $this->assertSame(0, PosTransaction::query()->count());
+    }
+
+    // ==========================================
+    // GROUP 16: R2 REPLAY & STATUS AUTHORIZATION TESTS
+    // ==========================================
+
+    public function test_r2_replay_01_same_org_replay_success(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashierA, ['pos:write']);
+        $enqueueResponse = $this->withHeader('X-Device-Id', 'device-replay-01')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-01',
+                'device_id' => 'device-replay-01',
+                'idempotency_key' => 'idemp-replay-01',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-01',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ]);
+        $enqueueResponse->assertStatus(202);
+
+        $processResponse = $this->withHeader('X-Device-Id', 'device-replay-01')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-01');
+        $processResponse->assertStatus(201);
+        $this->assertFalse($processResponse->json('replay'));
+
+        $syncReq = PosSyncRequest::query()->where('idempotency_key', 'idemp-replay-01')->firstOrFail();
+        $this->assertSame(PosSyncRequest::STATUS_DONE, $syncReq->status);
+
+        // Replay while still in same org
+        $replayResponse = $this->withHeader('X-Device-Id', 'device-replay-01')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-01');
+        $replayResponse->assertStatus(201);
+        $this->assertTrue($replayResponse->json('replay'));
+        $this->assertSame($processResponse->json('data'), $replayResponse->json('data'));
+    }
+
+    public function test_r2_replay_02_moved_user_replay_denied_zero_response_leak(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write']);
+        $this->withHeader('X-Device-Id', 'device-replay-02')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-02',
+                'device_id' => 'device-replay-02',
+                'idempotency_key' => 'idemp-replay-02',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-02',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-replay-02')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-02')
+            ->assertStatus(201);
+
+        $syncReq = PosSyncRequest::query()->where('idempotency_key', 'idemp-replay-02')->firstOrFail();
+        $this->assertSame(PosSyncRequest::STATUS_DONE, $syncReq->status);
+        $storedResponse = $syncReq->response_body;
+        $this->assertNotEmpty($storedResponse);
+
+        // Move user to Org B
+        $cashier->forceFill(['organization_id' => $orgB->id])->save();
+
+        // Replay via API should be denied / 404
+        $apiReplay = $this->withHeader('X-Device-Id', 'device-replay-02')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-02');
+        $apiReplay->assertStatus(404);
+        $this->assertNull($apiReplay->json('data'));
+        $this->assertNull($apiReplay->json('response_body'));
+
+        // Replay directly via service throws AuthorizationException and does not leak stored response
+        $syncService = app(PosSyncService::class);
+        $directReplay = $syncService->process($syncReq->fresh());
+        $this->assertSame(403, $directReplay['status']);
+        $this->assertNotSame($storedResponse, $directReplay['data']);
+        $this->assertArrayHasKey('error', $directReplay['data']);
+        $this->assertArrayNotHasKey('id', $directReplay['data']);
+        $this->assertSame(PosSyncRequest::STATUS_DONE, $syncReq->fresh()->status);
+    }
+
+    public function test_r2_replay_03_moved_user_status_returns_404_zero_leak(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write', 'pos:read']);
+        $this->withHeader('X-Device-Id', 'device-replay-03')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-03',
+                'device_id' => 'device-replay-03',
+                'idempotency_key' => 'idemp-replay-03',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-03',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-replay-03')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-03')
+            ->assertStatus(201);
+
+        // Move user to Org B
+        $cashier->forceFill(['organization_id' => $orgB->id])->save();
+
+        $statusResponse = $this->withHeader('X-Device-Id', 'device-replay-03')
+            ->getJson('/api/v1/pos/sync/status/idemp-replay-03');
+
+        $statusResponse->assertStatus(404);
+        $this->assertSame('not_found', $statusResponse->json('error'));
+        $this->assertNull($statusResponse->json('response_body'));
+    }
+
+    public function test_r2_replay_04_moved_user_process_batch_excludes_foreign_org(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write']);
+        $this->withHeader('X-Device-Id', 'device-replay-04')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-04',
+                'device_id' => 'device-replay-04',
+                'idempotency_key' => 'idemp-replay-04',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-04',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-replay-04')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-04')
+            ->assertStatus(201);
+
+        // Move user to Org B
+        $cashier->forceFill(['organization_id' => $orgB->id])->save();
+
+        $batchResponse = $this->withHeader('X-Device-Id', 'device-replay-04')
+            ->postJson('/api/v1/pos/sync/batch', [
+                'idempotency_keys' => ['idemp-replay-04'],
+            ]);
+
+        $batchResponse->assertStatus(200);
+        $this->assertSame([], $batchResponse->json('data'));
+    }
+
+    public function test_r2_replay_05_revoked_pos_permission_replay_denied(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write']);
+        $this->withHeader('X-Device-Id', 'device-replay-05')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-05',
+                'device_id' => 'device-replay-05',
+                'idempotency_key' => 'idemp-replay-05',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-05',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-replay-05')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-05')
+            ->assertStatus(201);
+
+        $syncReq = PosSyncRequest::query()->where('idempotency_key', 'idemp-replay-05')->firstOrFail();
+        $this->assertSame(PosSyncRequest::STATUS_DONE, $syncReq->status);
+
+        // Revoke access_cooperative_pos
+        $cashier->revokePermissionTo('access_cooperative_pos');
+
+        // Replay via API
+        $this->withHeader('X-Device-Id', 'device-replay-05')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-05')
+            ->assertStatus(403);
+
+        // Replay via service
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReq->fresh());
+        $this->assertSame(403, $result['status']);
+        $this->assertArrayHasKey('error', $result['data']);
+        $this->assertArrayNotHasKey('id', $result['data']);
+    }
+
+    public function test_r2_replay_06_revoked_pos_permission_status_denied(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write', 'pos:read']);
+        $this->withHeader('X-Device-Id', 'device-replay-06')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-06',
+                'device_id' => 'device-replay-06',
+                'idempotency_key' => 'idemp-replay-06',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-06',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-replay-06')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-06')
+            ->assertStatus(201);
+
+        // Revoke access_cooperative_pos
+        $cashier->revokePermissionTo('access_cooperative_pos');
+
+        $statusResponse = $this->withHeader('X-Device-Id', 'device-replay-06')
+            ->getJson('/api/v1/pos/sync/status/idemp-replay-06');
+
+        $statusResponse->assertStatus(403);
+        $this->assertNull($statusResponse->json('response_body'));
+    }
+
+    public function test_r2_replay_07_null_user_org_replay_fails_closed(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write']);
+        $this->withHeader('X-Device-Id', 'device-replay-07')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-replay-07',
+                'device_id' => 'device-replay-07',
+                'idempotency_key' => 'idemp-replay-07',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-REPLAY-07',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-replay-07')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-07')
+            ->assertStatus(201);
+
+        $syncReq = PosSyncRequest::query()->where('idempotency_key', 'idemp-replay-07')->firstOrFail();
+        $this->assertSame(PosSyncRequest::STATUS_DONE, $syncReq->status);
+
+        // User organization becomes NULL
+        $cashier->forceFill(['organization_id' => null])->save();
+
+        // API should return 404 (not found / denied)
+        $this->withHeader('X-Device-Id', 'device-replay-07')
+            ->postJson('/api/v1/pos/sync/process/idemp-replay-07')
+            ->assertStatus(404);
+
+        // Service should return 403 fail closed
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReq->fresh());
+        $this->assertSame(403, $result['status']);
+        $this->assertArrayHasKey('error', $result['data']);
+        $this->assertArrayNotHasKey('id', $result['data']);
+    }
+
+    public function test_r2_replay_08_corrupt_null_sync_org_done_request_fails_closed(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+
+        // Corrupt legacy request that was marked DONE but has NULL organization_id
+        $syncReq = PosSyncRequest::query()->create([
+            'idempotency_key' => 'idemp-corrupt-08',
+            'user_id' => $cashier->id,
+            'client_id' => 'client-corrupt-08',
+            'device_id' => 'device-corrupt-08',
+            'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+            'method' => 'POST',
+            'payload' => ['client_reference' => 'CORRUPT-08'],
+            'status' => PosSyncRequest::STATUS_DONE,
+            'organization_id' => null,
+            'response_status' => 201,
+            'response_body' => ['secret' => 'financial_leak_prevention'],
+        ]);
+
+        $syncService = app(PosSyncService::class);
+        $result = $syncService->process($syncReq);
+
+        $this->assertSame(422, $result['status']);
+        $this->assertFalse(isset($result['data']['secret']));
+        // Status in DB remains DONE (not overwritten)
+        $this->assertSame(PosSyncRequest::STATUS_DONE, $syncReq->fresh()->status);
+    }
+
+    // ==========================================
+    // GROUP 17: R2 STATUS ANTI-ENUMERATION TEST
+    // ==========================================
+
+    public function test_status_anti_enumeration_between_foreign_org_and_nonexistent_key(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashier = $this->createCashier($orgA);
+        $productA = $this->createProduct($orgA, ['stock' => 50, 'sale_price' => 10000]);
+
+        Sanctum::actingAs($cashier, ['pos:write', 'pos:read']);
+        $this->withHeader('X-Device-Id', 'device-enum-test')
+            ->postJson('/api/v1/pos/sync/enqueue', [
+                'client_id' => 'client-enum-test',
+                'device_id' => 'device-enum-test',
+                'idempotency_key' => 'idemp-enum-test',
+                'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
+                'method' => 'POST',
+                'payload' => [
+                    'client_reference' => 'REF-ENUM-01',
+                    'items' => [['pos_product_id' => $productA->id, 'quantity' => 1]],
+                    'payments' => [['payment_method' => 'CASH', 'amount' => 10000, 'cash_received' => 10000]],
+                ],
+            ])->assertStatus(202);
+
+        $this->withHeader('X-Device-Id', 'device-enum-test')
+            ->postJson('/api/v1/pos/sync/process/idemp-enum-test')
+            ->assertStatus(201);
+
+        // Move user to Org B
+        $cashier->forceFill(['organization_id' => $orgB->id])->save();
+
+        // Check foreign sync request status
+        $foreignResponse = $this->withHeader('X-Device-Id', 'device-enum-test')
+            ->getJson('/api/v1/pos/sync/status/idemp-enum-test');
+
+        // Check completely nonexistent idempotency key
+        $nonexistentResponse = $this->withHeader('X-Device-Id', 'device-enum-test')
+            ->getJson('/api/v1/pos/sync/status/completely-nonexistent-key-9999');
+
+        // Anti-enumeration: both must return identical 404 response
+        $foreignResponse->assertStatus(404);
+        $nonexistentResponse->assertStatus(404);
+        $this->assertSame(
+            Arr::except($nonexistentResponse->json(), ['request_id']),
+            Arr::except($foreignResponse->json(), ['request_id'])
+        );
+        $this->assertSame('not_found', $foreignResponse->json('error'));
+        $this->assertNull($foreignResponse->json('response_body'));
     }
 
     public function test_pos_sync_request_migration_postgresql_path_remains_valid(): void

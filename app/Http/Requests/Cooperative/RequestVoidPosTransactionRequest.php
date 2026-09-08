@@ -8,7 +8,7 @@ class RequestVoidPosTransactionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user() !== null && $this->user()->can('access_cooperative_pos');
     }
 
     public function rules(): array

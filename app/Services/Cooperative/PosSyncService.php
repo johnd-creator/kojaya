@@ -193,6 +193,14 @@ class PosSyncService
 
         $user = $syncRequest->loadMissing('user')->user;
 
+        $activeOrg = $syncRequest->headers['x-active-organization-id']
+            ?? $syncRequest->headers['X-Active-Organization-Id']
+            ?? null;
+
+        if ($activeOrg !== null) {
+            session(['active_organization_id' => (string) $activeOrg]);
+        }
+
         return $this->transactionService->create($payload, $user)->toArray();
     }
 
@@ -242,7 +250,7 @@ class PosSyncService
      */
     private function captureHeaders(Request $request): array
     {
-        $whitelisted = ['x-device-id', 'x-shift-id', 'x-location-id'];
+        $whitelisted = ['x-device-id', 'x-shift-id', 'x-location-id', 'x-active-organization-id'];
         $headers = [];
         foreach ($whitelisted as $key) {
             if ($request->headers->has($key)) {

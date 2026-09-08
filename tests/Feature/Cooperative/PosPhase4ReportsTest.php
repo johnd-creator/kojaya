@@ -316,6 +316,9 @@ class PosPhase4ReportsTest extends TestCase
 
     private function createUser(): User
     {
-        return User::factory()->create(['organization_id' => $this->organization->id]);
+        $user = User::factory()->create(['organization_id' => $this->organization->id]);
+        $user->givePermissionTo(['access_cooperative_pos', 'view_pos_reports']);
+
+        return $user;
     }
 }

@@ -258,7 +258,7 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_global_operator_can_create_transaction_stamped_with_product_organization(): void
+    public function test_global_operator_without_trusted_active_organization_fails_closed(): void
     {
         [$orgA] = $this->createOrganizations();
         $globalCashier = $this->createGlobalCashier();
@@ -274,9 +274,57 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
             ],
         ]);
 
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('pos_transactions', ['client_reference' => 'TX-GLOBAL-CASHIER-A']);
+    }
+
+    public function test_global_operator_with_trusted_active_organization_can_create_transaction(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $globalCashier = $this->createGlobalCashier();
+        $productA = $this->createProduct($orgA, ['sale_price' => 12000, 'stock' => 5]);
+
+        $response = $this->actingAs($globalCashier)
+            ->withSession(['active_organization_id' => $orgA->id])
+            ->post(route('cooperative.pos.transactions.store'), [
+                'client_reference' => 'TX-GLOBAL-CASHIER-A',
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 12000, 'cash_received' => 12000],
+                ],
+            ]);
+
         $response->assertRedirect();
         $trx = PosTransaction::query()->where('client_reference', 'TX-GLOBAL-CASHIER-A')->firstOrFail();
         $this->assertSame($orgA->id, $trx->organization_id);
+    }
+
+    public function test_global_read_actor_without_pos_permission_cannot_create_transaction(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $globalReader = User::factory()->create([
+            'organization_id' => null,
+            'name' => 'Global Reader Only',
+        ]);
+        $globalReader->givePermissionTo(['view_cooperative_all']);
+        $productA = $this->createProduct($orgA, ['sale_price' => 12000, 'stock' => 5]);
+
+        $response = $this->actingAs($globalReader)
+            ->withSession(['active_organization_id' => $orgA->id])
+            ->post(route('cooperative.pos.transactions.store'), [
+                'client_reference' => 'TX-GLOBAL-READER-FAIL',
+                'items' => [
+                    ['pos_product_id' => $productA->id, 'quantity' => 1],
+                ],
+                'payments' => [
+                    ['payment_method' => 'CASH', 'amount' => 12000, 'cash_received' => 12000],
+                ],
+            ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('pos_transactions', ['client_reference' => 'TX-GLOBAL-READER-FAIL']);
     }
 
     public function test_global_operator_with_active_organization_session_uses_active_org(): void
@@ -1031,6 +1079,7 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
             'idempotency_key' => 'idemp-global-sync-b',
             'endpoint' => PosSyncService::ENDPOINT_TRANSACTION_STORE,
             'method' => 'POST',
+            'headers' => ['x-active-organization-id' => $orgB->id],
             'payload' => [
                 'client_reference' => 'SYNC-SHARED-REF',
                 'items' => [

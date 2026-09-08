@@ -34,6 +34,10 @@ class PosReturnService
             throw new AuthorizationException('Kasir terautentikasi wajib diisi untuk retur POS.');
         }
 
+        if (! $cashier->can('access_cooperative_pos')) {
+            throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk retur POS.');
+        }
+
         $returnDate = ($data['returned_at'] ?? null) ?: now()->toDateString();
         $transactionId = (int) $data['pos_transaction_id'];
         $transaction = PosTransaction::query()->find($transactionId);
@@ -49,6 +53,15 @@ class PosReturnService
                 ->findOrFail($data['pos_transaction_id']);
 
             app(\App\Services\Authorization\OrganizationScopeService::class)->assertVisible($cashier, $transaction);
+
+            if ($cashier->can('view_cooperative_all')) {
+                $activeOrg = session('active_organization_id');
+                if (! empty($activeOrg) && (string) $activeOrg !== (string) $transaction->organization_id) {
+                    throw ValidationException::withMessages([
+                        'pos_transaction_id' => 'Transaksi berada di luar konteks organisasi aktif.',
+                    ]);
+                }
+            }
 
             $this->closingGuard->assertAndLockReturn($transaction, (string) $returnDate);
 

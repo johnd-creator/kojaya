@@ -1159,7 +1159,7 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
         ]);
 
         $this->actingAs($this->userA)
-            ->get("/api/reports/payslip/{$this->employeeB->id}/2026-03")
+            ->get("/projects/1/api/reports/payslip/{$this->employeeB->id}/2026-03")
             ->assertNotFound();
     }
 
@@ -1170,7 +1170,7 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
 
         // Attempting to query foreign organization explicitly throws 403
         $this->actingAs($this->userA)
-            ->get("/api/reports/payroll-summary?period_from=2026-01&period_to=2026-03&organization_id={$this->orgB->id}")
+            ->get("/projects/1/api/reports/payroll-summary?period_from=2026-01&period_to=2026-03&organization_id={$this->orgB->id}")
             ->assertForbidden();
     }
 
@@ -1181,7 +1181,7 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
 
         // Attempting to query foreign organization explicitly throws 403
         $this->actingAs($this->userA)
-            ->get("/api/reports/payroll-detail?period=2026-03&organization_id={$this->orgB->id}")
+            ->get("/projects/1/api/reports/payroll-detail?period=2026-03&organization_id={$this->orgB->id}")
             ->assertForbidden();
     }
 

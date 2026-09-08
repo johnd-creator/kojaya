@@ -36,14 +36,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Reports
     Route::get('reports', [\App\Http\Controllers\ReportController::class, 'page'])->name('reports');
 
-    // Consolidated & Payroll Reports API
+    // Consolidated Reports API
     Route::prefix('api/reports')->group(function () {
         Route::get('/consolidated-stats', [\App\Http\Controllers\ReportController::class, 'consolidatedStats'])->name('reports.consolidated-stats');
         Route::get('/consolidated-payroll', [\App\Http\Controllers\ReportController::class, 'consolidatedPayroll'])->name('reports.consolidated-payroll');
         Route::get('/consolidated-attendance', [\App\Http\Controllers\ReportController::class, 'consolidatedAttendance'])->name('reports.consolidated-attendance');
-        Route::get('/payslip/{employeeId}/{period}', [\App\Http\Controllers\ReportController::class, 'payslip'])->name('reports.payslip');
-        Route::get('/payroll-summary', [\App\Http\Controllers\ReportController::class, 'payrollSummary'])->name('reports.payroll-summary');
-        Route::get('/payroll-detail', [\App\Http\Controllers\ReportController::class, 'payrollDetail'])->name('reports.payroll-detail');
     });
 
     // Audit Logs API (session-based for Inertia)

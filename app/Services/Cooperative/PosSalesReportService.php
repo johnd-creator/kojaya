@@ -170,6 +170,10 @@ class PosSalesReportService
      */
     public function topMembers(User $actor, string $from, string $to, array $filters = [], int $limit = 10): array
     {
+        $visibility = $this->resolveEffectiveVisibility($actor);
+        $isGlobal = $visibility->global;
+        $orgId = $visibility->organizationId;
+
         return $this->baseTransactionQuery($actor, $from, $to, $filters)
             ->where('status', 'COMPLETED')
             ->whereNotNull('cooperative_member_id')
@@ -177,15 +181,19 @@ class PosSalesReportService
             ->groupBy('cooperative_member_id')
             ->orderByDesc('total')
             ->limit($limit)
-            ->with('member:id,name,member_no')
+            ->with('member:id,name,member_no,organization_id')
             ->get()
-            ->map(fn ($row): array => [
-                'cooperative_member_id' => $row->cooperative_member_id,
-                'member_name' => $row->member?->name ?? 'Anggota',
-                'member_no' => $row->member?->member_no,
-                'transactions' => (int) $row->cnt,
-                'total' => (float) $row->total,
-            ])->all();
+            ->map(function ($row) use ($isGlobal, $orgId): array {
+                $isSameOrg = $isGlobal || ($row->member?->organization_id === $orgId);
+
+                return [
+                    'cooperative_member_id' => $isSameOrg ? $row->cooperative_member_id : null,
+                    'member_name' => $isSameOrg ? ($row->member?->name ?? 'Anggota') : 'Anggota',
+                    'member_no' => $isSameOrg ? $row->member?->member_no : null,
+                    'transactions' => (int) $row->cnt,
+                    'total' => (float) $row->total,
+                ];
+            })->all();
     }
 
     /**
@@ -194,20 +202,28 @@ class PosSalesReportService
      */
     public function cashierPerformance(User $actor, string $from, string $to, array $filters = []): array
     {
+        $visibility = $this->resolveEffectiveVisibility($actor);
+        $isGlobal = $visibility->global;
+        $orgId = $visibility->organizationId;
+
         return $this->baseTransactionQuery($actor, $from, $to, $filters)
             ->where('status', 'COMPLETED')
             ->whereNotNull('cashier_id')
             ->selectRaw('cashier_id, COUNT(*) as cnt, SUM(total_amount) as total')
             ->groupBy('cashier_id')
             ->orderByDesc('total')
-            ->with('cashier:id,name')
+            ->with('cashier:id,name,organization_id')
             ->get()
-            ->map(fn ($row): array => [
-                'cashier_id' => $row->cashier_id,
-                'cashier_name' => $row->cashier?->name ?? 'Kasir',
-                'transactions' => (int) $row->cnt,
-                'total' => (float) $row->total,
-            ])->all();
+            ->map(function ($row) use ($isGlobal, $orgId): array {
+                $isSameOrg = $isGlobal || ($row->cashier?->organization_id === $orgId);
+
+                return [
+                    'cashier_id' => $isSameOrg ? $row->cashier_id : null,
+                    'cashier_name' => $isSameOrg ? ($row->cashier?->name ?? 'Kasir') : 'Kasir',
+                    'transactions' => (int) $row->cnt,
+                    'total' => (float) $row->total,
+                ];
+            })->all();
     }
 
     /**

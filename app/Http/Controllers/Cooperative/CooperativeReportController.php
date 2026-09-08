@@ -72,6 +72,10 @@ class CooperativeReportController extends Controller
             $query->whereDate('sold_at', '<=', $dateTo);
         }
 
+        $visibility = $this->scopeService->visibilityFor($user);
+        $isGlobal = $visibility->global;
+        $orgId = $visibility->organizationId;
+
         $totalCount = (int) (clone $query)->count();
         $totalRevenue = (float) (clone $query)->sum('total_amount');
         $totalGrossProfit = (float) (clone $query)->sum('gross_profit');
@@ -80,15 +84,19 @@ class CooperativeReportController extends Controller
             ->whereNotNull('cashier_id')
             ->selectRaw('cashier_id, count(*) as count, sum(total_amount) as revenue, sum(gross_profit) as gross_profit')
             ->groupBy('cashier_id')
-            ->with('cashier:id,name,email')
+            ->with('cashier:id,name,organization_id')
             ->get()
-            ->map(fn ($row): array => [
-                'cashier_id' => $row->cashier_id,
-                'cashier_name' => $row->cashier?->name ?? 'Kasir',
-                'count' => (int) $row->count,
-                'revenue' => (float) $row->revenue,
-                'gross_profit' => (float) $row->gross_profit,
-            ])
+            ->map(function ($row) use ($isGlobal, $orgId): array {
+                $isSameOrg = $isGlobal || ($row->cashier?->organization_id === $orgId);
+
+                return [
+                    'cashier_id' => $isSameOrg ? $row->cashier_id : null,
+                    'cashier_name' => $isSameOrg ? ($row->cashier?->name ?? 'Kasir') : 'Kasir',
+                    'count' => (int) $row->count,
+                    'revenue' => (float) $row->revenue,
+                    'gross_profit' => (float) $row->gross_profit,
+                ];
+            })
             ->values()
             ->all();
 
@@ -184,11 +192,24 @@ class CooperativeReportController extends Controller
         $lowStockProducts = (int) $productQuery->count();
 
         $pointsQuery = PosMemberPoint::query()
-            ->when(! $isGlobal, fn ($q) => $q->whereHas('member', fn ($mq) => $mq->where('organization_id', $orgId)));
+            ->when(! $isGlobal, function ($q) use ($orgId): void {
+                $q->whereHas('member', fn ($mq) => $mq->where('organization_id', $orgId))
+                    ->where(function ($tq) use ($orgId): void {
+                        $tq->whereNull('pos_transaction_id')
+                            ->orWhereHas('transaction', fn ($tx) => $tx->where('organization_id', $orgId));
+                    });
+            });
         $annualPosPoints = (int) (clone $pointsQuery)->where('year', $year)->sum('points');
 
         $pointTxQuery = PointTransaction::query()
-            ->when(! $isGlobal, fn ($q) => $q->whereHas('member', fn ($mq) => $mq->where('organization_id', $orgId)));
+            ->when(! $isGlobal, function ($q) use ($orgId): void {
+                $q->whereHas('member', fn ($mq) => $mq->where('organization_id', $orgId))
+                    ->where(function ($sq) use ($orgId): void {
+                        $sq->whereNull('metadata->organization_id')
+                            ->orWhere('metadata->organization_id', $orgId)
+                            ->orWhere('metadata->organization_id', (string) $orgId);
+                    });
+            });
         $earnedPoints = (int) (clone $pointTxQuery)->where('transaction_type', 'EARNED')->sum('points');
         if ($earnedPoints === 0) {
             $earnedPoints = (int) (clone $pointsQuery)->sum('points');
@@ -196,9 +217,23 @@ class CooperativeReportController extends Controller
         $redeemedPoints = (int) (clone $pointTxQuery)->where('transaction_type', 'REDEEMED')->sum('points');
 
         $activePointMembersQuery = (clone $memberQuery);
-        $activePointMembers = (int) $activePointMembersQuery->where(function ($q): void {
-            $q->whereHas('pointTransactions')
-                ->orWhereHas('posMemberPoints');
+        $activePointMembers = (int) $activePointMembersQuery->where(function ($q) use ($isGlobal, $orgId): void {
+            $q->whereHas('pointTransactions', function ($ptq) use ($isGlobal, $orgId): void {
+                if (! $isGlobal) {
+                    $ptq->where(function ($sq) use ($orgId): void {
+                        $sq->whereNull('metadata->organization_id')
+                            ->orWhere('metadata->organization_id', $orgId)
+                            ->orWhere('metadata->organization_id', (string) $orgId);
+                    });
+                }
+            })->orWhereHas('posMemberPoints', function ($pmpq) use ($isGlobal, $orgId): void {
+                if (! $isGlobal) {
+                    $pmpq->where(function ($tq) use ($orgId): void {
+                        $tq->whereNull('pos_transaction_id')
+                            ->orWhereHas('transaction', fn ($tx) => $tx->where('organization_id', $orgId));
+                    });
+                }
+            });
         })->count();
 
         if ($isGlobal) {

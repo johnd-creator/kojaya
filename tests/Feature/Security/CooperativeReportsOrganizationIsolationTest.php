@@ -17,6 +17,7 @@ use App\Models\LoanType;
 use App\Models\Organization;
 use App\Models\PointTransaction;
 use App\Models\PosCategory;
+use App\Models\PosMemberPoint;
 use App\Models\PosProduct;
 use App\Models\PosReturn;
 use App\Models\PosTransaction;
@@ -217,6 +218,30 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
             ->assertJsonPath('data.points.redeemed', 50);
     }
 
+    public function test_corrupt_point_with_foreign_transaction_does_not_inflate_tenant_annual_points(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $memberA = $this->createMember($orgA);
+        $txB = $this->createCompletedTransaction($orgB, null, ['total_amount' => 50000]);
+
+        // Corrupt fixture: Member Org A, but transaction belongs to Org B
+        PosMemberPoint::query()->create([
+            'cooperative_member_id' => $memberA->id,
+            'pos_transaction_id' => $txB->id,
+            'year' => now()->year,
+            'profit_amount' => 10000,
+            'points' => 500,
+            'posted_at' => today(),
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_cooperative_report']);
+        Sanctum::actingAs($userA, ['reports:read']);
+
+        $this->getJson('/api/v1/reports/cooperative-summary')
+            ->assertOk()
+            ->assertJsonPath('data.annual_pos_points', 0);
+    }
+
     public function test_total_revenue_is_scoped_by_pos_transaction_organization_id(): void
     {
         [$orgA, $orgB] = $this->createOrganizations();
@@ -372,6 +397,57 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
 
         $content = $response->getContent();
         $this->assertStringNotContainsString('Secret Cashier B', $content);
+    }
+
+    public function test_corrupt_transaction_org_a_with_cashier_org_b_does_not_leak_foreign_cashier_identity(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierB = User::factory()->create(['organization_id' => $orgB->id, 'name' => 'Foreign Cashier B']);
+        // Corrupt fixture: Org A transaction has foreign cashier_id
+        $this->createCompletedTransaction($orgA, null, ['cashier_id' => $cashierB->id, 'total_amount' => 100000]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        Sanctum::actingAs($userA, ['reports:read']);
+
+        $response = $this->getJson('/api/v1/reports/sales')
+            ->assertOk();
+
+        $content = $response->getContent();
+        $this->assertStringNotContainsString('Foreign Cashier B', $content);
+        $this->assertStringNotContainsString($cashierB->email, $content);
+
+        $byCashier = $response->json('by_cashier');
+        $this->assertCount(1, $byCashier);
+        $this->assertNull($byCashier[0]['cashier_id']);
+        $this->assertSame('Kasir', $byCashier[0]['cashier_name']);
+        $this->assertSame(100000.0, (float) $byCashier[0]['revenue']);
+    }
+
+    public function test_pos_sales_report_service_masks_foreign_cashier_and_member_in_corrupt_data(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierB = User::factory()->create(['organization_id' => $orgB->id, 'name' => 'Foreign Cashier B']);
+        $memberB = $this->createMember($orgB, ['name' => 'Foreign Member B', 'member_no' => 'MBR-FOREIGN']);
+
+        $this->createCompletedTransaction($orgA, $memberB, [
+            'cashier_id' => $cashierB->id,
+            'total_amount' => 150000,
+            'sold_at' => today(),
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports']);
+        $service = app(PosSalesReportService::class);
+
+        $performance = $service->cashierPerformance($userA, today()->toDateString(), today()->toDateString());
+        $this->assertCount(1, $performance);
+        $this->assertNull($performance[0]['cashier_id']);
+        $this->assertSame('Kasir', $performance[0]['cashier_name']);
+
+        $topMembers = $service->topMembers($userA, today()->toDateString(), today()->toDateString());
+        $this->assertCount(1, $topMembers);
+        $this->assertNull($topMembers[0]['cooperative_member_id']);
+        $this->assertSame('Anggota', $topMembers[0]['member_name']);
+        $this->assertNull($topMembers[0]['member_no']);
     }
 
     public function test_foreign_cashier_id_filter_cannot_expose_foreign_data(): void
@@ -1042,6 +1118,50 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
         $content = $response->streamedContent();
         $this->assertStringContainsString('50000', $content);
         $this->assertStringNotContainsString('80000', $content);
+    }
+
+    public function test_csv_export_sanitizes_cells_starting_with_formula_characters(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $category = PosCategory::factory()->create([
+            'organization_id' => $orgA->id,
+            'name' => '=HYPERLINK(evil.com)',
+        ]);
+        $product = PosProduct::factory()->create([
+            'organization_id' => $orgA->id,
+            'pos_category_id' => $category->id,
+            'name' => '=CMD|calc!A0',
+        ]);
+
+        $tx = $this->createCompletedTransaction($orgA, null, ['total_amount' => 100000, 'sold_at' => today()]);
+        \App\Models\PosTransactionItem::query()->create([
+            'pos_transaction_id' => $tx->id,
+            'pos_product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => 100000,
+            'line_total' => 100000,
+            'cost_price' => 60000,
+            'line_profit' => 40000,
+        ]);
+        \App\Models\PosPayment::query()->create([
+            'pos_transaction_id' => $tx->id,
+            'payment_method' => '@MALICIOUS_METHOD',
+            'amount' => 100000,
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+        $response = $this->actingAs($userA)->get(route('cooperative.pos.reports.export.csv', [
+            'from' => today()->toDateString(),
+            'to' => today()->toDateString(),
+        ]));
+        $response->assertOk();
+
+        $csvContent = $response->streamedContent();
+
+        // Must be prefixed with single quote, not bare formula characters
+        $this->assertStringContainsString("'=CMD|calc!A0", $csvContent);
+        $this->assertStringContainsString("'=HYPERLINK(evil.com)", $csvContent);
+        $this->assertStringContainsString("'@MALICIOUS_METHOD", $csvContent);
     }
 
     public function test_pdf_queue_execution_cannot_trust_crafted_foreign_organization_id_from_metadata(): void

@@ -35,7 +35,7 @@ class PosReportCsvExport
             fputcsv($handle, ['REKONSILIASI PEMBAYARAN']);
             fputcsv($handle, ['Metode', 'Jumlah', 'Total']);
             foreach ($service->paymentReconciliation($actor, $from, $to, $filters) as $row) {
-                fputcsv($handle, [$row['method'], $row['count'], $row['total']]);
+                fputcsv($handle, [$this->sanitizeCell($row['method']), $row['count'], $row['total']]);
             }
             fputcsv($handle, []);
 
@@ -43,8 +43,8 @@ class PosReportCsvExport
             fputcsv($handle, ['Produk', 'Kategori', 'Qty', 'Pendapatan', 'Laba Kotor', 'Margin %']);
             foreach ($service->productSalesForPeriod($actor, $from, $to, $filters) as $row) {
                 fputcsv($handle, [
-                    $row['product_name'],
-                    $row['category'] ?? '-',
+                    $this->sanitizeCell($row['product_name']),
+                    $this->sanitizeCell($row['category'] ?? '-'),
                     $row['quantity'],
                     $row['revenue'],
                     $row['gross_profit'],
@@ -56,12 +56,28 @@ class PosReportCsvExport
             fputcsv($handle, ['TREN HARIAN']);
             fputcsv($handle, ['Tanggal', 'Transaksi', 'Pendapatan']);
             foreach ($service->dailyTrend($actor, $from, $to, $filters) as $row) {
-                fputcsv($handle, [$row['date'], $row['transactions'], $row['revenue']]);
+                fputcsv($handle, [$this->sanitizeCell($row['date']), $row['transactions'], $row['revenue']]);
             }
 
             fclose($handle);
         }, $fileName, [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    /**
+     * Sanitize a cell value to prevent CSV / spreadsheet formula injection.
+     */
+    private function sanitizeCell(mixed $value): mixed
+    {
+        if (! is_string($value) || is_numeric($value)) {
+            return $value;
+        }
+
+        if ($value !== '' && $value !== '-' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 }

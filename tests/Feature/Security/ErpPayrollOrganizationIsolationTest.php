@@ -1860,4 +1860,194 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
         $this->assertTrue($scopedApprovals->contains('id', $approvalA->id));
         $this->assertFalse($scopedApprovals->contains('id', $approvalB->id));
     }
+
+    // ==========================================
+    // R2-01 to R2-06: Approval Anti-Enumeration & Oracle Elimination (SEC-P1-09 R2)
+    // ==========================================
+
+    public function test_r2_01_submitting_foreign_existing_payroll_returns_404_not_found_with_zero_approvals(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollB->id],
+                'notes' => 'Attempting submission of foreign payroll',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame(0, PayrollApproval::count());
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollB->id]);
+        $this->assertSame(PayrollStatus::Draft->value, $payrollB->fresh()->status);
+    }
+
+    public function test_r2_02_submitting_nonexistent_numeric_payroll_returns_404_not_found_with_zero_approvals(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $nonexistentPayrollId = 99999999;
+        $this->assertDatabaseMissing('payrolls', ['id' => $nonexistentPayrollId]);
+
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$nonexistentPayrollId],
+                'notes' => 'Attempting submission of nonexistent payroll ID',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame(0, PayrollApproval::count());
+    }
+
+    public function test_r2_03_foreign_existing_and_nonexistent_payroll_ids_produce_identical_anti_enumeration_404_responses(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $nonexistentPayrollId = 99999998;
+        $this->assertDatabaseMissing('payrolls', ['id' => $nonexistentPayrollId]);
+
+        // Request 1: Foreign existing ID
+        $foreignResponse = $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollB->id],
+            ]);
+        $foreignResponse->assertNotFound();
+
+        // Request 2: Nonexistent ID
+        $nonexistentResponse = $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$nonexistentPayrollId],
+            ]);
+        $nonexistentResponse->assertNotFound();
+
+        // Anti-enumeration assertion: Both responses produce identical 404 status codes
+        $this->assertSame($foreignResponse->status(), $nonexistentResponse->status());
+        $this->assertSame(404, $foreignResponse->status());
+        $this->assertSame(0, PayrollApproval::count());
+    }
+
+    public function test_r2_04_mixed_batches_with_valid_and_foreign_or_nonexistent_fail_with_zero_approvals_regardless_of_order(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollA = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+        $nonexistentId = 99999997;
+
+        // Permutation 1: [valid_own, foreign_existing]
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollA->id, $payrollB->id],
+            ])
+            ->assertNotFound();
+        $this->assertSame(0, PayrollApproval::count());
+
+        // Permutation 2: [foreign_existing, valid_own]
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollB->id, $payrollA->id],
+            ])
+            ->assertNotFound();
+        $this->assertSame(0, PayrollApproval::count());
+
+        // Permutation 3: [valid_own, nonexistent]
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollA->id, $nonexistentId],
+            ])
+            ->assertNotFound();
+        $this->assertSame(0, PayrollApproval::count());
+
+        // Permutation 4: [nonexistent, valid_own]
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$nonexistentId, $payrollA->id],
+            ])
+            ->assertNotFound();
+        $this->assertSame(0, PayrollApproval::count());
+
+        // Defense in depth: Verify original valid payroll remains unmutated DRAFT
+        $this->assertSame(PayrollStatus::Draft->value, $payrollA->fresh()->status);
+        $this->assertSame(0, PayrollApproval::count());
+    }
+
+    public function test_r2_05_malformed_structural_validation_returns_422_unprocessable_entity(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        // Case 1: Missing payroll_ids
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'notes' => 'Missing payroll IDs',
+            ])
+            ->assertSessionHasErrors('payroll_ids');
+
+        // Case 2: payroll_ids is not an array
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => 'not-an-array',
+            ])
+            ->assertSessionHasErrors('payroll_ids');
+
+        // Case 3: payroll_ids item is not an integer
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => ['string-id-instead-of-int'],
+            ])
+            ->assertSessionHasErrors('payroll_ids.0');
+
+        $this->assertSame(0, PayrollApproval::count());
+    }
+
+    public function test_r2_06_unit_actor_submitting_valid_own_organization_payrolls_succeeds(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollA1 = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $employeeA2 = Employee::factory()->create(['organization_id' => $this->orgA->id]);
+        $payrollA2 = Payroll::factory()->create([
+            'employee_id' => $employeeA2->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollA1->id, $payrollA2->id],
+                'notes' => 'Valid approval submission for Org A',
+            ])
+            ->assertSessionHas('success');
+
+        $approvals = PayrollApproval::whereIn('payroll_id', [$payrollA1->id, $payrollA2->id])->get();
+        $this->assertCount(2, $approvals);
+        $this->assertSame(1, $approvals->pluck('payroll_batch_id')->unique()->count());
+        $this->assertSame($this->userA->id, $approvals[0]->requester_id);
+        $this->assertSame($this->userA->id, $approvals[1]->requester_id);
+        $this->assertSame(PayrollApprovalStatus::Pending->value, $approvals[0]->status);
+        $this->assertSame(PayrollApprovalStatus::Pending->value, $approvals[1]->status);
+    }
 }

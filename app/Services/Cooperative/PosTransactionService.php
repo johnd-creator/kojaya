@@ -36,11 +36,11 @@ class PosTransactionService
             throw new AuthorizationException('A cashier is required to create a POS transaction.');
         }
 
-        if (! $cashier->can('access_cooperative_pos')) {
+        $isGlobalCashier = $cashier->can('view_cooperative_all');
+
+        if ($isGlobalCashier && ! $cashier->can('access_cooperative_pos')) {
             throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk membuat transaksi POS.');
         }
-
-        $isGlobalCashier = $cashier->can('view_cooperative_all');
 
         if (! $isGlobalCashier && empty($cashier->organization_id)) {
             throw new AuthorizationException('A cooperative organization is required for this operation.');
@@ -340,7 +340,7 @@ class PosTransactionService
 
     public function requestVoid(PosTransaction $transaction, User $requester, string $reason): PosVoidRequest
     {
-        if (! $requester->can('access_cooperative_pos')) {
+        if ($requester->can('view_cooperative_all') && ! $requester->can('access_cooperative_pos')) {
             throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk mengajukan void.');
         }
 

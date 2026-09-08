@@ -34,7 +34,7 @@ class PosReturnService
             throw new AuthorizationException('Kasir terautentikasi wajib diisi untuk retur POS.');
         }
 
-        if (! $cashier->can('access_cooperative_pos')) {
+        if ($cashier->can('view_cooperative_all') && ! $cashier->can('access_cooperative_pos')) {
             throw new AuthorizationException('Izin access_cooperative_pos diperlukan untuk retur POS.');
         }
 

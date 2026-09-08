@@ -571,7 +571,7 @@ class PaymentChargeRecoveryTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,
@@ -640,7 +640,7 @@ class PaymentChargeRecoveryTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $org->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $org->id,
             'cost_price' => 5000,

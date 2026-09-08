@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\OrganizationScopedModel;
 use App\Models\Traits\HasOrganizationScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,9 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class SalaryStructure extends Model
+class SalaryStructure extends Model implements OrganizationScopedModel
 {
     use HasFactory, HasOrganizationScope;
+
+    public function organizationScopePath(): string
+    {
+        return 'organization_id';
+    }
 
     protected $fillable = [
         'employee_type',

@@ -18,6 +18,8 @@ class PosReturnController extends Controller
 
     public function create(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
+        $this->authorizePermission('access_cooperative_pos');
+
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
             PosTransaction::query()->with(['items.product', 'member', 'cashier']),
@@ -52,6 +54,8 @@ class PosReturnController extends Controller
 
     public function store(StorePosReturnRequest $request, string $transaction, OrganizationScopedQueryService $scopedQuery): RedirectResponse
     {
+        $this->authorizePermission('access_cooperative_pos');
+
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(PosTransaction::class, $request->user(), $transaction);
 

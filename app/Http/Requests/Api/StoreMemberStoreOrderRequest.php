@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMemberStoreOrderRequest extends FormRequest
 {
@@ -11,14 +12,32 @@ class StoreMemberStoreOrderRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    public function memberOrganizationId(): ?string
+    {
+        $member = $this->user()?->cooperativeMember()->active()->first();
+
+        return $member?->organization_id ? (string) $member->organization_id : ($this->user()?->organization_id ? (string) $this->user()->organization_id : null);
+    }
+
     /**
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $orgId = $this->memberOrganizationId();
+
         return [
             'items' => ['required', 'array', 'min:1', 'max:50'],
-            'items.*.pos_product_id' => ['required', 'exists:pos_products,id'],
+            'items.*.pos_product_id' => [
+                'required',
+                Rule::exists('pos_products', 'id')->where(function ($query) use ($orgId): void {
+                    if ($orgId !== null) {
+                        $query->where('organization_id', $orgId);
+                    } else {
+                        $query->whereRaw('1 = 0');
+                    }
+                }),
+            ],
             'items.*.quantity' => ['nullable', 'integer', 'min:1', 'max:99'],
             'client_reference' => ['nullable', 'string', 'max:80'],
             'channel' => ['nullable', 'in:QRIS,VA,E_WALLET,TRANSFER'],

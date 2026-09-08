@@ -871,8 +871,8 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
     public function test_pos_report_page_does_not_expose_category_used_only_by_org_b_products_to_org_a(): void
     {
         [$orgA, $orgB] = $this->createOrganizations();
-        $catA = PosCategory::factory()->create(['name' => 'Kategori Org A']);
-        $catB = PosCategory::factory()->create(['name' => 'Kategori Org B']);
+        $catA = PosCategory::factory()->create(['organization_id' => $orgA->id, 'name' => 'Kategori Org A']);
+        $catB = PosCategory::factory()->create(['organization_id' => $orgB->id, 'name' => 'Kategori Org B']);
 
         PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $catA->id]);
         PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catB->id]);
@@ -895,9 +895,9 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
         $sharedCat = PosCategory::factory()->create(['name' => 'Kategori Bersama']);
         $catBOnly = PosCategory::factory()->create(['name' => 'Kategori Org B Khusus']);
 
-        PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $sharedCat->id]);
-        PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $sharedCat->id]);
-        PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catBOnly->id]);
+        PosProduct::withoutEvents(fn () => PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $sharedCat->id]));
+        PosProduct::withoutEvents(fn () => PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $sharedCat->id]));
+        PosProduct::withoutEvents(fn () => PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catBOnly->id]));
 
         $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
 
@@ -942,8 +942,8 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
     public function test_direct_product_sales_for_year_cannot_become_global(): void
     {
         [$orgA, $orgB] = $this->createOrganizations();
-        $catA = PosCategory::factory()->create();
-        $catB = PosCategory::factory()->create();
+        $catA = PosCategory::factory()->create(['organization_id' => $orgA->id]);
+        $catB = PosCategory::factory()->create(['organization_id' => $orgB->id]);
         $pA = PosProduct::factory()->create(['organization_id' => $orgA->id, 'pos_category_id' => $catA->id, 'sale_price' => 5000]);
         $pB = PosProduct::factory()->create(['organization_id' => $orgB->id, 'pos_category_id' => $catB->id, 'sale_price' => 10000]);
 

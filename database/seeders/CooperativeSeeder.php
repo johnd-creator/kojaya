@@ -302,12 +302,12 @@ class CooperativeSeeder extends Seeder
     private function seedPosInventory(Organization $organization): array
     {
         $categories = [
-            'sembako' => PosCategory::query()->updateOrCreate(['slug' => 'sembako'], ['name' => 'Sembako', 'is_active' => true]),
-            'minuman' => PosCategory::query()->updateOrCreate(['slug' => 'minuman'], ['name' => 'Minuman', 'is_active' => true]),
-            'atk' => PosCategory::query()->updateOrCreate(['slug' => 'atk'], ['name' => 'ATK & Kebutuhan Kantor', 'is_active' => true]),
-            'espresso' => PosCategory::query()->updateOrCreate(['slug' => 'espresso'], ['name' => 'Espresso', 'is_active' => true]),
-            'signature' => PosCategory::query()->updateOrCreate(['slug' => 'signature'], ['name' => 'Signature', 'is_active' => true]),
-            'non-coffee' => PosCategory::query()->updateOrCreate(['slug' => 'non-coffee'], ['name' => 'Non-Coffee', 'is_active' => true]),
+            'sembako' => PosCategory::query()->updateOrCreate(['slug' => 'sembako', 'organization_id' => $organization->id], ['name' => 'Sembako', 'is_active' => true, 'organization_id' => $organization->id]),
+            'minuman' => PosCategory::query()->updateOrCreate(['slug' => 'minuman', 'organization_id' => $organization->id], ['name' => 'Minuman', 'is_active' => true, 'organization_id' => $organization->id]),
+            'atk' => PosCategory::query()->updateOrCreate(['slug' => 'atk', 'organization_id' => $organization->id], ['name' => 'ATK & Kebutuhan Kantor', 'is_active' => true, 'organization_id' => $organization->id]),
+            'espresso' => PosCategory::query()->updateOrCreate(['slug' => 'espresso', 'organization_id' => $organization->id], ['name' => 'Espresso', 'is_active' => true, 'organization_id' => $organization->id]),
+            'signature' => PosCategory::query()->updateOrCreate(['slug' => 'signature', 'organization_id' => $organization->id], ['name' => 'Signature', 'is_active' => true, 'organization_id' => $organization->id]),
+            'non-coffee' => PosCategory::query()->updateOrCreate(['slug' => 'non-coffee', 'organization_id' => $organization->id], ['name' => 'Non-Coffee', 'is_active' => true, 'organization_id' => $organization->id]),
         ];
 
         $products = [

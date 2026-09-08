@@ -7,6 +7,7 @@ use App\Http\Requests\Cooperative\StorePosTransactionRequest;
 use App\Models\CooperativeMember;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
+use App\Services\Cooperative\PosCategoryAccessService;
 use App\Services\Cooperative\PosProductAccessService;
 use App\Services\Cooperative\PosTransactionService;
 use Illuminate\Http\JsonResponse;
@@ -17,10 +18,20 @@ use Inertia\Response;
 
 class PosRegisterController extends Controller
 {
-    public function index(Request $request, PosProductAccessService $productAccess): Response
-    {
+    public function index(
+        Request $request,
+        PosProductAccessService $productAccess,
+        PosCategoryAccessService $categoryAccess,
+    ): Response {
+        $this->authorizePermission('access_cooperative_pos');
+
+        $user = $request->user();
+        $targetOrgId = $user->can('view_cooperative_all')
+            ? (session('active_organization_id') ?? $user->organization_id)
+            : $user->organization_id;
+
         $members = CooperativeMember::query()
-            ->where('organization_id', $request->user()->organization_id)
+            ->when($targetOrgId, fn ($q) => $q->where('organization_id', $targetOrgId), fn ($q) => $q->whereRaw('1 = 0'))
             ->active()
             ->with('storeAccount')
             ->orderBy('name')
@@ -43,13 +54,18 @@ class PosRegisterController extends Controller
         return Inertia::render('Cooperative/Pos/Register', [
             'products' => $productAccess->scopeVisibleTo(PosProduct::query(), $request->user())
                 ->with('category')->where('is_active', true)->orderBy('name')->get(),
-            'categories' => PosCategory::query()->where('is_active', true)->orderBy('name')->get(),
+            'categories' => $categoryAccess->scopeVisibleTo(
+                PosCategory::query()->where('is_active', true),
+                $request->user()
+            )->orderBy('name')->get(),
             'members' => $members,
         ]);
     }
 
     public function store(StorePosTransactionRequest $request, PosTransactionService $service): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission('access_cooperative_pos');
+
         $transaction = $service->create($request->validated(), $request->user());
 
         if ($request->expectsJson()) {

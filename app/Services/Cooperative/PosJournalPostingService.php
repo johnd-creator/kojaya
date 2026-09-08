@@ -77,6 +77,7 @@ class PosJournalPostingService
             'POS_RETURN',
             [
                 'cooperative_member_id' => $transaction?->cooperative_member_id,
+                'organization_id' => $transaction?->organization_id,
                 'ledger_scope' => 'POS',
                 'debit' => 0,
                 'credit' => $amount,
@@ -94,6 +95,7 @@ class PosJournalPostingService
             'POS_RETURN_REVERSAL',
             [
                 'cooperative_member_id' => null,
+                'organization_id' => $transaction?->organization_id,
                 'ledger_scope' => 'POS',
                 'debit' => $amount,
                 'credit' => 0,

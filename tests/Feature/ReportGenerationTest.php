@@ -69,6 +69,8 @@ class ReportGenerationTest extends TestCase
     public function test_consolidated_payroll_endpoint_returns_aggregated_totals(): void
     {
         $user = $this->reportingUser();
+        Permission::query()->firstOrCreate(['name' => 'view_payroll_all', 'guard_name' => 'web']);
+        $user->givePermissionTo('view_payroll_all');
         $organization = Organization::factory()->create(['name' => 'Regional A']);
         $employee = Employee::factory()->create(['organization_id' => $organization->id]);
 

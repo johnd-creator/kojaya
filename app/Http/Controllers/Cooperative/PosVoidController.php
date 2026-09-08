@@ -34,6 +34,8 @@ class PosVoidController extends Controller
 
     public function store(RequestVoidPosTransactionRequest $request, string $transaction, OrganizationScopedQueryService $scopedQuery): RedirectResponse
     {
+        $this->authorizePermission('access_cooperative_pos');
+
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(PosTransaction::class, $request->user(), $transaction);
 
@@ -44,6 +46,8 @@ class PosVoidController extends Controller
 
     public function process(ProcessPosVoidRequest $request, string $voidRequest, OrganizationScopedQueryService $scopedQuery): RedirectResponse
     {
+        $this->authorizePermission('approve_pos_void');
+
         /** @var PosVoidRequest $voidRequestModel */
         $voidRequestModel = $scopedQuery->resolveVisible(PosVoidRequest::class, $request->user(), $voidRequest);
 

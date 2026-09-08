@@ -87,6 +87,7 @@ class PaymentWebhookFailClosedTest extends TestCase
     private function createProduct(string $name = 'Test Product', float $price = 10000.0, int $stock = 20): PosProduct
     {
         $category = PosCategory::factory()->create([
+            'organization_id' => $this->organization->id,
             'name' => 'Test Category',
             'slug' => 'test-cat-'.uniqid(),
         ]);

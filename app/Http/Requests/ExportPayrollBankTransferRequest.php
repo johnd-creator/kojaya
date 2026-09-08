@@ -14,7 +14,7 @@ class ExportPayrollBankTransferRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'bank' => ['required', 'in:bca,mandiri,bri'],
+            'bank' => ['required', 'in:bca,mandiri,bri,bni'],
         ];
     }
 }

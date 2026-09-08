@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\Organization;
 use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosSyncRequest;
@@ -287,7 +288,9 @@ class PosSprint4OfflineSyncHardeningTest extends TestCase
 
     private function cashier(): User
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => Organization::factory(),
+        ]);
         $user->givePermissionTo('access_cooperative_pos');
 
         return $user;

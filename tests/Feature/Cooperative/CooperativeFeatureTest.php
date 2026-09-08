@@ -1759,6 +1759,8 @@ class CooperativeFeatureTest extends TestCase
             'points' => 8,
         ]);
 
+        Carbon::setTestNow('2026-05-15 10:00:01');
+
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
             'client_reference' => 'POINT-002',
             'payment_method' => 'CASH',
@@ -1979,6 +1981,8 @@ class CooperativeFeatureTest extends TestCase
             ],
         ])->assertRedirect();
 
+        Carbon::setTestNow('2026-05-15 10:00:01');
+
         $this->actingAs($user)->post(route('cooperative.pos.transactions.store'), [
             'client_reference' => 'POS-SHU-002',
             'payment_method' => 'CASH',
@@ -2143,14 +2147,17 @@ class CooperativeFeatureTest extends TestCase
      */
     private function product(array $attributes = []): PosProduct
     {
+        $organizationId = $attributes['organization_id'] ?? Organization::query()->where('code', 'KOP-001')->value('id');
+
         $category = PosCategory::query()->create([
+            'organization_id' => $organizationId,
             'name' => 'Sembako',
             'slug' => 'sembako-'.fake()->unique()->numberBetween(1, 9999),
             'is_active' => true,
         ]);
 
         return PosProduct::query()->create([
-            'organization_id' => Organization::query()->where('code', 'KOP-001')->value('id'),
+            'organization_id' => $organizationId,
             'pos_category_id' => $category->id,
             'sku' => 'SKU-'.fake()->unique()->numberBetween(1, 9999),
             'name' => fake()->word(),

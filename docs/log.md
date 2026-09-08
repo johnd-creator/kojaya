@@ -4,7 +4,30 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 5, 2026
+**Last Updated:** September 7, 2026
+
+## 2026-09-07 - PHPUnit 4-Way Sharding & CI Runtime Optimization (CI-PERF-01)
+
+- Implemented deterministic 4-way distributed test sharding script (`bin/ci/phpunit-shard`) using Greedy Longest Processing Time (LPT) balancing heuristic across 253 canonical SQLite test files.
+- Implemented fail-closed test & coverage aggregator (`bin/ci/phpunit-aggregate`) verifying all 4 shard JUnit XMLs and `.cov` files, validating zero test errors, zero test failures, zero skipped tests (`tests >= 2211`), merging raw coverage via `SebastianBergmann\CodeCoverage\CodeCoverage::merge()`, and enforcing `>= 60.0%` combined line coverage.
+- Updated `.github/workflows/ci.yml`: partitioned PHPUnit into 4 parallel matrix shards (`phpunit-shard`), eliminated redundant `selenium` container service, eliminated duplicate execution of `Legacy ERP Recovery Wave 1` tests, and shared compiled frontend build assets (`public/build`) from `frontend-build` across shard runners.
+- Preserved canonical required check name `PHPUnit Parallel` as the aggregator job for seamless branch protection.
+- Documented architecture decisions in ADR-040.
+
+## 2026-09-07 - Global Reward & Redemption Explicit Tenant Targeting (SEC-P1-07 R2)
+
+- Enforced explicit organization targeting for all tenant-owned Reward and RewardRedemption mutations performed by global actors (`StoreRewardRequest`, `UpdateRewardRequest`, `UpdateRedemptionStatusRequest`, `RewardController`, `RewardRedemptionController`, and `PointService`).
+- Removed implicit fallbacks to `user.organization_id`, session `active_organization_id`, or object identity alone.
+- Unit actors use authoritative scoped tenant from `OrganizationScopeService`; mismatched explicit target fails closed with `AuthorizationException` (403).
+- Global actors must provide explicit `organization_id`; missing/invalid target fails closed with `ValidationException` (422), mismatched target fails closed with `AuthorizationException` (403).
+- Domain/service layer enforcement: `PointService::updateRedemptionStatus` validates `targetOrgId` against the locked redemption model within the database transaction.
+- Added comprehensive security regression coverage (tests 29-36) in `PointsAdminOrganizationIsolationTest.php` covering R2-01 through R2-13, home/session fallback misdirection, invalid/non-existent UUIDs, and direct service-layer authority.
+
+## 2026-09-06 - Canonical POS Closing Target and PostgreSQL Serialization (SEC-P1-06 R1)
+
+- Removed controller/service target-policy duplication and all implicit global session/home targets. Added HTTP and direct-service regressions for explicit targeting, invalid targets, authoritative unit scope, and organization attribution on both closing and journal.
+- Added `PosDailyClosingConcurrencyTest` to the existing `PostgreSQLConcurrency` CI suite. Independent PHP worker sessions synchronize via pipes; `pg_blocking_pids()` and fresh `pg_stat_activity` snapshots prove the competing session waits before the parent commits. Covers sale-first and closing-first orderings for existing mutex rows and concurrent creation of previously absent placeholders, plus cross-organization same-date progress.
+- Local PostgreSQL 18.6 (`pgsql`, READ COMMITTED), isolated `kojaya_test`: five cases passed with 117 assertions. CI uses PostgreSQL 16. SQLite explicitly skips this proof. The mutex algorithm, mutation transaction boundaries, migration, and legacy null-org isolation remain unchanged. The closing page preserves the server-validated target on date filtering and submission; the UI audit uses an explicit organization fixture and exercises both actions without changing visual baselines.
 
 ## 🎯 2026-09-05 - POS Organization Isolation R1 & CI Regression Hardening (SEC-P1-03 R1)
 
@@ -1258,4 +1281,3 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Jul 29, 2026 | Admin Koperasi Sidebar Active State | Engineering | Kept the Keuangan Anggota group open for payment and dues routes, normalized active navigation matching to ignore query strings, and added responsive Playwright coverage for active submenu behavior. |
 
 *This log is maintained throughout the project lifecycle. Last updated: August 29, 2026*
-

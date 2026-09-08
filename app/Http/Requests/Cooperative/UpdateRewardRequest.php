@@ -13,8 +13,13 @@ class UpdateRewardRequest extends FormRequest
 
     public function rules(): array
     {
+        $user = $this->user();
+        $isGlobal = $user && $user->can('view_cooperative_all');
+
         return [
-            'organization_id' => ['prohibited'],
+            'organization_id' => $isGlobal
+                ? ['required', 'uuid', 'exists:organizations,id']
+                : ['nullable', 'uuid'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:BARANG,DISKON,LAYANAN'],
             'description' => ['nullable', 'string'],

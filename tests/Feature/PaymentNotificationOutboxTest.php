@@ -45,7 +45,7 @@ class PaymentNotificationOutboxTest extends TestCase
 
         \Laravel\Sanctum\Sanctum::actingAs($user, ['member:write']);
 
-        $category = PosCategory::factory()->create();
+        $category = PosCategory::factory()->create(['organization_id' => $organization->id]);
         $product = PosProduct::factory()->for($category, 'category')->create([
             'organization_id' => $organization->id,
             'cost_price' => 5000,

@@ -17,9 +17,16 @@ class PosApiController extends Controller
     {
         abort_unless($request->user()?->can('access_cooperative_pos'), 403);
 
+        $user = $request->user();
+        $organizationId = $user->organization_id;
+        abort_if(empty($organizationId), 403, 'A cooperative organization is required for this operation.');
+
         return response()->json([
             'data' => PosProduct::query()
-                ->with('category')
+                ->where('organization_id', $organizationId)
+                ->with(['category' => function ($query) use ($organizationId): void {
+                    $query->where('organization_id', $organizationId);
+                }])
                 ->where('is_active', true)
                 ->when($request->filled('search'), function ($query) use ($request): void {
                     $search = $request->string('search')->toString();

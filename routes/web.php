@@ -159,14 +159,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
     Route::resource('employees.contracts', \App\Http\Controllers\EmployeeContractController::class)->only(['index', 'store', 'update']);
-    Route::resource('payrolls', \App\Http\Controllers\PayrollController::class)->only(['index', 'show']);
-    Route::post('payrolls/generate', [\App\Http\Controllers\PayrollController::class, 'generate'])->name('payrolls.generate');
-    Route::get('payrolls/{payroll}/download-pdf', [\App\Http\Controllers\PayrollController::class, 'downloadPdf'])->name('payrolls.download-pdf');
-
     // THR (Tunjangan Hari Raya)
     Route::get('payrolls/thr', [\App\Http\Controllers\PayrollController::class, 'thrIndex'])->name('payrolls.thr');
     Route::post('payrolls/thr/preview', [\App\Http\Controllers\PayrollController::class, 'previewThr'])->name('payrolls.thr.preview');
     Route::post('payrolls/thr/generate', [\App\Http\Controllers\PayrollController::class, 'generateThr'])->name('payrolls.thr.generate');
+
+    Route::post('payrolls/generate', [\App\Http\Controllers\PayrollController::class, 'generate'])->name('payrolls.generate');
+    Route::get('payrolls/{payroll}/download-pdf', [\App\Http\Controllers\PayrollController::class, 'downloadPdf'])->whereNumber('payroll')->name('payrolls.download-pdf');
+    Route::resource('payrolls', \App\Http\Controllers\PayrollController::class)->whereNumber('payroll')->only(['index', 'show']);
 
     // Payroll Approvals
     Route::get('payroll-approvals', [\App\Http\Controllers\PayrollApprovalController::class, 'index'])->name('payroll-approvals.index');

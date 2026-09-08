@@ -23,7 +23,8 @@ class PayrollPolicy extends BasePolicy
 
     public function create(User $user): bool
     {
-        return $this->can($user, PermissionEnum::PAYROLL_PROCESS->value);
+        return $this->can($user, PermissionEnum::PAYROLL_PROCESS->value)
+            && ($user->can(PermissionEnum::PAYROLL_VIEW_ALL->value) || ! empty($user->organization_id));
     }
 
     public function update(User $user, Payroll $payroll): bool
@@ -45,6 +46,7 @@ class PayrollPolicy extends BasePolicy
 
     public function exportBankTransfer(User $user): bool
     {
-        return $this->can($user, PermissionEnum::PAYROLL_APPROVE->value);
+        return $this->can($user, PermissionEnum::PAYROLL_APPROVE->value)
+            && ($user->can(PermissionEnum::PAYROLL_VIEW_ALL->value) || ! empty($user->organization_id));
     }
 }

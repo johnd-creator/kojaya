@@ -15,7 +15,7 @@ class SubmitPayrollApprovalRequest extends FormRequest
     {
         return [
             'payroll_ids' => ['required', 'array'],
-            'payroll_ids.*' => ['integer', 'exists:payrolls,id'],
+            'payroll_ids.*' => ['integer'],
             'notes' => ['nullable', 'string'],
         ];
     }

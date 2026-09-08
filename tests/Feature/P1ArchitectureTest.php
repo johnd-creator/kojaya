@@ -73,7 +73,10 @@ class P1ArchitectureTest extends TestCase
 
     public function test_payroll_index_loads_summary_stats_as_deferred_props(): void
     {
+        $this->seed(RolePermissionSeeder::class);
+
         $user = User::factory()->create();
+        $user->assignRole('Admin Pusat');
 
         $this->actingAs($user)
             ->get(route('payrolls.index'))

@@ -13,8 +13,10 @@ use App\Reports\Leave\LeaveReport;
 use App\Reports\Payroll\PayrollDetailReport;
 use App\Reports\Payroll\PayrollSummaryReport;
 use App\Reports\Payroll\PayslipReport;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Services\ConsolidatedReportService;
 use App\Services\ExcelExportService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -118,14 +120,14 @@ class ReportController extends Controller
         ];
     }
 
-    public function payslip(Request $request, int $employeeId, string $period): HttpResponse
+    public function payslip(Request $request, int $employeeId, string $period, OrganizationScopeService $scopeService): HttpResponse
     {
         $this->authorizePermission('view_reports');
 
+        $query = Payroll::query()->where('employee_id', $employeeId)->where('period', $period);
+        $payroll = $scopeService->scopeVisibleTo($query, $request->user(), 'view_payroll_all')->firstOrFail();
+
         $employee = Employee::findOrFail($employeeId);
-        $payroll = Payroll::where('employee_id', $employeeId)
-            ->where('period', $period)
-            ->firstOrFail();
 
         $report = new PayslipReport($employee, $payroll);
         $data = json_decode($report->generate(), true);
@@ -142,14 +144,25 @@ class ReportController extends Controller
         ]);
     }
 
-    public function payrollSummary(Request $request): BinaryFileResponse
+    public function payrollSummary(Request $request, OrganizationScopeService $scopeService): BinaryFileResponse
     {
         $this->authorizePermission('view_reports');
+
+        $orgId = $request->input('organization_id');
+        if (! $request->user()->can('view_payroll_all')) {
+            if (empty($request->user()->organization_id)) {
+                throw new AuthorizationException('Pengguna tanpa organisasi tidak diizinkan mengakses laporan ini.');
+            }
+            if ($orgId !== null && (string) $orgId !== (string) $request->user()->organization_id) {
+                throw new AuthorizationException('Pengguna tidak diizinkan mengakses organisasi lain.');
+            }
+            $orgId = (string) $request->user()->organization_id;
+        }
 
         $filters = [
             'period_from' => $request->input('period_from'),
             'period_to' => $request->input('period_to'),
-            'organization_id' => $request->input('organization_id'),
+            'organization_id' => $orgId,
             'department' => $request->input('department'),
         ];
 
@@ -160,15 +173,26 @@ class ReportController extends Controller
             ->download();
     }
 
-    public function payrollDetail(Request $request): BinaryFileResponse
+    public function payrollDetail(Request $request, OrganizationScopeService $scopeService): BinaryFileResponse
     {
         $this->authorizePermission('view_reports');
+
+        $orgId = $request->input('organization_id');
+        if (! $request->user()->can('view_payroll_all')) {
+            if (empty($request->user()->organization_id)) {
+                throw new AuthorizationException('Pengguna tanpa organisasi tidak diizinkan mengakses laporan ini.');
+            }
+            if ($orgId !== null && (string) $orgId !== (string) $request->user()->organization_id) {
+                throw new AuthorizationException('Pengguna tidak diizinkan mengakses organisasi lain.');
+            }
+            $orgId = (string) $request->user()->organization_id;
+        }
 
         $filters = [
             'period' => $request->input('period'),
             'period_from' => $request->input('period_from'),
             'period_to' => $request->input('period_to'),
-            'organization_id' => $request->input('organization_id'),
+            'organization_id' => $orgId,
         ];
 
         $fileName = 'payroll_detail_'.now()->format('Y-m-d_His').'.xlsx';
@@ -268,6 +292,7 @@ class ReportController extends Controller
     public function consolidatedPayroll(ConsolidatedPayrollReportRequest $request): JsonResponse
     {
         $this->authorizePermission('view_reports');
+        abort_unless($request->user()?->can('view_payroll_all'), 403, 'Akses global ke seluruh payroll diperlukan untuk laporan konsolidasi.');
 
         $validated = $request->validated();
 

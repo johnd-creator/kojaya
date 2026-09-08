@@ -23,8 +23,15 @@ class PosRegisterController extends Controller
         PosProductAccessService $productAccess,
         PosCategoryAccessService $categoryAccess,
     ): Response {
+        $this->authorizePermission('access_cooperative_pos');
+
+        $user = $request->user();
+        $targetOrgId = $user->can('view_cooperative_all')
+            ? (session('active_organization_id') ?? $user->organization_id)
+            : $user->organization_id;
+
         $members = CooperativeMember::query()
-            ->where('organization_id', $request->user()->organization_id)
+            ->when($targetOrgId, fn ($q) => $q->where('organization_id', $targetOrgId), fn ($q) => $q->whereRaw('1 = 0'))
             ->active()
             ->with('storeAccount')
             ->orderBy('name')
@@ -57,6 +64,8 @@ class PosRegisterController extends Controller
 
     public function store(StorePosTransactionRequest $request, PosTransactionService $service): RedirectResponse|JsonResponse
     {
+        $this->authorizePermission('access_cooperative_pos');
+
         $transaction = $service->create($request->validated(), $request->user());
 
         if ($request->expectsJson()) {

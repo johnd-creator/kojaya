@@ -16,9 +16,9 @@ class StorePosTransactionRequest extends FormRequest
     {
         return [
             'organization_id' => ['prohibited'],
-            'pos_cashier_shift_id' => ['nullable', 'integer', 'exists:pos_cashier_shifts,id'],
+            'pos_cashier_shift_id' => ['nullable', 'integer'],
             'client_reference' => ['nullable', 'string', 'max:80'],
-            'cooperative_member_id' => ['nullable', 'exists:cooperative_members,id'],
+            'cooperative_member_id' => ['nullable', 'integer'],
             'payment_method' => ['required_without:payments', 'in:CASH,TRANSFER,QRIS,MEMBER_CREDIT,MEMBER_STORE_ACCOUNT'],
             'reference_no' => ['nullable', 'string', 'max:255'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
@@ -28,7 +28,7 @@ class StorePosTransactionRequest extends FormRequest
             'purchase_note' => ['nullable', 'string', 'max:500'],
             'store_delegate_code' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.pos_product_id' => ['required', 'exists:pos_products,id'],
+            'items.*.pos_product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
             'payments' => ['required_without:payment_method', 'array', 'min:1'],
             'payments.*.payment_method' => ['required_with:payments', 'in:CASH,TRANSFER,QRIS,MEMBER_CREDIT,MEMBER_STORE_ACCOUNT'],

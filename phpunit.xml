@@ -12,6 +12,7 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
             <exclude>tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Cooperative/PosVoidConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</exclude>
             <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>

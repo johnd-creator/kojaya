@@ -16,6 +16,7 @@ use App\Models\SalaryStructure;
 use App\Models\ThrEntitlement;
 use App\Models\User;
 use App\Services\Authorization\OrganizationScopeService;
+use Carbon\Carbon;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\URL;
@@ -380,6 +381,122 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
         ]);
     }
 
+    public function test_p15a_atomic_submission_appended_foreign_payroll_fails_with_zero_approvals(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollA = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollA->id, $payrollB->id],
+                'notes' => 'Attempting mixed batch submission [A valid, B foreign]',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame(0, PayrollApproval::count());
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollA->id]);
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollB->id]);
+        $this->assertSame(PayrollStatus::Draft->value, $payrollA->fresh()->status);
+    }
+
+    public function test_p15b_atomic_submission_prepended_foreign_payroll_fails_with_zero_approvals(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollA = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollB->id, $payrollA->id],
+                'notes' => 'Attempting mixed batch submission [B foreign, A valid]',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame(0, PayrollApproval::count());
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollA->id]);
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollB->id]);
+        $this->assertSame(PayrollStatus::Draft->value, $payrollA->fresh()->status);
+    }
+
+    public function test_p15c_global_actor_cannot_create_mixed_organization_approval_batch(): void
+    {
+        $this->globalUser->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+        $this->globalUser->givePermissionTo(PermissionEnum::PAYROLL_VIEW_ALL->value);
+
+        $payrollA = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $this->actingAs($this->globalUser)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollA->id, $payrollB->id],
+                'notes' => 'Global actor attempting mixed organization batch',
+            ])
+            ->assertSessionHasErrors('payroll_ids');
+
+        $this->assertSame(0, PayrollApproval::count());
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollA->id]);
+        $this->assertDatabaseMissing('payroll_approvals', ['payroll_id' => $payrollB->id]);
+    }
+
+    public function test_p16a_unit_actor_submitting_multiple_own_payrolls_creates_single_atomic_batch(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_PROCESS->value);
+
+        $payrollA1 = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+        $employeeA2 = Employee::factory()->create(['organization_id' => $this->orgA->id]);
+        $payrollA2 = Payroll::factory()->create([
+            'employee_id' => $employeeA2->id,
+            'organization_id' => $this->orgA->id,
+            'status' => PayrollStatus::Draft->value,
+        ]);
+
+        $this->actingAs($this->userA)
+            ->post(route('payrolls.submit-approval'), [
+                'payroll_ids' => [$payrollA1->id, $payrollA2->id],
+                'notes' => 'Submitting batch of 2 payrolls for Org A',
+            ])
+            ->assertSessionHas('success');
+
+        $approvals = PayrollApproval::whereIn('payroll_id', [$payrollA1->id, $payrollA2->id])->get();
+        $this->assertCount(2, $approvals);
+        $this->assertSame(1, $approvals->pluck('payroll_batch_id')->unique()->count());
+        $this->assertSame($this->userA->id, $approvals[0]->requester_id);
+        $this->assertSame($this->userA->id, $approvals[1]->requester_id);
+        $this->assertSame(PayrollApprovalStatus::Pending->value, $approvals[0]->status);
+        $this->assertSame(PayrollApprovalStatus::Pending->value, $approvals[1]->status);
+    }
+
     public function test_p17_unit_actor_cannot_export_bank_transfer_for_batch_of_another_organization(): void
     {
         $this->userA->givePermissionTo(PermissionEnum::PAYROLL_APPROVE->value);
@@ -434,6 +551,161 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('1122334455', $response->getContent());
         $this->assertStringContainsString('5500000.00', $response->getContent());
+    }
+
+    public function test_p18a_mixed_organization_batch_fails_closed_without_partial_export_for_unit_actor(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_APPROVE->value);
+
+        $payrollA = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'net_salary' => 5000000,
+            'status' => PayrollStatus::Approved->value,
+        ]);
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'net_salary' => 7000000,
+            'status' => PayrollStatus::Approved->value,
+        ]);
+
+        $batchId = 'mixed-batch-fail-closed-unit';
+        PayrollApproval::create([
+            'payroll_id' => $payrollA->id,
+            'payroll_batch_id' => $batchId,
+            'requester_id' => $this->userA->id,
+            'approver_id' => $this->userA->id,
+            'status' => PayrollApprovalStatus::Approved->value,
+            'requested_at' => now(),
+            'approved_at' => now(),
+        ]);
+        PayrollApproval::create([
+            'payroll_id' => $payrollB->id,
+            'payroll_batch_id' => $batchId,
+            'requester_id' => $this->userB->id,
+            'approver_id' => $this->userB->id,
+            'status' => PayrollApprovalStatus::Approved->value,
+            'requested_at' => now(),
+            'approved_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->userA)
+            ->get(route('payrolls.export-bank', ['batch' => $batchId, 'bank' => 'bni']));
+
+        $response->assertSessionHas('error');
+        $this->assertFalse($response->headers->has('content-disposition'));
+        $content = (string) $response->getContent();
+        $this->assertStringNotContainsString('1122334455', $content);
+        $this->assertStringNotContainsString('9988776655', $content);
+        $this->assertStringNotContainsString('5000000', $content);
+        $this->assertStringNotContainsString('7000000', $content);
+    }
+
+    public function test_p18b_mixed_organization_batch_fails_closed_for_global_actor(): void
+    {
+        $this->globalUser->givePermissionTo(PermissionEnum::PAYROLL_APPROVE->value);
+        $this->globalUser->givePermissionTo(PermissionEnum::PAYROLL_VIEW_ALL->value);
+
+        $payrollA = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'net_salary' => 5000000,
+            'status' => PayrollStatus::Approved->value,
+        ]);
+        $payrollB = Payroll::factory()->create([
+            'employee_id' => $this->employeeB->id,
+            'organization_id' => $this->orgB->id,
+            'net_salary' => 7000000,
+            'status' => PayrollStatus::Approved->value,
+        ]);
+
+        $batchId = 'mixed-batch-fail-closed-global';
+        PayrollApproval::create([
+            'payroll_id' => $payrollA->id,
+            'payroll_batch_id' => $batchId,
+            'requester_id' => $this->userA->id,
+            'approver_id' => $this->userA->id,
+            'status' => PayrollApprovalStatus::Approved->value,
+            'requested_at' => now(),
+            'approved_at' => now(),
+        ]);
+        PayrollApproval::create([
+            'payroll_id' => $payrollB->id,
+            'payroll_batch_id' => $batchId,
+            'requester_id' => $this->userB->id,
+            'approver_id' => $this->userB->id,
+            'status' => PayrollApprovalStatus::Approved->value,
+            'requested_at' => now(),
+            'approved_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->globalUser)
+            ->get(route('payrolls.export-bank', ['batch' => $batchId, 'bank' => 'bni']));
+
+        $response->assertSessionHas('error');
+        $this->assertFalse($response->headers->has('content-disposition'));
+        $content = (string) $response->getContent();
+        $this->assertStringNotContainsString('1122334455', $content);
+        $this->assertStringNotContainsString('9988776655', $content);
+        $this->assertStringNotContainsString('5000000', $content);
+        $this->assertStringNotContainsString('7000000', $content);
+    }
+
+    public function test_p18c_same_org_approved_batch_exports_all_members_completely(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::PAYROLL_APPROVE->value);
+
+        $employeeA2 = Employee::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'bank_name' => 'BNI',
+            'bank_account_number' => '1122339999',
+            'bank_account_holder' => 'Second Employee',
+        ]);
+
+        $payrollA1 = Payroll::factory()->create([
+            'employee_id' => $this->employeeA->id,
+            'organization_id' => $this->orgA->id,
+            'net_salary' => 5500000,
+            'status' => PayrollStatus::Approved->value,
+        ]);
+        $payrollA2 = Payroll::factory()->create([
+            'employee_id' => $employeeA2->id,
+            'organization_id' => $this->orgA->id,
+            'net_salary' => 6500000,
+            'status' => PayrollStatus::Approved->value,
+        ]);
+
+        $batchId = 'batch-org-a-complete';
+        PayrollApproval::create([
+            'payroll_id' => $payrollA1->id,
+            'payroll_batch_id' => $batchId,
+            'requester_id' => $this->userA->id,
+            'approver_id' => $this->userA->id,
+            'status' => PayrollApprovalStatus::Approved->value,
+            'requested_at' => now(),
+            'approved_at' => now(),
+        ]);
+        PayrollApproval::create([
+            'payroll_id' => $payrollA2->id,
+            'payroll_batch_id' => $batchId,
+            'requester_id' => $this->userA->id,
+            'approver_id' => $this->userA->id,
+            'status' => PayrollApprovalStatus::Approved->value,
+            'requested_at' => now(),
+            'approved_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->userA)
+            ->get(route('payrolls.export-bank', ['batch' => $batchId, 'bank' => 'bni']));
+
+        $response->assertOk();
+        $this->assertTrue($response->headers->has('content-disposition'));
+        $content = (string) $response->getContent();
+        $this->assertStringContainsString('1122334455', $content);
+        $this->assertStringContainsString('1122339999', $content);
+        $this->assertStringContainsString('5500000.00', $content);
+        $this->assertStringContainsString('6500000.00', $content);
     }
 
     public function test_p19_actor_without_organization_and_without_view_payroll_all_fails_closed_on_export(): void
@@ -1140,6 +1412,317 @@ class ErpPayrollOrganizationIsolationTest extends TestCase
                     ['component_type_id' => $componentType->id, 'amount' => 5000000],
                 ],
             ])
+            ->assertForbidden();
+    }
+
+    public function test_s09_payroll_lookup_uses_global_salary_structure_when_no_org_specific_structure_exists(): void
+    {
+        $grade = JobGrade::factory()->create();
+        $comp = SalaryComponentType::factory()->create(['code' => 'BASE']);
+
+        // Explicit NULL organization_id
+        $globalStruct = SalaryStructure::factory()->create([
+            'organization_id' => null,
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'min_tenure_months' => 0,
+            'max_tenure_months' => null,
+            'effective_from' => '2026-01-01',
+        ]);
+        $globalStruct->items()->create([
+            'salary_component_type_id' => $comp->id,
+            'amount' => 4200000,
+        ]);
+
+        $this->employeeA->update([
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'hire_date' => '2026-01-01',
+        ]);
+
+        $resolved = SalaryStructure::lookupFor($this->employeeA, Carbon::parse('2026-06-01'));
+        $this->assertNotNull($resolved);
+        $this->assertSame($globalStruct->id, $resolved->id);
+        $this->assertNull($resolved->organization_id);
+        $this->assertEquals(4200000, $resolved->totalGross());
+    }
+
+    public function test_s10_payroll_lookup_prefers_org_specific_structure_over_global_structure(): void
+    {
+        $grade = JobGrade::factory()->create();
+        $comp = SalaryComponentType::factory()->create(['code' => 'BASE']);
+
+        $globalStruct = SalaryStructure::factory()->create([
+            'organization_id' => null,
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $globalStruct->items()->create([
+            'salary_component_type_id' => $comp->id,
+            'amount' => 4000000,
+        ]);
+
+        $orgAStruct = SalaryStructure::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $orgAStruct->items()->create([
+            'salary_component_type_id' => $comp->id,
+            'amount' => 6500000,
+        ]);
+
+        $this->employeeA->update([
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'hire_date' => '2026-01-01',
+        ]);
+        $this->employeeB->update([
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'hire_date' => '2026-01-01',
+        ]);
+
+        // Employee A gets Org A specific structure
+        $resolvedA = SalaryStructure::lookupFor($this->employeeA, Carbon::parse('2026-06-01'));
+        $this->assertNotNull($resolvedA);
+        $this->assertSame($orgAStruct->id, $resolvedA->id);
+        $this->assertSame($this->orgA->id, $resolvedA->organization_id);
+        $this->assertEquals(6500000, $resolvedA->totalGross());
+
+        // Employee B (Org B has no specific structure) falls back to global structure
+        $resolvedB = SalaryStructure::lookupFor($this->employeeB, Carbon::parse('2026-06-01'));
+        $this->assertNotNull($resolvedB);
+        $this->assertSame($globalStruct->id, $resolvedB->id);
+        $this->assertNull($resolvedB->organization_id);
+        $this->assertEquals(4000000, $resolvedB->totalGross());
+    }
+
+    public function test_s11_tenant_actor_cannot_mutate_or_delete_global_salary_structure(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::SALARY_STRUCTURES_MANAGE->value);
+        $grade = JobGrade::factory()->create();
+        $comp = SalaryComponentType::factory()->create();
+
+        $globalStruct = SalaryStructure::factory()->create([
+            'organization_id' => null,
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'min_tenure_months' => 0,
+            'effective_from' => '2026-01-01',
+        ]);
+        $globalStruct->items()->create([
+            'salary_component_type_id' => $comp->id,
+            'amount' => 4000000,
+        ]);
+
+        // Attempt update
+        $this->actingAs($this->userA)
+            ->put(route('salary-structures.update', $globalStruct->id), [
+                'employee_type' => 'Organic',
+                'job_grade_id' => $grade->id,
+                'min_tenure_months' => 12,
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['component_type_id' => $comp->id, 'amount' => 9999999],
+                ],
+            ])
+            ->assertNotFound();
+
+        $globalStruct->refresh();
+        $this->assertSame(0, $globalStruct->min_tenure_months);
+        $this->assertEquals(4000000, $globalStruct->items->first()->amount);
+
+        // Attempt delete
+        $this->actingAs($this->userA)
+            ->delete(route('salary-structures.destroy', $globalStruct->id))
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('salary_structures', ['id' => $globalStruct->id]);
+    }
+
+    public function test_s12_tenant_actor_cannot_rebind_own_salary_structure_to_global_or_foreign_scope(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::SALARY_STRUCTURES_MANAGE->value);
+        $grade = JobGrade::factory()->create();
+        $comp = SalaryComponentType::factory()->create();
+
+        $structA = SalaryStructure::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $structA->items()->create([
+            'salary_component_type_id' => $comp->id,
+            'amount' => 5000000,
+        ]);
+
+        // Attempt to convert to global (organization_id = null)
+        $this->actingAs($this->userA)
+            ->put(route('salary-structures.update', $structA->id), [
+                'employee_type' => 'Organic',
+                'job_grade_id' => $grade->id,
+                'organization_id' => null,
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['component_type_id' => $comp->id, 'amount' => 5000000],
+                ],
+            ])
+            ->assertForbidden();
+
+        $structA->refresh();
+        $this->assertSame($this->orgA->id, $structA->organization_id);
+
+        // Attempt to rebind to foreign org B
+        $this->actingAs($this->userA)
+            ->put(route('salary-structures.update', $structA->id), [
+                'employee_type' => 'Organic',
+                'job_grade_id' => $grade->id,
+                'organization_id' => $this->orgB->id,
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['component_type_id' => $comp->id, 'amount' => 5000000],
+                ],
+            ])
+            ->assertForbidden();
+
+        $structA->refresh();
+        $this->assertSame($this->orgA->id, $structA->organization_id);
+    }
+
+    public function test_s13_tenant_actor_cannot_take_ownership_of_global_salary_structure(): void
+    {
+        $this->userA->givePermissionTo(PermissionEnum::SALARY_STRUCTURES_MANAGE->value);
+        $grade = JobGrade::factory()->create();
+        $comp = SalaryComponentType::factory()->create();
+
+        $globalStruct = SalaryStructure::factory()->create([
+            'organization_id' => null,
+            'employee_type' => 'Organic',
+            'job_grade_id' => $grade->id,
+            'effective_from' => '2026-01-01',
+        ]);
+        $globalStruct->items()->create([
+            'salary_component_type_id' => $comp->id,
+            'amount' => 4000000,
+        ]);
+
+        // Tenant user tries to update global structure with own org ID
+        $this->actingAs($this->userA)
+            ->put(route('salary-structures.update', $globalStruct->id), [
+                'employee_type' => 'Organic',
+                'job_grade_id' => $grade->id,
+                'organization_id' => $this->orgA->id,
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['component_type_id' => $comp->id, 'amount' => 4000000],
+                ],
+            ])
+            ->assertNotFound();
+
+        $globalStruct->refresh();
+        $this->assertNull($globalStruct->organization_id);
+    }
+
+    public function test_s14_authorized_central_administrator_can_create_update_and_delete_global_salary_structure(): void
+    {
+        $this->globalUser->givePermissionTo(PermissionEnum::SALARY_STRUCTURES_MANAGE->value);
+        $this->globalUser->givePermissionTo(PermissionEnum::PAYROLL_VIEW_ALL->value);
+        $grade = JobGrade::factory()->create();
+        $comp = SalaryComponentType::factory()->create();
+
+        // 1. Create global structure
+        $this->actingAs($this->globalUser)
+            ->post(route('salary-structures.store'), [
+                'employee_type' => 'Organic',
+                'job_grade_id' => $grade->id,
+                'organization_id' => null,
+                'min_tenure_months' => 0,
+                'max_tenure_months' => 36,
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['component_type_id' => $comp->id, 'amount' => 4500000],
+                ],
+            ])
+            ->assertRedirect(route('salary-structures.index'));
+
+        $created = SalaryStructure::whereNull('organization_id')->first();
+        $this->assertNotNull($created);
+        $this->assertNull($created->organization_id);
+        $this->assertSame(36, $created->max_tenure_months);
+        $this->assertEquals(4500000, $created->items->first()->amount);
+
+        // 2. Update global structure
+        $this->actingAs($this->globalUser)
+            ->put(route('salary-structures.update', $created->id), [
+                'employee_type' => 'Organic',
+                'job_grade_id' => $grade->id,
+                'organization_id' => null,
+                'min_tenure_months' => 6,
+                'max_tenure_months' => null,
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['component_type_id' => $comp->id, 'amount' => 5000000],
+                ],
+            ])
+            ->assertRedirect(route('salary-structures.index'));
+
+        $created->refresh();
+        $this->assertNull($created->organization_id);
+        $this->assertSame(6, $created->min_tenure_months);
+        $this->assertNull($created->max_tenure_months);
+        $this->assertEquals(5000000, $created->items->first()->amount);
+
+        // 3. Delete global structure
+        $this->actingAs($this->globalUser)
+            ->delete(route('salary-structures.destroy', $created->id))
+            ->assertRedirect(route('salary-structures.index'));
+
+        $this->assertDatabaseMissing('salary_structures', ['id' => $created->id]);
+    }
+
+    public function test_s15_authorized_central_administrator_can_view_and_filter_global_salary_structures(): void
+    {
+        $this->globalUser->givePermissionTo(PermissionEnum::SALARY_STRUCTURES_MANAGE->value);
+        $this->globalUser->givePermissionTo(PermissionEnum::PAYROLL_VIEW_ALL->value);
+        $this->userA->givePermissionTo(PermissionEnum::SALARY_STRUCTURES_MANAGE->value);
+
+        $grade = JobGrade::factory()->create();
+
+        $globalStruct = SalaryStructure::factory()->create([
+            'organization_id' => null,
+            'job_grade_id' => $grade->id,
+        ]);
+        SalaryStructure::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'job_grade_id' => $grade->id,
+        ]);
+
+        // Global user sees both global and org-specific
+        $this->actingAs($this->globalUser)
+            ->get(route('salary-structures.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('SalaryStructure/Index')
+                ->has('structures.data', 2)
+            );
+
+        // Global user filters by global
+        $this->actingAs($this->globalUser)
+            ->get(route('salary-structures.index', ['organization_id' => 'global']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('SalaryStructure/Index')
+                ->has('structures.data', 1)
+                ->where('structures.data.0.id', $globalStruct->id)
+            );
+
+        // Tenant user cannot filter by global
+        $this->actingAs($this->userA)
+            ->get(route('salary-structures.index', ['organization_id' => 'global']))
             ->assertForbidden();
     }
 

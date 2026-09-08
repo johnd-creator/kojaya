@@ -18,7 +18,9 @@ use App\Services\Hr\ThrEntitlementService;
 use App\Services\PayrollGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -243,35 +245,52 @@ class PayrollController extends Controller
         $this->authorize('submitForApproval', Payroll::class);
 
         $validated = $request->validated();
+        $user = $request->user();
 
-        $batchId = Str::uuid()->toString();
-
+        // 1. Resolve and validate all supplied payroll IDs before any persistent mutation
+        $resolvedPayrolls = [];
         foreach ($validated['payroll_ids'] as $payrollId) {
             /** @var Payroll $payroll */
-            $payroll = $scopeService->resolveVisible(Payroll::class, $request->user(), $payrollId, 'view_payroll_all');
+            $payroll = $scopeService->resolveVisible(Payroll::class, $user, $payrollId, 'view_payroll_all');
+            $resolvedPayrolls[] = $payroll;
+        }
 
-            if ($payroll->status !== PayrollStatus::Draft->value) {
-                continue;
-            }
-
-            $hasPendingApproval = PayrollApproval::query()
-                ->where('payroll_id', $payrollId)
-                ->where('status', PayrollApprovalStatus::Pending->value)
-                ->exists();
-
-            if ($hasPendingApproval) {
-                continue;
-            }
-
-            PayrollApproval::create([
-                'payroll_id' => $payrollId,
-                'payroll_batch_id' => $batchId,
-                'requester_id' => Auth::id(),
-                'status' => PayrollApprovalStatus::Pending->value,
-                'requester_notes' => $validated['notes'],
-                'requested_at' => now(),
+        // 2. Enforce batch invariant: one payroll approval batch == one organization
+        $orgIds = collect($resolvedPayrolls)->pluck('organization_id')->unique()->values();
+        if ($orgIds->count() > 1) {
+            throw ValidationException::withMessages([
+                'payroll_ids' => 'Semua payroll dalam satu batch persetujuan harus berasal dari organisasi yang sama.',
             ]);
         }
+
+        // 3. Mutation phase wrapped in database transaction as defense in depth
+        $batchId = Str::uuid()->toString();
+
+        DB::transaction(function () use ($resolvedPayrolls, $validated, $batchId) {
+            foreach ($resolvedPayrolls as $payroll) {
+                if ($payroll->status !== PayrollStatus::Draft->value) {
+                    continue;
+                }
+
+                $hasPendingApproval = PayrollApproval::query()
+                    ->where('payroll_id', $payroll->id)
+                    ->where('status', PayrollApprovalStatus::Pending->value)
+                    ->exists();
+
+                if ($hasPendingApproval) {
+                    continue;
+                }
+
+                PayrollApproval::create([
+                    'payroll_id' => $payroll->id,
+                    'payroll_batch_id' => $batchId,
+                    'requester_id' => Auth::id(),
+                    'status' => PayrollApprovalStatus::Pending->value,
+                    'requester_notes' => $validated['notes'],
+                    'requested_at' => now(),
+                ]);
+            }
+        });
 
         return back()->with('success', 'Payroll submitted for approval.');
     }
@@ -282,19 +301,33 @@ class PayrollController extends Controller
 
         $validated = $request->validated();
 
-        $query = Payroll::query()->whereHas('approvals', function ($query) use ($batchId) {
+        // 1. Resolve the complete approved batch server-side
+        $payrolls = Payroll::query()->whereHas('approvals', function ($query) use ($batchId) {
             $query->where('payroll_batch_id', $batchId)
                 ->where('status', PayrollApprovalStatus::Approved->value);
-        });
-
-        $query = $scopeService->scopeVisibleTo($query, $request->user(), 'view_payroll_all');
-
-        $payrolls = $query->with('employee')->get();
+        })->with(['employee', 'organization'])->get();
 
         if ($payrolls->isEmpty()) {
             return back()->with('error', 'No approved payrolls found for this batch.');
         }
 
+        // 2. Determine distinct underlying payroll organization IDs
+        $orgIds = $payrolls->pluck('organization_id')->unique()->values();
+
+        // 3. Fail closed if the complete batch contains more than one organization
+        if ($orgIds->count() > 1) {
+            return back()->with('error', 'Batch persetujuan payroll tidak valid karena mencakup beberapa organisasi.');
+        }
+
+        // 4. Authorize the actor against that single organization
+        $batchOrgId = (string) $orgIds->first();
+        $visibility = $scopeService->visibilityFor($request->user(), 'view_payroll_all');
+
+        if (! $visibility->global && (string) $visibility->organizationId !== $batchOrgId) {
+            return back()->with('error', 'Anda tidak memiliki akses ke batch payroll organisasi ini.');
+        }
+
+        // 5. Only then export the complete authorized batch
         $content = $this->bankExportService->exportPayrollToBank($batchId, $validated['bank'], $payrolls);
 
         $filename = 'payroll-export-'.$batchId.'-'.$validated['bank'].'.txt';

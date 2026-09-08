@@ -34,8 +34,15 @@ class SalaryStructureController extends Controller
         }
 
         if ($request->filled('organization_id')) {
-            $targetOrgId = $scopeService->resolveTargetOrganization($request->user(), $request->input('organization_id'), 'view_payroll_all');
-            $query->where('organization_id', $targetOrgId);
+            if ($request->input('organization_id') === 'global') {
+                if (! $request->user()->can('view_payroll_all')) {
+                    throw new AuthorizationException('Pengguna tidak diizinkan mengakses template global.');
+                }
+                $query->whereNull('organization_id');
+            } else {
+                $targetOrgId = $scopeService->resolveTargetOrganization($request->user(), $request->input('organization_id'), 'view_payroll_all');
+                $query->where('organization_id', $targetOrgId);
+            }
         }
 
         $structures = $query->orderBy('employee_type')
@@ -62,7 +69,19 @@ class SalaryStructureController extends Controller
         $this->authorize('create', SalaryStructure::class);
 
         $validated = $request->validated();
-        $targetOrgId = $scopeService->resolveTargetOrganization($request->user(), $validated['organization_id'] ?? null, 'view_payroll_all');
+        $user = $request->user();
+
+        if ($user->can('view_payroll_all')) {
+            $targetOrgId = ! empty($validated['organization_id'])
+                ? $scopeService->assertOrganizationIdentifier($validated['organization_id'])
+                : null;
+        } else {
+            if (array_key_exists('organization_id', $validated) && $validated['organization_id'] !== null && (string) $validated['organization_id'] !== (string) $user->organization_id) {
+                throw new AuthorizationException('Pengguna tidak diizinkan mengakses organisasi lain.');
+            }
+
+            $targetOrgId = (string) $user->organization_id;
+        }
 
         $structure = SalaryStructure::create([
             'employee_type' => $validated['employee_type'],
@@ -93,11 +112,29 @@ class SalaryStructureController extends Controller
         $this->authorize('update', $structureModel);
 
         $validated = $request->validated();
-        $targetOrgId = $scopeService->resolveTargetOrganization($request->user(), $validated['organization_id'] ?? null, 'view_payroll_all');
+        $user = $request->user();
 
-        $authoritativeOrgId = (string) $scopeService->organizationIdForModel($structureModel);
-        if ($authoritativeOrgId !== $targetOrgId) {
-            throw new AuthorizationException('Target organization does not match salary structure organization.');
+        if ($user->can('view_payroll_all')) {
+            if (array_key_exists('organization_id', $validated)) {
+                $targetOrgId = ! empty($validated['organization_id'])
+                    ? $scopeService->assertOrganizationIdentifier($validated['organization_id'])
+                    : null;
+            } else {
+                $targetOrgId = $structureModel->organization_id;
+            }
+        } else {
+            // Tenant-scoped user:
+            // 1. Cannot convert own template into global
+            if (array_key_exists('organization_id', $validated) && $validated['organization_id'] === null) {
+                throw new AuthorizationException('Pengguna tidak diizinkan mengubah struktur gaji menjadi template global.');
+            }
+
+            // 2. Cannot rebind to another organization
+            if (! empty($validated['organization_id']) && (string) $validated['organization_id'] !== (string) $structureModel->organization_id) {
+                throw new AuthorizationException('Target organization does not match salary structure organization.');
+            }
+
+            $targetOrgId = (string) $structureModel->organization_id;
         }
 
         $structureModel->update([

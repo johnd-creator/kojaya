@@ -15,8 +15,15 @@ class SalaryStructurePolicy extends BasePolicy
 
     public function view(User $user, SalaryStructure $salaryStructure): bool
     {
-        return $this->can($user, PermissionEnum::SALARY_STRUCTURES_MANAGE->value)
-            && $this->sameOrganization($user, $salaryStructure);
+        if (! $this->can($user, PermissionEnum::SALARY_STRUCTURES_MANAGE->value)) {
+            return false;
+        }
+
+        if ($salaryStructure->organization_id === null) {
+            return $user->can(PermissionEnum::PAYROLL_VIEW_ALL->value);
+        }
+
+        return $this->sameOrganization($user, $salaryStructure);
     }
 
     public function create(User $user): bool
@@ -27,13 +34,27 @@ class SalaryStructurePolicy extends BasePolicy
 
     public function update(User $user, SalaryStructure $salaryStructure): bool
     {
-        return $this->can($user, PermissionEnum::SALARY_STRUCTURES_MANAGE->value)
-            && $this->sameOrganization($user, $salaryStructure);
+        if (! $this->can($user, PermissionEnum::SALARY_STRUCTURES_MANAGE->value)) {
+            return false;
+        }
+
+        if ($salaryStructure->organization_id === null) {
+            return $user->can(PermissionEnum::PAYROLL_VIEW_ALL->value);
+        }
+
+        return $this->sameOrganization($user, $salaryStructure);
     }
 
     public function delete(User $user, SalaryStructure $salaryStructure): bool
     {
-        return $this->can($user, PermissionEnum::SALARY_STRUCTURES_MANAGE->value)
-            && $this->sameOrganization($user, $salaryStructure);
+        if (! $this->can($user, PermissionEnum::SALARY_STRUCTURES_MANAGE->value)) {
+            return false;
+        }
+
+        if ($salaryStructure->organization_id === null) {
+            return $user->can(PermissionEnum::PAYROLL_VIEW_ALL->value);
+        }
+
+        return $this->sameOrganization($user, $salaryStructure);
     }
 }

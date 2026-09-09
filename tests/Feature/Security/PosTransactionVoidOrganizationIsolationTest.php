@@ -534,6 +534,55 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         );
     }
 
+    public function test_transaction_history_masks_foreign_member_and_cashier_identity_from_corrupt_transaction(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA, ['access_cooperative_pos'], 'Cashier Org A');
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Secret Cashier Org B');
+        $memberA = $this->createMember($orgA, 'Member Org A');
+        $memberB = $this->createMember($orgB, 'Secret Member Org B');
+        $productA = $this->createProduct($orgA);
+
+        $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-VALID-HISTORY',
+            'cooperative_member_id' => $memberA->id,
+        ]);
+
+        $transaction = $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-CORRUPT-HISTORY',
+            'sold_at' => now()->toDateString(),
+        ]);
+        DB::table('pos_transactions')->where('id', $transaction->id)->update([
+            'cashier_id' => $cashierB->id,
+            'cooperative_member_id' => $memberB->id,
+        ]);
+
+        $this->actingAs($cashierA)
+            ->get(route('cooperative.pos.transactions.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Pos/Transactions/Index')
+                ->where('transactions.data.0.id', $transaction->id)
+                ->where('transactions.data.0.cashier', null)
+                ->where('transactions.data.0.member', null)
+                ->missing('transactions.data.0.cashier_id')
+                ->missing('transactions.data.0.cooperative_member_id')
+                ->has('members', 1)
+                ->where('members.0.id', $memberA->id)
+            );
+
+        $this->actingAs($cashierA)
+            ->get(route('cooperative.pos.transactions.show', $transaction->id))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Pos/Transactions/Show')
+                ->where('transaction.member', null)
+                ->where('transaction.cashier', null)
+                ->missing('transaction.cashier_id')
+                ->missing('transaction.cooperative_member_id')
+            );
+    }
+
     public function test_transaction_history_index_global_user_sees_all_organizations(): void
     {
         [$orgA, $orgB] = $this->createOrganizations();
@@ -610,6 +659,34 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
             );
     }
 
+    public function test_cashier_dropdown_excludes_foreign_cashier_referenced_by_corrupt_transaction(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA, ['access_cooperative_pos'], 'Cashier Org A');
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Secret Cashier Org B');
+        $productA = $this->createProduct($orgA);
+
+        $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-VALID-CASHIER-A',
+        ]);
+        $corruptTransaction = $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-CORRUPT-CASHIER-B',
+        ]);
+        DB::table('pos_transactions')->where('id', $corruptTransaction->id)->update([
+            'cashier_id' => $cashierB->id,
+        ]);
+
+        $this->actingAs($cashierA)
+            ->get(route('cooperative.pos.transactions.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Pos/Transactions/Index')
+                ->has('cashiers', 1)
+                ->where('cashiers.0.id', $cashierA->id)
+                ->where('cashiers.0.name', 'Cashier Org A')
+            );
+    }
+
     public function test_unauthenticated_or_null_org_user_cannot_view_transactions(): void
     {
         $nullUser = User::factory()->create(['organization_id' => null]);
@@ -654,6 +731,56 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
         $this->actingAs($cashierA)
             ->get(route('cooperative.pos.transactions.receipt', $txA->id))
             ->assertOk();
+    }
+
+    public function test_receipt_surfaces_mask_foreign_member_and_cashier_but_preserves_totals(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA, ['access_cooperative_pos'], 'Cashier Org A');
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Secret Cashier Org B');
+        $memberB = $this->createMember($orgB, 'Secret Member Org B');
+        $memberB->forceFill(['member_no' => 'MBR-SECRET-B'])->saveQuietly();
+        $productA = $this->createProduct($orgA, ['sale_price' => 10000]);
+        $transaction = $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-CORRUPT-RECEIPT',
+        ]);
+        DB::table('pos_transactions')->where('id', $transaction->id)->update([
+            'cashier_id' => $cashierB->id,
+            'cooperative_member_id' => $memberB->id,
+        ]);
+
+        foreach (['cooperative.pos.transactions.receipt', 'cooperative.pos.transactions.receipt.pdf'] as $routeName) {
+            $content = $this->actingAs($cashierA)
+                ->get(route($routeName, $transaction->id))
+                ->assertOk()
+                ->getContent();
+
+            $this->assertStringNotContainsString('Secret Cashier Org B', $content);
+            $this->assertStringNotContainsString('MBR-SECRET-B', $content);
+            $this->assertStringNotContainsString('Secret Member Org B', $content);
+            $this->assertStringContainsString('Rp 10.000', $content);
+        }
+    }
+
+    public function test_receipt_keeps_same_organization_member_and_cashier_identity_visible(): void
+    {
+        [$orgA] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA, ['access_cooperative_pos'], 'Cashier Org A');
+        $memberA = $this->createMember($orgA, 'Member Org A');
+        $memberA->forceFill(['member_no' => 'MBR-ORG-A'])->saveQuietly();
+        $productA = $this->createProduct($orgA);
+        $transaction = $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-VALID-RECEIPT',
+            'cooperative_member_id' => $memberA->id,
+        ]);
+
+        $content = $this->actingAs($cashierA)
+            ->get(route('cooperative.pos.transactions.receipt', $transaction->id))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Cashier Org A', $content);
+        $this->assertStringContainsString('MBR-ORG-A', $content);
     }
 
     public function test_receipt_returns_404_for_other_organization(): void
@@ -945,6 +1072,33 @@ class PosTransactionVoidOrganizationIsolationTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Cooperative/Pos/Returns/Create')
                 ->where('transaction.id', $txA->id)
+            );
+    }
+
+    public function test_return_preview_masks_foreign_member_and_cashier_identity(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $cashierA = $this->createCashier($orgA, ['access_cooperative_pos'], 'Cashier Org A');
+        $cashierB = $this->createCashier($orgB, ['access_cooperative_pos'], 'Secret Cashier Org B');
+        $memberB = $this->createMember($orgB, 'Secret Member Org B');
+        $productA = $this->createProduct($orgA);
+        $transaction = $this->createTransaction($orgA, $cashierA, $productA, [
+            'transaction_no' => 'TX-CORRUPT-RETURN-READ',
+        ]);
+        DB::table('pos_transactions')->where('id', $transaction->id)->update([
+            'cashier_id' => $cashierB->id,
+            'cooperative_member_id' => $memberB->id,
+        ]);
+
+        $this->actingAs($cashierA)
+            ->get(route('cooperative.pos.returns.create', $transaction->id))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Cooperative/Pos/Returns/Create')
+                ->where('transaction.cashier', null)
+                ->where('transaction.member', null)
+                ->missing('transaction.cashier_id')
+                ->missing('transaction.cooperative_member_id')
             );
     }
 

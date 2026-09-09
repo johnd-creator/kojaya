@@ -15,8 +15,17 @@ class PosTransactionHistoryController extends Controller
 {
     public function index(Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
+        $visibility = $scopedQuery->visibilityFor($request->user());
+        $relatedScope = fn ($query) => $visibility->global
+            ? $query
+            : $query->where('organization_id', $visibility->organizationId);
+
         $query = PosTransaction::query()
-            ->with(['member', 'cashier', 'payments'])
+            ->with([
+                'member' => $relatedScope,
+                'cashier' => $relatedScope,
+                'payments',
+            ])
             ->withCount('items');
 
         $scopedQuery->scopeVisibleTo($query, $request->user());
@@ -52,10 +61,23 @@ class PosTransactionHistoryController extends Controller
         }
 
         return Inertia::render('Cooperative/Pos/Transactions/Index', [
-            'transactions' => $query->orderByDesc('sold_at')->paginate(20)->withQueryString(),
+            'transactions' => $query->orderByDesc('sold_at')->paginate(20)->through(function (PosTransaction $transaction) use ($visibility): PosTransaction {
+                if (! $visibility->global) {
+                    $this->maskForeignRelatedIds($transaction);
+                }
+
+                return $transaction;
+            })->withQueryString(),
             'filters' => $request->only(['date_from', 'date_to', 'transaction_no', 'member_id', 'cashier_id', 'payment_method', 'status']),
-            'cashiers' => User::query()
-                ->whereHas('posTransactions', fn ($q) => $scopedQuery->scopeVisibleTo($q, $request->user()))
+            'cashiers' => tap(
+                User::query()
+                    ->whereHas('posTransactions', fn ($q) => $scopedQuery->scopeVisibleTo($q, $request->user())),
+                function ($cashierQuery) use ($visibility): void {
+                    if (! $visibility->global) {
+                        $cashierQuery->where('organization_id', $visibility->organizationId);
+                    }
+                }
+            )
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name])
@@ -78,12 +100,15 @@ class PosTransactionHistoryController extends Controller
     public function show(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
         $visibility = $scopedQuery->visibilityFor($request->user());
+        $relatedScope = fn ($query) => $visibility->global
+            ? $query
+            : $query->where('organization_id', $visibility->organizationId);
 
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
             PosTransaction::query()->with([
-                'member',
-                'cashier',
+                'member' => $relatedScope,
+                'cashier' => $relatedScope,
                 'payments',
                 'items.product' => fn ($query) => $visibility->global
                     ? $query
@@ -94,6 +119,8 @@ class PosTransactionHistoryController extends Controller
         );
 
         if (! $visibility->global) {
+            $this->maskForeignRelatedIds($transactionModel);
+
             $transactionModel->items->each(function ($item): void {
                 if ($item->product === null) {
                     $item->makeHidden('pos_product_id');
@@ -104,5 +131,16 @@ class PosTransactionHistoryController extends Controller
         return Inertia::render('Cooperative/Pos/Transactions/Show', [
             'transaction' => $transactionModel,
         ]);
+    }
+
+    private function maskForeignRelatedIds(PosTransaction $transaction): void
+    {
+        if ($transaction->member === null) {
+            $transaction->makeHidden('cooperative_member_id');
+        }
+
+        if ($transaction->cashier === null) {
+            $transaction->makeHidden('cashier_id');
+        }
     }
 }

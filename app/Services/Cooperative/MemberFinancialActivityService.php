@@ -39,6 +39,11 @@ class MemberFinancialActivityService
                     : $query->where('organization_id', $member->organization_id),
                 'payments',
             ])
+            ->when(
+                $member->organization_id === null || $member->organization_id === '',
+                fn ($query) => $query->whereRaw('1 = 0'),
+                fn ($query) => $query->where('organization_id', $member->organization_id),
+            )
             ->whereIn('id', $posIds)
             ->get()
             ->keyBy('id');
@@ -103,7 +108,12 @@ class MemberFinancialActivityService
             ->first();
         $totalItemsQuery = DB::table('pos_transaction_items')
             ->join('pos_transactions', 'pos_transactions.id', '=', 'pos_transaction_items.pos_transaction_id')
-            ->where('pos_transactions.cooperative_member_id', $member->id);
+            ->where('pos_transactions.cooperative_member_id', $member->id)
+            ->when(
+                $member->organization_id === null || $member->organization_id === '',
+                fn ($query) => $query->whereRaw('1 = 0'),
+                fn ($query) => $query->where('pos_transactions.organization_id', $member->organization_id),
+            );
         $this->applyDateFilters($totalItemsQuery, $request, 'pos_transactions.sold_at');
 
         return [
@@ -126,6 +136,11 @@ class MemberFinancialActivityService
     {
         $posQuery = DB::table('pos_transactions')
             ->where('cooperative_member_id', $member->id)
+            ->when(
+                $member->organization_id === null || $member->organization_id === '',
+                fn ($query) => $query->whereRaw('1 = 0'),
+                fn ($query) => $query->where('organization_id', $member->organization_id),
+            )
             ->selectRaw("'pos' as source, id as source_id, sold_at as occurred_at, total_amount as amount, status");
         $paymentQuery = DB::table('cooperative_payments')
             ->where('cooperative_member_id', $member->id)

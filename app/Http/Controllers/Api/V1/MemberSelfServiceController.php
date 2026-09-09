@@ -558,10 +558,16 @@ class MemberSelfServiceController extends Controller
     public function transactions(Request $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
+        $organizationId = $member->organization_id;
         $filters = $request->only(['date_from', 'date_to', 'status']);
 
         $baseQuery = PosTransaction::query()
             ->where('cooperative_member_id', $member->id)
+            ->when(
+                $organizationId === null || $organizationId === '',
+                fn ($query) => $query->whereRaw('1 = 0'),
+                fn ($query) => $query->where('organization_id', $organizationId),
+            )
             ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('sold_at', '>=', $date))
             ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('sold_at', '<=', $date))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status));
@@ -576,7 +582,9 @@ class MemberSelfServiceController extends Controller
                     ? $query->whereRaw('1 = 0')
                     : $query->where('organization_id', $member->organization_id),
                 'payments',
-                'cashier:id,name',
+                'cashier' => fn ($query) => $organizationId === null || $organizationId === ''
+                    ? $query->whereRaw('1 = 0')
+                    : $query->where('organization_id', $organizationId)->select(['id', 'name']),
             ])
             ->orderByDesc('sold_at')
             ->paginate($this->perPage($request))
@@ -875,22 +883,25 @@ class MemberSelfServiceController extends Controller
         $items = collect();
 
         if ($source === null || $source === 'pos') {
-            $items = $items->merge(
-                $member->posTransactions()
-                    ->orderByDesc('sold_at')
-                    ->limit(100)
-                    ->get()
-                    ->map(fn (PosTransaction $transaction) => [
-                        'id' => 'pos:'.$transaction->id,
-                        'source' => 'pos',
-                        'title' => 'Belanja POS',
-                        'subtitle' => $transaction->transaction_no,
-                        'amount' => (float) $transaction->total_amount,
-                        'date' => $transaction->sold_at?->toISOString(),
-                        'status' => $transaction->status,
-                        'is_pos' => true,
-                    ])
-            );
+            if ($member->organization_id !== null && $member->organization_id !== '') {
+                $items = $items->merge(
+                    $member->posTransactions()
+                        ->where('organization_id', $member->organization_id)
+                        ->orderByDesc('sold_at')
+                        ->limit(100)
+                        ->get()
+                        ->map(fn (PosTransaction $transaction) => [
+                            'id' => 'pos:'.$transaction->id,
+                            'source' => 'pos',
+                            'title' => 'Belanja POS',
+                            'subtitle' => $transaction->transaction_no,
+                            'amount' => (float) $transaction->total_amount,
+                            'date' => $transaction->sold_at?->toISOString(),
+                            'status' => $transaction->status,
+                            'is_pos' => true,
+                        ])
+                );
+            }
         }
 
         if ($source === null || $source === 'payment') {

@@ -20,12 +20,15 @@ class PosReturnController extends Controller
     {
         $this->authorizePermission('access_cooperative_pos');
         $visibility = $scopedQuery->visibilityFor($request->user());
+        $relatedScope = fn ($query) => $visibility->global
+            ? $query
+            : $query->where('organization_id', $visibility->organizationId);
 
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
             PosTransaction::query()->with([
-                'member',
-                'cashier',
+                'member' => $relatedScope,
+                'cashier' => $relatedScope,
                 'items.product' => fn ($query) => $visibility->global
                     ? $query
                     : $query->where('organization_id', $visibility->organizationId),
@@ -35,6 +38,14 @@ class PosReturnController extends Controller
         );
 
         if (! $visibility->global) {
+            if ($transactionModel->member === null) {
+                $transactionModel->makeHidden('cooperative_member_id');
+            }
+
+            if ($transactionModel->cashier === null) {
+                $transactionModel->makeHidden('cashier_id');
+            }
+
             $transactionModel->items->each(function ($item): void {
                 if ($item->product === null) {
                     $item->makeHidden('pos_product_id');

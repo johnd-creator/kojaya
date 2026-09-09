@@ -33,7 +33,12 @@ class MemberFinancialActivityService
         $paymentIds = $rows->where('source', 'payment')->pluck('source_id')->map(fn ($id): int => (int) $id);
 
         $posTransactions = PosTransaction::query()
-            ->with(['items.product', 'payments'])
+            ->with([
+                'items.product' => fn ($query) => $member->organization_id === null
+                    ? $query->whereRaw('1 = 0')
+                    : $query->where('organization_id', $member->organization_id),
+                'payments',
+            ])
             ->whereIn('id', $posIds)
             ->get()
             ->keyBy('id');

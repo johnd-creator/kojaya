@@ -571,7 +571,13 @@ class MemberSelfServiceController extends Controller
         $latestQuery = clone $baseQuery;
 
         $transactions = $baseQuery
-            ->with(['items.product', 'payments', 'cashier:id,name'])
+            ->with([
+                'items.product' => fn ($query) => $member->organization_id === null
+                    ? $query->whereRaw('1 = 0')
+                    : $query->where('organization_id', $member->organization_id),
+                'payments',
+                'cashier:id,name',
+            ])
             ->orderByDesc('sold_at')
             ->paginate($this->perPage($request))
             ->through(fn (PosTransaction $transaction): array => [
@@ -589,7 +595,7 @@ class MemberSelfServiceController extends Controller
                 ] : null,
                 'items' => $transaction->items->map(fn ($item): array => [
                     'id' => $item->id,
-                    'product_id' => $item->pos_product_id,
+                    'product_id' => $item->product?->id,
                     'product' => $item->product ? [
                         'id' => $item->product->id,
                         'name' => $item->product->name,

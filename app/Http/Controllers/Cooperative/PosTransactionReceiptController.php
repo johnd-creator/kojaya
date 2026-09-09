@@ -13,9 +13,18 @@ class PosTransactionReceiptController extends Controller
 {
     public function show(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): HttpResponse
     {
+        $visibility = $scopedQuery->visibilityFor($request->user());
+
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
-            PosTransaction::query()->with(['member', 'cashier', 'items.product', 'payments']),
+            PosTransaction::query()->with([
+                'member',
+                'cashier',
+                'payments',
+                'items.product' => fn ($query) => $visibility->global
+                    ? $query
+                    : $query->where('organization_id', $visibility->organizationId),
+            ]),
             $request->user(),
             $transaction
         );
@@ -27,9 +36,18 @@ class PosTransactionReceiptController extends Controller
 
     public function pdf(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): HttpResponse
     {
+        $visibility = $scopedQuery->visibilityFor($request->user());
+
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
-            PosTransaction::query()->with(['member', 'cashier', 'items.product', 'payments']),
+            PosTransaction::query()->with([
+                'member',
+                'cashier',
+                'payments',
+                'items.product' => fn ($query) => $visibility->global
+                    ? $query
+                    : $query->where('organization_id', $visibility->organizationId),
+            ]),
             $request->user(),
             $transaction
         );

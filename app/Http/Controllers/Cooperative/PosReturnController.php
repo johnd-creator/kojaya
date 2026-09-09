@@ -19,13 +19,28 @@ class PosReturnController extends Controller
     public function create(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
         $this->authorizePermission('access_cooperative_pos');
+        $visibility = $scopedQuery->visibilityFor($request->user());
 
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
-            PosTransaction::query()->with(['items.product', 'member', 'cashier']),
+            PosTransaction::query()->with([
+                'member',
+                'cashier',
+                'items.product' => fn ($query) => $visibility->global
+                    ? $query
+                    : $query->where('organization_id', $visibility->organizationId),
+            ]),
             $request->user(),
             $transaction
         );
+
+        if (! $visibility->global) {
+            $transactionModel->items->each(function ($item): void {
+                if ($item->product === null) {
+                    $item->makeHidden('pos_product_id');
+                }
+            });
+        }
 
         $existingReturns = $transactionModel->returns()->with('items')->get();
         $returnedQuantities = $existingReturns

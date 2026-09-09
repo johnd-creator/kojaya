@@ -12,6 +12,7 @@ use App\Models\CooperativeShuAllocation;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Loan;
 use App\Models\LoanType;
+use App\Models\Organization;
 use App\Models\PosPayment;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -394,6 +395,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
         [$user, $member] = $this->memberUser();
         $otherMember = CooperativeMember::factory()->active()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $member->organization_id,
             'name' => 'Beras Koperasi',
             'sku' => 'BR-KOP-001',
         ]);
@@ -440,6 +442,45 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             ->assertJsonPath('transactions.data.0.items.0.product.name', 'Beras Koperasi')
             ->assertJsonPath('transactions.data.0.payments.0.payment_method', 'CASH')
             ->assertJsonMissingPath('transactions.data.1');
+    }
+
+    public function test_member_transactions_endpoint_masks_foreign_product_identity_in_corrupt_history(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $foreignOrganization = Organization::factory()->create();
+        $foreignProduct = PosProduct::factory()->create([
+            'organization_id' => $foreignOrganization->id,
+            'name' => 'Produk Rahasia Organisasi Lain',
+            'sku' => 'RAHASIA-B-001',
+        ]);
+        $transaction = PosTransaction::query()->create([
+            'transaction_no' => 'POS-CORRUPT-001',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $user->id,
+            'subtotal' => 10000,
+            'discount_amount' => 0,
+            'total_amount' => 10000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $transaction->id,
+            'pos_product_id' => $foreignProduct->id,
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'line_total' => 10000,
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/transactions')
+            ->assertOk()
+            ->assertJsonPath('summary.total_transactions', 1)
+            ->assertJsonPath('summary.total_items', 1)
+            ->assertJsonPath('transactions.data.0.items.0.product_id', null)
+            ->assertJsonPath('transactions.data.0.items.0.product', null)
+            ->assertJsonMissing(['name' => 'Produk Rahasia Organisasi Lain'])
+            ->assertJsonMissing(['sku' => 'RAHASIA-B-001']);
     }
 
     public function test_member_reward_redemptions_endpoint_returns_own_redemptions(): void

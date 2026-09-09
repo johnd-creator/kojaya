@@ -77,12 +77,29 @@ class PosTransactionHistoryController extends Controller
 
     public function show(string $transaction, Request $request, OrganizationScopedQueryService $scopedQuery): Response
     {
+        $visibility = $scopedQuery->visibilityFor($request->user());
+
         /** @var PosTransaction $transactionModel */
         $transactionModel = $scopedQuery->resolveVisible(
-            PosTransaction::query()->with(['member', 'cashier', 'payments', 'items.product']),
+            PosTransaction::query()->with([
+                'member',
+                'cashier',
+                'payments',
+                'items.product' => fn ($query) => $visibility->global
+                    ? $query
+                    : $query->where('organization_id', $visibility->organizationId),
+            ]),
             $request->user(),
             $transaction
         );
+
+        if (! $visibility->global) {
+            $transactionModel->items->each(function ($item): void {
+                if ($item->product === null) {
+                    $item->makeHidden('pos_product_id');
+                }
+            });
+        }
 
         return Inertia::render('Cooperative/Pos/Transactions/Show', [
             'transaction' => $transactionModel,

@@ -512,8 +512,9 @@ class MemberUnifiedEndpointsTest extends TestCase
     public function test_unified_transactions_merge_pos_and_payments_timeline(): void
     {
         [$user, $member] = $this->memberUser();
-        $product = PosProduct::factory()->create();
+        $product = PosProduct::factory()->create(['organization_id' => $member->organization_id]);
         $posTransaction = PosTransaction::query()->create([
+            'organization_id' => $member->organization_id,
             'transaction_no' => 'POS-20260628-001',
             'cooperative_member_id' => $member->id,
             'cashier_id' => $user->id,

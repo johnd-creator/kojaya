@@ -1057,6 +1057,98 @@ class CooperativeReportsOrganizationIsolationTest extends TestCase
         $this->assertNotContains($pB->id, $productIds);
     }
 
+    public function test_corrupt_foreign_product_relation_is_masked_without_losing_tenant_financial_totals(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $categoryB = PosCategory::factory()->create(['organization_id' => $orgB->id, 'name' => 'Kategori Rahasia B']);
+        $productB = PosProduct::factory()->create([
+            'organization_id' => $orgB->id,
+            'pos_category_id' => $categoryB->id,
+            'name' => 'Produk Rahasia B',
+        ]);
+        $transactionA = $this->createCompletedTransaction($orgA, null, ['total_amount' => 10000]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $transactionA->id,
+            'pos_product_id' => $productB->id,
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'cost_price' => 5000,
+            'unit_profit' => 5000,
+            'line_total' => 10000,
+            'line_profit' => 5000,
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+        $service = app(PosSalesReportService::class);
+        $rows = $service->productSalesForPeriod($userA, now()->toDateString(), now()->toDateString());
+
+        $this->assertCount(1, $rows);
+        $this->assertNull($rows[0]['pos_product_id']);
+        $this->assertSame('Produk tidak tersedia', $rows[0]['product_name']);
+        $this->assertNull($rows[0]['category']);
+        $this->assertSame(10000.0, (float) $rows[0]['revenue']);
+
+        $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.index'))
+            ->assertInertia(fn ($page) => $page
+                ->loadDeferredProps('analytics', fn ($page) => $page
+                    ->where('analytics.top_products.0.pos_product_id', null)
+                    ->where('analytics.top_products.0.product_name', 'Produk tidak tersedia')
+                    ->where('analytics.top_products.0.category', null)
+                )
+            );
+
+        $csv = $this->actingAs($userA)
+            ->get(route('cooperative.pos.reports.export.csv'))
+            ->streamedContent();
+
+        $this->assertStringNotContainsString('Produk Rahasia B', $csv);
+        $this->assertStringNotContainsString('Kategori Rahasia B', $csv);
+        $this->assertStringContainsString('Produk tidak tersedia', $csv);
+    }
+
+    public function test_corrupt_foreign_category_relation_is_masked_from_report_and_category_filter(): void
+    {
+        [$orgA, $orgB] = $this->createOrganizations();
+        $categoryA = PosCategory::factory()->create(['organization_id' => $orgA->id, 'name' => 'Kategori A']);
+        $categoryB = PosCategory::factory()->create(['organization_id' => $orgB->id, 'name' => 'Kategori Rahasia B']);
+        $productA = PosProduct::withoutEvents(fn () => PosProduct::factory()->create([
+            'organization_id' => $orgA->id,
+            'pos_category_id' => $categoryB->id,
+            'name' => 'Produk A',
+        ]));
+        PosProduct::factory()->create([
+            'organization_id' => $orgA->id,
+            'pos_category_id' => $categoryA->id,
+            'name' => 'Produk Normal A',
+        ]);
+        $transactionA = $this->createCompletedTransaction($orgA, null, ['total_amount' => 10000]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $transactionA->id,
+            'pos_product_id' => $productA->id,
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'cost_price' => 5000,
+            'unit_profit' => 5000,
+            'line_total' => 10000,
+            'line_profit' => 5000,
+        ]);
+
+        $userA = $this->createReportUser($orgA, ['view_pos_reports', 'access_cooperative_pos']);
+        $rows = app(PosSalesReportService::class)
+            ->productSalesForPeriod($userA, now()->toDateString(), now()->toDateString());
+
+        $this->assertNull($rows[0]['category']);
+
+        $page = $this->actingAs($userA)->get(route('cooperative.pos.reports.index'));
+        $page->assertOk();
+        $categories = $page->viewData('page')['props']['categories'];
+        $categoryIds = collect($categories)->pluck('id')->all();
+
+        $this->assertContains($categoryA->id, $categoryIds);
+        $this->assertNotContains($categoryB->id, $categoryIds);
+    }
+
     public function test_caller_supplied_foreign_organization_id_cannot_override_actor_scope(): void
     {
         [$orgA, $orgB] = $this->createOrganizations();

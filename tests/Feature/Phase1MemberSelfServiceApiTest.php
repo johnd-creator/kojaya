@@ -12,6 +12,7 @@ use App\Models\CooperativeShuAllocation;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Loan;
 use App\Models\LoanType;
+use App\Models\Organization;
 use App\Models\PosPayment;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -19,8 +20,11 @@ use App\Models\PosTransactionItem;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
@@ -394,10 +398,12 @@ class Phase1MemberSelfServiceApiTest extends TestCase
         [$user, $member] = $this->memberUser();
         $otherMember = CooperativeMember::factory()->active()->create();
         $product = PosProduct::factory()->create([
+            'organization_id' => $member->organization_id,
             'name' => 'Beras Koperasi',
             'sku' => 'BR-KOP-001',
         ]);
         $transaction = PosTransaction::query()->create([
+            'organization_id' => $member->organization_id,
             'transaction_no' => 'POS-20260610-001',
             'cooperative_member_id' => $member->id,
             'cashier_id' => $user->id,
@@ -420,6 +426,7 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             'amount' => 300000,
         ]);
         PosTransaction::query()->create([
+            'organization_id' => $otherMember->organization_id,
             'transaction_no' => 'POS-20260610-OTHER',
             'cooperative_member_id' => $otherMember->id,
             'subtotal' => 100000,
@@ -440,6 +447,177 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             ->assertJsonPath('transactions.data.0.items.0.product.name', 'Beras Koperasi')
             ->assertJsonPath('transactions.data.0.payments.0.payment_method', 'CASH')
             ->assertJsonMissingPath('transactions.data.1');
+    }
+
+    public function test_member_transactions_endpoint_masks_foreign_product_identity_in_corrupt_history(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $foreignOrganization = Organization::factory()->create();
+        $foreignProduct = PosProduct::factory()->create([
+            'organization_id' => $foreignOrganization->id,
+            'name' => 'Produk Rahasia Organisasi Lain',
+            'sku' => 'RAHASIA-B-001',
+        ]);
+        $transaction = PosTransaction::query()->create([
+            'organization_id' => $member->organization_id,
+            'transaction_no' => 'POS-CORRUPT-001',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $user->id,
+            'subtotal' => 10000,
+            'discount_amount' => 0,
+            'total_amount' => 10000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $transaction->id,
+            'pos_product_id' => $foreignProduct->id,
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'line_total' => 10000,
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/transactions')
+            ->assertOk()
+            ->assertJsonPath('summary.total_transactions', 1)
+            ->assertJsonPath('summary.total_items', 1)
+            ->assertJsonPath('transactions.data.0.items.0.product_id', null)
+            ->assertJsonPath('transactions.data.0.items.0.product', null)
+            ->assertJsonMissing(['name' => 'Produk Rahasia Organisasi Lain'])
+            ->assertJsonMissing(['sku' => 'RAHASIA-B-001']);
+    }
+
+    public function test_member_transactions_excludes_foreign_parent_transaction_from_rows_and_summaries(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $organizationA = Organization::query()->findOrFail($member->organization_id);
+        $organizationB = Organization::factory()->create();
+        $cashierA = User::factory()->create([
+            'organization_id' => $organizationA->id,
+            'name' => 'Cashier Org A',
+        ]);
+        $cashierB = User::factory()->create([
+            'organization_id' => $organizationB->id,
+            'name' => 'Secret Cashier Org B',
+        ]);
+        $productA = PosProduct::factory()->create(['organization_id' => $organizationA->id]);
+        $productB = PosProduct::factory()->create(['organization_id' => $organizationB->id]);
+
+        $ownTransaction = PosTransaction::query()->create([
+            'organization_id' => $organizationA->id,
+            'transaction_no' => 'POS-MEMBER-OWN-111111',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $cashierA->id,
+            'subtotal' => 111111,
+            'discount_amount' => 0,
+            'total_amount' => 111111,
+            'status' => 'COMPLETED',
+            'sold_at' => now()->subMinute(),
+        ]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $ownTransaction->id,
+            'pos_product_id' => $productA->id,
+            'quantity' => 2,
+            'unit_price' => 55555.5,
+            'line_total' => 111111,
+        ]);
+
+        $foreignTransaction = PosTransaction::query()->create([
+            'organization_id' => $organizationB->id,
+            'transaction_no' => 'POS-MEMBER-FOREIGN-999999',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $cashierB->id,
+            'subtotal' => 999999,
+            'discount_amount' => 0,
+            'total_amount' => 999999,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $foreignTransaction->id,
+            'pos_product_id' => $productB->id,
+            'quantity' => 4,
+            'unit_price' => 249999.75,
+            'line_total' => 999999,
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/transactions')
+            ->assertOk()
+            ->assertJsonPath('summary.total_transactions', 1)
+            ->assertJsonPath('summary.total_amount', 111111)
+            ->assertJsonPath('summary.total_items', 2)
+            ->assertJsonPath('summary.last_transaction_at', $ownTransaction->sold_at->toISOString())
+            ->assertJsonPath('transactions.data.0.transaction_no', 'POS-MEMBER-OWN-111111')
+            ->assertJsonMissing(['transaction_no' => 'POS-MEMBER-FOREIGN-999999'])
+            ->assertJsonMissing(['name' => 'Secret Cashier Org B']);
+
+        $this->getJson('/api/v1/member/transactions/unified')
+            ->assertOk()
+            ->assertJsonPath('summary.pos_count', 1)
+            ->assertJsonPath('summary.total_amount', 111111)
+            ->assertJsonMissing(['subtitle' => 'POS-MEMBER-FOREIGN-999999']);
+    }
+
+    public function test_member_transactions_masks_foreign_cashier_identity_on_same_organization_transaction(): void
+    {
+        [$user, $member] = $this->memberUser();
+        $organization = Organization::query()->findOrFail($member->organization_id);
+        $foreignOrganization = Organization::factory()->create();
+        $foreignCashier = User::factory()->create([
+            'organization_id' => $foreignOrganization->id,
+            'name' => 'Secret Cashier Org B',
+        ]);
+        PosTransaction::query()->create([
+            'organization_id' => $organization->id,
+            'transaction_no' => 'POS-MEMBER-CASHIER-CORRUPT',
+            'cooperative_member_id' => $member->id,
+            'cashier_id' => $foreignCashier->id,
+            'subtotal' => 10000,
+            'discount_amount' => 0,
+            'total_amount' => 10000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/transactions')
+            ->assertOk()
+            ->assertJsonPath('transactions.data.0.cashier', null)
+            ->assertJsonMissing(['name' => 'Secret Cashier Org B']);
+    }
+
+    public function test_member_transactions_fail_closed_for_member_without_organization(): void
+    {
+        [$user, $member] = $this->memberUser();
+        PosTransaction::query()->create([
+            'organization_id' => $member->organization_id,
+            'transaction_no' => 'POS-MEMBER-NULL-ORG',
+            'cooperative_member_id' => $member->id,
+            'subtotal' => 50000,
+            'discount_amount' => 0,
+            'total_amount' => 50000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+
+        Schema::table('cooperative_members', function (Blueprint $table): void {
+            $table->uuid('organization_id')->nullable()->change();
+        });
+        DB::table('cooperative_members')->where('id', $member->id)->update(['organization_id' => null]);
+
+        Sanctum::actingAs($user, ['member:read']);
+
+        $this->getJson('/api/v1/member/transactions')
+            ->assertOk()
+            ->assertJsonPath('summary.total_transactions', 0)
+            ->assertJsonPath('summary.total_amount', 0)
+            ->assertJsonPath('summary.total_items', 0)
+            ->assertJsonMissing(['transaction_no' => 'POS-MEMBER-NULL-ORG']);
     }
 
     public function test_member_reward_redemptions_endpoint_returns_own_redemptions(): void

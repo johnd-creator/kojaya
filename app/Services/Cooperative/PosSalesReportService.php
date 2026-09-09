@@ -120,7 +120,21 @@ class PosSalesReportService
 
         return PosTransactionItem::query()
             ->selectRaw('pos_product_id, sum(quantity) as quantity, sum(line_total) as revenue, sum(line_profit) as gross_profit')
-            ->with('product.category')
+            ->with([
+                'product' => function ($query) use ($visibility): void {
+                    if (! $visibility->global) {
+                        $query->where('organization_id', $visibility->organizationId);
+                    }
+
+                    $query->with([
+                        'category' => function ($categoryQuery) use ($visibility): void {
+                            if (! $visibility->global) {
+                                $categoryQuery->where('organization_id', $visibility->organizationId);
+                            }
+                        },
+                    ]);
+                },
+            ])
             ->whereHas('transaction', function (Builder $query) use ($visibility, $from, $to, $filters): void {
                 $this->scopeService->applyVisibility($query, $visibility)
                     ->where('status', 'COMPLETED')
@@ -131,17 +145,23 @@ class PosSalesReportService
             ->groupBy('pos_product_id')
             ->orderByDesc('revenue')
             ->get()
-            ->map(fn (PosTransactionItem $item): array => [
-                'pos_product_id' => $item->pos_product_id,
-                'product_name' => $item->product?->name ?? 'Produk tidak tersedia',
-                'category' => $item->product?->category?->name,
-                'quantity' => (int) $item->quantity,
-                'revenue' => (float) $item->revenue,
-                'gross_profit' => (float) $item->gross_profit,
-                'margin_percent' => $item->revenue > 0
-                    ? round((float) $item->gross_profit / (float) $item->revenue * 100, 2)
-                    : 0.0,
-            ]);
+            ->map(function (PosTransactionItem $item) use ($visibility): array {
+                $product = $item->product;
+                $productIsVisible = $product !== null
+                    && ($visibility->global || (string) $product->organization_id === (string) $visibility->organizationId);
+
+                return [
+                    'pos_product_id' => $productIsVisible ? $item->pos_product_id : null,
+                    'product_name' => $productIsVisible ? $product->name : 'Produk tidak tersedia',
+                    'category' => $productIsVisible ? $product->category?->name : null,
+                    'quantity' => (int) $item->quantity,
+                    'revenue' => (float) $item->revenue,
+                    'gross_profit' => (float) $item->gross_profit,
+                    'margin_percent' => $item->revenue > 0
+                        ? round((float) $item->gross_profit / (float) $item->revenue * 100, 2)
+                        : 0.0,
+                ];
+            });
     }
 
     /**

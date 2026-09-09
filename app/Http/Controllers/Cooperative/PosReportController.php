@@ -56,7 +56,12 @@ class PosReportController extends Controller
             'products' => $this->productAccess->scopeVisibleTo(PosProduct::query(), $user)
                 ->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'categories' => PosCategory::query()
-                ->when(! $visibility->global, fn ($q) => $q->whereHas('products', fn ($pq) => $pq->where('organization_id', $visibility->organizationId)))
+                ->when(! $visibility->global, fn ($q) => $q
+                    ->whereHas('products', fn ($productQuery) => $productQuery->where('organization_id', $visibility->organizationId))
+                    ->where(function ($categoryQuery) use ($visibility): void {
+                        $categoryQuery->where('organization_id', $visibility->organizationId)
+                            ->orWhereNull('organization_id');
+                    }))
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'cashiers' => User::query()

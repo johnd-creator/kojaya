@@ -26,6 +26,7 @@ class PosReturnService
         private readonly PosJournalPostingService $journal,
         private readonly MemberStoreCheckoutService $storeCheckout,
         private readonly PosProductAccessService $productAccess,
+        private readonly PosReturnNumberGenerator $returnNumberGenerator = new PosReturnNumberGenerator,
     ) {}
 
     /**
@@ -329,8 +330,8 @@ class PosReturnService
         return $points;
     }
 
-    private function nextReturnNo(): string
+    public function nextReturnNo(): string
     {
-        return 'RET-'.now()->format('Ymd-His').'-'.str_pad((string) random_int(1, 999), 3, '0', STR_PAD_LEFT);
+        return $this->returnNumberGenerator->generate();
     }
 }

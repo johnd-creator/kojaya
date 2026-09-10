@@ -20,6 +20,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
@@ -347,7 +348,8 @@ class MemberCoffeeOrderOrganizationIsolationTest extends TestCase
         $this->postJson('/api/v1/member/coffee/orders', [
             'pos_product_id' => $this->productA->id,
             'quantity' => 1,
-        ])->assertUnprocessable();
+        ])->assertForbidden()
+            ->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
 
         $reservedAAfter = PosInventoryStock::query()
             ->where('pos_product_id', $this->productA->id)
@@ -355,6 +357,228 @@ class MemberCoffeeOrderOrganizationIsolationTest extends TestCase
 
         $this->assertSame($reservedABefore, $reservedAAfter);
         $this->assertDatabaseCount('member_payment_intents', 0);
+    }
+
+    public function test_case_a_authenticated_user_without_cooperative_member_cannot_probe_product_existence_oracle(): void
+    {
+        $userWithoutMember = User::factory()->create(['organization_id' => $this->orgA->id]);
+        Sanctum::actingAs($userWithoutMember, ['member:write']);
+
+        $reservedABefore = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productA->id)
+            ->value('reserved');
+        $reservedBBefore = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productB->id)
+            ->value('reserved');
+
+        $resOrgA = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productA->id,
+            'quantity' => 1,
+        ]);
+
+        $resOrgB = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productB->id,
+            'quantity' => 1,
+        ]);
+
+        $resNonExistent = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => 999999,
+            'quantity' => 1,
+        ]);
+
+        $resOrgA->assertForbidden();
+        $resOrgB->assertForbidden();
+        $resNonExistent->assertForbidden();
+
+        $this->assertSame($resOrgA->status(), $resOrgB->status());
+        $this->assertSame($resOrgA->status(), $resNonExistent->status());
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resOrgB), 'Actor org product and foreign org product must produce identical responses.');
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resNonExistent), 'Actor org product and nonexistent product must produce identical responses.');
+
+        $reservedAAfter = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productA->id)
+            ->value('reserved');
+        $reservedBAfter = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productB->id)
+            ->value('reserved');
+
+        $this->assertSame($reservedABefore, $reservedAAfter);
+        $this->assertSame($reservedBBefore, $reservedBAfter);
+        $this->assertDatabaseCount('member_payment_intents', 0);
+        $this->assertDatabaseCount('coffee_orders', 0);
+        $this->assertDatabaseCount('pos_transactions', 0);
+    }
+
+    public function test_case_a_authenticated_user_with_inactive_cooperative_member_cannot_probe_product_existence_oracle(): void
+    {
+        $userInactive = User::factory()->create(['organization_id' => $this->orgA->id]);
+        CooperativeMember::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'user_id' => $userInactive->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'PENDING',
+        ]);
+
+        Sanctum::actingAs($userInactive, ['member:write']);
+
+        $resOrgA = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productA->id,
+            'quantity' => 1,
+        ]);
+
+        $resOrgB = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productB->id,
+            'quantity' => 1,
+        ]);
+
+        $resNonExistent = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => 999999,
+            'quantity' => 1,
+        ]);
+
+        $resOrgA->assertForbidden();
+        $resOrgB->assertForbidden();
+        $resNonExistent->assertForbidden();
+
+        $this->assertSame($resOrgA->status(), $resOrgB->status());
+        $this->assertSame($resOrgA->status(), $resNonExistent->status());
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resOrgB));
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resNonExistent));
+
+        $this->assertDatabaseCount('member_payment_intents', 0);
+        $this->assertDatabaseCount('coffee_orders', 0);
+        $this->assertDatabaseCount('pos_transactions', 0);
+    }
+
+    public function test_case_b_active_member_with_null_organization_and_user_with_valid_org_fails_closed_before_product_existence_lookup(): void
+    {
+        Schema::table('cooperative_members', function (Blueprint $table): void {
+            $table->uuid('organization_id')->nullable()->change();
+        });
+
+        $userWithOrg = User::factory()->create(['organization_id' => $this->orgA->id]);
+        $memberWithNullOrg = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->orgA->id,
+            'user_id' => $userWithOrg->id,
+        ]);
+        $memberWithNullOrg->forceFill(['organization_id' => null])->saveQuietly();
+
+        Sanctum::actingAs($userWithOrg, ['member:read', 'member:write']);
+
+        // 1. Catalog must fail closed (no catalog exposure for null member organization)
+        $this->getJson('/api/v1/member/coffee/menu')
+            ->assertForbidden()
+            ->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+
+        $reservedABefore = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productA->id)
+            ->value('reserved');
+        $reservedBBefore = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productB->id)
+            ->value('reserved');
+
+        // 2. Orders must fail closed before product existence lookup with identical 403 responses
+        $resOrgA = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productA->id,
+            'quantity' => 1,
+        ]);
+
+        $resOrgB = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productB->id,
+            'quantity' => 1,
+        ]);
+
+        $resNonExistent = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => 999999,
+            'quantity' => 1,
+        ]);
+
+        $resOrgA->assertForbidden()->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+        $resOrgB->assertForbidden()->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+        $resNonExistent->assertForbidden()->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+
+        $this->assertSame($resOrgA->status(), $resOrgB->status());
+        $this->assertSame($resOrgA->status(), $resNonExistent->status());
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resOrgB));
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resNonExistent));
+
+        $reservedAAfter = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productA->id)
+            ->value('reserved');
+        $reservedBAfter = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productB->id)
+            ->value('reserved');
+
+        $this->assertSame($reservedABefore, $reservedAAfter);
+        $this->assertSame($reservedBBefore, $reservedBAfter);
+        $this->assertDatabaseCount('member_payment_intents', 0);
+        $this->assertDatabaseCount('coffee_orders', 0);
+        $this->assertDatabaseCount('pos_transactions', 0);
+    }
+
+    public function test_case_c_completely_null_organization_authority_fails_closed_across_catalog_and_orders(): void
+    {
+        Schema::table('cooperative_members', function (Blueprint $table): void {
+            $table->uuid('organization_id')->nullable()->change();
+        });
+
+        $userNull = User::factory()->create(['organization_id' => null]);
+        $memberNull = CooperativeMember::factory()->active()->create([
+            'organization_id' => $this->orgA->id,
+            'user_id' => $userNull->id,
+        ]);
+        $memberNull->forceFill(['organization_id' => null])->saveQuietly();
+
+        Sanctum::actingAs($userNull, ['member:read', 'member:write']);
+
+        // 1. Zero catalog exposure
+        $this->getJson('/api/v1/member/coffee/menu')
+            ->assertForbidden()
+            ->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+
+        $reservedABefore = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productA->id)
+            ->value('reserved');
+        $reservedBBefore = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productB->id)
+            ->value('reserved');
+
+        // 2. Zero product existence oracle: all return identical 403
+        $resOrgA = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productA->id,
+            'quantity' => 1,
+        ]);
+
+        $resOrgB = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => $this->productB->id,
+            'quantity' => 1,
+        ]);
+
+        $resNonExistent = $this->postJson('/api/v1/member/coffee/orders', [
+            'pos_product_id' => 999999,
+            'quantity' => 1,
+        ]);
+
+        $resOrgA->assertForbidden()->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+        $resOrgB->assertForbidden()->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+        $resNonExistent->assertForbidden()->assertJsonFragment(['message' => 'Organisasi koperasi tidak ditemukan.']);
+
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resOrgB));
+        $this->assertSame($this->normalizedErrorPayload($resOrgA), $this->normalizedErrorPayload($resNonExistent));
+
+        // 3. Zero reservation, zero payment intents, zero orders, zero transactions
+        $reservedAAfter = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productA->id)
+            ->value('reserved');
+        $reservedBAfter = PosInventoryStock::query()
+            ->where('pos_product_id', $this->productB->id)
+            ->value('reserved');
+
+        $this->assertSame($reservedABefore, $reservedAAfter);
+        $this->assertSame($reservedBBefore, $reservedBAfter);
+        $this->assertDatabaseCount('member_payment_intents', 0);
+        $this->assertDatabaseCount('coffee_orders', 0);
+        $this->assertDatabaseCount('pos_transactions', 0);
     }
 
     public function test_settlement_defense_rejects_tampered_legacy_coffee_intent_with_foreign_product(): void
@@ -496,5 +720,14 @@ class MemberCoffeeOrderOrganizationIsolationTest extends TestCase
             ->value('reserved');
 
         $this->assertSame($reservedStoreBBefore, $reservedStoreBAfter);
+    }
+
+    /**
+     * @param  \Illuminate\Testing\TestResponse  $response
+     * @return array<string, mixed>
+     */
+    private function normalizedErrorPayload($response): array
+    {
+        return Arr::except($response->json(), ['request_id']);
     }
 }

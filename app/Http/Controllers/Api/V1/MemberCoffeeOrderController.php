@@ -21,7 +21,7 @@ class MemberCoffeeOrderController extends Controller
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
-        $organizationId = $member->organization_id ?? $request->user()?->organization_id;
+        $organizationId = $member->organization_id;
         abort_if(empty($organizationId), 403, 'Organisasi koperasi tidak ditemukan.');
 
         $products = $this->coffeeProductQuery((string) $organizationId)
@@ -54,10 +54,10 @@ class MemberCoffeeOrderController extends Controller
         MemberOrderIntentService $intentService,
         AuditLogService $audit,
     ): JsonResponse {
-        $member = $request->user()?->cooperativeMember()->active()->first();
+        $member = $request->activeMember() ?? $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
-        $organizationId = $member->organization_id ?? $request->user()?->organization_id;
+        $organizationId = $member->organization_id;
         abort_if(empty($organizationId), 403, 'Organisasi koperasi tidak ditemukan.');
 
         $items = $this->validatedItems($request, (string) $organizationId);
@@ -99,6 +99,7 @@ class MemberCoffeeOrderController extends Controller
     {
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null && (int) $coffeeOrder->cooperative_member_id === (int) $member->id, 403);
+        abort_if(empty($member->organization_id), 403, 'Organisasi koperasi tidak ditemukan.');
 
         $coffeeOrder->load(['transaction.payments', 'transaction.items.product', 'product']);
 

@@ -182,6 +182,14 @@ class MemberPaymentSettlementService
             ]);
         }
 
+        $member = $intent->member ?? CooperativeMember::query()->find($intent->cooperative_member_id);
+        $expectedOrgId = $member?->organization_id ? (string) $member->organization_id : null;
+        if ($expectedOrgId === null) {
+            throw ValidationException::withMessages([
+                'items' => 'Organisasi anggota untuk settlement tidak ditemukan.',
+            ]);
+        }
+
         $transactionItems = [];
         foreach ($items as $item) {
             if (! is_array($item)) {
@@ -189,6 +197,12 @@ class MemberPaymentSettlementService
             }
 
             $product = PosProduct::query()->findOrFail($item['pos_product_id'] ?? null);
+            if (empty($product->organization_id) || (string) $product->organization_id !== $expectedOrgId) {
+                throw ValidationException::withMessages([
+                    'items' => 'Item kopi untuk settlement tidak sesuai dengan organisasi anggota.',
+                ]);
+            }
+
             $transactionItems[] = [
                 'pos_product_id' => $product->id,
                 'quantity' => (int) ($item['quantity'] ?? 1),
@@ -270,6 +284,14 @@ class MemberPaymentSettlementService
             ]);
         }
 
+        $member = $intent->member ?? CooperativeMember::query()->find($intent->cooperative_member_id);
+        $expectedOrgId = $member?->organization_id ? (string) $member->organization_id : null;
+        if ($expectedOrgId === null) {
+            throw ValidationException::withMessages([
+                'items' => 'Organisasi anggota untuk settlement tidak ditemukan.',
+            ]);
+        }
+
         $transactionItems = [];
         foreach ($items as $item) {
             if (! is_array($item)) {
@@ -277,6 +299,12 @@ class MemberPaymentSettlementService
             }
 
             $product = PosProduct::query()->findOrFail($item['pos_product_id'] ?? null);
+            if (empty($product->organization_id) || (string) $product->organization_id !== $expectedOrgId) {
+                throw ValidationException::withMessages([
+                    'items' => 'Item toko untuk settlement tidak sesuai dengan organisasi anggota.',
+                ]);
+            }
+
             $transactionItems[] = [
                 'pos_product_id' => $product->id,
                 'quantity' => (int) ($item['quantity'] ?? 1),

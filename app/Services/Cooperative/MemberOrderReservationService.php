@@ -8,6 +8,7 @@ use App\Models\PosProduct;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
 use App\Support\CanonicalOrderItem;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -27,9 +28,13 @@ class MemberOrderReservationService
      * @param  list<CanonicalOrderItem>  $canonicalItems
      * @return list<CanonicalOrderItem>
      */
-    public function reserve(array $canonicalItems): array
+    public function reserve(array $canonicalItems, ?string $organizationId = null): array
     {
-        return DB::transaction(function () use ($canonicalItems): array {
+        if (empty($organizationId)) {
+            throw new AuthorizationException('A valid cooperative organization is required to reserve stock.');
+        }
+
+        return DB::transaction(function () use ($canonicalItems, $organizationId): array {
             $location = app(PosInventoryService::class)->resolveLocationFor();
             app(PosInventoryService::class)->syncDefaultLocationStocks($location->id);
 
@@ -37,6 +42,11 @@ class MemberOrderReservationService
 
             foreach ($canonicalItems as $item) {
                 $product = PosProduct::query()->lockForUpdate()->findOrFail($item->posProductId);
+
+                if (empty($product->organization_id) || (string) $product->organization_id !== (string) $organizationId) {
+                    throw new AuthorizationException('Produk berada di luar organisasi yang diizinkan untuk reservasi.');
+                }
+
                 $quantity = $item->quantity;
                 $stock = PosInventoryStock::query()
                     ->where('pos_product_id', $product->id)

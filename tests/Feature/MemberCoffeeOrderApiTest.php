@@ -60,9 +60,10 @@ class MemberCoffeeOrderApiTest extends TestCase
 
     public function test_seeded_coffee_products_are_available_in_member_menu(): void
     {
-        $this->actingMember(['member:read']);
         $this->fakeCooperativeReceiptIssuance();
         $this->seed(CooperativeSeeder::class);
+        $headOffice = Organization::query()->where('code', 'KOP-001')->firstOrFail();
+        $this->actingMember(['member:read'], $headOffice);
 
         $this->getJson('/api/v1/member/coffee/menu')
             ->assertOk()
@@ -172,9 +173,9 @@ class MemberCoffeeOrderApiTest extends TestCase
     /**
      * @param  list<string>  $abilities
      */
-    private function actingMember(array $abilities): CooperativeMember
+    private function actingMember(array $abilities, ?Organization $organization = null): CooperativeMember
     {
-        $this->organization = Organization::factory()->create();
+        $this->organization = $organization ?? Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $this->organization->id]);
         $member = CooperativeMember::factory()->active()->create([
             'organization_id' => $this->organization->id,

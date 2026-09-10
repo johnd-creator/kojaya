@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMemberCoffeeOrderRequest extends FormRequest
 {
@@ -14,6 +15,13 @@ class StoreMemberCoffeeOrderRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    public function memberOrganizationId(): ?string
+    {
+        $member = $this->user()?->cooperativeMember()->active()->first();
+
+        return $member?->organization_id ? (string) $member->organization_id : ($this->user()?->organization_id ? (string) $this->user()->organization_id : null);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -21,11 +29,21 @@ class StoreMemberCoffeeOrderRequest extends FormRequest
      */
     public function rules(): array
     {
+        $orgId = $this->memberOrganizationId();
+
+        $productExistsRule = Rule::exists('pos_products', 'id')->where(function ($query) use ($orgId): void {
+            if ($orgId !== null) {
+                $query->where('organization_id', $orgId);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        });
+
         return [
-            'pos_product_id' => ['required_without:items', 'exists:pos_products,id'],
+            'pos_product_id' => ['required_without:items', $productExistsRule],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:12'],
             'items' => ['nullable', 'array', 'min:1', 'max:12'],
-            'items.*.pos_product_id' => ['required_with:items', 'exists:pos_products,id'],
+            'items.*.pos_product_id' => ['required_with:items', $productExistsRule],
             'items.*.quantity' => ['nullable', 'integer', 'min:1', 'max:12'],
             'items.*.sugar_level' => ['nullable', 'in:Normal,Less Sugar,No Sugar'],
             'items.*.ice_level' => ['nullable', 'in:Normal,Less Ice,Warm'],

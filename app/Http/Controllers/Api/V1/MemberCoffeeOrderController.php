@@ -18,8 +18,16 @@ class MemberCoffeeOrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $products = $this->coffeeProductQuery()
-            ->with('category')
+        $member = $request->user()?->cooperativeMember()->active()->first();
+        abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
+
+        $organizationId = $member->organization_id ?? $request->user()?->organization_id;
+        abort_if(empty($organizationId), 403, 'Organisasi koperasi tidak ditemukan.');
+
+        $products = $this->coffeeProductQuery((string) $organizationId)
+            ->with(['category' => function ($query) use ($organizationId): void {
+                $query->where('organization_id', $organizationId);
+            }])
             ->orderBy('name')
             ->get()
             ->map(fn (PosProduct $product): array => $this->formatProduct($product));
@@ -49,7 +57,10 @@ class MemberCoffeeOrderController extends Controller
         $member = $request->user()?->cooperativeMember()->active()->first();
         abort_unless($member !== null, 403, 'Akun belum terhubung dengan anggota koperasi aktif.');
 
-        $items = $this->validatedItems($request);
+        $organizationId = $member->organization_id ?? $request->user()?->organization_id;
+        abort_if(empty($organizationId), 403, 'Organisasi koperasi tidak ditemukan.');
+
+        $items = $this->validatedItems($request, (string) $organizationId);
         $subtotal = array_sum(array_map(fn (array $item): float => (float) $item['line_total'], $items));
         $channel = (string) ($request->validated('channel') ?? $request->validated('payment_method') ?? 'QRIS');
         $clientReference = $request->validated('client_reference')
@@ -96,14 +107,18 @@ class MemberCoffeeOrderController extends Controller
         ]);
     }
 
-    private function coffeeProductQuery(): Builder
+    private function coffeeProductQuery(string $organizationId): Builder
     {
         return PosProduct::query()
+            ->where('organization_id', $organizationId)
             ->sellable()
-            ->where(function ($query): void {
-                $query->whereHas('category', function ($query): void {
-                    $query->whereIn('name', ['Signature', 'Espresso', 'Non-Coffee'])
-                        ->orWhereIn('slug', ['signature', 'espresso', 'non-coffee', 'noncoffee', 'kopi']);
+            ->where(function ($query) use ($organizationId): void {
+                $query->whereHas('category', function ($query) use ($organizationId): void {
+                    $query->where('organization_id', $organizationId)
+                        ->where(function ($query): void {
+                            $query->whereIn('name', ['Signature', 'Espresso', 'Non-Coffee'])
+                                ->orWhereIn('slug', ['signature', 'espresso', 'non-coffee', 'noncoffee', 'kopi']);
+                        });
                 })
                     ->orWhere('name', 'like', '%Kopi%')
                     ->orWhere('name', 'like', '%Coffee%')
@@ -133,7 +148,7 @@ class MemberCoffeeOrderController extends Controller
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function validatedItems(StoreMemberCoffeeOrderRequest $request): array
+    private function validatedItems(StoreMemberCoffeeOrderRequest $request, string $organizationId): array
     {
         $validated = $request->validated();
         $rawItems = $validated['items'] ?? [[
@@ -147,7 +162,7 @@ class MemberCoffeeOrderController extends Controller
         $items = [];
 
         foreach ($rawItems as $item) {
-            $product = $this->coffeeProductQuery()
+            $product = $this->coffeeProductQuery($organizationId)
                 ->whereKey($item['pos_product_id'])
                 ->firstOrFail();
 

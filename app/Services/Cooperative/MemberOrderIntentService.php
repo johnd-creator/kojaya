@@ -92,7 +92,7 @@ class MemberOrderIntentService
                     return new IntentResolution($existing, created: false);
                 }
 
-                $reservedItems = $this->reservationService->reserve($canonicalItems);
+                $reservedItems = $this->reservationService->reserve($canonicalItems, (string) ($member->organization_id ?? ''));
 
                 $intent = MemberPaymentIntent::query()->create([
                     'user_id' => $canonicalRequest['user_id'] ?? null,

@@ -106,23 +106,28 @@ return new class extends Migration
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             $guard = config('auth.defaults.guard', 'web');
+
+            $viewAll = Permission::where(['name' => PermissionEnum::ATTENDANCE_VIEW_ALL->value, 'guard_name' => $guard])->first();
+            $viewUnit = Permission::where(['name' => PermissionEnum::ATTENDANCE_VIEW_UNIT->value, 'guard_name' => $guard])->first();
+            $approve = Permission::where(['name' => PermissionEnum::ATTENDANCE_APPROVE->value, 'guard_name' => $guard])->first();
+
             $hrPusat = Role::where(['name' => 'HR Pusat', 'guard_name' => $guard])->first();
             if ($hrPusat) {
-                if ($hrPusat->hasPermissionTo(PermissionEnum::ATTENDANCE_VIEW_ALL->value)) {
-                    $hrPusat->revokePermissionTo(PermissionEnum::ATTENDANCE_VIEW_ALL->value);
+                if ($viewAll && $hrPusat->hasPermissionTo($viewAll)) {
+                    $hrPusat->revokePermissionTo($viewAll);
                 }
-                if ($hrPusat->hasPermissionTo(PermissionEnum::ATTENDANCE_APPROVE->value)) {
-                    $hrPusat->revokePermissionTo(PermissionEnum::ATTENDANCE_APPROVE->value);
+                if ($approve && $hrPusat->hasPermissionTo($approve)) {
+                    $hrPusat->revokePermissionTo($approve);
                 }
             }
 
             $hrUnit = Role::where(['name' => 'HR Unit', 'guard_name' => $guard])->first();
             if ($hrUnit) {
-                if ($hrUnit->hasPermissionTo(PermissionEnum::ATTENDANCE_VIEW_UNIT->value)) {
-                    $hrUnit->revokePermissionTo(PermissionEnum::ATTENDANCE_VIEW_UNIT->value);
+                if ($viewUnit && $hrUnit->hasPermissionTo($viewUnit)) {
+                    $hrUnit->revokePermissionTo($viewUnit);
                 }
-                if ($hrUnit->hasPermissionTo(PermissionEnum::ATTENDANCE_APPROVE->value)) {
-                    $hrUnit->revokePermissionTo(PermissionEnum::ATTENDANCE_APPROVE->value);
+                if ($approve && $hrUnit->hasPermissionTo($approve)) {
+                    $hrUnit->revokePermissionTo($approve);
                 }
             }
 

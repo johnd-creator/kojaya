@@ -17,6 +17,12 @@ return new class extends Migration
         DB::transaction(function (): void {
             $guard = config('auth.defaults.guard', 'web');
 
+            // If the roles table is completely empty (e.g. unseeded database or isolated test suites
+            // testing role creation from scratch), there are no existing production roles to cut over.
+            if (Role::count() === 0) {
+                return;
+            }
+
             // Invalidate permission cache first
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -25,14 +31,6 @@ return new class extends Migration
                 'name' => PermissionEnum::BANK_BATCH_VIEW_ALL->value,
                 'guard_name' => $guard,
             ]);
-
-            // If the roles table is completely empty (e.g. unseeded database or isolated test suites
-            // testing role creation from scratch), there are no existing production roles to cut over.
-            if (Role::count() === 0) {
-                app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-                return;
-            }
 
             // 2. Ensure canonical roles exist
             $financePusat = Role::firstOrCreate(['name' => 'Finance Pusat', 'guard_name' => $guard]);

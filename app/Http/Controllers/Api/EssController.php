@@ -272,6 +272,8 @@ class EssController extends Controller
         AttendanceCorrection $attendanceCorrection,
         AttendanceCorrectionService $service,
     ): JsonResponse {
+        $this->authorize('approve', $attendanceCorrection);
+
         $correction = $service->approve(
             $attendanceCorrection,
             $request->user(),

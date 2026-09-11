@@ -46,7 +46,7 @@ class Sprint3HrPayrollHardeningTest extends TestCase
 
     public function test_attendance_correction_request_can_be_approved_into_attendance_record(): void
     {
-        [$user, $employee] = $this->employeeUser();
+        [$user, $employee, $organization] = $this->employeeUser();
 
         Sanctum::actingAs($user, ['attendance:write']);
 
@@ -59,6 +59,13 @@ class Sprint3HrPayrollHardeningTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.status', 'PENDING')
             ->json('data.id');
+
+        $reviewer = User::factory()->create(['organization_id' => $organization->id]);
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'approve_attendance', 'guard_name' => 'web']);
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'view_attendance_unit', 'guard_name' => 'web']);
+        $reviewer->givePermissionTo(['approve_attendance', 'view_attendance_unit']);
+
+        Sanctum::actingAs($reviewer, ['attendance:write']);
 
         $this->postJson("/api/ess/attendance/corrections/{$correctionId}/approve", [
             'review_note' => 'Disetujui HR.',

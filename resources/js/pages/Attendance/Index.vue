@@ -75,6 +75,17 @@ const form = useForm({
   notes: "",
 });
 
+watch(
+  () => form.employee_id,
+  (newEmpId) => {
+    if (!newEmpId) return;
+    const emp = props.employees.find((e) => String(e.id) === String(newEmpId));
+    if (emp && emp.organization_id) {
+      form.organization_id = emp.organization_id;
+    }
+  },
+);
+
 const submitAttendance = () => {
   form.post(attendanceStore().url, {
     onSuccess: () => {

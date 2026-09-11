@@ -16,8 +16,15 @@ class AttendanceController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Attendance::class);
+
+        $user = $request->user();
+        $scopeService = app(\App\Services\Authorization\OrganizationScopeService::class);
+
         $query = Attendance::query()
             ->with(['employee', 'organization']);
+
+        $scopeService->scopeVisibleTo($query, $user, 'view_attendance_all');
 
         if ($request->filled('employee_id')) {
             $query->where('employee_id', $request->input('employee_id'));
@@ -44,14 +51,21 @@ class AttendanceController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $organizations = Organization::orderBy('name')->get();
-        $employees = Employee::where('status', 'ACTIVE')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'employee_code']);
+        if ($user->can('view_attendance_all')) {
+            $organizations = Organization::orderBy('name')->get();
+        } else {
+            $organizations = Organization::where('id', $user->organization_id)->get();
+        }
 
-        $todayCount = Attendance::whereDate('date', today())
-            ->where('status', 'PRESENT')
-            ->count();
+        $employeeQuery = Employee::where('status', 'ACTIVE')
+            ->orderBy('first_name');
+        $scopeService->scopeVisibleTo($employeeQuery, $user, 'view_attendance_all');
+        $employees = $employeeQuery->get(['id', 'first_name', 'last_name', 'employee_code', 'organization_id']);
+
+        $todayQuery = Attendance::whereDate('date', today())
+            ->where('status', 'PRESENT');
+        $scopeService->scopeVisibleTo($todayQuery, $user, 'view_attendance_all');
+        $todayCount = $todayQuery->count();
 
         return Inertia::render('Attendance/Index', [
             'attendances' => $attendances,
@@ -66,11 +80,43 @@ class AttendanceController extends Controller
 
     public function store(StoreAttendanceRequest $request)
     {
+        $this->authorize('create', Attendance::class);
+
+        $user = $request->user();
         $validated = $request->validated();
 
+        $targetEmployee = Employee::find($validated['employee_id']);
+        if (! $targetEmployee) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'employee_id' => 'Karyawan tidak ditemukan.',
+            ]);
+        }
+
+        if (! $user->can('view_attendance_all')) {
+            if ((string) $targetEmployee->organization_id !== (string) $user->organization_id) {
+                throw new \Illuminate\Auth\Access\AuthorizationException('Karyawan berada di luar organisasi Anda.');
+            }
+        }
+
+        if (! empty($validated['organization_id'])) {
+            if ((string) $validated['organization_id'] !== (string) $targetEmployee->organization_id) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'organization_id' => 'Organisasi tidak sesuai dengan karyawan yang dipilih.',
+                ]);
+            }
+        }
+
+        $attendanceData = [
+            'organization_id' => $targetEmployee->organization_id,
+            'status' => $validated['status'],
+            'clock_in' => $validated['clock_in'] ?? null,
+            'clock_out' => $validated['clock_out'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ];
+
         Attendance::updateOrCreate(
-            ['employee_id' => $validated['employee_id'], 'date' => $validated['date']],
-            $validated
+            ['employee_id' => $targetEmployee->id, 'date' => $validated['date']],
+            $attendanceData
         );
 
         return redirect()->route('attendances.index')->with('success', 'Attendance recorded successfully.');

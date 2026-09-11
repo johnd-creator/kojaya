@@ -69,15 +69,21 @@ class MigrateProjectDocumentsToPrivateStorageCommand extends Command
                 $existsPrivate = false;
                 try {
                     $existsPrivate = Storage::disk($targetDisk)->exists($path);
-                } catch (Throwable) {
-                    $existsPrivate = false;
+                } catch (Throwable $e) {
+                    $this->error("Error checking private presence for document [{$doc->id}]: {$e->getMessage()}");
+                    $stats['failed']++;
+
+                    continue;
                 }
 
                 $existsPublic = false;
                 try {
                     $existsPublic = Storage::disk($sourceDisk)->exists($path);
-                } catch (Throwable) {
-                    $existsPublic = false;
+                } catch (Throwable $e) {
+                    $this->error("Error checking public presence for document [{$doc->id}]: {$e->getMessage()}");
+                    $stats['failed']++;
+
+                    continue;
                 }
 
                 if ($existsPrivate && ! $existsPublic) {

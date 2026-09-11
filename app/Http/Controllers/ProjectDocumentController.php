@@ -42,7 +42,7 @@ class ProjectDocumentController extends Controller
 
     public function store(StoreProjectDocumentRequest $request, Project $project): RedirectResponse
     {
-        $this->authorize('update', $project);
+        $this->authorize('manageDocuments', $project);
 
         $validated = $request->validated();
 
@@ -120,7 +120,7 @@ class ProjectDocumentController extends Controller
 
     public function destroy(Project $project, ProjectDocument $document): RedirectResponse
     {
-        $this->authorize('update', $project);
+        $this->authorize('manageDocuments', $project);
 
         if ($document->project_id !== $project->id) {
             abort(404, 'Project document not found.');
@@ -203,7 +203,7 @@ class ProjectDocumentController extends Controller
 
     public function updateStatus(UpdateProjectDocumentStatusRequest $request, Project $project, ProjectDocument $document): RedirectResponse
     {
-        $this->authorize('update', $project);
+        $this->authorize('manageDocuments', $project);
 
         if ($document->project_id !== $project->id) {
             abort(404, 'Project document not found.');

@@ -29,6 +29,8 @@ class ProjectDocumentAuthorizationTest extends TestCase
 
     protected User $unauthorizedUserA;
 
+    protected User $readOnlyUserA;
+
     protected User $nullOrgUser;
 
     protected Project $projectA;
@@ -58,6 +60,10 @@ class ProjectDocumentAuthorizationTest extends TestCase
 
         $this->unauthorizedUserA = User::factory()->create(['organization_id' => $this->orgA->id]);
         // unauthorizedUserA has NO project permissions
+
+        $this->readOnlyUserA = User::factory()->create(['organization_id' => $this->orgA->id]);
+        $this->readOnlyUserA->givePermissionTo('view_project_unit');
+        // readOnlyUserA has view_project_unit, but NOT manage_project
 
         // Set up Organization B and actors
         $this->orgB = Organization::factory()->create();
@@ -785,5 +791,288 @@ class ProjectDocumentAuthorizationTest extends TestCase
         // Physical state must remain untouched
         Storage::disk('public')->assertExists($doc->file_path);
         Storage::disk('project_documents')->assertMissing($doc->file_path);
+    }
+
+    /** 39 read-only same-org user with view_project_unit CAN list Project A documents */
+    public function test_39_read_only_same_org_user_with_view_project_unit_can_list_project_a_documents(): void
+    {
+        $response = $this->actingAs($this->readOnlyUserA)
+            ->get(route('documents.index', $this->projectA));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('ProjectDocuments/Index')
+            ->has('documents', 1)
+            ->where('documents.0.id', $this->documentA->id)
+        );
+    }
+
+    /** 40 read-only same-org user CAN download authorized Project A document */
+    public function test_40_read_only_same_org_user_can_download_authorized_project_a_document(): void
+    {
+        $response = $this->actingAs($this->readOnlyUserA)
+            ->get(route('projects.documents.download', [$this->projectA, $this->documentA]));
+
+        $response->assertOk();
+        $this->assertSame('Content A', $response->streamedContent());
+    }
+
+    /** 41 read-only same-org user CANNOT upload Project A document */
+    public function test_41_read_only_same_org_user_cannot_upload_project_a_document(): void
+    {
+        $file = UploadedFile::fake()->create('contract.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($this->readOnlyUserA)
+            ->post(route('documents.store', $this->projectA), [
+                'name' => 'ReadOnly Upload Attempt',
+                'type' => 'SIKA',
+                'file' => $file,
+            ]);
+
+        $response->assertForbidden();
+    }
+
+    /** 42 rejected read-only upload creates zero DB row */
+    public function test_42_rejected_read_only_upload_creates_zero_db_row(): void
+    {
+        $initialCount = ProjectDocument::count();
+        $file = UploadedFile::fake()->create('contract.pdf', 100, 'application/pdf');
+
+        $this->actingAs($this->readOnlyUserA)
+            ->post(route('documents.store', $this->projectA), [
+                'name' => 'Should Not Exist',
+                'type' => 'SIKA',
+                'file' => $file,
+            ]);
+
+        $this->assertSame($initialCount, ProjectDocument::count());
+        $this->assertDatabaseMissing('project_documents', [
+            'name' => 'Should Not Exist',
+        ]);
+    }
+
+    /** 43 rejected read-only upload creates zero storage files */
+    public function test_43_rejected_read_only_upload_creates_zero_storage_files(): void
+    {
+        $initialFiles = Storage::disk('project_documents')->allFiles();
+        $file = UploadedFile::fake()->create('contract.pdf', 100, 'application/pdf');
+
+        $this->actingAs($this->readOnlyUserA)
+            ->post(route('documents.store', $this->projectA), [
+                'name' => 'Should Not Exist On Disk',
+                'type' => 'SIKA',
+                'file' => $file,
+            ]);
+
+        $this->assertSame($initialFiles, Storage::disk('project_documents')->allFiles());
+    }
+
+    /** 44 read-only same-org user CANNOT delete Project A document */
+    public function test_44_read_only_same_org_user_cannot_delete_project_a_document(): void
+    {
+        $response = $this->actingAs($this->readOnlyUserA)
+            ->delete(route('documents.destroy', [$this->projectA, $this->documentA]));
+
+        $response->assertForbidden();
+    }
+
+    /** 45 rejected read-only delete preserves DB row */
+    public function test_45_rejected_read_only_delete_preserves_db_row(): void
+    {
+        $this->actingAs($this->readOnlyUserA)
+            ->delete(route('documents.destroy', [$this->projectA, $this->documentA]));
+
+        $this->assertDatabaseHas('project_documents', [
+            'id' => $this->documentA->id,
+        ]);
+    }
+
+    /** 46 rejected read-only delete preserves private file */
+    public function test_46_rejected_read_only_delete_preserves_private_file(): void
+    {
+        $this->actingAs($this->readOnlyUserA)
+            ->delete(route('documents.destroy', [$this->projectA, $this->documentA]));
+
+        Storage::disk('project_documents')->assertExists($this->documentA->file_path);
+    }
+
+    /** 47 rejected read-only delete preserves legacy public file where present */
+    public function test_47_rejected_read_only_delete_preserves_legacy_public_file_where_present(): void
+    {
+        $legacyPath = 'project-documents/legacy_ro.pdf';
+        $legacyDoc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => $legacyPath,
+            'name' => 'Legacy RO Doc',
+        ]);
+        Storage::disk('public')->put($legacyPath, 'Public Secret');
+
+        $response = $this->actingAs($this->readOnlyUserA)
+            ->delete(route('documents.destroy', [$this->projectA, $legacyDoc]));
+
+        $response->assertForbidden();
+        Storage::disk('public')->assertExists($legacyPath);
+        $this->assertDatabaseHas('project_documents', ['id' => $legacyDoc->id]);
+    }
+
+    /** 48 manage_project same-org actor CAN upload */
+    public function test_48_manage_project_same_org_actor_can_upload(): void
+    {
+        $file = UploadedFile::fake()->create('manager_doc.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($this->userA)
+            ->post(route('documents.store', $this->projectA), [
+                'name' => 'Manager Upload',
+                'type' => 'SIKA',
+                'file' => $file,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Document uploaded successfully.');
+        $this->assertDatabaseHas('project_documents', [
+            'project_id' => $this->projectA->id,
+            'name' => 'Manager Upload',
+        ]);
+    }
+
+    /** 49 manage_project same-org actor CAN delete */
+    public function test_49_manage_project_same_org_actor_can_delete(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/manager_del.pdf',
+            'name' => 'To Delete',
+        ]);
+        Storage::disk('project_documents')->put($doc->file_path, 'Content');
+
+        $response = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectA, $doc]));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Document deleted successfully.');
+        $this->assertDatabaseMissing('project_documents', ['id' => $doc->id]);
+        Storage::disk('project_documents')->assertMissing($doc->file_path);
+    }
+
+    /** 50 manage_project actor from Org A CANNOT mutate Project B */
+    public function test_50_manage_project_actor_from_org_a_cannot_mutate_project_b(): void
+    {
+        $file = UploadedFile::fake()->create('cross_org.pdf', 100, 'application/pdf');
+
+        // Store attempt on Project B
+        $responseUpload = $this->actingAs($this->userA)
+            ->post(route('documents.store', $this->projectB), [
+                'name' => 'Cross Org Mutation',
+                'type' => 'SIKA',
+                'file' => $file,
+            ]);
+        $responseUpload->assertForbidden();
+
+        // Destroy attempt on Document B
+        $responseDelete = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectB, $this->documentB]));
+        $responseDelete->assertForbidden();
+    }
+
+    /** 51 NULL-org actor with manage_project still fails closed */
+    public function test_51_null_org_actor_with_manage_project_still_fails_closed(): void
+    {
+        $file = UploadedFile::fake()->create('null_org.pdf', 100, 'application/pdf');
+
+        // Upload attempt
+        $responseUpload = $this->actingAs($this->nullOrgUser)
+            ->post(route('documents.store', $this->projectA), [
+                'name' => 'Null Org Upload',
+                'type' => 'SIKA',
+                'file' => $file,
+            ]);
+        $responseUpload->assertForbidden();
+
+        // Destroy attempt
+        $responseDelete = $this->actingAs($this->nullOrgUser)
+            ->delete(route('documents.destroy', [$this->projectA, $this->documentA]));
+        $responseDelete->assertForbidden();
+    }
+
+    /** 54 public exists() throws -> migration FAILURE */
+    public function test_54_public_exists_throws_migration_failure(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc54.pdf',
+            'name' => 'Doc 54',
+        ]);
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('exists')->with($doc->file_path)->andThrow(new \RuntimeException('Disk IO error'));
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+    }
+
+    /** 55 public exists() throws -> not classified missing_source */
+    public function test_55_public_exists_throws_not_classified_missing_source(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc55.pdf',
+            'name' => 'Doc 55',
+        ]);
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('exists')->with($doc->file_path)->andThrow(new \RuntimeException('Disk IO error'));
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/\|\s*missing_source\s*\|\s*0\s*\|/', $output);
+        $this->assertMatchesRegularExpression('/\|\s*failed\s*\|\s*1\s*\|/', $output);
+    }
+
+    /** 56 dry-run public exists() throws -> FAILURE / UNKNOWN reported */
+    public function test_56_dry_run_public_exists_throws_failure_unknown_reported(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc56.pdf',
+            'name' => 'Doc 56',
+        ]);
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('exists')->with($doc->file_path)->andThrow(new \RuntimeException('Disk IO error'));
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private', ['--dry-run' => true]);
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/\|\s*failed\s*\|\s*1\s*\|/', $output);
+    }
+
+    /** 57 private exists() throws -> fail closed rather than treating as confirmed absent */
+    public function test_57_private_exists_throws_fail_closed_rather_than_treating_as_confirmed_absent(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc57.pdf',
+            'name' => 'Doc 57',
+        ]);
+        Storage::disk('public')->put($doc->file_path, 'Source Content');
+
+        $mockPrivate = \Mockery::mock(Storage::disk('project_documents'))->makePartial();
+        $mockPrivate->shouldReceive('exists')->with($doc->file_path)->andThrow(new \RuntimeException('Private disk error'));
+        Storage::set('project_documents', $mockPrivate);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/\|\s*failed\s*\|\s*1\s*\|/', $output);
+        // Public file must not be removed
+        Storage::disk('public')->assertExists($doc->file_path);
     }
 }

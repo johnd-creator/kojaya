@@ -20,7 +20,7 @@ class StoreProjectDocumentRequest extends FormRequest
             return false;
         }
 
-        return $user->can('update', $project);
+        return $user->can('manageDocuments', $project);
     }
 
     /**

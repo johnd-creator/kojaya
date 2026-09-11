@@ -23,4 +23,10 @@ class ProjectPolicy extends BasePolicy
     {
         return $this->view($user, $project);
     }
+
+    public function manageDocuments(User $user, Project $project): bool
+    {
+        return $this->can($user, 'manage_project')
+            && $this->sameOrganization($user, $project);
+    }
 }

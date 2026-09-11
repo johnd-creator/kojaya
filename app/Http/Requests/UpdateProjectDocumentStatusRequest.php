@@ -8,7 +8,18 @@ class UpdateProjectDocumentStatusRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        $project = $this->route('project');
+
+        if (is_string($project)) {
+            $project = \App\Models\Project::find($project);
+        }
+
+        if (! $user || ! $project instanceof \App\Models\Project) {
+            return false;
+        }
+
+        return $user->can('manageDocuments', $project);
     }
 
     /**

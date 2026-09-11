@@ -8,7 +8,14 @@ class ImportBudgetLinesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        $budget = $this->route('budget');
+
+        if (! $user || ! ($budget instanceof \App\Models\Budget)) {
+            return false;
+        }
+
+        return $user->can('import', $budget);
     }
 
     /**

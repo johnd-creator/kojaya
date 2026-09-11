@@ -18,7 +18,9 @@ class BudgetImportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Role::firstOrCreate(['name' => 'Finance Unit', 'guard_name' => 'web']);
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'manage_budget', 'guard_name' => 'web']);
+        $role = Role::firstOrCreate(['name' => 'Finance Unit', 'guard_name' => 'web']);
+        $role->givePermissionTo('manage_budget');
     }
 
     public function test_budget_line_unique_validation(): void

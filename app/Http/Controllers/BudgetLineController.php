@@ -5,18 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpsertBudgetLineRequest;
 use App\Models\Budget;
 use App\Models\BudgetLine;
-use Illuminate\Support\Facades\Auth;
 
 class BudgetLineController extends Controller
 {
-    protected function hasOrgScope(): bool
-    {
-        return auth()->user()?->can('view_budget_all') ?? false;
-    }
-
     public function store(UpsertBudgetLineRequest $request, Budget $budget)
     {
-        $this->authorizeBudgetAccess($budget);
+        $this->authorize('update', $budget);
 
         if ($budget->status !== 'DRAFT') {
             return back()->with('error', 'Only DRAFT budgets can be modified.');
@@ -40,14 +34,14 @@ class BudgetLineController extends Controller
 
     public function update(UpsertBudgetLineRequest $request, Budget $budget, BudgetLine $line)
     {
-        $this->authorizeBudgetAccess($budget);
-
-        if ($budget->status !== 'DRAFT') {
-            return back()->with('error', 'Only DRAFT budgets can be modified.');
-        }
+        $this->authorize('update', $budget);
 
         if ($line->budget_id !== $budget->id) {
             abort(404);
+        }
+
+        if ($budget->status !== 'DRAFT') {
+            return back()->with('error', 'Only DRAFT budgets can be modified.');
         }
 
         $validated = $request->validated();
@@ -65,35 +59,18 @@ class BudgetLineController extends Controller
 
     public function destroy(Budget $budget, BudgetLine $line)
     {
-        $this->authorizeBudgetAccess($budget);
-
-        if ($budget->status !== 'DRAFT') {
-            return back()->with('error', 'Only DRAFT budgets can be modified.');
-        }
+        $this->authorize('update', $budget);
 
         if ($line->budget_id !== $budget->id) {
             abort(404);
         }
 
+        if ($budget->status !== 'DRAFT') {
+            return back()->with('error', 'Only DRAFT budgets can be modified.');
+        }
+
         $line->delete();
 
         return back()->with('success', 'Budget line deleted.');
-    }
-
-    protected function authorizeBudgetAccess(Budget $budget): void
-    {
-        $user = Auth::user();
-
-        if (! $user) {
-            abort(403);
-        }
-
-        if ($user->can('view_budget_all')) {
-            return;
-        }
-
-        if ($budget->organization_id !== $user->organization_id) {
-            abort(403);
-        }
     }
 }

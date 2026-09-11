@@ -122,6 +122,7 @@ class RolePermissionSeeder extends Seeder
             'manage_budget',
             'manage_petty_cash',
             'manage_bank_batch',
+            'view_bank_batch_all',
             'manage_bank_reconciliation',
             'view_chart_of_accounts',
             'manage_chart_of_accounts',

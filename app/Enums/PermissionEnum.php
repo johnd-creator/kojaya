@@ -65,6 +65,7 @@ enum PermissionEnum: string
     case BUDGET_VIEW_ALL = 'view_budget_all';
     case BUDGET_MANAGE = 'manage_budget';
     case PETTY_CASH_MANAGE = 'manage_petty_cash';
+    case BANK_BATCH_VIEW_ALL = 'view_bank_batch_all';
     case BANK_BATCH_MANAGE = 'manage_bank_batch';
     case BANK_RECONCILIATION_MANAGE = 'manage_bank_reconciliation';
     case COA_VIEW = 'view_chart_of_accounts';

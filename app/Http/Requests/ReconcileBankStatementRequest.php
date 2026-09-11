@@ -8,7 +8,17 @@ class ReconcileBankStatementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if (! $user || ! $user->can('manage_bank_reconciliation')) {
+            return false;
+        }
+
+        if ($user->can('view_invoice_all')) {
+            return true;
+        }
+
+        return ! empty($user->organization_id);
     }
 
     /**

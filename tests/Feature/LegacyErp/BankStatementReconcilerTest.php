@@ -16,8 +16,11 @@ class BankStatementReconcilerTest extends TestCase
 
     public function test_reconcile_marks_invoice_as_paid(): void
     {
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+
         $org = Organization::factory()->create();
         $user = User::factory()->create(['organization_id' => $org->id]);
+        $user->assignRole('Finance Unit');
         $client = Client::factory()->create(['name' => 'Safe Name Ltd']);
 
         $invoice = Invoice::create([
@@ -37,7 +40,7 @@ class BankStatementReconcilerTest extends TestCase
         $statement .= "1234567890,{$client->name},9876543210,555000.00,IDR,INV-{$invoice->id}\n";
 
         $svc = new BankStatementReconciler;
-        $matched = $svc->reconcileCsv($statement);
+        $matched = $svc->reconcileCsv($statement, $user);
         $this->assertEquals(1, $matched);
 
         $invoice->refresh();

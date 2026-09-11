@@ -9,6 +9,7 @@ use App\Exceptions\OrganizationScopeException;
 use App\Models\Asset;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
+use App\Models\BankTransferBatch;
 use App\Models\Budget;
 use App\Models\Client;
 use App\Models\CooperativeDuesInvoice;
@@ -75,6 +76,7 @@ class OrganizationScopeService
         Attendance::class => 'organization_id',
         AttendanceCorrection::class => 'organization_id',
         Asset::class => 'organization_id',
+        BankTransferBatch::class => 'organization_id',
         Budget::class => 'organization_id',
         Client::class => 'organization_id',
         Department::class => 'organization_id',
@@ -141,6 +143,7 @@ class OrganizationScopeService
         Attendance::class => 'view_attendance_all',
         AttendanceCorrection::class => 'view_attendance_all',
         Asset::class => 'view_asset_all',
+        BankTransferBatch::class => PermissionEnum::BANK_BATCH_VIEW_ALL->value,
         Budget::class => 'view_budget_all',
         Employee::class => 'view_employee_all',
         GoodsReceiveNote::class => 'view_grn_all',

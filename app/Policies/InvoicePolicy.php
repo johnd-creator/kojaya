@@ -22,4 +22,21 @@ class InvoicePolicy extends BasePolicy
     {
         return $this->view($user, $invoice);
     }
+
+    public function reconcilePayment(User $user, Invoice $invoice): bool
+    {
+        if (! $this->can($user, 'manage_bank_reconciliation')) {
+            return false;
+        }
+
+        if ($this->can($user, 'view_invoice_all')) {
+            return true;
+        }
+
+        if (empty($user->organization_id)) {
+            return false;
+        }
+
+        return (string) $invoice->organization_id === (string) $user->organization_id;
+    }
 }

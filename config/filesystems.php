@@ -55,6 +55,14 @@ return [
             'report' => false,
         ],
 
+        'project_documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/project-documents'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

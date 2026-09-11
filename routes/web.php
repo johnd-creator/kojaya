@@ -582,6 +582,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('resources/assets/{allocation}', [\App\Http\Controllers\ProjectResourceController::class, 'updateAsset'])->name('projects.resources.update-asset');
         Route::delete('resources/assets/{allocation}', [\App\Http\Controllers\ProjectResourceController::class, 'destroyAsset'])->name('projects.resources.destroy-asset');
 
+        Route::get('documents/{document}/download', [\App\Http\Controllers\ProjectDocumentController::class, 'download'])->name('projects.documents.download');
         Route::resource('documents', \App\Http\Controllers\ProjectDocumentController::class)->only(['index', 'store', 'destroy']);
 
         // Reports API

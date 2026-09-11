@@ -18,9 +18,12 @@ class AttendanceManagementTest extends TestCase
 
     public function test_user_can_filter_attendance_index_and_record_attendance(): void
     {
-        $user = User::factory()->create();
         $organization = Organization::factory()->create();
         $otherOrganization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'view_attendance_unit', 'guard_name' => 'web']);
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'approve_attendance', 'guard_name' => 'web']);
+        $user->givePermissionTo(['view_attendance_unit', 'approve_attendance']);
         $employee = Employee::factory()->create(['organization_id' => $organization->id]);
         $otherEmployee = Employee::factory()->create(['organization_id' => $otherOrganization->id]);
 

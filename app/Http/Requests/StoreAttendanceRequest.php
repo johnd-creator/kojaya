@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PermissionEnum;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAttendanceRequest extends FormRequest
@@ -11,7 +12,24 @@ class StoreAttendanceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        if (! $user->can(PermissionEnum::ATTENDANCE_APPROVE->value)) {
+            return false;
+        }
+
+        if ($user->can(PermissionEnum::ATTENDANCE_VIEW_ALL->value)) {
+            return true;
+        }
+
+        if ($user->can(PermissionEnum::ATTENDANCE_VIEW_UNIT->value) && ! empty($user->organization_id)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -22,8 +40,8 @@ class StoreAttendanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
-            'organization_id' => ['required', 'uuid', 'exists:organizations,id'],
+            'employee_id' => ['required', 'integer'],
+            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
             'date' => ['required', 'date'],
             'clock_in' => ['nullable', 'date_format:H:i'],
             'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
@@ -36,7 +54,6 @@ class StoreAttendanceRequest extends FormRequest
     {
         return [
             'employee_id.required' => 'Karyawan wajib dipilih.',
-            'organization_id.required' => 'Organisasi wajib dipilih.',
             'date.required' => 'Tanggal absensi wajib diisi.',
             'status.required' => 'Status absensi wajib dipilih.',
         ];

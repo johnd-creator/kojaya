@@ -9,6 +9,8 @@ use App\Listeners\LogFailedLogin;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
 use App\Models\Asset;
+use App\Models\Attendance;
+use App\Models\AttendanceCorrection;
 use App\Models\Budget;
 use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
@@ -43,6 +45,8 @@ use App\Observers\EmployeeCertificateObserver;
 use App\Observers\EmployeeObserver;
 use App\Observers\MedicalCheckupObserver;
 use App\Policies\AssetPolicy;
+use App\Policies\AttendanceCorrectionPolicy;
+use App\Policies\AttendancePolicy;
 use App\Policies\BudgetPolicy;
 use App\Policies\CooperativeMemberPolicy;
 use App\Policies\CooperativePaymentPolicy;
@@ -163,6 +167,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn ($user): ?bool => $user->hasRole('System Admin') ? true : null);
 
         Gate::policy(Asset::class, AssetPolicy::class);
+        Gate::policy(Attendance::class, AttendancePolicy::class);
+        Gate::policy(AttendanceCorrection::class, AttendanceCorrectionPolicy::class);
         Gate::policy(Budget::class, BudgetPolicy::class);
         Gate::policy(CooperativeMember::class, CooperativeMemberPolicy::class);
         Gate::policy(CooperativePayment::class, CooperativePaymentPolicy::class);

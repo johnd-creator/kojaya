@@ -71,6 +71,8 @@ class RolePermissionSeeder extends Seeder
             'view_employee_all',
             'create_employee',
             'edit_employee',
+            'view_attendance_all',
+            'approve_attendance',
             'view_payroll_all',
             'process_payroll',
             'manage_departments',
@@ -95,6 +97,8 @@ class RolePermissionSeeder extends Seeder
             'view_employee_unit',
             'create_employee',
             'edit_employee',
+            'view_attendance_unit',
+            'approve_attendance',
             'view_payroll_unit',
             'process_payroll',
             'view_leave_unit',
@@ -189,7 +193,6 @@ class RolePermissionSeeder extends Seeder
         Role::where('name', 'Employee')->first()?->syncPermissions([
             'view_employee_unit',
             'access_ess_portal',
-            'view_attendance_unit',
             'view_payroll_unit',
             'view_own_payslip',
         ]);

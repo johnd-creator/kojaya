@@ -43,7 +43,13 @@ class BudgetLinesImport implements ToModel, WithHeadingRow, WithValidation
             'gl_account' => ['required', 'string', 'max:50'],
             'category' => ['required', Rule::in(['OPEX', 'CAPEX'])],
             'allocated_amount' => ['required', 'numeric', 'min:0'],
-            'project_id' => ['nullable', 'uuid', 'exists:projects,id'],
+            'project_id' => [
+                'nullable',
+                'uuid',
+                Rule::exists('projects', 'id')->where(function ($query) {
+                    return $query->where('organization_id', $this->budget->organization_id);
+                }),
+            ],
             'cost_center' => ['nullable', 'string', 'max:50'],
         ];
     }

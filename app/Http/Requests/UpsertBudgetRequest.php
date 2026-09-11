@@ -9,7 +9,21 @@ class UpsertBudgetRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->isMethod('post')) {
+            return $user->can('create', \App\Models\Budget::class);
+        }
+
+        $budget = $this->route('budget');
+        if ($budget instanceof \App\Models\Budget) {
+            return $user->can('update', $budget);
+        }
+
+        return false;
     }
 
     /**
@@ -17,12 +31,19 @@ class UpsertBudgetRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'organization_id' => ['nullable', 'uuid', 'exists:organizations,id'],
+        $rules = [
             'year' => ['required', 'digits:4'],
             'period' => ['required', Rule::in(['ANNUAL', 'Q1', 'Q2', 'Q3', 'Q4'])],
             'status' => [$this->isMethod('post') ? 'nullable' : 'required', Rule::in(['DRAFT', 'ACTIVE', 'CLOSED'])],
         ];
+
+        if ($this->isMethod('post') && $this->user()?->can('view_budget_all')) {
+            $rules['organization_id'] = ['nullable', 'uuid', 'exists:organizations,id'];
+        } else {
+            $rules['organization_id'] = ['nullable'];
+        }
+
+        return $rules;
     }
 
     /**

@@ -44,6 +44,7 @@ class BudgetControllerTest extends TestCase
 
         $user = User::factory()->create(['organization_id' => $orgA->id]);
         $user->assignRole('Finance Unit');
+        $user->givePermissionTo('manage_budget');
 
         $response = $this->actingAs($user)->get('/budgets');
 
@@ -89,6 +90,7 @@ class BudgetControllerTest extends TestCase
         $org = Organization::factory()->create(['code' => 'UNIT-A', 'level' => 'L2', 'type' => 'BRANCH']);
         $user = User::factory()->create(['organization_id' => $org->id]);
         $user->assignRole('Finance Unit');
+        $user->givePermissionTo('manage_budget');
 
         $budget = Budget::create([
             'organization_id' => $org->id,

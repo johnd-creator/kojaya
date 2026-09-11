@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -18,6 +19,8 @@ class BudgetController extends Controller
 {
     public function index(Request $request): Response
     {
+        $this->authorize('viewAny', Budget::class);
+
         $user = $request->user();
 
         $budgets = Budget::query()
@@ -56,13 +59,19 @@ class BudgetController extends Controller
 
     public function store(UpsertBudgetRequest $request)
     {
+        $this->authorize('create', Budget::class);
+
         $user = $request->user();
 
         $validated = $request->validated();
 
-        $organizationId = $user->can('view_budget_all')
+        $organizationId = ($user->can('view_budget_all') && $user->can('manage_budget'))
             ? ($validated['organization_id'] ?? $user->organization_id)
             : $user->organization_id;
+
+        if (empty($organizationId)) {
+            abort(403, 'A valid organization is required to create a budget.');
+        }
 
         $exists = Budget::query()
             ->where('organization_id', $organizationId)
@@ -88,12 +97,26 @@ class BudgetController extends Controller
 
     public function show(Budget $budget): Response
     {
-        $this->authorizeAccess($budget);
+        $this->authorize('view', $budget);
 
         $budget->load([
             'organization:id,code,name',
-            'lines' => fn ($q) => $q->with('project:id,project_code,name')->orderBy('gl_account'),
+            'lines' => fn ($q) => $q->with([
+                'project' => fn ($pq) => $pq->where('organization_id', $budget->organization_id)
+                    ->select('id', 'project_code', 'name'),
+            ])->orderBy('gl_account'),
         ]);
+
+        // Fail-closed defense for pre-existing corrupt project relationships:
+        // Ensure no foreign project metadata or foreign project IDs are exposed.
+        $budget->lines->each(function ($line) {
+            if ($line->project_id !== null && $line->project === null) {
+                $line->project_id = null;
+            }
+        });
+
+        $user = Auth::user();
+        $canMutate = $user ? $user->can('update', $budget) : false;
 
         return Inertia::render('Budget/Show', [
             'budget' => $budget,
@@ -102,27 +125,24 @@ class BudgetController extends Controller
                 ->orderBy('project_code')
                 ->get(['id', 'project_code', 'name']),
             'can' => [
-                'edit' => Auth::user()?->can('view_budget_all') || $budget->organization_id === Auth::user()?->organization_id,
-                'editLines' => $budget->status === 'DRAFT',
+                'edit' => $canMutate,
+                'editLines' => $canMutate && $budget->status === 'DRAFT',
             ],
         ]);
     }
 
     public function update(UpsertBudgetRequest $request, Budget $budget)
     {
-        $this->authorizeAccess($budget);
+        $this->authorize('update', $budget);
 
         if ($budget->status !== 'DRAFT') {
             return back()->with('error', 'Only DRAFT budgets can be edited.');
         }
 
-        $user = $request->user();
-
         $validated = $request->validated();
 
-        $organizationId = $user->can('view_budget_all')
-            ? ($validated['organization_id'] ?? $budget->organization_id)
-            : $budget->organization_id;
+        // Budget organization is immutable after creation to protect tenant integrity
+        $organizationId = $budget->organization_id;
 
         $exists = Budget::query()
             ->whereKeyNot($budget->id)
@@ -138,7 +158,6 @@ class BudgetController extends Controller
         }
 
         $budget->update([
-            'organization_id' => $organizationId,
             'year' => $validated['year'],
             'period' => $validated['period'],
             'status' => $validated['status'],
@@ -149,7 +168,7 @@ class BudgetController extends Controller
 
     public function destroy(Budget $budget)
     {
-        $this->authorizeAccess($budget);
+        $this->authorize('delete', $budget);
 
         if ($budget->status !== 'DRAFT') {
             return back()->with('error', 'Only DRAFT budgets can be deleted.');
@@ -162,14 +181,16 @@ class BudgetController extends Controller
 
     public function import(ImportBudgetLinesRequest $request, Budget $budget)
     {
-        $this->authorizeAccess($budget);
+        $this->authorize('import', $budget);
 
         if ($budget->status !== 'DRAFT') {
             return back()->with('error', 'Only DRAFT budgets can be modified.');
         }
 
         try {
-            Excel::import(new BudgetLinesImport($budget), $request->file('file'));
+            DB::transaction(function () use ($request, $budget) {
+                Excel::import(new BudgetLinesImport($budget), $request->file('file'));
+            });
 
             return back()->with('success', 'Budget lines imported successfully.');
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
@@ -182,23 +203,6 @@ class BudgetController extends Controller
             return back()->withErrors(['file' => $messages]);
         } catch (\Exception $e) {
             return back()->with('error', 'Import failed: '.$e->getMessage());
-        }
-    }
-
-    protected function authorizeAccess(Budget $budget): void
-    {
-        $user = Auth::user();
-
-        if (! $user) {
-            abort(403);
-        }
-
-        if ($user->can('view_budget_all')) {
-            return;
-        }
-
-        if ($budget->organization_id !== $user->organization_id) {
-            abort(403);
         }
     }
 }

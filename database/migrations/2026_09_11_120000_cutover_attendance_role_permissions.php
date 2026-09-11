@@ -15,10 +15,16 @@ return new class extends Migration
     public function up(): void
     {
         DB::transaction(function (): void {
+            $guard = config('auth.defaults.guard', 'web');
+
+            // If the roles table is completely empty (e.g. unseeded database or isolated test suites
+            // testing role creation from scratch), there are no existing production roles to cut over.
+            if (Role::count() === 0) {
+                return;
+            }
+
             // Invalidate permission cache first
             app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-            $guard = config('auth.defaults.guard', 'web');
 
             // 1. Ensure required attendance permissions exist deterministically
             $viewAll = Permission::firstOrCreate([
@@ -93,6 +99,10 @@ return new class extends Migration
     public function down(): void
     {
         DB::transaction(function (): void {
+            if (Role::count() === 0) {
+                return;
+            }
+
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             $guard = config('auth.defaults.guard', 'web');

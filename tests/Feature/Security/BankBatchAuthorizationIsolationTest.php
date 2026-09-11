@@ -533,6 +533,54 @@ class BankBatchAuthorizationIsolationTest extends TestCase
         $this->assertEquals($itemCountBefore, BankTransferItem::count());
     }
 
+    public function test_20b_true_store_transaction_rollback_on_database_level_item_persistence_exception(): void
+    {
+        $batchCountBefore = BankTransferBatch::count();
+        $itemCountBefore = BankTransferItem::count();
+
+        // Register a listener on BankTransferItem::creating that throws an exception during second item persistence
+        BankTransferItem::creating(function (BankTransferItem $item) {
+            if ($item->beneficiary_name === 'FAIL_ON_ITEM_PERSISTENCE') {
+                throw new \RuntimeException('Simulated database failure during item creation');
+            }
+        });
+
+        $payload = [
+            'bank_name' => 'BCA',
+            'account_number' => '111122223333',
+            'format' => 'CSV',
+            'batch_date' => now()->toDateString(),
+            'reference' => 'TRANSACTION-ROLLBACK-TEST',
+            'items' => [
+                [
+                    'beneficiary_name' => 'Item 1 Valid',
+                    'beneficiary_account' => '1111',
+                    'amount' => 100.00,
+                    'currency' => 'IDR',
+                ],
+                [
+                    'beneficiary_name' => 'FAIL_ON_ITEM_PERSISTENCE',
+                    'beneficiary_account' => '2222',
+                    'amount' => 200.00,
+                    'currency' => 'IDR',
+                ],
+            ],
+        ];
+
+        try {
+            $this->withoutExceptionHandling()
+                ->actingAs($this->financeUnitA)
+                ->post(route('finance.bank-batches.store'), $payload);
+            $this->fail('Expected RuntimeException was not thrown.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Simulated database failure during item creation', $e->getMessage());
+        }
+
+        // True database rollback verification: batch was created, but rolled back with items
+        $this->assertEquals($batchCountBefore, BankTransferBatch::count(), 'Batch creation must be rolled back when item persistence fails.');
+        $this->assertEquals($itemCountBefore, BankTransferItem::count(), 'Item creation must be rolled back when transaction aborts.');
+    }
+
     // 21 Finance Unit reconciliation index own-org only
     public function test_21_finance_unit_reconciliation_index_own_org_only(): void
     {

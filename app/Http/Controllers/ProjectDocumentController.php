@@ -94,6 +94,7 @@ class ProjectDocumentController extends Controller
         if (Storage::disk('project_documents')->exists($path)) {
             $disk = 'project_documents';
         } elseif (Storage::disk('public')->exists($path)) {
+            // public fallback is transitional compatibility only until migration is complete
             $disk = 'public';
         }
 
@@ -128,11 +129,70 @@ class ProjectDocumentController extends Controller
         $filePath = $document->file_path;
 
         if ($filePath && is_string($filePath)) {
-            if (Storage::disk('project_documents')->exists($filePath)) {
-                Storage::disk('project_documents')->delete($filePath);
+            // Validate path namespace and reject traversals
+            if (
+                str_contains($filePath, '..') ||
+                str_contains($filePath, '\\') ||
+                str_starts_with($filePath, '/') ||
+                ! str_starts_with($filePath, 'project-documents/')
+            ) {
+                abort(400, 'Invalid document file path.');
             }
-            if (Storage::disk('public')->exists($filePath)) {
-                Storage::disk('public')->delete($filePath);
+
+            // Fail-closed private storage deletion
+            $existsPrivate = false;
+            try {
+                $existsPrivate = Storage::disk('project_documents')->exists($filePath);
+            } catch (\Throwable) {
+                abort(500, 'Failed to verify private document file presence.');
+            }
+
+            if ($existsPrivate) {
+                $deletedPrivate = false;
+                try {
+                    $deletedPrivate = Storage::disk('project_documents')->delete($filePath);
+                } catch (\Throwable) {
+                    abort(500, 'Failed to delete private document file.');
+                }
+
+                $stillExistsPrivate = true;
+                try {
+                    $stillExistsPrivate = Storage::disk('project_documents')->exists($filePath);
+                } catch (\Throwable) {
+                    abort(500, 'Failed to verify private document file absence.');
+                }
+
+                if (! $deletedPrivate || $stillExistsPrivate) {
+                    abort(500, 'Failed to safely remove private document file.');
+                }
+            }
+
+            // Fail-closed legacy public storage deletion
+            $existsPublic = false;
+            try {
+                $existsPublic = Storage::disk('public')->exists($filePath);
+            } catch (\Throwable) {
+                abort(500, 'Failed to verify legacy public document file presence.');
+            }
+
+            if ($existsPublic) {
+                $deletedPublic = false;
+                try {
+                    $deletedPublic = Storage::disk('public')->delete($filePath);
+                } catch (\Throwable) {
+                    abort(500, 'Failed to delete legacy public document file.');
+                }
+
+                $stillExistsPublic = true;
+                try {
+                    $stillExistsPublic = Storage::disk('public')->exists($filePath);
+                } catch (\Throwable) {
+                    abort(500, 'Failed to verify legacy public document file absence.');
+                }
+
+                if (! $deletedPublic || $stillExistsPublic) {
+                    abort(500, 'Failed to safely remove legacy public document file.');
+                }
             }
         }
 

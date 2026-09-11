@@ -480,4 +480,310 @@ class ProjectDocumentAuthorizationTest extends TestCase
         Storage::disk('public')->assertExists($mismatchPath);
         $this->assertSame('Original Public Source', Storage::disk('public')->get($mismatchPath));
     }
+
+    /** 26 migration does not report public_removed when public delete fails */
+    public function test_26_migration_does_not_report_public_removed_when_public_delete_fails(): void
+    {
+        $legacyPath = 'project-documents/doc26.pdf';
+        ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => $legacyPath,
+            'name' => 'Doc 26',
+        ]);
+        Storage::disk('public')->put($legacyPath, 'Secret 26');
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($legacyPath)->andReturn(false);
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/\|\s*public_removed\s*\|\s*0\s*\|/', $output);
+        $this->assertStringContainsString('remaining_referenced_public = 1', $output);
+    }
+
+    /** 27 migration exits FAILURE when public delete returns false */
+    public function test_27_migration_exits_failure_when_public_delete_returns_false(): void
+    {
+        $legacyPath = 'project-documents/doc27.pdf';
+        ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => $legacyPath,
+            'name' => 'Doc 27',
+        ]);
+        Storage::disk('public')->put($legacyPath, 'Secret 27');
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($legacyPath)->andReturn(false);
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+    }
+
+    /** 28 migration exits FAILURE when public file remains after delete attempt */
+    public function test_28_migration_exits_failure_when_public_file_remains_after_delete_attempt(): void
+    {
+        $legacyPath = 'project-documents/doc28.pdf';
+        ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => $legacyPath,
+            'name' => 'Doc 28',
+        ]);
+        Storage::disk('public')->put($legacyPath, 'Secret 28');
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($legacyPath)->andReturn(true);
+        $mockPublic->shouldReceive('exists')->with($legacyPath)->andReturn(true);
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/\|\s*public_removed\s*\|\s*0\s*\|/', $output);
+        $this->assertStringContainsString('remaining_referenced_public = 1', $output);
+    }
+
+    /** 29 both-present identical files remain classified incomplete if public delete fails */
+    public function test_29_both_present_identical_files_remain_classified_incomplete_if_public_delete_fails(): void
+    {
+        $legacyPath = 'project-documents/doc29.pdf';
+        ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => $legacyPath,
+            'name' => 'Doc 29',
+        ]);
+
+        $content = 'Identical Content 29';
+        Storage::disk('public')->put($legacyPath, $content);
+        Storage::disk('project_documents')->put($legacyPath, $content);
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($legacyPath)->andReturn(false);
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/\|\s*failed\s*\|\s*1\s*\|/', $output);
+        $this->assertMatchesRegularExpression('/\|\s*public_removed\s*\|\s*0\s*\|/', $output);
+        $this->assertStringContainsString('remaining_referenced_public = 1', $output);
+    }
+
+    /** 30 verified private copy remains intact when public cleanup fails */
+    public function test_30_verified_private_copy_remains_intact_when_public_cleanup_fails(): void
+    {
+        $legacyPath = 'project-documents/doc30.pdf';
+        ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => $legacyPath,
+            'name' => 'Doc 30',
+        ]);
+
+        $content = 'Valuable Content 30';
+        Storage::disk('public')->put($legacyPath, $content);
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($legacyPath)->andReturn(false);
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        Storage::disk('project_documents')->assertExists($legacyPath);
+        $this->assertSame($content, Storage::disk('project_documents')->get($legacyPath));
+        Storage::disk('public')->assertExists($legacyPath);
+    }
+
+    /** 31 destroy does not delete DB row if private file deletion fails */
+    public function test_31_destroy_does_not_delete_db_row_if_private_file_deletion_fails(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc31.pdf',
+            'name' => 'Doc 31',
+        ]);
+        Storage::disk('project_documents')->put($doc->file_path, 'Content 31');
+
+        $mockPrivate = \Mockery::mock(Storage::disk('project_documents'))->makePartial();
+        $mockPrivate->shouldReceive('delete')->with($doc->file_path)->andReturn(false);
+        Storage::set('project_documents', $mockPrivate);
+
+        $response = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectA, $doc]));
+
+        $response->assertStatus(500);
+        $this->assertDatabaseHas('project_documents', ['id' => $doc->id]);
+    }
+
+    /** 32 destroy does not delete DB row if legacy public file deletion fails */
+    public function test_32_destroy_does_not_delete_db_row_if_legacy_public_file_deletion_fails(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc32.pdf',
+            'name' => 'Doc 32',
+        ]);
+        Storage::disk('public')->put($doc->file_path, 'Legacy Content 32');
+
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($doc->file_path)->andReturn(false);
+        Storage::set('public', $mockPublic);
+
+        $response = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectA, $doc]));
+
+        $response->assertStatus(500);
+        $this->assertDatabaseHas('project_documents', ['id' => $doc->id]);
+    }
+
+    /** 33 failed destroy does not return successful redirect/message */
+    public function test_33_failed_destroy_does_not_return_successful_redirect_message(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc33.pdf',
+            'name' => 'Doc 33',
+        ]);
+        Storage::disk('project_documents')->put($doc->file_path, 'Content 33');
+
+        $mockPrivate = \Mockery::mock(Storage::disk('project_documents'))->makePartial();
+        $mockPrivate->shouldReceive('delete')->with($doc->file_path)->andReturn(false);
+        Storage::set('project_documents', $mockPrivate);
+
+        $response = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectA, $doc]));
+
+        $this->assertNotSame(302, $response->getStatusCode());
+        $response->assertStatus(500);
+        $response->assertSessionMissing('success');
+    }
+
+    /** 34 successful destroy proves private file absent before DB row removal */
+    public function test_34_successful_destroy_proves_private_file_absent_before_db_row_removal(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc34.pdf',
+            'name' => 'Doc 34',
+        ]);
+        Storage::disk('project_documents')->put($doc->file_path, 'Content 34');
+
+        $response = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectA, $doc]));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Document deleted successfully.');
+        Storage::disk('project_documents')->assertMissing($doc->file_path);
+        $this->assertDatabaseMissing('project_documents', ['id' => $doc->id]);
+    }
+
+    /** 35 successful legacy destroy proves public file absent before DB row removal */
+    public function test_35_successful_legacy_destroy_proves_public_file_absent_before_db_row_removal(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc35.pdf',
+            'name' => 'Doc 35',
+        ]);
+        Storage::disk('public')->put($doc->file_path, 'Legacy Content 35');
+
+        $response = $this->actingAs($this->userA)
+            ->delete(route('documents.destroy', [$this->projectA, $doc]));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Document deleted successfully.');
+        Storage::disk('public')->assertMissing($doc->file_path);
+        $this->assertDatabaseMissing('project_documents', ['id' => $doc->id]);
+    }
+
+    /** 36 migration final verification reports remaining_referenced_public = 0 on clean success */
+    public function test_36_migration_final_verification_reports_remaining_referenced_public_zero_on_clean_success(): void
+    {
+        $doc1 = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc36_1.pdf',
+            'name' => 'Doc 36 1',
+        ]);
+        $doc2 = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc36_2.pdf',
+            'name' => 'Doc 36 2',
+        ]);
+
+        Storage::disk('public')->put($doc1->file_path, 'Content 36 1');
+        Storage::disk('public')->put($doc2->file_path, 'Content 36 2');
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(0, $exitCode);
+        $output = Artisan::output();
+        $this->assertStringContainsString('remaining_referenced_public = 0', $output);
+        Storage::disk('public')->assertMissing($doc1->file_path);
+        Storage::disk('public')->assertMissing($doc2->file_path);
+        Storage::disk('project_documents')->assertExists($doc1->file_path);
+        Storage::disk('project_documents')->assertExists($doc2->file_path);
+    }
+
+    /** 37 migration final verification fails when one referenced public file remains */
+    public function test_37_migration_final_verification_fails_when_one_referenced_public_file_remains(): void
+    {
+        $doc1 = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc37_1.pdf',
+            'name' => 'Doc 37 1',
+        ]);
+        $doc2 = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc37_2.pdf',
+            'name' => 'Doc 37 2',
+        ]);
+
+        Storage::disk('public')->put($doc1->file_path, 'Content 37 1');
+        Storage::disk('public')->put($doc2->file_path, 'Content 37 2');
+
+        // Delete succeeds for doc1, but fails for doc2
+        $mockPublic = \Mockery::mock(Storage::disk('public'))->makePartial();
+        $mockPublic->shouldReceive('delete')->with($doc2->file_path)->andReturn(false);
+        Storage::set('public', $mockPublic);
+
+        $exitCode = Artisan::call('project-documents:migrate-private');
+
+        $this->assertSame(1, $exitCode);
+        $output = Artisan::output();
+        $this->assertStringContainsString('remaining_referenced_public = 1', $output);
+    }
+
+    /** 38 dry-run never represents simulated cleanup as physically completed */
+    public function test_38_dry_run_never_represents_simulated_cleanup_as_physically_completed(): void
+    {
+        $doc = ProjectDocument::factory()->create([
+            'project_id' => $this->projectA->id,
+            'file_path' => 'project-documents/doc38.pdf',
+            'name' => 'Doc 38',
+        ]);
+        Storage::disk('public')->put($doc->file_path, 'Content 38');
+
+        $exitCode = Artisan::call('project-documents:migrate-private', ['--dry-run' => true]);
+
+        $this->assertSame(0, $exitCode);
+        $output = Artisan::output();
+
+        // Must report simulated metrics
+        $this->assertMatchesRegularExpression('/\|\s*would_migrate\s*\|\s*1\s*\|/', $output);
+        $this->assertMatchesRegularExpression('/\|\s*would_remove_public\s*\|\s*1\s*\|/', $output);
+
+        // Must NOT represent simulated cleanup as physically completed
+        $this->assertMatchesRegularExpression('/\|\s*migrated\s*\|\s*0\s*\|/', $output);
+        $this->assertMatchesRegularExpression('/\|\s*public_removed\s*\|\s*0\s*\|/', $output);
+
+        // Physical state must remain untouched
+        Storage::disk('public')->assertExists($doc->file_path);
+        Storage::disk('project_documents')->assertMissing($doc->file_path);
+    }
 }

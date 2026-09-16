@@ -211,6 +211,16 @@ const isAdminVerificationReady = computed(
 const isFinalApprovalReady = computed(
   () => props.member.validation_status === "PENDING_VALIDATION",
 );
+const canDeactivateLifecycle = computed(
+  () =>
+    props.member.status === "ACTIVE" &&
+    props.member.validation_status === "ACTIVE",
+);
+const canActivateLifecycle = computed(
+  () =>
+    props.member.status === "INACTIVE" &&
+    props.member.validation_status === "INACTIVE",
+);
 
 const jenisKelaminMap: Record<string, string> = {
   L: "Laki-laki",
@@ -501,13 +511,16 @@ const showJenis = computed(() => props.member.jenis_anggota_label || "—");
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    v-if="props.member.status === 'ACTIVE'"
+                    v-if="canDeactivateLifecycle"
                     @click="deactivateMember"
                   >
                     <PowerOff class="mr-2 size-4" />
                     Nonaktifkan
                   </DropdownMenuItem>
-                  <DropdownMenuItem v-else @click="activateMember">
+                  <DropdownMenuItem
+                    v-if="canActivateLifecycle"
+                    @click="activateMember"
+                  >
                     <Power class="mr-2 size-4 text-emerald-600" />
                     Aktifkan
                   </DropdownMenuItem>

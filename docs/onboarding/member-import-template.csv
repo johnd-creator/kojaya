@@ -1,0 +1,5 @@
+member_number,full_name,email,phone_number,identity_number,gender,company_code,employee_number,address,membership_type,join_date,notes
+KOP-001,Ahmad Pratama,ahmad.pratama.dummy@example.com,081234560001,3171012301900001,L,IP,IP-102938,"Jl. Merdeka No. 10, Jakarta Pusat",AB,2026-06-01,Data dummy uji impor anggota aktif IP
+KOP-002,Siti Rahayu,siti.rahayu.dummy@example.com,081234560002,3201014506920002,P,CDB,CDB-204911,"Jl. Asia Afrika No. 25, Bandung",AB,2026-06-01,Data dummy uji impor anggota aktif CDB
+KOP-003,Bambang Hermanto*,bambang.hermanto.dummy@example.com,081234560003,3374011208880003,L,KOP,,"Jl. Pemuda No. 88, Semarang",ALB,2026-06-01,Data dummy uji impor ALB non-karyawan
+,Dewi Anggraini,dewi.anggraini.dummy@example.com,081234560004,3578015511950004,P,IP,IP-305819,"Jl. Basuki Rahmat No. 12, Surabaya",AB,2026-06-01,Data dummy auto-generate nomor anggota

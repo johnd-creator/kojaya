@@ -123,23 +123,7 @@ const modules = [
       <div
         class="hidden min-h-0 flex-col overflow-hidden px-6 pt-6 pb-4 sm:px-8 lg:flex lg:px-12 xl:px-16"
       >
-        <div class="flex items-center gap-4">
-          <img
-            src="/images/logo.png"
-            alt="KojayaPro"
-            class="size-12 object-contain sm:size-14"
-          />
-          <div>
-            <p class="text-xl font-extrabold text-[#063f22] xl:text-2xl">
-              KojayaPro
-            </p>
-            <p class="text-sm font-medium text-slate-600">
-              Sistem Koperasi KOJAYA
-            </p>
-          </div>
-        </div>
-
-        <div class="mt-8 max-w-3xl xl:mt-10">
+        <div class="mt-2 max-w-3xl xl:mt-4">
           <h1
             class="text-2xl leading-tight font-black text-slate-950 xl:text-4xl"
           >
@@ -191,16 +175,12 @@ const modules = [
         <div
           class="w-full max-w-lg rounded-lg border border-white/80 bg-white/95 px-5 py-6 shadow-[0_24px_60px_rgba(15,23,42,0.14)] backdrop-blur sm:px-8 sm:py-8"
         >
-          <div class="flex items-center justify-center gap-4">
-            <img src="/images/logo.png" alt="" class="size-12 object-contain" />
-            <div>
-              <p class="text-xl font-extrabold text-[#063f22] sm:text-2xl">
-                KojayaPro
-              </p>
-              <p class="text-sm font-medium text-slate-600">
-                Sistem Koperasi KOJAYA
-              </p>
-            </div>
+          <div class="flex items-center justify-center">
+            <img
+              src="/images/logo_kjy.png"
+              alt="KOJAYA"
+              class="h-12 w-auto object-contain sm:h-14"
+            />
           </div>
 
           <div class="my-6 flex items-center gap-3 text-[#0b8f2e]">
@@ -398,7 +378,7 @@ const modules = [
             <span class="hidden text-slate-500 sm:inline">&middot;</span>
             <span class="inline-flex items-center gap-2">
               <Users class="size-4 text-[#0b8f2e]" />
-              Multi-user
+              Multi-role
             </span>
           </div>
         </div>

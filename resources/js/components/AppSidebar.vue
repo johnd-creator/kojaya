@@ -997,7 +997,11 @@ const navigationLabel = computed(() => {
     <SidebarHeader>
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" as-child>
+          <SidebarMenuButton
+            size="lg"
+            as-child
+            class="h-14 py-1.5 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
+          >
             <Link :href="logoHref" prefetch>
               <AppLogo />
             </Link>

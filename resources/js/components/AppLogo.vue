@@ -1,15 +1,11 @@
 <script setup lang="ts"></script>
 
 <template>
-  <img
-    src="/images/logo-white.png"
-    alt="KojayaPro"
-    class="size-8 shrink-0 object-contain"
-  />
-  <div class="ml-1 grid flex-1 text-left text-sm leading-tight">
-    <span class="truncate font-bold text-sidebar-primary">KojayaPro</span>
-    <span class="truncate text-xs text-sidebar-foreground/70"
-      >Sistem Koperasi KOJAYA</span
-    >
+  <div class="flex items-center">
+    <img
+      src="/images/logo_kjy2.png"
+      alt="KOJAYA"
+      class="h-10 w-auto max-w-[210px] object-contain object-left sm:h-11 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:max-w-none"
+    />
   </div>
 </template>

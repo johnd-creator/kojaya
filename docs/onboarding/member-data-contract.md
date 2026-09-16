@@ -1,13 +1,13 @@
-# Kojaya Member Data Contract — Canonical Onboarding Specification
+# Kojaya Member Data Contract — Canonical Onboarding Specification (ONB-01 FROZEN)
 
-Dokumen ini adalah **kontrak data anggota kanonikal final (ONB-01R2)** untuk seluruh ekosistem **Kojaya** (`johnd-creator/kojaya`), yang berfungsi sebagai **Single Source of Truth** bagi seluruh alur Onboarding Anggota (Fase 2):
+Dokumen ini adalah **kontrak data anggota kanonikal (ONB-01 FROZEN)** untuk seluruh ekosistem **Kojaya** (`johnd-creator/kojaya`), yang berfungsi sebagai **Single Source of Truth** bagi seluruh alur Onboarding Anggota (Fase 2):
 
 ```text
 Google Form (ONB-02)
         ↓
 Admin Verification (ONB-03)
         ↓
-Canonical Import Template CSV/Excel (ONB-01R2)
+Canonical Import Template CSV/Excel (ONB-01 Frozen)
         ↓
 Backend Import Validator (ONB-04)
         ↓
@@ -32,11 +32,11 @@ Pemeriksaan repositori membuktikan bahwa data anggota di Kojaya terdistribusi pa
 
 | Tabel | Model Eloquent | Peran dalam Domain Anggota |
 | :--- | :--- | :--- |
-| `cooperative_members` | [`CooperativeMember`](file:///home/john-d/Pictures/kojaya/app/Models/CooperativeMember.php) | **Tabel utama profil keanggotaan koperasi**, menyimpan status, kategori keanggotaan, histori approval, data demografi, data rekening, limit kredit POS, dan metadata enkripsi PII. |
-| `users` | [`User`](file:///home/john-d/Pictures/kojaya/app/Models/User.php) | **Akun otentikasi login**, menyimpan email, password hash, role Spatie (`Anggota`), dan status verifikasi email. Terhubung 1-ke-1 secara unik (`cooperative_members.user_id` UNIQUE). |
-| `social_accounts` | [`SocialAccount`](file:///home/john-d/Pictures/kojaya/app/Models/SocialAccount.php) | **Identitas OAuth pihak ketiga (Google SSO)**, menyimpan `provider`, `provider_id` (Google Subject ID / `sub`), `provider_email`, token, dan jejak waktu login. Terhubung ke `users.id`. |
-| `employees` | [`Employee`](file:///home/john-d/Pictures/kojaya/app/Models/Employee.php) | **Data kepegawaian perusahaan induk**, menyimpan `employee_code` (NIP), departemen, jabatan, dan shift. Terhubung opsional ke `cooperative_members.employee_id`. |
-| `organizations` | [`Organization`](file:///home/john-d/Pictures/kojaya/app/Models/Organization.php) | **Organisasi/cabang koperasi**, menjaga multi-tenant / organization isolation. Setiap anggota wajib terikat ke `organization_id` (default Head Office `KOP-001`). |
+| `cooperative_members` | [`CooperativeMember`](../../app/Models/CooperativeMember.php) | **Tabel utama profil keanggotaan koperasi**, menyimpan status, kategori keanggotaan, histori approval, data demografi, data rekening, limit kredit POS, dan metadata enkripsi PII. |
+| `users` | [`User`](../../app/Models/User.php) | **Akun otentikasi login**, menyimpan email, password hash, role Spatie (`Anggota`), dan status verifikasi email. Terhubung 1-ke-1 secara unik (`cooperative_members.user_id` UNIQUE). |
+| `social_accounts` | [`SocialAccount`](../../app/Models/SocialAccount.php) | **Identitas OAuth pihak ketiga (Google SSO)**, menyimpan `provider`, `provider_id` (Google Subject ID / `sub`), `provider_email`, token, dan jejak waktu login. Terhubung ke `users.id`. |
+| `employees` | [`Employee`](../../app/Models/Employee.php) | **Data kepegawaian perusahaan induk**, menyimpan `employee_code` (NIP), departemen, jabatan, dan shift. Terhubung opsional ke `cooperative_members.employee_id`. |
+| `organizations` | [`Organization`](../../app/Models/Organization.php) | **Organisasi/cabang koperasi**, menjaga multi-tenant / organization isolation. Setiap anggota wajib terikat ke `organization_id` (default Head Office `KOP-001`). |
 | `member_onboarding_progress` | `MemberOnboardingProgress` | **Pelacak checklist onboarding di portal anggota**, mencatat milestone pengisian profil, KYC, simpanan pertama, dsb. |
 | `cooperative_member_documents` | `CooperativeMemberDocument` | **Lampiran dokumen fisik/digital** (foto KTP, KK, formulir bertanda tangan). |
 | `member_store_accounts` | `MemberStoreAccount` | **Akun kredit toko/POS anggota**, mencatat limit belanja dan saldo tertunggak. |
@@ -117,7 +117,7 @@ Berikut adalah inventarisasi seluruh 63 kolom pada tabel `cooperative_members` b
 
 ## 2. Klasifikasi Siklus Hidup Field (Field Lifecycle Classification)
 
-Berdasarkan keputusan Senior Review (ONB-01R1 & ONB-01R2), setiap field dalam domain anggota dibagi secara tegas ke dalam 6 kelompok fungsional tanpa tumpang-tindih:
+Berdasarkan pembekuan kontrak kanonikal (ONB-01 Frozen), setiap field dalam domain anggota dibagi secara tegas ke dalam 6 kelompok fungsional tanpa tumpang-tindih:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -252,7 +252,7 @@ Field-field berikut secara eksplisit **dikeluarkan dari payload impor awal Fase 
 - `birth_date` (`tanggal_lahir`)
 - `job_title` (`pekerjaan`)
 
-*Alasan*: Field ini tidak memblokir pembentukan identitas autentikasi maupun keabsahan pendaftaran anggota. Anggota dapat melengkapinya secara mandiri di portal Kojayaku ([`/member/profile`](file:///home/john-d/Pictures/kojaya/resources/js/pages/Kojayaku/Profile.vue)) setelah status aktif.
+*Alasan*: Field ini tidak memblokir pembentukan identitas autentikasi maupun keabsahan pendaftaran anggota. Anggota dapat melengkapinya secara mandiri di portal Kojayaku ([`/member/profile`](../../resources/js/pages/Kojayaku/Profile.vue)) setelah status aktif.
 
 ### 6.2 `FINANCIAL_MIGRATION` (Dialihkan ke Fase 9)
 - `npwp` (Nomor Pokok Wajib Pajak)
@@ -283,7 +283,7 @@ Tabel evaluasi kepatuhan data minimisasi untuk seluruh atribut identitas sensiti
 
 ## 8. Arsitektur Otentikasi & Kontrak Google SSO (Authentication Contract)
 
-Berdasarkan keputusan Senior Review (ONB-01R2), terminologi dan alur otentikasi dibekukan (*frozen*) sebagai berikut:
+Berdasarkan pembekuan kontrak kanonikal (ONB-01 Frozen), terminologi dan alur otentikasi dibekukan (*frozen*) sebagai berikut:
 
 ### 8.1 Terminologi Kunci Identitas
 
@@ -390,11 +390,11 @@ Sebelum validator impor (ONB-04) menerima data mentah, normalisasi deterministik
 ### 9.4 Normalisasi Nomor Anggota (`no_anggota`)
 1. `trim()` dan `strtoupper()`.
 2. Format standar: `KOP-` diikuti digit dengan *zero-padding* 3 digit atau lebih (misal `KOP-001`, `KOP-042`).
-3. Jika kosong saat proses impor, sistem men-generate otomatis dari urutan tertinggi berikutnya via [`MemberNumberGenerator`](file:///home/john-d/Pictures/kojaya/app/Services/Cooperative/MemberNumberGenerator.php).
+3. Jika kosong saat proses impor, sistem men-generate otomatis dari urutan tertinggi berikutnya via [`MemberNumberGenerator`](../../app/Services/Cooperative/MemberNumberGenerator.php).
 
 ### 9.5 Normalisasi Tanggal (`YYYY-MM-DD`)
 1. Format kanonikal tunggal: **`YYYY-MM-DD`** (ISO 8601).
-2. Jika sumber data berupa serial date Excel (misal nilai numerik `45292`), konversi via parser Excel date ([`PhpSpreadsheet Date`](file:///home/john-d/Pictures/kojaya/app/Http/Requests/Cooperative/StoreCooperativeMemberRequest.php#L35-L42)).
+2. Jika sumber data berupa serial date Excel (misal nilai numerik `45292`), konversi via parser Excel date ([`PhpSpreadsheet Date`](../../app/Http/Requests/Cooperative/StoreCooperativeMemberRequest.php#L35-L42)).
 3. Hindari ambiguitas format `DD/MM/YYYY` vs `MM/DD/YYYY`.
 4. *Hasil*: `15/01/1990` → `1990-01-15`.
 
@@ -442,7 +442,7 @@ Repository Kojaya memiliki dua kolom status yang saling melengkapi pada tabel `c
 ```
 
 ### 10.2 Aturan Maker-Checker (Pemisahan Kewenangan)
-Sesuai implementasi [`MemberValidationService::assertApproverIsNotVerifier()`](file:///home/john-d/Pictures/kojaya/app/Services/Cooperative/MemberValidationService.php#L120):
+Sesuai implementasi [`MemberValidationService::assertApproverIsNotVerifier()`](../../app/Services/Cooperative/MemberValidationService.php#L120):
 - **Admin Koperasi** (Verifier): Memiliki izin `verify_cooperative_member`, memeriksa kelengkapan identitas, memverifikasi NIK/KK, dan mengubah status ke `PENDING_VALIDATION`.
 - **Pengurus Koperasi / System Admin** (Approver): Memiliki izin `approve_cooperative_member`, memberikan persetujuan final, mengaktifkan status ke `ACTIVE`, dan memberikan role `'Anggota'`.
 - **Aturan Tegas**: Pengguna yang bertindak sebagai Admin Verifier **DILARANG MERANGKAP** sebagai Pengurus Approver untuk anggota yang sama (`approved_by != admin_validated_by`).
@@ -483,7 +483,7 @@ Evaluasi kesiapan setiap field kanonikal Fase 2 untuk diimplementasikan pada val
 | `full_name` | `CORE_ONBOARDING` | YA (`nama_anggota`, `name`) | YA (`StoreCooperativeMemberRequest`) | YA | TIDAK | **READY** |
 | `email` | `CORE_ONBOARDING` | YA (`users.email`, `cooperative_members.email`) | YA (`StoreCooperativeMemberRequest`) | YA | TIDAK | **READY** |
 | `phone_number` | `CORE_ONBOARDING` | YA (`no_telp`, `phone`) | YA (`StoreCooperativeMemberRequest`) | YA | TIDAK | **READY** |
-| `identity_number` | `CORE_ONBOARDING` | YA (`identity_number` + enc/bidx) | YA ([`PiiCryptoService`](file:///home/john-d/Pictures/kojaya/app/Services/Security/PiiCryptoService.php)) | YA (Masked) | TIDAK | **READY** |
+| `identity_number` | `CORE_ONBOARDING` | YA (`identity_number` + enc/bidx) | YA ([`PiiCryptoService`](../../app/Services/Security/PiiCryptoService.php)) | YA (Masked) | TIDAK | **READY** |
 | `gender` | `CORE_ONBOARDING` | YA (`jenis_kelamin`: `L,P`) | YA (`StoreCooperativeMemberRequest`) | YA | TIDAK | **READY** |
 | `company_code` | `CORE_ONBOARDING` | YA (`kategori`: `IP,CDB,KOP`) | YA (`StoreCooperativeMemberRequest`) | YA | TIDAK | **READY** |
 | `employee_number` | `ADMIN_ENRICHMENT` | MAPPED (`employees.employee_code`) | YA di modul Employee | YA di Employee | TIDAK (Gunakan relasi) | **READY (Via Relasi)** |

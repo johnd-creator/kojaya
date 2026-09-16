@@ -231,4 +231,98 @@ class CooperativeMemberValidationTest extends TestCase
             ->post(route('cooperative.members.validate', $member))
             ->assertStatus(409);
     }
+
+    public function test_same_actor_cannot_final_approve_member_they_verified(): void
+    {
+        $actor = User::factory()->create();
+        $actor->assignRole('Pengurus Koperasi');
+        $actor->givePermissionTo('approve_cooperative_member');
+        $actor->givePermissionTo('verify_cooperative_member');
+
+        $member = CooperativeMember::factory()->create([
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+            'admin_validated_at' => now(),
+            'admin_validated_by' => $actor->id,
+        ]);
+        $actor->forceFill(['organization_id' => $member->organization_id])->save();
+
+        $this->actingAs($actor)
+            ->post(route('cooperative.members.approve-final', $member))
+            ->assertSessionHasErrors('approved_by');
+
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $member->fresh()->validation_status);
+        $this->assertNull($member->fresh()->validated_at);
+    }
+
+    public function test_system_admin_cannot_final_approve_member_they_verified(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('System Admin');
+
+        $member = CooperativeMember::factory()->create([
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+            'admin_validated_at' => now(),
+            'admin_validated_by' => $admin->id,
+        ]);
+        $admin->forceFill(['organization_id' => $member->organization_id])->save();
+
+        $this->actingAs($admin)
+            ->post(route('cooperative.members.approve-final', $member))
+            ->assertSessionHasErrors('approved_by');
+
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $member->fresh()->validation_status);
+        $this->assertNull($member->fresh()->validated_at);
+    }
+
+    public function test_admin_verification_and_approval_produces_audit_logs(): void
+    {
+        $admin = User::factory()->create();
+        $admin->givePermissionTo('verify_cooperative_member');
+
+        $pengurus = User::factory()->create();
+        $pengurus->assignRole('Pengurus Koperasi');
+        $pengurus->givePermissionTo('approve_cooperative_member');
+
+        $user = User::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $admin->forceFill(['organization_id' => $member->organization_id])->save();
+        $pengurus->forceFill(['organization_id' => $member->organization_id])->save();
+
+        // 1. Admin verification
+        $this->actingAs($admin)
+            ->post(route('cooperative.members.validate', $member), [
+                'notes' => 'Verifikasi berkas administratif pelamar valid.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'member.status.transitioned',
+            'module' => 'cooperative.lifecycle',
+            'user_id' => $admin->id,
+        ]);
+
+        // 2. Final Approval by different user (Pengurus)
+        $this->actingAs($pengurus)
+            ->post(route('cooperative.members.approve-final', $member), [
+                'notes' => 'Persetujuan akhir keanggotaan disetujui Pengurus.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'member.status.transitioned',
+            'module' => 'cooperative.lifecycle',
+            'user_id' => $pengurus->id,
+        ]);
+
+        $fresh = $member->fresh();
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
+    }
 }

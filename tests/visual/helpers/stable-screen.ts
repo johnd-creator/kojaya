@@ -16,6 +16,9 @@ const stabilityStyles = `
     img[alt="KojayaPro"] + div > span:first-child {
         text-rendering: geometricPrecision !important;
     }
+    img[alt="KOJAYA"] {
+        image-rendering: -webkit-optimize-contrast !important;
+    }
 `;
 
 const deterministicFontWeights = ["400", "500", "600"] as const;
@@ -62,6 +65,47 @@ async function installDeterministicFonts(page: Page): Promise<void> {
             contentType: "font/woff2",
             body,
         });
+    });
+}
+
+const deterministicImages = [
+    "logo_kjy2.png",
+    "logo_kjy.png",
+    "logo.png",
+    "logo-white.png",
+    "bg-login.png",
+] as const;
+
+async function installDeterministicImages(page: Page): Promise<void> {
+    const imageAssets = new Map(
+        await Promise.all(
+            deterministicImages.map(async (filename) => {
+                const buffer = await fs
+                    .readFile(path.resolve("public/images", filename))
+                    .catch(() => null);
+                return [filename, buffer] as const;
+            }),
+        ),
+    );
+
+    await page.route(/\/images\/([^?#]+)$/, async (route) => {
+        const match = route.request().url().match(/\/images\/([^?#]+)$/);
+        const filename = match ? match[1] : undefined;
+        const body = filename ? imageAssets.get(filename as typeof deterministicImages[number]) : undefined;
+
+        if (body) {
+            await route.fulfill({
+                status: 200,
+                contentType: filename?.endsWith(".png") ? "image/png" : "image/jpeg",
+                headers: {
+                    "cache-control": "public, max-age=31536000, immutable",
+                },
+                body,
+            });
+            return;
+        }
+
+        await route.continue();
     });
 }
 
@@ -134,6 +178,7 @@ async function waitForExpectedContent(page: Page, screenId: string): Promise<voi
 
 export async function installStableEnvironment(page: Page): Promise<void> {
     await installDeterministicFonts(page);
+    await installDeterministicImages(page);
 
     await page.addInitScript(({ now, css }: { now: string; css: string }) => {
         const RealDate = Date;
@@ -195,7 +240,15 @@ export async function waitForStableScreen(
     const loading = page.locator('[aria-busy="true"], [data-loading="true"], [data-inertia-loading="true"]');
     await loading.first().waitFor({ state: "hidden", timeout: 10_000 }).catch(() => undefined);
 
-    await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete), null, {
+    await page.waitForFunction(() => {
+        return Array.from(document.images).every((image) => {
+            if (!image.src) {
+                return true;
+            }
+
+            return image.complete && image.naturalWidth > 0;
+        });
+    }, null, {
         timeout: 10_000,
         polling: 100,
     }).catch(() => {
@@ -215,6 +268,11 @@ export async function waitForStableScreen(
             }
         }));
     });
+
+    const logo = page.locator('img[alt="KOJAYA"]');
+    if ((await logo.count()) > 0) {
+        await logo.first().waitFor({ state: "visible", timeout: 10_000 }).catch(() => undefined);
+    }
 
     if (options.readyLocator) {
         await options.readyLocator.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {

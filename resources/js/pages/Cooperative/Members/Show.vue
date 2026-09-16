@@ -37,10 +37,7 @@ import StatusPill from "@/components/dashboard/StatusPill.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -104,10 +101,25 @@ const reviewProcessing = ref(false);
 const deleteDialogOpen = ref(false);
 
 const savingCategories = [
-  { key: "POKOK", label: "Simpanan Pokok", icon: WalletCards, tone: "emerald" as Tone },
+  {
+    key: "POKOK",
+    label: "Simpanan Pokok",
+    icon: WalletCards,
+    tone: "emerald" as Tone,
+  },
   { key: "WAJIB", label: "Simpanan Wajib", icon: Wallet, tone: "sky" as Tone },
-  { key: "SUKARELA", label: "Simpanan Sukarela", icon: PiggyBank, tone: "violet" as Tone },
-  { key: "KHUSUS", label: "Simpanan Khusus", icon: Banknote, tone: "amber" as Tone },
+  {
+    key: "SUKARELA",
+    label: "Simpanan Sukarela",
+    icon: PiggyBank,
+    tone: "violet" as Tone,
+  },
+  {
+    key: "KHUSUS",
+    label: "Simpanan Khusus",
+    icon: Banknote,
+    tone: "amber" as Tone,
+  },
 ];
 
 const memberName = computed(
@@ -198,6 +210,16 @@ const isAdminVerificationReady = computed(
 );
 const isFinalApprovalReady = computed(
   () => props.member.validation_status === "PENDING_VALIDATION",
+);
+const canDeactivateLifecycle = computed(
+  () =>
+    props.member.status === "ACTIVE" &&
+    props.member.validation_status === "ACTIVE",
+);
+const canActivateLifecycle = computed(
+  () =>
+    props.member.status === "INACTIVE" &&
+    props.member.validation_status === "INACTIVE",
 );
 
 const jenisKelaminMap: Record<string, string> = {
@@ -346,10 +368,7 @@ const kpiCards = computed(() => [
 ]);
 
 const showKategori = computed(() => formatKategori(props.member.kategori));
-const showJenis = computed(
-  () => props.member.jenis_anggota_label || "—",
-);
-
+const showJenis = computed(() => props.member.jenis_anggota_label || "—");
 </script>
 
 <template>
@@ -374,7 +393,9 @@ const showJenis = computed(
           class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
           aria-hidden="true"
         />
-        <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div
+          class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+        >
           <div class="flex items-start gap-4">
             <span
               :class="[
@@ -417,7 +438,9 @@ const showJenis = computed(
               >
                 {{ memberName }}
               </h1>
-              <div class="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <div
+                class="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400"
+              >
                 <span
                   class="inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 font-mono text-xs font-semibold text-zinc-700 ring-1 ring-inset ring-zinc-200/70 dark:bg-zinc-950/40 dark:text-zinc-200 dark:ring-zinc-800/60"
                 >
@@ -479,32 +502,30 @@ const showJenis = computed(
                 <template v-if="canManageMember">
                   <DropdownMenuSeparator />
                   <DropdownMenuItem as-child>
-                    <Link :href="`${index().url}/${props.member.id}/edit`" prefetch>
+                    <Link
+                      :href="`${index().url}/${props.member.id}/edit`"
+                      prefetch
+                    >
                       <Pencil class="mr-2 size-4" />
                       Edit anggota
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    v-if="props.member.status === 'ACTIVE'"
+                    v-if="canDeactivateLifecycle"
                     @click="deactivateMember"
                   >
                     <PowerOff class="mr-2 size-4" />
                     Nonaktifkan
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    v-else
+                    v-if="canActivateLifecycle"
                     @click="activateMember"
                   >
                     <Power class="mr-2 size-4 text-emerald-600" />
                     Aktifkan
                   </DropdownMenuItem>
                 </template>
-                <template
-                  v-if="
-                    canReviewMember &&
-                    (isAdminVerificationReady || isFinalApprovalReady)
-                  "
-                >
+                <template v-if="canReviewMember && isFinalApprovalReady">
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     data-test="member-revision"
@@ -608,7 +629,9 @@ const showJenis = computed(
                 <dd
                   class="mt-1.5 text-sm font-semibold text-zinc-950 dark:text-white"
                 >
-                  {{ formatMemberDate(member.tanggal_aktif || member.joined_at) }}
+                  {{
+                    formatMemberDate(member.tanggal_aktif || member.joined_at)
+                  }}
                 </dd>
               </div>
               <div
@@ -749,9 +772,7 @@ const showJenis = computed(
                 </p>
               </div>
             </div>
-            <div
-              class="grid grid-cols-2 gap-3"
-            >
+            <div class="grid grid-cols-2 gap-3">
               <div
                 class="rounded-xl border border-zinc-200/70 bg-zinc-50/60 p-3.5 dark:border-zinc-800/70 dark:bg-zinc-950/40"
               >
@@ -915,7 +936,9 @@ const showJenis = computed(
                   <th class="px-6 py-3 font-medium">Keterangan</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+              <tbody
+                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+              >
                 <tr
                   v-for="entry in recentSavingsEntries"
                   :key="entry.id"
@@ -932,9 +955,7 @@ const showJenis = computed(
                       :label="formatSavingEntryType(entry.entry_type)"
                     />
                   </td>
-                  <td
-                    class="px-6 py-3 text-zinc-600 dark:text-zinc-400"
-                  >
+                  <td class="px-6 py-3 text-zinc-600 dark:text-zinc-400">
                     {{
                       entry.contribution_type?.category ||
                       entry.category_snapshot ||
@@ -961,9 +982,7 @@ const showJenis = computed(
                     </span>
                     <span v-else class="text-zinc-400">—</span>
                   </td>
-                  <td
-                    class="px-6 py-3 text-zinc-600 dark:text-zinc-400"
-                  >
+                  <td class="px-6 py-3 text-zinc-600 dark:text-zinc-400">
                     {{ entry.description || "—" }}
                   </td>
                 </tr>
@@ -1004,7 +1023,9 @@ const showJenis = computed(
                   <th class="px-6 py-3 text-right font-medium">Nominal</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+              <tbody
+                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+              >
                 <tr
                   v-for="invoice in memberInvoices"
                   :key="invoice.id"
@@ -1068,9 +1089,7 @@ const showJenis = computed(
             <div>
               <DialogTitle>
                 {{
-                  reviewAction === "reject"
-                    ? "Tolak anggota"
-                    : "Minta revisi"
+                  reviewAction === "reject" ? "Tolak anggota" : "Minta revisi"
                 }}
               </DialogTitle>
               <DialogDescription>
@@ -1110,9 +1129,7 @@ const showJenis = computed(
             :disabled="reviewNotes.trim().length < 5 || reviewProcessing"
             @click="submitReview"
           >
-            {{
-              reviewAction === "reject" ? "Tolak anggota" : "Kirim revisi"
-            }}
+            {{ reviewAction === "reject" ? "Tolak anggota" : "Kirim revisi" }}
           </Button>
         </DialogFooter>
       </DialogContent>

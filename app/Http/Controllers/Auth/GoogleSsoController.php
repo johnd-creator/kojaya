@@ -7,6 +7,7 @@ use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\LocalRedirectValidator;
 use App\Services\Auth\Sso\GoogleSsoService;
+use App\Services\Auth\Sso\MemberGoogleSsoMatchingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -97,20 +98,17 @@ class GoogleSsoController extends Controller
                 ->withErrors(['sso' => 'Login Google gagal diproses. Coba lagi.']);
         }
 
-        $email = (string) $googleUser->getEmail();
-
-        if ($email === '' || ! (bool) data_get($googleUser->user, 'email_verified')) {
+        $providerId = (string) $googleUser->getId();
+        if ($providerId === '') {
             $request->session()->forget(['google_sso_intent', 'google_sso_return_to']);
-            $this->googleSso->logFailure('email_unverified', [
-                'email' => $email,
-                'provider_id' => $googleUser->getId(),
-            ]);
+            $this->googleSso->logFailure('missing_provider_id', []);
 
             return redirect()->route('login')
-                ->withErrors(['sso' => 'Email Google belum terverifikasi. Gunakan akun lain.']);
+                ->withErrors(['sso' => 'Akun Google tidak memiliki ID yang valid.']);
         }
 
         if (! $this->googleSso->isHostedDomainAllowed($googleUser)) {
+            $email = (string) $googleUser->getEmail();
             $this->googleSso->logFailure('hosted_domain_denied', [
                 'email' => $email,
                 'hosted_domain' => data_get($googleUser->user, 'hd'),
@@ -150,13 +148,21 @@ class GoogleSsoController extends Controller
 
         if (! $resolution['user']) {
             $request->session()->forget(['google_sso_intent', 'google_sso_return_to']);
+            $reason = $resolution['reason'] ?? 'unknown';
+            $email = (string) $googleUser->getEmail();
+
             $this->googleSso->logFailure('resolution_failed', [
-                'reason' => $resolution['reason'] ?? 'unknown',
+                'reason' => $reason,
                 'email' => $email,
             ]);
 
+            if ($reason === MemberGoogleSsoMatchingService::CODE_EMAIL_NOT_VERIFIED) {
+                return redirect()->route('login')
+                    ->withErrors(['sso' => 'Email Google belum terverifikasi. Gunakan akun lain.']);
+            }
+
             return redirect()->route('login')
-                ->withErrors(['sso' => 'Akun Google ini tidak dapat digunakan untuk login.']);
+                ->withErrors(['sso' => 'Akun Google ini belum dapat dihubungkan ke akun anggota Kojaya. Silakan hubungi administrator koperasi.']);
         }
 
         $user = $resolution['user'];

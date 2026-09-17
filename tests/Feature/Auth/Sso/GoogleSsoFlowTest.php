@@ -60,35 +60,36 @@ class GoogleSsoFlowTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_callback_creates_pending_member_when_email_is_new(): void
+    public function test_callback_fails_closed_when_email_has_no_canonical_member(): void
     {
         $this->mockSocialite(googleId: '9001', email: 'new-member@example.com', verified: true);
 
         $response = $this->get(route('auth.google.callback'))
-            ->assertRedirect(route('member.onboarding'));
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
 
-        $user = User::query()->where('email', 'new-member@example.com')->firstOrFail();
-        $this->assertNotNull($user->cooperativeMember);
-        $this->assertNotNull($user->email_verified_at);
-        $this->assertFalse($user->hasRole('Anggota'));
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $user->cooperativeMember->validation_status);
-        $this->assertLessThanOrEqual(10, strlen($user->cooperativeMember->member_no));
-        $this->assertSame($user->cooperativeMember->member_no, $user->cooperativeMember->no_anggota);
-        $this->assertNotNull(SocialAccount::query()->where('provider', 'google')->where('provider_id', '9001')->first());
-
-        $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseMissing('users', ['email' => 'new-member@example.com']);
+        $this->assertDatabaseMissing('cooperative_members', ['email' => 'new-member@example.com']);
+        $this->assertDatabaseMissing('social_accounts', ['provider_id' => '9001']);
+        $this->assertGuest();
     }
 
-    public function test_callback_links_to_existing_user(): void
+    public function test_callback_logs_in_existing_bound_user(): void
     {
         $user = User::factory()->unverified()->create(['email' => 'returning@example.com']);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => '777',
+            'provider_email' => 'returning@example.com',
+        ]);
         $this->mockSocialite(googleId: '777', email: 'returning@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
             ->assertRedirect();
 
         $this->assertAuthenticatedAs($user);
-        $this->assertNotNull($user->fresh()->email_verified_at);
+        $this->assertNull($user->fresh()->email_verified_at);
         $this->assertDatabaseHas('social_accounts', [
             'user_id' => $user->id,
             'provider' => 'google',
@@ -96,13 +97,57 @@ class GoogleSsoFlowTest extends TestCase
         ]);
     }
 
-    public function test_callback_links_to_existing_member(): void
+    public function test_callback_logs_in_existing_bound_user_even_if_google_email_unverified(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'unverified-returning@example.com']);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'unverified-777',
+            'provider_email' => 'unverified-returning@example.com',
+        ]);
+        $this->mockSocialite(googleId: 'unverified-777', email: 'unverified-returning@example.com', verified: false);
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_callback_rejects_unbound_user_when_google_email_unverified(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'user_id' => null,
+            'email' => 'unbound-unverified@example.com',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+        $this->mockSocialite(googleId: 'unbound-unverified-id', email: 'unbound-unverified@example.com', verified: false);
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
+
+        $this->assertGuest();
+        $this->assertNull($member->fresh()->user_id);
+        $this->assertDatabaseMissing('users', ['email' => 'unbound-unverified@example.com']);
+    }
+
+    public function test_callback_logs_in_existing_bound_member(): void
     {
         $user = User::factory()->create(['email' => 'member@example.com']);
+        $user->assignRole('Anggota');
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'email' => 'member@example.com',
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => '4242',
+            'provider_email' => 'member@example.com',
         ]);
         $this->mockSocialite(googleId: '4242', email: 'member@example.com', verified: true);
 
@@ -120,21 +165,34 @@ class GoogleSsoFlowTest extends TestCase
         $this->assertNotNull($audit);
     }
 
-    public function test_callback_does_not_auto_link_existing_member_without_user_account(): void
+    public function test_callback_first_time_matches_eligible_canonical_member(): void
     {
         $member = CooperativeMember::factory()->create([
             'user_id' => null,
             'email' => 'unlinked-member@example.com',
+            'nama_anggota' => 'Budi Anggota',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
         $this->mockSocialite(googleId: 'unlinked-member', email: 'unlinked-member@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
-            ->assertRedirect(route('login'))
-            ->assertSessionHasErrors('sso');
+            ->assertRedirect(route('member.onboarding'));
 
-        $this->assertDatabaseMissing('users', ['email' => 'unlinked-member@example.com']);
+        $this->assertAuthenticated();
+        $user = User::query()->where('email', 'unlinked-member@example.com')->firstOrFail();
+        $this->assertSame('Budi Anggota', $user->name);
+        $this->assertTrue($user->hasRole('Anggota'));
+        $this->assertSame($user->id, $member->fresh()->user_id);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->validation_status);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'unlinked-member',
+        ]);
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'sso.google.manual_member_link_required',
+            'action' => 'member.google_sso_linked',
         ]);
     }
 
@@ -206,6 +264,12 @@ class GoogleSsoFlowTest extends TestCase
     public function test_callback_accepts_email_inside_allowed_hosted_domains(): void
     {
         config()->set('services.google.hosted_domains', ['kojaya.co.id']);
+        CooperativeMember::factory()->create([
+            'user_id' => null,
+            'email' => 'member@kojaya.co.id',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
         $this->mockSocialite(googleId: 'domain-ok', email: 'member@kojaya.co.id', verified: true);
 
         $this->get(route('auth.google.callback'))
@@ -235,6 +299,45 @@ class GoogleSsoFlowTest extends TestCase
             'user_id' => $user->id,
             'provider' => 'google',
             'provider_id' => 'link-123',
+        ]);
+    }
+
+    public function test_authenticated_user_linking_different_email_does_not_verify_user_email(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'local-user@example.com']);
+        $this->mockSocialite(googleId: 'link-diff-456', email: 'different-google@example.com', verified: true);
+
+        $this->actingAs($user)
+            ->withSession(['google_sso_intent' => 'link', 'google_sso_return_to' => route('profile.edit', absolute: false)])
+            ->get(route('auth.google.callback'))
+            ->assertRedirect(route('profile.edit', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'link-diff-456',
+            'provider_email' => 'different-google@example.com',
+        ]);
+    }
+
+    public function test_authenticated_user_linking_unverified_matching_email_does_not_verify_user_email(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'unverified-match@example.com']);
+        $this->mockSocialite(googleId: 'link-unverified-789', email: 'unverified-match@example.com', verified: false);
+
+        $this->actingAs($user)
+            ->withSession(['google_sso_intent' => 'link', 'google_sso_return_to' => route('profile.edit', absolute: false)])
+            ->get(route('auth.google.callback'))
+            ->assertRedirect(route('profile.edit', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'link-unverified-789',
         ]);
     }
 
@@ -287,6 +390,12 @@ class GoogleSsoFlowTest extends TestCase
             'user_id' => $user->id,
             'email' => 'member-mobile@example.com',
         ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'mobile-google-123',
+            'provider_email' => 'member-mobile@example.com',
+        ]);
         $keyPair = $this->fakeRsaJwk();
         $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
             'sub' => 'mobile-google-123',
@@ -310,7 +419,7 @@ class GoogleSsoFlowTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('token_type', 'Bearer')
             ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write'])
-            ->assertJsonPath('auth_result', 'login_linked')
+            ->assertJsonPath('auth_result', 'login_existing')
             ->assertJsonPath('member_status', 'ACTIVE')
             ->assertJsonPath('validation_status', 'ACTIVE')
             ->assertJsonPath('onboarding_next_step', 'dashboard');
@@ -361,6 +470,12 @@ class GoogleSsoFlowTest extends TestCase
             'user_id' => $user->id,
             'email' => 'jwks-member@example.com',
         ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'jwks-google-123',
+            'provider_email' => 'jwks-member@example.com',
+        ]);
         $keyPair = $this->fakeRsaJwk();
         $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
             'sub' => 'jwks-google-123',
@@ -387,8 +502,131 @@ class GoogleSsoFlowTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('token_type', 'Bearer')
             ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write'])
-            ->assertJsonPath('auth_result', 'login_linked')
+            ->assertJsonPath('auth_result', 'login_existing')
             ->assertJsonPath('user.email', 'jwks-member@example.com');
+    }
+
+    public function test_mobile_google_login_resolves_first_time_match_and_returns_login_linked(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'user_id' => null,
+            'nama_anggota' => 'Mobile First Member',
+            'email' => 'mobile-first@example.com',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'mobile-first-999',
+            'email' => 'mobile-first@example.com',
+            'email_verified' => true,
+            'name' => 'Mobile First Member',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ])->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('abilities', ['profile:read', 'member:read', 'member:write'])
+            ->assertJsonPath('auth_result', 'login_linked')
+            ->assertJsonPath('member_status', 'PENDING')
+            ->assertJsonPath('validation_status', 'PENDING')
+            ->assertJsonPath('onboarding_next_step', 'waiting_admin_acceptance');
+
+        $user = User::query()->where('email', 'mobile-first@example.com')->firstOrFail();
+        $this->assertSame($user->id, $member->fresh()->user_id);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'mobile-first-999',
+        ]);
+    }
+
+    public function test_mobile_google_login_allows_existing_member_even_if_google_email_unverified(): void
+    {
+        $user = User::factory()->create(['email' => 'existing-mobile-unverified@example.com']);
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create([
+            'user_id' => $user->id,
+            'email' => 'existing-mobile-unverified@example.com',
+        ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'mobile-exist-unverified-id',
+            'provider_email' => 'existing-mobile-unverified@example.com',
+        ]);
+
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'mobile-exist-unverified-id',
+            'email' => 'existing-mobile-unverified@example.com',
+            'email_verified' => false,
+            'name' => 'Existing Member',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ])->assertOk()
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('auth_result', 'login_existing');
+    }
+
+    public function test_mobile_google_login_rejects_unverified_email_when_first_time_matching(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'user_id' => null,
+            'email' => 'mobile-unverified-first@example.com',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'mobile-unverified-first-id',
+            'email' => 'mobile-unverified-first@example.com',
+            'email_verified' => false,
+            'name' => 'Unverified First Member',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ])->assertUnprocessable()
+            ->assertJsonPath('message', 'Email Google tidak valid atau belum terverifikasi.');
+
+        $this->assertNull($member->fresh()->user_id);
+        $this->assertDatabaseMissing('users', ['email' => 'mobile-unverified-first@example.com']);
     }
 
     protected function mockSocialite(string $googleId, string $email, bool $verified): void

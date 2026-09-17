@@ -151,22 +151,24 @@ class AuthController extends Controller
             return $payload;
         }
 
-        // email_verified can be boolean or string 'true' in response
-        $emailVerified = data_get($payload, 'email_verified');
-        if (empty($payload['email']) || ($emailVerified !== true && $emailVerified !== 'true')) {
+        $sub = (string) ($payload['sub'] ?? '');
+        if ($sub === '') {
             return response()->json([
-                'message' => 'Email Google tidak valid atau belum terverifikasi.',
+                'message' => 'Token Google tidak valid atau tidak memiliki sub/provider ID.',
             ], 422);
         }
 
-        $sub = $payload['sub'] ?? '';
-        $email = $payload['email'];
+        // email_verified can be boolean or string 'true' in response
+        $rawEmailVerified = data_get($payload, 'email_verified');
+        $emailVerified = ($rawEmailVerified === true || $rawEmailVerified === 'true');
+
+        $email = (string) ($payload['email'] ?? '');
         $name = $payload['name'] ?? 'Anggota Baru';
         $picture = $payload['picture'] ?? null;
         $hd = $payload['hd'] ?? null;
 
         // Wrap the payload into a Laravel Socialite User object structure for compatibility
-        $socialiteUser = new class($sub, $name, $email, $picture, $hd) implements \Laravel\Socialite\Contracts\User
+        $socialiteUser = new class($sub, $name, $email, $picture, $hd, $emailVerified) implements \Laravel\Socialite\Contracts\User
         {
             public $user;
 
@@ -175,9 +177,13 @@ class AuthController extends Controller
                 private $name,
                 private $email,
                 private $avatar,
-                $hd
+                $hd,
+                $emailVerified = true
             ) {
-                $this->user = ['hd' => $hd];
+                $this->user = [
+                    'hd' => $hd,
+                    'email_verified' => (bool) $emailVerified,
+                ];
             }
 
             public function getId()
@@ -225,14 +231,21 @@ class AuthController extends Controller
         $resolution = $googleSso->resolveUserFromGoogle($socialiteUser);
 
         if (! $resolution['user']) {
+            $reason = $resolution['reason'] ?? null;
             $googleSso->logFailure('resolution_failed', [
                 'provider_id' => $sub,
                 'email' => $email,
-                'reason' => $resolution['reason'] ?? null,
+                'reason' => $reason,
             ]);
 
+            if ($reason === \App\Services\Auth\Sso\MemberGoogleSsoMatchingService::CODE_EMAIL_NOT_VERIFIED) {
+                return response()->json([
+                    'message' => 'Email Google tidak valid atau belum terverifikasi.',
+                ], 422);
+            }
+
             return response()->json([
-                'message' => 'Akun Google ini tidak dapat digunakan untuk login.',
+                'message' => 'Akun Google ini belum dapat dihubungkan ke akun anggota Kojaya. Silakan hubungi administrator koperasi.',
             ], 422);
         }
 

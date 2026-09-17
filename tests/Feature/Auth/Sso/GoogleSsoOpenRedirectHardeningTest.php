@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth\Sso;
 
 use App\Models\CooperativeMember;
+use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -237,6 +238,12 @@ class GoogleSsoOpenRedirectHardeningTest extends TestCase
     public function test_ordinary_google_login_blocks_poisoned_intended_url(): void
     {
         $user = User::factory()->create(['email' => 'returning@example.com']);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'login-301',
+            'provider_email' => 'returning@example.com',
+        ]);
         $this->mockSocialite(googleId: 'login-301', email: 'returning@example.com', verified: true);
 
         $response = $this->withSession([
@@ -252,6 +259,12 @@ class GoogleSsoOpenRedirectHardeningTest extends TestCase
     public function test_ordinary_google_login_allows_valid_local_intended_url(): void
     {
         $user = User::factory()->create(['email' => 'returning@example.com']);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'login-302',
+            'provider_email' => 'returning@example.com',
+        ]);
         $this->mockSocialite(googleId: 'login-302', email: 'returning@example.com', verified: true);
 
         $response = $this->withSession([
@@ -270,6 +283,12 @@ class GoogleSsoOpenRedirectHardeningTest extends TestCase
             'email' => 'pending-member@example.com',
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
+        SocialAccount::factory()->create([
+            'user_id' => $pendingUser->id,
+            'provider' => 'google',
+            'provider_id' => 'status-1',
+            'provider_email' => 'pending-member@example.com',
+        ]);
         $this->mockSocialite(googleId: 'status-1', email: 'pending-member@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
@@ -283,6 +302,12 @@ class GoogleSsoOpenRedirectHardeningTest extends TestCase
             'user_id' => $activeUser->id,
             'email' => 'active-member@example.com',
         ]);
+        SocialAccount::factory()->create([
+            'user_id' => $activeUser->id,
+            'provider' => 'google',
+            'provider_id' => 'status-2',
+            'provider_email' => 'active-member@example.com',
+        ]);
         $this->mockSocialite(googleId: 'status-2', email: 'active-member@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
@@ -293,6 +318,12 @@ class GoogleSsoOpenRedirectHardeningTest extends TestCase
     {
         $adminUser = User::factory()->create(['email' => 'admin-coop@example.com']);
         $adminUser->givePermissionTo('view_cooperative_member');
+        SocialAccount::factory()->create([
+            'user_id' => $adminUser->id,
+            'provider' => 'google',
+            'provider_id' => 'status-3',
+            'provider_email' => 'admin-coop@example.com',
+        ]);
         $this->mockSocialite(googleId: 'status-3', email: 'admin-coop@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
@@ -302,6 +333,12 @@ class GoogleSsoOpenRedirectHardeningTest extends TestCase
     public function test_ordinary_google_login_routes_default_user_to_dashboard(): void
     {
         $defaultUser = User::factory()->create(['email' => 'default-user@example.com']);
+        SocialAccount::factory()->create([
+            'user_id' => $defaultUser->id,
+            'provider' => 'google',
+            'provider_id' => 'status-4',
+            'provider_email' => 'default-user@example.com',
+        ]);
         $this->mockSocialite(googleId: 'status-4', email: 'default-user@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))

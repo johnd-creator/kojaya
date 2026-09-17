@@ -13,6 +13,7 @@
             <file>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</file>
             <file>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</file>
             <file>tests/Feature/Cooperative/MemberImportConcurrencyTest.php</file>
+            <file>tests/Feature/Auth/Sso/GoogleSsoMemberMatchingConcurrencyTest.php</file>
         </testsuite>
         <testsuite name="Document05PostgreSQL">
             <file>tests/Feature/Auth/AuthAuditActorIdentityTest.php</file>

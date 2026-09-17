@@ -28,6 +28,7 @@ const manualScenarioIds = new Set([
     "admin-members-index-default",
     "admin-members-index-pending-filter",
     "admin-members-index-no-results",
+    "members-import-default",
     "admin-members-show-pending-review",
     "admin-members-show-revision",
     "admin-members-show-active",

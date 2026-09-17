@@ -24,6 +24,7 @@ import {
   Settings2,
   ShieldCheck,
   Trash2,
+  Upload,
   UserCheck,
   UserCog,
   UserPlus,
@@ -679,6 +680,14 @@ const kpiCards = computed(() => [
               <Download class="size-4" />
               Export Excel
             </a>
+            <Link
+              v-if="canManageMember"
+              href="/cooperative/members/import"
+              class="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white/80 px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm shadow-zinc-950/5 backdrop-blur transition hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            >
+              <Upload class="size-4" />
+              Import Anggota
+            </Link>
             <Button
               v-if="canManageMember"
               size="lg"

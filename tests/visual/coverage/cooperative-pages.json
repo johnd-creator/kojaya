@@ -220,6 +220,24 @@
       "accessibility": true
     },
     {
+      "id": "members-import-default",
+      "module": "members",
+      "screen": "import",
+      "route_name": "cooperative.members.import",
+      "path_template": "/cooperative/members/import",
+      "role": "Admin Koperasi",
+      "auth_state": "admin",
+      "state": "default",
+      "viewport_policy": ["desktop"],
+      "fixture": "module-default",
+      "ready_locator": "role=heading",
+      "goal": "Meninjau halaman import anggota",
+      "primary_actions": ["Meninjau panduan import", "Mengunggah berkas CSV"],
+      "risk_level": "operational",
+      "visual": true,
+      "accessibility": false
+    },
+    {
       "id": "members-resignations-index-default",
       "module": "members",
       "screen": "members-resignations",

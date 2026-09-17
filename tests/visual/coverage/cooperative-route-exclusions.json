@@ -1,16 +1,21 @@
 {
   "version": 1,
   "entries": [
-  {
-    "route_name": "cooperative.members.export",
-    "reason": "File download endpoint; no HTML/Inertia surface",
-    "category": "download"
-  },
-  {
-    "route_name": "cooperative.members.account-link.candidates",
-    "reason": "JSON candidate lookup endpoint used by account-link UI; no HTML/Inertia surface",
-    "category": "api-json"
-  },
+    {
+      "route_name": "cooperative.members.export",
+      "reason": "File download endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
+      "route_name": "cooperative.members.import.template",
+      "reason": "Canonical CSV member import template download endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
+      "route_name": "cooperative.members.account-link.candidates",
+      "reason": "JSON candidate lookup endpoint used by account-link UI; no HTML/Inertia surface",
+      "category": "api-json"
+    },
     {
       "route_name": "cooperative.operator.approval-inbox",
       "reason": "JSON data endpoint consumed by the operator dashboard",

@@ -98,8 +98,9 @@ class GoogleSsoController extends Controller
         }
 
         $email = (string) $googleUser->getEmail();
+        $isEmailVerified = (bool) (data_get($googleUser->user, 'email_verified') ?? data_get($googleUser->user, 'verified_email') ?? false);
 
-        if ($email === '' || ! (bool) data_get($googleUser->user, 'email_verified')) {
+        if ($email === '' || ! $isEmailVerified) {
             $request->session()->forget(['google_sso_intent', 'google_sso_return_to']);
             $this->googleSso->logFailure('email_unverified', [
                 'email' => $email,
@@ -156,7 +157,7 @@ class GoogleSsoController extends Controller
             ]);
 
             return redirect()->route('login')
-                ->withErrors(['sso' => 'Akun Google ini tidak dapat digunakan untuk login.']);
+                ->withErrors(['sso' => 'Akun Google ini belum dapat dihubungkan ke akun anggota Kojaya. Silakan hubungi administrator koperasi.']);
         }
 
         $user = $resolution['user'];

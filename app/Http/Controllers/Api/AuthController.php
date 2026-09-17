@@ -166,7 +166,7 @@ class AuthController extends Controller
         $hd = $payload['hd'] ?? null;
 
         // Wrap the payload into a Laravel Socialite User object structure for compatibility
-        $socialiteUser = new class($sub, $name, $email, $picture, $hd) implements \Laravel\Socialite\Contracts\User
+        $socialiteUser = new class($sub, $name, $email, $picture, $hd, $emailVerified) implements \Laravel\Socialite\Contracts\User
         {
             public $user;
 
@@ -175,9 +175,13 @@ class AuthController extends Controller
                 private $name,
                 private $email,
                 private $avatar,
-                $hd
+                $hd,
+                $emailVerified = true
             ) {
-                $this->user = ['hd' => $hd];
+                $this->user = [
+                    'hd' => $hd,
+                    'email_verified' => (bool) $emailVerified,
+                ];
             }
 
             public function getId()
@@ -232,7 +236,7 @@ class AuthController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Akun Google ini tidak dapat digunakan untuk login.',
+                'message' => 'Akun Google ini belum dapat dihubungkan ke akun anggota Kojaya. Silakan hubungi administrator koperasi.',
             ], 422);
         }
 

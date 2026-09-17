@@ -18,6 +18,7 @@
             <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Backup/PostgresRestoreDrillTest.php</exclude>
             <exclude>tests/Feature/Cooperative/MemberImportConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Auth/Sso/GoogleSsoMemberMatchingConcurrencyTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>

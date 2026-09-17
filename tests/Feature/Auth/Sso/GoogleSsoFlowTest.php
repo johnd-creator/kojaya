@@ -60,28 +60,29 @@ class GoogleSsoFlowTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_callback_creates_pending_member_when_email_is_new(): void
+    public function test_callback_fails_closed_when_email_has_no_canonical_member(): void
     {
         $this->mockSocialite(googleId: '9001', email: 'new-member@example.com', verified: true);
 
         $response = $this->get(route('auth.google.callback'))
-            ->assertRedirect(route('member.onboarding'));
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
 
-        $user = User::query()->where('email', 'new-member@example.com')->firstOrFail();
-        $this->assertNotNull($user->cooperativeMember);
-        $this->assertNotNull($user->email_verified_at);
-        $this->assertFalse($user->hasRole('Anggota'));
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $user->cooperativeMember->validation_status);
-        $this->assertLessThanOrEqual(10, strlen($user->cooperativeMember->member_no));
-        $this->assertSame($user->cooperativeMember->member_no, $user->cooperativeMember->no_anggota);
-        $this->assertNotNull(SocialAccount::query()->where('provider', 'google')->where('provider_id', '9001')->first());
-
-        $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseMissing('users', ['email' => 'new-member@example.com']);
+        $this->assertDatabaseMissing('cooperative_members', ['email' => 'new-member@example.com']);
+        $this->assertDatabaseMissing('social_accounts', ['provider_id' => '9001']);
+        $this->assertGuest();
     }
 
-    public function test_callback_links_to_existing_user(): void
+    public function test_callback_logs_in_existing_bound_user(): void
     {
         $user = User::factory()->unverified()->create(['email' => 'returning@example.com']);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => '777',
+            'provider_email' => 'returning@example.com',
+        ]);
         $this->mockSocialite(googleId: '777', email: 'returning@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
@@ -96,13 +97,20 @@ class GoogleSsoFlowTest extends TestCase
         ]);
     }
 
-    public function test_callback_links_to_existing_member(): void
+    public function test_callback_logs_in_existing_bound_member(): void
     {
         $user = User::factory()->create(['email' => 'member@example.com']);
+        $user->assignRole('Anggota');
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'email' => 'member@example.com',
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => '4242',
+            'provider_email' => 'member@example.com',
         ]);
         $this->mockSocialite(googleId: '4242', email: 'member@example.com', verified: true);
 
@@ -120,21 +128,34 @@ class GoogleSsoFlowTest extends TestCase
         $this->assertNotNull($audit);
     }
 
-    public function test_callback_does_not_auto_link_existing_member_without_user_account(): void
+    public function test_callback_first_time_matches_eligible_canonical_member(): void
     {
         $member = CooperativeMember::factory()->create([
             'user_id' => null,
             'email' => 'unlinked-member@example.com',
+            'nama_anggota' => 'Budi Anggota',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
         $this->mockSocialite(googleId: 'unlinked-member', email: 'unlinked-member@example.com', verified: true);
 
         $this->get(route('auth.google.callback'))
-            ->assertRedirect(route('login'))
-            ->assertSessionHasErrors('sso');
+            ->assertRedirect(route('member.onboarding'));
 
-        $this->assertDatabaseMissing('users', ['email' => 'unlinked-member@example.com']);
+        $this->assertAuthenticated();
+        $user = User::query()->where('email', 'unlinked-member@example.com')->firstOrFail();
+        $this->assertSame('Budi Anggota', $user->name);
+        $this->assertTrue($user->hasRole('Anggota'));
+        $this->assertSame($user->id, $member->fresh()->user_id);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->validation_status);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'unlinked-member',
+        ]);
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'sso.google.manual_member_link_required',
+            'action' => 'member.google_sso_linked',
         ]);
     }
 
@@ -206,6 +227,12 @@ class GoogleSsoFlowTest extends TestCase
     public function test_callback_accepts_email_inside_allowed_hosted_domains(): void
     {
         config()->set('services.google.hosted_domains', ['kojaya.co.id']);
+        CooperativeMember::factory()->create([
+            'user_id' => null,
+            'email' => 'member@kojaya.co.id',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
         $this->mockSocialite(googleId: 'domain-ok', email: 'member@kojaya.co.id', verified: true);
 
         $this->get(route('auth.google.callback'))
@@ -287,6 +314,12 @@ class GoogleSsoFlowTest extends TestCase
             'user_id' => $user->id,
             'email' => 'member-mobile@example.com',
         ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'mobile-google-123',
+            'provider_email' => 'member-mobile@example.com',
+        ]);
         $keyPair = $this->fakeRsaJwk();
         $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
             'sub' => 'mobile-google-123',
@@ -360,6 +393,12 @@ class GoogleSsoFlowTest extends TestCase
         CooperativeMember::factory()->active()->create([
             'user_id' => $user->id,
             'email' => 'jwks-member@example.com',
+        ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'jwks-google-123',
+            'provider_email' => 'jwks-member@example.com',
         ]);
         $keyPair = $this->fakeRsaJwk();
         $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [

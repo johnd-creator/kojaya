@@ -6,6 +6,18 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 7, 2026
 
+## 2026-09-17 - Google SSO Member Matching (ONB-07)
+
+- Implemented safe Google SSO identity binding to canonical existing `CooperativeMember` records (`MemberGoogleSsoMatchingService` and `MemberGoogleSsoMatchResult`).
+- Enforced strict matching priority:
+  - Step 1 (Permanent Identity Lookup): Fast login via `social_accounts` (`provider = 'google'`, `provider_id`), zero rematch by email, zero member link modification, preserving staff/admin Google login.
+  - Step 2 (First-Time Match): Verified Google email required, case-insensitive normalized exact match against canonical `cooperative_members.email` (single candidate required).
+- Enforced member eligibility matrix: `PENDING/PENDING`, `PENDING/PENDING_VALIDATION`, `ACTIVE/ACTIVE` allowed; `INACTIVE/REVISION`, `INACTIVE/REJECTED`, and terminal/resigned states fail closed.
+- Atomic first-time link transaction with row-level locking (`lockForUpdate`), commit-time conflict rechecks, creating User with canonical member attributes and random high-entropy secret, assigning `Anggota` role only, linking `CooperativeMember.user_id`, creating `SocialAccount` without persisting OAuth access/refresh tokens, and recording mandatory safe audit event (`member.google_sso_linked`) with SHA-256 hashed `provider_id`.
+- Removed legacy unauthenticated temporary member generation (`TMP...`) and guest email auto-linking to arbitrary users.
+- Added comprehensive unit and feature regression suite (`GoogleSsoMemberMatchingTest`, 40 tests, 181 assertions) and real PostgreSQL concurrency test (`GoogleSsoMemberMatchingConcurrencyTest`).
+- Documented complete architecture in `docs/onboarding/google-sso-member-matching.md`.
+
 ## 2026-09-07 - PHPUnit 4-Way Sharding & CI Runtime Optimization (CI-PERF-01)
 
 - Implemented deterministic 4-way distributed test sharding script (`bin/ci/phpunit-shard`) using Greedy Longest Processing Time (LPT) balancing heuristic across 253 canonical SQLite test files.

@@ -216,7 +216,7 @@ Seluruh rute dilindungi oleh middleware autentikasi dan otorisasi `can:manage_co
 | `POST` | `/cooperative/members/import/preview` | `cooperative.members.import.preview` | `MemberImportPreviewController@preview` | Memproses validasi berkas dan merender tabel pratinjau |
 | `GET` | `/cooperative/members/import/template` | `cooperative.members.import.template` | `MemberImportPreviewController@downloadTemplate` | Mengunduh berkas template CSV kanonikal 12 kolom |
 
-*Catatan: Rute di atas didefinisikan sebelum `Route::resource('members', ...)` untuk mencegah konflik penangkapan URI dinamis `{member}`.*
+*Catatan: Rute di atas didefinisikan sebelum `Route::resource('members', ...)` untuk mencegah konflik penangkapan URI dinamis `{member}`. Seluruh rute GET terdaftar dalam rekonsiliasi cakupan rute UI audit (`tests/visual/coverage/cooperative-route-exclusions.json`) guna memenuhi integritas inventory audit.*
 
 ---
 

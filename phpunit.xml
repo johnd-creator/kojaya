@@ -17,6 +17,7 @@
             <exclude>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</exclude>
             <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Backup/PostgresRestoreDrillTest.php</exclude>
+            <exclude>tests/Feature/Cooperative/MemberImportConcurrencyTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>

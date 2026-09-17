@@ -214,6 +214,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('members/resignations/{resignationRequest}/process', [\App\Http\Controllers\Cooperative\MemberResignationController::class, 'process'])->name('members.resignations.process');
         });
 
+        Route::middleware('can:manage_cooperative_member')->group(function () {
+            Route::get('members/import', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'index'])->name('members.import');
+            Route::post('members/import/preview', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'preview'])->name('members.import.preview');
+            Route::get('members/import/template', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'downloadTemplate'])->name('members.import.template');
+        });
+
         Route::middleware('can:view_cooperative_member')->group(function () {
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
             Route::patch('members/{member}/sensitive-data', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'updateSensitiveData'])->name('members.sensitive-data.update');

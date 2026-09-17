@@ -12,11 +12,6 @@
       "category": "download"
     },
     {
-      "route_name": "cooperative.members.import",
-      "reason": "Member import dry-run interactive upload wizard endpoint; staged without static visual baseline",
-      "category": "api-json"
-    },
-    {
       "route_name": "cooperative.members.account-link.candidates",
       "reason": "JSON candidate lookup endpoint used by account-link UI; no HTML/Inertia surface",
       "category": "api-json"

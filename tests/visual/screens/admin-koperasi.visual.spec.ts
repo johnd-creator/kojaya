@@ -23,6 +23,7 @@ const scenarios = [
     "admin-members-index-no-results",
     "/cooperative/members?search=UI-NO-RESULT-999",
   ],
+  ["members-import-default", "/cooperative/members/import"],
   ["admin-payments-index-pending", "/cooperative/payments"],
   ["admin-payments-index-empty", "/cooperative/payments?status=APPROVED"],
   ["admin-dues-index-open", "/cooperative/dues?period_scope=all&status=OPEN"],

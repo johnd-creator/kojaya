@@ -55,7 +55,7 @@ Berikut adalah matriks lengkap untuk seluruh 12 field:
 | # | Nama Kolom CSV | Status Wajib | Klasifikasi Lifecycle | Aturan Normalisasi | Aturan Validasi | Kode Error Utama |
 | -: | :--- | :---: | :--- | :--- | :--- | :--- |
 | 1 | `member_number` | Opsional | `ADMIN_ENRICHMENT` | `trim()`, `strtoupper()`. Jika kosong &rarr; `null` & flag `member_number_generation_required = true`. | Jika diisi: wajib format `^KOP-\d{3,}$` (maks 20 karakter). Deteksi duplikasi batch dan benturan DB (`no_anggota`, `member_no`). Validator **tidak pernah** meng-generate nomor. | `INVALID_CONTROLLED_VALUE`, `DUPLICATE_MEMBER_NUMBER_BATCH`, `MEMBER_NUMBER_ALREADY_EXISTS` |
-| 2 | `full_name` | **WAJIB** | `CORE_ONBOARDING` | `trim()` saja, mempertahankan spasi internal dan teks apa adanya (tanpa *whitespace collapsing*). | Tidak boleh kosong / spasi saja. Panjang minimal 3 karakter, maksimal 255 karakter (memetakan ke kolom `cooperative_members.name` varchar(255) per frozen docs). | `MISSING_REQUIRED_FIELD`, `INVALID_CONTROLLED_VALUE` |
+| 2 | `full_name` | **WAJIB** | `CORE_ONBOARDING` | `trim()` saja, mempertahankan spasi internal dan teks apa adanya (tanpa *whitespace collapsing*). | Tidak boleh kosong / spasi saja. Panjang minimal 3 karakter, maksimal 100 karakter (alasan: `full_name` kanonikal mengisi kolom `cooperative_members.name` dan `cooperative_members.nama_anggota`; batas persistensi otoritatif tersempit adalah `nama_anggota` yang berbatas 100 karakter). | `MISSING_REQUIRED_FIELD`, `INVALID_CONTROLLED_VALUE` |
 | 3 | `email` | **WAJIB** | `CORE_ONBOARDING` | `strtolower(trim())`. | Sintaksis email sah (RFC 5322), maks 255 karakter. Deteksi duplikasi batch dan benturan DB terhadap `users.email` dan `cooperative_members.email`. Fail closed: tidak ada penggabungan (*merge*) akun. | `MISSING_REQUIRED_FIELD`, `INVALID_CONTROLLED_VALUE`, `DUPLICATE_EMAIL_BATCH`, `EMAIL_ALREADY_EXISTS` |
 | 4 | `phone_number` | **WAJIB** | `CORE_ONBOARDING` | Hapus spasi, tanda hubung (`-`), titik (`.`), dan kurung. Awalan `+628` dan `628` diubah menjadi `08`. | Format nomor seluler Indonesia valid (`^08[1-9][0-9]{7,11}$`), total panjang 10–14 digit. *Bukan identity uniqueness* (tidak memblokir nomor bersama). | `MISSING_REQUIRED_FIELD`, `INVALID_CONTROLLED_VALUE` |
 | 5 | `identity_number` | **WAJIB** | `CORE_ONBOARDING` | **String murni** (preservasi angka nol di depan). `trim()`. Dilarang konversi ke tipe float/int. Tidak ada perbaikan permisif (*no permissive repair*). | Tepat 16 digit angka numerik (`^\d{16}$`). Deteksi duplikasi batch. Deteksi benturan DB via blind index `PiiCryptoService` (`identity_number_bidx`). Pesan error aman tanpa membocorkan NIK mentah. | `MISSING_REQUIRED_FIELD`, `INVALID_CONTROLLED_VALUE`, `DUPLICATE_IDENTITY_NUMBER_BATCH`, `IDENTITY_NUMBER_ALREADY_EXISTS` |
@@ -164,9 +164,13 @@ Jika NIP pelamar tidak ditemukan pada master `employees`:
       ->exists();
   ```
 
-### 6.2 Pencegahan Kebocoran PII pada Pesan Error
+### 6.2 Pencegahan Kebocoran PII pada Pesan Error & Serialisasi
 - Pesan error untuk `DUPLICATE_IDENTITY_NUMBER_BATCH` dan `IDENTITY_NUMBER_ALREADY_EXISTS` bersifat **aman (safe error messages)**.
 - Nilai NIK mentah 16 digit **DILARANG KERAS** dicantumkan pada teks pesan error atau log output validator guna mencegah kebocoran informasi melalui laporan UI atau antarmuka debugging.
+- **Model Privasi Dua Representasi (Internal Runtime vs Serialisasi)**:
+  - **Internal Runtime Representation**: Validator mempertahankan NIK 16 digit ter-normalisasi yang valid pada properti DTO internal (`$rowResult->normalizedData['identity_number']`) untuk kebutuhan persistensi downstream oleh importer ONB-06. Properti ini tidak boleh dihilangkan dari objek memori.
+  - **Serialized / Presentation Representation**: Setiap jalur serialisasi umum (`toArray()`, `jsonSerialize()`, `json_encode()`) untuk integrasi JSON/API/Inertia/ONB-05 maupun log debug **wajib** menyamarkan `identity_number` menjadi `[REDACTED]` (baik pada `raw_data` maupun `normalized_data`).
+  - **Immutabilitas DTO**: Proses sanitasi serialisasi dilakukan pada salinan data (`sanitized copy`), tanpa memutasi properti array internal objek DTO.
 
 ---
 
@@ -182,13 +186,13 @@ Validator mengembalikan objek bertipe kuat yang mengimplementasikan `ArrayAccess
 - `invalid_rows`: `int` — jumlah baris yang memiliki setidaknya satu kesalahan validasi.
 - `errors`: `list<ImportValidationError>` — daftar seluruh error (baik tingkat header maupun baris).
 - `rows`: `list<ImportRowResult>` — representasi terstruktur setiap baris data.
-- `toArray()`: `array` — representasi array asosiatif lengkap untuk serialisasi JSON / Inertia props.
+- `toArray()`: `array` — representasi array asosiatif lengkap untuk serialisasi JSON / Inertia props (NIK pada `raw_data` dan `normalized_data` tersanitasi menjadi `[REDACTED]`).
 
 ### 7.2 Objek Tingkat Baris: `ImportRowResult`
 - `row_number`: `int` — nomor urut baris data pada berkas (1-indexed).
 - `valid`: `bool` — status keabsahan baris bersangkutan.
 - `raw_data`: `array<string, mixed>` — masukan mentah baris (field `identity_number` disanitasi/`[REDACTED]` untuk proteksi PII pada output JSON/toArray).
-- `normalized_data`: `array<string, mixed>` — tepat 12 kunci kanonikal hasil normalisasi deterministik.
+- `normalized_data`: `array<string, mixed>` — tepat 12 kunci kanonikal hasil normalisasi deterministik. Nilai NIK mentah 16 digit tetap tersedia secara internal pada `$rowResult->normalizedData['identity_number']` untuk kebutuhan persistensi ONB-06, tetapi disanitasi menjadi `[REDACTED]` saat dipanggil via `toArray()`, `jsonSerialize()`, atau `json_encode()`.
 - `resolved_employee_id`: `?int` — ID pegawai master `employees.id` jika NIP ter-resolve, atau `null`.
 - `employee_resolution_status`: `string` — salah satu dari: `NOT_PROVIDED`, `RESOLVED`, `UNRESOLVED`, `CONFLICT`.
 - `member_number_generation_required`: `bool` — `true` jika nomor anggota kosong dan membutuhkan penomoran otomatis saat persistensi.

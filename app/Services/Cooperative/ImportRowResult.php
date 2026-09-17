@@ -49,11 +49,16 @@ final class ImportRowResult implements ArrayAccess, JsonSerializable
             $sanitizedRawData['identity_number'] = '[REDACTED]';
         }
 
+        $sanitizedNormalizedData = $this->normalizedData;
+        if (array_key_exists('identity_number', $sanitizedNormalizedData)) {
+            $sanitizedNormalizedData['identity_number'] = '[REDACTED]';
+        }
+
         return [
             'row_number' => $this->rowNumber,
             'valid' => $this->valid,
             'raw_data' => $sanitizedRawData,
-            'normalized_data' => $this->normalizedData,
+            'normalized_data' => $sanitizedNormalizedData,
             'resolved_employee_id' => $this->resolvedEmployeeId,
             'employee_resolution_status' => $this->employeeResolutionStatus,
             'member_number_generation_required' => $this->memberNumberGenerationRequired,

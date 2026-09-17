@@ -464,12 +464,12 @@ class MemberImportValidator
                     code: self::CODE_INVALID_CONTROLLED_VALUE,
                     message: 'Nama lengkap minimal 3 karakter.',
                 );
-            } elseif (mb_strlen($normalizedFullName) > 255) {
+            } elseif (mb_strlen($normalizedFullName) > 100) {
                 $rowErrors[] = new ImportValidationError(
                     row: $rowNumber,
                     field: 'full_name',
                     code: self::CODE_INVALID_CONTROLLED_VALUE,
-                    message: 'Nama lengkap maksimal 255 karakter.',
+                    message: 'Nama lengkap maksimal 100 karakter.',
                 );
             }
 

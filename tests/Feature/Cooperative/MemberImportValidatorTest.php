@@ -724,59 +724,57 @@ class MemberImportValidatorTest extends TestCase
         $this->assertSame($nameWithInternalSpaces, $result->rows[0]->normalizedData['full_name']);
     }
 
-    public function test_full_name_accepts_between_101_and_255_characters_preserving_trim_only_internal_whitespace(): void
+    public function test_full_name_boundary_validation_99_and_100_pass_101_fails(): void
     {
-        // 1. Name with 150 characters (previously incorrectly rejected by > 100 limit)
-        $name150 = str_repeat('A', 70).'   '.str_repeat('B', 77);
-        $row1 = $this->validRow([
-            'full_name' => '   '.$name150.'   ',
-        ]);
+        // 1. 99 characters passes (trim-only, preserving internal whitespace)
+        // 'Ir.   ' (6) + 87 'A's + '   Jr.' (6) = 99 characters
+        $name99 = 'Ir.   '.str_repeat('A', 87).'   Jr.';
+        $this->assertSame(99, mb_strlen($name99));
 
-        $result1 = $this->validator->validateRows([$row1], MemberImportValidator::CANONICAL_HEADERS, [
+        $row99 = $this->validRow([
+            'full_name' => '   '.$name99.'   ',
+        ]);
+        $result99 = $this->validator->validateRows([$row99], MemberImportValidator::CANONICAL_HEADERS, [
             'organization_id' => $this->organization->id,
             'import_date' => '2026-06-01',
         ]);
+        $this->assertTrue($result99->valid);
+        $this->assertSame($name99, $result99->rows[0]->normalizedData['full_name']);
+        $this->assertSame(99, mb_strlen($result99->rows[0]->normalizedData['full_name']));
 
-        $this->assertTrue($result1->valid);
-        $this->assertSame($name150, $result1->rows[0]->normalizedData['full_name']);
-        $this->assertSame(150, mb_strlen($result1->rows[0]->normalizedData['full_name']));
+        // 2. 100 characters passes (authoritative maximum persistence boundary)
+        // 'Ir.   ' (6) + 88 'A's + '   Jr.' (6) = 100 characters
+        $name100 = 'Ir.   '.str_repeat('A', 88).'   Jr.';
+        $this->assertSame(100, mb_strlen($name100));
 
-        // 2. Name with exactly 255 characters (authoritative maximum mapping to cooperative_members.name varchar(255))
-        $name255 = 'Prof.   '.str_repeat('A', 241).'   Jr.';
-        $this->assertSame(255, mb_strlen($name255));
-
-        $row2 = $this->validRow([
-            'full_name' => '   '.$name255.'   ',
+        $row100 = $this->validRow([
+            'full_name' => '   '.$name100.'   ',
         ]);
-
-        $result2 = $this->validator->validateRows([$row2], MemberImportValidator::CANONICAL_HEADERS, [
+        $result100 = $this->validator->validateRows([$row100], MemberImportValidator::CANONICAL_HEADERS, [
             'organization_id' => $this->organization->id,
             'import_date' => '2026-06-01',
         ]);
+        $this->assertTrue($result100->valid);
+        $this->assertSame($name100, $result100->rows[0]->normalizedData['full_name']);
+        $this->assertSame(100, mb_strlen($result100->rows[0]->normalizedData['full_name']));
 
-        $this->assertTrue($result2->valid);
-        $this->assertSame($name255, $result2->rows[0]->normalizedData['full_name']);
-        $this->assertSame(255, mb_strlen($result2->rows[0]->normalizedData['full_name']));
-    }
+        // 3. 101 characters fails closed (no truncation, no silent shortening)
+        $name101 = str_repeat('A', 101);
+        $this->assertSame(101, mb_strlen($name101));
 
-    public function test_full_name_rejects_exceeding_255_characters(): void
-    {
-        $name256 = str_repeat('A', 256);
-        $row = $this->validRow([
-            'full_name' => $name256,
+        $row101 = $this->validRow([
+            'full_name' => $name101,
         ]);
-
-        $result = $this->validator->validateRows([$row], MemberImportValidator::CANONICAL_HEADERS, [
+        $result101 = $this->validator->validateRows([$row101], MemberImportValidator::CANONICAL_HEADERS, [
             'organization_id' => $this->organization->id,
             'import_date' => '2026-06-01',
         ]);
-
-        $this->assertFalse($result->valid);
-        $errors = $result->rows[0]->errors;
-        $this->assertCount(1, $errors);
-        $this->assertSame('full_name', $errors[0]->field);
-        $this->assertSame(MemberImportValidator::CODE_INVALID_CONTROLLED_VALUE, $errors[0]->code);
-        $this->assertSame('Nama lengkap maksimal 255 karakter.', $errors[0]->message);
+        $this->assertFalse($result101->valid);
+        $errors101 = $result101->rows[0]->errors;
+        $this->assertCount(1, $errors101);
+        $this->assertSame('full_name', $errors101[0]->field);
+        $this->assertSame(MemberImportValidator::CODE_INVALID_CONTROLLED_VALUE, $errors101[0]->code);
+        $this->assertSame('Nama lengkap maksimal 100 karakter.', $errors101[0]->message);
     }
 
     public function test_full_name_rejects_fewer_than_3_characters(): void
@@ -837,44 +835,73 @@ class MemberImportValidatorTest extends TestCase
         $this->assertTrue($result->valid);
         $rowResult = $result->rows[0];
 
-        // 1. Check raw_data property on ImportRowResult
-        $this->assertArrayHasKey('identity_number', $rowResult->rawData);
-        $this->assertNotSame($rawNik, $rowResult->rawData['identity_number']);
-        $this->assertSame('[REDACTED]', $rowResult->rawData['identity_number']);
+        // 1. Internal normalizedData contains the normalized raw NIK for ONB-06 persistence
+        $this->assertSame($rawNik, $rowResult->normalizedData['identity_number']);
 
-        // 2. Check toArray() output
+        // 2. rawData property on ImportRowResult has identity_number redacted
+        $this->assertArrayHasKey('identity_number', $rowResult->rawData);
+        $this->assertSame('[REDACTED]', $rowResult->rawData['identity_number']);
+        $this->assertNotSame($rawNik, $rowResult->rawData['identity_number']);
+
+        // 3. toArray()['raw_data']['identity_number'] does NOT contain raw NIK
         $rowArray = $rowResult->toArray();
         $this->assertSame('[REDACTED]', $rowArray['raw_data']['identity_number']);
         $this->assertNotSame($rawNik, $rowArray['raw_data']['identity_number']);
 
-        // 3. Check JSON serialization of single row
+        // 4. toArray()['normalized_data']['identity_number'] does NOT contain raw NIK
+        $this->assertSame('[REDACTED]', $rowArray['normalized_data']['identity_number']);
+        $this->assertNotSame($rawNik, $rowArray['normalized_data']['identity_number']);
+
+        // 5. Internal normalizedData is NOT mutated by toArray()
+        $this->assertSame($rawNik, $rowResult->normalizedData['identity_number']);
+
+        // 6. json_encode(ImportRowResult) does NOT contain raw NIK
         $rowJson = json_encode($rowResult);
         $this->assertIsString($rowJson);
-        $this->assertStringNotContainsString('"identity_number":"'.$rawNik.'"', (string) json_encode($rowResult->toArray()['raw_data']));
+        $this->assertStringNotContainsString($rawNik, $rowJson);
         $decodedRow = json_decode($rowJson, true);
         $this->assertSame('[REDACTED]', $decodedRow['raw_data']['identity_number']);
+        $this->assertSame('[REDACTED]', $decodedRow['normalized_data']['identity_number']);
 
-        // 4. Check entire ImportValidationResult JSON output
+        // 7. json_encode(ImportValidationResult) does NOT contain raw NIK
         $batchJson = json_encode($result);
         $this->assertIsString($batchJson);
+        $this->assertStringNotContainsString($rawNik, $batchJson);
         $decodedBatch = json_decode($batchJson, true);
         $this->assertSame('[REDACTED]', $decodedBatch['rows'][0]['raw_data']['identity_number']);
+        $this->assertSame('[REDACTED]', $decodedBatch['rows'][0]['normalized_data']['identity_number']);
 
-        // 5. Test direct instantiation of ImportRowResult to prove immunity
+        // 8. Serialized output still contains all required non-sensitive ONB-05 fields
+        $this->assertSame('KOP-001', $decodedBatch['rows'][0]['normalized_data']['member_number']);
+        $this->assertSame('Ahmad Pratama', $decodedBatch['rows'][0]['normalized_data']['full_name']);
+        $this->assertSame('ahmad.pratama.dummy@example.com', $decodedBatch['rows'][0]['normalized_data']['email']);
+        $this->assertSame('081234560001', $decodedBatch['rows'][0]['normalized_data']['phone_number']);
+        $this->assertSame('L', $decodedBatch['rows'][0]['normalized_data']['gender']);
+        $this->assertSame('IP', $decodedBatch['rows'][0]['normalized_data']['company_code']);
+        $this->assertNull($decodedBatch['rows'][0]['normalized_data']['employee_number']);
+        $this->assertSame('Jl. Merdeka No. 10, Jakarta Pusat', $decodedBatch['rows'][0]['normalized_data']['address']);
+        $this->assertSame('AB', $decodedBatch['rows'][0]['normalized_data']['membership_type']);
+        $this->assertSame('2026-06-01', $decodedBatch['rows'][0]['normalized_data']['join_date']);
+        $this->assertSame('Catatan anggota aktif', $decodedBatch['rows'][0]['normalized_data']['notes']);
+
+        // 9. Test direct instantiation of ImportRowResult to prove immutability and privacy contract
         $directRowResult = new ImportRowResult(
             rowNumber: 1,
             valid: true,
             rawData: ['identity_number' => $rawNik, 'full_name' => 'Direct Test'],
-            normalizedData: ['identity_number' => $rawNik],
+            normalizedData: ['identity_number' => $rawNik, 'full_name' => 'Direct Test'],
             resolvedEmployeeId: null,
             employeeResolutionStatus: MemberImportValidator::EMPLOYEE_RESOLUTION_NOT_PROVIDED,
             memberNumberGenerationRequired: false,
             manualReviewRequired: false,
             persistable: true,
         );
+        $this->assertSame($rawNik, $directRowResult->normalizedData['identity_number']);
         $this->assertSame('[REDACTED]', $directRowResult->rawData['identity_number']);
         $this->assertSame('[REDACTED]', $directRowResult->toArray()['raw_data']['identity_number']);
-        $this->assertStringNotContainsString($rawNik, (string) json_encode($directRowResult->toArray()['raw_data']));
+        $this->assertSame('[REDACTED]', $directRowResult->toArray()['normalized_data']['identity_number']);
+        $this->assertStringNotContainsString($rawNik, (string) json_encode($directRowResult));
+        $this->assertSame($rawNik, $directRowResult->normalizedData['identity_number']);
     }
 
     public function test_employee_resolution_query_is_scoped_to_organization_at_sql_level(): void

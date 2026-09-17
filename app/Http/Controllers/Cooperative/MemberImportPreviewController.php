@@ -167,7 +167,7 @@ class MemberImportPreviewController extends Controller
         MemberImportExecutionService $executionService,
     ): JsonResponse|RedirectResponse {
         $user = $request->user();
-        abort_unless($user && $user->can(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value), 403);
+        abort_unless($user && $user->can(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value), 403);
 
         // DEV Execution Gate Check
         if (! config('cooperative.member_import_execution_enabled', false)) {

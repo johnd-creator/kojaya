@@ -38,7 +38,7 @@ class CooperativeMemberPolicy extends BasePolicy
         }
     }
 
-    public function import(User $user): bool
+    public function previewImport(User $user): bool
     {
         if (! $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)) {
             return false;
@@ -51,6 +51,26 @@ class CooperativeMemberPolicy extends BasePolicy
         } catch (AuthorizationException) {
             return false;
         }
+    }
+
+    public function executeImport(User $user): bool
+    {
+        if (! $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value)) {
+            return false;
+        }
+
+        try {
+            app(OrganizationScopeService::class)->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
+
+            return true;
+        } catch (AuthorizationException) {
+            return false;
+        }
+    }
+
+    public function import(User $user): bool
+    {
+        return $this->executeImport($user);
     }
 
     public function update(User $user, CooperativeMember $cooperativeMember): bool

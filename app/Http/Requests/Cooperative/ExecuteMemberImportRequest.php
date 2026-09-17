@@ -17,11 +17,11 @@ class ExecuteMemberImportRequest extends FormRequest
             return false;
         }
 
-        if (! $user->can(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)) {
+        if (! $user->can(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value)) {
             return false;
         }
 
-        return $user->can('import', CooperativeMember::class);
+        return $user->can('executeImport', CooperativeMember::class);
     }
 
     /**

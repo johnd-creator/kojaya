@@ -48,6 +48,7 @@ enum PermissionEnum: string
     // Cooperative
     case COOPERATIVE_MEMBER_VIEW = 'view_cooperative_member';
     case COOPERATIVE_MEMBER_MANAGE = 'manage_cooperative_member';
+    case COOPERATIVE_MEMBER_IMPORT = 'import_cooperative_member_batch';
     case COOPERATIVE_MEMBER_PII_VIEW = 'view_cooperative_member_pii';
     case COOPERATIVE_MEMBER_PII_WRITE = 'update_cooperative_member_pii';
     case COOPERATIVE_MEMBER_PII_EXPORT = 'export_cooperative_member_pii';

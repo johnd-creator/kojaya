@@ -280,6 +280,7 @@ class RolePermissionSeeder extends Seeder
         Role::where('name', 'Admin Koperasi')->first()?->syncPermissions([
             'view_cooperative_member',
             'manage_cooperative_member',
+            'import_cooperative_member_batch',
             'validate_cooperative_member',
             'verify_cooperative_member',
             'manage_cooperative_dues',

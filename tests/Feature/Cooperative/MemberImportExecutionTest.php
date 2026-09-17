@@ -23,6 +23,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class MemberImportExecutionTest extends TestCase
@@ -59,19 +60,21 @@ class MemberImportExecutionTest extends TestCase
             'name' => 'Koperasi Unit 2',
         ]);
 
-        // Unit-scoped Admin Koperasi with manage_cooperative_member
+        // Unit-scoped Admin Koperasi with manage_cooperative_member & import_cooperative_member_batch
         $this->authorizedUnitAdmin = User::factory()->create([
             'organization_id' => $this->organization->id,
             'name' => 'Admin Koperasi Unit',
         ]);
         $this->authorizedUnitAdmin->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+        $this->authorizedUnitAdmin->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value);
 
-        // Global-scoped operator with manage_cooperative_member & view_cooperative_all
+        // Global-scoped operator with manage_cooperative_member, import_cooperative_member_batch & view_cooperative_all
         $this->authorizedGlobalAdmin = User::factory()->create([
             'organization_id' => $this->organization->id,
             'name' => 'System Admin Operator',
         ]);
         $this->authorizedGlobalAdmin->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+        $this->authorizedGlobalAdmin->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value);
         $this->authorizedGlobalAdmin->givePermissionTo(PermissionEnum::COOPERATIVE_VIEW_ALL->value);
 
         // Regular unauthorized user (Anggota)
@@ -165,20 +168,132 @@ class MemberImportExecutionTest extends TestCase
         ])->assertRedirect(route('login'));
     }
 
-    public function test_02_authenticated_user_without_manage_cooperative_member_cannot_execute(): void
+    public function test_02_user_with_manage_cooperative_member_alone_cannot_execute_import(): void
     {
-        $this->actingAs($this->unauthorizedUser)
+        $manageOnlyUser = User::factory()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Manage Only Operator',
+        ]);
+        $manageOnlyUser->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+
+        $setup = $this->createUploadWithProof([$this->validRow()]);
+
+        $this->actingAs($manageOnlyUser)
             ->post(route('cooperative.members.import.execute'), [
-                'file' => UploadedFile::fake()->create('import.csv', 100),
+                'file' => $setup['file'],
+                'import_date' => '2026-06-01',
+                'preview_proof' => $setup['proof'],
                 'confirm_import' => true,
             ])->assertForbidden();
+
+        $this->assertSame(0, CooperativeMember::count());
+        $this->assertFalse($manageOnlyUser->can('executeImport', CooperativeMember::class));
+        $this->assertFalse($manageOnlyUser->can('import', CooperativeMember::class));
+    }
+
+    public function test_02b_unauthorized_user_without_any_member_permission_cannot_execute(): void
+    {
+        $setup = $this->createUploadWithProof([$this->validRow()]);
+
+        $this->actingAs($this->unauthorizedUser)
+            ->post(route('cooperative.members.import.execute'), [
+                'file' => $setup['file'],
+                'import_date' => '2026-06-01',
+                'preview_proof' => $setup['proof'],
+                'confirm_import' => true,
+            ])->assertForbidden();
+
+        $this->assertSame(0, CooperativeMember::count());
     }
 
     public function test_03_policy_gate_import_enforces_organization_scope(): void
     {
         $this->actingAs($this->authorizedUnitAdmin);
         $this->assertTrue($this->authorizedUnitAdmin->can('import', CooperativeMember::class));
+        $this->assertTrue($this->authorizedUnitAdmin->can('executeImport', CooperativeMember::class));
         $this->assertFalse($this->unauthorizedUser->can('import', CooperativeMember::class));
+        $this->assertFalse($this->unauthorizedUser->can('executeImport', CooperativeMember::class));
+    }
+
+    public function test_03b_import_permission_without_organization_authorization_is_forbidden(): void
+    {
+        // User has import_cooperative_member_batch, but null organization context
+        $orphanUser = User::factory()->create([
+            'organization_id' => null,
+            'name' => 'Orphan Importer',
+        ]);
+        $orphanUser->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value);
+
+        $this->assertFalse($orphanUser->can('executeImport', CooperativeMember::class));
+        $this->assertFalse($orphanUser->can('import', CooperativeMember::class));
+
+        $setup = $this->createUploadWithProof([$this->validRow()]);
+
+        $this->actingAs($orphanUser)
+            ->post(route('cooperative.members.import.execute'), [
+                'file' => $setup['file'],
+                'import_date' => '2026-06-01',
+                'preview_proof' => $setup['proof'],
+                'confirm_import' => true,
+            ])->assertForbidden();
+
+        $this->assertSame(0, CooperativeMember::count());
+    }
+
+    public function test_03c_preview_accessible_with_manage_member_alone_while_execute_is_forbidden(): void
+    {
+        $manageOnlyUser = User::factory()->create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Preview Only Operator',
+        ]);
+        $manageOnlyUser->givePermissionTo(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value);
+
+        // Preview dry-run route is accessible
+        $csv = $this->generateCsv(MemberImportValidator::CANONICAL_HEADERS, [$this->validRow()]);
+        $file = UploadedFile::fake()->createWithContent('preview.csv', $csv);
+
+        $this->actingAs($manageOnlyUser)
+            ->post(route('cooperative.members.import.preview'), [
+                'file' => $file,
+                'import_date' => '2026-06-01',
+            ])
+            ->assertOk();
+
+        // But execute route is strictly forbidden
+        $setup = $this->createUploadWithProof([$this->validRow()]);
+
+        $this->actingAs($manageOnlyUser)
+            ->post(route('cooperative.members.import.execute'), [
+                'file' => $setup['file'],
+                'import_date' => '2026-06-01',
+                'preview_proof' => $setup['proof'],
+                'confirm_import' => true,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, CooperativeMember::count());
+    }
+
+    public function test_03d_admin_koperasi_role_permission_composition_in_seeder(): void
+    {
+        $role = Role::findByName('Admin Koperasi');
+
+        $this->assertTrue(
+            $role->hasPermissionTo('import_cooperative_member_batch'),
+            'Admin Koperasi must have import_cooperative_member_batch permission'
+        );
+        $this->assertTrue(
+            $role->hasPermissionTo(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value),
+            'Admin Koperasi must have COOPERATIVE_MEMBER_IMPORT permission value'
+        );
+        $this->assertFalse(
+            $role->hasPermissionTo('update_cooperative_member_pii'),
+            'Admin Koperasi must NOT have update_cooperative_member_pii permission'
+        );
+        $this->assertFalse(
+            $role->hasPermissionTo(PermissionEnum::COOPERATIVE_MEMBER_PII_WRITE->value),
+            'Admin Koperasi must NOT have COOPERATIVE_MEMBER_PII_WRITE permission value'
+        );
     }
 
     public function test_04_execution_feature_disabled_rejects_import_with_zero_inserts(): void

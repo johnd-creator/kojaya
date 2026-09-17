@@ -93,12 +93,14 @@ Sesuai arsitektur onboarding Kojaya, eksekusi persistensi anggota pada tahap ONB
 
 Sesuai kesepakatan perancangan:
 - **Feature Owner**: Role `Admin Koperasi` tetap menjadi pemilik alur operasional onboarding anggota.
-- **Kebijakan PII & Opsi C**: Role `Admin Koperasi` memiliki hak kelola anggota (`manage_cooperative_member`), namun hak penyuntingan PII anggota aktif (`update_cooperative_member_pii`) tetap berada di bawah wewenang `Pengurus Koperasi`.
-- **Batch Onboarding Gate**: Otorisasi eksekusi persistensi batch anggota baru berstatus `PENDING` diatur melalui method policy [`CooperativeMemberPolicy::import()`](file:///home/john-d/Pictures/kojaya/app/Policies/CooperativeMemberPolicy.php):
+- **Dedicated Batch Import Permission**: Eksekusi persistensi batch anggota baru mewajibkan izin khusus `import_cooperative_member_batch` (`PermissionEnum::COOPERATIVE_MEMBER_IMPORT`).
+- **Pemisahan Hak Akses**: Kepemilikan izin `manage_cooperative_member` saja **TIDAK CUKUP** untuk mengeksekusi impor persistensi ke database. Alur pratinjau/simulasi (dry-run) tetap dapat diakses dengan `manage_cooperative_member`, namun eksekusi persistensi mutlak membutuhkan `import_cooperative_member_batch`.
+- **Kebijakan PII & Opsi C**: Role `Admin Koperasi` secara sengaja diberikan izin `import_cooperative_member_batch` tanpa diberikan izin penyuntingan PII umum (`update_cooperative_member_pii`), yang tetap berada di bawah wewenang `Pengurus Koperasi`.
+- **Batch Onboarding Gate**: Otorisasi eksekusi persistensi batch anggota baru berstatus `PENDING` diatur melalui method policy [`CooperativeMemberPolicy::executeImport()`](file:///home/john-d/Pictures/kojaya/app/Policies/CooperativeMemberPolicy.php) dan alias [`import()`](file:///home/john-d/Pictures/kojaya/app/Policies/CooperativeMemberPolicy.php):
   ```php
-  public function import(User $user): bool
+  public function executeImport(User $user): bool
   {
-      if (! $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value)) {
+      if (! $this->can($user, PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value)) {
           return false;
       }
 
@@ -109,8 +111,14 @@ Sesuai kesepakatan perancangan:
           return false;
       }
   }
+
+  public function import(User $user): bool
+  {
+      return $this->executeImport($user);
+  }
   ```
-- Kebijakan ini memungkinkan `Admin Koperasi` mendaftarkan calon anggota massal ke tahap `PENDING` tanpa membuka izin mutasi PII anggota aktif secara umum.
+- **Organization Scope Enforcement**: Izin `import_cooperative_member_batch` adalah syarat perlu namun belum cukup (necessary but not sufficient); pengguna harus memiliki otorisasi cakupan organisasi yang sah (`OrganizationScopeService`). Upaya eksekusi untuk organisasi di luar wewenang pengguna ditolak seketika dengan **HTTP 403 Forbidden** (fail-closed).
+- Kebijakan ini memungkinkan `Admin Koperasi` mendaftarkan calon anggota massal ke tahap `PENDING` secara mandiri tanpa membuka izin mutasi PII anggota aktif secara umum.
 
 ---
 

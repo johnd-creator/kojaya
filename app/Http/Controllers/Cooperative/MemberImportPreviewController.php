@@ -3,12 +3,20 @@
 namespace App\Http\Controllers\Cooperative;
 
 use App\Enums\PermissionEnum;
+use App\Exceptions\MemberImportExecutionException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cooperative\ExecuteMemberImportRequest;
 use App\Http\Requests\Cooperative\PreviewMemberImportRequest;
 use App\Models\Organization;
 use App\Services\Authorization\OrganizationScopeService;
+use App\Services\Cooperative\MemberImportExecutionService;
 use App\Services\Cooperative\MemberImportValidator;
+use App\Services\Cooperative\PreviewProofService;
+use App\Support\AuditContext;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -57,6 +65,9 @@ class MemberImportPreviewController extends Controller
             'default_import_date' => $defaultImportDate,
             'canonical_headers' => MemberImportValidator::CANONICAL_HEADERS,
             'preview' => null,
+            'preview_proof' => null,
+            'file_sha256' => null,
+            'execution_enabled' => (bool) config('cooperative.member_import_execution_enabled', false),
         ]);
     }
 
@@ -68,6 +79,7 @@ class MemberImportPreviewController extends Controller
         PreviewMemberImportRequest $request,
         OrganizationScopeService $scopeService,
         MemberImportValidator $validator,
+        PreviewProofService $proofService,
     ): Response {
         $user = $request->user();
         abort_unless($user && $user->can(PermissionEnum::COOPERATIVE_MEMBER_MANAGE->value), 403);
@@ -81,6 +93,7 @@ class MemberImportPreviewController extends Controller
 
         $importDate = $request->validated('import_date');
         $uploadedFile = $request->file('file');
+        $fileSha256 = hash_file('sha256', $uploadedFile->getRealPath());
 
         // Execute deterministic validation without permanently storing the file
         $result = $validator->validateFile(
@@ -94,6 +107,17 @@ class MemberImportPreviewController extends Controller
         // Safe serialized representation:
         // ImportValidationResult::toArray() ensures raw_data and normalized_data NIK are [REDACTED]
         $previewData = $result->toArray();
+
+        // Issue tamper-resistant preview proof if batch is 100% ready for import
+        $isReady = $result->valid
+            && $result->headerValid
+            && $result->totalRows > 0
+            && $result->invalidRows === 0
+            && ! $result->requiresManualReview();
+
+        $previewProof = $isReady
+            ? $proofService->generate($fileSha256, (string) $authorizedOrganizationId, $importDate)
+            : null;
 
         $visibility = $scopeService->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
         $isGlobal = $visibility->global;
@@ -126,7 +150,80 @@ class MemberImportPreviewController extends Controller
             'default_import_date' => $importDate,
             'canonical_headers' => MemberImportValidator::CANONICAL_HEADERS,
             'preview' => $previewData,
+            'preview_proof' => $previewProof,
+            'file_sha256' => $fileSha256,
+            'execution_enabled' => (bool) config('cooperative.member_import_execution_enabled', false),
         ]);
+    }
+
+    /**
+     * Execute transactional member import after server-side revalidation,
+     * tamper-resistant preview proof verification, and DEV gate check.
+     */
+    public function execute(
+        ExecuteMemberImportRequest $request,
+        OrganizationScopeService $scopeService,
+        PreviewProofService $proofService,
+        MemberImportExecutionService $executionService,
+    ): JsonResponse|RedirectResponse {
+        $user = $request->user();
+        abort_unless($user && $user->can(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value), 403);
+
+        // DEV Execution Gate Check
+        if (! config('cooperative.member_import_execution_enabled', false)) {
+            abort(403, 'Eksekusi impor anggota saat ini dinonaktifkan.');
+        }
+
+        $targetOrgId = $request->input('organization_id');
+        $authorizedOrganizationId = $scopeService->resolveTargetOrganization(
+            $user,
+            $targetOrgId,
+            PermissionEnum::COOPERATIVE_VIEW_ALL->value,
+        );
+
+        $importDate = $request->validated('import_date');
+        $uploadedFile = $request->file('file');
+        $fileSha256 = hash_file('sha256', $uploadedFile->getRealPath());
+
+        // Verify preview proof against uploaded file hash and parameters
+        $proofResult = $proofService->verify(
+            $request->validated('preview_proof'),
+            $fileSha256,
+            (string) $authorizedOrganizationId,
+            $importDate,
+        );
+
+        if (! $proofResult['valid']) {
+            throw ValidationException::withMessages([
+                'preview_proof' => [$proofResult['message'] ?? 'Bukti pratinjau tidak valid.'],
+            ]);
+        }
+
+        try {
+            $result = $executionService->execute(
+                filePath: $uploadedFile->getRealPath(),
+                organizationId: (string) $authorizedOrganizationId,
+                importDate: $importDate,
+                fileSha256: $fileSha256,
+                auditContext: AuditContext::fromCurrentRequest(),
+            );
+        } catch (MemberImportExecutionException $e) {
+            throw ValidationException::withMessages([
+                'execution' => [$e->getMessage()],
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Import anggota ke DEV berhasil dipersistensikan.',
+                'data' => $result->toArray(),
+            ]);
+        }
+
+        return redirect()->route('cooperative.members.import')
+            ->with('success', 'Import anggota ke DEV berhasil dipersistensikan.')
+            ->with('import_result', $result->toArray());
     }
 
     /**

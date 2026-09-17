@@ -60,10 +60,12 @@ function getExcludedFiles(string $baseXmlPath, string $root): array
     // Fallback safe list matching phpunit.xml
     $defaultExcludes = [
         'tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php',
+        'tests/Feature/Cooperative/PosVoidConcurrencyTest.php',
         'tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php',
         'tests/Feature/Cooperative/StoreCreditConcurrencyTest.php',
         'tests/Feature/PaymentConcurrencyTest.php',
         'tests/Feature/Backup/PostgresRestoreDrillTest.php',
+        'tests/Feature/Cooperative/MemberImportConcurrencyTest.php',
     ];
 
     return array_values(array_unique(array_merge($excluded, $defaultExcludes)));

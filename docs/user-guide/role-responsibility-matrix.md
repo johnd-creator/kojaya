@@ -26,6 +26,7 @@ Tabel: ✅ = izin diberikan, — = tidak diberikan.
 | `cashier_store_credit` | ✅ | — | ✅ | ✅ |
 | `export_cooperative_member` | ✅ | — | — | ✅ |
 | `export_cooperative_member_pii` | — | — | — | ✅ |
+| `import_cooperative_member_batch` | ✅ | — | — | — |
 | `manage_cooperative_dues` | ✅ | — | ✅ | ✅ |
 | `manage_cooperative_ledger` | — | — | ✅ | ✅ |
 | `manage_cooperative_loan` | ✅ | — | ✅ | ✅ |
@@ -60,7 +61,7 @@ Tabel: ✅ = izin diberikan, — = tidak diberikan.
 | `view_store_credit` | ✅ | — | ✅ | ✅ |
 | `view_store_credit_all` | — | — | — | ✅ |
 | `void_cooperative_opening_balance` | — | — | — | ✅ |
-| **Jumlah izin** | 26 | 1 | 29 | 41 |
+| **Jumlah izin** | 27 | 1 | 29 | 41 |
 
 ---
 

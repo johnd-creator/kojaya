@@ -220,6 +220,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('members/import/template', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'downloadTemplate'])->name('members.import.template');
         });
 
+        Route::middleware('can:import_cooperative_member_batch')->group(function () {
+            Route::post('members/import/execute', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'execute'])->name('members.import.execute');
+        });
+
         Route::middleware('can:view_cooperative_member')->group(function () {
             Route::resource('members', \App\Http\Controllers\Cooperative\CooperativeMemberController::class);
             Route::patch('members/{member}/sensitive-data', [\App\Http\Controllers\Cooperative\CooperativeMemberController::class, 'updateSensitiveData'])->name('members.sensitive-data.update');

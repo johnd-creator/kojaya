@@ -103,7 +103,7 @@ class MemberAccessGatingTest extends TestCase
         ] as $route) {
             $this->actingAs($user)
                 ->get(route($route))
-                ->assertRedirect(route('member.dashboard'));
+                ->assertForbidden();
         }
     }
 
@@ -120,7 +120,7 @@ class MemberAccessGatingTest extends TestCase
         foreach (['member.savings', 'member.loans', 'member.points', 'member.rewards', 'member.transactions'] as $route) {
             $this->actingAs($user)
                 ->get(route($route))
-                ->assertRedirect(route('member.dashboard'));
+                ->assertForbidden();
         }
     }
 
@@ -147,11 +147,11 @@ class MemberAccessGatingTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.loans'))
-            ->assertRedirect(route('member.dashboard'));
+            ->assertRedirect(route('member.onboarding'));
 
         $this->actingAs($user)
             ->get(route('member.savings'))
-            ->assertRedirect(route('member.dashboard'));
+            ->assertRedirect(route('member.onboarding'));
     }
 
     public function test_active_member_is_redirected_from_erp_dashboard_to_kojayaku(): void

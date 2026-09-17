@@ -38,7 +38,10 @@ class CooperativeMemberFactory extends Factory
             'joined_at' => now()->subMonths(fake()->numberBetween(1, 24))->toDateString(),
             'resigned_at' => null,
             'status' => CooperativeMember::VALIDATION_PENDING,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => fn (array $attributes) => match ($attributes['status'] ?? CooperativeMember::VALIDATION_PENDING) {
+                CooperativeMember::VALIDATION_ACTIVE => CooperativeMember::VALIDATION_ACTIVE,
+                default => CooperativeMember::VALIDATION_PENDING,
+            },
             'tanggal_lahir' => fake()->optional()->date(),
             'tempat_lahir' => fake()->optional()->city(),
             'pekerjaan' => fake()->optional()->jobTitle(),

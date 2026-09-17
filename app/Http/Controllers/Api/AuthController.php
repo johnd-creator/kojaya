@@ -55,6 +55,19 @@ class AuthController extends Controller
         $member = $refreshedUser->cooperativeMember;
         $experience = $member ? \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member) : null;
 
+        if ($experience && $experience->isBlocked()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status keanggotaan tidak valid.',
+                'error_code' => \App\Enums\ApiErrorCode::MemberNotActive->value,
+                'data' => [
+                    'member_status' => $member->status,
+                    'validation_status' => $member->validation_status,
+                    'lifecycle_experience' => $experience->value,
+                ],
+            ], \Symfony\Component\HttpFoundation\Response::HTTP_FORBIDDEN);
+        }
+
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,

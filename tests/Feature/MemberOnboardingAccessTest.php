@@ -18,7 +18,7 @@ class MemberOnboardingAccessTest extends TestCase
         Role::firstOrCreate(['name' => 'Anggota']);
     }
 
-    public function test_admin_verified_member_without_submission_sees_draft_review_state(): void
+    public function test_admin_verified_member_without_submission_sees_review_review_state(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
@@ -34,7 +34,7 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
+                ->where('review_state', 'review')
                 ->where('validation_status', 'PENDING_VALIDATION')
                 ->where('submitted', false)
             );
@@ -62,7 +62,7 @@ class MemberOnboardingAccessTest extends TestCase
             );
     }
 
-    public function test_pending_member_without_submission_sees_draft_review_state(): void
+    public function test_pending_member_without_submission_sees_pending_review_state(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
@@ -78,13 +78,13 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
+                ->where('review_state', 'pending')
                 ->where('validation_status', 'PENDING')
                 ->where('submitted', false)
             );
     }
 
-    public function test_active_member_without_submission_can_fill_onboarding_form(): void
+    public function test_active_member_visiting_onboarding_is_redirected_to_member_dashboard(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
@@ -97,17 +97,10 @@ class MemberOnboardingAccessTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.onboarding'))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
-                ->where('validation_status', 'ACTIVE')
-                ->where('submitted', false)
-            )
-            ->assertDontSee('member-admission-waiting');
+            ->assertRedirect(route('member.dashboard'));
     }
 
-    public function test_active_member_submission_keeps_lifecycle_active_while_waiting_final_approval(): void
+    public function test_active_member_submission_is_denied(): void
     {
         $user = User::factory()->create();
         $member = CooperativeMember::factory()->create([
@@ -130,11 +123,9 @@ class MemberOnboardingAccessTest extends TestCase
                 'jenis_kelamin' => 'L',
                 'kategori' => 'IP',
             ])
-            ->assertRedirect('/member/onboarding')
-            ->assertSessionHas('success');
+            ->assertForbidden();
 
         $fresh = $member->fresh();
-
         $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->status);
         $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
     }
@@ -167,7 +158,7 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertSessionHas('success');
     }
 
-    public function test_revision_member_without_submission_sees_draft_review_state(): void
+    public function test_revision_member_without_submission_sees_revision_review_state(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
@@ -183,7 +174,7 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
+                ->where('review_state', 'revision')
                 ->where('validation_status', 'REVISION')
                 ->where('submitted', false)
             );

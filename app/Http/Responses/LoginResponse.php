@@ -24,7 +24,9 @@ class LoginResponse implements LoginResponseContract
             }
 
             if ($experience->isNonActiveLifecycle()) {
-                return redirect()->intended(route('member.onboarding', absolute: false));
+                session()->forget('url.intended');
+
+                return redirect()->route('member.onboarding');
             }
 
             abort(403, 'Status keanggotaan tidak valid.');

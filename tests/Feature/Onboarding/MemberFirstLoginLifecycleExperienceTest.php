@@ -94,6 +94,8 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             ['PENDING', 'REVISION'],
             ['PENDING', 'REJECTED'],
             ['INACTIVE', 'ACTIVE'],
+            ['INACTIVE', 'INACTIVE'],
+            ['RESIGNED', 'RESIGNED'],
             ['RESIGNED', 'PENDING'],
             [null, null],
             ['UNKNOWN', 'UNKNOWN'],
@@ -105,7 +107,30 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             $this->assertTrue($blocked->isBlocked());
             $this->assertFalse($blocked->isActive());
             $this->assertFalse($blocked->isNonActiveLifecycle());
+            $this->assertSame('blocked', $blocked->reviewState());
         }
+
+        // Deterministic reviewState projections
+        $this->assertSame('pending', MemberLifecycleExperience::WaitingVerification->reviewState());
+        $this->assertSame('review', MemberLifecycleExperience::UnderReview->reviewState());
+        $this->assertSame('revision', MemberLifecycleExperience::RevisionRequired->reviewState());
+        $this->assertSame('rejected', MemberLifecycleExperience::Rejected->reviewState());
+        $this->assertSame('approved', MemberLifecycleExperience::Active->reviewState());
+        $this->assertSame('blocked', MemberLifecycleExperience::BlockedUnknown->reviewState());
+
+        // R1-02 Invariant: onboarding_submitted_at does not change lifecycle experience or review_state
+        $memberReviewNoSubmit = CooperativeMember::factory()->pendingReview()->create([
+            'onboarding_submitted_at' => null,
+        ]);
+        $memberReviewWithSubmit = CooperativeMember::factory()->pendingReview()->create([
+            'onboarding_submitted_at' => now(),
+        ]);
+        $this->assertSame(MemberLifecycleExperience::UnderReview, MemberLifecycleExperience::fromMember($memberReviewNoSubmit));
+        $this->assertSame(MemberLifecycleExperience::UnderReview, MemberLifecycleExperience::fromMember($memberReviewWithSubmit));
+        $this->assertSame('review', MemberLifecycleExperience::fromMember($memberReviewNoSubmit)->reviewState());
+        $this->assertSame('review', MemberLifecycleExperience::fromMember($memberReviewWithSubmit)->reviewState());
+        $this->assertTrue(app(MemberAccessService::class)->for($memberReviewNoSubmit)['is_pending_review']);
+        $this->assertTrue(app(MemberAccessService::class)->for($memberReviewWithSubmit)['is_pending_review']);
 
         // Member instance resolution via MemberLifecycleExperience::fromMember and MemberAccessService
         $memberWaiting = CooperativeMember::factory()->pending()->create();
@@ -202,6 +227,37 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             'email' => $userBlocked->email,
             'password' => 'secret123',
         ])->assertForbidden();
+
+        $this->post('/logout');
+
+        // 7. INACTIVE/INACTIVE and RESIGNED/RESIGNED members fail closed with 403
+        $userInactive = User::factory()->create(['password' => Hash::make('secret123')]);
+        CooperativeMember::factory()->create([
+            'user_id' => $userInactive->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+        $userInactive->assignRole('Anggota');
+
+        $this->post('/login', [
+            'email' => $userInactive->email,
+            'password' => 'secret123',
+        ])->assertForbidden();
+
+        $this->post('/logout');
+
+        // 8. url.intended safety: non-active member clears intended URL to prevent hijacking into active routes
+        $userPendingIntended = User::factory()->create(['password' => Hash::make('secret123')]);
+        CooperativeMember::factory()->pending()->create(['user_id' => $userPendingIntended->id]);
+        $userPendingIntended->assignRole('Anggota');
+
+        $this->withSession(['url.intended' => 'http://localhost/member/pos'])
+            ->post('/login', [
+                'email' => $userPendingIntended->email,
+                'password' => 'secret123',
+            ])
+            ->assertRedirect(route('member.onboarding'));
+        $this->assertNull(session('url.intended'));
     }
 
     /**
@@ -274,6 +330,7 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             'pending' => CooperativeMember::factory()->pending(),
             'review' => CooperativeMember::factory()->pendingReview(),
             'revision' => CooperativeMember::factory()->revision(),
+            'rejected' => CooperativeMember::factory()->rejected(),
         ];
 
         foreach ($onboardingStates as $key => $factory) {
@@ -287,16 +344,6 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
                 ->assertRedirect(route('member.onboarding'))
                 ->assertSessionHas('warning');
         }
-
-        // Rejected member redirects to member.dashboard
-        $userRejected = User::factory()->create();
-        CooperativeMember::factory()->rejected()->create(['user_id' => $userRejected->id]);
-        $userRejected->assignRole('Anggota');
-
-        $this->actingAs($userRejected)
-            ->get(route('member.store-account'))
-            ->assertRedirect(route('member.dashboard'))
-            ->assertSessionHas('warning');
 
         // Active member is permitted
         $userActive = User::factory()->create();
@@ -456,37 +503,64 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             'lifecycle_experience' => 'ACTIVE',
             'onboarding_next_step' => 'dashboard',
         ]);
+
+        // 6. Blocked/inconsistent member fails closed with 403 on API
+        $userBlocked = User::factory()->create(['password' => Hash::make('secret123')]);
+        CooperativeMember::factory()->create([
+            'user_id' => $userBlocked->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+        $userBlocked->assignRole('Anggota');
+
+        $resBlocked = $this->postJson('/api/auth/login', [
+            'email' => $userBlocked->email,
+            'password' => 'secret123',
+            'app' => 'member',
+        ]);
+        $resBlocked->assertForbidden();
     }
 
     /**
      * Requirement 8: ONB-03 Authority Preserved - POST /member/onboarding never self-advances status.
+     * R1-01: Sensitive PII mutation closed (legacy fields ignored/not mutated).
+     * R1-03: Rejected member cannot submit (403).
+     * R1-04: Active member cannot submit (403).
      */
     public function test_legacy_onboarding_submit_never_self_advances_status_preserving_onb03_authority(): void
     {
-        // 1. PENDING / PENDING member submits onboarding
+        // 1. PENDING / PENDING member submits safe profile updates
         $user = User::factory()->create();
         $member = CooperativeMember::factory()->pending()->create([
             'user_id' => $user->id,
             'name' => 'Original Name',
             'phone' => null,
-            'identity_number' => null,
+            'identity_number' => '3201234567890001',
+            'kategori' => 'CDB',
+            'npwp' => '12.345.678.9-000.000',
+            'nama_bank' => 'BCA',
+            'no_rekening' => '1234567890',
+            'nama_pemilik_rekening' => 'Original Holder',
             'onboarding_submitted_at' => null,
         ]);
         $user->assignRole('Anggota');
 
+        // Payload includes both safe profile fields AND legacy sensitive fields
         $payload = [
             'name' => 'Updated Name',
-            'email' => $user->email,
+            'email' => 'new-email@example.com',
             'phone' => '08123456789',
             'address' => 'Jl. Gatot Subroto No. 45',
-            'identity_number' => '3201234567890001',
+            'identity_number' => '9999999999999999',
             'jenis_kelamin' => 'L',
             'kategori' => 'IP',
+            'npwp' => '99.999.999.9-999.999',
             'tanggal_lahir' => '1992-05-15',
             'tempat_lahir' => 'Jakarta',
             'pekerjaan' => 'Staff',
             'nama_bank' => 'BNI',
-            'nama_pemilik_rekening' => 'Updated Name',
+            'no_rekening' => '9876543210',
+            'nama_pemilik_rekening' => 'Updated Holder',
         ];
 
         $this->actingAs($user)
@@ -496,9 +570,25 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             ->assertSessionHas('success');
 
         $fresh = $member->fresh();
+        // Safe profile fields ARE updated
         $this->assertSame('Updated Name', $fresh->name);
+        $this->assertSame('08123456789', $fresh->phone);
+        $this->assertSame('Jl. Gatot Subroto No. 45', $fresh->address);
+        $this->assertSame('L', $fresh->jenis_kelamin);
+        $this->assertSame('1992-05-15', $fresh->tanggal_lahir?->format('Y-m-d'));
+        $this->assertSame('Jakarta', $fresh->tempat_lahir);
+        $this->assertSame('Staff', $fresh->pekerjaan);
         $this->assertNotNull($fresh->onboarding_submitted_at);
         $this->assertNotNull($fresh->profile_completed_at);
+
+        // Sensitive PII fields MUST NOT be mutated (R1-01)
+        $this->assertSame('3201234567890001', $fresh->identity_number);
+        $this->assertSame('CDB', $fresh->kategori);
+        $this->assertSame('12.345.678.9-000.000', $fresh->npwp);
+        $this->assertSame('BCA', $fresh->nama_bank);
+        $this->assertSame('1234567890', $fresh->no_rekening);
+        $this->assertSame('Original Holder', $fresh->nama_pemilik_rekening);
+        $this->assertSame($user->email, $user->fresh()->email);
 
         // Crucial invariant: validation_status and status MUST NOT self-advance!
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->validation_status);
@@ -508,7 +598,7 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             MemberLifecycleExperience::fromMember($fresh)
         );
 
-        // 2. ACTIVE / ACTIVE member submits onboarding (e.g. profile update)
+        // 2. ACTIVE / ACTIVE member submits onboarding -> Denied with 403 (R1-04)
         $userActive = User::factory()->create();
         $memberActive = CooperativeMember::factory()->active()->create([
             'user_id' => $userActive->id,
@@ -516,34 +606,122 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
         ]);
         $userActive->assignRole('Anggota');
 
-        $payloadActive = [
-            'name' => 'Active Member Updated',
-            'email' => $userActive->email,
-            'phone' => '08987654321',
-            'address' => 'Jl. Thamrin No. 10',
-            'identity_number' => '3201234567890002',
-            'jenis_kelamin' => 'P',
-            'kategori' => 'CDB',
-        ];
-
         $this->actingAs($userActive)
             ->from('/member/onboarding')
-            ->post(route('member.onboarding.submit'), $payloadActive)
-            ->assertRedirect(route('member.onboarding'))
-            ->assertSessionHas('success');
+            ->post(route('member.onboarding.submit'), ['name' => 'Should Fail'])
+            ->assertForbidden();
 
-        $freshActive = $memberActive->fresh();
-        $this->assertSame('Active Member Updated', $freshActive->name);
-        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $freshActive->status);
-        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $freshActive->validation_status);
-        $this->assertSame(
-            MemberLifecycleExperience::Active,
-            MemberLifecycleExperience::fromMember($freshActive)
-        );
+        $this->assertSame('Active Member', $memberActive->fresh()->name);
+
+        // 3. Rejected member submits onboarding -> Denied with 403 (R1-03)
+        $userRejected = User::factory()->create();
+        $memberRejected = CooperativeMember::factory()->rejected()->create([
+            'user_id' => $userRejected->id,
+            'name' => 'Rejected Member',
+        ]);
+        $userRejected->assignRole('Anggota');
+
+        $this->actingAs($userRejected)
+            ->from('/member/onboarding')
+            ->post(route('member.onboarding.submit'), ['name' => 'Should Also Fail'])
+            ->assertForbidden();
+
+        $this->assertSame('Rejected Member', $memberRejected->fresh()->name);
+
+        // 4. Blocked/inconsistent member submits onboarding -> Denied with 403
+        $userBlocked = User::factory()->create();
+        CooperativeMember::factory()->create([
+            'user_id' => $userBlocked->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+        $userBlocked->assignRole('Anggota');
+
+        $this->actingAs($userBlocked)
+            ->from('/member/onboarding')
+            ->post(route('member.onboarding.submit'), ['name' => 'Blocked'])
+            ->assertForbidden();
     }
 
     /**
-     * Requirement 9: Multi-tenant safety - member experience and access are strictly scoped to organization.
+     * Requirement 9: GET /member/onboarding renders lifecycle status UX or redirects/denies.
+     * R1-03: Rejected member reaches read-only page (200 OK) with validation notes and no edit capability.
+     * R1-04: Active member redirects to member.dashboard.
+     */
+    public function test_get_member_onboarding_renders_or_redirects_by_lifecycle(): void
+    {
+        // 1. Active member redirects to member.dashboard (R1-04)
+        $userActive = User::factory()->create();
+        CooperativeMember::factory()->active()->create(['user_id' => $userActive->id]);
+        $userActive->assignRole('Anggota');
+
+        $this->actingAs($userActive)
+            ->get(route('member.onboarding'))
+            ->assertRedirect(route('member.dashboard'));
+
+        // 2. Rejected member reaches page in read-only mode (R1-03)
+        $userRejected = User::factory()->create();
+        CooperativeMember::factory()->rejected()->create([
+            'user_id' => $userRejected->id,
+            'validation_notes' => 'Dokumen identitas tidak jelas.',
+        ]);
+        $userRejected->assignRole('Anggota');
+
+        $this->actingAs($userRejected)
+            ->get(route('member.onboarding'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kojayaku/Onboarding')
+                ->where('review_state', 'rejected')
+                ->where('can_edit_safe_profile', false)
+                ->where('can_view_lifecycle_status', true)
+                ->where('member.validation_notes', 'Dokumen identitas tidak jelas.')
+            );
+
+        // 3. Waiting verification member reaches page with editable safe profile
+        $userWaiting = User::factory()->create();
+        CooperativeMember::factory()->pending()->create(['user_id' => $userWaiting->id]);
+        $userWaiting->assignRole('Anggota');
+
+        $this->actingAs($userWaiting)
+            ->get(route('member.onboarding'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kojayaku/Onboarding')
+                ->where('review_state', 'pending')
+                ->where('can_edit_safe_profile', true)
+            );
+
+        // 4. Under review member reaches page with read-only review state
+        $userReview = User::factory()->create();
+        CooperativeMember::factory()->pendingReview()->create(['user_id' => $userReview->id]);
+        $userReview->assignRole('Anggota');
+
+        $this->actingAs($userReview)
+            ->get(route('member.onboarding'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kojayaku/Onboarding')
+                ->where('review_state', 'review')
+                ->where('can_edit_safe_profile', false)
+            );
+
+        // 5. Inconsistent / blocked member receives 403
+        $userBlocked = User::factory()->create();
+        CooperativeMember::factory()->create([
+            'user_id' => $userBlocked->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+        $userBlocked->assignRole('Anggota');
+
+        $this->actingAs($userBlocked)
+            ->get(route('member.onboarding'))
+            ->assertForbidden();
+    }
+
+    /**
+     * Requirement 10: Multi-tenant safety - member experience and access are strictly scoped to organization.
      */
     public function test_multi_tenant_isolation_member_experience_strictly_scoped_to_organization(): void
     {

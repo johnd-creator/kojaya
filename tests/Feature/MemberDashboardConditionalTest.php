@@ -233,7 +233,7 @@ class MemberDashboardConditionalTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('is_active_member', false)
-                ->where('is_pending_review', false)
+                ->where('is_pending_review', true)
             );
     }
 

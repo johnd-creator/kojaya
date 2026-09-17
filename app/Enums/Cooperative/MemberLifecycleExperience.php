@@ -31,11 +31,21 @@ enum MemberLifecycleExperience: string
             [CooperativeMember::VALIDATION_PENDING, CooperativeMember::VALIDATION_PENDING_REVIEW],
             [CooperativeMember::VALIDATION_PENDING, 'PENDING_REVIEW'] => self::UnderReview,
             [CooperativeMember::VALIDATION_INACTIVE, CooperativeMember::VALIDATION_REVISION] => self::RevisionRequired,
-            [CooperativeMember::VALIDATION_INACTIVE, CooperativeMember::VALIDATION_REJECTED],
-            [CooperativeMember::VALIDATION_INACTIVE, CooperativeMember::VALIDATION_INACTIVE],
-            [CooperativeMember::VALIDATION_RESIGNED, CooperativeMember::VALIDATION_RESIGNED] => self::Rejected,
+            [CooperativeMember::VALIDATION_INACTIVE, CooperativeMember::VALIDATION_REJECTED] => self::Rejected,
             [CooperativeMember::VALIDATION_ACTIVE, CooperativeMember::VALIDATION_ACTIVE] => self::Active,
             default => self::BlockedUnknown,
+        };
+    }
+
+    public function reviewState(): string
+    {
+        return match ($this) {
+            self::WaitingVerification => 'pending',
+            self::UnderReview => 'review',
+            self::RevisionRequired => 'revision',
+            self::Rejected => 'rejected',
+            self::Active => 'approved',
+            self::BlockedUnknown => 'blocked',
         };
     }
 

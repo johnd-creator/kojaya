@@ -17,12 +17,22 @@ Seluruh logika penurunan status diturunkan secara kanonikal melalui enum `App\En
 | `PENDING` | `PENDING` | `WaitingVerification` | `WAITING_VERIFICATION` | Menunggu Verifikasi Admin | `/member/onboarding` | ❌ Tidak |
 | `PENDING` | `PENDING_VALIDATION` / `PENDING_REVIEW` | `UnderReview` | `UNDER_REVIEW` | Menunggu Approval Pengurus | `/member/onboarding` | ❌ Tidak (Pratinjau) |
 | `INACTIVE` | `REVISION` | `RevisionRequired` | `REVISION_REQUIRED` | Perlu Revisi | `/member/onboarding` | ❌ Tidak |
-| `INACTIVE` | `REJECTED` | `Rejected` | `REJECTED` | Ditolak | `/member` | ❌ Tidak |
+| `INACTIVE` | `REJECTED` | `Rejected` | `REJECTED` | Ditolak | `/member/onboarding` (Read-only) | ❌ Tidak |
 | `ACTIVE` | `ACTIVE` | `Active` | `ACTIVE` | Aktif | `/member` (Dashboard) | ✅ Penuh |
+| `INACTIVE` | `INACTIVE` | `BlockedUnknown` | `BLOCKED_UNKNOWN` | Akses Dibatasi | HTTP 403 Forbidden | ❌ Tidak |
+| `RESIGNED` | *Nilai apapun* | `BlockedUnknown` | `BLOCKED_UNKNOWN` | Akses Dibatasi | HTTP 403 Forbidden | ❌ Tidak |
 | *Nilai lainnya / kontradiktif* | *Nilai lainnya / null* | `BlockedUnknown` | `BLOCKED_UNKNOWN` | Akses Dibatasi | HTTP 403 Forbidden | ❌ Tidak |
 
-### Karakteristik Keamanan Fail-Closed
-Kombinasi status yang tidak sah atau kontradiktif (misalnya `ACTIVE` dengan `PENDING`, `PENDING` dengan `REVISION`, atau nilai yang korup/hilang) secara otomatis jatuh ke `BLOCKED_UNKNOWN`. Sistem langsung menolak permintaan dengan **HTTP 403 Forbidden**, mencatat peringatan keamanan audit, dan tidak membocorkan data koperasi atau anggota.
+### Karakteristik Keamanan Fail-Closed & Proyeksi Deterministik (R1-02)
+- **Penurunan Murni Status**: Seluruh pengalaman siklus hidup diturunkan **hanya** dari `status` dan `validation_status`, tidak pernah bergantung pada `onboarding_submitted_at`.
+- **Proyeksi `review_state`**: Metode `reviewState()` pada `MemberLifecycleExperience` merupakan proyeksi deterministik:
+  - `WaitingVerification` -> `'pending'`
+  - `UnderReview` -> `'review'`
+  - `RevisionRequired` -> `'revision'`
+  - `Rejected` -> `'rejected'`
+  - `Active` -> `'approved'`
+  - `BlockedUnknown` -> `'blocked'`
+- Kombinasi status yang tidak sah atau kontradiktif (misalnya `ACTIVE` dengan `PENDING`, `INACTIVE` dengan `INACTIVE`, `RESIGNED`, atau nilai korup/hilang) secara otomatis jatuh ke `BLOCKED_UNKNOWN` (HTTP 403 Forbidden fail-closed).
 
 ---
 
@@ -31,8 +41,10 @@ Kombinasi status yang tidak sah atau kontradiktif (misalnya `ACTIVE` dengan `PEN
 ### A. Autentikasi Web Berbasis Sandi (Fortify LoginResponse)
 - Terletak di `App\Http\Responses\LoginResponse`.
 - Saat pengguna dengan peran `Anggota` berhasil login:
-  - Jika `isActive()`: diarahkan langsung ke dasbor anggota (`route('member.dashboard')`).
-  - Jika `isNonActiveLifecycle()` (`WAITING_VERIFICATION`, `UNDER_REVIEW`, `REVISION_REQUIRED`): diarahkan ke halaman status siklus hidup onboarding (`route('member.onboarding')`).
+  - Jika `isActive()`: diarahkan ke dasbor anggota (`route('member.dashboard')`) atau intended URL.
+  - Jika `isNonActiveLifecycle()` (`WAITING_VERIFICATION`, `UNDER_REVIEW`, `REVISION_REQUIRED`, `REJECTED`):
+    - **Keamanan `url.intended`**: Memanggil `session()->forget('url.intended')` sebelum redirect agar anggota non-aktif tidak dapat dibelokkan ke rute finansial/POS.
+    - Diarahkan ke halaman status siklus hidup onboarding (`route('member.onboarding')`).
   - Jika `isBlocked()`: dibatalkan dengan status **HTTP 403 Forbidden**.
 
 ### B. Autentikasi Google SSO (GoogleSsoController)
@@ -58,7 +70,7 @@ Dua lapis pengamanan middleware memastikan fitur-fitur sensitif koperasi terlind
 ### 1. Web Middleware: `EnsureMemberFullyActive` (`member.active`)
 - Memproteksi rute web finansial dan transaksional anggota (misal: simpanan, pinjaman, rekening toko).
 - Memeriksa apakah `MemberLifecycleExperience::fromMember($member)->isActive()`.
-- Jika anggota berada dalam siklus onboarding (`WAITING_VERIFICATION`, `UNDER_REVIEW`, `REVISION_REQUIRED`):
+- Jika anggota berada dalam siklus non-aktif (`WAITING_VERIFICATION`, `UNDER_REVIEW`, `REVISION_REQUIRED`, `REJECTED`):
   - Diberikan pengalihan aman ke `/member/onboarding` dengan pesan peringatan sesi terenkripsi: *"Layanan finansial hanya dapat diakses setelah keanggotaan Anda aktif sepenuhnya."*
 - Jika status keanggotaan adalah `BLOCKED_UNKNOWN`:
   - Ditolak dengan HTTP 403 Forbidden.
@@ -80,16 +92,23 @@ Dua lapis pengamanan middleware memastikan fitur-fitur sensitif koperasi terlind
 
 ---
 
-## 4. Penghapusan Eskalasi Mandiri (Preservasi Otoritas ONB-03)
+## 4. Proteksi PII & Penutupan Mutasi Sensitif (R1-01, R1-03, R1-04)
 
-Sebelum implementasi ini, `MemberOnboardingSubmitService` secara otomatis memutasi kolom `validation_status` menjadi `PENDING_REVIEW` setiap kali form `POST /member/onboarding` dikirimkan. Hal ini memungkinkan pengguna mempromosikan status mereka sendiri tanpa verifikasi admin.
+### A. Penutupan Mutasi PII Sensitif (R1-01)
+`MemberOnboardingSubmitService::submit()` menerapkan *safe profile allowlist* yang sangat ketat:
+- **Hanya kolom profil aman yang diizinkan diperbarui**: `name`, `phone`, `address`, `jenis_kelamin`, `tanggal_lahir`, `tempat_lahir`, `pekerjaan`.
+- **Kolom sensitif/otoritas diabaikan dan tidak pernah dimutasi**: `identity_number` (NIK), `npwp`, `kategori`, `no_rekening`, `nama_bank`, `nama_pemilik_rekening`, `organization_id`, `employee_id`, `member_no`, `jenis_anggota`, serta `users.email`.
+- `status` dan `validation_status` **TIDAK PERNAH** dimutasi oleh pengiriman onboarding anggota, mempertahankan otoritas penuh **ONB-03**.
 
-Pada ONB-08:
-- `MemberOnboardingSubmitService::submit()` diperbarui agar **hanya** memperbarui data profil anggota (nama, kontak, alamat, identitas) serta merekam waktu pengisian (`profile_completed_at`, `onboarding_submitted_at`).
-- Kolom `status` dan `validation_status` **TIDAK PERNAH** dimutasi oleh form submission anggota.
-- Anggota `PENDING/PENDING` tetap `PENDING/PENDING` setelah submit.
-- Anggota `ACTIVE/ACTIVE` tetap `ACTIVE/ACTIVE` setelah submit.
-- Hanya alur verifikasi maker-checker admin dan pengurus (**ONB-03**) yang memiliki wewenang mengubah status validasi keanggotaan.
+### B. Anggota Ditolak (R1-03)
+- Anggota berstatus `INACTIVE/REJECTED` diarahkan ke `GET /member/onboarding` dalam **mode baca-saja (*read-only*)**.
+- Menampilkan pesan penolakan dan `validation_notes` dari admin/pengurus.
+- Tidak memiliki tombol kirim ulang (*no resubmit CTA*), tidak ada tombol aktivasi buatan, dan pengiriman `POST /member/onboarding` ditolak dengan **HTTP 403 Forbidden**.
+
+### C. Pemensiunan Wizard Pendaftaran Kedua (R1-04)
+- Anggota berstatus `ACTIVE/ACTIVE` yang mengunjungi `GET /member/onboarding` langsung dialihkan ke `member.dashboard`.
+- Pengiriman `POST /member/onboarding` oleh anggota aktif ditolak dengan **HTTP 403 Forbidden**.
+- Seluruh form wizard pendaftaran kedua (input NIK, NPWP, Bank, dsb.) dipensiunkan dari `Onboarding.vue`.
 
 ---
 
@@ -115,32 +134,36 @@ Daftar pemetaan `onboarding_next_step` ke pengalaman siklus hidup:
 - `RevisionRequired` -> `revision_required`
 - `Rejected` -> `rejected`
 - `WaitingVerification` -> `waiting_admin_acceptance`
-- `BlockedUnknown` -> `blocked`
+- `BlockedUnknown` -> `blocked` (HTTP 403 fail-closed)
 
 ---
 
 ## 6. Antarmuka Pengguna (Kojayaku Onboarding UI)
 
-Komponen frontend `resources/js/pages/Kojayaku/Onboarding.vue` telah disempurnakan:
+Komponen frontend `resources/js/pages/Kojayaku/Onboarding.vue` telah disempurnakan menjadi *Lifecycle Status UX*:
+- Menghilangkan form wizard pendaftaran kedua (NIK, NPWP, data rekening bank).
 - Menghilangkan tombol persetujuan mandiri (*self-approval CTA*) atau tombol aktivasi buatan.
 - Menampilkan status siklus hidup dalam Bahasa Indonesia yang informatif:
-  - **Menunggu Verifikasi Admin**: Menjelaskan berkas sedang dalam antrean verifikasi petugas koperasi.
-  - **Menunggu Persetujuan Pengurus**: Menjelaskan data telah diverifikasi petugas dan menunggu persetujuan pengurus.
-  - **Perlu Revisi**: Menampilkan catatan perbaikan yang dibutuhkan dan mengizinkan pembaruan formulir.
-  - **Ditolak**: Menampilkan informasi penolakan pendaftaran.
-  - **Aktif**: Menampilkan konfirmasi keanggotaan penuh dan tautan ke dasbor.
+  - **Menunggu Verifikasi Admin**: Menjelaskan berkas sedang dalam antrean verifikasi petugas koperasi, dengan opsi memperbarui data profil dasar (telepon, alamat, tanggal lahir).
+  - **Menunggu Persetujuan Pengurus**: Mode pratinjau yang menjelaskan data telah diverifikasi petugas dan menunggu persetujuan akhir pengurus.
+  - **Perlu Revisi**: Menampilkan catatan perbaikan yang dibutuhkan dan mengizinkan pembaruan data profil yang aman.
+  - **Ditolak**: Kartu status penolakan baca-saja (*read-only*) lengkap dengan alasan/catatan verifikasi, tanpa tombol kirim ulang.
+  - **Aktif**: Konfirmasi keanggotaan penuh dan tautan langsung ke dasbor.
 
 ---
 
 ## 7. Verifikasi & Pengujian
 
-Suite pengujian khusus dibuat di `tests/Feature/Onboarding/MemberFirstLoginLifecycleExperienceTest.php` yang mencakup 9 skenario komprehensif:
+Suite pengujian komprehensif di `tests/Feature/Onboarding/MemberFirstLoginLifecycleExperienceTest.php` mencakup 10 skenario:
 
 1. `test_derived_lifecycle_experience_mapping_resolves_all_canonical_and_inconsistent_states`:
    - Validasi pemetaan kanonikal 5 status valid.
-   - Validasi fail-closed 7 pasangan kontradiktif/tidak dikenal.
+   - Validasi fail-closed pasangan kontradiktif (termasuk `INACTIVE/INACTIVE` dan `RESIGNED/RESIGNED`).
+   - Validasi proyeksi deterministik `reviewState()`.
+   - Validasi invariant R1-02 (`onboarding_submitted_at` tidak mengubah status pengalaman).
 2. `test_web_fortify_login_redirects_non_active_members_to_onboarding_and_active_to_dashboard`:
    - Pengujian login sandi web untuk semua status non-aktif mengarah ke onboarding.
+   - Pengujian keamanan `url.intended` (dihapus saat redirect anggota non-aktif).
    - Anggota aktif mengarah ke dasbor.
    - Anggota dengan status kontradiktif gagal dengan HTTP 403.
 3. `test_dashboard_controller_routes_members_appropriately`:
@@ -152,8 +175,16 @@ Suite pengujian khusus dibuat di `tests/Feature/Onboarding/MemberFirstLoginLifec
 6. `test_api_member_active_middleware_gate_denies_non_active_and_permits_active`:
    - Pengujian proteksi endpoint API finansial dengan error code `MEMBER_NOT_ACTIVE` (403).
 7. `test_api_auth_login_returns_lifecycle_experience_and_onboarding_next_step`:
-   - Pengujian integritas payload API login untuk seluruh status siklus hidup.
+   - Pengujian integritas payload API login untuk seluruh status siklus hidup serta 403 fail-closed untuk status inkonsisten.
 8. `test_legacy_onboarding_submit_never_self_advances_status_preserving_onb03_authority`:
-   - Memastikan `POST /member/onboarding` tidak memutasi `validation_status` maupun `status`.
-9. `test_multi_tenant_isolation_member_experience_strictly_scoped_to_organization`:
-   - Memastikan isolasi data multi-tenant dan boundary koperasi tetap terjaga.
+   - Memastikan `POST /member/onboarding` memperbarui profil aman namun tidak memutasi `validation_status` maupun `status` (preservasi ONB-03).
+   - Memastikan kolom PII sensitif (NIK, email, NPWP, kategori, bank) diabaikan dan tidak termutasi (R1-01).
+   - Memastikan anggota aktif ditolak 403 pada `POST /member/onboarding` (R1-04).
+   - Memastikan anggota ditolak ditolak 403 pada `POST /member/onboarding` (R1-03).
+9. `test_get_member_onboarding_renders_or_redirects_by_lifecycle`:
+   - Anggota aktif dialihkan ke dasbor (R1-04).
+   - Anggota ditolak menerima halaman baca-saja 200 OK dengan catatan validasi (R1-03).
+   - Anggota menunggu/revisi menerima halaman dengan kemampuan edit profil aman.
+   - Anggota berstatus tidak konsisten menerima 403 Forbidden.
+10. `test_multi_tenant_isolation_member_experience_strictly_scoped_to_organization`:
+    - Memastikan isolasi data multi-tenant dan boundary koperasi tetap terjaga.

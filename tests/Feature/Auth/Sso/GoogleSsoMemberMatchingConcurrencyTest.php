@@ -313,30 +313,56 @@ PHP;
             $this->fail("Failed to spawn worker {$workerName}");
         }
 
-        return $process;
+        return [
+            'process' => $process,
+            'pipes' => $pipes,
+        ];
     }
 
     /**
-     * @param  resource  $process
+     * @param  array{process: mixed, pipes: array<int, resource>}  $worker
      * @return array<string, mixed>
      */
-    private function finishWorker($process, string $resultDir, string $workerName): array
+    private function finishWorker(array $worker, string $resultDir, string $workerName): array
     {
-        $stdout = stream_get_contents($pipes[1] ?? null) ?: '';
-        $stderr = stream_get_contents($pipes[2] ?? null) ?: '';
-        $exitCode = proc_close($process);
-
-        $resultFile = $resultDir.'/'.$workerName.'.json';
-        if (! file_exists($resultFile)) {
-            $this->fail(sprintf(
-                'Worker %s produced no result file. exit=%d stdout=%s stderr=%s',
-                $workerName,
-                $exitCode,
-                $stdout,
-                $stderr
-            ));
+        $stderr = '';
+        if (is_resource($worker['pipes'][2] ?? null)) {
+            $stderr = (string) stream_get_contents($worker['pipes'][2]);
+            fclose($worker['pipes'][2]);
         }
 
-        return json_decode((string) file_get_contents($resultFile), true, 512, JSON_THROW_ON_ERROR);
+        if (is_resource($worker['pipes'][1] ?? null)) {
+            fclose($worker['pipes'][1]);
+        }
+
+        $exitCode = 0;
+        if (is_resource($worker['process'] ?? null)) {
+            $exitCode = proc_close($worker['process']);
+        }
+
+        $resultFile = $resultDir.'/'.$workerName.'.json';
+        $contents = file_exists($resultFile) ? file_get_contents($resultFile) : '';
+
+        if ($contents === false || $contents === '') {
+            return [
+                'ok' => false,
+                'worker' => $workerName,
+                'class' => 'WorkerCrashed',
+                'message' => "Worker [{$workerName}] did not write a result file. Exit code: {$exitCode}. Stderr: ".trim($stderr),
+            ];
+        }
+
+        $decoded = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+
+        if (! is_array($decoded) || ! array_key_exists('ok', $decoded)) {
+            return [
+                'ok' => false,
+                'worker' => $workerName,
+                'class' => 'MalformedResult',
+                'message' => "Worker [{$workerName}] wrote a malformed result. Contents: {$contents}",
+            ];
+        }
+
+        return $decoded;
     }
 }

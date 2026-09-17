@@ -2,7 +2,6 @@
 
 namespace App\Http\Responses;
 
-use App\Models\CooperativeMember;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
@@ -14,17 +13,21 @@ class LoginResponse implements LoginResponseContract
 
         if ($user && ($user->cooperativeMember || $user->hasRole('Anggota'))) {
             $member = $user->cooperativeMember;
-            $status = $member->validation_status ?: $member->status;
+            if (! $member) {
+                return redirect()->intended(config('fortify.home'));
+            }
 
-            if (in_array($status, [
-                CooperativeMember::VALIDATION_PENDING,
-                CooperativeMember::VALIDATION_PENDING_REVIEW,
-                CooperativeMember::VALIDATION_REVISION,
-            ], true)) {
+            $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
+
+            if ($experience->isActive()) {
+                return redirect()->intended(route('member.dashboard', absolute: false));
+            }
+
+            if ($experience->isNonActiveLifecycle()) {
                 return redirect()->intended(route('member.onboarding', absolute: false));
             }
 
-            return redirect()->intended(route('member.dashboard', absolute: false));
+            abort(403, 'Status keanggotaan tidak valid.');
         }
 
         return redirect()->intended(config('fortify.home'));

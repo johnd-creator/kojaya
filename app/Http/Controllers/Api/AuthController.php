@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Enums\TokenApp;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MobileLoginRequest;
-use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\Sso\GoogleSsoService;
 use App\Services\Auth\TokenIssuanceService;
@@ -52,11 +51,20 @@ class AuthController extends Controller
         $token = $this->tokenIssuer->issue($user, $app, $deviceName, $validated['device_id'] ?? null);
         $abilities = $token->accessToken->abilities;
 
+        $refreshedUser = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
+        $member = $refreshedUser->cooperativeMember;
+        $experience = $member ? \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member) : null;
+
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,
             'abilities' => $abilities,
-            'user' => $this->sessionPayload($user->refresh()->load(['roles', 'employee', 'cooperativeMember'])),
+            'auth_result' => GoogleSsoService::RESULT_LOGIN_EXISTING,
+            'user' => $this->sessionPayload($refreshedUser),
+            'member_status' => $member?->status,
+            'validation_status' => $member?->validation_status,
+            'lifecycle_experience' => $experience?->value,
+            'onboarding_next_step' => $this->onboardingNextStep($refreshedUser),
         ]);
     }
 
@@ -263,6 +271,8 @@ class AuthController extends Controller
         $abilities = $token->accessToken->abilities;
         $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
+        $experience = $user->cooperativeMember ? \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($user->cooperativeMember) : null;
+
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,
@@ -271,6 +281,7 @@ class AuthController extends Controller
             'user' => $this->sessionPayload($user),
             'member_status' => $user->cooperativeMember?->status,
             'validation_status' => $user->cooperativeMember?->validation_status,
+            'lifecycle_experience' => $experience?->value,
             'onboarding_next_step' => $this->onboardingNextStep($user),
         ]);
     }
@@ -441,11 +452,15 @@ class AuthController extends Controller
             return null;
         }
 
-        return match ($member->validation_status) {
-            CooperativeMember::VALIDATION_ACTIVE => 'dashboard',
-            CooperativeMember::VALIDATION_PENDING_REVIEW => 'waiting_final_approval',
-            CooperativeMember::VALIDATION_REJECTED => 'rejected',
-            default => 'waiting_admin_acceptance',
+        $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
+
+        return match ($experience) {
+            \App\Enums\Cooperative\MemberLifecycleExperience::Active => 'dashboard',
+            \App\Enums\Cooperative\MemberLifecycleExperience::UnderReview => 'waiting_final_approval',
+            \App\Enums\Cooperative\MemberLifecycleExperience::RevisionRequired => 'revision_required',
+            \App\Enums\Cooperative\MemberLifecycleExperience::Rejected => 'rejected',
+            \App\Enums\Cooperative\MemberLifecycleExperience::WaitingVerification => 'waiting_admin_acceptance',
+            default => 'blocked',
         };
     }
 }

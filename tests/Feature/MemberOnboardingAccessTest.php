@@ -89,7 +89,7 @@ class MemberOnboardingAccessTest extends TestCase
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
             'user_id' => $user->id,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'status' => CooperativeMember::VALIDATION_ACTIVE,
             'onboarding_submitted_at' => null,
         ]);
@@ -101,7 +101,7 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
                 ->where('review_state', 'draft')
-                ->where('validation_status', 'PENDING')
+                ->where('validation_status', 'ACTIVE')
                 ->where('submitted', false)
             )
             ->assertDontSee('member-admission-waiting');
@@ -112,7 +112,7 @@ class MemberOnboardingAccessTest extends TestCase
         $user = User::factory()->create();
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'status' => CooperativeMember::VALIDATION_ACTIVE,
             'onboarding_submitted_at' => null,
             'identity_number' => null,
@@ -136,7 +136,7 @@ class MemberOnboardingAccessTest extends TestCase
         $fresh = $member->fresh();
 
         $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->status);
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
     }
 
     public function test_admin_verified_member_can_submit_onboarding(): void
@@ -173,7 +173,7 @@ class MemberOnboardingAccessTest extends TestCase
         CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'validation_status' => CooperativeMember::VALIDATION_REVISION,
-            'status' => 'PENDING',
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
             'onboarding_submitted_at' => null,
         ]);
         $user->assignRole('Anggota');
@@ -195,7 +195,7 @@ class MemberOnboardingAccessTest extends TestCase
         CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'validation_status' => CooperativeMember::VALIDATION_REVISION,
-            'status' => 'PENDING',
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
             'onboarding_submitted_at' => now(),
         ]);
         $user->assignRole('Anggota');

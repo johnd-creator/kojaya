@@ -295,6 +295,11 @@ class MemberPortalController extends Controller
         $member = $this->memberOrAbort($request);
         $member->loadMissing(['organization', 'user']);
 
+        $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
+        if ($experience->isBlocked()) {
+            abort(403, 'Status keanggotaan tidak valid.');
+        }
+
         $validation = $member->validation_status ?: $member->status;
         $submitted = $member->onboarding_submitted_at !== null;
         $reviewState = $this->resolveOnboardingReviewState($validation, $submitted);
@@ -304,6 +309,7 @@ class MemberPortalController extends Controller
             'onboarding' => $service->status($member),
             'submitted' => $submitted,
             'review_state' => $reviewState,
+            'lifecycle_experience' => $experience->value,
             'validation_status' => $validation,
             'options' => [
                 'jenisKelamin' => [

@@ -20,13 +20,17 @@ class DashboardController extends Controller
 
         if ($user && $user->cooperativeMember) {
             $member = $user->cooperativeMember;
-            $status = $member->validation_status ?: $member->status;
+            $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
 
-            if (in_array($status, [\App\Models\CooperativeMember::VALIDATION_PENDING, \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW, \App\Models\CooperativeMember::VALIDATION_REVISION], true)) {
+            if ($experience->isActive()) {
+                return redirect()->route('member.dashboard');
+            }
+
+            if ($experience->isNonActiveLifecycle()) {
                 return redirect()->route('member.onboarding');
             }
 
-            return redirect()->route('member.dashboard');
+            abort(403, 'Status keanggotaan tidak valid.');
         }
 
         return Inertia::render('Dashboard', [

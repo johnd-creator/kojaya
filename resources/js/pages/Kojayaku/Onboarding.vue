@@ -86,6 +86,7 @@ const props = defineProps<{
     | "approved"
     | "pending";
   validation_status: string;
+  lifecycle_experience?: string;
   options: Options;
 }>();
 

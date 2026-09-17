@@ -65,7 +65,7 @@ class MemberOnboardingSubmitTest extends TestCase
 
         $fresh = $member->fresh();
         $this->assertSame('Andi Susilo', $fresh->name);
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->validation_status);
         $this->assertNotNull($fresh->onboarding_submitted_at);
         $this->assertNotNull($fresh->profile_completed_at);
 
@@ -136,7 +136,8 @@ class MemberOnboardingSubmitTest extends TestCase
             ->assertSessionHas('success');
 
         $fresh = $member->fresh();
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->status);
     }
 
     public function test_request_rejects_empty_required_fields(): void

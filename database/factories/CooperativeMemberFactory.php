@@ -37,7 +37,8 @@ class CooperativeMemberFactory extends Factory
             'address' => fake()->address(),
             'joined_at' => now()->subMonths(fake()->numberBetween(1, 24))->toDateString(),
             'resigned_at' => null,
-            'status' => fake()->randomElement(['PENDING', 'ACTIVE']),
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
             'tanggal_lahir' => fake()->optional()->date(),
             'tempat_lahir' => fake()->optional()->city(),
             'pekerjaan' => fake()->optional()->jobTitle(),
@@ -79,6 +80,24 @@ class CooperativeMemberFactory extends Factory
             'status' => 'PENDING',
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
             'onboarding_submitted_at' => null,
+        ]);
+    }
+
+    public function revision(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_REVISION,
+            'onboarding_submitted_at' => now(),
+        ]);
+    }
+
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_REJECTED,
+            'onboarding_submitted_at' => now(),
         ]);
     }
 }

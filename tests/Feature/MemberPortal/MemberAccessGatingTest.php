@@ -188,10 +188,18 @@ class MemberAccessGatingTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('Anggota');
+        $status = match ($validationStatus) {
+            CooperativeMember::VALIDATION_ACTIVE => CooperativeMember::VALIDATION_ACTIVE,
+            CooperativeMember::VALIDATION_REVISION,
+            CooperativeMember::VALIDATION_REJECTED,
+            CooperativeMember::VALIDATION_INACTIVE => CooperativeMember::VALIDATION_INACTIVE,
+            default => CooperativeMember::VALIDATION_PENDING,
+        };
+
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'validation_status' => $validationStatus,
-            'status' => $validationStatus === CooperativeMember::VALIDATION_ACTIVE ? 'ACTIVE' : 'PENDING',
+            'status' => $status,
             'onboarding_submitted_at' => $validationStatus === CooperativeMember::VALIDATION_PENDING ? null : now(),
         ]);
 

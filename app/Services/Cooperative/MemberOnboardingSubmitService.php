@@ -46,10 +46,6 @@ class MemberOnboardingSubmitService
                 'nama_pemilik_rekening' => $data['nama_pemilik_rekening'] ?? null,
                 'profile_completed_at' => Carbon::now(),
                 'onboarding_submitted_at' => Carbon::now(),
-                'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
-                'status' => $member->status === CooperativeMember::VALIDATION_ACTIVE
-                    ? CooperativeMember::VALIDATION_ACTIVE
-                    : CooperativeMember::VALIDATION_PENDING,
             ];
 
             if (array_key_exists('npwp', $data)) {

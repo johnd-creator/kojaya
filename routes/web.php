@@ -218,6 +218,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('members/import', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'index'])->name('members.import');
             Route::post('members/import/preview', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'preview'])->name('members.import.preview');
             Route::get('members/import/template', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'downloadTemplate'])->name('members.import.template');
+            Route::post('members/import/execute', [\App\Http\Controllers\Cooperative\MemberImportPreviewController::class, 'execute'])->name('members.import.execute');
         });
 
         Route::middleware('can:view_cooperative_member')->group(function () {

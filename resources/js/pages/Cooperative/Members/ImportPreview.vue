@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from "@inertiajs/vue3";
+import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
 import {
   AlertCircle,
   AlertTriangle,
@@ -88,18 +88,31 @@ interface OrganizationOption {
   name: string;
 }
 
-const props = defineProps<{
-  is_global: boolean;
-  current_organization_id: string | null;
-  organizations: OrganizationOption[];
-  default_import_date: string;
-  canonical_headers: string[];
-  preview: ImportValidationResultPayload | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    is_global: boolean;
+    current_organization_id: string | null;
+    organizations: OrganizationOption[];
+    default_import_date: string;
+    canonical_headers: string[];
+    preview: ImportValidationResultPayload | null;
+    preview_proof?: string | null;
+    file_sha256?: string | null;
+    execution_enabled?: boolean;
+  }>(),
+  {
+    preview_proof: null,
+    file_sha256: null,
+    execution_enabled: false,
+  },
+);
+
+const flash = computed(() => (usePage().props.flash as any) ?? {});
 
 const selectedFile = ref<File | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const activeFilter = ref<"all" | "valid" | "invalid" | "manual_review">("all");
+const isConfirmDialogOpen = ref(false);
 
 const form = useForm({
   file: null as File | null,
@@ -107,6 +120,44 @@ const form = useForm({
     props.current_organization_id ?? props.organizations[0]?.id ?? "",
   import_date: props.default_import_date,
 });
+
+const executeForm = useForm({
+  file: null as File | null,
+  organization_id:
+    props.current_organization_id ?? props.organizations[0]?.id ?? "",
+  import_date: props.default_import_date,
+  preview_proof: props.preview_proof ?? "",
+  confirm_import: true,
+});
+
+const openConfirmDialog = (): void => {
+  isConfirmDialogOpen.value = true;
+};
+
+const closeConfirmDialog = (): void => {
+  isConfirmDialogOpen.value = false;
+};
+
+const submitExecute = (): void => {
+  const fileToSubmit = selectedFile.value || form.file;
+  if (!fileToSubmit) {
+    return;
+  }
+
+  executeForm.file = fileToSubmit;
+  executeForm.organization_id = form.organization_id;
+  executeForm.import_date = form.import_date;
+  executeForm.preview_proof = props.preview_proof ?? "";
+  executeForm.confirm_import = true;
+
+  executeForm.post("/cooperative/members/import/execute", {
+    preserveScroll: true,
+    forceFormData: true,
+    onSuccess: () => {
+      isConfirmDialogOpen.value = false;
+    },
+  });
+};
 
 const onFileChange = (e: Event): void => {
   const target = e.target as HTMLInputElement;
@@ -157,7 +208,7 @@ const isReadyForImport = computed(() => {
     props.preview.header_valid &&
     props.preview.total_rows > 0 &&
     props.preview.invalid_rows === 0 &&
-    props.preview.rows.every((r) => r.persistable)
+    props.preview.rows.every((r) => r.persistable && !r.manual_review_required)
   );
 });
 
@@ -202,6 +253,61 @@ const currentOrgName = computed(() => {
   >
     <PageContainer>
       <div class="space-y-6">
+        <!-- SUCCESS BANNER AFTER EXECUTION -->
+        <div
+          v-if="flash?.import_result"
+          class="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-5 text-emerald-950 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100"
+        >
+          <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <div class="flex items-start gap-3">
+              <CheckCircle2
+                class="mt-0.5 size-6 shrink-0 text-emerald-600 dark:text-emerald-400"
+              />
+              <div>
+                <h3
+                  class="text-base font-bold text-emerald-900 dark:text-emerald-100"
+                >
+                  Import Anggota ke DEV Berhasil Dipersistensikan
+                </h3>
+                <p class="mt-1 text-sm text-emerald-800 dark:text-emerald-300">
+                  Sebanyak
+                  <strong>{{
+                    formatNumber(flash.import_result.imported_count)
+                  }}</strong>
+                  anggota baru telah dibuat dengan status
+                  <strong>PENDING</strong>.
+                </p>
+                <div
+                  class="mt-3 flex flex-wrap gap-4 text-xs text-emerald-700 dark:text-emerald-400"
+                >
+                  <span
+                    >ID Impor:
+                    <code>{{ flash.import_result.import_id }}</code></span
+                  >
+                  <span
+                    >Nomor Di-generate:
+                    {{
+                      flash.import_result.generated_member_number_count
+                    }}</span
+                  >
+                  <span
+                    >Nomor Disediakan:
+                    {{ flash.import_result.supplied_member_number_count }}</span
+                  >
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/cooperative/members?status=PENDING"
+              class="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+            >
+              Buka Daftar Anggota (PENDING)
+            </Link>
+          </div>
+        </div>
+
         <!-- HEADER SECTION -->
         <section
           class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -559,13 +665,54 @@ const currentOrgName = computed(() => {
                   </p>
                 </div>
               </div>
-              <Button
-                disabled
-                variant="outline"
-                class="border-emerald-300 text-emerald-800 opacity-60"
+              <div
+                v-if="execution_enabled && preview_proof"
+                class="flex items-center gap-2"
               >
-                Eksekusi Impor (Tersedia di ONB-06)
-              </Button>
+                <Button
+                  type="button"
+                  :disabled="executeForm.processing || !selectedFile"
+                  class="bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm"
+                  @click="openConfirmDialog"
+                >
+                  <Upload class="mr-2 size-4" />
+                  {{
+                    executeForm.processing
+                      ? "Mengimpor ke DEV..."
+                      : "Import ke DEV"
+                  }}
+                </Button>
+              </div>
+
+              <div
+                v-else-if="!execution_enabled"
+                class="flex items-center gap-2"
+              >
+                <Badge
+                  variant="outline"
+                  class="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                >
+                  DEV Gate Nonaktif
+                </Badge>
+                <Button
+                  disabled
+                  variant="outline"
+                  class="border-zinc-300 text-zinc-500 opacity-60"
+                  title="Eksekusi impor dinonaktifkan melalui konfigurasi cooperative.member_import_execution_enabled"
+                >
+                  Eksekusi Dinonaktifkan
+                </Button>
+              </div>
+
+              <div v-else class="flex items-center gap-2">
+                <Button
+                  disabled
+                  variant="outline"
+                  class="border-zinc-300 text-zinc-500 opacity-60"
+                >
+                  Bukti Pratinjau Belum Terbit
+                </Button>
+              </div>
             </div>
 
             <div
@@ -944,6 +1091,112 @@ const currentOrgName = computed(() => {
             </Card>
           </div>
         </section>
+
+        <!-- CONFIRMATION MODAL -->
+        <div
+          v-if="isConfirmDialogOpen && preview"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+        >
+          <div
+            class="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+          >
+            <div class="flex items-start gap-3">
+              <div
+                class="rounded-xl bg-emerald-100 p-2 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+              >
+                <Upload class="size-6" />
+              </div>
+              <div>
+                <h3 class="text-lg font-bold">
+                  Konfirmasi Eksekusi Impor ke DEV
+                </h3>
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Harap periksa parameter sebelum melakukan persistensi ke basis
+                  data.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="mt-5 space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 text-xs dark:border-zinc-800 dark:bg-zinc-950/40"
+            >
+              <div
+                class="flex justify-between border-b border-zinc-200/60 py-1 dark:border-zinc-800"
+              >
+                <span class="text-zinc-500">Jumlah Calon Anggota:</span>
+                <span
+                  class="font-semibold text-emerald-700 dark:text-emerald-400"
+                  >{{ formatNumber(preview.valid_rows) }} orang</span
+                >
+              </div>
+              <div
+                class="flex justify-between border-b border-zinc-200/60 py-1 dark:border-zinc-800"
+              >
+                <span class="text-zinc-500">Organisasi Sasaran:</span>
+                <span class="font-semibold">{{ currentOrgName }}</span>
+              </div>
+              <div
+                class="flex justify-between border-b border-zinc-200/60 py-1 dark:border-zinc-800"
+              >
+                <span class="text-zinc-500">Tanggal Impor Efektif:</span>
+                <span class="font-semibold">{{ form.import_date }}</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-zinc-500">Status Awal Anggota:</span>
+                <span class="font-semibold">PENDING (Validasi PENDING)</span>
+              </div>
+            </div>
+
+            <div
+              class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
+            >
+              <p class="font-semibold">Peringatan Persistensi DEV:</p>
+              <p class="mt-1">
+                Data akan ditulis secara transaksional (all-or-nothing) ke basis
+                data DEV. Seluruh anggota akan berstatus
+                <strong>PENDING</strong> dan tetap memerlukan alur verifikasi
+                operasional (ONB-03).
+              </p>
+            </div>
+
+            <div
+              v-if="
+                executeForm.errors.execution || executeForm.errors.preview_proof
+              "
+              class="mt-3"
+            >
+              <InputError
+                :message="
+                  executeForm.errors.execution ||
+                  executeForm.errors.preview_proof
+                "
+              />
+            </div>
+
+            <div class="mt-6 flex items-center justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                :disabled="executeForm.processing"
+                @click="closeConfirmDialog"
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                :disabled="executeForm.processing"
+                class="bg-emerald-700 text-white hover:bg-emerald-800"
+                @click="submitExecute"
+              >
+                {{
+                  executeForm.processing
+                    ? "Memproses Transaksi..."
+                    : "Ya, Eksekusi Impor ke DEV"
+                }}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </PageContainer>
   </AppLayout>

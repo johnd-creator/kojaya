@@ -49,6 +49,17 @@ final class ImportValidationResult implements ArrayAccess, JsonSerializable
         return $this->toArray();
     }
 
+    public function requiresManualReview(): bool
+    {
+        foreach ($this->rows as $row) {
+            if ($row->manualReviewRequired) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function offsetExists(mixed $offset): bool
     {
         return array_key_exists($offset, $this->toArray());

@@ -64,7 +64,7 @@ final readonly class MemberGoogleSsoMatchResult
     {
         return [
             'user' => $this->user,
-            'result' => $this->success ? GoogleSsoService::RESULT_LOGIN_LINKED : GoogleSsoService::RESULT_NO_REGISTRATION,
+            'result' => $this->success ? $this->resultCode : GoogleSsoService::RESULT_NO_REGISTRATION,
             'social_account' => $this->socialAccount,
             'member' => $this->member,
             'reason' => $this->reason,

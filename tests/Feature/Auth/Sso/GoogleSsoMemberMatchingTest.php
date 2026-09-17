@@ -49,7 +49,7 @@ class GoogleSsoMemberMatchingTest extends TestCase
      */
     public function test_01_existing_google_provider_id_binding_logs_existing_user_in(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->unverified()->create([
             'organization_id' => $this->organization->id,
             'email' => 'existing@example.com',
         ]);
@@ -68,6 +68,34 @@ class GoogleSsoMemberMatchingTest extends TestCase
         $response->assertRedirect();
 
         $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
+
+    /**
+     * 01b. existing Google provider_id binding logs in even if Google reports email_verified = false (R1-01)
+     */
+    public function test_01b_existing_google_provider_id_binding_logs_in_even_if_email_unverified(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'organization_id' => $this->organization->id,
+            'email' => 'existing-unverified@example.com',
+        ]);
+        $user->assignRole('Anggota');
+
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google-uid-01b',
+            'provider_email' => 'existing-unverified@example.com',
+        ]);
+
+        $this->mockSocialite(googleId: 'google-uid-01b', email: 'existing-unverified@example.com', verified: false);
+
+        $response = $this->get(route('auth.google.callback'));
+        $response->assertRedirect();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNull($user->fresh()->email_verified_at);
     }
 
     /**
@@ -75,7 +103,7 @@ class GoogleSsoMemberMatchingTest extends TestCase
      */
     public function test_02_existing_provider_binding_ignores_email_change_and_preserves_canonical_member(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->unverified()->create([
             'organization_id' => $this->organization->id,
             'email' => 'original@example.com',
         ]);
@@ -105,6 +133,7 @@ class GoogleSsoMemberMatchingTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertSame('original@example.com', $member->fresh()->email);
         $this->assertSame('original@example.com', $user->fresh()->email);
+        $this->assertNull($user->fresh()->email_verified_at);
     }
 
     /**
@@ -707,25 +736,22 @@ class GoogleSsoMemberMatchingTest extends TestCase
             'validation_status' => CooperativeMember::VALIDATION_PENDING,
         ]);
 
-        // Force a collision on social_accounts provider_id to trigger DB exception during transaction
-        $dummyUser = User::factory()->create();
-        SocialAccount::factory()->create([
-            'user_id' => $dummyUser->id,
-            'provider' => 'google',
-            'provider_id' => 'conflicting-uid-27',
-        ]);
+        SocialAccount::creating(function (SocialAccount $social) {
+            if ($social->provider_id === 'simulated-failure-uid-27') {
+                throw new \RuntimeException('Simulated SocialAccount creation failure');
+            }
+        });
 
-        // Attempt matching with an email for $member but the conflicting provider_id
-        // However, Step 1 would normally find it. To bypass Step 1 and force failure in executeFirstTimeLink,
-        // we can test executeFirstTimeLink with conflicting email or simulated failure.
-        $this->mockSocialite(googleId: 'conflicting-uid-27', email: 'rollback.test@example.com', verified: true);
+        $this->mockSocialite(googleId: 'simulated-failure-uid-27', email: 'rollback.test@example.com', verified: true);
 
-        $this->get(route('auth.google.callback'))->assertRedirect();
+        $response = $this->get(route('auth.google.callback'));
+        $response->assertRedirect(route('login'))
+            ->assertSessionHasErrors('sso');
 
-        // Step 1 logged in the existing dummy user!
-        $this->assertAuthenticatedAs($dummyUser);
+        $this->assertGuest();
         $this->assertNull($member->fresh()->user_id);
         $this->assertDatabaseMissing('users', ['email' => 'rollback.test@example.com']);
+        $this->assertDatabaseMissing('social_accounts', ['provider_id' => 'simulated-failure-uid-27']);
     }
 
     /**
@@ -1047,6 +1073,38 @@ class GoogleSsoMemberMatchingTest extends TestCase
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $member->fresh()->status);
     }
 
+    /**
+     * 41. match result DTO returns correct result code ('login_existing' vs 'login_linked')
+     */
+    public function test_41_match_result_dto_returns_correct_result_codes(): void
+    {
+        $matchingService = app(\App\Services\Auth\Sso\MemberGoogleSsoMatchingService::class);
+
+        // Case A: First-time match
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => null,
+            'email' => 'dto.first@example.com',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $firstTimeUser = $this->fakeSocialiteUser('dto-first-uid', 'dto.first@example.com', true);
+        $resultFirst = $matchingService->resolve($firstTimeUser);
+
+        $this->assertTrue($resultFirst->success);
+        $this->assertSame('login_linked', $resultFirst->resultCode);
+        $this->assertSame('login_linked', $resultFirst->toArray()['result']);
+
+        // Case B: Existing login
+        $existingUser = $this->fakeSocialiteUser('dto-first-uid', 'dto.first@example.com', false);
+        $resultExisting = $matchingService->resolve($existingUser);
+
+        $this->assertTrue($resultExisting->success);
+        $this->assertSame('login_existing', $resultExisting->resultCode);
+        $this->assertSame('login_existing', $resultExisting->toArray()['result']);
+    }
+
     private function mockSocialite(string $googleId, string $email, bool $verified, ?string $name = null): void
     {
         $abstract = Mockery::mock(Provider::class);
@@ -1080,6 +1138,7 @@ class GoogleSsoMemberMatchingTest extends TestCase
 
     protected function tearDown(): void
     {
+        SocialAccount::flushEventListeners();
         Mockery::close();
         parent::tearDown();
     }

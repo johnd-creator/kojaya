@@ -81,10 +81,6 @@ class MemberGoogleSsoMatchingService
                 );
             }
 
-            if (! $user->email_verified_at) {
-                $user->forceFill(['email_verified_at' => Carbon::now()])->save();
-            }
-
             // Touch social account login timestamp
             $existingSocial->forceFill(['last_login_at' => Carbon::now()])->save();
             if ($user->cooperativeMember) {

@@ -120,7 +120,18 @@ class GoogleSsoService
         }
 
         $social = $this->linking->link($user, $googleUser, self::PROVIDER);
-        $this->markEmailVerifiedFromGoogle($user);
+
+        $isGoogleEmailVerified = (bool) (data_get($googleUser->user, 'email_verified')
+            ?? data_get($googleUser->user, 'verified_email')
+            ?? false);
+
+        $normalizedGoogleEmail = strtolower(trim((string) $googleUser->getEmail()));
+        $normalizedUserEmail = strtolower(trim((string) $user->email));
+
+        if ($isGoogleEmailVerified && $normalizedGoogleEmail !== '' && $normalizedGoogleEmail === $normalizedUserEmail) {
+            $this->markEmailVerifiedFromGoogle($user);
+        }
+
         $this->audit->logAuth('sso.google.authenticated_user_linked', $user->id);
 
         return $social;

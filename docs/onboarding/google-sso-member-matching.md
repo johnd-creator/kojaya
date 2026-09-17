@@ -25,17 +25,21 @@ Mengikat identitas eksternal Google (`provider_id` / `sub`) yang telah terotenti
 ## 2. Invarian Keamanan Identitas (Identity Invariants)
 
 1. **Email Google adalah bootstrap identity matching candidate semata, bukan identitas permanen.**
-   - Pencocokan email hanya digunakan pada kali pertama anggota mengaitkan akunnya (first-time match).
-   - Setelah tertaut, `provider_id` Google adalah identitas permanen eksternal. Perubahan email di sisi Google pada sesi berikutnya tidak akan memicu rematch dan tidak akan mengubah email kanonikal anggota.
+   - Pencocokan email hanya digunakan pada kali pertama anggota mengaitkan akunnya (first-time match, Step 2).
+   - Setelah tertaut, `provider_id` Google adalah identitas permanen eksternal (Step 1). Jika akun sudah tertaut, login langsung diproses berdasarkan `provider_id` bahkan jika sinyal `email_verified` Google pada sesi tersebut bernilai `false`.
+   - Perubahan email di sisi Google pada sesi berikutnya tidak akan memicu rematch dan tidak akan mengubah email kanonikal anggota maupun `users.email`.
 2. **Aturan Mutlak — Callback Google TIDAK BISA membuat anggota baru:**
    - Jika akun Google yang masuk tidak cocok dengan anggota kanonikal yang ada, sistem melakukan **fail-closed**.
    - Tidak ada baris baru di `cooperative_members`.
    - Tidak ada nomor anggota sementara (`TMP...`).
    - Tidak ada baris baru di `users`.
    - Tidak ada baris baru di `social_accounts`.
-3. **Verifikasi Email Google Wajib:**
-   - Sinyal `email_verified` atau `verified_email` dari Google OIDC info / tokeninfo wajib bernilai `true`. Email yang belum terverifikasi oleh Google ditolak secara tegas.
-4. **Otoritas Data Akun Pengguna:**
+3. **Verifikasi Email Google Wajib pada First-Time Bootstrap:**
+   - Sinyal `email_verified` atau `verified_email` dari Google OIDC info / tokeninfo wajib bernilai `true` saat melakukan pencocokan pertama kali (Step 2). Email yang belum terverifikasi oleh Google ditolak secara tegas.
+   - Pada akun yang sudah terikat sebelumnya (Step 1), verifikasi email Google tidak lagi menjadi syarat penghalang karena identitas terikat secara permanen pada `provider_id`.
+4. **Otoritas Data Akun Pengguna & Verifikasi Email Kanonikal:**
+   - Login pengguna eksisting **TIDAK** memutasi `users.email_verified_at`, `users.email`, maupun `cooperative_members.email`.
+   - Penautan eksplisit oleh pengguna yang sudah login (`/auth/google/link`) hanya akan menandai `users.email_verified_at` jika email Google terverifikasi DAN cocok secara persis dengan email pengguna kanonikal (`LOWER(TRIM(googleEmail)) === LOWER(TRIM(user->email))`). Jika email Google berbeda atau unverified, penautan akun sosial tetap tersimpan tetapi status verifikasi email kanonikal tidak diubah.
    - Nama pengguna (`users.name`) diambil dari data kanonikal koperasi (`nama_anggota` / `name`), bukan display name Google.
    - Email pengguna (`users.email`) diambil dari data kanonikal koperasi.
    - Organisasi (`users.organization_id`) diambil dari organisasi anggota koperasi.
@@ -124,7 +128,7 @@ Proses matching identitas **TIDAK** mengubah status siklus hidup anggota koperas
 | Anggota kanonikal sudah memiliki `user_id` yang berbeda | Gagal terkendali. Menolak penimpaan kepemilikan akun. | `MEMBER_USER_LINK_CONFLICT` |
 | Email Google bertabrakan dengan `users.email` lain yang tidak terafiliasi | Gagal terkendali. Menolak pengambilalihan akun sembarangan. | `USER_EMAIL_CONFLICT` |
 | Google `provider_id` sudah tertaut ke `users` lain | Login sebagai user pemilik binding eksisting (Step 1) atau tolak linking baru. | `GOOGLE_ACCOUNT_ALREADY_LINKED` |
-| Email Google tidak terverifikasi (`email_verified === false`) | Ditolak sebelum pencarian database. | `GOOGLE_EMAIL_NOT_VERIFIED` |
+| Email Google tidak terverifikasi (`email_verified === false`) | Ditolak pada first-time bootstrap (Step 2). Tidak menghalangi login jika `provider_id` sudah terikat sah sebelumnya (Step 1). | `GOOGLE_EMAIL_NOT_VERIFIED` |
 
 ---
 

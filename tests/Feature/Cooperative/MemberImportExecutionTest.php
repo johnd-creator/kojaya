@@ -779,15 +779,19 @@ class MemberImportExecutionTest extends TestCase
 
         $setup = $this->createUploadWithProof([$row1, $row2]);
 
-        // Inject simulated failure on row 2 via test hook
-        $service = app(MemberImportExecutionService::class);
-        $service->setAfterRowInsertHook(function ($member, $index) {
-            if ($index === 2) {
+        // Inject simulated mid-batch failure on row 2 via Eloquent event listener
+        $insertCount = 0;
+        $callback = function () use (&$insertCount) {
+            $insertCount++;
+            if ($insertCount === 2) {
                 throw new Exception('Simulated fatal mid-batch crash');
             }
-        });
+        };
+
+        \Illuminate\Support\Facades\Event::listen('eloquent.creating: '.CooperativeMember::class, $callback);
 
         try {
+            $service = app(MemberImportExecutionService::class);
             $service->execute(
                 filePath: $setup['file']->getRealPath(),
                 organizationId: (string) $this->organization->id,
@@ -797,32 +801,99 @@ class MemberImportExecutionTest extends TestCase
             $this->fail('Exception was expected');
         } catch (Exception $e) {
             $this->assertSame('Simulated fatal mid-batch crash', $e->getMessage());
+        } finally {
+            \Illuminate\Support\Facades\Event::forget('eloquent.creating: '.CooperativeMember::class);
         }
 
-        // Entire transaction rolled back to zero inserts
+        // Verified: Row 1 attempted insert, row 2 failed, entire transaction rolled back
+        $this->assertSame(2, $insertCount);
         $this->assertSame(0, CooperativeMember::count());
     }
 
-    public function test_34_mandatory_audit_failure_rolls_back_all_members(): void
+    public function test_34_mandatory_audit_failure_rolls_back_all_members_and_sanitizes_errors(): void
     {
-        $setup = $this->createUploadWithProof([$this->validRow()]);
+        $rawNik = '3171012301900099';
+        $setup = $this->createUploadWithProof([$this->validRow(['identity_number' => $rawNik])]);
 
-        // Mock AuditLogService to throw
+        // Mock AuditLogService to throw a sensitive internal exception on member import completion
+        $sensitiveMessage = 'SQLSTATE[23505]: duplicate key value violates unique constraint "secret_internal_idx"';
+        $dummyAudit = new AuditLog;
         $auditMock = $this->createMock(AuditLogService::class);
         $auditMock->method('log')
-            ->willThrowException(new Exception('Audit service unavailable'));
+            ->willReturnCallback(function (...$args) use ($sensitiveMessage, $dummyAudit) {
+                $action = $args[0] ?? $args['action'] ?? null;
+                if ($action === 'member.import.completed') {
+                    throw new Exception($sensitiveMessage);
+                }
+
+                return $dummyAudit;
+            });
 
         $this->app->instance(AuditLogService::class, $auditMock);
 
-        $this->actingAs($this->authorizedUnitAdmin)
+        $response = $this->actingAs($this->authorizedUnitAdmin)
             ->post(route('cooperative.members.import.execute'), [
                 'file' => $setup['file'],
                 'import_date' => '2026-06-01',
                 'preview_proof' => $setup['proof'],
                 'confirm_import' => true,
-            ])
-            ->assertSessionHasErrors(['execution']);
+            ]);
 
+        $response->assertSessionHasErrors(['execution']);
+
+        // Assert 0 members committed
+        $this->assertSame(0, CooperativeMember::count());
+
+        // Assert safe generic message in session
+        $error = session('errors')->first('execution');
+        $this->assertSame('Gagal menyelesaikan impor anggota. Tidak ada data yang disimpan.', $error);
+
+        // Assert NO sensitive database internals or raw NIK leaked
+        $this->assertStringNotContainsString('SQLSTATE', $error);
+        $this->assertStringNotContainsString('secret_internal_idx', $error);
+        $this->assertStringNotContainsString($sensitiveMessage, $error);
+        $this->assertStringNotContainsString($rawNik, $error);
+    }
+
+    public function test_34b_internal_audit_exception_does_not_leak_internals_in_json_response(): void
+    {
+        $rawNik = '3171012301900099';
+        $setup = $this->createUploadWithProof([$this->validRow(['identity_number' => $rawNik])]);
+
+        $sensitiveMessage = 'SQLSTATE[23505]: duplicate key value violates unique constraint "secret_internal_idx"';
+        $dummyAudit = new AuditLog;
+        $auditMock = $this->createMock(AuditLogService::class);
+        $auditMock->method('log')
+            ->willReturnCallback(function (...$args) use ($sensitiveMessage, $dummyAudit) {
+                $action = $args[0] ?? $args['action'] ?? null;
+                if ($action === 'member.import.completed') {
+                    throw new Exception($sensitiveMessage);
+                }
+
+                return $dummyAudit;
+            });
+
+        $this->app->instance(AuditLogService::class, $auditMock);
+
+        $response = $this->actingAs($this->authorizedUnitAdmin)
+            ->post(route('cooperative.members.import.execute'), [
+                'file' => $setup['file'],
+                'import_date' => '2026-06-01',
+                'preview_proof' => $setup['proof'],
+                'confirm_import' => true,
+            ], [
+                'Accept' => 'application/json',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['execution']);
+
+        $content = (string) $response->getContent();
+        $this->assertStringContainsString('Gagal menyelesaikan impor anggota. Tidak ada data yang disimpan.', $content);
+        $this->assertStringNotContainsString('SQLSTATE', $content);
+        $this->assertStringNotContainsString('secret_internal_idx', $content);
+        $this->assertStringNotContainsString($sensitiveMessage, $content);
+        $this->assertStringNotContainsString($rawNik, $content);
         $this->assertSame(0, CooperativeMember::count());
     }
 

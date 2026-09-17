@@ -160,21 +160,23 @@ Tepat 12 kolom kanonikal dipetakan ke atribut model [`CooperativeMember`](file:/
 
 1. **Nomor Terisi (Supplied)**: Format kanonikal dinormalisasi dan dipertahankan apa adanya.
 2. **Nomor Kosong (Auto-Generated)**:
-   - Menggunakan pola kanonikal `KOP-###` via [`MemberNumberGenerator`](file:///home/john-d/Pictures/kojaya/app/Services/Cooperative/MemberNumberGenerator.php).
-   - Di dalam transaksi basis data, sistem memindai nilai maksimum yang ada (termasuk rekaman *soft-deleted*) dan mengalokasikan nomor urut berikutnya secara sekuensial.
-   - Sistem mendeteksi nomor yang telah disediakan dalam batch yang sama untuk mencegah benturan internal.
+   - Menggunakan pola kanonikal `KOP-###` secara otoritatif via [`MemberNumberGenerator::reserveBatch()`](file:///home/john-d/Pictures/kojaya/app/Services/Cooperative/MemberNumberGenerator.php).
+   - Di dalam transaksi basis data, generator memindai nilai maksimum yang ada (termasuk rekaman *soft-deleted*) dan mengalokasikan urutan nomor baru secara sekuensial.
+   - Generator otomatis mendeteksi dan melewati nomor anggota yang telah disediakan secara manual dalam batch yang sama untuk mencegah benturan internal.
 3. **Penguncian Konkurensi (Concurrency Lock)**:
+   - Penomoran anggota mengikuti domain sekuensial global `KOP-###` dengan *unique database constraints*.
    - Pada PostgreSQL, transaksi mengeksekusi *transaction-scoped advisory lock*:
      ```sql
      SELECT pg_advisory_xact_lock(crc32('cooperative_members_import_lock'));
      ```
    - Penguncian ini memastikan dua proses impor yang berjalan bersamaan akan mengantre secara teratur. Transaksi kedua baru akan membaca nomor anggota terakhir setelah transaksi pertama berhasil melakukan commit.
    - Kunci dilepas secara otomatis oleh engine database saat transaksi melakukan commit atau rollback.
+   - Teruji secara nyata melalui pengujian multi-proses PostgreSQL pada [`MemberImportConcurrencyTest`](file:///home/john-d/Pictures/kojaya/tests/Feature/Cooperative/MemberImportConcurrencyTest.php).
    - Kolom `no_anggota` dan `member_no` dilindungi oleh *unique index constraint* di level basis data sebagai pengaman lapis terakhir.
 
 ---
 
-## 8. Jaminan Atomisitas & Audit Wajib (Atomic Transaction & Mandatory Audit)
+## 8. Jaminan Atomisitas, Sanitasi Error & Audit Wajib (Atomic Transaction & Mandatory Audit)
 
 1. **All-or-Nothing Policy**: Seluruh baris data diproses dalam satu cakupan `DB::transaction()`.
 2. **Rollback Menyeluruh**:
@@ -183,6 +185,9 @@ Tepat 12 kolom kanonikal dipetakan ke atribut model [`CooperativeMember`](file:/
    - Jika terjadi exception/error database pada baris mana pun (misal baris ke-70 dari 100),
    - Atau jika pencatatan audit log gagal,
    maka transaksi dibatalkan sepenuhnya dan **TIDAK ADA SATU PUN ANGGOTA** yang tersimpan di basis data.
+3. **Sanitasi Error Pengguna**:
+   - Kegagalan infrastruktur tingkat rendah (seperti kegagalan koneksi audit, constraint SQLSTATE, atau driver DB) tidak pernah diekspos ke browser atau respons JSON/session.
+   - Pesan error dipetakan secara aman ke pesan statis generik: `"Gagal menyelesaikan impor anggota. Tidak ada data yang disimpan."` dengan tetap mempertahankan exception asli pada parameter `previous` untuk diagnostik log internal server.
 3. **Pencatatan Audit Wajib (Mandatory Batch Audit)**:
    - Aksi: `member.import.completed`
    - Modul: `cooperative`
@@ -237,25 +242,31 @@ Modul ONB-06 mematuhi batas arsitektur secara mutlak:
 ## 12. Panduan Verifikasi Pengujian (Verification Commands)
 
 ```bash
-# 1. Menjalankan seluruh pengujian fitur eksekusi impor ONB-06 (50 skenario)
+# 1. Menjalankan seluruh pengujian fitur eksekusi impor ONB-06 (43 skenario)
 php artisan test --compact tests/Feature/Cooperative/MemberImportExecutionTest.php
 
-# 2. Menjalankan regresi pengujian pratinjau ONB-05
+# 2. Menjalankan pengujian unit generator nomor anggota kanonikal (9 skenario)
+php artisan test --compact tests/Unit/MemberNumberGeneratorTest.php
+
+# 3. Menjalankan regresi pengujian pratinjau ONB-05
 php artisan test --compact tests/Feature/Cooperative/MemberImportPreviewTest.php
 
-# 3. Menjalankan regresi validator kanonikal ONB-04
+# 4. Menjalankan regresi validator kanonikal ONB-04
 php artisan test --compact tests/Feature/Cooperative/MemberImportValidatorTest.php
 
-# 4. Memverifikasi kelayakan formatting kode PHP
+# 5. Menjalankan pengujian konkurensi multi-proses nyata PostgreSQL
+vendor/bin/phpunit --configuration phpunit.pgsql.xml --testsuite PostgreSQLConcurrency
+
+# 6. Memverifikasi kelayakan formatting kode PHP
 vendor/bin/pint --dirty --test
 
-# 5. Memeriksa linting & formatting komponen antarmuka Vue
+# 7. Memeriksa linting & formatting komponen antarmuka Vue
 npx eslint resources/js/pages/Cooperative/Members/ImportPreview.vue
 npx prettier --check resources/js/pages/Cooperative/Members/ImportPreview.vue
 
-# 6. Membangun bundle frontend Vite
+# 8. Membangun bundle frontend Vite
 npm run build
 
-# 7. Memverifikasi integritas cakupan UI Audit
+# 9. Memverifikasi integritas cakupan UI Audit
 php artisan --env=playwright ui-audit:coverage --no-interaction
 ```

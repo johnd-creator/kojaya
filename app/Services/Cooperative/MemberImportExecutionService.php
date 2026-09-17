@@ -6,35 +6,19 @@ namespace App\Services\Cooperative;
 
 use App\Exceptions\MemberImportExecutionException;
 use App\Models\CooperativeMember;
-use App\Models\Organization;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
-use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
 class MemberImportExecutionService
 {
-    /**
-     * Optional hook for injecting test failures during batch insertion
-     * to verify database transaction atomicity and rollback.
-     */
-    private ?Closure $afterRowInsertHook = null;
-
     public function __construct(
         private readonly MemberImportValidator $validator,
         private readonly MemberNumberGenerator $numberGenerator,
         private readonly AuditLogService $auditLogService,
     ) {}
-
-    /**
-     * Register a test failure injection hook.
-     */
-    public function setAfterRowInsertHook(?Closure $hook): void
-    {
-        $this->afterRowInsertHook = $hook;
-    }
 
     /**
      * Execute canonical member import in an atomic, all-or-nothing database transaction.
@@ -73,7 +57,9 @@ class MemberImportExecutionService
 
         // 3. Atomic Database Transaction Boundary
         return DB::transaction(function () use ($filePath, $organizationId, $importDate, $fileSha256, $auditContext): MemberImportExecutionResult {
-            // Concurrency protection: Acquire PostgreSQL advisory lock
+            // Concurrency protection: Acquire PostgreSQL transaction-level advisory lock.
+            // Member numbers follow a global KOP-### sequence with unique database constraints.
+            // A transaction-level advisory lock prevents race conditions during member number reservation.
             if (DB::getDriverName() === 'pgsql') {
                 $lockKey = crc32('cooperative_members_import_lock');
                 DB::statement('SELECT pg_advisory_xact_lock(?)', [$lockKey]);
@@ -94,38 +80,29 @@ class MemberImportExecutionService
             }
 
             // 5. Member Number Allocation & Reservation
-            $generatedMemberNumbers = [];
-            $suppliedMemberNumbers = [];
-
-            $existingCandidates = CooperativeMember::query()
-                ->withTrashed()
-                ->where('no_anggota', 'like', 'KOP-%')
-                ->pluck('no_anggota');
-
-            $currentMax = $existingCandidates
-                ->filter(fn (string $value): bool => (bool) preg_match('/^KOP-\d+$/', $value))
-                ->map(fn (string $value): int => (int) substr($value, 4))
-                ->max() ?? 0;
-
-            // Collect all supplied member numbers to avoid collision
             $batchSupplied = [];
+            $rowsNeedingGeneration = 0;
+
             foreach ($finalValidation->rows as $row) {
-                if (! $row->memberNumberGenerationRequired && is_string($row->normalizedData['member_number'])) {
+                if ($row->memberNumberGenerationRequired) {
+                    $rowsNeedingGeneration++;
+                } elseif (is_string($row->normalizedData['member_number'])) {
                     $batchSupplied[] = $row->normalizedData['member_number'];
                 }
             }
 
-            // Map each row to its final member number
+            $reservedGenerated = $this->numberGenerator->reserveBatch($rowsNeedingGeneration, $batchSupplied);
+            $generatedIndex = 0;
+
+            $generatedMemberNumbers = [];
+            $suppliedMemberNumbers = [];
             $allocatedNumbersByRow = [];
+
             foreach ($finalValidation->rows as $row) {
                 if ($row->memberNumberGenerationRequired) {
-                    do {
-                        $currentMax++;
-                        $candidate = 'KOP-'.str_pad((string) $currentMax, 3, '0', STR_PAD_LEFT);
-                    } while (in_array($candidate, $batchSupplied, true));
-
-                    $allocatedNumbersByRow[$row->rowNumber] = $candidate;
-                    $generatedMemberNumbers[] = $candidate;
+                    $allocated = $reservedGenerated[$generatedIndex++];
+                    $allocatedNumbersByRow[$row->rowNumber] = $allocated;
+                    $generatedMemberNumbers[] = $allocated;
                 } else {
                     $supplied = (string) $row->normalizedData['member_number'];
                     $allocatedNumbersByRow[$row->rowNumber] = $supplied;
@@ -137,10 +114,10 @@ class MemberImportExecutionService
             $importId = (string) Str::uuid();
             $importedCount = 0;
 
-            foreach ($finalValidation->rows as $index => $row) {
+            foreach ($finalValidation->rows as $row) {
                 $memberNumber = $allocatedNumbersByRow[$row->rowNumber];
 
-                $member = CooperativeMember::query()->create([
+                CooperativeMember::query()->create([
                     'organization_id' => $organizationId,
                     'employee_id' => $row->resolvedEmployeeId,
                     'user_id' => null,
@@ -164,19 +141,24 @@ class MemberImportExecutionService
                 ]);
 
                 $importedCount++;
-
-                // Trigger test failure injection hook if registered
-                if ($this->afterRowInsertHook !== null) {
-                    ($this->afterRowInsertHook)($member, $index + 1);
-                }
             }
 
             // 7. Mandatory Batch Audit Log (inside transaction)
+            $effectiveAuditContext = new AuditContext(
+                actorId: $auditContext?->actorId,
+                actorRoles: $auditContext?->actorRoles ?? [],
+                organizationId: $organizationId,
+                correlationId: $auditContext?->correlationId ?? (string) Str::uuid(),
+                ip: $auditContext?->ip,
+                userAgent: $auditContext?->userAgent,
+                source: $auditContext?->source ?? AuditContext::SOURCE_HTTP,
+            );
+
             try {
                 $this->auditLogService->log(
                     action: 'member.import.completed',
                     module: 'cooperative',
-                    subject: Organization::query()->find($organizationId),
+                    subject: null,
                     changes: [
                         'new' => [
                             'import_id' => $importId,
@@ -190,12 +172,12 @@ class MemberImportExecutionService
                         ],
                         'reason' => 'Batch member onboarding DEV import completed',
                     ],
-                    context: $auditContext,
+                    context: $effectiveAuditContext,
                 );
             } catch (Throwable $e) {
                 throw new MemberImportExecutionException(
                     'IMPORT_AUDIT_FAILED',
-                    'Gagal mencatat log audit impor: '.$e->getMessage(),
+                    'Gagal menyelesaikan impor anggota. Tidak ada data yang disimpan.',
                     previous: $e,
                 );
             }

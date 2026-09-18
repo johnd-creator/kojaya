@@ -161,7 +161,6 @@ class GoogleSsoService
             'provider_email' => $email ?: $social->provider_email,
             'provider_name' => $googleUser->getName() ?: $social->provider_name,
             'provider_avatar' => $googleUser->getAvatar() ?: $social->provider_avatar,
-            'last_login_at' => Carbon::now(),
         ])->save();
     }
 

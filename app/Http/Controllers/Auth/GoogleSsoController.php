@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\Cooperative\MemberLifecycleExperience;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\LocalRedirectValidator;
@@ -165,6 +166,21 @@ class GoogleSsoController extends Controller
         }
 
         $user = $resolution['user'];
+        $user->loadMissing(['roles', 'employee', 'cooperativeMember']);
+
+        if ($user->cooperativeMember) {
+            $experience = MemberLifecycleExperience::fromMember($user->cooperativeMember);
+            if ($experience->isBlocked()) {
+                $request->session()->forget(['google_sso_intent', 'google_sso_return_to']);
+                $this->googleSso->logFailure('member_lifecycle_blocked', [
+                    'user_id' => $user->id,
+                    'lifecycle_experience' => $experience->value,
+                ]);
+
+                abort(403, 'Status keanggotaan tidak valid.');
+            }
+        }
+
         $social = $resolution['social_account'] ?? null;
 
         $request->session()->forget(['google_sso_intent', 'google_sso_return_to']);

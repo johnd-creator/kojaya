@@ -7,6 +7,7 @@ namespace Tests\Feature\Onboarding;
 use App\Enums\ApiErrorCode;
 use App\Enums\Cooperative\MemberLifecycleExperience;
 use App\Enums\PermissionEnum;
+use App\Models\AuditLog;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
 use App\Models\SocialAccount;
@@ -624,12 +625,13 @@ class MemberOnboardingEndToEndTest extends TestCase
             'password' => Hash::make('secretPassword123'),
         ]);
         $user->assignRole('Anggota');
-        CooperativeMember::factory()->create([
+        $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'organization_id' => $this->organization->id,
             'email' => 'blocked.e2e@example.com',
             'status' => 'INACTIVE',
             'validation_status' => 'INACTIVE', // Corrupt / inconsistent pair -> BLOCKED_UNKNOWN
+            'last_sso_login_at' => null,
         ]);
         $social = SocialAccount::factory()->create([
             'user_id' => $user->id,
@@ -673,7 +675,9 @@ class MemberOnboardingEndToEndTest extends TestCase
             ]),
         ]);
 
-        $lastLoginBefore = $social->last_login_at;
+        $lastLoginBefore = $social->fresh()->last_login_at;
+        $lastSsoLoginBefore = $member->fresh()->last_sso_login_at;
+        $auditSuccessCountBefore = AuditLog::query()->where('action', 'sso.google.login_success')->count();
 
         $resGoogle = $this->postJson('/api/auth/google/mobile', [
             'id_token' => $idToken,
@@ -700,6 +704,20 @@ class MemberOnboardingEndToEndTest extends TestCase
             $lastLoginBefore,
             $social->fresh()->last_login_at,
             'Blocked Google authentication must not mutate last_login_at.'
+        );
+        $this->assertNull(
+            $member->fresh()->last_sso_login_at,
+            'Blocked Google authentication must not mutate member last_sso_login_at.'
+        );
+        $this->assertSame(
+            $lastSsoLoginBefore,
+            $member->fresh()->last_sso_login_at,
+            'Blocked Google authentication must not mutate member last_sso_login_at.'
+        );
+        $this->assertSame(
+            $auditSuccessCountBefore,
+            AuditLog::query()->where('action', 'sso.google.login_success')->count(),
+            'Blocked Google authentication must not record sso.google.login_success audit.'
         );
 
         // Invariant I-17: Active gate fails closed

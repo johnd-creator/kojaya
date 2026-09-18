@@ -4,7 +4,18 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 7, 2026
+**Last Updated:** September 18, 2026
+
+## 2026-09-18 - Test Data Contract & Dataset Matrix (SEED-01)
+
+- Published authoritative Phase 3 specification in `docs/phase-3/SEED-01-test-data-contract.md`.
+- Completed full inventory of 15 seeders and 63 factories in the repository.
+- Documented strict boundary between `PRODUCTION_SAFE_REFERENCE` data and non-production demo/fixture seeders.
+- Mapped canonical `MemberLifecycleExperience` states against existing `CooperativeMemberFactory` methods, identifying missing `blockedUnknown()` state.
+- Defined 15 persona definitions: 14 baseline valid DEV personas (P01–P10, P12–P15) + 1 optional BLOCKED_UNKNOWN edge persona (P11) with synthetic identities (`DEV-*`, `@kojaya.test`, synthetic NIKs), strictly excluding P11 from standard default DEV reseed.
+- Established Credential Policy, Fixed Anchor Date policy (`2026-06-01`), and tenant isolation requirements (`KOP-001`, `KBU-001`, `ISO-999`).
+- Mapped primary ownership for all Phase 3 tasks (SEED-02 through SEED-09) with detailed gap analysis.
+- Zero production code, zero seeder code, zero migrations, and zero configuration changed.
 
 ## 2026-09-17 - Google SSO Member Matching Senior Review Corrections (ONB-07R1)
 

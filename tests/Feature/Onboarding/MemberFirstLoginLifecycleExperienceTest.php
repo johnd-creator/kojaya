@@ -750,4 +750,105 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
         // Member A in Org A cannot access or view Member B's data
         $this->assertNotSame($memberA->organization_id, $memberB->organization_id);
     }
+
+    /**
+     * Requirement 11: R1 Test Matrix comprehensive verification.
+     * Covers items 14-22 and 29-32:
+     * - Under review cannot POST (403)
+     * - Revision experience rendering & lifecycle immutability
+     * - Member-facing actions never set status, validation_status, validated_by, or admin_validated_by
+     * - First-login lifecycle view creates ZERO users, social accounts, members, or financial records
+     */
+    public function test_r1_lifecycle_invariants_immutability_and_zero_side_effects(): void
+    {
+        // 1. UNDER_REVIEW member cannot alter canonical data via POST /member/onboarding (Item 14)
+        $userReview = User::factory()->create();
+        $memberReview = CooperativeMember::factory()->pendingReview()->create([
+            'user_id' => $userReview->id,
+            'name' => 'Original Review Name',
+            'identity_number' => '3201000000000099',
+        ]);
+        $userReview->assignRole('Anggota');
+
+        $this->actingAs($userReview)
+            ->post(route('member.onboarding.submit'), [
+                'name' => 'Hacked Name',
+                'phone' => '0811111111',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Original Review Name', $memberReview->fresh()->name);
+
+        // 2. REJECTED member cannot alter canonical data via POST /member/onboarding (Item 15)
+        $userRejected = User::factory()->create();
+        $memberRejected = CooperativeMember::factory()->rejected()->create([
+            'user_id' => $userRejected->id,
+            'name' => 'Original Rejected Name',
+        ]);
+        $userRejected->assignRole('Anggota');
+
+        $this->actingAs($userRejected)
+            ->post(route('member.onboarding.submit'), [
+                'name' => 'Hacked Rejected Name',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Original Rejected Name', $memberRejected->fresh()->name);
+
+        // 3. REVISION state displays correctly (Item 16, 17)
+        $userRevision = User::factory()->create();
+        $memberRevision = CooperativeMember::factory()->revision()->create([
+            'user_id' => $userRevision->id,
+            'validation_notes' => 'Tolong perbaiki foto KTP.',
+        ]);
+        $userRevision->assignRole('Anggota');
+
+        $this->actingAs($userRevision)
+            ->get(route('member.onboarding'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kojayaku/Onboarding')
+                ->where('lifecycle_experience', 'REVISION_REQUIRED')
+                ->where('review_state', 'revision')
+                ->where('validation_notes', 'Tolong perbaiki foto KTP.')
+            );
+
+        // Submitting revision safe profile does not alter lifecycle statuses (Item 17-21)
+        $this->actingAs($userRevision)
+            ->post(route('member.onboarding.submit'), [
+                'name' => 'Revision Name Updated',
+                'phone' => '0822222222',
+            ])
+            ->assertRedirect(route('member.onboarding'));
+
+        $freshRevision = $memberRevision->fresh();
+        $this->assertSame(CooperativeMember::VALIDATION_INACTIVE, $freshRevision->status);
+        $this->assertSame(CooperativeMember::VALIDATION_REVISION, $freshRevision->validation_status);
+        $this->assertNull($freshRevision->validated_by);
+        $this->assertNull($freshRevision->validated_at);
+        $this->assertNull($freshRevision->admin_validated_by);
+        $this->assertNull($freshRevision->admin_validated_at);
+
+        // 4. Zero side-effects on first-login lifecycle view (Item 29-32)
+        $initialUsers = User::count();
+        $initialSocial = \App\Models\SocialAccount::count();
+        $initialMembers = CooperativeMember::count();
+        $initialLoans = \App\Models\Loan::count();
+        $initialPos = \App\Models\PosTransaction::count();
+        $initialPayments = \App\Models\CooperativePayment::count();
+        $initialInvoices = \App\Models\CooperativeDuesInvoice::count();
+
+        // Visit lifecycle view for waiting member
+        $this->actingAs($userReview)
+            ->get(route('member.onboarding'))
+            ->assertOk();
+
+        $this->assertSame($initialUsers, User::count(), 'Zero users created on lifecycle view');
+        $this->assertSame($initialSocial, \App\Models\SocialAccount::count(), 'Zero social accounts created on lifecycle view');
+        $this->assertSame($initialMembers, CooperativeMember::count(), 'Zero members created on lifecycle view');
+        $this->assertSame($initialLoans, \App\Models\Loan::count(), 'Zero loans created on lifecycle view');
+        $this->assertSame($initialPos, \App\Models\PosTransaction::count(), 'Zero pos transactions created on lifecycle view');
+        $this->assertSame($initialPayments, \App\Models\CooperativePayment::count(), 'Zero payments created on lifecycle view');
+        $this->assertSame($initialInvoices, \App\Models\CooperativeDuesInvoice::count(), 'Zero invoices created on lifecycle view');
+    }
 }

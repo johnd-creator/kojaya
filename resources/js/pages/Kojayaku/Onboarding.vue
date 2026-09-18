@@ -112,9 +112,7 @@ const steps = computed(() => [
   {
     title: "Verifikasi Admin",
     desc: "Pemeriksaan berkas & identitas",
-    status: isWaitingVerification.value
-      ? "current"
-      : "completed",
+    status: isWaitingVerification.value ? "current" : "completed",
   },
   {
     title: "Approval Pengurus",
@@ -168,7 +166,9 @@ const steps = computed(() => [
 
         <!-- Status Banner Alert -->
         <Alert
-          :variant="statusMeta.tone === 'destructive' ? 'destructive' : 'default'"
+          :variant="
+            statusMeta.tone === 'destructive' ? 'destructive' : 'default'
+          "
           class="rounded-2xl border p-4 sm:p-5"
         >
           <component :is="statusMeta.icon" class="h-5 w-5" />
@@ -188,10 +188,14 @@ const steps = computed(() => [
           <div class="flex items-start gap-3">
             <FileText class="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
             <div>
-              <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <h3
+                class="text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+              >
                 Catatan Pengurus / Admin:
               </h3>
-              <p class="mt-1 whitespace-pre-line text-sm text-zinc-700 dark:text-zinc-300">
+              <p
+                class="mt-1 whitespace-pre-line text-sm text-zinc-700 dark:text-zinc-300"
+              >
                 {{ validation_notes }}
               </p>
             </div>
@@ -203,8 +207,9 @@ const steps = computed(() => [
           v-if="isRejected"
           class="rounded-2xl border border-rose-200/80 bg-rose-50/50 p-4 text-xs leading-relaxed text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300 sm:p-5"
         >
-          Pendaftaran ini telah berstatus ditolak dan tidak dapat diajukan kembali secara mandiri.
-          Akses transaksi dan fitur finansial tidak tersedia. Hubungi pengurus koperasi untuk keterangan lebih lanjut.
+          Pendaftaran ini telah berstatus ditolak dan tidak dapat diajukan
+          kembali secara mandiri. Akses transaksi dan fitur finansial tidak
+          tersedia. Hubungi pengurus koperasi untuk keterangan lebih lanjut.
         </div>
 
         <!-- Lifecycle Progression Stepper -->
@@ -217,7 +222,9 @@ const steps = computed(() => [
             Alur Verifikasi Keanggotaan
           </h2>
 
-          <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
             <div
               v-for="(step, idx) in steps"
               :key="step.title"
@@ -286,10 +293,16 @@ const steps = computed(() => [
         <section
           class="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
         >
-          <div class="flex items-center justify-between border-b pb-4 dark:border-zinc-800">
+          <div
+            class="flex items-center justify-between border-b pb-4 dark:border-zinc-800"
+          >
             <div class="flex items-center gap-2.5">
-              <ShieldCheck class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              <ShieldCheck
+                class="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+              />
+              <h2
+                class="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+              >
                 Informasi Pendaftaran
               </h2>
             </div>
@@ -301,9 +314,15 @@ const steps = computed(() => [
             </span>
           </div>
 
-          <dl class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30">
-              <dt class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <dl
+            class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm"
+          >
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
                 <User class="h-3.5 w-3.5" />
                 Nama Terdaftar
               </dt>
@@ -312,18 +331,28 @@ const steps = computed(() => [
               </dd>
             </div>
 
-            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30">
-              <dt class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
                 <Mail class="h-3.5 w-3.5" />
                 Email Akun
               </dt>
-              <dd class="mt-1.5 font-semibold text-zinc-900 dark:text-zinc-100 break-all">
+              <dd
+                class="mt-1.5 font-semibold text-zinc-900 dark:text-zinc-100 break-all"
+              >
                 {{ member.email || member.user?.email || "-" }}
               </dd>
             </div>
 
-            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30">
-              <dt class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
                 <Building class="h-3.5 w-3.5" />
                 Unit Koperasi
               </dt>
@@ -332,8 +361,12 @@ const steps = computed(() => [
               </dd>
             </div>
 
-            <div class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30">
-              <dt class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
                 <FileText class="h-3.5 w-3.5" />
                 Nomor Anggota
               </dt>
@@ -346,8 +379,9 @@ const steps = computed(() => [
 
         <!-- Information Notice Footer -->
         <p class="text-center text-xs text-zinc-500 dark:text-zinc-400">
-          Setelah pendaftaran disetujui penuh oleh Pengurus Koperasi, akun Anda akan otomatis aktif dan
-          seluruh layanan koperasi (simpanan, pinjaman, dan transaksi kasir) akan terbuka.
+          Setelah pendaftaran disetujui penuh oleh Pengurus Koperasi, akun Anda
+          akan otomatis aktif dan seluruh layanan koperasi (simpanan, pinjaman,
+          dan transaksi kasir) akan terbuka.
         </p>
       </div>
     </PageContainer>

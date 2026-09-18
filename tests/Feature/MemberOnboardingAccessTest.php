@@ -130,15 +130,16 @@ class MemberOnboardingAccessTest extends TestCase
         $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
     }
 
-    public function test_admin_verified_member_can_submit_onboarding(): void
+    public function test_admin_verified_under_review_member_cannot_submit_onboarding(): void
     {
         $user = User::factory()->create();
-        CooperativeMember::factory()->create([
+        $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
+            'name' => 'Original Budi',
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
             'status' => 'PENDING',
             'onboarding_submitted_at' => null,
-            'identity_number' => null,
+            'identity_number' => '3201000000000001',
         ]);
         $user->assignRole('Anggota');
 
@@ -154,8 +155,10 @@ class MemberOnboardingAccessTest extends TestCase
                 'jenis_kelamin' => 'L',
                 'kategori' => 'IP',
             ])
-            ->assertRedirect('/member/onboarding')
-            ->assertSessionHas('success');
+            ->assertForbidden();
+
+        $this->assertSame('Original Budi', $member->fresh()->name);
+        $this->assertSame('3201000000000001', $member->fresh()->identity_number);
     }
 
     public function test_revision_member_without_submission_sees_revision_review_state(): void

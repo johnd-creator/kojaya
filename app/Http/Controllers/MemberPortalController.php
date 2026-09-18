@@ -332,6 +332,10 @@ class MemberPortalController extends Controller
             abort(403, 'Anggota aktif tidak dapat mengajukan onboarding.');
         }
 
+        if ($experience === \App\Enums\Cooperative\MemberLifecycleExperience::UnderReview) {
+            abort(403, 'Data pendaftaran sedang diverifikasi dan tidak dapat diubah.');
+        }
+
         if ($experience === \App\Enums\Cooperative\MemberLifecycleExperience::Rejected) {
             abort(403, 'Pendaftaran Anda ditolak dan tidak dapat diajukan kembali.');
         }

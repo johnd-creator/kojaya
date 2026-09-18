@@ -86,7 +86,7 @@ class MemberOnboardingSubmitTest extends TestCase
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->validation_status);
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->status);
 
-        $audit = AuditLog::query()->where('action', 'sso.member_onboarding.submitted')->latest('id')->first();
+        $audit = AuditLog::query()->where('action', 'member.profile.updated')->latest('id')->first();
         $this->assertNotNull($audit);
         $this->assertSame($member->id, $audit->subject_id);
     }
@@ -153,6 +153,26 @@ class MemberOnboardingSubmitTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_under_review_member_cannot_submit_onboarding(): void
+    {
+        $user = User::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+        $user->assignRole('Anggota');
+
+        $this->actingAs($user)
+            ->from('/member/onboarding')
+            ->post(route('member.onboarding.submit'), [
+                'name' => 'Andi Susilo',
+                'phone' => '08123456789',
+                'address' => 'Alamat',
+            ])
+            ->assertForbidden();
+    }
+
     public function test_rejected_member_cannot_submit_onboarding(): void
     {
         $user = User::factory()->create();
@@ -184,5 +204,30 @@ class MemberOnboardingSubmitTest extends TestCase
                 'address' => 'Alamat',
             ])
             ->assertRedirect(route('dashboard'));
+    }
+
+    public function test_onboarding_submit_does_not_emit_submitted_for_validation_notification(): void
+    {
+        $user = User::factory()->create();
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+        $user->assignRole('Anggota');
+
+        // Verify no notification dispatcher call or fake notification in DB
+        $initialNotificationCount = \Illuminate\Support\Facades\DB::table('notifications')->count();
+
+        $this->actingAs($user)
+            ->from('/member/onboarding')
+            ->post(route('member.onboarding.submit'), [
+                'name' => 'Andi Test',
+                'phone' => '08123456789',
+                'address' => 'Alamat',
+            ])
+            ->assertRedirect('/member/onboarding');
+
+        $this->assertSame($initialNotificationCount, \Illuminate\Support\Facades\DB::table('notifications')->count());
     }
 }

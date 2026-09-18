@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 class MemberOnboardingSubmitService
 {
     public function __construct(
-        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
         private readonly AuditLogService $audit,
     ) {}
 
@@ -63,8 +62,6 @@ class MemberOnboardingSubmitService
 
             $this->writeAuditLog($member, $actor);
 
-            DB::afterCommit(fn () => $this->notificationDispatcher->memberSubmittedForValidation($member->refresh(), $actor));
-
             return $member->refresh();
         });
     }
@@ -72,11 +69,11 @@ class MemberOnboardingSubmitService
     private function writeAuditLog(CooperativeMember $member, ?User $actor): void
     {
         try {
-            $this->audit->log('sso.member_onboarding.submitted', 'cooperative.sso', $member, [
+            $this->audit->log('member.profile.updated', 'cooperative.member', $member, [
                 'new' => [
                     'validation_status' => $member->validation_status,
                 ],
-                'reason' => 'Member onboarding submitted for validation.',
+                'reason' => 'Member updated safe profile information.',
             ]);
         } catch (\Throwable) {
             // audit log best-effort, never break onboarding

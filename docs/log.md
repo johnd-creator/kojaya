@@ -12,7 +12,7 @@
 - Completed full inventory of 15 seeders and 63 factories in the repository.
 - Documented strict boundary between `PRODUCTION_SAFE_REFERENCE` data and non-production demo/fixture seeders.
 - Mapped canonical `MemberLifecycleExperience` states against existing `CooperativeMemberFactory` methods, identifying missing `blockedUnknown()` state.
-- Defined minimum 15 deterministic personas (P01–P15) with synthetic identities (`DEV-*`, `@kojaya.test`, synthetic NIKs).
+- Defined 15 persona definitions: 14 baseline valid DEV personas (P01–P10, P12–P15) + 1 optional BLOCKED_UNKNOWN edge persona (P11) with synthetic identities (`DEV-*`, `@kojaya.test`, synthetic NIKs), strictly excluding P11 from standard default DEV reseed.
 - Established Credential Policy, Fixed Anchor Date policy (`2026-06-01`), and tenant isolation requirements (`KOP-001`, `KBU-001`, `ISO-999`).
 - Mapped primary ownership for all Phase 3 tasks (SEED-02 through SEED-09) with detailed gap analysis.
 - Zero production code, zero seeder code, zero migrations, and zero configuration changed.

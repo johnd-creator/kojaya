@@ -6,16 +6,16 @@
 - **Fase Roadmap:** Phase 3 — Seed & Test Data (`SEED-01`)
 - **Status:** Authoritative Contract / Baseline Specification
 - **Otoritas Kode:**
-  - `DatabaseSeeder`: [database/seeders/DatabaseSeeder.php](file:///home/john-d/Pictures/kojaya/database/seeders/DatabaseSeeder.php)
-  - `MemberLifecycleExperience`: [app/Enums/Cooperative/MemberLifecycleExperience.php](file:///home/john-d/Pictures/kojaya/app/Enums/Cooperative/MemberLifecycleExperience.php)
-  - `RolePermissionSeeder`: [database/seeders/RolePermissionSeeder.php](file:///home/john-d/Pictures/kojaya/database/seeders/RolePermissionSeeder.php)
-  - `CooperativeReferenceSeeder`: [database/seeders/CooperativeReferenceSeeder.php](file:///home/john-d/Pictures/kojaya/database/seeders/CooperativeReferenceSeeder.php)
-  - `CooperativeMemberFactory`: [database/factories/CooperativeMemberFactory.php](file:///home/john-d/Pictures/kojaya/database/factories/CooperativeMemberFactory.php)
+  - `DatabaseSeeder`: [database/seeders/DatabaseSeeder.php](../../database/seeders/DatabaseSeeder.php)
+  - `MemberLifecycleExperience`: [app/Enums/Cooperative/MemberLifecycleExperience.php](../../app/Enums/Cooperative/MemberLifecycleExperience.php)
+  - `RolePermissionSeeder`: [database/seeders/RolePermissionSeeder.php](../../database/seeders/RolePermissionSeeder.php)
+  - `CooperativeReferenceSeeder`: [database/seeders/CooperativeReferenceSeeder.php](../../database/seeders/CooperativeReferenceSeeder.php)
+  - `CooperativeMemberFactory`: [database/factories/CooperativeMemberFactory.php](../../database/factories/CooperativeMemberFactory.php)
 - **Baseline Git HEAD:** `fa316aef5be1445c87fec681b2d8b44296f21579` (Pasca merge PR #64 / ONB-09)
 - **Dokumentasi Pendukung:**
-  - [docs/onboarding/first-login-lifecycle-experience.md](file:///home/john-d/Pictures/kojaya/docs/onboarding/first-login-lifecycle-experience.md)
-  - [docs/onboarding/google-sso-member-matching.md](file:///home/john-d/Pictures/kojaya/docs/onboarding/google-sso-member-matching.md)
-  - [docs/architecture.md](file:///home/john-d/Pictures/kojaya/docs/architecture.md)
+  - [docs/onboarding/first-login-lifecycle-experience.md](../onboarding/first-login-lifecycle-experience.md)
+  - [docs/onboarding/google-sso-member-matching.md](../onboarding/google-sso-member-matching.md)
+  - [docs/architecture.md](../architecture.md)
 
 ---
 
@@ -38,7 +38,7 @@ Tujuan dari `SEED-01` adalah meletakkan fondasi desain, kontrak data, dan invent
 ## 2. Arsitektur Seeder Saat Ini (Existing Landscape)
 
 ### 2.1. Pemisahan Lingkungan di `DatabaseSeeder`
-Repositori saat ini di [database/seeders/DatabaseSeeder.php](file:///home/john-d/Pictures/kojaya/database/seeders/DatabaseSeeder.php#L14-L34) telah menerapkan pemisahan tegas antara data referensi yang aman untuk produksi (*production-safe reference data*) dan data demo/fixture yang hanya boleh dijalankan di lingkungan lokal/pengujian:
+Repositori saat ini di [database/seeders/DatabaseSeeder.php](../../database/seeders/DatabaseSeeder.php#L14-L34) telah menerapkan pemisahan tegas antara data referensi yang aman untuk produksi (*production-safe reference data*) dan data demo/fixture yang hanya boleh dijalankan di lingkungan lokal/pengujian:
 
 ```text
 DatabaseSeeder::run()
@@ -67,7 +67,7 @@ Selain seeder yang dipanggil langsung oleh `DatabaseSeeder`, terdapat tiga seede
 
 ## 3. Inventarisasi Lengkap Seeder (Seeder Inventory)
 
-Berdasarkan inspeksi mendalam terhadap seluruh berkas di [database/seeders/](file:///home/john-d/Pictures/kojaya/database/seeders/), berikut adalah tabel inventarisasi seluruh 15 seeder yang ada di repositori:
+Berdasarkan inspeksi mendalam terhadap seluruh berkas di [database/seeders/](../../database/seeders/), berikut adalah tabel inventarisasi seluruh 15 seeder yang ada di repositori:
 
 | Nama Seeder | Tujuan & Ruang Lingkup | Environment Diizinkan | Production-Safe? | Deterministik? | Strategi Idempoten | Entitas Utama | Kredensial Pengguna? | Data Finansial Sintetis? | Risiko & Kesenjangan Saat Ini | Disposisi Phase 3 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -108,9 +108,9 @@ if (! in_array((string) config('app.env'), ['testing', 'playwright'], true)) {
 
 ### 4.2. Bukti Uji Keamanan (Test Evidence)
 Mekanisme ini telah diverifikasi secara otomatis oleh dua suite pengujian:
-1. [tests/Feature/DatabaseSeederSafetyTest.php](file:///home/john-d/Pictures/kojaya/tests/Feature/DatabaseSeederSafetyTest.php):
+1. [tests/Feature/DatabaseSeederSafetyTest.php](../../tests/Feature/DatabaseSeederSafetyTest.php):
    - Membuktikan bahwa seeder demo melempar `LogicException` jika `app.env` disetel ke `production`, `staging`, `qa`, maupun `development`.
-2. [tests/Feature/SeederSafetyStaticAnalysisTest.php](file:///home/john-d/Pictures/kojaya/tests/Feature/SeederSafetyStaticAnalysisTest.php):
+2. [tests/Feature/SeederSafetyStaticAnalysisTest.php](../../tests/Feature/SeederSafetyStaticAnalysisTest.php):
    - Memverifikasi secara statis bahwa:
      - Tidak ada seeder referensi yang memanggil operasi destruktif (`truncate`, `forceDelete`, `DROP TABLE`).
      - Tidak ada seeder referensi yang membuat user atau password (`User::create`, `Hash::make`).
@@ -127,7 +127,7 @@ Mekanisme ini telah diverifikasi secara otomatis oleh dua suite pengujian:
 
 ## 5. Inventarisasi Factory (Factory Landscape)
 
-Terdapat 63 factory yang ditemukan pada [database/factories/](file:///home/john-d/Pictures/kojaya/database/factories/). Di bawah ini adalah inventarisasi factory yang relevan secara langsung terhadap domain Koperasi, Anggota, Autentikasi, dan Keuangan:
+Terdapat 63 factory yang ditemukan pada [database/factories/](../../database/factories/). Di bawah ini adalah inventarisasi factory yang relevan secara langsung terhadap domain Koperasi, Anggota, Autentikasi, dan Keuangan:
 
 | Nama Factory | Definisi Default Signifikan | State Khusus yang Tersedia | Tingkat Determinisme | Cocok untuk Otomasi Uji (Unit/Feature)? | Cocok untuk Persistent DEV Seed? | Kesenjangan / Keterbatasan Utama |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -160,7 +160,7 @@ Sebaliknya, **Persistent DEV Seed Data** mensyaratkan:
 
 ## 6. Pemetaan Siklus Hidup Anggota (Member Lifecycle Dataset Contract)
 
-Sesuai arsitektur yang diresmikan pada `ONB-08` dan `ONB-09` melalui enum [app/Enums/Cooperative/MemberLifecycleExperience.php](file:///home/john-d/Pictures/kojaya/app/Enums/Cooperative/MemberLifecycleExperience.php), kombinasi status basis data dipetakan secara kanonikal ke dalam 6 pengalaman siklus hidup:
+Sesuai arsitektur yang diresmikan pada `ONB-08` dan `ONB-09` melalui enum [app/Enums/Cooperative/MemberLifecycleExperience.php](../../app/Enums/Cooperative/MemberLifecycleExperience.php), kombinasi status basis data dipetakan secara kanonikal ke dalam 6 pengalaman siklus hidup:
 
 ```text
 [status = PENDING, validation_status = PENDING]
@@ -203,7 +203,7 @@ Sesuai arsitektur yang diresmikan pada `ONB-08` dan `ONB-09` melalui enum [app/E
 
 ## 7. Matriks Persona Deterministik (Persona Matrix)
 
-Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase 4, didefinisikan **15 Persona Minimum Deterministik**. 
+Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase 4, didefinisikan **15 Definisi Persona Deterministik**, yang terbagi menjadi **14 Persona Baseline Valid (P01–P10, P12–P15)** dan **1 Persona Edge-Case Tidak Sah / Korup (P11)**.
 
 > [!NOTE]
 > Seluruh persona ini bersifat sintetis (*synthetic identities*). Tidak ada satu pun data anggota atau karyawan riil yang digunakan.
@@ -231,7 +231,7 @@ Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase
                ├─ P08 Anggota REVISION_REQUIRED
                ├─ P09 Anggota REJECTED
                ├─ P10 Anggota ACTIVE (Password Fortify)
-               ├─ P11 Anggota BLOCKED_UNKNOWN (Edge-Case)
+               ├─ P11 Anggota BLOCKED_UNKNOWN (Optional Edge-Case / Excluded from Baseline DEV)
                ├─ P12 Anggota ACTIVE + Google SSO Terhubung
                └─ P13 Anggota ACTIVE Murni (Tanpa Google SSO)
 ```
@@ -250,7 +250,7 @@ Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase
 | **P08** | **Anggota Perlu Revisi**<br>Berkas ditolak sebagian oleh Admin/Pengurus, diminta memperbaiki data | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Opsional | `REVISION_REQUIRED` | **Ya** | **Ya** | Halaman Onboarding | ❌ Ditolak (403) | Pengujian alur edit profil koreksi pendaftaran |
 | **P09** | **Anggota Ditolak**<br>Pendaftaran keanggotaan ditolak permanen | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Opsional | `REJECTED` | **Ya** | **Ya** | Halaman Onboarding (Read-only) | ❌ Ditolak (403) | Pengujian halaman penolakan dan proteksi pengiriman ulang |
 | **P10** | **Anggota Aktif Kanonikal**<br>Anggota aktif penuh dengan autentikasi sandi reguler | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Tidak | `ACTIVE` | **Ya** | **Ya** | Dashboard Lengkap | ✅ Diizinkan Penuh | Cek saldo simpanan, ajukan pinjaman, riwayat transaksi toko |
-| **P11** | **Anggota Status Korup / Mismatch**<br>Kombinasi status tidak sah untuk uji fail-closed keamanan | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Tidak | `BLOCKED_UNKNOWN` | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ Ditolak (403) | Uji keamanan gerbang middleware `EnsureMemberFullyActive` |
+| **P11** | **Anggota Status Korup / Mismatch (Optional Edge)**<br>Kombinasi status tidak sah untuk uji fail-closed keamanan; **dikecualikan dari baseline default DEV** | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Tidak | `BLOCKED_UNKNOWN` | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ Ditolak (403) | Uji keamanan gerbang middleware `EnsureMemberFullyActive` (Fixture opsional/on-demand) |
 | **P12** | **Anggota Aktif Terhubung Google SSO**<br>Anggota aktif dengan akun Google terhubung di `social_accounts` | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | **Ya** (`google`) | `ACTIVE` | **Ya** (SSO/Pwd) | **Ya** (SSO/Pwd) | Dashboard Lengkap | ✅ Diizinkan Penuh | Pengujian autentikasi cepat Google SSO, auto-login Mobile |
 | **P13** | **Anggota Aktif Tanpa Google SSO**<br>Anggota aktif murni berbasis email dan sandi lokal | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Tidak | `ACTIVE` | **Ya** (Pwd) | **Ya** (Pwd) | Dashboard Lengkap | ✅ Diizinkan Penuh | Pengujian alur tautkan Google SSO dari profil pengguna (`/auth/google/link`) |
 | **P14** | **Anggota Aktif Cabang Lain (Tenant Boundary)**<br>Anggota aktif pada unit cabang KBU-001 | `Anggota` | `KBU-001` | **Ya** | Tidak | **Ya** | Tidak | `ACTIVE` | **Ya** | **Ya** | Dashboard Cabang | ✅ Diizinkan (Scoped) | Pengujian isolasi data antar organisasi (*tenant scoping check*) |
@@ -300,7 +300,7 @@ Untuk mencegah tabrakan data (*collision*), memudahkan penelusuran (*searchabili
 
 ## 10. Matriks Hak Akses & Peran Koperasi (Role & Permission Authority)
 
-Merujuk pada [database/seeders/RolePermissionSeeder.php](file:///home/john-d/Pictures/kojaya/database/seeders/RolePermissionSeeder.php#L201-L330), berikut adalah pemetaan kewenangan operasional untuk peran koperasi:
+Merujuk pada [database/seeders/RolePermissionSeeder.php](../../database/seeders/RolePermissionSeeder.php#L201-L330), berikut adalah pemetaan kewenangan operasional untuk peran koperasi:
 
 ```text
 Pengurus Koperasi ───▶ Validasi & Approval Akhir Anggota, Approval Pinjaman, Void POS, Pembagian SHU
@@ -334,7 +334,7 @@ Untuk menguji isolasi organisasi (*multi-tenancy scoping*) secara ketat, disyara
 
 | Kode Organisasi | Nama Organisasi | Level | Tipe | Induk (Parent) | Tujuan Pengujian Phase 4 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`KOP-001`** | **Koperasi Jaya Bersama** | `L0` | `HEAD_OFFICE` | `null` | **Tenant Utama.** Menampung seluruh persona inti (P01 s.d. P13) dan transaksi finansial utama. |
+| **`KOP-001`** | **Koperasi Jaya Bersama** | `L0` | `HEAD_OFFICE` | `null` | **Tenant Utama.** Menampung persona baseline valid (P01–P10, P12, P13), persona edge-case P11, dan transaksi finansial utama. |
 | **`KBU-001`** | **PT Koperasi Berkah Usaha** | `L1` | `BRANCH` | `KOP-001` | **Unit Cabang / Anak Perusahaan.** Menampung persona P14 dan P15 untuk menguji visibilitas hierarki induk-cabang. |
 | **`ISO-999`** | **Koperasi Mandiri Sejahtera** | `L0` | `HEAD_OFFICE` | `null` | **Tenant Terisolasi (Third-party).** Membuktikan bahwa Admin KOP-001 sama sekali tidak dapat melihat, mengubah, atau menyetujui data anggota/transaksi milik ISO-999 (HTTP 403 / ModelNotFoundException). |
 
@@ -424,7 +424,7 @@ Untuk kebutuhan **SEED-06 (Negative & Edge-Case Dataset)**, kasus-kasus batas wa
 | **Duplikasi NIK (Identity Number)** | Calon anggota mencoba mendaftar dengan NIK yang sudah ada di database | Dedicated Test / Optional Seeder | Import preview menandai baris invalid / form menolak NIK ganda |
 | **Duplikasi Email Pengguna** | Pendaftaran anggota baru dengan email yang sudah terikat pada User lain | Dedicated Test / Optional Seeder | Ditolak oleh registrasi / matching SSO mendeteksi konflik |
 | **Konflik Akun Google SSO** | Akun Google dengan sub tertentu mencoba ditautkan ke member yang sudah memiliki provider lain | Dedicated Test (Unit/Feature) | `MemberGoogleSsoMatchingService` fail-closed |
-| **Siklus Hidup Mismatch (`BLOCKED_UNKNOWN`)** | Data anggota dengan kombinasi status tidak sah (misal `ACTIVE` & `PENDING` atau `RESIGNED`) | Persona `P11` pada SEED-03 / SEED-04 | Middleware memblokir dengan **HTTP 403 Forbidden** |
+| **Siklus Hidup Mismatch (`BLOCKED_UNKNOWN`)** | Data anggota dengan kombinasi status tidak sah (misal `ACTIVE` & `PENDING` atau `RESIGNED`) | Persona `P11` (Didefinisikan di SEED-04, dimuat opsional di SEED-06) | Middleware memblokir dengan **HTTP 403 Forbidden** fail-closed |
 | **Akses Fitur Aktif oleh Member Belum Aktif** | Anggota `WAITING_VERIFICATION` mencoba memanggil API pengajuan pinjaman | Feature Test via Persona `P06` | Middleware `member.api.active` mengembalikan 403 `MEMBER_NOT_ACTIVE` |
 | **Pelanggaran Batas Tenant (Cross-Org)** | Admin KOP-001 mencoba menyetujui anggota yang terdaftar di unit KBU-001 | Feature Test via Persona `P14` & `P04` | `AuthorizationException` (HTTP 403) |
 | **Transaksi Melebihi Plafon Kredit Toko** | Belanja POS melebihi sisa limit kredit toko anggota | Dedicated Feature Test | Penolakan transaksi oleh `MemberStoreAccountService` |
@@ -440,13 +440,15 @@ Untuk memastikan stabilitas lingkungan pengujian:
 - Berisi:
   - Seluruh master referensi produksi (`RolePermissionSeeder`, `CooperativeReferenceSeeder`, `LoanTypeSeeder`, dll.).
   - 3 Organisasi (`KOP-001`, `KBU-001`, `ISO-999`).
-  - 15 Persona deterministik valid (P01 s.d. P15).
+  - 14 Persona baseline valid (`P01` s.d. `P10`, `P12` s.d. `P15`).
   - Transaksi bisnis normal yang valid (iuran lunas/berjalan, katalog POS aktif, saldo kredit toko normal, pinjaman berjalan).
+- **Pengecualian Tegas:** Persona `P11 (BLOCKED_UNKNOWN)` **dikecualikan** dari baseline DEV dataset karena merepresentasikan data siklus hidup tidak sah / korup yang disengaja.
 - **Karakteristik:** Bersih dari data korup, siap digunakan untuk demo fungsional dan pengujian end-to-end happy-path.
 
 ### B. Optional Edge Dataset (On-Demand / Testing Only)
-- Hanya dimuat saat parameter atau flag khusus diberikan (misal: `--with-edge-cases`).
+- Hanya dimuat saat parameter atau flag khusus diberikan (misal: `--with-edge-cases`) atau di dalam runner pengujian terisolasi.
 - Berisi:
+  - Persona `P11 (BLOCKED_UNKNOWN)` untuk memverifikasi proteksi fail-closed HTTP 403.
   - Baris CSV import yang sengaja dibuat cacat (email salah format, NIK duplikat, kolom kosong).
   - Rekening toko dengan status `Suspended` atau saldo minus melewati batas.
   - Pinjaman menunggak / *defaulted*.
@@ -466,11 +468,11 @@ Setiap dataset yang didefinisikan dalam repositori diklasifikasikan ke dalam 3 t
 ├────────────────────────────────────────────────────────────────────────────┤
 │ 2. NON_PRODUCTION_DETERMINISTIC_FIXTURE                                    │
 │    • Hanya untuk local, testing, dan playwright.                           │
-│    • Memuat persona P01-P15 deterministik, sandi 'password', data POS.     │
+│    • Memuat 14 persona valid P01-P10 & P12-P15, sandi 'password', data POS.│
 ├────────────────────────────────────────────────────────────────────────────┤
 │ 3. TEST_ONLY_INVALID_FIXTURE                                               │
 │    • Hanya untuk automated test suites spesifik / isolated sandbox.        │
-│    • Berisi anomali, duplikasi, dan pelanggaran integritas bisnis.         │
+│    • Memuat persona P11 (BLOCKED_UNKNOWN), anomali, duplikasi, data korup. │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -479,8 +481,8 @@ Setiap dataset yang didefinisikan dalam repositori diklasifikasikan ke dalam 3 t
 | Klasifikasi | Komponen / Entitas yang Masuk | Lingkungan Diizinkan | Aturan Penegakan |
 | :--- | :--- | :--- | :--- |
 | **`PRODUCTION_SAFE_REFERENCE`** | Roles, Permissions, Organization `KOP-001`, Contribution Types, Pos Categories, Loan Types, Tax Rules, Job Grades, Leave Types, Salary Component Types, Work Shifts | `production`, `staging`, `local`, `testing`, `playwright` | Wajib idempoten via `firstOrCreate`; tidak boleh ada `Hash::make` atau user. |
-| **`NON_PRODUCTION_DETERMINISTIC_FIXTURE`** | Persona P01 s.d. P15, Akun login Fortify, SocialAccount mock, Produk POS demo, Transaksi POS historis, Iuran dan kuitansi demo, Rekening toko demo | `local`, `testing`, `playwright` | Dilindungi oleh guard `LogicException` jika `app.env` di luar whitelist. |
-| **`TEST_ONLY_INVALID_FIXTURE`** | File CSV malformed, duplikasi NIK/email, data anggota korup, data transaksi over-limit | `testing` (In-memory / isolated test runner) | Tidak boleh masuk ke dalam default `DatabaseSeeder::run()`. |
+| **`NON_PRODUCTION_DETERMINISTIC_FIXTURE`** | 14 Persona baseline valid (`P01`–`P10`, `P12`–`P15`), Akun login Fortify, SocialAccount mock, Produk POS demo, Transaksi POS historis, Iuran dan kuitansi demo, Rekening toko demo | `local`, `testing`, `playwright` | Dilindungi oleh guard `LogicException` jika `app.env` di luar whitelist. |
+| **`TEST_ONLY_INVALID_FIXTURE`** | Persona `P11 (BLOCKED_UNKNOWN)`, File CSV malformed, duplikasi NIK/email, data anggota korup, data transaksi over-limit | `testing` (In-memory / isolated test runner / optional flag) | Dikecualikan dari default reseed dev; tidak boleh masuk ke default `DatabaseSeeder::run()`. |
 
 ---
 
@@ -492,10 +494,10 @@ Setiap kategori dataset dan infrastruktur data uji diberikan satu pemilik tugas 
 | :--- | :--- | :--- | :--- | :--- |
 | **SEED-01** | **Test Data Contract & Dataset Matrix** | Kontrak spesifikasi, matriks persona, kebijakan identitas & kredensial, gap analysis | Dokumen `docs/phase-3/SEED-01-test-data-contract.md` | PR #64 (ONB-09) |
 | **SEED-02** | **Master / Reference Data Seeder** | Standarisasi seeder referensi produksi, organisasi kanonikal, penyempurnaan `CooperativeReferenceSeeder` | `CooperativeReferenceSeeder.php` yang terstandarisasi dan teruji | SEED-01 |
-| **SEED-03** | **User & Member Persona Seeder** | Pembuatan 15 persona sintetis deterministik (P01 s.d. P15), akun User Fortify, relasi role, kredensial dev | `CooperativePersonaSeeder.php` | SEED-01, SEED-02 |
-| **SEED-04** | **Member Lifecycle Dataset** | Dataset 6 siklus hidup anggota (Waiting Verification, Under Review, Revision, Rejected, Active, Blocked) | State factory baru & fixture anggota per siklus hidup | SEED-01, SEED-03 |
+| **SEED-03** | **User & Member Persona Seeder** | Pembuatan 14 persona valid sintetis deterministik (`P01`–`P10`, `P12`–`P15`), akun User Fortify, relasi role, kredensial dev | `CooperativePersonaSeeder.php` | SEED-01, SEED-02 |
+| **SEED-04** | **Member Lifecycle Dataset** | Dataset siklus hidup anggota valid (`WAITING_VERIFICATION`, `UNDER_REVIEW`, `REVISION_REQUIRED`, `REJECTED`, `ACTIVE`) serta kapabilitas state factory `blockedUnknown()` | State factory baru & fixture anggota per siklus hidup | SEED-01, SEED-03 |
 | **SEED-05** | **Synthetic Transaction / Financial Test Data** | Dataset simpanan, tagihan iuran, kuitansi, mutasi buku besar, kredit toko, pinjaman, dan transaksi POS | `CooperativeFinancialFixtureSeeder.php` | SEED-01, SEED-04 |
-| **SEED-06** | **Negative & Edge-Case Dataset** | Fixture kasus batas, duplikasi NIK, status korup, over-limit, data CSV import cacat | `CooperativeEdgeCaseFixtureSeeder.php` / test factories | SEED-01, SEED-05 |
+| **SEED-06** | **Negative & Edge-Case Dataset** | Pemuatan opsional fixture persona `P11 (BLOCKED_UNKNOWN)`, kasus batas, duplikasi NIK, over-limit, data CSV import cacat | `CooperativeEdgeCaseFixtureSeeder.php` / test factories | SEED-01, SEED-04, SEED-05 |
 | **SEED-07** | **Deterministic Reset / Reseed Tooling** | Command Artisan reset/reseed deterministik terorkestrasi untuk developer dan QA | Command `php artisan cooperative:reset-test-data` | SEED-02 s.d. SEED-06 |
 | **SEED-08** | **Environment Safety Guard** | Pengerasan proteksi lingkungan, pencegahan eksekusi seeder dev di production/staging | Middleware / Seeder Guard Service | SEED-01, SEED-07 |
 | **SEED-09** | **Seed Integrity & Readiness Gate** | Suite verifikasi integritas, assertion konsistensi saldo, kesiapan data untuk Phase 4 | Suite pengujian `SeedIntegrityGateTest.php` | Seluruh SEED-01 s.d. 08 |

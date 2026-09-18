@@ -290,37 +290,34 @@ class MemberPortalController extends Controller
         ]);
     }
 
-    public function onboarding(Request $request, MemberOnboardingService $service): Response
+    public function onboarding(Request $request, MemberOnboardingService $service): Response|RedirectResponse
     {
         $member = $this->memberOrAbort($request);
         $member->loadMissing(['organization', 'user']);
 
-        $validation = $member->validation_status ?: $member->status;
-        $submitted = $member->onboarding_submitted_at !== null;
-        $reviewState = $this->resolveOnboardingReviewState($validation, $submitted);
+        $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
+        if ($experience->isActive()) {
+            return redirect()->route('member.dashboard');
+        }
+
+        if ($experience->isBlocked()) {
+            abort(403, 'Status keanggotaan tidak valid.');
+        }
+
+        $validation = (string) ($member->validation_status ?: $member->status);
+        $reviewState = $experience->reviewState();
+        $access = app(\App\Services\Cooperative\MemberAccessService::class)->for($member);
 
         return Inertia::render('Kojayaku/Onboarding', [
             'member' => $member,
             'onboarding' => $service->status($member),
-            'submitted' => $submitted,
+            'submitted' => $member->onboarding_submitted_at !== null,
             'review_state' => $reviewState,
+            'lifecycle_experience' => $experience->value,
             'validation_status' => $validation,
-            'options' => [
-                'jenisKelamin' => [
-                    ['value' => 'L', 'label' => 'Laki-laki'],
-                    ['value' => 'P', 'label' => 'Perempuan'],
-                ],
-                'perusahaan' => [
-                    ['value' => 'IP', 'label' => 'Indonesia Power'],
-                    ['value' => 'CDB', 'label' => 'Cogindo DayaBersama'],
-                    ['value' => 'KOP', 'label' => 'Koperasi'],
-                ],
-                'bank' => [
-                    ['value' => 'BNI', 'label' => 'BNI'],
-                    ['value' => 'BRI', 'label' => 'BRI'],
-                    ['value' => 'Mandiri', 'label' => 'Mandiri'],
-                ],
-            ],
+            'validation_notes' => $member->validation_notes ?: $member->admin_validation_notes,
+            'can_edit_safe_profile' => $access['can_edit_safe_profile'] ?? false,
+            'can_view_lifecycle_status' => $access['can_view_lifecycle_status'] ?? true,
         ]);
     }
 
@@ -329,12 +326,29 @@ class MemberPortalController extends Controller
         MemberOnboardingSubmitService $service,
     ): RedirectResponse {
         $member = $this->memberOrAbort($request);
+        $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
+
+        if ($experience->isActive()) {
+            abort(403, 'Anggota aktif tidak dapat mengajukan onboarding.');
+        }
+
+        if ($experience === \App\Enums\Cooperative\MemberLifecycleExperience::UnderReview) {
+            abort(403, 'Data pendaftaran sedang diverifikasi dan tidak dapat diubah.');
+        }
+
+        if ($experience === \App\Enums\Cooperative\MemberLifecycleExperience::Rejected) {
+            abort(403, 'Pendaftaran Anda ditolak dan tidak dapat diajukan kembali.');
+        }
+
+        if ($experience->isBlocked()) {
+            abort(403, 'Status keanggotaan tidak valid.');
+        }
 
         $service->submit($member, $request->validated(), $request->user());
 
         return redirect()
             ->route('member.onboarding')
-            ->with('success', 'Onboarding terkirim. Pengurus akan memvalidasi data Anda.');
+            ->with('success', 'Data profil berhasil diperbarui.');
     }
 
     public function markOnboardingStep(
@@ -882,20 +896,5 @@ class MemberPortalController extends Controller
         abort_if(blank($member->organization_id), 403, 'Anggota belum terdaftar pada unit koperasi.');
 
         return $member;
-    }
-
-    private function resolveOnboardingReviewState(string $validation, bool $submitted): string
-    {
-        if (! $submitted) {
-            return 'draft';
-        }
-
-        return match ($validation) {
-            \App\Models\CooperativeMember::VALIDATION_PENDING_REVIEW => 'review',
-            \App\Models\CooperativeMember::VALIDATION_REVISION => 'revision',
-            \App\Models\CooperativeMember::VALIDATION_REJECTED => 'rejected',
-            \App\Models\CooperativeMember::VALIDATION_ACTIVE => 'approved',
-            default => 'pending',
-        };
     }
 }

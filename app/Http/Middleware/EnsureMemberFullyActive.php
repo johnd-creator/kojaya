@@ -24,26 +24,26 @@ class EnsureMemberFullyActive
             return redirect()->route('member.dashboard');
         }
 
-        if ($this->isFullyActive($member)) {
+        $experience = $this->memberAccessService->experience($member);
+
+        if ($experience->isActive()) {
             return $next($request);
         }
 
         $this->logAccessDenied($request, $member);
 
+        if ($experience->isBlocked()) {
+            abort(403, 'Status keanggotaan tidak valid.');
+        }
+
         $memberAccess = $this->memberAccessService->for($member);
-        $targetRoute = $memberAccess['can_access_onboarding']
+        $targetRoute = ($memberAccess && $memberAccess['can_access_onboarding'])
             ? 'member.onboarding'
             : 'member.dashboard';
 
         return redirect()
             ->route($targetRoute)
-            ->with('warning', $this->messageFor($member->validation_status));
-    }
-
-    private function isFullyActive(CooperativeMember $member): bool
-    {
-        return $member->status === CooperativeMember::VALIDATION_ACTIVE
-            && $member->validation_status === CooperativeMember::VALIDATION_ACTIVE;
+            ->with('warning', $this->messageForExperience($experience));
     }
 
     private function logAccessDenied(Request $request, CooperativeMember $member): void
@@ -62,13 +62,13 @@ class EnsureMemberFullyActive
         }
     }
 
-    private function messageFor(string $status): string
+    private function messageForExperience(\App\Enums\Cooperative\MemberLifecycleExperience $experience): string
     {
-        return match ($status) {
-            CooperativeMember::VALIDATION_PENDING,
-            CooperativeMember::VALIDATION_PENDING_REVIEW => 'Onboarding Anda sedang menunggu validasi pengurus. Setelah disetujui, fitur anggota akan terbuka.',
-            CooperativeMember::VALIDATION_REVISION => 'Pengurus meminta revisi data. Lengkapi onboarding untuk mengajukan ulang.',
-            CooperativeMember::VALIDATION_REJECTED => 'Pendaftaran Anda ditolak. Hubungi admin untuk informasi lebih lanjut.',
+        return match ($experience) {
+            \App\Enums\Cooperative\MemberLifecycleExperience::WaitingVerification => 'Pendaftaran Anda sedang menunggu verifikasi awal Admin Koperasi.',
+            \App\Enums\Cooperative\MemberLifecycleExperience::UnderReview => 'Onboarding Anda sedang menunggu validasi pengurus. Setelah disetujui, fitur anggota akan terbuka.',
+            \App\Enums\Cooperative\MemberLifecycleExperience::RevisionRequired => 'Pengurus meminta revisi data. Lengkapi onboarding untuk mengajukan ulang.',
+            \App\Enums\Cooperative\MemberLifecycleExperience::Rejected => 'Pendaftaran Anda ditolak. Hubungi admin untuk informasi lebih lanjut.',
             default => 'Status keanggotaan Anda belum aktif.',
         };
     }

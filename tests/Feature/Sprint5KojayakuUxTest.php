@@ -75,7 +75,18 @@ class Sprint5KojayakuUxTest extends TestCase
                 ->has('recentTransactions')
             );
 
+        // Active member visiting onboarding redirects to member dashboard per R1-04
         $this->actingAs($user)
+            ->get('/member/onboarding')
+            ->assertRedirect(route('member.dashboard'));
+
+        // Non-active (pending) member receives onboarding props
+        [$pendingUser] = $this->memberUser([
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $this->actingAs($pendingUser)
             ->get('/member/onboarding')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page

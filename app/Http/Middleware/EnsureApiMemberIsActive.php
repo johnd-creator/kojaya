@@ -14,6 +14,7 @@ class EnsureApiMemberIsActive
 {
     public function __construct(
         private readonly AuditLogService $audit,
+        private readonly \App\Services\Cooperative\MemberAccessService $memberAccessService,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -27,14 +28,13 @@ class EnsureApiMemberIsActive
             );
         }
 
-        $status = $member->validation_status;
+        $experience = $this->memberAccessService->experience($member);
 
-        if ($member->status === CooperativeMember::VALIDATION_ACTIVE
-            && $member->validation_status === CooperativeMember::VALIDATION_ACTIVE) {
+        if ($experience->isActive()) {
             return $next($request);
         }
 
-        $this->logAccessDenied($request, $member, $status);
+        $this->logAccessDenied($request, $member, (string) $member->validation_status);
 
         return ApiResponse::error(
             'Keanggotaan Anda belum aktif. Fitur ini hanya tersedia untuk anggota aktif.',

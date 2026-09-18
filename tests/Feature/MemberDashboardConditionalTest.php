@@ -203,7 +203,7 @@ class MemberDashboardConditionalTest extends TestCase
 
     public function test_pending_review_member_sees_active_member_cards(): void
     {
-        [$user, $member] = $this->makeMember(CooperativeMember::VALIDATION_ACTIVE);
+        [$user, $member] = $this->makeMember(CooperativeMember::VALIDATION_PENDING);
         $member->update([
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
             'onboarding_submitted_at' => now(),
@@ -233,7 +233,7 @@ class MemberDashboardConditionalTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('is_active_member', false)
-                ->where('is_pending_review', false)
+                ->where('is_pending_review', true)
             );
     }
 

@@ -26,6 +26,11 @@ class EnsureIsMember
             return redirect()->route('dashboard');
         }
 
+        $experience = $this->memberAccessService->experience($member);
+        if ($experience->isBlocked()) {
+            abort(403, 'Status keanggotaan tidak valid.');
+        }
+
         $memberAccess = $this->memberAccessService->for($member);
 
         if (! $memberAccess['is_active'] && ! $this->isAllowedRoute($request, $memberAccess)) {

@@ -1,680 +1,387 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from "@inertiajs/vue3";
+import { Head } from "@inertiajs/vue3";
 import {
   AlertCircle,
+  Building,
   CheckCircle2,
-  CircleDot,
-  CreditCard,
-  FileSignature,
-  IdCard,
-  MapPin,
+  Clock,
+  FileText,
+  Mail,
   ShieldCheck,
   Sparkles,
-  User
-  
+  User,
+  XCircle,
 } from "lucide-vue-next";
-import type {LucideIcon} from "lucide-vue-next";
-import { computed, ref } from "vue";
-import OnboardingChecklist from "@/components/Kojayaku/OnboardingChecklist.vue";
+import { computed } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AppLayout from "@/layouts/AppLayout.vue";
 
-type Member = {
-  id: number;
-  member_no: string;
-  status?: string | null;
+interface MemberData {
+  id?: number;
+  member_no?: string;
   name?: string | null;
   email?: string | null;
   phone?: string | null;
-  address?: string | null;
-  identity_number?: string | null;
-  jenis_kelamin?: string | null;
-  kategori?: string | null;
-  tanggal_lahir?: string | null;
-  tempat_lahir?: string | null;
-  pekerjaan?: string | null;
-  npwp?: string | null;
-  no_rekening?: string | null;
-  nama_bank?: string | null;
-  nama_pemilik_rekening?: string | null;
+  status?: string | null;
   validation_status?: string | null;
-  organization?: { name: string } | null;
-  user?: { name?: string; email?: string };
-};
-
-type OnboardingStatus = {
-  completed_steps: number;
-  total_steps: number;
-  progress_percent: number;
-  is_complete: boolean;
-  is_dismissed: boolean;
-  steps: Array<{
-    key: string;
-    label: string;
-    description: string;
-    href: string;
-    completed: boolean;
-  }>;
-};
-
-type Options = {
-  jenisKelamin: Array<{ value: string; label: string }>;
-  perusahaan: Array<{ value: string; label: string }>;
-  bank: Array<{ value: string; label: string }>;
-};
+  validation_notes?: string | null;
+  organization?: { name?: string } | null;
+  user?: { name?: string; email?: string } | null;
+}
 
 const props = defineProps<{
-  member: Member;
-  onboarding: OnboardingStatus;
-  submitted: boolean;
-  review_state:
-    | "draft"
-    | "review"
-    | "revision"
-    | "rejected"
-    | "approved"
-    | "pending";
-  validation_status: string;
-  options: Options;
+  member: MemberData;
+  lifecycle_experience?: string;
+  review_state?: string;
+  validation_status?: string;
+  validation_notes?: string | null;
+  submitted?: boolean;
 }>();
 
-const stepOrder = [
-  { key: "personal", label: "Data Pribadi", icon: User },
-  { key: "contact", label: "Kontak & Alamat", icon: MapPin },
-  { key: "identity", label: "Identitas", icon: IdCard },
-  { key: "membership", label: "Keanggotaan", icon: FileSignature },
-  { key: "bank", label: "Rekening", icon: CreditCard },
-  { key: "review", label: "Review & Submit", icon: ShieldCheck },
-] as const;
-
-const activeStep = ref<number>(0);
-
-const isLocked = computed<boolean>(() => {
-  return ["approved", "rejected"].includes(props.review_state);
-});
-
-const isApproved = computed<boolean>(() => props.review_state === "approved");
-
-const isAdmissionWaiting = computed<boolean>(() => {
-  return (
-    props.validation_status === "PENDING" &&
-    props.member.status !== "ACTIVE" &&
-    !props.submitted
-  );
-});
-
-const admissionWaitingTitle = computed<string>(() =>
-  props.validation_status === "PENDING_VALIDATION"
-    ? "Menunggu approval Pengurus Koperasi"
-    : "Menunggu penerimaan Admin Koperasi",
+const isWaitingVerification = computed(
+  () => props.lifecycle_experience === "WAITING_VERIFICATION",
 );
-
-const admissionWaitingDescription = computed<string>(() =>
-  props.validation_status === "PENDING_VALIDATION"
-    ? "Data Anda sudah diverifikasi Admin Koperasi. Akses Kojayaku akan dibuka setelah Pengurus Koperasi memberikan approval final."
-    : "Akun Google Anda sudah berhasil dibuat sebagai calon anggota. Untuk menjaga validasi data koperasi, akses Kojayaku baru akan dibuka setelah Admin Koperasi menerima pendaftaran ini.",
+const isUnderReview = computed(
+  () => props.lifecycle_experience === "UNDER_REVIEW",
 );
-
-const admissionWaitingStatus = computed<string>(() =>
-  props.validation_status === "PENDING_VALIDATION"
-    ? "Menunggu Pengurus"
-    : "Menunggu Admin",
+const isRevisionRequired = computed(
+  () => props.lifecycle_experience === "REVISION_REQUIRED",
 );
+const isRejected = computed(() => props.lifecycle_experience === "REJECTED");
 
-const form = useForm<{
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  identity_number: string;
-  npwp: string;
-  jenis_kelamin: string;
-  kategori: string;
-  tanggal_lahir: string;
-  tempat_lahir: string;
-  pekerjaan: string;
-  no_rekening: string;
-  nama_bank: string;
-  nama_pemilik_rekening: string;
-}>({
-  name: props.member.name ?? props.member.user?.name ?? "",
-  email: props.member.email ?? props.member.user?.email ?? "",
-  phone: props.member.phone ?? "",
-  address: props.member.address ?? "",
-  identity_number: props.member.identity_number ?? "",
-  npwp: props.member.npwp ?? "",
-  jenis_kelamin: props.member.jenis_kelamin ?? "L",
-  kategori: props.member.kategori ?? "IP",
-  tanggal_lahir: props.member.tanggal_lahir ?? "",
-  tempat_lahir: props.member.tempat_lahir ?? "",
-  pekerjaan: props.member.pekerjaan ?? "",
-  no_rekening: props.member.no_rekening ?? "",
-  nama_bank: props.member.nama_bank ?? "",
-  nama_pemilik_rekening: props.member.nama_pemilik_rekening ?? "",
-});
-
-const setStep = (index: number): void => {
-  if (isLocked.value) return;
-  activeStep.value = Math.max(0, Math.min(stepOrder.length - 1, index));
-};
-
-const next = (): void => {
-  setStep(activeStep.value + 1);
-};
-
-const back = (): void => {
-  setStep(activeStep.value - 1);
-};
-
-const submit = (): void => {
-  form.post("/member/onboarding", { preserveScroll: true });
-};
-
-const reviewItems = computed(() => [
-  { label: "Nama lengkap", value: form.name },
-  { label: "Email", value: form.email },
-  { label: "Nomor HP", value: form.phone },
-  { label: "Alamat", value: form.address },
-  { label: "Nomor Identitas", value: form.identity_number },
-  { label: "NPWP", value: form.npwp || "-" },
-  { label: "Jenis Kelamin", value: form.jenis_kelamin },
-  { label: "Perusahaan", value: form.kategori },
-  { label: "Tanggal Lahir", value: form.tanggal_lahir || "-" },
-  { label: "Tempat Lahir", value: form.tempat_lahir || "-" },
-  { label: "Jabatan", value: form.pekerjaan || "-" },
-  { label: "Bank", value: form.nama_bank || "-" },
-  { label: "Nama Pemilik Rekening", value: form.nama_pemilik_rekening || "-" },
-  { label: "Nomor Rekening", value: form.no_rekening || "-" },
-]);
-
-const formError = computed<string>(() => String(form.errors.form ?? ""));
-
-const reviewStateMeta = computed<{
-  tone: "warning" | "success" | "destructive" | "secondary";
-  title: string;
-  description: string;
-  icon: LucideIcon;
-}>(() => {
-  switch (props.review_state) {
-    case "review":
-      return {
-        tone: "warning",
-        title: "Menunggu Approval Pengurus",
-        description:
-          "Data Anda sudah diverifikasi Admin Koperasi dan sedang menunggu approval final Pengurus Koperasi.",
-        icon: Sparkles,
-      };
-    case "revision":
-      return {
-        tone: "warning",
-        title: "Perlu Revisi",
-        description:
-          "Pengurus meminta perbaikan data. Silakan perbarui dan kirim ulang.",
-        icon: AlertCircle,
-      };
-    case "rejected":
-      return {
-        tone: "destructive",
-        title: "Ditolak",
-        description:
-          "Pengurus menolak pendaftaran ini. Hubungi admin untuk informasi lebih lanjut.",
-        icon: AlertCircle,
-      };
-    case "approved":
-      return {
-        tone: "success",
-        title: "Disetujui",
-        description:
-          "Selamat! Anda sudah menjadi anggota aktif. Anda bisa mengakses fitur anggota.",
-        icon: CheckCircle2,
-      };
-    case "pending":
-    case "draft":
-    default:
-      return {
-        tone: "secondary",
-        title: isAdmissionWaiting.value
-          ? "Penerimaan Anggota Baru"
-          : "Onboarding Diterima",
-        description: isAdmissionWaiting.value
-          ? "Pendaftaran Anda sudah masuk ke sistem. Mohon konfirmasi ke Admin Koperasi agar akun dapat diterima sebagai anggota."
-          : "Lengkapi semua langkah dan submit data Anda untuk validasi pengurus.",
-        icon: ShieldCheck,
-      };
+const statusMeta = computed(() => {
+  if (isRejected.value) {
+    return {
+      tone: "destructive" as const,
+      title: "Pendaftaran Ditolak",
+      badge: "Ditolak",
+      badgeClass:
+        "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900/40",
+      description:
+        "Mohon maaf, pendaftaran keanggotaan Anda telah ditolak oleh Koperasi. Akun Anda berada dalam status baca-saja (read-only).",
+      icon: XCircle,
+    };
   }
+
+  if (isRevisionRequired.value) {
+    return {
+      tone: "warning" as const,
+      title: "Perlu Revisi Dokumen / Data",
+      badge: "Perlu Revisi",
+      badgeClass:
+        "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-900/40",
+      description:
+        "Pengurus Koperasi meminta perbaikan atau kelengkapan data pendaftaran Anda. Silakan hubungi admin koperasi untuk klarifikasi.",
+      icon: AlertCircle,
+    };
+  }
+
+  if (isUnderReview.value) {
+    return {
+      tone: "warning" as const,
+      title: "Menunggu Approval Pengurus",
+      badge: "Menunggu Pengurus",
+      badgeClass:
+        "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-900/40",
+      description:
+        "Data pendaftaran Anda sudah berhasil diverifikasi oleh Admin Koperasi dan sedang menunggu persetujuan (approval) akhir dari Pengurus Koperasi.",
+      icon: Clock,
+    };
+  }
+
+  // WAITING_VERIFICATION or default
+  return {
+    tone: "default" as const,
+    title: "Menunggu Verifikasi Admin Koperasi",
+    badge: "Menunggu Admin",
+    badgeClass:
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40",
+    description:
+      "Data pendaftaran Anda telah tercatat dalam sistem. Saat ini berkas Anda sedang dalam antrean verifikasi oleh Admin Koperasi.",
+    icon: Sparkles,
+  };
 });
 
+const steps = computed(() => [
+  {
+    title: "Pendaftaran Tercatat",
+    desc: "Data tersimpan di sistem",
+    status: "completed",
+  },
+  {
+    title: "Verifikasi Admin",
+    desc: "Pemeriksaan berkas & identitas",
+    status: isWaitingVerification.value ? "current" : "completed",
+  },
+  {
+    title: "Approval Pengurus",
+    desc: "Persetujuan final maker-checker",
+    status: isRejected.value
+      ? "rejected"
+      : isRevisionRequired.value
+        ? "revision"
+        : isUnderReview.value
+          ? "current"
+          : "pending",
+  },
+  {
+    title: "Anggota Aktif",
+    desc: "Akses penuh fitur Kojayaku",
+    status: "pending",
+  },
+]);
 </script>
 
 <template>
-  <Head title="Onboarding Kojayaku" />
   <AppLayout
     :breadcrumbs="[
       { title: 'Kojayaku', href: '/member' },
-      { title: 'Onboarding', href: '/member/onboarding' },
+      { title: 'Status Pendaftaran', href: '/member/onboarding' },
     ]"
   >
+    <Head title="Status Pendaftaran Anggota" />
+
     <PageContainer>
+      <div class="space-y-6">
+        <!-- Header -->
         <header class="flex items-center gap-3 sm:gap-5">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-lg shadow-emerald-600/20 sm:h-16 sm:w-16">
+          <div
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-700 text-white shadow-lg shadow-emerald-600/20 sm:h-16 sm:w-16"
+          >
             <Sparkles class="h-6 w-6 sm:h-8 sm:w-8" />
           </div>
           <div>
-            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">Onboarding Anggota</h1>
+            <h1
+              class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white sm:text-3xl"
+            >
+              Status Pendaftaran Anggota
+            </h1>
             <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              {{ member.member_no }} · {{ member.organization?.name || "Koperasi" }} — {{ member.name }}
+              {{ member.organization?.name || "Koperasi" }} ·
+              {{ member.name || member.user?.name || "Calon Anggota" }}
             </p>
           </div>
         </header>
 
-      <Alert
-        :variant="
-          reviewStateMeta.tone === 'destructive' ? 'destructive' : 'default'
-        "
-      >
-        <component :is="reviewStateMeta.icon" class="h-4 w-4" />
-        <AlertTitle>{{ reviewStateMeta.title }}</AlertTitle>
-        <AlertDescription>{{ reviewStateMeta.description }}</AlertDescription>
-      </Alert>
+        <!-- Status Banner Alert -->
+        <Alert
+          :variant="
+            statusMeta.tone === 'destructive' ? 'destructive' : 'default'
+          "
+          class="rounded-2xl border p-4 sm:p-5"
+        >
+          <component :is="statusMeta.icon" class="h-5 w-5" />
+          <AlertTitle class="text-base font-semibold">
+            {{ statusMeta.title }}
+          </AlertTitle>
+          <AlertDescription class="mt-1 text-sm leading-relaxed">
+            {{ statusMeta.description }}
+          </AlertDescription>
+        </Alert>
 
-      <section
-        v-if="isAdmissionWaiting"
-        class="grid gap-4 rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/40 p-4 text-emerald-950 dark:text-emerald-300 dark:from-emerald-950/20 dark:to-teal-950/10 dark:border-emerald-900/30 shadow-sm sm:p-6"
-        data-test="member-admission-waiting"
-      >
-        <div class="flex items-start gap-4">
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm border dark:border-zinc-800"
-          >
-            <ShieldCheck class="h-5 w-5" />
-          </div>
-          <div class="space-y-2">
-            <h2 class="text-lg font-semibold">
-              {{ admissionWaitingTitle }}
-            </h2>
-            <p class="max-w-3xl text-sm leading-6 text-emerald-900/85 dark:text-emerald-400/80">
-              {{ admissionWaitingDescription }}
-            </p>
-          </div>
-        </div>
-
+        <!-- Rejection / Revision Notes if available -->
         <div
-          class="grid grid-cols-1 gap-3 rounded-md border border-emerald-200 dark:border-emerald-900/30 bg-white/75 dark:bg-zinc-900/40 p-4 text-sm sm:grid-cols-3"
+          v-if="(isRejected || isRevisionRequired) && validation_notes"
+          class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60"
         >
-          <div>
-            <p
-              class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
-            >
-              Nama
-            </p>
-            <p class="mt-1 font-semibold">
-              {{ member.name || member.user?.name || "-" }}
-            </p>
-          </div>
-          <div>
-            <p
-              class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
-            >
-              Email Google
-            </p>
-            <p class="mt-1 font-semibold">
-              {{ member.email || member.user?.email || "-" }}
-            </p>
-          </div>
-          <div>
-            <p
-              class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
-            >
-              Status
-            </p>
-            <p class="mt-1 font-semibold">{{ admissionWaitingStatus }}</p>
-          </div>
-        </div>
-
-        <p class="text-xs leading-5 text-emerald-800 dark:text-emerald-400">
-          Jika Anda sudah menghubungi Admin Koperasi, silakan tunggu sampai
-          status diterima. Setelah diterima, menu anggota seperti simpanan,
-          pinjaman, poin, dan transaksi akan otomatis terbuka.
-        </p>
-      </section>
-
-      <OnboardingChecklist
-        v-if="!isAdmissionWaiting"
-        :onboarding="onboarding"
-      />
-
-      <section v-if="!isAdmissionWaiting" class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-5">
-        <ol
-          class="flex flex-wrap items-center gap-2 text-xs sm:text-sm"
-          data-test="onboarding-step-nav"
-        >
-          <li
-            v-for="(step, index) in stepOrder"
-            :key="step.key"
-            :data-active="activeStep === index"
-            :data-completed="index < activeStep"
-          >
-            <button
-              type="button"
-              class="flex items-center gap-2 rounded-full border px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-50"
-              :class="[
-                activeStep === index
-                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
-                  : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40',
-              ]"
-              :disabled="isLocked"
-              @click="setStep(index)"
-            >
-              <span
-                class="flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold"
-                :class="
-                  activeStep === index
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
-                "
+          <div class="flex items-start gap-3">
+            <FileText class="mt-0.5 h-5 w-5 shrink-0 text-zinc-500" />
+            <div>
+              <h3
+                class="text-sm font-semibold text-zinc-900 dark:text-zinc-100"
               >
-                {{ index + 1 }}
-              </span>
-              <component :is="step.icon" class="h-3.5 w-3.5" />
-              <span :class="[isLocked ? 'text-zinc-500' : 'text-zinc-900 dark:text-zinc-100']">{{ step.label }}</span>
-            </button>
-          </li>
-        </ol>
-      </section>
-
-      <form
-        v-if="!isAdmissionWaiting"
-        class="rounded-3xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm sm:p-6"
-        data-test="onboarding-form"
-        @submit.prevent="submit"
-      >
-        <div v-show="activeStep === 0" class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="onb-name">Nama Lengkap</Label>
-              <Input
-                id="onb-name"
-                v-model="form.name"
-                :disabled="isLocked"
-                required
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-            <div class="space-y-2">
-              <Label for="onb-email">Email</Label>
-              <Input
-                id="onb-email"
-                v-model="form.email"
-                type="email"
-                :disabled="isLocked"
-                required
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-            <div class="space-y-2">
-              <Label for="onb-tanggal-lahir">Tanggal Lahir</Label>
-              <Input
-                id="onb-tanggal-lahir"
-                v-model="form.tanggal_lahir"
-                type="date"
-                :disabled="isLocked"
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-            <div class="space-y-2">
-              <Label for="onb-tempat-lahir">Tempat Lahir</Label>
-              <Input
-                id="onb-tempat-lahir"
-                v-model="form.tempat_lahir"
-                :disabled="isLocked"
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div v-show="activeStep === 1" class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="onb-phone">Nomor HP</Label>
-              <Input
-                id="onb-phone"
-                v-model="form.phone"
-                :disabled="isLocked"
-                required
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-            <div class="space-y-2">
-              <Label for="onb-pekerjaan">Jabatan</Label>
-              <Input
-                id="onb-pekerjaan"
-                v-model="form.pekerjaan"
-                :disabled="isLocked"
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-            <div class="space-y-2 md:col-span-2">
-              <Label for="onb-address">Alamat Domisili</Label>
-              <textarea
-                id="onb-address"
-                v-model="form.address"
-                class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm disabled:opacity-60 dark:border-zinc-800 dark:text-white"
-                :disabled="isLocked"
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        <div v-show="activeStep === 2" class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="onb-identity">Nomor Identitas (NIK/KTP)</Label>
-              <Input
-                id="onb-identity"
-                v-model="form.identity_number"
-                :disabled="isLocked"
-                required
-                class="rounded-xl dark:border-zinc-800"
-              />
-              <p class="text-xs text-muted-foreground">
-                Data identitas dipakai untuk validasi pengurus.
-              </p>
-            </div>
-            <div class="space-y-2">
-              <Label for="onb-npwp">NPWP</Label>
-              <Input
-                id="onb-npwp"
-                v-model="form.npwp"
-                placeholder="contoh: 12.345.678.9-012.000"
-                :disabled="isLocked"
-                class="rounded-xl dark:border-zinc-800"
-              />
-              <p class="text-xs text-muted-foreground">
-                Opsional. Digunakan untuk kebutuhan administrasi perpajakan koperasi.
+                Catatan Pengurus / Admin:
+              </h3>
+              <p
+                class="mt-1 whitespace-pre-line text-sm text-zinc-700 dark:text-zinc-300"
+              >
+                {{ validation_notes }}
               </p>
             </div>
           </div>
         </div>
 
-        <div v-show="activeStep === 3" class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label>Jenis Kelamin</Label>
-              <Select v-model="form.jenis_kelamin" :disabled="isLocked">
-                <SelectTrigger class="rounded-xl dark:border-zinc-800">
-                  <SelectValue placeholder="Pilih jenis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in options.jenisKelamin"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="space-y-2">
-              <Label>Perusahaan</Label>
-              <Select v-model="form.kategori" :disabled="isLocked">
-                <SelectTrigger class="rounded-xl dark:border-zinc-800">
-                  <SelectValue placeholder="Pilih perusahaan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in options.perusahaan"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <!-- Read-Only Notice for Rejected -->
+        <div
+          v-if="isRejected"
+          class="rounded-2xl border border-rose-200/80 bg-rose-50/50 p-4 text-xs leading-relaxed text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300 sm:p-5"
+        >
+          Pendaftaran ini telah berstatus ditolak dan tidak dapat diajukan
+          kembali secara mandiri. Akses transaksi dan fitur finansial tidak
+          tersedia. Hubungi pengurus koperasi untuk keterangan lebih lanjut.
         </div>
 
-        <div v-show="activeStep === 4" class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-3">
-            <div class="space-y-2">
-              <Label>Nama Bank</Label>
-              <Select v-model="form.nama_bank" :disabled="isLocked">
-                <SelectTrigger class="rounded-xl dark:border-zinc-800">
-                  <SelectValue placeholder="Pilih bank" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in options.bank"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="space-y-2 md:col-span-2">
-              <Label for="onb-pemilik">Nama Pemilik Rekening</Label>
-              <Input
-                id="onb-pemilik"
-                v-model="form.nama_pemilik_rekening"
-                :disabled="isLocked"
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-            <div class="space-y-2 md:col-span-3">
-              <Label for="onb-norek">Nomor Rekening</Label>
-              <Input
-                id="onb-norek"
-                v-model="form.no_rekening"
-                :disabled="isLocked"
-                class="rounded-xl dark:border-zinc-800"
-              />
-            </div>
-          </div>
-        </div>
+        <!-- Lifecycle Progression Stepper -->
+        <section
+          class="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
+        >
+          <h2
+            class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
+          >
+            Alur Verifikasi Keanggotaan
+          </h2>
 
-        <div v-show="activeStep === 5" class="space-y-4">
-          <div class="rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-sm">
-            <p class="font-semibold dark:text-white">Review Data Onboarding</p>
-            <p class="text-muted-foreground">
-              Pastikan data yang Anda kirim sudah benar. Setelah submit,
-              pengurus akan memvalidasi.
-            </p>
-          </div>
-          <dl class="grid gap-3 sm:grid-cols-2">
+          <div
+            class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
             <div
-              v-for="item in reviewItems"
-              :key="item.label"
-              class="rounded-lg border border-zinc-100 dark:border-zinc-800 p-3"
+              v-for="(step, idx) in steps"
+              :key="step.title"
+              class="relative rounded-2xl border p-4 transition-all"
+              :class="[
+                step.status === 'completed'
+                  ? 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-900/30 dark:bg-emerald-950/10'
+                  : step.status === 'current'
+                    ? 'border-amber-300 bg-amber-50/50 dark:border-amber-800/40 dark:bg-amber-950/20 ring-2 ring-amber-400/30'
+                    : step.status === 'rejected'
+                      ? 'border-rose-300 bg-rose-50/50 dark:border-rose-800/40 dark:bg-rose-950/20'
+                      : step.status === 'revision'
+                        ? 'border-amber-300 bg-amber-50/50 dark:border-amber-800/40 dark:bg-amber-950/20'
+                        : 'border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-800/20 text-zinc-400',
+              ]"
             >
-              <dt class="text-xs text-muted-foreground">{{ item.label }}</dt>
-              <dd class="mt-1 text-sm font-medium dark:text-white">{{ item.value || "-" }}</dd>
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                  :class="[
+                    step.status === 'completed'
+                      ? 'bg-emerald-600 text-white'
+                      : step.status === 'current'
+                        ? 'bg-amber-500 text-white animate-pulse'
+                        : step.status === 'rejected'
+                          ? 'bg-rose-600 text-white'
+                          : step.status === 'revision'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300',
+                  ]"
+                >
+                  <CheckCircle2
+                    v-if="step.status === 'completed'"
+                    class="h-4 w-4"
+                  />
+                  <Clock
+                    v-else-if="step.status === 'current'"
+                    class="h-4 w-4"
+                  />
+                  <XCircle
+                    v-else-if="step.status === 'rejected'"
+                    class="h-4 w-4"
+                  />
+                  <AlertCircle
+                    v-else-if="step.status === 'revision'"
+                    class="h-4 w-4"
+                  />
+                  <span v-else>{{ idx + 1 }}</span>
+                </span>
+                <div>
+                  <h3
+                    class="text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+                  >
+                    {{ step.title }}
+                  </h3>
+                  <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    {{ step.desc }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Member Profile Overview (Read-only) -->
+        <section
+          class="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
+        >
+          <div
+            class="flex items-center justify-between border-b pb-4 dark:border-zinc-800"
+          >
+            <div class="flex items-center gap-2.5">
+              <ShieldCheck
+                class="h-5 w-5 text-emerald-600 dark:text-emerald-400"
+              />
+              <h2
+                class="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+              >
+                Informasi Pendaftaran
+              </h2>
+            </div>
+            <span
+              class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+              :class="statusMeta.badgeClass"
+            >
+              {{ statusMeta.badge }}
+            </span>
+          </div>
+
+          <dl
+            class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm"
+          >
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
+                <User class="h-3.5 w-3.5" />
+                Nama Terdaftar
+              </dt>
+              <dd class="mt-1.5 font-semibold text-zinc-900 dark:text-zinc-100">
+                {{ member.name || member.user?.name || "-" }}
+              </dd>
+            </div>
+
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
+                <Mail class="h-3.5 w-3.5" />
+                Email Akun
+              </dt>
+              <dd
+                class="mt-1.5 font-semibold text-zinc-900 dark:text-zinc-100 break-all"
+              >
+                {{ member.email || member.user?.email || "-" }}
+              </dd>
+            </div>
+
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
+                <Building class="h-3.5 w-3.5" />
+                Unit Koperasi
+              </dt>
+              <dd class="mt-1.5 font-semibold text-zinc-900 dark:text-zinc-100">
+                {{ member.organization?.name || "Koperasi Pusat" }}
+              </dd>
+            </div>
+
+            <div
+              class="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+            >
+              <dt
+                class="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+              >
+                <FileText class="h-3.5 w-3.5" />
+                Nomor Anggota
+              </dt>
+              <dd class="mt-1.5 font-semibold text-zinc-900 dark:text-zinc-100">
+                {{ member.member_no || "Menunggu Aktivasi" }}
+              </dd>
             </div>
           </dl>
-        </div>
+        </section>
 
-        <div v-if="formError" class="mt-4">
-          <Alert variant="destructive">
-            <AlertCircle class="h-4 w-4" />
-            <AlertTitle>Onboarding belum lengkap</AlertTitle>
-            <AlertDescription>{{ formError }}</AlertDescription>
-          </Alert>
-        </div>
-
-        <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <Button
-            v-if="activeStep > 0"
-            type="button"
-            variant="outline"
-            :disabled="isLocked"
-            @click="back"
-          >
-            Kembali
-          </Button>
-          <span v-else />
-          <div class="flex flex-wrap items-center gap-2">
-            <Button
-              v-if="activeStep < stepOrder.length - 1"
-              type="button"
-              :disabled="isLocked"
-              data-test="onboarding-next"
-              @click="next"
-            >
-              Lanjut
-            </Button>
-            <Button
-              v-else
-              type="submit"
-              :disabled="form.processing || isLocked"
-              data-test="onboarding-submit"
-            >
-              <CircleDot class="h-4 w-4" />
-              {{ isApproved ? "Sudah Disetujui" : "Submit Onboarding" }}
-            </Button>
-          </div>
-        </div>
-      </form>
-
-      <div
-        v-if="!submitted && !isLocked"
-        class="rounded-3xl border border-amber-200 dark:border-amber-900/35 bg-amber-50 dark:bg-amber-950/15 p-4 text-sm text-amber-900 dark:text-amber-400"
-      >
-        Onboarding akan dikirim ke pengurus setelah Anda menekan tombol
-        <strong>Submit Onboarding</strong>. Sebelum submit, data dianggap masih
-        draf.
-      </div>
-
-      <div
-        v-if="isApproved"
-        class="rounded-3xl border border-emerald-200 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-950/20 p-4 text-sm text-emerald-900 dark:text-emerald-400"
-      >
-        <p class="font-semibold">Selamat datang di koperasi.</p>
-        <p>
-          Anda bisa mengakses
-          <Link href="/member/savings" class="font-semibold underline"
-            >simpanan</Link
-          >,
-          <Link href="/member/loans" class="font-semibold underline"
-            >pinjaman</Link
-          >, dan
-          <Link href="/member/rewards" class="font-semibold underline"
-            >reward</Link
-          >.
+        <!-- Information Notice Footer -->
+        <p class="text-center text-xs text-zinc-500 dark:text-zinc-400">
+          Setelah pendaftaran disetujui penuh oleh Pengurus Koperasi, akun Anda
+          akan otomatis aktif dan seluruh layanan koperasi (simpanan, pinjaman,
+          dan transaksi kasir) akan terbuka.
         </p>
       </div>
     </PageContainer>

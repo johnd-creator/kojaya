@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\LocalRedirectValidator;
 use App\Services\Auth\Sso\GoogleSsoService;
@@ -184,24 +183,22 @@ class GoogleSsoController extends Controller
         return redirect($destination);
     }
 
-    private function redirectDestination(User $user): string
+    public function redirectDestination(User $user): string
     {
         $member = $user->cooperativeMember;
 
         if ($member) {
-            $status = $member->validation_status ?: $member->status;
+            $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
 
-            if (in_array($status, [
-                CooperativeMember::VALIDATION_PENDING,
-                CooperativeMember::VALIDATION_PENDING_REVIEW,
-                CooperativeMember::VALIDATION_REVISION,
-            ], true)) {
+            if ($experience->isActive()) {
+                return route('member.dashboard', absolute: false);
+            }
+
+            if ($experience->isNonActiveLifecycle()) {
                 return route('member.onboarding', absolute: false);
             }
-        }
 
-        if ($user->cooperativeMember) {
-            return route('member.dashboard', absolute: false);
+            abort(403, 'Status keanggotaan tidak valid.');
         }
 
         if ($user->can('view_cooperative_member')) {

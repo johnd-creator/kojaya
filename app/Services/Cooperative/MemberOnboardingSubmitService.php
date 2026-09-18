@@ -7,12 +7,10 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class MemberOnboardingSubmitService
 {
     public function __construct(
-        private readonly CooperativeNotificationDispatcher $notificationDispatcher,
         private readonly AuditLogService $audit,
     ) {}
 
@@ -21,86 +19,61 @@ class MemberOnboardingSubmitService
      */
     public function submit(CooperativeMember $member, array $data, ?User $actor = null): CooperativeMember
     {
-        $missing = $this->missingRequiredFields($data);
-
-        if (count($missing) > 0) {
-            throw ValidationException::withMessages([
-                'form' => 'Lengkapi field wajib: '.implode(', ', $missing).'.',
-            ]);
-        }
-
         return DB::transaction(function () use ($member, $data, $actor): CooperativeMember {
-            $memberAttributes = [
-                'name' => $data['name'],
-                'nama_anggota' => $data['name'],
-                'phone' => $data['phone'],
-                'no_telp' => $data['phone'],
-                'address' => $data['address'],
-                'identity_number' => $data['identity_number'],
-                'jenis_kelamin' => $data['jenis_kelamin'],
-                'kategori' => $data['kategori'],
-                'tanggal_lahir' => $data['tanggal_lahir'] ?? null,
-                'tempat_lahir' => $data['tempat_lahir'] ?? null,
-                'pekerjaan' => $data['pekerjaan'] ?? null,
-                'nama_bank' => $data['nama_bank'] ?? null,
-                'nama_pemilik_rekening' => $data['nama_pemilik_rekening'] ?? null,
-                'profile_completed_at' => Carbon::now(),
-                'onboarding_submitted_at' => Carbon::now(),
-                'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
-                'status' => $member->status === CooperativeMember::VALIDATION_ACTIVE
-                    ? CooperativeMember::VALIDATION_ACTIVE
-                    : CooperativeMember::VALIDATION_PENDING,
-            ];
+            // Narrow explicitly safe profile allowlist ONLY (R1-01):
+            // Must NOT edit: identity_number (NIK), kategori/company, organization,
+            // employee, member_no, membership_type, npwp, bank fields, or users.email.
+            $safeUpdates = [];
 
-            if (array_key_exists('npwp', $data)) {
-                $memberAttributes['npwp'] = $data['npwp'];
+            if (isset($data['name']) && is_string($data['name']) && trim($data['name']) !== '') {
+                $safeUpdates['name'] = trim($data['name']);
+                $safeUpdates['nama_anggota'] = trim($data['name']);
             }
 
-            if (array_key_exists('no_rekening', $data)) {
-                $memberAttributes['no_rekening'] = $data['no_rekening'];
+            if (isset($data['phone']) && is_string($data['phone'])) {
+                $safeUpdates['phone'] = trim($data['phone']);
+                $safeUpdates['no_telp'] = trim($data['phone']);
             }
 
-            $member->forceFill($memberAttributes)->save();
-
-            $user = $member->user;
-            if ($user && $user->email !== $data['email']) {
-                $user->forceFill(['email' => $data['email']])->save();
+            if (isset($data['address']) && is_string($data['address'])) {
+                $safeUpdates['address'] = trim($data['address']);
             }
+
+            if (isset($data['jenis_kelamin']) && in_array($data['jenis_kelamin'], ['L', 'P'], true)) {
+                $safeUpdates['jenis_kelamin'] = $data['jenis_kelamin'];
+            }
+
+            if (isset($data['tanggal_lahir'])) {
+                $safeUpdates['tanggal_lahir'] = $data['tanggal_lahir'];
+            }
+
+            if (isset($data['tempat_lahir']) && is_string($data['tempat_lahir'])) {
+                $safeUpdates['tempat_lahir'] = trim($data['tempat_lahir']);
+            }
+
+            if (isset($data['pekerjaan']) && is_string($data['pekerjaan'])) {
+                $safeUpdates['pekerjaan'] = trim($data['pekerjaan']);
+            }
+
+            $safeUpdates['profile_completed_at'] = Carbon::now();
+            $safeUpdates['onboarding_submitted_at'] = Carbon::now();
+
+            $member->forceFill($safeUpdates)->save();
 
             $this->writeAuditLog($member, $actor);
-
-            DB::afterCommit(fn () => $this->notificationDispatcher->memberSubmittedForValidation($member->refresh(), $actor));
 
             return $member->refresh();
         });
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<int, string>
-     */
-    private function missingRequiredFields(array $data): array
-    {
-        $required = ['name', 'email', 'phone', 'address', 'identity_number', 'jenis_kelamin', 'kategori'];
-        $missing = [];
-        foreach ($required as $key) {
-            $value = $data[$key] ?? null;
-            if (! is_string($value) || trim($value) === '') {
-                $missing[] = $key;
-            }
-        }
-
-        return $missing;
-    }
-
     private function writeAuditLog(CooperativeMember $member, ?User $actor): void
     {
         try {
-            $this->audit->log('sso.member_onboarding.submitted', 'cooperative.sso', $member, [
+            $this->audit->log('member.profile.updated', 'cooperative.member', $member, [
                 'new' => [
                     'validation_status' => $member->validation_status,
                 ],
-                'reason' => 'Member onboarding submitted for validation.',
+                'reason' => 'Member updated safe profile information.',
             ]);
         } catch (\Throwable) {
             // audit log best-effort, never break onboarding

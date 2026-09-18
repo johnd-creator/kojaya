@@ -103,7 +103,7 @@ class MemberAccessGatingTest extends TestCase
         ] as $route) {
             $this->actingAs($user)
                 ->get(route($route))
-                ->assertRedirect(route('member.dashboard'));
+                ->assertForbidden();
         }
     }
 
@@ -120,7 +120,7 @@ class MemberAccessGatingTest extends TestCase
         foreach (['member.savings', 'member.loans', 'member.points', 'member.rewards', 'member.transactions'] as $route) {
             $this->actingAs($user)
                 ->get(route($route))
-                ->assertRedirect(route('member.dashboard'));
+                ->assertForbidden();
         }
     }
 
@@ -147,11 +147,11 @@ class MemberAccessGatingTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.loans'))
-            ->assertRedirect(route('member.dashboard'));
+            ->assertRedirect(route('member.onboarding'));
 
         $this->actingAs($user)
             ->get(route('member.savings'))
-            ->assertRedirect(route('member.dashboard'));
+            ->assertRedirect(route('member.onboarding'));
     }
 
     public function test_active_member_is_redirected_from_erp_dashboard_to_kojayaku(): void
@@ -188,10 +188,18 @@ class MemberAccessGatingTest extends TestCase
     {
         $user = User::factory()->create();
         $user->assignRole('Anggota');
+        $status = match ($validationStatus) {
+            CooperativeMember::VALIDATION_ACTIVE => CooperativeMember::VALIDATION_ACTIVE,
+            CooperativeMember::VALIDATION_REVISION,
+            CooperativeMember::VALIDATION_REJECTED,
+            CooperativeMember::VALIDATION_INACTIVE => CooperativeMember::VALIDATION_INACTIVE,
+            default => CooperativeMember::VALIDATION_PENDING,
+        };
+
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'validation_status' => $validationStatus,
-            'status' => $validationStatus === CooperativeMember::VALIDATION_ACTIVE ? 'ACTIVE' : 'PENDING',
+            'status' => $status,
             'onboarding_submitted_at' => $validationStatus === CooperativeMember::VALIDATION_PENDING ? null : now(),
         ]);
 

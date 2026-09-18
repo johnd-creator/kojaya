@@ -18,7 +18,7 @@ class MemberOnboardingAccessTest extends TestCase
         Role::firstOrCreate(['name' => 'Anggota']);
     }
 
-    public function test_admin_verified_member_without_submission_sees_draft_review_state(): void
+    public function test_admin_verified_member_without_submission_sees_review_review_state(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
@@ -34,7 +34,7 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
+                ->where('review_state', 'review')
                 ->where('validation_status', 'PENDING_VALIDATION')
                 ->where('submitted', false)
             );
@@ -62,7 +62,7 @@ class MemberOnboardingAccessTest extends TestCase
             );
     }
 
-    public function test_pending_member_without_submission_sees_draft_review_state(): void
+    public function test_pending_member_without_submission_sees_pending_review_state(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
@@ -78,18 +78,18 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
+                ->where('review_state', 'pending')
                 ->where('validation_status', 'PENDING')
                 ->where('submitted', false)
             );
     }
 
-    public function test_active_member_without_submission_can_fill_onboarding_form(): void
+    public function test_active_member_visiting_onboarding_is_redirected_to_member_dashboard(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
             'user_id' => $user->id,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'status' => CooperativeMember::VALIDATION_ACTIVE,
             'onboarding_submitted_at' => null,
         ]);
@@ -97,22 +97,15 @@ class MemberOnboardingAccessTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('member.onboarding'))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
-                ->where('validation_status', 'PENDING')
-                ->where('submitted', false)
-            )
-            ->assertDontSee('member-admission-waiting');
+            ->assertRedirect(route('member.dashboard'));
     }
 
-    public function test_active_member_submission_keeps_lifecycle_active_while_waiting_final_approval(): void
+    public function test_active_member_submission_is_denied(): void
     {
         $user = User::factory()->create();
         $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
-            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
             'status' => CooperativeMember::VALIDATION_ACTIVE,
             'onboarding_submitted_at' => null,
             'identity_number' => null,
@@ -130,24 +123,23 @@ class MemberOnboardingAccessTest extends TestCase
                 'jenis_kelamin' => 'L',
                 'kategori' => 'IP',
             ])
-            ->assertRedirect('/member/onboarding')
-            ->assertSessionHas('success');
+            ->assertForbidden();
 
         $fresh = $member->fresh();
-
         $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->status);
-        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $fresh->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $fresh->validation_status);
     }
 
-    public function test_admin_verified_member_can_submit_onboarding(): void
+    public function test_admin_verified_under_review_member_cannot_submit_onboarding(): void
     {
         $user = User::factory()->create();
-        CooperativeMember::factory()->create([
+        $member = CooperativeMember::factory()->create([
             'user_id' => $user->id,
+            'name' => 'Original Budi',
             'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
             'status' => 'PENDING',
             'onboarding_submitted_at' => null,
-            'identity_number' => null,
+            'identity_number' => '3201000000000001',
         ]);
         $user->assignRole('Anggota');
 
@@ -163,17 +155,19 @@ class MemberOnboardingAccessTest extends TestCase
                 'jenis_kelamin' => 'L',
                 'kategori' => 'IP',
             ])
-            ->assertRedirect('/member/onboarding')
-            ->assertSessionHas('success');
+            ->assertForbidden();
+
+        $this->assertSame('Original Budi', $member->fresh()->name);
+        $this->assertSame('3201000000000001', $member->fresh()->identity_number);
     }
 
-    public function test_revision_member_without_submission_sees_draft_review_state(): void
+    public function test_revision_member_without_submission_sees_revision_review_state(): void
     {
         $user = User::factory()->create();
         CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'validation_status' => CooperativeMember::VALIDATION_REVISION,
-            'status' => 'PENDING',
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
             'onboarding_submitted_at' => null,
         ]);
         $user->assignRole('Anggota');
@@ -183,7 +177,7 @@ class MemberOnboardingAccessTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kojayaku/Onboarding')
-                ->where('review_state', 'draft')
+                ->where('review_state', 'revision')
                 ->where('validation_status', 'REVISION')
                 ->where('submitted', false)
             );
@@ -195,7 +189,7 @@ class MemberOnboardingAccessTest extends TestCase
         CooperativeMember::factory()->create([
             'user_id' => $user->id,
             'validation_status' => CooperativeMember::VALIDATION_REVISION,
-            'status' => 'PENDING',
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
             'onboarding_submitted_at' => now(),
         ]);
         $user->assignRole('Anggota');

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ApiErrorCode;
+use App\Enums\Cooperative\MemberLifecycleExperience;
 use App\Enums\TokenApp;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MobileLoginRequest;
-use App\Models\CooperativeMember;
 use App\Models\User;
 use App\Services\Auth\Sso\GoogleSsoService;
 use App\Services\Auth\TokenIssuanceService;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class AuthController extends Controller
@@ -45,6 +47,10 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($blockedResponse = $this->blockedMemberLifecycleResponse($user)) {
+            return $blockedResponse;
+        }
+
         $app = isset($validated['app'])
             ? TokenApp::from($validated['app'])
             : $this->defaultTokenAppFor($user);
@@ -52,11 +58,20 @@ class AuthController extends Controller
         $token = $this->tokenIssuer->issue($user, $app, $deviceName, $validated['device_id'] ?? null);
         $abilities = $token->accessToken->abilities;
 
+        $refreshedUser = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
+        $member = $refreshedUser->cooperativeMember;
+        $experience = $member ? MemberLifecycleExperience::fromMember($member) : null;
+
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,
             'abilities' => $abilities,
-            'user' => $this->sessionPayload($user->refresh()->load(['roles', 'employee', 'cooperativeMember'])),
+            'auth_result' => GoogleSsoService::RESULT_LOGIN_EXISTING,
+            'user' => $this->sessionPayload($refreshedUser),
+            'member_status' => $member?->status,
+            'validation_status' => $member?->validation_status,
+            'lifecycle_experience' => $experience?->value,
+            'onboarding_next_step' => $this->onboardingNextStep($refreshedUser),
         ]);
     }
 
@@ -250,6 +265,12 @@ class AuthController extends Controller
         }
 
         $user = $resolution['user'];
+        $user->loadMissing(['roles', 'employee', 'cooperativeMember']);
+
+        if ($blockedResponse = $this->blockedMemberLifecycleResponse($user)) {
+            return $blockedResponse;
+        }
+
         $social = $resolution['social_account'] ?? null;
         if ($social) {
             $googleSso->recordLogin($social);
@@ -263,6 +284,8 @@ class AuthController extends Controller
         $abilities = $token->accessToken->abilities;
         $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
+        $experience = $user->cooperativeMember ? MemberLifecycleExperience::fromMember($user->cooperativeMember) : null;
+
         return response()->json([
             'token_type' => 'Bearer',
             'token' => $token->plainTextToken,
@@ -271,6 +294,7 @@ class AuthController extends Controller
             'user' => $this->sessionPayload($user),
             'member_status' => $user->cooperativeMember?->status,
             'validation_status' => $user->cooperativeMember?->validation_status,
+            'lifecycle_experience' => $experience?->value,
             'onboarding_next_step' => $this->onboardingNextStep($user),
         ]);
     }
@@ -434,6 +458,30 @@ class AuthController extends Controller
         ];
     }
 
+    private function blockedMemberLifecycleResponse(User $user): ?JsonResponse
+    {
+        $member = $user->cooperativeMember;
+        if (! $member) {
+            return null;
+        }
+
+        $experience = MemberLifecycleExperience::fromMember($member);
+        if (! $experience->isBlocked()) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Status keanggotaan tidak valid.',
+            'error_code' => ApiErrorCode::MemberNotActive->value,
+            'data' => [
+                'member_status' => $member->status,
+                'validation_status' => $member->validation_status,
+                'lifecycle_experience' => $experience->value,
+            ],
+        ], Response::HTTP_FORBIDDEN);
+    }
+
     private function onboardingNextStep(User $user): ?string
     {
         $member = $user->cooperativeMember;
@@ -441,11 +489,15 @@ class AuthController extends Controller
             return null;
         }
 
-        return match ($member->validation_status) {
-            CooperativeMember::VALIDATION_ACTIVE => 'dashboard',
-            CooperativeMember::VALIDATION_PENDING_REVIEW => 'waiting_final_approval',
-            CooperativeMember::VALIDATION_REJECTED => 'rejected',
-            default => 'waiting_admin_acceptance',
+        $experience = MemberLifecycleExperience::fromMember($member);
+
+        return match ($experience) {
+            MemberLifecycleExperience::Active => 'dashboard',
+            MemberLifecycleExperience::UnderReview => 'waiting_final_approval',
+            MemberLifecycleExperience::RevisionRequired => 'revision_required',
+            MemberLifecycleExperience::Rejected => 'rejected',
+            MemberLifecycleExperience::WaitingVerification => 'waiting_admin_acceptance',
+            default => 'blocked',
         };
     }
 }

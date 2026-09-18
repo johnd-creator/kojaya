@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ApiErrorCode;
+use App\Enums\Cooperative\MemberLifecycleExperience;
 use App\Enums\TokenApp;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MobileLoginRequest;
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class AuthController extends Controller
@@ -44,6 +47,10 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($blockedResponse = $this->blockedMemberLifecycleResponse($user)) {
+            return $blockedResponse;
+        }
+
         $app = isset($validated['app'])
             ? TokenApp::from($validated['app'])
             : $this->defaultTokenAppFor($user);
@@ -53,20 +60,7 @@ class AuthController extends Controller
 
         $refreshedUser = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
         $member = $refreshedUser->cooperativeMember;
-        $experience = $member ? \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member) : null;
-
-        if ($experience && $experience->isBlocked()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Status keanggotaan tidak valid.',
-                'error_code' => \App\Enums\ApiErrorCode::MemberNotActive->value,
-                'data' => [
-                    'member_status' => $member->status,
-                    'validation_status' => $member->validation_status,
-                    'lifecycle_experience' => $experience->value,
-                ],
-            ], \Symfony\Component\HttpFoundation\Response::HTTP_FORBIDDEN);
-        }
+        $experience = $member ? MemberLifecycleExperience::fromMember($member) : null;
 
         return response()->json([
             'token_type' => 'Bearer',
@@ -271,6 +265,12 @@ class AuthController extends Controller
         }
 
         $user = $resolution['user'];
+        $user->loadMissing(['roles', 'employee', 'cooperativeMember']);
+
+        if ($blockedResponse = $this->blockedMemberLifecycleResponse($user)) {
+            return $blockedResponse;
+        }
+
         $social = $resolution['social_account'] ?? null;
         if ($social) {
             $googleSso->recordLogin($social);
@@ -284,7 +284,7 @@ class AuthController extends Controller
         $abilities = $token->accessToken->abilities;
         $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
-        $experience = $user->cooperativeMember ? \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($user->cooperativeMember) : null;
+        $experience = $user->cooperativeMember ? MemberLifecycleExperience::fromMember($user->cooperativeMember) : null;
 
         return response()->json([
             'token_type' => 'Bearer',
@@ -458,6 +458,30 @@ class AuthController extends Controller
         ];
     }
 
+    private function blockedMemberLifecycleResponse(User $user): ?JsonResponse
+    {
+        $member = $user->cooperativeMember;
+        if (! $member) {
+            return null;
+        }
+
+        $experience = MemberLifecycleExperience::fromMember($member);
+        if (! $experience->isBlocked()) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Status keanggotaan tidak valid.',
+            'error_code' => ApiErrorCode::MemberNotActive->value,
+            'data' => [
+                'member_status' => $member->status,
+                'validation_status' => $member->validation_status,
+                'lifecycle_experience' => $experience->value,
+            ],
+        ], Response::HTTP_FORBIDDEN);
+    }
+
     private function onboardingNextStep(User $user): ?string
     {
         $member = $user->cooperativeMember;
@@ -465,14 +489,14 @@ class AuthController extends Controller
             return null;
         }
 
-        $experience = \App\Enums\Cooperative\MemberLifecycleExperience::fromMember($member);
+        $experience = MemberLifecycleExperience::fromMember($member);
 
         return match ($experience) {
-            \App\Enums\Cooperative\MemberLifecycleExperience::Active => 'dashboard',
-            \App\Enums\Cooperative\MemberLifecycleExperience::UnderReview => 'waiting_final_approval',
-            \App\Enums\Cooperative\MemberLifecycleExperience::RevisionRequired => 'revision_required',
-            \App\Enums\Cooperative\MemberLifecycleExperience::Rejected => 'rejected',
-            \App\Enums\Cooperative\MemberLifecycleExperience::WaitingVerification => 'waiting_admin_acceptance',
+            MemberLifecycleExperience::Active => 'dashboard',
+            MemberLifecycleExperience::UnderReview => 'waiting_final_approval',
+            MemberLifecycleExperience::RevisionRequired => 'revision_required',
+            MemberLifecycleExperience::Rejected => 'rejected',
+            MemberLifecycleExperience::WaitingVerification => 'waiting_admin_acceptance',
             default => 'blocked',
         };
     }

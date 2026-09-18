@@ -425,6 +425,65 @@ class GoogleSsoFlowTest extends TestCase
             ->assertJsonPath('onboarding_next_step', 'dashboard');
     }
 
+    public function test_mobile_google_login_rejects_blocked_unknown_lifecycle_with_zero_token_issuance(): void
+    {
+        $user = User::factory()->create(['email' => 'member-blocked@example.com']);
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'email' => 'member-blocked@example.com',
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+        SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'mobile-google-blocked-123',
+            'provider_email' => 'member-blocked@example.com',
+        ]);
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'mobile-google-blocked-123',
+            'email' => 'member-blocked@example.com',
+            'email_verified' => true,
+            'name' => 'Blocked Member',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $tokensBefore = \Laravel\Sanctum\PersonalAccessToken::query()
+            ->where('tokenable_id', $user->id)
+            ->count();
+        $this->assertSame(0, $tokensBefore);
+
+        $response = $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ]);
+
+        $response->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', 'MEMBER_NOT_ACTIVE')
+            ->assertJsonPath('data.lifecycle_experience', 'BLOCKED_UNKNOWN')
+            ->assertJsonPath('data.member_status', 'INACTIVE')
+            ->assertJsonPath('data.validation_status', 'INACTIVE');
+
+        $response->assertJsonMissing(['token', 'token_type']);
+
+        $tokensAfter = \Laravel\Sanctum\PersonalAccessToken::query()
+            ->where('tokenable_id', $user->id)
+            ->count();
+
+        $this->assertSame(0, $tokensAfter, 'ZERO personal access tokens may be created for blocked Google mobile login.');
+    }
+
     public function test_mobile_google_login_rejects_wrong_audience(): void
     {
         $keyPair = $this->fakeRsaJwk();

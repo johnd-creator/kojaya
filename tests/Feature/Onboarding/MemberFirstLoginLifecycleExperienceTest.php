@@ -9,10 +9,14 @@ use App\Enums\Cooperative\MemberLifecycleExperience;
 use App\Http\Controllers\Auth\GoogleSsoController;
 use App\Models\CooperativeMember;
 use App\Models\Organization;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\Cooperative\MemberAccessService;
+use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -504,7 +508,7 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
             'onboarding_next_step' => 'dashboard',
         ]);
 
-        // 6. Blocked/inconsistent member fails closed with 403 on API
+        // 6. Blocked/inconsistent member fails closed with 403 on API and ZERO token issuance
         $userBlocked = User::factory()->create(['password' => Hash::make('secret123')]);
         CooperativeMember::factory()->create([
             'user_id' => $userBlocked->id,
@@ -513,12 +517,29 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
         ]);
         $userBlocked->assignRole('Anggota');
 
+        $tokensBefore = PersonalAccessToken::query()->where('tokenable_id', $userBlocked->id)->count();
+
         $resBlocked = $this->postJson('/api/auth/login', [
             'email' => $userBlocked->email,
             'password' => 'secret123',
             'app' => 'member',
         ]);
         $resBlocked->assertForbidden();
+        $resBlocked->assertJson([
+            'success' => false,
+            'message' => 'Status keanggotaan tidak valid.',
+            'error_code' => ApiErrorCode::MemberNotActive->value,
+            'data' => [
+                'member_status' => 'INACTIVE',
+                'validation_status' => 'INACTIVE',
+                'lifecycle_experience' => MemberLifecycleExperience::BlockedUnknown->value,
+            ],
+        ]);
+        $resBlocked->assertJsonMissing(['token', 'token_type']);
+
+        $tokensAfter = PersonalAccessToken::query()->where('tokenable_id', $userBlocked->id)->count();
+        $this->assertSame(0, $tokensBefore);
+        $this->assertSame(0, $tokensAfter);
     }
 
     /**
@@ -850,5 +871,321 @@ class MemberFirstLoginLifecycleExperienceTest extends TestCase
         $this->assertSame($initialPos, \App\Models\PosTransaction::count(), 'Zero pos transactions created on lifecycle view');
         $this->assertSame($initialPayments, \App\Models\CooperativePayment::count(), 'Zero payments created on lifecycle view');
         $this->assertSame($initialInvoices, \App\Models\CooperativeDuesInvoice::count(), 'Zero invoices created on lifecycle view');
+    }
+
+    /**
+     * ONB-08R2 Test 1: Password Login Does Not Issue Token when lifecycle is BLOCKED_UNKNOWN.
+     * Invariant: 403 + ZERO TOKEN ISSUANCE.
+     */
+    public function test_onb08r2_password_login_blocked_unknown_fails_closed_with_zero_token_issuance(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('password123')]);
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+
+        $tokensBefore = PersonalAccessToken::query()->where('tokenable_id', $user->id)->count();
+        $this->assertSame(0, $tokensBefore);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+            'app' => 'member',
+        ]);
+
+        $response->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', ApiErrorCode::MemberNotActive->value)
+            ->assertJsonPath('data.lifecycle_experience', MemberLifecycleExperience::BlockedUnknown->value)
+            ->assertJsonPath('data.member_status', 'INACTIVE')
+            ->assertJsonPath('data.validation_status', 'INACTIVE');
+
+        $response->assertJsonMissing(['token', 'token_type']);
+
+        $tokensAfter = PersonalAccessToken::query()->where('tokenable_id', $user->id)->count();
+        $this->assertSame(0, $tokensAfter, 'ZERO personal access tokens may be created for blocked member login.');
+    }
+
+    /**
+     * ONB-08R2 Test 2: Google Mobile Login Rejects BLOCKED_UNKNOWN with ZERO Token Issuance.
+     * Invariant: 403 + ZERO TOKEN ISSUANCE + NO login recorded.
+     */
+    public function test_onb08r2_google_mobile_login_blocked_unknown_fails_closed_with_zero_token_issuance(): void
+    {
+        $user = User::factory()->create(['email' => 'google-blocked@example.com']);
+        $user->assignRole('Anggota');
+        CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'email' => 'google-blocked@example.com',
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+        ]);
+        $social = SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google-mobile-blocked-999',
+            'provider_email' => 'google-blocked@example.com',
+            'last_login_at' => null,
+        ]);
+
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'google-mobile-blocked-999',
+            'email' => 'google-blocked@example.com',
+            'email_verified' => true,
+            'name' => 'Blocked Google Member',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $tokensBefore = PersonalAccessToken::query()->where('tokenable_id', $user->id)->count();
+        $this->assertSame(0, $tokensBefore);
+
+        $response = $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'device_id' => 'android-device',
+            'platform' => 'android',
+            'app' => 'member',
+        ]);
+
+        $response->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', ApiErrorCode::MemberNotActive->value)
+            ->assertJsonPath('data.lifecycle_experience', MemberLifecycleExperience::BlockedUnknown->value)
+            ->assertJsonPath('data.member_status', 'INACTIVE')
+            ->assertJsonPath('data.validation_status', 'INACTIVE');
+
+        $response->assertJsonMissing(['token', 'token_type']);
+
+        $tokensAfter = PersonalAccessToken::query()->where('tokenable_id', $user->id)->count();
+        $this->assertSame(0, $tokensAfter, 'ZERO personal access tokens may be created for blocked Google mobile login.');
+    }
+
+    /**
+     * ONB-08R2 Test 3: Valid ACTIVE Lifecycle Still Issues Tokens.
+     */
+    public function test_onb08r2_valid_active_lifecycle_authenticates_and_issues_tokens(): void
+    {
+        // 1. Password login
+        $userPwd = User::factory()->create(['password' => Hash::make('password123')]);
+        $userPwd->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create(['user_id' => $userPwd->id]);
+
+        $tokensBeforePwd = PersonalAccessToken::query()->where('tokenable_id', $userPwd->id)->count();
+
+        $resPwd = $this->postJson('/api/auth/login', [
+            'email' => $userPwd->email,
+            'password' => 'password123',
+            'app' => 'member',
+        ]);
+
+        $resPwd->assertOk()
+            ->assertJsonPath('lifecycle_experience', 'ACTIVE')
+            ->assertJsonPath('onboarding_next_step', 'dashboard');
+        $this->assertNotEmpty($resPwd->json('token'));
+
+        $tokensAfterPwd = PersonalAccessToken::query()->where('tokenable_id', $userPwd->id)->count();
+        $this->assertSame($tokensBeforePwd + 1, $tokensAfterPwd);
+
+        // 2. Google mobile login
+        $userGoogle = User::factory()->create(['email' => 'google-active@example.com']);
+        $userGoogle->assignRole('Anggota');
+        CooperativeMember::factory()->active()->create([
+            'user_id' => $userGoogle->id,
+            'email' => 'google-active@example.com',
+        ]);
+        SocialAccount::factory()->create([
+            'user_id' => $userGoogle->id,
+            'provider' => 'google',
+            'provider_id' => 'google-active-123',
+            'provider_email' => 'google-active@example.com',
+        ]);
+
+        $keyPair = $this->fakeRsaJwk();
+        $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+            'sub' => 'google-active-123',
+            'email' => 'google-active@example.com',
+            'email_verified' => true,
+            'name' => 'Active Member',
+        ]);
+
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $tokensBeforeGoogle = PersonalAccessToken::query()->where('tokenable_id', $userGoogle->id)->count();
+
+        $resGoogle = $this->postJson('/api/auth/google/mobile', [
+            'id_token' => $idToken,
+            'device_name' => 'Android Member',
+            'app' => 'member',
+        ]);
+
+        $resGoogle->assertOk()
+            ->assertJsonPath('lifecycle_experience', 'ACTIVE')
+            ->assertJsonPath('onboarding_next_step', 'dashboard');
+        $this->assertNotEmpty($resGoogle->json('token'));
+
+        $tokensAfterGoogle = PersonalAccessToken::query()->where('tokenable_id', $userGoogle->id)->count();
+        $this->assertSame($tokensBeforeGoogle + 1, $tokensAfterGoogle);
+    }
+
+    /**
+     * ONB-08R2 Test 4: Supported Non-Active Lifecycles Still Authenticate & Issue Tokens.
+     */
+    public function test_onb08r2_supported_non_active_lifecycles_authenticate_and_issue_tokens(): void
+    {
+        $keyPair = $this->fakeRsaJwk();
+        Http::fake([
+            'https://www.googleapis.com/oauth2/v3/certs' => Http::response([
+                'keys' => [$keyPair['jwk']],
+            ]),
+        ]);
+
+        $cases = [
+            'waiting' => [
+                'status' => 'PENDING',
+                'validation_status' => 'PENDING',
+                'expected_experience' => 'WAITING_VERIFICATION',
+                'expected_next_step' => 'waiting_admin_acceptance',
+            ],
+            'under_review' => [
+                'status' => 'PENDING',
+                'validation_status' => 'PENDING_VALIDATION',
+                'expected_experience' => 'UNDER_REVIEW',
+                'expected_next_step' => 'waiting_final_approval',
+            ],
+            'revision' => [
+                'status' => 'INACTIVE',
+                'validation_status' => 'REVISION',
+                'expected_experience' => 'REVISION_REQUIRED',
+                'expected_next_step' => 'revision_required',
+            ],
+            'rejected' => [
+                'status' => 'INACTIVE',
+                'validation_status' => 'REJECTED',
+                'expected_experience' => 'REJECTED',
+                'expected_next_step' => 'rejected',
+            ],
+        ];
+
+        foreach ($cases as $key => $config) {
+            $user = User::factory()->create(['email' => "google-{$key}@example.com"]);
+            $user->assignRole('Anggota');
+            CooperativeMember::factory()->create([
+                'user_id' => $user->id,
+                'email' => "google-{$key}@example.com",
+                'status' => $config['status'],
+                'validation_status' => $config['validation_status'],
+            ]);
+            SocialAccount::factory()->create([
+                'user_id' => $user->id,
+                'provider' => 'google',
+                'provider_id' => "google-sub-{$key}",
+                'provider_email' => "google-{$key}@example.com",
+            ]);
+
+            $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
+                'sub' => "google-sub-{$key}",
+                'email' => "google-{$key}@example.com",
+                'email_verified' => true,
+                'name' => "User {$key}",
+            ]);
+
+            $res = $this->postJson('/api/auth/google/mobile', [
+                'id_token' => $idToken,
+                'device_name' => 'Android Member',
+                'app' => 'member',
+            ]);
+
+            $res->assertOk()
+                ->assertJsonPath('lifecycle_experience', $config['expected_experience'])
+                ->assertJsonPath('onboarding_next_step', $config['expected_next_step']);
+            $this->assertNotEmpty($res->json('token'));
+            $this->assertDatabaseHas('personal_access_tokens', [
+                'tokenable_id' => $user->id,
+            ]);
+        }
+    }
+
+    /**
+     * ONB-08R2 Test 5: Users Without Cooperative Member (Admin / Employee) Can Authenticate.
+     */
+    public function test_onb08r2_user_without_cooperative_member_authenticates_without_lifecycle_block(): void
+    {
+        $admin = User::factory()->create(['password' => Hash::make('password123')]);
+        $role = Role::firstOrCreate(['name' => 'Admin Koperasi']);
+        $admin->assignRole($role);
+
+        $tokensBefore = PersonalAccessToken::query()->where('tokenable_id', $admin->id)->count();
+
+        $res = $this->postJson('/api/auth/login', [
+            'email' => $admin->email,
+            'password' => 'password123',
+            'app' => 'admin',
+        ]);
+
+        $res->assertOk();
+        $this->assertNotEmpty($res->json('token'));
+        $this->assertNull($res->json('lifecycle_experience'));
+
+        $tokensAfter = PersonalAccessToken::query()->where('tokenable_id', $admin->id)->count();
+        $this->assertSame($tokensBefore + 1, $tokensAfter);
+    }
+
+    /**
+     * @return array{private_key: string, jwk: array<string, string>}
+     */
+    protected function fakeRsaJwk(): array
+    {
+        $resource = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        openssl_pkey_export($resource, $privateKey);
+        $details = openssl_pkey_get_details($resource);
+
+        return [
+            'private_key' => $privateKey,
+            'jwk' => [
+                'kty' => 'RSA',
+                'alg' => 'RS256',
+                'use' => 'sig',
+                'kid' => 'test-kid',
+                'n' => rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '='),
+                'e' => rtrim(strtr(base64_encode($details['rsa']['e']), '+/', '-_'), '='),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $claims
+     */
+    protected function fakeGoogleIdToken(string $privateKey, array $claims = []): string
+    {
+        $clientId = (string) (config('services.google.client_id') ?: 'web-client.apps.googleusercontent.com');
+        config()->set('services.google.client_id', $clientId);
+        config()->set('services.google.sso_enabled', true);
+
+        return JWT::encode(array_merge([
+            'iss' => 'https://accounts.google.com',
+            'aud' => $clientId,
+            'sub' => 'google-subject',
+            'email' => 'member@example.com',
+            'email_verified' => true,
+            'name' => 'Google Member',
+            'iat' => time(),
+            'exp' => time() + 300,
+        ], $claims), $privateKey, 'RS256', 'test-kid');
     }
 }

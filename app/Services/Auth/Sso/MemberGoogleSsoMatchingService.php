@@ -81,14 +81,6 @@ class MemberGoogleSsoMatchingService
                 );
             }
 
-            // Touch social account login timestamp
-            $existingSocial->forceFill(['last_login_at' => Carbon::now()])->save();
-            if ($user->cooperativeMember) {
-                $user->cooperativeMember->forceFill(['last_sso_login_at' => Carbon::now()])->save();
-            }
-
-            $this->audit->logAuth('sso.google.login_success', $user->id);
-
             return MemberGoogleSsoMatchResult::successExisting(
                 $user,
                 $existingSocial,

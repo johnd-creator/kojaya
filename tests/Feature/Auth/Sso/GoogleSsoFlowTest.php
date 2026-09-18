@@ -386,16 +386,28 @@ class GoogleSsoFlowTest extends TestCase
     {
         $user = User::factory()->create(['email' => 'member-mobile@example.com']);
         $user->assignRole('Anggota');
-        CooperativeMember::factory()->active()->create([
+        $member = CooperativeMember::factory()->active()->create([
             'user_id' => $user->id,
             'email' => 'member-mobile@example.com',
+            'last_sso_login_at' => null,
         ]);
-        SocialAccount::factory()->create([
+        $social = SocialAccount::factory()->create([
             'user_id' => $user->id,
             'provider' => 'google',
             'provider_id' => 'mobile-google-123',
             'provider_email' => 'member-mobile@example.com',
+            'last_login_at' => null,
         ]);
+
+        $lastLoginBefore = $social->fresh()->last_login_at;
+        $lastSsoLoginBefore = $member->fresh()->last_sso_login_at;
+        $this->assertNull($lastLoginBefore, 'Initial social last_login_at must be null.');
+        $this->assertNull($lastSsoLoginBefore, 'Initial member last_sso_login_at must be null.');
+
+        $auditCountBefore = AuditLog::query()
+            ->where('action', 'sso.google.login_success')
+            ->count();
+
         $keyPair = $this->fakeRsaJwk();
         $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
             'sub' => 'mobile-google-123',
@@ -423,6 +435,26 @@ class GoogleSsoFlowTest extends TestCase
             ->assertJsonPath('member_status', 'ACTIVE')
             ->assertJsonPath('validation_status', 'ACTIVE')
             ->assertJsonPath('onboarding_next_step', 'dashboard');
+
+        $this->assertNotNull(
+            $social->fresh()->last_login_at,
+            'Successful mobile Google authentication must record social last_login_at.'
+        );
+
+        $this->assertNotNull(
+            $member->fresh()->last_sso_login_at,
+            'Successful mobile Google authentication must record member last_sso_login_at.'
+        );
+
+        $auditCountAfter = AuditLog::query()
+            ->where('action', 'sso.google.login_success')
+            ->count();
+
+        $this->assertSame(
+            $auditCountBefore + 1,
+            $auditCountAfter,
+            'Successful mobile Google authentication must record sso.google.login_success exactly once.'
+        );
     }
 
     public function test_mobile_google_login_rejects_blocked_unknown_lifecycle_with_zero_token_issuance(): void
@@ -686,6 +718,98 @@ class GoogleSsoFlowTest extends TestCase
 
         $this->assertNull($member->fresh()->user_id);
         $this->assertDatabaseMissing('users', ['email' => 'mobile-unverified-first@example.com']);
+    }
+
+    public function test_web_google_callback_rejects_blocked_unknown_before_session_and_success_side_effects(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'blocked.web@example.com',
+        ]);
+        $user->assignRole('Anggota');
+
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'email' => 'blocked.web@example.com',
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+            'last_sso_login_at' => null,
+        ]);
+
+        $social = SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google-blocked-web',
+            'provider_email' => 'blocked.web@example.com',
+            'last_login_at' => null,
+        ]);
+
+        $this->mockSocialite(googleId: 'google-blocked-web', email: 'blocked.web@example.com', verified: true);
+
+        $auditCountBefore = AuditLog::query()->where('action', 'sso.google.login_success')->count();
+
+        $this->get(route('auth.google.callback'))
+            ->assertStatus(403);
+
+        $this->assertGuest();
+        $this->assertNull(
+            $social->fresh()->last_login_at,
+            'Blocked web Google authentication must not mutate social last_login_at.'
+        );
+        $this->assertNull(
+            $member->fresh()->last_sso_login_at,
+            'Blocked web Google authentication must not mutate member last_sso_login_at.'
+        );
+        $this->assertSame(
+            $auditCountBefore,
+            AuditLog::query()->where('action', 'sso.google.login_success')->count(),
+            'Blocked web Google authentication must not record sso.google.login_success audit.'
+        );
+    }
+
+    public function test_successful_google_web_login_records_login_side_effects_at_success_boundary(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'active.web@example.com',
+        ]);
+        $user->assignRole('Anggota');
+
+        $member = CooperativeMember::factory()->create([
+            'user_id' => $user->id,
+            'email' => 'active.web@example.com',
+            'status' => 'ACTIVE',
+            'validation_status' => 'ACTIVE',
+            'last_sso_login_at' => null,
+        ]);
+
+        $social = SocialAccount::factory()->create([
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_id' => 'google-active-web',
+            'provider_email' => 'active.web@example.com',
+            'last_login_at' => null,
+        ]);
+
+        $this->mockSocialite(googleId: 'google-active-web', email: 'active.web@example.com', verified: true);
+
+        $auditCountBefore = AuditLog::query()->where('action', 'sso.google.login_success')->count();
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull(
+            $social->fresh()->last_login_at,
+            'Successful web Google authentication must record social last_login_at.'
+        );
+        $this->assertNotNull(
+            $member->fresh()->last_sso_login_at,
+            'Successful web Google authentication must record member last_sso_login_at.'
+        );
+        $this->assertSame(
+            $auditCountBefore + 1,
+            AuditLog::query()->where('action', 'sso.google.login_success')->count(),
+            'Successful web Google authentication must record sso.google.login_success audit exactly once.'
+        );
     }
 
     protected function mockSocialite(string $googleId, string $email, bool $verified): void

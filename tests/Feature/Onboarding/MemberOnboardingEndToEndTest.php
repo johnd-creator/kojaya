@@ -673,6 +673,8 @@ class MemberOnboardingEndToEndTest extends TestCase
             ]),
         ]);
 
+        $lastLoginBefore = $social->last_login_at;
+
         $resGoogle = $this->postJson('/api/auth/google/mobile', [
             'id_token' => $idToken,
             'device_name' => 'Android Member',
@@ -689,6 +691,16 @@ class MemberOnboardingEndToEndTest extends TestCase
 
         $tokensAfterGoogle = PersonalAccessToken::where('tokenable_id', $user->id)->count();
         $this->assertSame(0, $tokensAfterGoogle, 'Zero tokens issued for blocked Google mobile login');
+
+        $this->assertNull(
+            $social->fresh()->last_login_at,
+            'Blocked Google authentication must not be recorded as a successful social login.'
+        );
+        $this->assertSame(
+            $lastLoginBefore,
+            $social->fresh()->last_login_at,
+            'Blocked Google authentication must not mutate last_login_at.'
+        );
 
         // Invariant I-17: Active gate fails closed
         Sanctum::actingAs($user, ['member:read']);

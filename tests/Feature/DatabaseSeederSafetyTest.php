@@ -19,6 +19,7 @@ use App\Models\SalaryComponentType;
 use App\Models\User;
 use App\Models\WorkShift;
 use Database\Seeders\AnggotaSeeder;
+use Database\Seeders\CooperativeFixtureReferenceSeeder;
 use Database\Seeders\CooperativeManagerRoleSeeder;
 use Database\Seeders\CooperativeReferenceSeeder;
 use Database\Seeders\CooperativeSeeder;
@@ -41,6 +42,7 @@ class DatabaseSeederSafetyTest extends TestCase
      * @var list<class-string>
      */
     private array $demoSeeders = [
+        CooperativeFixtureReferenceSeeder::class,
         CooperativeSeeder::class,
         AnggotaSeeder::class,
         DemoDataSeeder::class,
@@ -131,6 +133,8 @@ class DatabaseSeederSafetyTest extends TestCase
         $this->assertSame(0, PosProduct::query()->count(), 'No POS products should be created in staging.');
         $this->assertSame(0, Employee::query()->count(), 'No employee fixtures should be created in staging.');
         $this->assertSame(0, User::query()->count(), 'No privileged users with default passwords should be created in staging.');
+        $this->assertDatabaseMissing('organizations', ['code' => 'KBU-001']);
+        $this->assertDatabaseMissing('organizations', ['code' => 'ISO-999']);
     }
 
     public function test_database_seeder_under_production_creates_only_safe_reference_data(): void
@@ -150,6 +154,8 @@ class DatabaseSeederSafetyTest extends TestCase
         $this->assertSame(0, PosProduct::query()->count(), 'No POS products should be created in production.');
         $this->assertSame(0, Employee::query()->count(), 'No employee fixtures should be created in production.');
         $this->assertSame(0, User::query()->count(), 'No default privileged users should be created in production.');
+        $this->assertDatabaseMissing('organizations', ['code' => 'KBU-001']);
+        $this->assertDatabaseMissing('organizations', ['code' => 'ISO-999']);
     }
 
     public function test_rerunning_reference_seeders_is_idempotent(): void

@@ -18,7 +18,6 @@ use App\Services\Cooperative\PosTransactionService;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 class CooperativeSeeder extends Seeder
 {
@@ -32,58 +31,24 @@ class CooperativeSeeder extends Seeder
             throw new \LogicException('CooperativeSeeder is only available in local, testing, or playwright environments.');
         }
 
-        $headOffice = Organization::query()->updateOrCreate(
-            ['code' => 'KOP-001'],
-            [
-                'id' => Organization::query()->where('code', 'KOP-001')->value('id') ?? (string) Str::uuid(),
-                'name' => 'Koperasi Jaya Bersama',
-                'level' => 'L0',
-                'type' => 'HEAD_OFFICE',
-                'parent_id' => null,
-                'address' => 'Jalan Jaya Bersama No. 1, Jakarta',
-                'phone' => '021-12345678',
-                'email' => 'info@koperasijayabersama.id',
-                'is_active' => true,
-                'latitude' => '-6.200000',
-                'longitude' => '106.816666',
-                'radius' => 200,
-            ],
-        );
+        $headOffice = Organization::query()->where('code', 'KOP-001')->first();
+        $branch = Organization::query()->where('code', 'KBU-001')->first();
 
-        Organization::query()->updateOrCreate(
-            ['code' => 'KBU-001'],
-            [
-                'id' => Organization::query()->where('code', 'KBU-001')->value('id') ?? (string) Str::uuid(),
-                'parent_id' => $headOffice->id,
-                'name' => 'PT Koperasi Berkah Usaha',
-                'level' => 'L1',
-                'type' => 'BRANCH',
-                'address' => 'Jl. Berkah Usaha No. 8, Jakarta',
-                'phone' => '021-111111',
-                'email' => 'operasional@koperasiberkahusaha.id',
-                'is_active' => true,
-                'latitude' => '-6.175392',
-                'longitude' => '106.827153',
-                'radius' => 150,
-            ],
-        );
+        if (! $headOffice || ! $branch) {
+            $this->call(CooperativeFixtureReferenceSeeder::class);
+            $headOffice = Organization::query()->where('code', 'KOP-001')->firstOrFail();
+        }
 
-        $pokok = CooperativeContributionType::query()->updateOrCreate(
-            ['code' => 'POKOK'],
-            ['name' => 'Simpanan Pokok', 'category' => 'POKOK', 'default_amount' => 200000, 'frequency' => 'ONCE', 'is_active' => true],
-        );
-        $wajib = CooperativeContributionType::query()->updateOrCreate(
-            ['code' => 'WAJIB'],
-            ['name' => 'Simpanan Wajib', 'category' => 'WAJIB', 'default_amount' => 100000, 'frequency' => 'MONTHLY', 'is_active' => true],
-        );
-        $sukarela = CooperativeContributionType::query()->updateOrCreate(
-            ['code' => 'SUKARELA'],
-            ['name' => 'Simpanan Sukarela', 'category' => 'SUKARELA', 'default_amount' => 0, 'frequency' => 'ADHOC', 'is_active' => true],
-        );
-        CooperativeContributionType::query()->updateOrCreate(
-            ['code' => 'KHUSUS'],
-            ['name' => 'Simpanan Khusus', 'category' => 'KHUSUS', 'default_amount' => 0, 'frequency' => 'ADHOC', 'is_active' => true],
-        );
+        $pokok = CooperativeContributionType::query()->where('code', 'POKOK')->first();
+        $wajib = CooperativeContributionType::query()->where('code', 'WAJIB')->first();
+        $sukarela = CooperativeContributionType::query()->where('code', 'SUKARELA')->first();
+
+        if (! $pokok || ! $wajib || ! $sukarela) {
+            $this->call(CooperativeReferenceSeeder::class);
+            $pokok = CooperativeContributionType::query()->where('code', 'POKOK')->firstOrFail();
+            $wajib = CooperativeContributionType::query()->where('code', 'WAJIB')->firstOrFail();
+            $sukarela = CooperativeContributionType::query()->where('code', 'SUKARELA')->firstOrFail();
+        }
 
         $pengurus = User::query()->where('email', 'admin@erp.com')->first();
         $adminKop = User::query()->updateOrCreate(
@@ -301,14 +266,39 @@ class CooperativeSeeder extends Seeder
      */
     private function seedPosInventory(Organization $organization): array
     {
-        $categories = [
-            'sembako' => PosCategory::query()->updateOrCreate(['slug' => 'sembako', 'organization_id' => $organization->id], ['name' => 'Sembako', 'is_active' => true, 'organization_id' => $organization->id]),
-            'minuman' => PosCategory::query()->updateOrCreate(['slug' => 'minuman', 'organization_id' => $organization->id], ['name' => 'Minuman', 'is_active' => true, 'organization_id' => $organization->id]),
-            'atk' => PosCategory::query()->updateOrCreate(['slug' => 'atk', 'organization_id' => $organization->id], ['name' => 'ATK & Kebutuhan Kantor', 'is_active' => true, 'organization_id' => $organization->id]),
-            'espresso' => PosCategory::query()->updateOrCreate(['slug' => 'espresso', 'organization_id' => $organization->id], ['name' => 'Espresso', 'is_active' => true, 'organization_id' => $organization->id]),
-            'signature' => PosCategory::query()->updateOrCreate(['slug' => 'signature', 'organization_id' => $organization->id], ['name' => 'Signature', 'is_active' => true, 'organization_id' => $organization->id]),
-            'non-coffee' => PosCategory::query()->updateOrCreate(['slug' => 'non-coffee', 'organization_id' => $organization->id], ['name' => 'Non-Coffee', 'is_active' => true, 'organization_id' => $organization->id]),
+        $categories = [];
+        $definitions = [
+            'sembako' => 'Sembako',
+            'minuman' => 'Minuman',
+            'atk' => 'ATK & Kebutuhan Kantor',
+            'espresso' => 'Espresso',
+            'signature' => 'Signature',
+            'non-coffee' => 'Non-Coffee',
         ];
+
+        foreach ($definitions as $slug => $name) {
+            $existingCategory = PosCategory::query()
+                ->where('slug', $slug)
+                ->where(function ($query) use ($organization) {
+                    $query->where('organization_id', $organization->id)
+                        ->orWhereNull('organization_id');
+                })
+                ->first();
+
+            if ($existingCategory) {
+                if ($existingCategory->organization_id === null) {
+                    $existingCategory->update(['organization_id' => $organization->id]);
+                }
+                $categories[$slug] = $existingCategory;
+            } else {
+                $categories[$slug] = PosCategory::query()->create([
+                    'slug' => $slug,
+                    'name' => $name,
+                    'is_active' => true,
+                    'organization_id' => $organization->id,
+                ]);
+            }
+        }
 
         $products = [
             ['category' => 'sembako', 'sku' => 'POS-RICE-5KG', 'barcode' => '8997001000011', 'name' => 'Beras Premium 5kg', 'cost_price' => 68000, 'sale_price' => 79000, 'stock' => 80, 'minimum_stock' => 15],

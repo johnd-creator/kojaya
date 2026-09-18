@@ -386,16 +386,28 @@ class GoogleSsoFlowTest extends TestCase
     {
         $user = User::factory()->create(['email' => 'member-mobile@example.com']);
         $user->assignRole('Anggota');
-        CooperativeMember::factory()->active()->create([
+        $member = CooperativeMember::factory()->active()->create([
             'user_id' => $user->id,
             'email' => 'member-mobile@example.com',
+            'last_sso_login_at' => null,
         ]);
-        SocialAccount::factory()->create([
+        $social = SocialAccount::factory()->create([
             'user_id' => $user->id,
             'provider' => 'google',
             'provider_id' => 'mobile-google-123',
             'provider_email' => 'member-mobile@example.com',
+            'last_login_at' => null,
         ]);
+
+        $lastLoginBefore = $social->fresh()->last_login_at;
+        $lastSsoLoginBefore = $member->fresh()->last_sso_login_at;
+        $this->assertNull($lastLoginBefore, 'Initial social last_login_at must be null.');
+        $this->assertNull($lastSsoLoginBefore, 'Initial member last_sso_login_at must be null.');
+
+        $auditCountBefore = AuditLog::query()
+            ->where('action', 'sso.google.login_success')
+            ->count();
+
         $keyPair = $this->fakeRsaJwk();
         $idToken = $this->fakeGoogleIdToken($keyPair['private_key'], [
             'sub' => 'mobile-google-123',
@@ -423,6 +435,26 @@ class GoogleSsoFlowTest extends TestCase
             ->assertJsonPath('member_status', 'ACTIVE')
             ->assertJsonPath('validation_status', 'ACTIVE')
             ->assertJsonPath('onboarding_next_step', 'dashboard');
+
+        $this->assertNotNull(
+            $social->fresh()->last_login_at,
+            'Successful mobile Google authentication must record social last_login_at.'
+        );
+
+        $this->assertNotNull(
+            $member->fresh()->last_sso_login_at,
+            'Successful mobile Google authentication must record member last_sso_login_at.'
+        );
+
+        $auditCountAfter = AuditLog::query()
+            ->where('action', 'sso.google.login_success')
+            ->count();
+
+        $this->assertSame(
+            $auditCountBefore + 1,
+            $auditCountAfter,
+            'Successful mobile Google authentication must record sso.google.login_success exactly once.'
+        );
     }
 
     public function test_mobile_google_login_rejects_blocked_unknown_lifecycle_with_zero_token_issuance(): void

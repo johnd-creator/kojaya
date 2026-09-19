@@ -16,11 +16,13 @@ use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\SalaryComponentType;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\WorkShift;
 use Database\Seeders\AnggotaSeeder;
 use Database\Seeders\CooperativeFixtureReferenceSeeder;
 use Database\Seeders\CooperativeManagerRoleSeeder;
+use Database\Seeders\CooperativePersonaSeeder;
 use Database\Seeders\CooperativeReferenceSeeder;
 use Database\Seeders\CooperativeSeeder;
 use Database\Seeders\DatabaseSeeder;
@@ -43,6 +45,7 @@ class DatabaseSeederSafetyTest extends TestCase
      */
     private array $demoSeeders = [
         CooperativeFixtureReferenceSeeder::class,
+        CooperativePersonaSeeder::class,
         CooperativeSeeder::class,
         AnggotaSeeder::class,
         DemoDataSeeder::class,
@@ -129,10 +132,14 @@ class DatabaseSeederSafetyTest extends TestCase
         $this->assertDatabaseHas('loan_types', ['code' => 'emergency']);
 
         $this->assertSame(0, CooperativeMember::query()->count(), 'No members should be created in staging.');
+        $this->assertSame(0, CooperativeMember::query()->where('member_no', 'like', 'DEV-KOP-%')->count(), 'No DEV-KOP-* personas should be created in staging.');
         $this->assertSame(0, PosTransaction::query()->count(), 'No POS transactions should be created in staging.');
         $this->assertSame(0, PosProduct::query()->count(), 'No POS products should be created in staging.');
         $this->assertSame(0, Employee::query()->count(), 'No employee fixtures should be created in staging.');
         $this->assertSame(0, User::query()->count(), 'No privileged users with default passwords should be created in staging.');
+        $this->assertSame(0, User::query()->where('email', 'like', 'seed.%')->count(), 'No seed.* persona users should be created in staging.');
+        $this->assertSame(0, SocialAccount::query()->count(), 'No social accounts should be created in staging.');
+        $this->assertSame(0, SocialAccount::query()->where('provider_id', 'like', 'google-seed-%')->count(), 'No google-seed-* social accounts should be created in staging.');
         $this->assertDatabaseMissing('organizations', ['code' => 'KBU-001']);
         $this->assertDatabaseMissing('organizations', ['code' => 'ISO-999']);
     }
@@ -150,10 +157,14 @@ class DatabaseSeederSafetyTest extends TestCase
         $this->assertDatabaseHas('cooperative_contribution_types', ['code' => 'POKOK']);
 
         $this->assertSame(0, CooperativeMember::query()->count(), 'No members should be created in production.');
+        $this->assertSame(0, CooperativeMember::query()->where('member_no', 'like', 'DEV-KOP-%')->count(), 'No DEV-KOP-* personas should be created in production.');
         $this->assertSame(0, PosTransaction::query()->count(), 'No POS transactions should be created in production.');
         $this->assertSame(0, PosProduct::query()->count(), 'No POS products should be created in production.');
         $this->assertSame(0, Employee::query()->count(), 'No employee fixtures should be created in production.');
         $this->assertSame(0, User::query()->count(), 'No default privileged users should be created in production.');
+        $this->assertSame(0, User::query()->where('email', 'like', 'seed.%')->count(), 'No seed.* persona users should be created in production.');
+        $this->assertSame(0, SocialAccount::query()->count(), 'No social accounts should be created in production.');
+        $this->assertSame(0, SocialAccount::query()->where('provider_id', 'like', 'google-seed-%')->count(), 'No google-seed-* social accounts should be created in production.');
         $this->assertDatabaseMissing('organizations', ['code' => 'KBU-001']);
         $this->assertDatabaseMissing('organizations', ['code' => 'ISO-999']);
     }

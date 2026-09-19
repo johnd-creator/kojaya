@@ -35,7 +35,7 @@ Sesuai kontrak SEED-01, lingkungan produksi (`production` dan `staging`) hanya b
 
 ## 3. Kepemilikan dan Topologi Organisasi (Organization Topology & Ownership)
 
-Pengujian Phase 4 membutuhkan topologi multi-organisasi yang merepresentasikan kantor pusat, unit cabang/anak perusahaan, dan pihak ketiga yang terisolasi. Namun, ketiga organisasi ini memiliki kelas keamanan yang berbeda:
+Pengujian Phase 4 membutuhkan topologi multi-organisasi yang merepresentasikan entitas legal koperasi, PT anak usaha (*subsidiary company*), dan pihak ketiga yang terisolasi. Namun, ketiga organisasi ini memiliki kelas keamanan dan batas domain hukum yang berbeda:
 
 ```text
 DatabaseSeeder (Production / Staging)
@@ -50,9 +50,9 @@ DatabaseSeeder (Local Development) / CooperativeFixtureReferenceSeeder (Testing)
         │
         ▼
 CooperativeFixtureReferenceSeeder (Guarded: local, testing, playwright)
-        ├── KOP-001 (HEAD_OFFICE, L0, parent: null)  [Memastikan KOP-001 ada]
-        ├── KBU-001 (BRANCH, L1, parent: KOP-001)    [Topologi Hierarki Cabang]
-        └── ISO-999 (HEAD_OFFICE, L0, parent: null)  [Tenant Terisolasi Third-Party]
+        ├── KOP-001 (HEAD_OFFICE, L0, parent: null)  [Koperasi Legal Entity - OWNS ALL MEMBERS]
+        ├── KBU-001 (BRANCH, L1, parent: KOP-001)    [PT Anak Usaha / Subsidiary - ZERO MEMBERS]
+        └── ISO-999 (HEAD_OFFICE, L0, parent: null)  [Tenant Terisolasi Third-Party Synthetic]
 ```
 
 ### Rincian Organisasi & Kepemilikan Tunggal (Single Ownership Strategy)
@@ -60,17 +60,17 @@ CooperativeFixtureReferenceSeeder (Guarded: local, testing, playwright)
 1. **`KOP-001` (Koperasi Jaya Bersama)**
    - **Pemilik Tunggal:** [`CooperativeReferenceSeeder`](../../database/seeders/CooperativeReferenceSeeder.php).
    - **Tipe:** `HEAD_OFFICE`, Level `L0`, Parent `null`.
-   - **Aturan:** Menjadi anchor organisasi utama produksi dan non-produksi. Downstream seeder hanya mengonsumsi (*read/lookup*) `KOP-001` tanpa mengubah properti operator yang sudah ada.
+   - **Aturan:** Merupakan **satu-satunya entitas legal koperasi** saat ini yang berhak memiliki data anggota koperasi (`CooperativeMember`), proses onboarding anggota, simpanan, pinjaman, kredit toko POS, dan SHU. Menjadi anchor organisasi utama produksi dan non-produksi. Downstream seeder hanya mengonsumsi (*read/lookup*) `KOP-001` tanpa mengubah properti operator yang sudah ada.
 
 2. **`KBU-001` (PT Koperasi Berkah Usaha)**
    - **Pemilik Tunggal:** [`CooperativeFixtureReferenceSeeder`](../../database/seeders/CooperativeFixtureReferenceSeeder.php).
-   - **Tipe:** `BRANCH`, Level `L1`, Parent `KOP-001`.
-   - **Aturan:** Khusus lingkungan non-produksi. Menampung persona cabang (`P14`, `P15`) untuk memverifikasi otorisasi hierarki induk-cabang. **Dilarang dibuat di production/staging.**
+   - **Tipe:** `BRANCH` (secara skema teknis enum), Level `L1`, Parent `KOP-001`.
+   - **Aturan:** Mewakili **PT Anak Usaha (*subsidiary commercial company*)** di bawah kepemilikan/kendali koperasi. Tujuannya dalam hierarki organisasi adalah untuk mendukung pengujian modul tenaga kerja (`Employee`), HR/HRM, absensi, penggajian (*payroll*), aset, work order, dan proyek di masa depan. **DILARANG KERAS MEMILIKI ANGGOTA KOPERASI (`CooperativeMember` count = 0)**, simpanan, atau pinjaman. Persona `P14` dan `P15` di-reserve untuk tenaga kerja anak usaha masa depan. **Dilarang dibuat di production/staging.**
 
 3. **`ISO-999` (Koperasi Mandiri Sejahtera)**
    - **Pemilik Tunggal:** [`CooperativeFixtureReferenceSeeder`](../../database/seeders/CooperativeFixtureReferenceSeeder.php).
    - **Tipe:** `HEAD_OFFICE`, Level `L0`, Parent `null`.
-   - **Aturan:** Khusus lingkungan non-produksi. Menampung data uji penetrasi isolasi multi-tenant guna membuktikan bahwa admin `KOP-001` tidak dapat membaca/mengubah data milik `ISO-999`. **Dilarang dibuat di production/staging.**
+   - **Aturan:** Khusus lingkungan non-produksi. Entitas sintetis pihak ketiga yang terisolasi untuk pengujian otorisasi multi-tenant antar badan hukum koperasi yang independen (bukan antara koperasi dengan anak usahanya). Tidak menerima persona anggota default pada SEED-03. **Dilarang dibuat di production/staging.**
 
 ---
 
@@ -143,7 +143,7 @@ public function run(): void
 ## 7. Kesiapan Downstream Tasks (SEED-03 onward)
 
 Implementasi SEED-02 menyelesaikan dependensi master data untuk tahapan berikutnya:
-- **SEED-03 (User & Member Persona):** Memiliki anchor organisasi yang pasti (`KOP-001` untuk persona P01–P10 & P12–P13, `KBU-001` untuk P14–P15).
-- **SEED-04 (Member Lifecycle Dataset):** Siap mengaitkan anggota ke tipe simpanan resmi `POKOK` dan `WAJIB`.
+- **SEED-03 (User & Member Persona):** Memiliki anchor organisasi kanonikal yang pasti (`KOP-001` untuk seluruh persona anggota dan staf koperasi P01–P10 & P12–P13; `KBU-001` sebagai PT anak usaha dengan 0 CooperativeMember dan P14/P15 di-reserve untuk tenaga kerja anak usaha masa depan).
+- **SEED-04 (Member Lifecycle Dataset):** Siap mengaitkan anggota ke tipe simpanan resmi `POKOK` dan `WAJIB` di bawah `KOP-001`.
 - **SEED-05 (Synthetic Financial Data):** Memiliki produk pinjaman kanonikal (`emergency`, `productive`, `consumer`) dan kategori POS aktif.
-- **SEED-06 (Negative & Edge Cases):** Memiliki tenant terisolasi `ISO-999` yang bersih untuk pengujian batas otorisasi multi-tenant.
+- **SEED-06 (Negative & Edge Cases):** Memiliki tenant terisolasi `ISO-999` yang bersih untuk pengujian batas otorisasi multi-tenant antar entitas independen.

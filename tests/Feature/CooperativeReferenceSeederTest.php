@@ -10,7 +10,9 @@ use App\Models\PosCategory;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\User;
+use Database\Seeders\AnggotaSeeder;
 use Database\Seeders\CooperativeFixtureReferenceSeeder;
+use Database\Seeders\CooperativeSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LogicException;
@@ -303,5 +305,54 @@ class CooperativeReferenceSeederTest extends TestCase
 
         $this->assertSame($kop->id, $kbu->parent_id);
         $this->assertNull($iso->parent_id);
+    }
+
+    /**
+     * Scenario H: Cooperative and subsidiary semantic integrity.
+     * Only the cooperative legal entity (KOP-001) may own CooperativeMember fixtures.
+     * PT Subsidiary (KBU-001) and isolated organization (ISO-999) must have ZERO CooperativeMember records.
+     */
+    public function test_cooperative_and_subsidiary_organization_semantic_integrity(): void
+    {
+        config(['app.env' => 'testing']);
+
+        $this->seed(CooperativeFixtureReferenceSeeder::class);
+
+        $kop = Organization::query()->where('code', 'KOP-001')->firstOrFail();
+        $kbu = Organization::query()->where('code', 'KBU-001')->firstOrFail();
+        $iso = Organization::query()->where('code', 'ISO-999')->firstOrFail();
+
+        // After reference seeder, members count across all orgs is 0
+        $this->assertSame(0, CooperativeMember::query()->where('organization_id', $kbu->id)->count());
+        $this->assertSame(0, CooperativeMember::query()->where('organization_id', $iso->id)->count());
+        $this->assertSame(0, CooperativeMember::query()->where('organization_id', $kop->id)->count());
+
+        // Run demo seeders to populate sample cooperative data
+        $this->fakeCooperativeReceiptIssuance();
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->seed(CooperativeSeeder::class);
+        $this->seed(AnggotaSeeder::class);
+
+        $totalMembers = CooperativeMember::query()->count();
+        $kopMembers = CooperativeMember::query()->where('organization_id', $kop->id)->count();
+        $kbuMembers = CooperativeMember::query()->where('organization_id', $kbu->id)->count();
+        $isoMembers = CooperativeMember::query()->where('organization_id', $iso->id)->count();
+
+        // 1. Members exist under cooperative legal entity (KOP-001)
+        $this->assertGreaterThan(0, $kopMembers, 'KOP-001 must own cooperative members.');
+        $this->assertSame($totalMembers, $kopMembers, 'All cooperative members must belong exclusively to KOP-001.');
+
+        // 2. KBU-001 (PT Subsidiary) must have ZERO CooperativeMember records
+        $this->assertSame(0, $kbuMembers, 'KBU-001 (PT Subsidiary) must contain ZERO CooperativeMember fixtures.');
+
+        // 3. ISO-999 (Isolated Org) must have ZERO CooperativeMember records
+        $this->assertSame(0, $isoMembers, 'ISO-999 (Isolated Org) must contain ZERO CooperativeMember fixtures.');
+
+        // 4. No member number namespace may be assigned to KBU-001
+        $kbuMemberNoCount = CooperativeMember::query()
+            ->where('no_anggota', 'like', '%KBU%')
+            ->orWhere('member_no', 'like', '%KBU%')
+            ->count();
+        $this->assertSame(0, $kbuMemberNoCount, 'No member-number namespace may be assigned to KBU-001.');
     }
 }

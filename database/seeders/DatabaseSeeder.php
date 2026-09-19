@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         if (app()->environment('local')) {
             $this->call([
                 CooperativeFixtureReferenceSeeder::class,
+                CooperativePersonaSeeder::class,
                 CooperativeSeeder::class,
                 AnggotaSeeder::class,
                 DemoDataSeeder::class,

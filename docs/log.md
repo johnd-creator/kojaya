@@ -6,6 +6,22 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-19 - User & Member Persona Seeder (SEED-03)
+
+- Implemented `CooperativePersonaSeeder` creating the canonical deterministic non-production personas for Phase 4 functional testing:
+  - 12 valid baseline User personas (`seed.*@kojaya.test` with password `password`): P01-P05 Staff/Admin, P06-P10 and P12-P13 Members.
+  - 7 valid `CooperativeMember` personas (`DEV-KOP-006` through `DEV-KOP-013`) mapped to derived lifecycle experiences (`WaitingVerification`, `UnderReview`, `RevisionRequired`, `Rejected`, and `Active`).
+  - 1 deterministic Google `SocialAccount` linked to P12 (`google-seed-sub-012`, `linked_at` set, zero fake login/token side-effects).
+  - Ensured P13 has strictly 0 `SocialAccount`s.
+- Enforced strict fail-closed environment guard (`LogicException` in `production`, `staging`, `qa`, and `development`).
+- Preserved single-ownership domain boundaries: all personas and members belong strictly to `KOP-001`; `KBU-001` has strictly 0 members; `ISO-999` has 0 default personas.
+- Reserved personas P11 (`BLOCKED_UNKNOWN`), P14, and P15 remain strictly absent from baseline DEV seeder without renumbering churn.
+- Preserved idempotence and soft-delete restoration (`withTrashed()->restore()`) across repeated seeder runs.
+- Registered `CooperativePersonaSeeder` in `DatabaseSeeder` under the `local` environment branch.
+- Added comprehensive test suite in `tests/Feature/CooperativePersonaSeederTest.php` (16 tests, 187 assertions) covering scenarios A-N and web/mobile authentication flows.
+- Updated `DatabaseSeederSafetyTest` and `SeederSafetyStaticAnalysisTest`.
+- Published comprehensive documentation in `docs/phase-3/SEED-03-user-member-personas.md`.
+
 ## 2026-09-19 - Cooperative vs Subsidiary Organization Semantics Correction (SEED-02R1)
 
 - Corrected core domain modeling assumption: only the cooperative legal entity (`KOP-001`) may own `CooperativeMember` fixtures, onboarding, dues, loans, store credit, and SHU.

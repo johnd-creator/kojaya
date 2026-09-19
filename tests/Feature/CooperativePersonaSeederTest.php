@@ -3,14 +3,22 @@
 namespace Tests\Feature;
 
 use App\Enums\Cooperative\MemberLifecycleExperience;
+use App\Models\CooperativeDuesInvoice;
+use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePayment;
+use App\Models\Loan;
+use App\Models\MemberStoreAccount;
 use App\Models\Organization;
+use App\Models\PosTransaction;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Database\Seeders\CooperativePersonaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 use LogicException;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CooperativePersonaSeederTest extends TestCase
@@ -424,5 +432,87 @@ class CooperativePersonaSeederTest extends TestCase
         $this->assertSame('ACTIVE', $response->json('validation_status'));
         $this->assertSame('ACTIVE', $response->json('lifecycle_experience'));
         $this->assertSame($user10->cooperativeMember->id, $response->json('user.cooperative_member_id'));
+    }
+
+    /**
+     * Correction B: Direct execution survives a partially initialized role database.
+     */
+    public function test_direct_execution_survives_partially_initialized_role_database(): void
+    {
+        // 1. Manually create only 'Anggota' role
+        Role::query()->create(['name' => 'Anggota']);
+
+        // 2. Confirm other required staff roles are absent
+        $this->assertDatabaseMissing('roles', ['name' => 'System Admin']);
+        $this->assertDatabaseMissing('roles', ['name' => 'Pengurus Koperasi']);
+        $this->assertDatabaseMissing('roles', ['name' => 'Manajer Koperasi']);
+        $this->assertDatabaseMissing('roles', ['name' => 'Admin Koperasi']);
+        $this->assertDatabaseMissing('roles', ['name' => 'Kasir Koperasi']);
+
+        // 3. Run CooperativePersonaSeeder
+        $this->seed(CooperativePersonaSeeder::class);
+
+        // 4. Assert all required roles now exist
+        $this->assertDatabaseHas('roles', ['name' => 'System Admin']);
+        $this->assertDatabaseHas('roles', ['name' => 'Pengurus Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Manajer Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Admin Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Kasir Koperasi']);
+        $this->assertDatabaseHas('roles', ['name' => 'Anggota']);
+
+        // 5. Assert all 12 canonical personas and 7 members are successfully seeded
+        $this->assertSame(12, User::query()->count());
+        $this->assertSame(7, CooperativeMember::query()->count());
+    }
+
+    /**
+     * Organization Topology Dependency: Direct execution bootstraps missing non-production topology.
+     */
+    public function test_direct_execution_bootstraps_missing_organization_topology(): void
+    {
+        // Fresh database without prior Organization seeding
+        $this->assertSame(0, Organization::query()->count());
+
+        $this->seed(CooperativePersonaSeeder::class);
+
+        $this->assertDatabaseHas('organizations', ['code' => 'KOP-001']);
+        $this->assertDatabaseHas('organizations', ['code' => 'KBU-001']);
+        $this->assertDatabaseHas('organizations', ['code' => 'ISO-999']);
+
+        $this->assertSame(12, User::query()->count());
+        $this->assertSame(7, CooperativeMember::query()->count());
+
+        $kbu = Organization::query()->where('code', 'KBU-001')->firstOrFail();
+        $this->assertSame(0, CooperativeMember::query()->where('organization_id', $kbu->id)->count());
+
+        $iso = Organization::query()->where('code', 'ISO-999')->firstOrFail();
+        $this->assertSame(0, CooperativeMember::query()->where('organization_id', $iso->id)->count());
+    }
+
+    /**
+     * Correction A: SEED-03 does not provision financial state or downstream fixture entities.
+     */
+    public function test_seeder_does_not_provision_financial_state_or_downstream_fixtures(): void
+    {
+        $this->seed(CooperativePersonaSeeder::class);
+
+        // Assert zero downstream financial fixture records
+        $this->assertSame(0, MemberStoreAccount::query()->count(), 'SEED-03 must not create MemberStoreAccount.');
+        $this->assertSame(0, Loan::query()->count(), 'SEED-03 must not create Loan.');
+        $this->assertSame(0, CooperativeDuesInvoice::query()->count(), 'SEED-03 must not create CooperativeDuesInvoice.');
+        $this->assertSame(0, CooperativePayment::query()->count(), 'SEED-03 must not create CooperativePayment.');
+        $this->assertSame(0, CooperativeLedgerEntry::query()->count(), 'SEED-03 must not create CooperativeLedgerEntry.');
+        $this->assertSame(0, PosTransaction::query()->count(), 'SEED-03 must not create PosTransaction.');
+        $this->assertSame(0, PersonalAccessToken::query()->count(), 'SEED-03 must not create PersonalAccessToken.');
+
+        // Assert member credit attributes use schema/model defaults, not SEED-03 hardcoded values
+        $members = CooperativeMember::all();
+        $this->assertCount(7, $members);
+
+        foreach ($members as $member) {
+            $this->assertNotSame(500000.0, (float) $member->credit_limit, "credit_limit for {$member->member_no} must not be 500000.");
+            $this->assertSame(0.0, (float) $member->credit_limit, "credit_limit for {$member->member_no} should be database default 0.");
+            $this->assertSame(30, (int) $member->credit_term_days, "credit_term_days for {$member->member_no} should be database default 30.");
+        }
     }
 }

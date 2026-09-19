@@ -8,7 +8,6 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use LogicException;
-use Spatie\Permission\Models\Role;
 
 class CooperativePersonaSeeder extends Seeder
 {
@@ -30,15 +29,10 @@ class CooperativePersonaSeeder extends Seeder
             throw new LogicException('CooperativePersonaSeeder is only available in local, testing, or playwright environments.');
         }
 
-        if (! Role::query()->where('name', 'Anggota')->exists()) {
-            $this->call(RolePermissionSeeder::class);
-        }
+        $this->call(RolePermissionSeeder::class);
+        $this->call(CooperativeFixtureReferenceSeeder::class);
 
-        $kop = Organization::query()->where('code', 'KOP-001')->first();
-        if (! $kop || ! Organization::query()->where('code', 'KBU-001')->exists()) {
-            $this->call(CooperativeFixtureReferenceSeeder::class);
-            $kop = Organization::query()->where('code', 'KOP-001')->firstOrFail();
-        }
+        $kop = Organization::query()->where('code', 'KOP-001')->firstOrFail();
 
         $fixedDate = '2026-06-01';
         $fixedTimestamp = '2026-06-01 08:00:00';
@@ -246,8 +240,6 @@ class CooperativePersonaSeeder extends Seeder
                 $member->admin_validation_notes = 'Persona aktif diverifikasi admin koperasi.';
                 $member->profile_completed_at = $fixedTimestamp;
                 $member->onboarding_submitted_at = $fixedTimestamp;
-                $member->credit_limit = 500000;
-                $member->credit_term_days = 30;
             } else {
                 $member->tanggal_aktif = null;
                 $member->validated_at = null;

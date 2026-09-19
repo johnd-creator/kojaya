@@ -46,7 +46,7 @@ Sesuai kontrak SEED-01 dan SEED-02R1, beberapa entitas dan persona sengaja **TID
 1. **`P11` (`BLOCKED_UNKNOWN`):** Merupakan persona *corrupt/inconsistent lifecycle* yang masuk ke dalam domain pengujian batas negatif dan dialokasikan untuk implementasi khusus pada **SEED-06 Negative & Edge-Case Dataset**. Nomor anggota `DEV-KOP-011` tidak di-generate pada baseline SEED-03.
 2. **`P14` (Pegawai PT Anak Usaha) & `P15` (Admin/HR PT Anak Usaha):** Dialokasikan sebagai persona tenaga kerja `Employee` untuk modul HR/Payroll anak usaha masa depan. Tidak dibuat pada SEED-03 untuk mencegah kebocoran model `Employee` ke seeder keanggotaan koperasi.
 3. **Namespace Anggota Anak Usaha:** Ruang nama nomor anggota `DEV-KBU-*` dilarang keras dibuat karena PT anak usaha (`KBU-001`) tidak memiliki anggota koperasi.
-4. **Zero Financial Fixtures:** Tidak ada pembuatan tagihan iuran (`CooperativeDuesInvoice`), pembayaran (`CooperativePayment`), mutasi buku besar (`CooperativeLedgerEntry`), atau rekening simpanan. Data finansial sintetis didelegasikan penuh ke **SEED-05**.
+4. **Zero Financial & Credit Configuration:** Tidak ada penetapan limit kredit (`credit_limit`), termin kredit toko (`credit_term_days`), pembuatan akun toko (`MemberStoreAccount`), pinjaman (`Loan`), tagihan iuran (`CooperativeDuesInvoice`), pembayaran (`CooperativePayment`), atau mutasi buku besar (`CooperativeLedgerEntry`). Nilai atribut kredit anggota menggunakan nilai default netral skema basis data (`credit_limit` = 0, `credit_term_days` = 30). Data finansial sintetis didelegasikan penuh ke **SEED-05**.
 5. **Zero Pre-authenticated Tokens:** Tidak ada token Sanctum (`PersonalAccessToken`) yang dibuat di muka oleh seeder. Token diterbitkan secara dinamis saat skenario login diuji.
 
 ---
@@ -85,12 +85,24 @@ if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], t
 ```
 Jika dipanggil di lingkungan `production`, `staging`, `qa`, atau `development`, seeder langsung melempar `LogicException` tanpa memodifikasi baris data apa pun.
 
-### B. Isolasi Organisasi Multi-Tenant
+### B. Bootstrap Dependensi Kanonikal yang Diperketat (Hardened Dependency Bootstrap)
+Untuk memastikan eksekusi langsung seeder (`php artisan db:seed --class=CooperativePersonaSeeder`) berhasil pada basis data yang terinisialisasi sebagian tanpa dependensi implisit:
+```php
+$this->call(RolePermissionSeeder::class);
+$this->call(CooperativeFixtureReferenceSeeder::class);
+
+$kop = Organization::query()->where('code', 'KOP-001')->firstOrFail();
+```
+Kedua seeder prasyarat bersifat idempoten dan deterministik:
+- Menjamin seluruh peran kanonikal (`System Admin`, `Pengurus Koperasi`, `Manajer Koperasi`, `Admin Koperasi`, `Kasir Koperasi`, `Anggota`) selalu tersedia sebelum sinkronisasi peran `$user->syncRoles()`.
+- Menjamin topologi non-produksi (`KOP-001`, `KBU-001`, `ISO-999`) tersedia secara otomatis.
+
+### C. Isolasi Organisasi Multi-Tenant
 - Seluruh 12 pengguna dan 7 anggota koperasi ditautkan secara eksplisit ke `organization_id` milik `KOP-001` (Koperasi Jaya Bersama).
 - Organisasi `KBU-001` (PT Anak Usaha) memiliki tepat **0** record `CooperativeMember`.
 - Organisasi pengujian `ISO-999` tidak memiliki persona anggota default.
 
-### C. Idempotensi & Restorasi Soft Deletes
+### D. Idempotensi & Restorasi Soft Deletes
 - Pengguna diperbarui atau dibuat menggunakan pencarian `email`.
 - Anggota koperasi dicari menggunakan `CooperativeMember::withTrashed()->where('member_no', ...)` dan dipulihkan melalui `->restore()` jika sebelumnya berstatus terhapus lunak, mencegah kesalahan duplikasi kunci unik saat seeder dieksekusi berulang kali.
 - Relasi peran disinkronkan secara ketat menggunakan `$user->syncRoles([$roleName])`.
@@ -117,5 +129,8 @@ Rangkaian pengujian komprehensif diimplementasikan pada [`CooperativePersonaSeed
 14. **Skenario N:** Guard fail-closed menolak eksekusi pada `production`, `staging`, `qa`, dan `development`.
 15. **Uji Otentikasi Web:** Fortify web login (`POST /login`) berhasil mengotentikasi Admin Koperasi (P04) ke `/dashboard` dan Anggota Aktif (P10) ke rute `member.dashboard`.
 16. **Uji Otentikasi Mobile API:** API mobile login (`POST /api/auth/login`) berhasil menerbitkan token Sanctum dan memvalidasi payload untuk Anggota Aktif (P10).
+17. **Uji Ketahanan Dependensi Peran (Correction B):** Eksekusi langsung berhasil pada basis data dengan peran yang baru terinisialisasi sebagian (hanya `Anggota`), memastikan seluruh 6 peran kanonikal dan 12 persona terbentuk tanpa error.
+18. **Uji Ketahanan Topologi Organisasi:** Eksekusi langsung berhasil pada basis data kosong tanpa topologi organisasi sebelumnya, menginisialisasi `KOP-001`, `KBU-001`, dan `ISO-999` secara otomatis.
+19. **Uji Regresi Batas Finansial (Correction A):** Memvalidasi bahwa seeder tidak membuat record `MemberStoreAccount`, `Loan`, `CooperativeDuesInvoice`, `CooperativePayment`, `CooperativeLedgerEntry`, `PosTransaction`, atau `PersonalAccessToken`, serta nilai `credit_limit` anggota tetap pada default basis data (0.00).
 
 Pengujian keamanan statis ([`SeederSafetyStaticAnalysisTest`](../../tests/Feature/SeederSafetyStaticAnalysisTest.php)) dan dinamis ([`DatabaseSeederSafetyTest`](../../tests/Feature/DatabaseSeederSafetyTest.php)) juga memverifikasi bahwa seeder ini terklasifikasi sebagai non-reference yang aman dan terisolasi dari lingkungan produksi/staging.

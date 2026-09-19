@@ -6,6 +6,17 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-19 - Persona Scope & Dependency Hardening (SEED-03R1)
+
+- Correction A — Removed financial and store credit state from `CooperativePersonaSeeder`:
+  - Removed explicit assignment of `credit_limit` and `credit_term_days` on active members, preserving neutral database defaults (`credit_limit` = 0.00, `credit_term_days` = 30).
+  - Confirmed SEED-03 creates strictly zero downstream financial fixtures (`MemberStoreAccount`, `Loan`, `CooperativeDuesInvoice`, `CooperativePayment`, `CooperativeLedgerEntry`, `PosTransaction`, `PersonalAccessToken`), keeping SEED-05 as the sole owner of financial state.
+- Correction B — Hardened canonical dependency bootstrap for direct seeder execution:
+  - Ensured `RolePermissionSeeder` and `CooperativeFixtureReferenceSeeder` are unconditionally called after environment guard.
+  - Verified direct execution succeeds on databases with partially initialized roles (e.g. only `Anggota` present) by auto-bootstrapping all required roles without failing on `syncRoles`.
+  - Verified direct execution auto-bootstraps missing non-production topology (`KOP-001`, `KBU-001`, `ISO-999`).
+- Extended test suite in `tests/Feature/CooperativePersonaSeederTest.php` to 19 tests (237 assertions) covering partial role bootstrap, organization topology bootstrap, and financial scope regression.
+
 ## 2026-09-19 - User & Member Persona Seeder (SEED-03)
 
 - Implemented `CooperativePersonaSeeder` creating the canonical deterministic non-production personas for Phase 4 functional testing:

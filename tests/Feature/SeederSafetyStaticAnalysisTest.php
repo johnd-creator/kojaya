@@ -26,6 +26,7 @@ class SeederSafetyStaticAnalysisTest extends TestCase
     private array $guardedNonReferenceSeeders = [
         'CooperativeFixtureReferenceSeeder.php',
         'CooperativePersonaSeeder.php',
+        'CooperativeMemberLifecycleSeeder.php',
         'CooperativeSeeder.php',
         'AnggotaSeeder.php',
         'DemoDataSeeder.php',

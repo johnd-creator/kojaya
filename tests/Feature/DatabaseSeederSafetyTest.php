@@ -22,6 +22,7 @@ use App\Models\WorkShift;
 use Database\Seeders\AnggotaSeeder;
 use Database\Seeders\CooperativeFixtureReferenceSeeder;
 use Database\Seeders\CooperativeManagerRoleSeeder;
+use Database\Seeders\CooperativeMemberLifecycleSeeder;
 use Database\Seeders\CooperativePersonaSeeder;
 use Database\Seeders\CooperativeReferenceSeeder;
 use Database\Seeders\CooperativeSeeder;
@@ -46,6 +47,7 @@ class DatabaseSeederSafetyTest extends TestCase
     private array $demoSeeders = [
         CooperativeFixtureReferenceSeeder::class,
         CooperativePersonaSeeder::class,
+        CooperativeMemberLifecycleSeeder::class,
         CooperativeSeeder::class,
         AnggotaSeeder::class,
         DemoDataSeeder::class,

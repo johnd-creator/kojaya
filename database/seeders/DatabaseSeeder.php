@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 CooperativeFixtureReferenceSeeder::class,
                 CooperativePersonaSeeder::class,
+                CooperativeMemberLifecycleSeeder::class,
                 CooperativeSeeder::class,
                 AnggotaSeeder::class,
                 DemoDataSeeder::class,

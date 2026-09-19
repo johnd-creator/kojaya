@@ -103,4 +103,13 @@ class CooperativeMemberFactory extends Factory
             'onboarding_submitted_at' => now(),
         ]);
     }
+
+    public function blockedUnknown(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => CooperativeMember::VALIDATION_INACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_INACTIVE,
+            'onboarding_submitted_at' => null,
+        ]);
+    }
 }

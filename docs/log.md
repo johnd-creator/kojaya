@@ -6,6 +6,23 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-19 - Member Lifecycle Dataset (SEED-04)
+
+- Implemented `CooperativeMemberLifecycleSeeder` enriching the 7 canonical member personas (`DEV-KOP-006` through `DEV-KOP-013`) with deterministic lifecycle metadata:
+  - P06 (`DEV-KOP-006`, `WaitingVerification`): PENDING/PENDING, unverified, unapproved, zero decision metadata.
+  - P07 (`DEV-KOP-007`, `UnderReview`): PENDING/PENDING_VALIDATION, verified by Admin P04 at `2026-06-01 09:00:00`, pending Pengurus approval.
+  - P08 (`DEV-KOP-008`, `RevisionRequired`): INACTIVE/REVISION, revision note by Admin P04 at `2026-06-01 09:30:00`.
+  - P09 (`DEV-KOP-009`, `Rejected`): INACTIVE/REJECTED, rejected with reason by Pengurus P02 at `2026-06-01 10:00:00`.
+  - P10, P12, P13 (`DEV-KOP-010`, `012`, `013`, `Active`): ACTIVE/ACTIVE, verified by P04 (`09:00:00`), approved by P02 (`10:00:00`), `catatan_pengurus` set, `tanggal_aktif = 2026-06-01`.
+- Added `blockedUnknown()` factory state to `CooperativeMemberFactory` for isolated unit/feature edge testing without polluting DEV baseline seed.
+- Enforced zero new persona/member creation (strictly 12 users and 7 members in baseline dataset).
+- Enforced strict fail-closed environment guard (`LogicException` in production, staging, qa, and development).
+- Verified idempotent re-execution and automatic repair of drifted seed records.
+- Verified route gate and member lifecycle experiences across web onboarding and dashboard access (`GET /member/onboarding` and `POST /member/onboarding`).
+- Added comprehensive feature test suite in `tests/Feature/CooperativeMemberLifecycleSeederTest.php` (15 tests, 251 assertions) covering Scenarios A-O.
+- Updated `DatabaseSeederSafetyTest` and `SeederSafetyStaticAnalysisTest`.
+- Published comprehensive documentation in `docs/phase-3/SEED-04-member-lifecycle-dataset.md`.
+
 ## 2026-09-19 - Persona Scope & Dependency Hardening (SEED-03R1)
 
 - Correction A — Removed financial and store credit state from `CooperativePersonaSeeder`:

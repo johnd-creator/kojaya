@@ -4,7 +4,18 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 18, 2026
+**Last Updated:** September 19, 2026
+
+## 2026-09-19 - Cooperative vs Subsidiary Organization Semantics Correction (SEED-02R1)
+
+- Corrected core domain modeling assumption: only the cooperative legal entity (`KOP-001`) may own `CooperativeMember` fixtures, onboarding, dues, loans, store credit, and SHU.
+- Clarified `KBU-001` as a commercial PT subsidiary (*PT Anak Usaha*) under cooperative ownership/control: owns workforce/`Employee`, payroll, and operational entities, with strictly zero `CooperativeMember` fixtures (`count = 0`).
+- Adjusted SEED-03 persona matrix from 14 valid personas down to 12 valid baseline personas (`P01`–`P10`, `P12`, `P13`), all member personas attached exclusively to `KOP-001`.
+- Removed `P14` (Member KBU) and `P15` (Admin KBU) from baseline contract and reserved them for future subsidiary workforce/employee personas without renumbering churn.
+- Preserved `P11 (BLOCKED_UNKNOWN)` as optional/on-demand edge fixture outside the default DEV baseline.
+- Preserved `ISO-999` as a third-party isolated synthetic organization reserved for multi-tenant authorization testing without default member personas.
+- Added automated semantic integrity test in `tests/Feature/CooperativeReferenceSeederTest.php` asserting `KBU-001` and `ISO-999` contain zero `CooperativeMember` records and no `KBU` member number namespace.
+- Updated `docs/phase-3/SEED-01-test-data-contract.md` and `docs/phase-3/SEED-02-master-reference-data.md`.
 
 ## 2026-09-18 - Master / Reference Data Seeder & Non-Production Topology (SEED-02)
 

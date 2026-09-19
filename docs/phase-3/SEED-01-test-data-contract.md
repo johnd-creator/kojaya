@@ -203,10 +203,16 @@ Sesuai arsitektur yang diresmikan pada `ONB-08` dan `ONB-09` melalui enum [app/E
 
 ## 7. Matriks Persona Deterministik (Persona Matrix)
 
-Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase 4, didefinisikan **15 Definisi Persona Deterministik**, yang terbagi menjadi **14 Persona Baseline Valid (P01–P10, P12–P15)** dan **1 Persona Edge-Case Tidak Sah / Korup (P11)**.
+Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase 4, didefinisikan **13 Definisi Persona Deterministik Koperasi**, yang terbagi menjadi **12 Persona Baseline Valid (P01–P10, P12, P13)** dan **1 Persona Edge-Case Tidak Sah / Korup (P11)**. Persona **P14 dan P15 DI-RESERVED** untuk kebutuhan persona tenaga kerja (*workforce/employee*) anak usaha di masa depan tanpa mengubah penomoran ID.
 
 > [!NOTE]
 > Seluruh persona ini bersifat sintetis (*synthetic identities*). Tidak ada satu pun data anggota atau karyawan riil yang digunakan.
+
+> [!IMPORTANT]
+> **Aturan Bisnis Entitas Hukum Koperasi vs Anak Usaha (SEED-02R1):**
+> Hanya entitas legal koperasi (`KOP-001`) yang berhak memiliki anggota koperasi (`CooperativeMember`), proses onboarding anggota, simpanan, pinjaman, dan SHU.
+> `KBU-001` adalah PT Anak Usaha (*subsidiary company*). `KBU-001` dapat memiliki tenaga kerja (`Employee`), pengguna operasional (`User`), tetapi **DILARANG KERAS memiliki `CooperativeMember`** (`CooperativeMember count = 0`).
+> `ISO-999` adalah organisasi pihak ketiga sintetis yang terisolasi untuk pengujian otorisasi multi-tenant; tidak menerima persona anggota default pada SEED-03.
 
 ```text
                                ┌────────────────────────┐
@@ -215,25 +221,26 @@ Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase
                                            │
          ┌─────────────────────────────────┴─────────────────────────────────┐
          ▼                                                                   ▼
-┌──────────────────┐                                               ┌──────────────────┐
-│ Koperasi Utama   │                                               │ Cabang KBU       │
-│    (KOP-001)     │                                               │    (KBU-001)     │
-└────────┬─────────┘                                               └────────┬─────────┘
-         │                                                                  │
-         ├─ P02 Pengurus Koperasi                                           ├─ P15 Admin Koperasi Cabang
-         ├─ P03 Manajer Koperasi                                            └─ P14 Anggota Aktif Cabang
-         ├─ P04 Admin Koperasi
-         ├─ P05 Kasir Koperasi
-         │
-         └─ [Anggota Berdasarkan Siklus Hidup]
-               ├─ P06 Anggota WAITING_VERIFICATION
-               ├─ P07 Anggota UNDER_REVIEW
-               ├─ P08 Anggota REVISION_REQUIRED
-               ├─ P09 Anggota REJECTED
-               ├─ P10 Anggota ACTIVE (Password Fortify)
-               ├─ P11 Anggota BLOCKED_UNKNOWN (Optional Edge-Case / Excluded from Baseline DEV)
-               ├─ P12 Anggota ACTIVE + Google SSO Terhubung
-               └─ P13 Anggota ACTIVE Murni (Tanpa Google SSO)
+┌─────────────────────────────────┐                       ┌──────────────────────────────────┐
+│ Koperasi Utama (KOP-001)        │                       │ PT Anak Usaha (KBU-001)          │
+│ Legal Cooperative Entity        │                       │ Subsidiary Commercial Company    │
+│ (OWNS ALL COOPERATIVE MEMBERS)  │                       │ (NO COOPERATIVE MEMBERS)         │
+└────────────────┬────────────────┘                       └────────────────┬─────────────────┘
+                 │                                                                 │
+                 ├─ P02 Pengurus Koperasi                                          ├─ P14 [RESERVED: Future Employee PT]
+                 ├─ P03 Manajer Koperasi                                           └─ P15 [RESERVED: Future Admin/HR PT]
+                 ├─ P04 Admin Koperasi
+                 ├─ P05 Kasir Koperasi
+                 │
+                 └─ [Anggota Berdasarkan Siklus Hidup - KOP-001]
+                       ├─ P06 Anggota WAITING_VERIFICATION
+                       ├─ P07 Anggota UNDER_REVIEW
+                       ├─ P08 Anggota REVISION_REQUIRED
+                       ├─ P09 Anggota REJECTED
+                       ├─ P10 Anggota ACTIVE (Password Fortify)
+                       ├─ P11 Anggota BLOCKED_UNKNOWN (Optional Edge-Case / Excluded from Baseline DEV)
+                       ├─ P12 Anggota ACTIVE + Google SSO Terhubung
+                       └─ P13 Anggota ACTIVE Murni (Tanpa Google SSO)
 ```
 
 ### 7.1. Kontrak Detail Setiap Persona
@@ -253,8 +260,8 @@ Untuk mendukung seluruh skenario pengujian fungsional dan otomatisasi pada Phase
 | **P11** | **Anggota Status Korup / Mismatch (Optional Edge)**<br>Kombinasi status tidak sah untuk uji fail-closed keamanan; **dikecualikan dari baseline default DEV** | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Tidak | `BLOCKED_UNKNOWN` | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ 403 Forbidden | ❌ Ditolak (403) | Uji keamanan gerbang middleware `EnsureMemberFullyActive` (Fixture opsional/on-demand) |
 | **P12** | **Anggota Aktif Terhubung Google SSO**<br>Anggota aktif dengan akun Google terhubung di `social_accounts` | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | **Ya** (`google`) | `ACTIVE` | **Ya** (SSO/Pwd) | **Ya** (SSO/Pwd) | Dashboard Lengkap | ✅ Diizinkan Penuh | Pengujian autentikasi cepat Google SSO, auto-login Mobile |
 | **P13** | **Anggota Aktif Tanpa Google SSO**<br>Anggota aktif murni berbasis email dan sandi lokal | `Anggota` | `KOP-001` | **Ya** | Tidak | **Ya** | Tidak | `ACTIVE` | **Ya** (Pwd) | **Ya** (Pwd) | Dashboard Lengkap | ✅ Diizinkan Penuh | Pengujian alur tautkan Google SSO dari profil pengguna (`/auth/google/link`) |
-| **P14** | **Anggota Aktif Cabang Lain (Tenant Boundary)**<br>Anggota aktif pada unit cabang KBU-001 | `Anggota` | `KBU-001` | **Ya** | Tidak | **Ya** | Tidak | `ACTIVE` | **Ya** | **Ya** | Dashboard Cabang | ✅ Diizinkan (Scoped) | Pengujian isolasi data antar organisasi (*tenant scoping check*) |
-| **P15** | **Admin Koperasi Cabang Lain**<br>Admin operasional pada cabang KBU-001 | `Admin Koperasi` | `KBU-001` | **Ya** | Opsional | Opsional | Tidak | N/A | **Ya** | Tidak | Tidak | **Otoritas Cabang** | Uji bahwa Admin Cabang KBU tidak bisa melihat data member KOP-001 |
+| **P14** | **[RESERVED] Tenaga Kerja / Karyawan PT Anak Usaha**<br>Dicadangkan untuk persona karyawan masa depan KBU-001 (Bukan Anggota Koperasi) | `Employee` (Reserved) | `KBU-001` | Tidak | Tidak | **Tidak (0 Member)** | Tidak | N/A | Tidak | Tidak | Tidak | ❌ Dilarang | Dicadangkan untuk pengujian modul ERP HRM/Payroll anak usaha masa depan (Di luar SEED-03) |
+| **P15** | **[RESERVED] Admin / HR Operasional PT Anak Usaha**<br>Dicadangkan untuk staf administratif masa depan KBU-001 | `Admin` (Reserved) | `KBU-001` | Tidak | Tidak | **Tidak (0 Member)** | Tidak | N/A | Tidak | Tidak | Tidak | ❌ Dilarang | Dicadangkan untuk pengujian otorisasi operasional internal anak usaha masa depan (Di luar SEED-03) |
 
 ---
 
@@ -267,7 +274,7 @@ Untuk mencegah tabrakan data (*collision*), memudahkan penelusuran (*searchabili
 | Komponen Identitas | Pola / Aturan Format | Contoh Sintetis | Catatan Keamanan |
 | :--- | :--- | :--- | :--- |
 | **Email Pengguna (`users.email`)** | `seed.<role-alias>@kojaya.test` | `seed.admin.kop@kojaya.test`<br>`seed.member.active@kojaya.test` | Domain khusus RFC 2606 `.test` menjamin email tidak pernah terkirim ke internet. |
-| **Nomor Anggota (`no_anggota` / `member_no`)** | `DEV-KOP-###` (KOP-001)<br>`DEV-KBU-###` (KBU-001) | `DEV-KOP-001`<br>`DEV-KOP-010` | Jelas berlabel `DEV`, terurut, dan terikat kode organisasi. |
+| **Nomor Anggota (`no_anggota` / `member_no`)** | `DEV-KOP-###` (Hanya untuk KOP-001) | `DEV-KOP-001`<br>`DEV-KOP-010` | Jelas berlabel `DEV`, terurut, dan terikat kode organisasi KOP-001. KBU-001 tidak memiliki namespace nomor anggota. |
 | **Nomor Induk Kependudukan (NIK)** | `31749900000000##` (16 digit) | `3174990000000001` s.d. `3174990000000099` | Menggunakan kode wilayah fiktif `317499` yang tidak ada di Dukcapil. |
 | **Nomor Telepon** | `0812999900##` | `081299990001` s.d. `081299990099` | Jelas nomor telepon dummy. |
 | **Nomor Pokok Wajib Pajak (NPWP)** | `99.999.999.9-999.0##` | `99.999.999.9-999.001` | Format sintetik terisolasi. |
@@ -334,9 +341,9 @@ Untuk menguji isolasi organisasi (*multi-tenancy scoping*) secara ketat, disyara
 
 | Kode Organisasi | Nama Organisasi | Level | Tipe | Induk (Parent) | Tujuan Pengujian Phase 4 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`KOP-001`** | **Koperasi Jaya Bersama** | `L0` | `HEAD_OFFICE` | `null` | **Tenant Utama.** Menampung persona baseline valid (P01–P10, P12, P13), persona edge-case P11, dan transaksi finansial utama. |
-| **`KBU-001`** | **PT Koperasi Berkah Usaha** | `L1` | `BRANCH` | `KOP-001` | **Unit Cabang / Anak Perusahaan.** Menampung persona P14 dan P15 untuk menguji visibilitas hierarki induk-cabang. |
-| **`ISO-999`** | **Koperasi Mandiri Sejahtera** | `L0` | `HEAD_OFFICE` | `null` | **Tenant Terisolasi (Third-party).** Membuktikan bahwa Admin KOP-001 sama sekali tidak dapat melihat, mengubah, atau menyetujui data anggota/transaksi milik ISO-999 (HTTP 403 / ModelNotFoundException). |
+| **`KOP-001`** | **Koperasi Jaya Bersama** | `L0` | `HEAD_OFFICE` | `null` | **Entitas Legal Koperasi (Tenant Utama).** Satu-satunya organisasi yang berhak memiliki `CooperativeMember`. Menampung persona baseline valid (P01–P10, P12, P13), persona edge-case P11, dan seluruh transaksi finansial anggota. |
+| **`KBU-001`** | **PT Koperasi Berkah Usaha** | `L1` | `BRANCH` | `KOP-001` | **PT Anak Usaha (Subsidiary Company).** Entitas komersial di bawah kepemilikan/kendali koperasi untuk operasi bisnis. Menampung relasi tenaga kerja (`Employee`), aset, dan payroll. **DILARANG MEMILIKI ANGGOTA KOPERASI (`CooperativeMember` count = 0).** P14 dan P15 di-reserve untuk pengujian tenaga kerja anak usaha masa depan. |
+| **`ISO-999`** | **Koperasi Mandiri Sejahtera** | `L0` | `HEAD_OFFICE` | `null` | **Entitas Pihak Ketiga Terisolasi (Third-party Synthetic).** Membuktikan isolasi otorisasi multi-tenant antar badan hukum independen (HTTP 403 / ModelNotFoundException). Tidak menerima persona anggota default pada SEED-03. |
 
 ---
 
@@ -426,7 +433,7 @@ Untuk kebutuhan **SEED-06 (Negative & Edge-Case Dataset)**, kasus-kasus batas wa
 | **Konflik Akun Google SSO** | Akun Google dengan sub tertentu mencoba ditautkan ke member yang sudah memiliki provider lain | Dedicated Test (Unit/Feature) | `MemberGoogleSsoMatchingService` fail-closed |
 | **Siklus Hidup Mismatch (`BLOCKED_UNKNOWN`)** | Data anggota dengan kombinasi status tidak sah (misal `ACTIVE` & `PENDING` atau `RESIGNED`) | Persona `P11` (Didefinisikan di SEED-04, dimuat opsional di SEED-06) | Middleware memblokir dengan **HTTP 403 Forbidden** fail-closed |
 | **Akses Fitur Aktif oleh Member Belum Aktif** | Anggota `WAITING_VERIFICATION` mencoba memanggil API pengajuan pinjaman | Feature Test via Persona `P06` | Middleware `member.api.active` mengembalikan 403 `MEMBER_NOT_ACTIVE` |
-| **Pelanggaran Batas Tenant (Cross-Org)** | Admin KOP-001 mencoba menyetujui anggota yang terdaftar di unit KBU-001 | Feature Test via Persona `P14` & `P04` | `AuthorizationException` (HTTP 403) |
+| **Pelanggaran Batas Tenant (Cross-Org)** | Pengguna organisasi satu mencoba mengakses/menyetujui resource milik badan usaha lain (misal KOP-001 vs entitas independen ISO-999) | Feature Test Otorisasi Multi-Tenant | `AuthorizationException` (HTTP 403) / ModelNotFoundException |
 | **Transaksi Melebihi Plafon Kredit Toko** | Belanja POS melebihi sisa limit kredit toko anggota | Dedicated Feature Test | Penolakan transaksi oleh `MemberStoreAccountService` |
 
 ---
@@ -440,7 +447,9 @@ Untuk memastikan stabilitas lingkungan pengujian:
 - Berisi:
   - Seluruh master referensi produksi (`RolePermissionSeeder`, `CooperativeReferenceSeeder`, `LoanTypeSeeder`, dll.).
   - 3 Organisasi (`KOP-001`, `KBU-001`, `ISO-999`).
-  - 14 Persona baseline valid (`P01` s.d. `P10`, `P12` s.d. `P15`).
+  - 12 Persona baseline valid (`P01` s.d. `P10`, `P12`, `P13`) yang seluruhnya terikat ke `KOP-001`.
+  - Persona `P14` dan `P15` berstatus **RESERVED** (tidak dimuat di SEED-03).
+  - Organisasi `KBU-001` memiliki **0 `CooperativeMember`**.
   - Transaksi bisnis normal yang valid (iuran lunas/berjalan, katalog POS aktif, saldo kredit toko normal, pinjaman berjalan).
 - **Pengecualian Tegas:** Persona `P11 (BLOCKED_UNKNOWN)` **dikecualikan** dari baseline DEV dataset karena merepresentasikan data siklus hidup tidak sah / korup yang disengaja.
 - **Karakteristik:** Bersih dari data korup, siap digunakan untuk demo fungsional dan pengujian end-to-end happy-path.
@@ -458,7 +467,7 @@ Untuk memastikan stabilitas lingkungan pengujian:
 
 ## 17. Klasifikasi Keamanan Data (Production Safety Classification)
 
-Setiap dataset yang didefinisikan dalam repositori diklasifikasikan ke dalam 3 tier keamanan:
+Phase 3 mengelompokkan seluruh data ke dalam 3 tier keamanan:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -468,7 +477,8 @@ Setiap dataset yang didefinisikan dalam repositori diklasifikasikan ke dalam 3 t
 ├────────────────────────────────────────────────────────────────────────────┤
 │ 2. NON_PRODUCTION_DETERMINISTIC_FIXTURE                                    │
 │    • Hanya untuk local, testing, dan playwright.                           │
-│    • Memuat 14 persona valid P01-P10 & P12-P15, sandi 'password', data POS.│
+│    • Memuat 12 persona valid P01-P10 & P12-P13, sandi 'password', data POS.│
+│    • P14 & P15 reserved untuk tenaga kerja PT anak usaha masa depan.       │
 ├────────────────────────────────────────────────────────────────────────────┤
 │ 3. TEST_ONLY_INVALID_FIXTURE                                               │
 │    • Hanya untuk automated test suites spesifik / isolated sandbox.        │
@@ -481,7 +491,7 @@ Setiap dataset yang didefinisikan dalam repositori diklasifikasikan ke dalam 3 t
 | Klasifikasi | Komponen / Entitas yang Masuk | Lingkungan Diizinkan | Aturan Penegakan |
 | :--- | :--- | :--- | :--- |
 | **`PRODUCTION_SAFE_REFERENCE`** | Roles, Permissions, Organization `KOP-001`, Contribution Types, Pos Categories, Loan Types, Tax Rules, Job Grades, Leave Types, Salary Component Types, Work Shifts | `production`, `staging`, `local`, `testing`, `playwright` | Wajib idempoten via `firstOrCreate`; tidak boleh ada `Hash::make` atau user. |
-| **`NON_PRODUCTION_DETERMINISTIC_FIXTURE`** | 14 Persona baseline valid (`P01`–`P10`, `P12`–`P15`), Akun login Fortify, SocialAccount mock, Produk POS demo, Transaksi POS historis, Iuran dan kuitansi demo, Rekening toko demo | `local`, `testing`, `playwright` | Dilindungi oleh guard `LogicException` jika `app.env` di luar whitelist. |
+| **`NON_PRODUCTION_DETERMINISTIC_FIXTURE`** | 12 Persona baseline valid (`P01`–`P10`, `P12`, `P13`), Akun login Fortify, SocialAccount mock, Produk POS demo, Transaksi POS historis, Iuran dan kuitansi demo, Rekening toko demo (P14/P15 reserved) | `local`, `testing`, `playwright` | Dilindungi oleh guard `LogicException` jika `app.env` di luar whitelist. KBU-001 zero members. |
 | **`TEST_ONLY_INVALID_FIXTURE`** | Persona `P11 (BLOCKED_UNKNOWN)`, File CSV malformed, duplikasi NIK/email, data anggota korup, data transaksi over-limit | `testing` (In-memory / isolated test runner / optional flag) | Dikecualikan dari default reseed dev; tidak boleh masuk ke default `DatabaseSeeder::run()`. |
 
 ---
@@ -494,7 +504,7 @@ Setiap kategori dataset dan infrastruktur data uji diberikan satu pemilik tugas 
 | :--- | :--- | :--- | :--- | :--- |
 | **SEED-01** | **Test Data Contract & Dataset Matrix** | Kontrak spesifikasi, matriks persona, kebijakan identitas & kredensial, gap analysis | Dokumen `docs/phase-3/SEED-01-test-data-contract.md` | PR #64 (ONB-09) |
 | **SEED-02** | **Master / Reference Data Seeder** | Standarisasi seeder referensi produksi, organisasi kanonikal, penyempurnaan `CooperativeReferenceSeeder` | `CooperativeReferenceSeeder.php` yang terstandarisasi dan teruji | SEED-01 |
-| **SEED-03** | **User & Member Persona Seeder** | Pembuatan 14 persona valid sintetis deterministik (`P01`–`P10`, `P12`–`P15`), akun User Fortify, relasi role, kredensial dev | `CooperativePersonaSeeder.php` | SEED-01, SEED-02 |
+| **SEED-03** | **User & Member Persona Seeder** | Pembuatan 12 persona valid sintetis deterministik (`P01`–`P10`, `P12`, `P13`), akun User Fortify, relasi role, kredensial dev (P14 & P15 reserved) | `CooperativePersonaSeeder.php` | SEED-01, SEED-02 |
 | **SEED-04** | **Member Lifecycle Dataset** | Dataset siklus hidup anggota valid (`WAITING_VERIFICATION`, `UNDER_REVIEW`, `REVISION_REQUIRED`, `REJECTED`, `ACTIVE`) serta kapabilitas state factory `blockedUnknown()` | State factory baru & fixture anggota per siklus hidup | SEED-01, SEED-03 |
 | **SEED-05** | **Synthetic Transaction / Financial Test Data** | Dataset simpanan, tagihan iuran, kuitansi, mutasi buku besar, kredit toko, pinjaman, dan transaksi POS | `CooperativeFinancialFixtureSeeder.php` | SEED-01, SEED-04 |
 | **SEED-06** | **Negative & Edge-Case Dataset** | Pemuatan opsional fixture persona `P11 (BLOCKED_UNKNOWN)`, kasus batas, duplikasi NIK, over-limit, data CSV import cacat | `CooperativeEdgeCaseFixtureSeeder.php` / test factories | SEED-01, SEED-04, SEED-05 |

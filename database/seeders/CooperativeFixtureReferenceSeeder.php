@@ -12,7 +12,10 @@ class CooperativeFixtureReferenceSeeder extends Seeder
     /**
      * Run non-production reference and organization fixture seeding.
      * Strictly restricted to local development, testing, and playwright environments.
-     * Establishes the deterministic multi-tenant topology (KOP-001 -> KBU-001, and ISO-999).
+     * Establishes the deterministic non-production topology:
+     * - KOP-001: Cooperative legal entity (L0 HEAD_OFFICE). The ONLY organization allowed to own CooperativeMember records.
+     * - KBU-001: PT subsidiary under cooperative ownership/control (L1 BRANCH). Owns Employee/workforce data, zero CooperativeMember.
+     * - ISO-999: Synthetic isolated third-party organization (L0 HEAD_OFFICE) reserved for multi-tenant authorization testing.
      */
     public function run(): void
     {
@@ -26,6 +29,8 @@ class CooperativeFixtureReferenceSeeder extends Seeder
             $kop = Organization::query()->where('code', 'KOP-001')->firstOrFail();
         }
 
+        // KBU-001 represents a commercial PT subsidiary (PT Koperasi Berkah Usaha).
+        // It participates in the organizational hierarchy under KOP-001 but MUST NOT own CooperativeMember records.
         Organization::query()->firstOrCreate(
             ['code' => 'KBU-001'],
             [

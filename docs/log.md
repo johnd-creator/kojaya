@@ -6,6 +6,24 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-20 - Deterministic Reset / Reseed Tooling (SEED-07)
+
+- Implemented `php artisan cooperative:reset-test-data` command and `CooperativeTestDataResetService` closing gap G-09 from SEED-01:
+  - Scoped strictly to fixture-owned synthetic identities and natural keys (`seed.*@kojaya.test`, `DEV-KOP-*`, `google-seed-*`, `SEED-PAY-*`, `SEED-RC-*`, `SEED-POS-*`, `SEED-LOAN-*`, `seed-store-ledger:*`).
+  - Total cleanup of legacy cooperative demo namespaces (`DEMO-KOP-*`, `DEMO-ANG-*`, demo users `admin.kop@koj.id`, `kasir@...`).
+  - Strict preservation of operator/reference configuration (e.g. customized `WAJIB.default_amount`, customized `LoanType` parameters).
+  - Strict preservation of manual QA cooperative records (e.g. `MANUAL-KOP-*`, non-seed users) and unrelated ERP data (`Employee`, `Payroll`, `Department`, etc.).
+  - UI Audit data (`AUD-*`, `ui.*@kojaya.test`) preserved and isolated from reset.
+  - Multi-tier environment guard: allowed only in `local`, `testing`, `playwright`. Rejects `development`, `qa`, `staging`, and `production`.
+  - Guard for `--with-edge-cases`: strictly rejected in `local`, allowed only in `testing` and `playwright`. Rejection occurs before any cleanup or mutation.
+  - Safe `--dry-run` mode: reports counts of affected records and reseed plan with 100% zero database modifications.
+  - Atomic execution via `DB::transaction`: failures during reseed automatically roll back all deletions.
+  - Foreign-key safe deletion order (tokens, social accounts, POS children, store accounts, loans, receipts, ledgers, payments, invoices, members, users).
+  - Canonical reseed order: `CooperativeFixtureReferenceSeeder` -> `CooperativePersonaSeeder` -> `CooperativeMemberLifecycleSeeder` -> `CooperativeFinancialFixtureSeeder` (and optional `CooperativeEdgeCaseFixtureSeeder`).
+  - Baseline post-reset state: exactly 12 users, 7 members, 0 P11, 0 P14/P15, P10 completed, P12 near-limit/active loan, P13 empty, P06-P09 zero financial records, 0 KBU members, 0 ISO members.
+  - Added test suite in `tests/Feature/SEED07/CooperativeResetTestDataCommandTest.php` (23 tests, 125 assertions) covering Scenarios A-W.
+  - Published comprehensive documentation in `docs/phase-3/SEED-07-deterministic-reset-reseed.md`.
+
 ## 2026-09-20 - Negative & Edge-Case Dataset (SEED-06)
 
 - Implemented `CooperativeEdgeCaseFixtureSeeder` providing isolated negative and edge-case test fixtures for Phase 3 and Phase 4 testing:

@@ -18,19 +18,19 @@ Baseline dataset DEV memiliki tepat 7 record anggota koperasi (`CooperativeMembe
 
 ### Rincian Persona Siklus Hidup
 
-| Persona | No. Anggota | Status | Status Validasi | Experience Enum | Petugas Verifikasi | Tanggal Verifikasi | Pengurus Penyetujui | Tanggal Disetujui | Catatan Revisi / Penolakan | Tanggal Aktif |
+| Persona | No. Anggota | Status | Status Validasi | Experience Enum | Verifikasi Admin (P04) | Waktu Verifikasi | Pengesahan / Keputusan | Waktu Keputusan | Catatan Revisi / Penolakan / Pengesahan | Tanggal Aktif |
 | :--- | :--- | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :--- | :---: |
 | **P06** | `DEV-KOP-006` | `PENDING` | `PENDING` | `WaitingVerification` | `null` | `null` | `null` | `null` | `null` | `null` |
-| **P07** | `DEV-KOP-007` | `PENDING` | `PENDING_VALIDATION` | `UnderReview` | P04 | `2026-06-01 09:00:00` | `null` | `null` | `null` | `null` |
-| **P08** | `DEV-KOP-008` | `INACTIVE` | `REVISION` | `RevisionRequired` | P04 | `2026-06-01 09:30:00` | `null` | `null` | Catatan revisi dokumen KTP & slip gaji | `null` |
-| **P09** | `DEV-KOP-009` | `INACTIVE` | `REJECTED` | `Rejected` | P04 | `2026-06-01 09:00:00` | P02 | `2026-06-01 10:00:00` | Alasan penolakan domisili luar wilayah kerja | `null` |
-| **P10** | `DEV-KOP-010` | `ACTIVE` | `ACTIVE` | `Active` | P04 | `2026-06-01 09:00:00` | P02 | `2026-06-01 10:00:00` | Catatan persetujuan pengurus | `2026-06-01` |
-| **P12** | `DEV-KOP-012` | `ACTIVE` | `ACTIVE` | `Active` | P04 | `2026-06-01 09:00:00` | P02 | `2026-06-01 10:00:00` | Catatan persetujuan pengurus | `2026-06-01` |
-| **P13** | `DEV-KOP-013` | `ACTIVE` | `ACTIVE` | `Active` | P04 | `2026-06-01 09:00:00` | P02 | `2026-06-01 10:00:00` | Catatan persetujuan pengurus | `2026-06-01` |
+| **P07** | `DEV-KOP-007` | `PENDING` | `PENDING_VALIDATION` | `UnderReview` | P04 | `09:00:00` | `null` | `null` | `null` | `null` |
+| **P08** | `DEV-KOP-008` | `INACTIVE` | `REVISION` | `RevisionRequired` | P04 | `09:00:00` | P04 | `09:30:00` | Catatan revisi dokumen domisili/telepon | `null` |
+| **P09** | `DEV-KOP-009` | `INACTIVE` | `REJECTED` | `Rejected` | P04 | `09:00:00` | P02 | `10:00:00` | Alasan penolakan syarat keanggotaan | `null` |
+| **P10** | `DEV-KOP-010` | `ACTIVE` | `ACTIVE` | `Active` | P04 | `09:00:00` | P02 | `10:00:00` | Catatan persetujuan pengurus | `2026-06-01` |
+| **P12** | `DEV-KOP-012` | `ACTIVE` | `ACTIVE` | `Active` | P04 | `09:00:00` | P02 | `10:00:00` | Catatan persetujuan pengurus | `2026-06-01` |
+| **P13** | `DEV-KOP-013` | `ACTIVE` | `ACTIVE` | `Active` | P04 | `09:00:00` | P02 | `10:00:00` | Catatan persetujuan pengurus | `2026-06-01` |
 
-*Keterangan Aktor:*
-- **P04:** `seed.admin.kop@kojaya.test` (Admin Koperasi)
-- **P02:** `seed.pengurus@kojaya.test` (Pengurus Koperasi)
+*Keterangan Aktor & Riwayat Verifikasi (SEED-04R1):*
+- **P04 (Admin Koperasi):** `seed.admin.kop@kojaya.test` bertindak sebagai verifikator berkas awal (`admin_validated_by`, `admin_validated_at` = `09:00:00`) pada P07, P08, P09, P10, P12, dan P13. Pada P08, P04 juga bertindak sebagai pihak yang meminta revisi (`validated_by` = P04, `validated_at` = `09:30:00`).
+- **P02 (Pengurus Koperasi):** `seed.pengurus@kojaya.test` bertindak sebagai pengambil keputusan final (`validated_by` = P02, `validated_at` = `10:00:00`) pada penolakan P09 (dengan invariant *maker-checker* P04 != P02) dan pengesahan aktif P10, P12, P13.
 
 ---
 

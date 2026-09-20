@@ -167,8 +167,8 @@ class CooperativeSeeder extends Seeder
         int $memberNumber,
         ?User $pengurus,
     ): void {
-        $start = Carbon::parse($member->tanggal_aktif ?: $member->joined_at ?: now())->startOfMonth();
-        $end = Carbon::now()->startOfMonth();
+        $start = Carbon::parse($member->tanggal_aktif ?: $member->joined_at ?: '2026-06-01')->startOfMonth();
+        $end = Carbon::parse('2026-06-01')->startOfMonth();
 
         for ($periodDate = $start->copy(); $periodDate->lte($end); $periodDate->addMonth()) {
             $period = $periodDate->format('Y-m');

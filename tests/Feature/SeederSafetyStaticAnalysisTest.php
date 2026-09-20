@@ -27,6 +27,7 @@ class SeederSafetyStaticAnalysisTest extends TestCase
         'CooperativeFixtureReferenceSeeder.php',
         'CooperativePersonaSeeder.php',
         'CooperativeMemberLifecycleSeeder.php',
+        'CooperativeFinancialFixtureSeeder.php',
         'CooperativeSeeder.php',
         'AnggotaSeeder.php',
         'DemoDataSeeder.php',

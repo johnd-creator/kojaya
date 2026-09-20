@@ -36,6 +36,13 @@ class SeederSafetyStaticAnalysisTest extends TestCase
         'UiAuditSeeder.php',
     ];
 
+    /**
+     * @var list<string>
+     */
+    private array $testOnlyInvalidFixtureSeeders = [
+        'CooperativeEdgeCaseFixtureSeeder.php',
+    ];
+
     public function test_reference_seeders_contain_no_destructive_operations(): void
     {
         $seederDir = database_path('seeders');
@@ -138,6 +145,29 @@ class SeederSafetyStaticAnalysisTest extends TestCase
         }
     }
 
+    public function test_test_only_invalid_fixture_seeders_contain_strict_test_only_guard(): void
+    {
+        $seederDir = database_path('seeders');
+
+        foreach ($this->testOnlyInvalidFixtureSeeders as $fileName) {
+            $filePath = $seederDir.'/'.$fileName;
+            $this->assertFileExists($filePath);
+            $content = file_get_contents($filePath);
+            $this->assertIsString($content);
+
+            $hasEnvGuard = str_contains($content, 'LogicException') &&
+                (str_contains($content, "config('app.env')") || str_contains($content, 'app()->environment('));
+
+            $this->assertTrue(
+                $hasEnvGuard,
+                "Test-only invalid fixture seeder '{$fileName}' must have an explicit environment guard throwing a LogicException.",
+            );
+
+            $this->assertStringContainsString("'testing'", $content);
+            $this->assertStringContainsString("'playwright'", $content);
+        }
+    }
+
     public function test_all_seeder_files_are_classified_and_accounted_for(): void
     {
         $seederDir = database_path('seeders');
@@ -149,7 +179,11 @@ class SeederSafetyStaticAnalysisTest extends TestCase
             fn (string $file): bool => str_ends_with($file, 'Seeder.php') && $file !== 'DatabaseSeeder.php',
         ));
 
-        $expectedSeeders = array_merge($this->referenceSeeders, $this->guardedNonReferenceSeeders);
+        $expectedSeeders = array_merge(
+            $this->referenceSeeders,
+            $this->guardedNonReferenceSeeders,
+            $this->testOnlyInvalidFixtureSeeders,
+        );
         sort($foundSeeders);
         sort($expectedSeeders);
 

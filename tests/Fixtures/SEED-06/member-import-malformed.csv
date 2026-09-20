@@ -1,0 +1,6 @@
+member_number,full_name,email,phone_number,identity_number,gender,company_code,employee_number,address,membership_type,join_date,notes
+DEV-KOP-201,,user.emptyname@example.test,081200000010,3171012301900010,L,IP,,Jl. Melati No 1,AB,2026-06-01,Missing required full_name
+DEV-KOP-202,User Bad Email,not-an-email,081200000011,3171012301900011,L,IP,,Jl. Mawar No 2,AB,2026-06-01,Invalid email format
+DEV-KOP-203,User Bad NIK,bad.nik@example.test,081200000012,12345,L,IP,,Jl. Anggrek No 3,AB,2026-06-01,Invalid NIK length
+DEV-KOP-204,User Bad Controlled,bad.controlled@example.test,081200000013,3171012301900013,X,INVALID_CODE,,Jl. Kenanga No 4,ZZ,2026-06-01,Invalid controlled values
+DEV-KOP-205,User Bad Date,bad.date@example.test,081200000014,3171012301900014,L,IP,,Jl. Cempaka No 5,AB,not-a-valid-date,Invalid calendar date

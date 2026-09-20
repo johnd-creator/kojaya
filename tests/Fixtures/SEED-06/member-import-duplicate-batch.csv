@@ -1,0 +1,7 @@
+member_number,full_name,email,phone_number,identity_number,gender,company_code,employee_number,address,membership_type,join_date,notes
+DEV-KOP-101,Budi Santoso,budi.duplicate@example.test,081200000001,3171012301900001,L,IP,,Jl. Sudirman No 1,AB,2026-06-01,Valid row 1
+DEV-KOP-102,Siti Rahma,budi.duplicate@example.test,081200000002,3171012301900002,P,IP,,Jl. Thamrin No 2,AB,2026-06-01,Duplicate email with row 1
+DEV-KOP-103,Agus Prasetyo,agus.p@example.test,081200000003,3171012301900003,L,IP,,Jl. Gatot Subroto No 3,AB,2026-06-01,Valid row 3
+DEV-KOP-104,Dewi Lestari,dewi.l@example.test,081200000004,3171012301900003,P,IP,,Jl. Rasuna Said No 4,AB,2026-06-01,Duplicate NIK with row 3
+DEV-KOP-105,Eko Wijaya,eko.w@example.test,081200000005,3171012301900005,L,IP,,Jl. MT Haryono No 5,AB,2026-06-01,Valid row 5
+DEV-KOP-105,Fajar Nugraha,fajar.n@example.test,081200000006,3171012301900006,L,IP,,Jl. DI Panjaitan No 6,AB,2026-06-01,Duplicate member number with row 5

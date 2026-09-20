@@ -31,4 +31,11 @@ class MemberStoreAccountFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => ['credit_limit' => $limit]);
     }
+
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => MemberStoreAccountStatus::Suspended->value,
+        ]);
+    }
 }

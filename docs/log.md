@@ -6,6 +6,37 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-20 - Negative & Edge-Case Dataset (SEED-06)
+
+- Implemented `CooperativeEdgeCaseFixtureSeeder` providing isolated negative and edge-case test fixtures for Phase 3 and Phase 4 testing:
+  - Classified strictly as `TEST_ONLY_INVALID_FIXTURE`.
+  - Enforced strict environment guard: allowed ONLY in `testing` and `playwright`. Throws `LogicException` in `production`, `staging`, `qa`, `local`, and `development`.
+  - Kept completely separate from `DatabaseSeeder`: never invoked in baseline local development seeds to maintain an uncorrupted dev environment.
+  - Implemented deterministic canonical P11 persona (`DEV-KOP-011`, `seed.member.blocked@kojaya.test`, password `password`, role `Anggota`, organization `KOP-001`):
+    - Status: `INACTIVE`, `validation_status = INACTIVE` (`BLOCKED_UNKNOWN`).
+    - Web entry fail-closed: HTTP 403 on `/dashboard` and `/member/onboarding`.
+    - API login fail-closed: HTTP 403 on `POST /api/auth/login` with `lifecycle_experience = BLOCKED_UNKNOWN`, 0 Sanctum tokens issued.
+    - Zero financial records: strictly 0 dues invoices, 0 payments, 0 receipts, 0 ledgers, 0 store accounts, 0 loans, 0 POS transactions.
+    - Idempotent: re-running edge seeder produces exactly 1 P11 User and 1 P11 Member.
+    - Zero P14/P15 personas created. Zero KBU members.
+  - Added CSV test fixtures in `tests/Fixtures/SEED-06/`:
+    - `member-import-duplicate-batch.csv`: duplicate email, NIK, member_number within batch and against existing DB.
+    - `member-import-malformed.csv`: missing required fields, invalid email format, invalid NIK format/length, invalid controlled values, invalid date format.
+    - `member-import-invalid-header.csv`: unrecognized/missing column headers.
+  - Added factory edge states:
+    - `LoanFactory::defaulted()`: creates `DEFAULTED` loan with `outstanding_amount > 0`.
+    - `MemberStoreAccountFactory::suspended()`: creates `SUSPENDED` store account.
+  - Negative and edge-case regression coverage:
+    - `MemberImportValidator` error codes and raw NIK redaction to `[REDACTED]`.
+    - Google SSO conflict fail-closed: attacker cannot claim existing provider ID or steal account via matching email.
+    - Non-active member (P06) active-feature denial: HTTP 403 `MEMBER_NOT_ACTIVE`.
+    - Store credit over-limit attempt (P12 at -450k with 500k limit attempting 60k purchase): `ValidationException` (`INSUFFICIENT_STORE_CREDIT`), balance preserved at -450k, 0 mutasi created.
+    - Suspended store account rejection for purchases.
+    - Cross-organization tenant boundary enforcement: `OrganizationScopeService::assertVisible` throws `AuthorizationException`, `resolveVisible` throws `ModelNotFoundException`.
+  - Added test suite in `tests/Feature/SEED06/CooperativeEdgeCaseFixtureSeederTest.php` (23 tests, 156 assertions) covering Scenarios A-W.
+  - Updated `DatabaseSeederSafetyTest` and `SeederSafetyStaticAnalysisTest`.
+  - Published comprehensive documentation in `docs/phase-3/SEED-06-negative-edge-case-dataset.md`.
+
 ## 2026-09-20 - Synthetic Transaction & Financial Test Data (SEED-05)
 
 - Implemented `CooperativeFinancialFixtureSeeder` providing deterministic synthetic financial test data for Phase 4 functional testing:

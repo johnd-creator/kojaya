@@ -60,20 +60,6 @@ use LogicException;
 class CooperativeTestDataResetService
 {
     /**
-     * Allowed environments for baseline reset tooling.
-     *
-     * @var list<string>
-     */
-    public const ALLOWED_ENVIRONMENTS = ['local', 'testing', 'playwright'];
-
-    /**
-     * Allowed environments for loading invalid edge fixtures (SEED-06).
-     *
-     * @var list<string>
-     */
-    public const EDGE_ALLOWED_ENVIRONMENTS = ['testing', 'playwright'];
-
-    /**
      * Preview fixture-owned records without modifying the database.
      *
      * @return array<string, mixed>

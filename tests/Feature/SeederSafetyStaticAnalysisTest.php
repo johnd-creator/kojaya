@@ -201,4 +201,43 @@ class SeederSafetyStaticAnalysisTest extends TestCase
         // Also assert complete coverage via SeederSafetyRegistry
         SeederSafetyRegistry::assertCompleteCoverage();
     }
+
+    public function test_cooperative_test_data_reset_service_does_not_maintain_duplicate_environment_whitelist(): void
+    {
+        $servicePath = app_path('Services/Cooperative/CooperativeTestDataResetService.php');
+        $this->assertFileExists($servicePath);
+
+        $content = file_get_contents($servicePath);
+        $this->assertIsString($content);
+
+        $this->assertStringNotContainsString(
+            'ALLOWED_ENVIRONMENTS',
+            $content,
+            'CooperativeTestDataResetService must not define legacy ALLOWED_ENVIRONMENTS constant.',
+        );
+
+        $this->assertStringNotContainsString(
+            'EDGE_ALLOWED_ENVIRONMENTS',
+            $content,
+            'CooperativeTestDataResetService must not define legacy EDGE_ALLOWED_ENVIRONMENTS constant.',
+        );
+
+        $this->assertStringContainsString(
+            'SeederEnvironmentGuard::assertEnvironmentConsistency',
+            $content,
+            'CooperativeTestDataResetService must consume central guard assertEnvironmentConsistency().',
+        );
+
+        $this->assertStringContainsString(
+            'SeederEnvironmentGuard::isAllowed',
+            $content,
+            'CooperativeTestDataResetService must consume central guard isAllowed().',
+        );
+
+        $this->assertStringContainsString(
+            'SeederEnvironmentGuard::allowedEnvironmentsFor',
+            $content,
+            'CooperativeTestDataResetService must consume central guard allowedEnvironmentsFor().',
+        );
+    }
 }

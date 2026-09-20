@@ -32,6 +32,7 @@ use App\Models\PosTransactionItem;
 use App\Models\Reward;
 use App\Models\RewardRedemption;
 use App\Models\User;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -44,9 +45,7 @@ class UiAuditSeeder extends Seeder
 
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['testing', 'playwright'], true)) {
-            throw new \LogicException('UiAuditSeeder is only available in testing or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         $this->call(RolePermissionSeeder::class);
         $organizations = $this->seedOrganizations();

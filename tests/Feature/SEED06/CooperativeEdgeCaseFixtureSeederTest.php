@@ -58,6 +58,7 @@ class CooperativeEdgeCaseFixtureSeederTest extends TestCase
         $rejectedEnvironments = ['local', 'development', 'qa', 'staging', 'production'];
 
         foreach ($rejectedEnvironments as $env) {
+            $this->app['env'] = $env;
             config(['app.env' => $env]);
 
             $thrown = false;
@@ -74,16 +75,19 @@ class CooperativeEdgeCaseFixtureSeederTest extends TestCase
         }
 
         // Accepts testing
+        $this->app['env'] = 'testing';
         config(['app.env' => 'testing']);
         (new CooperativeEdgeCaseFixtureSeeder)->run();
         $this->assertSame(1, User::query()->where('email', 'seed.member.blocked@kojaya.test')->count());
 
         // Accepts playwright
+        $this->app['env'] = 'playwright';
         config(['app.env' => 'playwright']);
         (new CooperativeEdgeCaseFixtureSeeder)->run();
         $this->assertSame(1, User::query()->where('email', 'seed.member.blocked@kojaya.test')->count());
 
         // Reset
+        $this->app['env'] = 'testing';
         config(['app.env' => 'testing']);
     }
 

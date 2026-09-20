@@ -43,6 +43,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WorkOrder;
 use App\Models\WorkShift;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -52,9 +53,7 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new \LogicException('DemoDataSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         $this->call(RolePermissionSeeder::class);
 

@@ -136,6 +136,8 @@ Menggunakan jenis pinjaman kanonikal `productive` (bunga 1,25% per bulan flat, b
 ### A. Persona P10: Pinjaman Lunas Historis (`PAID_OFF`)
 - No. Referensi: `SEED-LOAN-CLOSED-010-001`
 - Pokok: Rp 3.000.000 | Tenor: 6 bulan (`2025-09-01` s.d. `2026-03-10`)
+- Workflow Review & Approval: Direview Manajer P03 (`2025-09-02 09:00:00`), disetujui Pengurus P02 (`2025-09-02 14:00:00`), dicairkan Pengurus P02 (`2025-09-03 10:00:00`).
+- Maker-Checker invariant: `manager_reviewed_by (P03) != approved_by (P02)` dengan urutan `manager_reviewed_at < approved_at <= disbursed_at`.
 - Angsuran per bulan: Rp 537.500 (Pokok Rp 500.000 + Bunga Rp 37.500)
 - Total Pinjaman: Rp 3.225.000 | Sisa Pinjaman (*Outstanding*): **Rp 0**
 - Status: `LoanStatus::PaidOff`
@@ -145,7 +147,8 @@ Menggunakan jenis pinjaman kanonikal `productive` (bunga 1,25% per bulan flat, b
 ### B. Persona P12: Pinjaman Aktif Berjalan (`ACTIVE`)
 - No. Referensi: `SEED-LOAN-ACTIVE-012-001`
 - Pokok: Rp 3.000.000 | Tenor: 6 bulan (`2026-05-01` s.d. `2026-11-10`)
-- Tanggal Pencairan: `2026-05-03 10:00:00` (disetujui P02 atas rekomendasi P03)
+- Workflow Review & Approval: Direview Manajer P03 (`2026-05-02 09:00:00`), disetujui Pengurus P02 (`2026-05-02 14:00:00`), dicairkan Pengurus P02 (`2026-05-03 10:00:00`).
+- Maker-Checker invariant: `manager_reviewed_by (P03) != approved_by (P02)` dengan urutan `manager_reviewed_at < approved_at <= disbursed_at`.
 - Total Pinjaman: Rp 3.225.000 | Sisa Pinjaman (*Outstanding*): **Rp 3.225.000**
 - Status: `LoanStatus::Active`
 - Angsuran ke-1 (jatuh tempo `2026-06-10`) dan seterusnya berstatus `PENDING` (belum ada pembayaran).

@@ -71,7 +71,17 @@ class CooperativeFinancialFixtureSeeder extends Seeder
         $products = $this->seedPosProducts($headOffice);
 
         // 8. Seed P10: NORMAL + COMPLETED / PAID state
-        $this->seedP10Financials($headOffice, $p10, $pokok, $wajib, $pengurus, $adminKop, $kasir, $products);
+        $this->seedP10Financials(
+            $headOffice,
+            $p10,
+            $pokok,
+            $wajib,
+            $pengurus,
+            $manajer,
+            $adminKop,
+            $kasir,
+            $products,
+        );
 
         // 9. Seed P12: UNPAID + ACTIVE LOAN + VALID BOUNDARY state
         $this->seedP12Financials($headOffice, $p12, $wajib, $pengurus, $manajer, $kasir, $products);
@@ -193,6 +203,7 @@ class CooperativeFinancialFixtureSeeder extends Seeder
         CooperativeContributionType $pokok,
         CooperativeContributionType $wajib,
         User $pengurus,
+        User $manajer,
         User $adminKop,
         User $kasir,
         array $products,
@@ -451,7 +462,7 @@ class CooperativeFinancialFixtureSeeder extends Seeder
                 'applied_at' => '2025-09-01',
                 'first_due_date' => '2025-10-10',
                 'manager_reviewed_at' => '2025-09-02 09:00:00',
-                'manager_reviewed_by' => $manajer->id ?? null,
+                'manager_reviewed_by' => $manajer->id,
                 'approved_at' => '2025-09-02 14:00:00',
                 'approved_by' => $pengurus->id,
                 'disbursed_at' => '2025-09-03 10:00:00',

@@ -354,6 +354,8 @@ class CooperativeFinancialFixtureSeederTest extends TestCase
     {
         $this->seed(CooperativeFinancialFixtureSeeder::class);
 
+        $pengurus = User::query()->where('email', 'seed.pengurus@kojaya.test')->firstOrFail();
+        $manajer = User::query()->where('email', 'seed.manajer@kojaya.test')->firstOrFail();
         $p12 = CooperativeMember::query()->where('member_no', 'DEV-KOP-012')->firstOrFail();
         $loan = Loan::query()
             ->where('cooperative_member_id', $p12->id)
@@ -364,6 +366,16 @@ class CooperativeFinancialFixtureSeederTest extends TestCase
         $this->assertSame(LoanStatus::Active, $loan->status);
         $this->assertGreaterThan(0, (float) $loan->outstanding_amount);
         $this->assertCount(6, $loan->installments);
+
+        // Workflow review & approval assertions
+        $this->assertNotNull($loan->manager_reviewed_at);
+        $this->assertSame($manajer->id, $loan->manager_reviewed_by);
+        $this->assertNotNull($loan->approved_at);
+        $this->assertSame($pengurus->id, $loan->approved_by);
+        $this->assertNotSame($loan->manager_reviewed_by, $loan->approved_by);
+        $this->assertTrue($loan->approved_at->gt($loan->manager_reviewed_at));
+        $this->assertTrue($loan->disbursed_at->gte($loan->approved_at));
+        $this->assertSame($pengurus->id, $loan->disbursed_by);
 
         // Assert at least installment 1 is PENDING
         $firstInst = $loan->installments->sortBy('installment_no')->first();
@@ -378,6 +390,8 @@ class CooperativeFinancialFixtureSeederTest extends TestCase
     {
         $this->seed(CooperativeFinancialFixtureSeeder::class);
 
+        $pengurus = User::query()->where('email', 'seed.pengurus@kojaya.test')->firstOrFail();
+        $manajer = User::query()->where('email', 'seed.manajer@kojaya.test')->firstOrFail();
         $p10 = CooperativeMember::query()->where('member_no', 'DEV-KOP-010')->firstOrFail();
         $loan = Loan::query()
             ->where('cooperative_member_id', $p10->id)
@@ -388,6 +402,16 @@ class CooperativeFinancialFixtureSeederTest extends TestCase
         $this->assertSame(LoanStatus::PaidOff, $loan->status);
         $this->assertEquals(0, (float) $loan->outstanding_amount);
         $this->assertCount(6, $loan->installments);
+
+        // Workflow review & approval assertions
+        $this->assertNotNull($loan->manager_reviewed_at);
+        $this->assertSame($manajer->id, $loan->manager_reviewed_by);
+        $this->assertNotNull($loan->approved_at);
+        $this->assertSame($pengurus->id, $loan->approved_by);
+        $this->assertNotSame($loan->manager_reviewed_by, $loan->approved_by);
+        $this->assertTrue($loan->approved_at->gt($loan->manager_reviewed_at));
+        $this->assertTrue($loan->disbursed_at->gte($loan->approved_at));
+        $this->assertSame($pengurus->id, $loan->disbursed_by);
 
         foreach ($loan->installments as $inst) {
             $this->assertSame(InstallmentStatus::Paid, $inst->status);

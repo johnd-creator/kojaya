@@ -18,12 +18,12 @@
     - Dues: Simpanan Pokok (Rp 200.000, PAID, receipt `SEED-RC-010-001`), Simpanan Wajib 2026-01 (Rp 100.000, PAID, receipt `SEED-RC-010-002`), matched savings ledgers.
     - Store Account: +Rp 150.000 (credit balance), limit Rp 500.000, matched opening ledger entry.
     - POS: 1 completed CASH sale (`SEED-POS-TX-010-001`, Rp 110.000, 2 items), matched cash payment and stock deduction.
-    - Loan: 1 completed productive loan (`SEED-LOAN-CLOSED-010-001`, Rp 3.000.000, 6-month, closed), 6 fully paid installments (Rp 537.500 each, total Rp 3.225.000), matched disbursement and payment ledgers.
+    - Loan: 1 completed productive loan (`SEED-LOAN-CLOSED-010-001`, Rp 3.000.000, 6-month, closed), reviewed by Manager P03, approved and disbursed by Pengurus P02, 6 fully paid installments (Rp 537.500 each, total Rp 3.225.000), matched disbursement and payment ledgers.
   - P12 Financial Fixtures (PARTIAL / UNPAID / BOUNDARY):
     - Dues: Simpanan Wajib 2026-06 (Rp 100.000, UNPAID, due 2026-06-10).
     - Store Account: -Rp 450.000 (outstanding debt), limit Rp 500.000, available credit Rp 50.000.
     - POS: 1 completed credit purchase via `MEMBER_STORE_ACCOUNT` (`SEED-POS-TX-012-001`, Rp 450.000, 4 items), matched store credit ledger debit and stock deduction.
-    - Loan: 1 active productive loan (`SEED-LOAN-ACTIVE-012-001`, Rp 3.000.000, 6-month, active), 6 pending installments (Rp 537.500 each, total Rp 3.225.000 outstanding), matched disbursement ledger.
+    - Loan: 1 active productive loan (`SEED-LOAN-ACTIVE-012-001`, Rp 3.000.000, 6-month, active), reviewed by Manager P03, approved and disbursed by Pengurus P02, 6 pending installments (Rp 537.500 each, total Rp 3.225.000 outstanding), matched disbursement ledger.
   - POS Catalog: 4 deterministic active products under `KOP-001` (`SEED-POS-001` through `SEED-POS-004`) with reconciled stock (93, 99, 100, 80 units).
   - Closed Gap G-04: removed calendar dependency (`Carbon::now()`) in legacy seeders (`CooperativeSeeder`, `AnggotaSeeder`) by fixing reference end period to `2026-06-01`.
   - Fail-closed environment guard: throws `LogicException` in `production`, `staging`, `qa`, and `development`.

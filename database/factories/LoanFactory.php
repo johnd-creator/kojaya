@@ -54,4 +54,12 @@ class LoanFactory extends Factory
     {
         return $this->state(fn () => ['status' => LoanStatus::Active]);
     }
+
+    public function defaulted(): static
+    {
+        return $this->state(fn () => [
+            'status' => LoanStatus::Defaulted,
+            'outstanding_amount' => 3000000,
+        ]);
+    }
 }

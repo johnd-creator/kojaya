@@ -20,6 +20,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\WorkShift;
 use Database\Seeders\AnggotaSeeder;
+use Database\Seeders\CooperativeEdgeCaseFixtureSeeder;
 use Database\Seeders\CooperativeFinancialFixtureSeeder;
 use Database\Seeders\CooperativeFixtureReferenceSeeder;
 use Database\Seeders\CooperativeManagerRoleSeeder;
@@ -120,6 +121,48 @@ class DatabaseSeederSafetyTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
     }
 
+    public function test_cooperative_edge_case_fixture_seeder_remains_restricted_to_testing_and_playwright(): void
+    {
+        foreach (['production', 'staging', 'qa', 'local', 'development'] as $environment) {
+            config(['app.env' => $environment]);
+            $thrown = false;
+
+            try {
+                (new CooperativeEdgeCaseFixtureSeeder)->run();
+            } catch (\LogicException $exception) {
+                $thrown = true;
+                $this->assertStringContainsString('CooperativeEdgeCaseFixtureSeeder is only available in testing or playwright environments', $exception->getMessage());
+            }
+
+            $this->assertTrue($thrown, "CooperativeEdgeCaseFixtureSeeder unexpectedly ran in {$environment}.");
+        }
+
+        config(['app.env' => 'testing']);
+        $this->seed(CooperativeEdgeCaseFixtureSeeder::class);
+        $this->assertDatabaseHas('users', ['email' => 'seed.member.blocked@kojaya.test']);
+        $this->assertDatabaseHas('cooperative_members', ['member_no' => 'DEV-KOP-011']);
+
+        config(['app.env' => 'playwright']);
+        $this->seed(CooperativeEdgeCaseFixtureSeeder::class);
+        $this->assertDatabaseHas('users', ['email' => 'seed.member.blocked@kojaya.test']);
+    }
+
+    public function test_database_seeder_in_local_environment_does_not_seed_edge_case_fixtures(): void
+    {
+        $this->app['env'] = 'local';
+        config(['app.env' => 'local']);
+
+        $this->seed(DatabaseSeeder::class);
+
+        // Baseline dev personas should be created
+        $this->assertDatabaseHas('users', ['email' => 'seed.member.active@kojaya.test']);
+        $this->assertDatabaseHas('cooperative_members', ['member_no' => 'DEV-KOP-010']);
+
+        // Test-only P11 edge persona must NEVER be seeded by DatabaseSeeder
+        $this->assertDatabaseMissing('users', ['email' => 'seed.member.blocked@kojaya.test']);
+        $this->assertDatabaseMissing('cooperative_members', ['member_no' => 'DEV-KOP-011']);
+    }
+
     public function test_database_seeder_under_staging_creates_only_safe_reference_data(): void
     {
         config(['app.env' => 'staging']);
@@ -137,6 +180,8 @@ class DatabaseSeederSafetyTest extends TestCase
 
         $this->assertSame(0, CooperativeMember::query()->count(), 'No members should be created in staging.');
         $this->assertSame(0, CooperativeMember::query()->where('member_no', 'like', 'DEV-KOP-%')->count(), 'No DEV-KOP-* personas should be created in staging.');
+        $this->assertDatabaseMissing('users', ['email' => 'seed.member.blocked@kojaya.test']);
+        $this->assertDatabaseMissing('cooperative_members', ['member_no' => 'DEV-KOP-011']);
         $this->assertSame(0, PosTransaction::query()->count(), 'No POS transactions should be created in staging.');
         $this->assertSame(0, PosProduct::query()->count(), 'No POS products should be created in staging.');
         $this->assertSame(0, Employee::query()->count(), 'No employee fixtures should be created in staging.');

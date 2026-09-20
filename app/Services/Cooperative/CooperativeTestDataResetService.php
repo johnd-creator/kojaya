@@ -39,6 +39,8 @@ use App\Models\PosVoidRequest;
 use App\Models\RewardRedemption;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
+use App\Support\SeedSafety\SeederExecutionProfile;
 use Database\Seeders\CooperativeEdgeCaseFixtureSeeder;
 use Database\Seeders\CooperativeFinancialFixtureSeeder;
 use Database\Seeders\CooperativeFixtureReferenceSeeder;
@@ -117,13 +119,14 @@ class CooperativeTestDataResetService
      */
     public function assertEnvironmentSafety(bool $withEdgeCases): void
     {
-        $env = (string) config('app.env');
+        $env = SeederEnvironmentGuard::assertEnvironmentConsistency();
 
-        if (! in_array($env, self::ALLOWED_ENVIRONMENTS, true) && ! app()->environment(self::ALLOWED_ENVIRONMENTS)) {
-            throw new LogicException("SEED-07 reset tooling is unavailable in this environment [{$env}]. Allowed: local, testing, playwright.");
+        if (! SeederEnvironmentGuard::isAllowed(SeederExecutionProfile::LocalTestFixture, $env)) {
+            $allowed = implode(', ', SeederEnvironmentGuard::allowedEnvironmentsFor(SeederExecutionProfile::LocalTestFixture));
+            throw new LogicException("SEED-07 reset tooling is unavailable in this environment [{$env}]. Allowed: {$allowed}.");
         }
 
-        if ($withEdgeCases && ! in_array($env, self::EDGE_ALLOWED_ENVIRONMENTS, true) && ! app()->environment(self::EDGE_ALLOWED_ENVIRONMENTS)) {
+        if ($withEdgeCases && ! SeederEnvironmentGuard::isAllowed(SeederExecutionProfile::TestOnlyFixture, $env)) {
             throw new LogicException("The --with-edge-cases option is only allowed in testing and playwright environments (current: [{$env}]).");
         }
     }

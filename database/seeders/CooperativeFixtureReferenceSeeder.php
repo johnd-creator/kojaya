@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Organization;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use LogicException;
 
 class CooperativeFixtureReferenceSeeder extends Seeder
 {
@@ -19,9 +19,7 @@ class CooperativeFixtureReferenceSeeder extends Seeder
      */
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new LogicException('CooperativeFixtureReferenceSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         $kop = Organization::query()->where('code', 'KOP-001')->first();
         if (! $kop) {

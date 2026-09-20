@@ -487,12 +487,18 @@ class CooperativeFinancialFixtureSeederTest extends TestCase
      */
     public function test_scenario_r_environment_guard_aborts_in_production(): void
     {
+        $this->app['env'] = 'production';
         config(['app.env' => 'production']);
 
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('CooperativeFinancialFixtureSeeder is only available in local, testing, or playwright environments.');
+        try {
+            $this->expectException(LogicException::class);
+            $this->expectExceptionMessage('CooperativeFinancialFixtureSeeder is only available in local, testing, or playwright environments.');
 
-        (new CooperativeFinancialFixtureSeeder)->run();
+            (new CooperativeFinancialFixtureSeeder)->run();
+        } finally {
+            $this->app['env'] = 'testing';
+            config(['app.env' => 'testing']);
+        }
     }
 
     /**

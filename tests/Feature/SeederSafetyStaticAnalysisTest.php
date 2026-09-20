@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Support\SeedSafety\SeederExecutionProfile;
+use App\Support\SeedSafety\SeederSafetyRegistry;
 use Tests\TestCase;
 
 class SeederSafetyStaticAnalysisTest extends TestCase
@@ -125,7 +127,7 @@ class SeederSafetyStaticAnalysisTest extends TestCase
         }
     }
 
-    public function test_non_reference_seeders_contain_strict_environment_guards(): void
+    public function test_non_reference_seeders_contain_centralized_environment_guards(): void
     {
         $seederDir = database_path('seeders');
 
@@ -135,12 +137,11 @@ class SeederSafetyStaticAnalysisTest extends TestCase
             $content = file_get_contents($filePath);
             $this->assertIsString($content);
 
-            $hasEnvGuard = str_contains($content, 'LogicException') &&
-                (str_contains($content, "config('app.env')") || str_contains($content, 'app()->environment('));
+            $hasEnvGuard = str_contains($content, 'SeederEnvironmentGuard::assertAllowed(');
 
             $this->assertTrue(
                 $hasEnvGuard,
-                "Seeder '{$fileName}' must have an explicit environment guard throwing a LogicException.",
+                "Seeder '{$fileName}' must call SeederEnvironmentGuard::assertAllowed(static::class).",
             );
         }
     }
@@ -155,16 +156,20 @@ class SeederSafetyStaticAnalysisTest extends TestCase
             $content = file_get_contents($filePath);
             $this->assertIsString($content);
 
-            $hasEnvGuard = str_contains($content, 'LogicException') &&
-                (str_contains($content, "config('app.env')") || str_contains($content, 'app()->environment('));
+            $hasEnvGuard = str_contains($content, 'SeederEnvironmentGuard::assertAllowed(');
 
             $this->assertTrue(
                 $hasEnvGuard,
-                "Test-only invalid fixture seeder '{$fileName}' must have an explicit environment guard throwing a LogicException.",
+                "Test-only invalid fixture seeder '{$fileName}' must call SeederEnvironmentGuard::assertAllowed(static::class).",
             );
 
-            $this->assertStringContainsString("'testing'", $content);
-            $this->assertStringContainsString("'playwright'", $content);
+            $className = 'Database\\Seeders\\'.pathinfo($fileName, PATHINFO_FILENAME);
+            $profile = SeederSafetyRegistry::profileFor($className);
+            $this->assertSame(
+                SeederExecutionProfile::TestOnlyFixture,
+                $profile,
+                "Seeder '{$fileName}' must have profile TestOnlyFixture.",
+            );
         }
     }
 
@@ -192,5 +197,8 @@ class SeederSafetyStaticAnalysisTest extends TestCase
             $foundSeeders,
             'All seeders in database/seeders must be explicitly classified as reference or guarded demo/test seeders.',
         );
+
+        // Also assert complete coverage via SeederSafetyRegistry
+        SeederSafetyRegistry::assertCompleteCoverage();
     }
 }

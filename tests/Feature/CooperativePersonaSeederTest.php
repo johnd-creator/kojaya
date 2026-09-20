@@ -355,6 +355,7 @@ class CooperativePersonaSeederTest extends TestCase
     public function test_scenario_n_fail_closed_guard_in_unauthorized_environments(): void
     {
         foreach (['production', 'staging', 'qa', 'development'] as $environment) {
+            $this->app['env'] = $environment;
             config(['app.env' => $environment]);
 
             $thrown = false;
@@ -370,6 +371,9 @@ class CooperativePersonaSeederTest extends TestCase
             $this->assertSame(0, CooperativeMember::query()->count(), "Zero members must be created when seeder fails in {$environment}.");
             $this->assertSame(0, SocialAccount::query()->count(), "Zero social accounts must be created when seeder fails in {$environment}.");
         }
+
+        $this->app['env'] = 'testing';
+        config(['app.env' => 'testing']);
     }
 
     /**

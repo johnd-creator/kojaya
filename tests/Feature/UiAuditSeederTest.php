@@ -98,11 +98,12 @@ class UiAuditSeederTest extends TestCase
     public function test_ui_audit_seeder_is_fail_closed_outside_test_environments(): void
     {
         foreach (['production', 'staging', 'local', 'development', 'qa'] as $environment) {
+            $this->app['env'] = $environment;
             config(['app.env' => $environment]);
             $thrown = false;
 
             try {
-                $this->seed(UiAuditSeeder::class);
+                (new UiAuditSeeder)->run();
             } catch (\LogicException $exception) {
                 $thrown = true;
                 $this->assertStringContainsString('UiAuditSeeder is only available', $exception->getMessage());
@@ -112,13 +113,16 @@ class UiAuditSeederTest extends TestCase
             $this->assertDatabaseMissing('users', ['email' => 'ui.system@kojaya.test']);
         }
 
+        $this->app['env'] = 'testing';
         config(['app.env' => 'testing']);
         $this->seed(UiAuditSeeder::class);
         $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
 
+        $this->app['env'] = 'playwright';
         config(['app.env' => 'playwright']);
         $this->seed(UiAuditSeeder::class);
         $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
+        $this->app['env'] = 'testing';
         config(['app.env' => 'testing']);
     }
 

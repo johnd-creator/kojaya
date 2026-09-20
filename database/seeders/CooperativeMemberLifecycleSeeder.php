@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\CooperativeMember;
 use App\Models\User;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 use LogicException;
 
@@ -24,9 +25,7 @@ class CooperativeMemberLifecycleSeeder extends Seeder
      */
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new LogicException('CooperativeMemberLifecycleSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         // 1. Ensure SEED-03 persona dependency is bootstrapped
         $this->call(CooperativePersonaSeeder::class);

@@ -264,6 +264,7 @@ class CooperativeReferenceSeederTest extends TestCase
     public function test_cooperative_fixture_reference_seeder_fails_closed_outside_allowed_environments(): void
     {
         foreach (['production', 'staging', 'qa', 'development'] as $environment) {
+            $this->app['env'] = $environment;
             config(['app.env' => $environment]);
             $thrown = false;
 
@@ -278,6 +279,9 @@ class CooperativeReferenceSeederTest extends TestCase
             $this->assertDatabaseMissing('organizations', ['code' => 'KBU-001']);
             $this->assertDatabaseMissing('organizations', ['code' => 'ISO-999']);
         }
+
+        $this->app['env'] = 'testing';
+        config(['app.env' => 'testing']);
     }
 
     /**

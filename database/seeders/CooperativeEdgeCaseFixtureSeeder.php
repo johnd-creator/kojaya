@@ -15,9 +15,9 @@ use App\Models\MemberStoreAccount;
 use App\Models\Organization;
 use App\Models\PosTransaction;
 use App\Models\User;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use LogicException;
 
 /**
  * SEED-06: Negative & Edge-Case Dataset Seeder.
@@ -33,12 +33,7 @@ class CooperativeEdgeCaseFixtureSeeder extends Seeder
     public function run(): void
     {
         // 1. Strict Fail-Closed Environment Guard
-        $env = (string) config('app.env');
-        if (! in_array($env, ['testing', 'playwright'], true)) {
-            throw new LogicException(
-                "CooperativeEdgeCaseFixtureSeeder is only available in testing or playwright environments. Current environment [{$env}] is rejected for safety."
-            );
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         // 2. Bootstrap Prerequisites (roles, KOP-001 topology, baseline personas)
         $this->call([

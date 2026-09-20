@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\Cooperative\AnnualShuDistributionService;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\PosTransactionService;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -27,9 +28,7 @@ class CooperativeSeeder extends Seeder
      */
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new \LogicException('CooperativeSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         $headOffice = Organization::query()->where('code', 'KOP-001')->first();
         $branch = Organization::query()->where('code', 'KBU-001')->first();

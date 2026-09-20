@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\PermissionEnum;
 use App\Models\Organization;
 use App\Models\User;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -14,9 +15,7 @@ class CooperativeManagerRoleSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new \LogicException('CooperativeManagerRoleSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 

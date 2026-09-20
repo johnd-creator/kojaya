@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Services\Cooperative\CooperativeTestDataResetService;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
+use App\Support\SeedSafety\SeederExecutionProfile;
 use Illuminate\Console\Command;
+use LogicException;
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
 use Throwable;
 
@@ -32,13 +35,20 @@ class CooperativeResetTestData extends Command
      */
     public function handle(CooperativeTestDataResetService $service): int
     {
-        $env = (string) config('app.env');
         $dryRun = (bool) $this->option('dry-run');
         $withEdgeCases = (bool) $this->option('with-edge-cases');
 
+        try {
+            $env = SeederEnvironmentGuard::assertEnvironmentConsistency();
+        } catch (LogicException $e) {
+            $this->error($e->getMessage());
+
+            return SymfonyCommand::FAILURE;
+        }
+
         // 1. Strict environment guard for reset tooling
-        $allowedEnvironments = CooperativeTestDataResetService::ALLOWED_ENVIRONMENTS;
-        if (! in_array($env, $allowedEnvironments, true) && ! app()->environment($allowedEnvironments)) {
+        if (! SeederEnvironmentGuard::isAllowed(SeederExecutionProfile::LocalTestFixture, $env)) {
+            $allowedEnvironments = SeederEnvironmentGuard::allowedEnvironmentsFor(SeederExecutionProfile::LocalTestFixture);
             $this->error("SEED-07 reset tooling is unavailable in this environment [{$env}].");
             $this->line('Allowed environments: '.implode(', ', $allowedEnvironments));
 
@@ -46,8 +56,7 @@ class CooperativeResetTestData extends Command
         }
 
         // 2. Strict guard for --with-edge-cases option (only testing & playwright)
-        $edgeAllowed = CooperativeTestDataResetService::EDGE_ALLOWED_ENVIRONMENTS;
-        if ($withEdgeCases && ! in_array($env, $edgeAllowed, true) && ! app()->environment($edgeAllowed)) {
+        if ($withEdgeCases && ! SeederEnvironmentGuard::isAllowed(SeederExecutionProfile::TestOnlyFixture, $env)) {
             $this->error("The --with-edge-cases option is only allowed in testing and playwright environments (current: [{$env}]).");
             $this->line('Command aborted with zero mutations.');
 

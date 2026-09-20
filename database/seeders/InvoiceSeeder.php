@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Invoice;
 use App\Models\Organization;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
 
 class InvoiceSeeder extends Seeder
@@ -13,9 +14,7 @@ class InvoiceSeeder extends Seeder
      */
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new \LogicException('InvoiceSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         $organizations = Organization::all();
 

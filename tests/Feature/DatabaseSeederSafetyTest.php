@@ -58,8 +58,17 @@ class DatabaseSeederSafetyTest extends TestCase
         CooperativeManagerRoleSeeder::class,
     ];
 
+    protected function tearDown(): void
+    {
+        $this->app['env'] = 'testing';
+        config(['app.env' => 'testing']);
+
+        parent::tearDown();
+    }
+
     public function test_demo_seeders_refuse_to_run_in_production(): void
     {
+        $this->app['env'] = 'production';
         config(['app.env' => 'production']);
 
         foreach ($this->demoSeeders as $seederClass) {
@@ -79,6 +88,7 @@ class DatabaseSeederSafetyTest extends TestCase
     public function test_demo_seeders_refuse_to_run_in_staging_and_qa(): void
     {
         foreach (['staging', 'qa', 'development'] as $environment) {
+            $this->app['env'] = $environment;
             config(['app.env' => $environment]);
 
             foreach ($this->demoSeeders as $seederClass) {
@@ -99,6 +109,7 @@ class DatabaseSeederSafetyTest extends TestCase
     public function test_ui_audit_seeder_remains_restricted_to_testing_and_playwright(): void
     {
         foreach (['production', 'staging', 'qa', 'local', 'development'] as $environment) {
+            $this->app['env'] = $environment;
             config(['app.env' => $environment]);
             $thrown = false;
 
@@ -112,10 +123,12 @@ class DatabaseSeederSafetyTest extends TestCase
             $this->assertTrue($thrown, "UiAuditSeeder unexpectedly ran in {$environment}.");
         }
 
+        $this->app['env'] = 'testing';
         config(['app.env' => 'testing']);
         $this->seed(UiAuditSeeder::class);
         $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
 
+        $this->app['env'] = 'playwright';
         config(['app.env' => 'playwright']);
         $this->seed(UiAuditSeeder::class);
         $this->assertDatabaseHas('users', ['email' => 'ui.system@kojaya.test']);
@@ -124,6 +137,7 @@ class DatabaseSeederSafetyTest extends TestCase
     public function test_cooperative_edge_case_fixture_seeder_remains_restricted_to_testing_and_playwright(): void
     {
         foreach (['production', 'staging', 'qa', 'local', 'development'] as $environment) {
+            $this->app['env'] = $environment;
             config(['app.env' => $environment]);
             $thrown = false;
 
@@ -137,11 +151,13 @@ class DatabaseSeederSafetyTest extends TestCase
             $this->assertTrue($thrown, "CooperativeEdgeCaseFixtureSeeder unexpectedly ran in {$environment}.");
         }
 
+        $this->app['env'] = 'testing';
         config(['app.env' => 'testing']);
         $this->seed(CooperativeEdgeCaseFixtureSeeder::class);
         $this->assertDatabaseHas('users', ['email' => 'seed.member.blocked@kojaya.test']);
         $this->assertDatabaseHas('cooperative_members', ['member_no' => 'DEV-KOP-011']);
 
+        $this->app['env'] = 'playwright';
         config(['app.env' => 'playwright']);
         $this->seed(CooperativeEdgeCaseFixtureSeeder::class);
         $this->assertDatabaseHas('users', ['email' => 'seed.member.blocked@kojaya.test']);
@@ -163,8 +179,20 @@ class DatabaseSeederSafetyTest extends TestCase
         $this->assertDatabaseMissing('cooperative_members', ['member_no' => 'DEV-KOP-011']);
     }
 
+    public function test_database_seeder_rejects_environment_mismatch(): void
+    {
+        $this->app['env'] = 'testing';
+        config(['app.env' => 'production']);
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Seeder environment mismatch detected: runtime=testing configured=production. Execution denied.');
+
+        (new DatabaseSeeder)->run();
+    }
+
     public function test_database_seeder_under_staging_creates_only_safe_reference_data(): void
     {
+        $this->app['env'] = 'staging';
         config(['app.env' => 'staging']);
 
         $this->seed(DatabaseSeeder::class);

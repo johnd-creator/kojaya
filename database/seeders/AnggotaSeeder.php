@@ -9,6 +9,7 @@ use App\Models\CooperativePayment;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Cooperative\CooperativePaymentService;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -22,9 +23,7 @@ class AnggotaSeeder extends Seeder
      */
     public function run(): void
     {
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new \LogicException('AnggotaSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         $organization = Organization::query()->firstOrCreate(
             ['code' => 'KOP-001'],

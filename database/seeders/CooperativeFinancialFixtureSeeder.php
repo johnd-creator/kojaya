@@ -26,8 +26,8 @@ use App\Models\PosProduct;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\User;
+use App\Support\SeedSafety\SeederEnvironmentGuard;
 use Illuminate\Database\Seeder;
-use LogicException;
 
 class CooperativeFinancialFixtureSeeder extends Seeder
 {
@@ -38,9 +38,7 @@ class CooperativeFinancialFixtureSeeder extends Seeder
     public function run(): void
     {
         // 1. Fail-closed environment guard
-        if (! in_array((string) config('app.env'), ['local', 'testing', 'playwright'], true)) {
-            throw new LogicException('CooperativeFinancialFixtureSeeder is only available in local, testing, or playwright environments.');
-        }
+        SeederEnvironmentGuard::assertAllowed(static::class);
 
         // 2. Canonical direct dependencies bootstrap
         $this->call([

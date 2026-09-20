@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
                 CooperativeMemberLifecycleSeeder::class,
                 CooperativeSeeder::class,
                 AnggotaSeeder::class,
+                CooperativeFinancialFixtureSeeder::class,
                 DemoDataSeeder::class,
             ]);
         }

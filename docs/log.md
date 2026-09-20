@@ -6,6 +6,32 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-20 - Synthetic Transaction & Financial Test Data (SEED-05)
+
+- Implemented `CooperativeFinancialFixtureSeeder` providing deterministic synthetic financial test data for Phase 4 functional testing:
+  - Scope boundaries strictly enforced: financial fixtures assigned strictly to active canonical members (P10 `DEV-KOP-010`, P12 `DEV-KOP-012`, P13 `DEV-KOP-013`).
+  - P13 (`DEV-KOP-013`) canonical EMPTY state: strictly 0 financial records across all models (0 store account, 0 dues, 0 loans, 0 POS transactions, 0 receipts, 0 ledgers).
+  - Inactive/pending members (P06-P09) have strictly 0 financial records.
+  - Organizations: all financial records belong strictly to `KOP-001`. `KBU-001` and `ISO-999` have strictly 0 members and 0 financial records.
+  - Zero edge/negative data: no `DEFAULTED`/`WRITTEN_OFF` loans, no store balance < -500k, no P11 edge data.
+  - P10 Financial Fixtures (NORMAL / PAID-OFF):
+    - Dues: Simpanan Pokok (Rp 200.000, PAID, receipt `SEED-RC-010-001`), Simpanan Wajib 2026-01 (Rp 100.000, PAID, receipt `SEED-RC-010-002`), matched savings ledgers.
+    - Store Account: +Rp 150.000 (credit balance), limit Rp 500.000, matched opening ledger entry.
+    - POS: 1 completed CASH sale (`SEED-POS-TX-010-001`, Rp 110.000, 2 items), matched cash payment and stock deduction.
+    - Loan: 1 completed productive loan (`SEED-LOAN-CLOSED-010-001`, Rp 3.000.000, 6-month, closed), 6 fully paid installments (Rp 537.500 each, total Rp 3.225.000), matched disbursement and payment ledgers.
+  - P12 Financial Fixtures (PARTIAL / UNPAID / BOUNDARY):
+    - Dues: Simpanan Wajib 2026-06 (Rp 100.000, UNPAID, due 2026-06-10).
+    - Store Account: -Rp 450.000 (outstanding debt), limit Rp 500.000, available credit Rp 50.000.
+    - POS: 1 completed credit purchase via `MEMBER_STORE_ACCOUNT` (`SEED-POS-TX-012-001`, Rp 450.000, 4 items), matched store credit ledger debit and stock deduction.
+    - Loan: 1 active productive loan (`SEED-LOAN-ACTIVE-012-001`, Rp 3.000.000, 6-month, active), 6 pending installments (Rp 537.500 each, total Rp 3.225.000 outstanding), matched disbursement ledger.
+  - POS Catalog: 4 deterministic active products under `KOP-001` (`SEED-POS-001` through `SEED-POS-004`) with reconciled stock (93, 99, 100, 80 units).
+  - Closed Gap G-04: removed calendar dependency (`Carbon::now()`) in legacy seeders (`CooperativeSeeder`, `AnggotaSeeder`) by fixing reference end period to `2026-06-01`.
+  - Fail-closed environment guard: throws `LogicException` in `production`, `staging`, `qa`, and `development`.
+  - Supports standalone direct execution bootstrapping `CooperativeMemberLifecycleSeeder`, `CooperativeReferenceSeeder`, and `LoanTypeSeeder`.
+  - Added comprehensive feature test suite in `tests/Feature/CooperativeFinancialFixtureSeederTest.php` (23 tests, 181 assertions) covering Scenarios A-W.
+  - Registered in `DatabaseSeeder` under `local` environment. Updated safety tests `DatabaseSeederSafetyTest` and `SeederSafetyStaticAnalysisTest`.
+  - Published comprehensive documentation in `docs/phase-3/SEED-05-synthetic-financial-data.md`.
+
 ## 2026-09-20 - Member Lifecycle Verification Metadata Correction (SEED-04R1)
 
 - Corrected lifecycle metadata for P08 (`DEV-KOP-008`, `REVISION`) and P09 (`DEV-KOP-009`, `REJECTED`) in `CooperativeMemberLifecycleSeeder`:

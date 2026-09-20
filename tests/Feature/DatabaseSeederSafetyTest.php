@@ -20,6 +20,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\WorkShift;
 use Database\Seeders\AnggotaSeeder;
+use Database\Seeders\CooperativeFinancialFixtureSeeder;
 use Database\Seeders\CooperativeFixtureReferenceSeeder;
 use Database\Seeders\CooperativeManagerRoleSeeder;
 use Database\Seeders\CooperativeMemberLifecycleSeeder;
@@ -48,6 +49,7 @@ class DatabaseSeederSafetyTest extends TestCase
         CooperativeFixtureReferenceSeeder::class,
         CooperativePersonaSeeder::class,
         CooperativeMemberLifecycleSeeder::class,
+        CooperativeFinancialFixtureSeeder::class,
         CooperativeSeeder::class,
         AnggotaSeeder::class,
         DemoDataSeeder::class,

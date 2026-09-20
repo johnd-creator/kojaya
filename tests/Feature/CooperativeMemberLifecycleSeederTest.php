@@ -135,17 +135,27 @@ class CooperativeMemberLifecycleSeederTest extends TestCase
         $this->assertNull($m07->validation_notes);
         $this->assertNull($m07->tanggal_aktif);
 
-        // 3. P08: Revision required (Revision note exists, no active date)
+        // 3. P08: Revision required (Admin verification preserved, revision note exists, no active date)
         $m08 = CooperativeMember::query()->where('member_no', 'DEV-KOP-008')->firstOrFail();
+        $this->assertNotNull($m08->admin_validated_at);
+        $this->assertSame($adminKop->id, $m08->admin_validated_by);
+        $this->assertNotNull($m08->admin_validation_notes);
         $this->assertNotNull($m08->validated_at);
+        $this->assertSame($adminKop->id, $m08->validated_by);
+        $this->assertTrue($m08->validated_at->gt($m08->admin_validated_at));
         $this->assertNotNull($m08->validation_notes);
         $this->assertStringContainsString('Perbarui', $m08->validation_notes);
         $this->assertNull($m08->tanggal_aktif);
 
-        // 4. P09: Rejected (Rejection note exists, no active date)
+        // 4. P09: Rejected (Admin verification preserved, rejection note exists, maker-checker preserved, no active date)
         $m09 = CooperativeMember::query()->where('member_no', 'DEV-KOP-009')->firstOrFail();
+        $this->assertNotNull($m09->admin_validated_at);
+        $this->assertSame($adminKop->id, $m09->admin_validated_by);
+        $this->assertNotNull($m09->admin_validation_notes);
         $this->assertNotNull($m09->validated_at);
         $this->assertSame($pengurus->id, $m09->validated_by);
+        $this->assertTrue($m09->validated_at->gt($m09->admin_validated_at));
+        $this->assertNotSame($m09->admin_validated_by, $m09->validated_by);
         $this->assertNotNull($m09->validation_notes);
         $this->assertStringContainsString('tidak memenuhi', $m09->validation_notes);
         $this->assertNull($m09->tanggal_aktif);

@@ -6,6 +6,15 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 19, 2026
 
+## 2026-09-20 - Member Lifecycle Verification Metadata Correction (SEED-04R1)
+
+- Corrected lifecycle metadata for P08 (`DEV-KOP-008`, `REVISION`) and P09 (`DEV-KOP-009`, `REJECTED`) in `CooperativeMemberLifecycleSeeder`:
+  - Preserved historical admin verification evidence: `admin_validated_by = P04` (Admin Koperasi), `admin_validated_at = 2026-06-01 09:00:00`, and `admin_validation_notes` populated.
+  - P08 revision decision remains by Admin P04 at `2026-06-01 09:30:00` with revision guidance.
+  - P09 final rejection remains by Pengurus P02 at `2026-06-01 10:00:00` with rejection reason, preserving maker-checker invariant (`P04 != P02`).
+  - Extended `tests/Feature/CooperativeMemberLifecycleSeederTest.php` Scenario C asserting admin verification history and chronologic ordering (`validated_at > admin_validated_at`).
+  - Updated `docs/phase-3/SEED-04-member-lifecycle-dataset.md`.
+
 ## 2026-09-19 - Member Lifecycle Dataset (SEED-04)
 
 - Implemented `CooperativeMemberLifecycleSeeder` enriching the 7 canonical member personas (`DEV-KOP-006` through `DEV-KOP-013`) with deterministic lifecycle metadata:

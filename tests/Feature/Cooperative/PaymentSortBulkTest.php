@@ -326,4 +326,83 @@ class PaymentSortBulkTest extends TestCase
         $this->assertSame('PENDING', $payment->fresh()->status);
         $this->assertSame('PENDING', $otherPayment->fresh()->status);
     }
+
+    public function test_bulk_approve_rolls_back_atomic_batch_on_mid_batch_validation_failure(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $organization->id]);
+
+        $p1 = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 100,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $member->id,
+            'user_id' => null,
+        ]);
+
+        $p2 = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 200,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $member->id,
+            'user_id' => null,
+        ]);
+
+        /** @var \App\Services\Cooperative\CooperativePaymentService $realService */
+        $realService = app(\App\Services\Cooperative\CooperativePaymentService::class);
+        $executed = [];
+        $midBatchState1 = null;
+
+        $decorated = new class($realService, $p1->id, $executed, $midBatchState1) extends \App\Services\Cooperative\CooperativePaymentService
+        {
+            public function __construct(
+                private readonly \App\Services\Cooperative\CooperativePaymentService $realService,
+                private readonly int $p1Id,
+                private array &$executed,
+                private ?array &$midBatchState1,
+            ) {}
+
+            public function approve(CooperativePayment $payment, ?User $approver = null, ?\App\Support\AuditContext $context = null): CooperativePayment
+            {
+                $this->executed[] = $payment->id;
+
+                if (count($this->executed) === 1) {
+                    $approved = $this->realService->approve($payment, $approver, $context);
+                    $this->midBatchState1 = [
+                        'status' => $payment->fresh()->status,
+                        'ledger_entries_count' => \App\Models\CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count(),
+                    ];
+
+                    return $approved;
+                }
+
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'approved_by' => 'Mid-batch failure.',
+                ]);
+            }
+        };
+
+        $this->app->instance(\App\Services\Cooperative\CooperativePaymentService::class, $decorated);
+
+        $this->actingAs($user)
+            ->post(route('cooperative.payments.bulk-approve'), ['ids' => [$p1->id, $p2->id]])
+            ->assertSessionHasErrors('approved_by');
+
+        $this->assertCount(2, $executed);
+        $this->assertSame([$p1->id, $p2->id], $executed);
+        $this->assertNotNull($midBatchState1);
+        $this->assertSame('APPROVED', $midBatchState1['status']);
+        $this->assertSame(1, $midBatchState1['ledger_entries_count']);
+
+        $this->assertSame('PENDING', $p1->fresh()->status);
+        $this->assertSame('PENDING', $p2->fresh()->status);
+        $this->assertNull($p1->fresh()->approved_at);
+        $this->assertNull($p1->fresh()->approved_by);
+        $this->assertSame(0, \App\Models\CooperativeLedgerEntry::query()->where('cooperative_payment_id', $p1->id)->count());
+        $this->assertSame(0, \App\Models\CooperativeReceipt::query()->where('cooperative_payment_id', $p1->id)->count());
+    }
 }

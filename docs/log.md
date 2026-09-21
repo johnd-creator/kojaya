@@ -6,6 +6,17 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 21, 2026
 
+## 2026-09-21 - Functional Test Contract & Coverage Matrix (FUNC-01)
+
+- Established authoritative functional test contract and coverage matrix governing Phase 4 (Functional Test & Fix):
+  - Created `docs/phase-4/FUNC-01-functional-test-contract.md` auditing all 10 core functional domains (Auth, Member Lifecycle, Admin Member Management, Contributions & Payments, Store Credit, POS & Cashier, Loans, Finance & Ledger, Multi-Tenant Isolation, Failure & Edge Cases).
+  - Classified 70+ granular scenarios with stable IDs, actors, entry points, authorization guards, side effects, and risk severity (P0–P3).
+  - Defined 5 critical end-to-end business journeys (Onboarding, Dues & Gateway Payment, POS Store-Credit Purchase, Loan Maker-Checker Lifecycle).
+  - Documented complete functional access matrix across 6 repository roles (`System Admin`, `Pengurus Koperasi`, `Manajer Koperasi`, `Admin Koperasi`, `Kasir Koperasi`, `Anggota`).
+  - Formalized 8 core financial and data integrity invariants cross-referenced to scenario IDs.
+  - Inventoried existing test suite (289 test files, 2,965 test methods, 100% passing) and pinpointed material coverage gaps in loans, admin member management, web dues/payments, ledger revisions, and voluntary savings withdrawals.
+  - Mapped explicit ownership and scope for Phase 4 execution from `FUNC-02` through `FUNC-13`.
+
 ## 2026-09-21 - Seed Integrity & Readiness Gate (SEED-09)
 
 - Established authoritative cross-component seed integrity and readiness gate closing Phase 3 — Seed & Test Data:

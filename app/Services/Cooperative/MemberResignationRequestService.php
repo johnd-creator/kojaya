@@ -30,6 +30,8 @@ class MemberResignationRequestService
             ]);
         }
 
+        $this->resignationGuard->assertCanResign($member);
+
         $existing = $member->resignationRequests()
             ->where('status', MemberResignationRequest::STATUS_PENDING)
             ->exists();

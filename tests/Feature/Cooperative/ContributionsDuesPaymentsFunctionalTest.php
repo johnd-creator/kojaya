@@ -837,7 +837,7 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
             'status' => 'UNPAID',
         ]);
 
-        // Payment A: same organization, PENDING, valid, NOT created by current approver
+        // Payment A: same organization, PENDING, valid
         $paymentA = CooperativePayment::query()->create([
             'cooperative_member_id' => $this->memberA->id,
             'cooperative_dues_invoice_id' => $invoiceA->id,
@@ -849,8 +849,7 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
             'user_id' => null,
         ]);
 
-        // Payment B: same organization, PENDING, user_id = current approving admin
-        // Triggers real maker-checker violation in CooperativePaymentService::approve()
+        // Payment B: same organization, PENDING, valid
         $paymentB = CooperativePayment::query()->create([
             'cooperative_member_id' => $this->memberB->id,
             'cooperative_contribution_type_id' => $this->typeWajib->id,
@@ -858,22 +857,81 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
             'payment_method' => 'TRANSFER',
             'paid_at' => now()->toDateString(),
             'status' => 'PENDING',
-            'user_id' => $this->adminUser->id,
+            'user_id' => null,
         ]);
 
-        // Deterministic order: ensure payment A has smaller ID than payment B
+        // Assert payment A has smaller ID than payment B
         $this->assertLessThan($paymentB->id, $paymentA->id);
 
-        // Bulk order: [A, B]
-        // Execution: A succeeds inside transaction -> B throws ValidationException -> OUTER transaction rolls back A
+        /** @var CooperativePaymentService $realService */
+        $realService = app(CooperativePaymentService::class);
+        $executedApprovals = [];
+        $midBatchStateA = null;
+
+        // Test-scoped decorated CooperativePaymentService:
+        // First approve() delegates to the real CooperativePaymentService to execute real production mutations
+        // Second approve() throws a deterministic exception
+        $decoratedService = new class($realService, $paymentA->id, $executedApprovals, $midBatchStateA) extends CooperativePaymentService
+        {
+            public function __construct(
+                private readonly CooperativePaymentService $realService,
+                private readonly int $paymentAId,
+                private array &$executedApprovals,
+                private ?array &$midBatchStateA,
+            ) {}
+
+            public function approve(CooperativePayment $payment, ?User $approver = null, ?\App\Support\AuditContext $context = null): CooperativePayment
+            {
+                $this->executedApprovals[] = $payment->id;
+
+                if (count($this->executedApprovals) === 1) {
+                    if ($payment->id !== $this->paymentAId) {
+                        throw new \LogicException("Ordering precondition failed: expected Payment A ({$this->paymentAId}) first, got {$payment->id}");
+                    }
+
+                    $approved = $this->realService->approve($payment, $approver, $context);
+
+                    // Capture real in-flight mutations inside the outer transaction before the mid-batch failure
+                    $this->midBatchStateA = [
+                        'status' => $payment->fresh()->status,
+                        'approved_at' => $payment->fresh()->approved_at,
+                        'approved_by' => $payment->fresh()->approved_by,
+                        'ledger_entries_count' => CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count(),
+                        'receipt_count' => CooperativeReceipt::query()->where('cooperative_payment_id', $payment->id)->count(),
+                        'invoice_status' => $payment->fresh()->invoice?->status,
+                        'invoice_paid_amount' => (float) $payment->fresh()->invoice?->paid_amount,
+                    ];
+
+                    return $approved;
+                }
+
+                // Second call in batch throws deterministic exception
+                throw ValidationException::withMessages([
+                    'approved_by' => 'Simulated mid-batch processing failure on second payment.',
+                ]);
+            }
+        };
+
+        $this->app->instance(CooperativePaymentService::class, $decoratedService);
+
+        // Execute the REAL bulkApprove HTTP endpoint
         $this->actingAs($this->adminUser)
             ->post(route('cooperative.payments.bulk-approve'), [
                 'ids' => [$paymentA->id, $paymentB->id],
             ])
             ->assertSessionHasErrors('approved_by');
 
-        // After request failure assert:
-        // Payment A status = PENDING, Payment B status = PENDING
+        // Prove first approval was actually entered and executed inside transaction before the failure
+        $this->assertCount(2, $executedApprovals, 'Expected both payments to be evaluated in batch');
+        $this->assertSame([$paymentA->id, $paymentB->id], $executedApprovals, 'Payment A must be processed first, then Payment B');
+        $this->assertNotNull($midBatchStateA, 'Payment A approve() was definitely entered before the failure');
+        $this->assertSame('APPROVED', $midBatchStateA['status'], 'Payment A was APPROVED inside transaction before rollback');
+        $this->assertSame(1, $midBatchStateA['ledger_entries_count'], 'Payment A had ledger entry created inside transaction before rollback');
+        $this->assertSame(1, $midBatchStateA['receipt_count'], 'Payment A had receipt issued inside transaction before rollback');
+        $this->assertSame('PAID', $midBatchStateA['invoice_status'], 'Invoice A was marked PAID inside transaction before rollback');
+        $this->assertSame(50000.0, $midBatchStateA['invoice_paid_amount']);
+
+        // After request failure assert outer DB::transaction rolled back Payment A:
         $paymentA->refresh();
         $paymentB->refresh();
 

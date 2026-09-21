@@ -378,6 +378,53 @@ jobs:
         run: php bin/ci/phpunit-aggregate --total=4 --artifacts-dir=build/artifacts --min-coverage=60 --min-tests=2211
 
 
+  seed-integrity-gate:
+    name: SEED-09 — Seed Integrity & Readiness Gate
+    needs: [changes, frontend-build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail closed when change classification fails
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: printf 'SEED-09 skipped for documentation-only changes.\n'
+
+      - name: Fail closed if frontend build failed
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: |
+          if [[ "${{ needs.frontend-build.result }}" != "success" ]]; then
+            echo "::error::Frontend build dependency failed!"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - uses: shivammathur/setup-php@v2
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+      - run: composer install --no-interaction --prefer-dist --no-progress
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - uses: actions/download-artifact@v4
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          name: frontend-build-assets
+          path: public/build
+      - name: Verify frontend build assets
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: test -f public/build/manifest.json
+      - run: cp .env.example .env
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - run: php artisan key:generate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - name: Run SEED-09 Seed Integrity & Readiness Gate
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: php artisan test --compact tests/Feature/SEED09/SeedIntegrityGateTest.php
+
   migration-seed:
     name: Migration and Seed
     needs: changes

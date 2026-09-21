@@ -3,10 +3,13 @@
 namespace Tests\Feature\Member;
 
 use App\Enums\Cooperative\MemberLifecycleExperience;
+use App\Models\CooperativeContributionType;
+use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\MemberResignationRequest;
 use App\Models\Organization;
+use App\Models\RewardRedemption;
 use App\Models\User;
 use App\Services\Cooperative\MemberProfileCompletenessService;
 use App\Services\Cooperative\MemberStatusConsistencyReport;
@@ -334,6 +337,60 @@ class MemberLifecycleAndProfileFunctionalTest extends TestCase
         $this->assertSame($this->organization->id, $fresh->organization_id);
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->status);
         $this->assertSame(CooperativeMember::VALIDATION_PENDING, $fresh->validation_status);
+    }
+
+    public function test_mem_002_duplicate_nik_submission_across_organizations_cannot_mutate_identity_or_cross_organization_boundaries(): void
+    {
+        // 1. Existing Member A in Organization 1 with registered NIK
+        $userA = User::factory()->create(['organization_id' => $this->organization->id]);
+        $userA->assignRole('Anggota');
+        $memberA = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'user_id' => $userA->id,
+            'name' => 'Anggota Org Satu',
+            'identity_number' => '3201012345670001',
+            'status' => CooperativeMember::VALIDATION_ACTIVE,
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ]);
+
+        // 2. Member B in a separate Organization 2 undergoing onboarding
+        $org2 = Organization::factory()->create();
+        $userB = User::factory()->create(['organization_id' => $org2->id]);
+        $userB->assignRole('Anggota');
+        $memberB = CooperativeMember::factory()->create([
+            'organization_id' => $org2->id,
+            'user_id' => $userB->id,
+            'name' => 'Anggota Org Dua',
+            'identity_number' => '3202022345670002',
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        // Member B attempts to submit onboarding specifying Member A's NIK (duplicate collision attempt)
+        $response = $this->actingAs($userB)
+            ->from(route('member.onboarding'))
+            ->post(route('member.onboarding.submit'), [
+                'name' => 'Anggota Org Dua Updated',
+                'phone' => '081299990002',
+                'address' => 'Jl. Organisasi Dua No. 2',
+                'identity_number' => '3201012345670001',
+            ]);
+
+        $response->assertRedirect(route('member.onboarding'));
+        $response->assertSessionHas('success');
+
+        // Safe profile fields updated for Member B, but identity_number remains unchanged
+        $freshB = $memberB->fresh();
+        $this->assertSame('Anggota Org Dua Updated', $freshB->name);
+        $this->assertSame('081299990002', $freshB->phone);
+        $this->assertSame('3202022345670002', $freshB->identity_number);
+        $this->assertSame($org2->id, $freshB->organization_id);
+
+        // Member A in Org 1 remains completely unmutated with no cross-organization leakage
+        $freshA = $memberA->fresh();
+        $this->assertSame('Anggota Org Satu', $freshA->name);
+        $this->assertSame('3201012345670001', $freshA->identity_number);
+        $this->assertSame($this->organization->id, $freshA->organization_id);
     }
 
     // =========================================================================
@@ -755,6 +812,79 @@ class MemberLifecycleAndProfileFunctionalTest extends TestCase
         $this->assertSame(MemberResignationRequest::STATUS_CANCELLED, $resignation->fresh()->status);
     }
 
+    public function test_mem_006_resignation_submission_with_pending_reward_redemptions_must_block(): void
+    {
+        $user = $this->createActiveMemberUser();
+        $member = $user->cooperativeMember;
+
+        // Pending reward redemption exists for this member
+        RewardRedemption::factory()->create([
+            'cooperative_member_id' => $member->id,
+            'status' => 'PENDING',
+        ]);
+
+        Sanctum::actingAs($user, ['member:write']);
+
+        $response = $this->postJson('/api/v1/member/resignation', [
+            'reason' => 'Ingin berhenti dari koperasi.',
+            'effective_date' => now()->addDays(14)->toDateString(),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('member');
+
+        // Verify request rejected + no MemberResignationRequest created + status unchanged
+        $this->assertDatabaseMissing('member_resignation_requests', [
+            'cooperative_member_id' => $member->id,
+        ]);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->fresh()->status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->fresh()->validation_status);
+    }
+
+    public function test_mem_006_resignation_submission_with_unpaid_invoices_must_block(): void
+    {
+        $user = $this->createActiveMemberUser();
+        $member = $user->cooperativeMember;
+
+        $wajibType = CooperativeContributionType::firstOrCreate(
+            ['code' => 'WAJIB'],
+            [
+                'name' => 'Simpanan Wajib',
+                'category' => 'SAVINGS',
+                'default_amount' => 50000,
+                'frequency' => 'MONTHLY',
+                'is_active' => true,
+            ]
+        );
+
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $wajibType->id,
+            'period' => '2026-03',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'due_date' => now()->addDays(7)->toDateString(),
+            'status' => 'UNPAID',
+        ]);
+
+        Sanctum::actingAs($user, ['member:write']);
+
+        $response = $this->postJson('/api/v1/member/resignation', [
+            'reason' => 'Ingin berhenti dari koperasi.',
+            'effective_date' => now()->addDays(14)->toDateString(),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('member');
+
+        // Verify request rejected + no MemberResignationRequest created + status unchanged
+        $this->assertDatabaseMissing('member_resignation_requests', [
+            'cooperative_member_id' => $member->id,
+        ]);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->fresh()->status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $member->fresh()->validation_status);
+    }
+
     // =========================================================================
     // MEM-007: Member Account Link to SSO & Isolation
     // =========================================================================
@@ -938,6 +1068,56 @@ class MemberLifecycleAndProfileFunctionalTest extends TestCase
 
         $exitCode = Artisan::call('members:audit-status-consistency');
         $this->assertSame(0, $exitCode);
+    }
+
+    public function test_mem_008_backfill_command_applies_deterministic_repairs_with_acknowledge(): void
+    {
+        // 1. Candidate 1: INACTIVE status with ACTIVE validation (terminal mismatch => deterministic repair)
+        $inactiveMismatch = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'status' => 'INACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ]);
+
+        // 2. Candidate 2: RESIGNED status with ACTIVE validation (terminal mismatch => deterministic repair)
+        $resignedMismatch = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'status' => 'RESIGNED',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ]);
+
+        // 3. Candidate 3: ACTIVE with REJECTED validation (contradictory pair => manual review candidate, must not be mutated automatically)
+        $manualReview = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_REJECTED,
+        ]);
+
+        // Dry-run: Must not mutate persistent state
+        $dryRunExit = Artisan::call('members:backfill-status-consistency');
+        $this->assertSame(0, $dryRunExit);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $inactiveMismatch->fresh()->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $resignedMismatch->fresh()->validation_status);
+
+        // Apply without acknowledge: Must fail-closed without mutating
+        $missingAckExit = Artisan::call('members:backfill-status-consistency', ['--apply' => true]);
+        $this->assertSame(1, $missingAckExit);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $inactiveMismatch->fresh()->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_ACTIVE, $resignedMismatch->fresh()->validation_status);
+
+        // Apply with acknowledge: Deterministic repair executed
+        // Note: Command returns 1 if manual review candidates remain in database
+        Artisan::call('members:backfill-status-consistency', [
+            '--apply' => true,
+            '--acknowledge' => true,
+        ]);
+
+        // Deterministic mismatches repaired to match terminal status
+        $this->assertSame(CooperativeMember::VALIDATION_INACTIVE, $inactiveMismatch->fresh()->validation_status);
+        $this->assertSame(CooperativeMember::VALIDATION_RESIGNED, $resignedMismatch->fresh()->validation_status);
+
+        // Manual review candidate protected from automatic corruption
+        $this->assertSame(CooperativeMember::VALIDATION_REJECTED, $manualReview->fresh()->validation_status);
     }
 
     // =========================================================================

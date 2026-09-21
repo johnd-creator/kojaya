@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Cooperative;
 
+use App\Models\ApprovalLog;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
@@ -824,6 +825,89 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
         $service->approve($payment, $this->adminUser);
     }
 
+    public function test_pay005_bulk_approve_rolls_back_atomic_transaction_on_mid_batch_failure(): void
+    {
+        $invoiceA = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->memberA->id,
+            'cooperative_contribution_type_id' => $this->typeWajib->id,
+            'period' => '2026-08',
+            'amount' => 50000.0,
+            'paid_amount' => 0,
+            'due_date' => '2026-08-10',
+            'status' => 'UNPAID',
+        ]);
+
+        // Payment A: same organization, PENDING, valid, NOT created by current approver
+        $paymentA = CooperativePayment::query()->create([
+            'cooperative_member_id' => $this->memberA->id,
+            'cooperative_dues_invoice_id' => $invoiceA->id,
+            'cooperative_contribution_type_id' => $this->typeWajib->id,
+            'amount' => 50000.0,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => now()->toDateString(),
+            'status' => 'PENDING',
+            'user_id' => null,
+        ]);
+
+        // Payment B: same organization, PENDING, user_id = current approving admin
+        // Triggers real maker-checker violation in CooperativePaymentService::approve()
+        $paymentB = CooperativePayment::query()->create([
+            'cooperative_member_id' => $this->memberB->id,
+            'cooperative_contribution_type_id' => $this->typeWajib->id,
+            'amount' => 50000.0,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => now()->toDateString(),
+            'status' => 'PENDING',
+            'user_id' => $this->adminUser->id,
+        ]);
+
+        // Deterministic order: ensure payment A has smaller ID than payment B
+        $this->assertLessThan($paymentB->id, $paymentA->id);
+
+        // Bulk order: [A, B]
+        // Execution: A succeeds inside transaction -> B throws ValidationException -> OUTER transaction rolls back A
+        $this->actingAs($this->adminUser)
+            ->post(route('cooperative.payments.bulk-approve'), [
+                'ids' => [$paymentA->id, $paymentB->id],
+            ])
+            ->assertSessionHasErrors('approved_by');
+
+        // After request failure assert:
+        // Payment A status = PENDING, Payment B status = PENDING
+        $paymentA->refresh();
+        $paymentB->refresh();
+
+        $this->assertSame('PENDING', $paymentA->status);
+        $this->assertSame('PENDING', $paymentB->status);
+
+        // For both: approved_at remains null, approved_by remains null
+        $this->assertNull($paymentA->approved_at);
+        $this->assertNull($paymentA->approved_by);
+        $this->assertNull($paymentB->approved_at);
+        $this->assertNull($paymentB->approved_by);
+
+        // Assert zero net side effects from A:
+        // - no CooperativeLedgerEntry
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $paymentA->id)->count());
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $paymentB->id)->count());
+
+        // - no CooperativeReceipt
+        $this->assertSame(0, CooperativeReceipt::query()->where('cooperative_payment_id', $paymentA->id)->count());
+        $this->assertSame(0, CooperativeReceipt::query()->where('cooperative_payment_id', $paymentB->id)->count());
+
+        // - related invoice unchanged
+        $invoiceA->refresh();
+        $this->assertSame('UNPAID', $invoiceA->status);
+        $this->assertSame(0.0, (float) $invoiceA->paid_amount);
+
+        // - no committed payment approval audit/log side effect where applicable
+        $this->assertSame(0, ApprovalLog::query()->where('subject_type', CooperativePayment::class)->where('subject_id', (string) $paymentA->id)->count());
+
+        // - no committed notification/outbox side effect
+        $this->assertSame(0, CooperativeNotificationOutbox::query()->where('deduplication_key', "member.payment.approved:{$paymentA->id}")->count());
+        $this->assertSame(0, $this->memberUserA->notifications()->where('data->deduplication_key', "member.payment.approved:{$paymentA->id}")->count());
+    }
+
     // =========================================================================
     // PAY-006: Manual Payment Proof Upload by Member
     // =========================================================================
@@ -863,6 +947,41 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
         Storage::disk('public')->assertExists($payment->proof_path);
     }
 
+    public function test_pay006_member_can_upload_valid_pdf_payment_proof(): void
+    {
+        Storage::fake('public');
+
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->memberA->id,
+            'cooperative_contribution_type_id' => $this->typeWajib->id,
+            'period' => '2026-09',
+            'amount' => 50000.0,
+            'paid_amount' => 0,
+            'due_date' => '2026-09-10',
+            'status' => 'UNPAID',
+        ]);
+
+        Sanctum::actingAs($this->memberUserA, ['member:read', 'member:write']);
+
+        $pdfFile = UploadedFile::fake()->create('bukti_transfer.pdf', 500, 'application/pdf');
+
+        $response = $this->postJson('/api/v1/member/payments/proof', [
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 50000.0,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => now()->toDateString(),
+            'reference_no' => 'TRF-MBR-PDF-001',
+            'proof' => $pdfFile,
+        ])->assertCreated();
+
+        $paymentId = $response->json('data.id');
+        $payment = CooperativePayment::query()->findOrFail($paymentId);
+
+        $this->assertSame('PENDING', $payment->status);
+        $this->assertNotNull($payment->proof_path);
+        Storage::disk('public')->assertExists($payment->proof_path);
+    }
+
     public function test_pay006_upload_rejects_disallowed_mime_types_and_executables(): void
     {
         Storage::fake('public');
@@ -891,8 +1010,9 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
         ])->assertStatus(422)
             ->assertJsonValidationErrors('proof');
 
-        // Zero payment records created
+        // Zero payment records created and zero stored artifacts
         $this->assertSame(0, CooperativePayment::query()->where('cooperative_dues_invoice_id', $invoice->id)->count());
+        $this->assertEmpty(Storage::disk('public')->allFiles(), 'Stored proof artifact left behind after executable upload rejection');
     }
 
     public function test_pay006_upload_rejects_oversized_file(): void
@@ -922,6 +1042,10 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
             'proof' => $oversizedFile,
         ])->assertStatus(422)
             ->assertJsonValidationErrors('proof');
+
+        // Zero payment records created and zero stored artifacts
+        $this->assertSame(0, CooperativePayment::query()->where('cooperative_dues_invoice_id', $invoice->id)->count());
+        $this->assertEmpty(Storage::disk('public')->allFiles(), 'Stored proof artifact left behind after oversized file rejection');
     }
 
     public function test_pay006_member_cannot_upload_proof_for_another_members_invoice(): void
@@ -1096,9 +1220,12 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
 
     public function test_pay008_outbox_delivery_retry_and_backoff_classification(): void
     {
+        $userId = $this->memberUserA->id;
+        $now = now();
+
         $outbox = CooperativeNotificationOutbox::query()->create([
             'id' => \Illuminate\Support\Str::uuid(),
-            'user_id' => $this->memberUserA->id,
+            'user_id' => $userId,
             'deduplication_key' => 'test.payment.retry:001',
             'payload' => [
                 'deduplication_key' => 'test.payment.retry:001',
@@ -1109,26 +1236,125 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
             ],
             'status' => CooperativeNotificationOutbox::STATUS_PENDING,
             'attempts' => 0,
+            'available_at' => $now,
+        ]);
+
+        // 1. Initial assertions:
+        // status = PENDING, attempts = 0, available_at <= now
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_PENDING, $outbox->status);
+        $this->assertSame(0, $outbox->attempts);
+        $this->assertTrue($outbox->available_at->lessThanOrEqualTo($now));
+
+        /** @var CooperativeNotificationOutboxService $outboxService */
+        $outboxService = app(CooperativeNotificationOutboxService::class);
+
+        // Force a REAL deterministic delivery failure using a test-safe mechanism:
+        // Eloquent 'retrieved' event on User model throws transient exception when looking up recipient
+        $failDelivery = true;
+        User::retrieved(function (User $user) use (&$failDelivery, $userId) {
+            if ($failDelivery && (int) $user->id === (int) $userId) {
+                throw new \RuntimeException('Simulated transient notification gateway connection failure');
+            }
+        });
+
+        try {
+            // First delivery attempt fails inside the service catch block
+            $outboxService->deliver($outbox);
+
+            // After first failure:
+            $outbox->refresh();
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_PENDING, $outbox->status);
+            $this->assertSame(1, $outbox->attempts);
+            $this->assertNotNull($outbox->last_error);
+            $this->assertStringContainsString('RuntimeException', $outbox->last_error);
+            $this->assertStringContainsString('Simulated transient notification gateway connection failure', $outbox->last_error);
+
+            // available_at approximately now + 5 minutes
+            $this->assertTrue(
+                $outbox->available_at->diffInMinutes($now->copy()->addMinutes(5)) <= 1,
+                'available_at was not scheduled ~5 minutes after first failure'
+            );
+
+            // Zero user notifications delivered
+            $this->assertSame(0, $this->memberUserA->notifications()->where('id', $outbox->id)->count());
+
+            // Before available_at: deliverPending() must NOT claim it
+            $failDelivery = false; // Even if delivery would now succeed...
+            $unclaimed = $outboxService->deliverPending(10);
+            $this->assertSame(0, $unclaimed, 'deliverPending() should not claim unexpired backoff entry');
+
+            $outbox->refresh();
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_PENDING, $outbox->status);
+            $this->assertSame(1, $outbox->attempts);
+
+            // After advancing time beyond available_at: retry becomes eligible
+            $this->travel(6)->minutes();
+
+            // Allow retry to succeed
+            $retried = $outboxService->deliverPending(10);
+            $this->assertSame(1, $retried);
+
+            $outbox->refresh();
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, $outbox->status);
+            $this->assertSame(1, $outbox->attempts);
+            $this->assertNotNull($outbox->delivered_at);
+
+            // Exactly one user notification delivered
+            $userNotificationCount = $this->memberUserA->notifications()
+                ->where('id', $outbox->id)
+                ->count();
+            $this->assertSame(1, $userNotificationCount, 'Exactly one user notification should exist after successful retry');
+        } finally {
+            $failDelivery = false;
+        }
+    }
+
+    public function test_pay008_outbox_delivery_transitions_to_failed_after_maximum_attempts(): void
+    {
+        $userId = $this->memberUserA->id;
+
+        $outbox = CooperativeNotificationOutbox::query()->create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'user_id' => $userId,
+            'deduplication_key' => 'test.payment.max_retry:001',
+            'payload' => [
+                'deduplication_key' => 'test.payment.max_retry:001',
+                'type' => 'payment',
+                'title' => 'Permanent failure test',
+            ],
+            'status' => CooperativeNotificationOutbox::STATUS_PENDING,
+            'attempts' => 4, // 4 prior failed attempts
             'available_at' => now(),
         ]);
 
         /** @var CooperativeNotificationOutboxService $outboxService */
         $outboxService = app(CooperativeNotificationOutboxService::class);
 
-        // Deliver
-        $delivered = $outboxService->deliverPending(10);
-        $this->assertSame(1, $delivered);
+        $failDelivery = true;
+        User::retrieved(function (User $user) use (&$failDelivery, $userId) {
+            if ($failDelivery && (int) $user->id === (int) $userId) {
+                throw new \RuntimeException('Persistent gateway outage');
+            }
+        });
 
-        $outbox->refresh();
-        $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, $outbox->status);
+        try {
+            $outboxService->deliver($outbox);
 
-        // Re-delivering produces 0 notifications and does not duplicate
-        $redelivered = $outboxService->deliverPending(10);
-        $this->assertSame(0, $redelivered);
+            $outbox->refresh();
+            // Reaches attempts = 5, status = FAILED
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_FAILED, $outbox->status);
+            $this->assertSame(5, $outbox->attempts);
+            $this->assertNotNull($outbox->last_error);
+            $this->assertStringContainsString('Persistent gateway outage', $outbox->last_error);
 
-        $userNotificationCount = $this->memberUserA->notifications()
-            ->where('id', $outbox->id)
-            ->count();
-        $this->assertSame(1, $userNotificationCount, 'Multiple notifications delivered for single outbox item');
+            // Never delivers user notification
+            $this->assertSame(0, $this->memberUserA->notifications()->where('id', $outbox->id)->count());
+
+            // Subsequent deliverPending() never claims FAILED entries
+            $this->travel(10)->minutes();
+            $this->assertSame(0, $outboxService->deliverPending(10));
+        } finally {
+            $failDelivery = false;
+        }
     }
 }

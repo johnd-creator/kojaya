@@ -326,4 +326,41 @@ class PaymentSortBulkTest extends TestCase
         $this->assertSame('PENDING', $payment->fresh()->status);
         $this->assertSame('PENDING', $otherPayment->fresh()->status);
     }
+
+    public function test_bulk_approve_rolls_back_atomic_batch_on_mid_batch_validation_failure(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $organization->id]);
+
+        $p1 = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 100,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $member->id,
+            'user_id' => null,
+        ]);
+
+        $p2 = CooperativePayment::query()->create([
+            'status' => 'PENDING',
+            'amount' => 200,
+            'payment_method' => 'CASH',
+            'paid_at' => now(),
+            'cooperative_member_id' => $member->id,
+            'user_id' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('cooperative.payments.bulk-approve'), ['ids' => [$p1->id, $p2->id]])
+            ->assertSessionHasErrors('approved_by');
+
+        $this->assertSame('PENDING', $p1->fresh()->status);
+        $this->assertSame('PENDING', $p2->fresh()->status);
+        $this->assertNull($p1->fresh()->approved_at);
+        $this->assertNull($p1->fresh()->approved_by);
+        $this->assertSame(0, \App\Models\CooperativeLedgerEntry::query()->where('cooperative_payment_id', $p1->id)->count());
+        $this->assertSame(0, \App\Models\CooperativeReceipt::query()->where('cooperative_payment_id', $p1->id)->count());
+    }
 }

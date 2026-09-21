@@ -126,6 +126,110 @@ class PaymentNotificationOutboxTest extends TestCase
         $this->assertSame('DELIVERED', $outbox->status);
     }
 
+    public function test_outbox_delivery_retry_backoff_and_recovery(): void
+    {
+        $user = \App\Models\User::factory()->create();
+        $now = now();
+
+        $outbox = CooperativeNotificationOutbox::query()->create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'user_id' => $user->id,
+            'deduplication_key' => 'retry-backoff-key',
+            'payload' => [
+                'deduplication_key' => 'retry-backoff-key',
+                'type' => 'pos',
+                'category' => 'info',
+                'title' => 'Retry Test',
+                'body' => 'Testing backoff.',
+            ],
+            'status' => CooperativeNotificationOutbox::STATUS_PENDING,
+            'attempts' => 0,
+            'available_at' => $now,
+        ]);
+
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_PENDING, $outbox->status);
+        $this->assertSame(0, $outbox->attempts);
+        $this->assertTrue($outbox->available_at->lessThanOrEqualTo($now));
+
+        $outboxService = app(\App\Services\Cooperative\CooperativeNotificationOutboxService::class);
+
+        $fail = true;
+        \App\Models\User::retrieved(function (\App\Models\User $u) use (&$fail, $user) {
+            if ($fail && (int) $u->id === (int) $user->id) {
+                throw new \RuntimeException('Gateway connection timeout');
+            }
+        });
+
+        try {
+            $outboxService->deliver($outbox);
+
+            $outbox->refresh();
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_PENDING, $outbox->status);
+            $this->assertSame(1, $outbox->attempts);
+            $this->assertNotNull($outbox->last_error);
+            $this->assertStringContainsString('Gateway connection timeout', $outbox->last_error);
+            $this->assertTrue($outbox->available_at->diffInMinutes($now->copy()->addMinutes(5)) <= 1);
+            $this->assertSame(0, $user->notifications()->count());
+
+            // Before available_at, delivery must not claim it
+            $fail = false;
+            $unclaimed = $outboxService->deliverPending(1);
+            $this->assertSame(0, $unclaimed);
+
+            // Advance time past 5 minutes
+            $this->travel(6)->minutes();
+
+            // Retry should succeed
+            $claimed = $outboxService->deliverPending(1);
+            $this->assertSame(1, $claimed);
+
+            $outbox->refresh();
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, $outbox->status);
+            $this->assertSame(1, $user->notifications()->where('id', $outbox->id)->count());
+        } finally {
+            $fail = false;
+        }
+    }
+
+    public function test_outbox_delivery_fails_after_five_attempts(): void
+    {
+        $user = \App\Models\User::factory()->create();
+
+        $outbox = CooperativeNotificationOutbox::query()->create([
+            'id' => \Illuminate\Support\Str::uuid(),
+            'user_id' => $user->id,
+            'deduplication_key' => 'max-retry-key',
+            'payload' => [
+                'deduplication_key' => 'max-retry-key',
+                'title' => 'Max attempts test',
+            ],
+            'status' => CooperativeNotificationOutbox::STATUS_PENDING,
+            'attempts' => 4,
+            'available_at' => now(),
+        ]);
+
+        $outboxService = app(\App\Services\Cooperative\CooperativeNotificationOutboxService::class);
+
+        $fail = true;
+        \App\Models\User::retrieved(function (\App\Models\User $u) use (&$fail, $user) {
+            if ($fail && (int) $u->id === (int) $user->id) {
+                throw new \RuntimeException('Persistent gateway fault');
+            }
+        });
+
+        try {
+            $outboxService->deliver($outbox);
+
+            $outbox->refresh();
+            $this->assertSame(CooperativeNotificationOutbox::STATUS_FAILED, $outbox->status);
+            $this->assertSame(5, $outbox->attempts);
+            $this->assertNotNull($outbox->last_error);
+            $this->assertSame(0, $user->notifications()->count());
+        } finally {
+            $fail = false;
+        }
+    }
+
     public function test_outbox_deduplication_prevents_duplicate_enqueue(): void
     {
         $user = \App\Models\User::factory()->create();

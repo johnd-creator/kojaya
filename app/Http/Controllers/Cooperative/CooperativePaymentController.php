@@ -14,6 +14,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -131,16 +132,18 @@ class CooperativePaymentController extends Controller
             'skipped' => 0,
         ];
 
-        foreach ($payments as $payment) {
-            if ($payment->status !== 'PENDING') {
-                $results['skipped']++;
+        DB::transaction(function () use ($payments, $service, $request, &$results): void {
+            foreach ($payments as $payment) {
+                if ($payment->status !== 'PENDING') {
+                    $results['skipped']++;
 
-                continue;
+                    continue;
+                }
+
+                $service->approve($payment, $request->user());
+                $results['approved']++;
             }
-
-            $service->approve($payment, $request->user());
-            $results['approved']++;
-        }
+        });
 
         $message = collect()
             ->when($results['approved'] > 0, fn ($c) => $c->push("{$results['approved']} pembayaran berhasil disetujui."))

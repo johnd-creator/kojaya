@@ -81,7 +81,7 @@ Hasil resolusi enum otoritatif `MemberLifecycleExperience::fromMember($member)`:
 - `DEV-KOP-013` ➜ `ACTIVE` (aktif dengan kredensial standar non-Google).
 
 ### 4.3. Isolasi Multi-Tenant & Organisasi (Organization Isolation)
-- `KOP-001` (Koperasi Konsumen Sejahtera Bersama, L0 HEAD_OFFICE): pemilik tunggal seluruh data keanggotaan dan keuangan koperasi kanonikal.
+- `KOP-001` (Koperasi Jaya Bersama, L0 HEAD_OFFICE): pemilik tunggal seluruh data keanggotaan dan keuangan koperasi kanonikal.
 - `KBU-001` (PT Koperasi Berkah Usaha, L1 BRANCH): entitas komersial anak perusahaan. Memiliki 0 anggota koperasi dan 0 transaksi keuangan koperasi.
 - `ISO-999` (Koperasi Mandiri Sejahtera, L0 HEAD_OFFICE): entitas pihak ketiga terisolasi untuk pengujian batas multi-tenant. Baseline memiliki 0 anggota dan 0 keuangan.
 
@@ -89,7 +89,7 @@ Hasil resolusi enum otoritatif `MemberLifecycleExperience::fromMember($member)`:
 - **Isolasi Finansial Non-Aktif**: Persona P06, P07, P08, dan P09 memiliki tepat 0 tagihan iuran, pembayaran, kwitansi, entri buku besar simpanan, akun toko, pinjaman, dan transaksi POS.
 - **P13 Bentuk Finansial Kosong (Empty State)**: Persona P13 aktif secara keanggotaan tetapi memiliki 0 riwayat keuangan, membuktikan bahwa status `ACTIVE` tidak mensyaratkan polusi data historis.
 - **P10 Iuran Lunas**:
-  - Simpanan Pokok: Tagihan Rp 100.000 `PAID`, Pembayaran `APPROVED`, Kwitansi `SEED-RC-010-001`, Buku Besar Simpanan Kredit Rp 100.000.
+  - Simpanan Pokok: Tagihan Rp 200.000 `PAID`, Pembayaran `APPROVED`, Kwitansi `SEED-RC-010-001`, Buku Besar Simpanan Kredit Rp 200.000.
   - Simpanan Wajib: Tagihan Rp 100.000 `PAID`, Pembayaran `APPROVED`, Kwitansi `SEED-RC-010-002`, Buku Besar Simpanan Kredit Rp 100.000.
 - **P12 Iuran Belum Bayar**:
   - Simpanan Wajib Juni 2026: Tagihan Rp 100.000 `UNPAID` (paid_amount Rp 0, jatuh tempo 2026-06-10), tanpa pembayaran yang mencatat lunas palsu.

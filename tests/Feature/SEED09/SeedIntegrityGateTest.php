@@ -425,6 +425,7 @@ class SeedIntegrityGateTest extends TestCase
 
         $kop = Organization::query()->where('code', 'KOP-001')->first();
         $this->assertNotNull($kop, 'KOP-001 must exist.');
+        $this->assertSame('Koperasi Jaya Bersama', $kop->name, 'KOP-001 name must be Koperasi Jaya Bersama.');
         $this->assertSame('L0', $kop->level);
         $this->assertSame('HEAD_OFFICE', $kop->type);
 
@@ -563,6 +564,11 @@ class SeedIntegrityGateTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame('PAID', $invPokok->status);
+        $this->assertEquals(
+            200000.0,
+            (float) $invPokok->amount,
+            'P10 canonical Simpanan Pokok amount must be Rp200.000.',
+        );
         $this->assertEquals($invPokok->amount, $invPokok->paid_amount);
 
         $payPokok = CooperativePayment::query()->where('cooperative_dues_invoice_id', $invPokok->id)->firstOrFail();
@@ -589,6 +595,11 @@ class SeedIntegrityGateTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame('PAID', $invWajib->status);
+        $this->assertEquals(
+            100000.0,
+            (float) $invWajib->amount,
+            'P10 canonical Simpanan Wajib amount must be Rp100.000.',
+        );
         $this->assertEquals($invWajib->amount, $invWajib->paid_amount);
 
         $payWajib = CooperativePayment::query()->where('cooperative_dues_invoice_id', $invWajib->id)->firstOrFail();

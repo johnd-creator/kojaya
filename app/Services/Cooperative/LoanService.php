@@ -178,6 +178,12 @@ class LoanService implements LoanServiceContract
         return DB::transaction(function () use ($loan, $actor, $referenceNo): Loan {
             $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
 
+            if (! is_string($referenceNo) || trim($referenceNo) === '') {
+                throw ValidationException::withMessages([
+                    'reference_no' => 'Nomor referensi pencairan wajib diisi.',
+                ]);
+            }
+
             if (! in_array($loan->status, [LoanStatus::Approved, LoanStatus::Active], true)) {
                 return $loan;
             }
@@ -234,9 +240,30 @@ class LoanService implements LoanServiceContract
         return DB::transaction(function () use ($loan, $data, $actor): LoanPayment {
             $loan = Loan::query()->lockForUpdate()->with('installments')->findOrFail($loan->id);
 
+            if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Defaulted], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Pembayaran hanya dapat dicatat untuk pinjaman aktif atau bermasalah.',
+                ]);
+            }
+
+            $paymentAmount = round((float) $data['amount'], 2);
+            $outstandingAmount = round((float) $loan->outstanding_amount, 2);
+
+            if ($paymentAmount <= 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal pembayaran harus lebih besar dari nol.',
+                ]);
+            }
+
+            if ($paymentAmount > $outstandingAmount) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal pembayaran melebihi outstanding pinjaman.',
+                ]);
+            }
+
             $this->periodLockService->assertUnlocked(substr((string) $data['paid_at'], 0, 7));
 
-            $remainingPayment = round((float) $data['amount'], 2);
+            $remainingPayment = $paymentAmount;
             $principalPaid = 0.0;
             $interestPaid = 0.0;
             $feePaid = 0.0;

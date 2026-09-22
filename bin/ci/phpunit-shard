@@ -60,6 +60,7 @@ function getExcludedFiles(string $baseXmlPath, string $root): array
     // Fallback safe list matching phpunit.xml
     $defaultExcludes = [
         'tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php',
+        'tests/Feature/Cooperative/PosShiftCheckoutConcurrencyTest.php',
         'tests/Feature/Cooperative/PosVoidConcurrencyTest.php',
         'tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php',
         'tests/Feature/Cooperative/StoreCreditConcurrencyTest.php',

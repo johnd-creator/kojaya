@@ -71,6 +71,12 @@ class PosTransactionService
                     'pos_cashier_shift_id' => 'Shift kasir tidak valid atau berada di luar organisasi transaksi.',
                 ]);
             }
+
+            if ($shift->status !== PosCashierShift::STATUS_OPEN) {
+                throw ValidationException::withMessages([
+                    'pos_cashier_shift_id' => 'Checkout hanya dapat dilakukan pada shift yang masih terbuka.',
+                ]);
+            }
         }
 
         if (! empty($data['client_reference'])) {
@@ -95,6 +101,18 @@ class PosTransactionService
 
         try {
             return DB::transaction(function () use ($data, $cashier, $saleDate, $targetOrgId): PosTransaction {
+                if (! empty($data['pos_cashier_shift_id'])) {
+                    $lockedShift = PosCashierShift::query()
+                        ->lockForUpdate()
+                        ->find($data['pos_cashier_shift_id']);
+
+                    if ($lockedShift === null || $lockedShift->status !== PosCashierShift::STATUS_OPEN) {
+                        throw ValidationException::withMessages([
+                            'pos_cashier_shift_id' => 'Checkout hanya dapat dilakukan pada shift yang masih terbuka.',
+                        ]);
+                    }
+                }
+
                 $this->closingGuard->assertAndLockSale($targetOrgId, (string) $saleDate);
 
                 $memberId = $data['cooperative_member_id'] ?? null;

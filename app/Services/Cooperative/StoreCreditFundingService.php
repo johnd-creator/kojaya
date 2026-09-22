@@ -267,7 +267,14 @@ class StoreCreditFundingService
     private function resolveFundingKey(MemberStoreAccount $account, ?string $idempotencyKey): string
     {
         if ($idempotencyKey !== null && $idempotencyKey !== '') {
-            return 'funding:'.$account->id.':'.$idempotencyKey;
+            $key = 'funding:'.$account->id.':'.$idempotencyKey;
+            if (strlen($key) > 120) {
+                throw ValidationException::withMessages([
+                    'idempotency_key' => 'Idempotency key melebihi batas panjang maksimum penyimpanan.',
+                ]);
+            }
+
+            return $key;
         }
 
         return 'funding:'.$account->id.':'.Str::uuid();

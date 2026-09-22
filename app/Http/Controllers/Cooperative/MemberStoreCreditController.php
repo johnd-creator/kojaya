@@ -215,7 +215,7 @@ class MemberStoreCreditController extends Controller
             amount: (int) $request->input('amount'),
             cashier: $request->user(),
             referenceNo: $request->string('reference_no')->toString() ?: null,
-            idempotencyKey: $this->stableIdempotencyKey($request),
+            idempotencyKey: $request->resolvedIdempotencyKey(),
         );
 
         return back()->with('success', 'Setoran tunai diposting.');
@@ -281,7 +281,7 @@ class MemberStoreCreditController extends Controller
             submitter: $request->user(),
             bankReference: $request->string('bank_reference')->toString() ?: null,
             proof: $request->file('proof_file'),
-            idempotencyKey: $this->stableIdempotencyKey($request),
+            idempotencyKey: $request->resolvedIdempotencyKey(),
         );
 
         return back()->with('success', 'Setoran transfer diajukan, menunggu verifikasi.');
@@ -316,22 +316,6 @@ class MemberStoreCreditController extends Controller
     private function ensureDelegateBelongsToAccount(MemberStoreDelegate $delegate, MemberStoreAccount $account): void
     {
         abort_if($delegate->account_id !== $account->id, 404, 'Delegate tidak ditemukan pada akun ini.');
-    }
-
-    private function stableIdempotencyKey(Request $request): ?string
-    {
-        $submitted = $request->input('idempotency_key');
-        if (is_string($submitted) && $submitted !== '') {
-            return $submitted;
-        }
-
-        $key = $request->headers->get('Idempotency-Key');
-
-        if ($key !== null && $key !== '') {
-            return $key;
-        }
-
-        return null;
     }
 
     public function report(Request $request): Response

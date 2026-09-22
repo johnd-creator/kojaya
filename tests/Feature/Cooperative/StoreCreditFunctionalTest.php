@@ -28,6 +28,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use RuntimeException;
 use Tests\TestCase;
@@ -359,15 +360,14 @@ class StoreCreditFunctionalTest extends TestCase
         $this->assertSame($this->cashierUser->id, $entry->actor_user_id);
     }
 
-    public function test_store002_cash_funding_idempotency_prevents_duplicate_credits(): void
+    public function test_store002_cash_funding_header_only_idempotency_replay_creates_single_credit(): void
     {
         $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
-        $idempotencyKey = 'idempotent-cash-key-999';
+        $idempotencyKey = 'idemp-header-only-001';
 
         $payload = [
             'amount' => 150000,
-            'reference_no' => 'CASH-IDEM-001',
-            'idempotency_key' => $idempotencyKey,
+            'reference_no' => 'CASH-IDEM-HDR',
         ];
 
         $first = $this->actingAs($this->cashierUser)
@@ -384,6 +384,158 @@ class StoreCreditFunctionalTest extends TestCase
         $this->assertSame(250000, $account->refresh()->balance);
         $this->assertSame(1, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
         $this->assertSame(2, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count()); // 1 opening + 1 cash
+    }
+
+    public function test_store002_cash_funding_body_only_idempotency_replay_creates_single_credit(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
+        $idempotencyKey = 'idemp-body-only-001';
+
+        $payload = [
+            'amount' => 150000,
+            'reference_no' => 'CASH-IDEM-BDY',
+            'idempotency_key' => $idempotencyKey,
+        ];
+
+        $first = $this->actingAs($this->cashierUser)
+            ->post(route('cooperative.store-credit.cash-funding', $account->id), $payload);
+
+        $second = $this->actingAs($this->cashierUser)
+            ->post(route('cooperative.store-credit.cash-funding', $account->id), $payload);
+
+        $first->assertRedirect();
+        $second->assertRedirect();
+
+        $this->assertSame(250000, $account->refresh()->balance);
+        $this->assertSame(1, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+        $this->assertSame(2, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store002_cash_funding_matching_header_and_body_keys_replays_cleanly(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
+        $idempotencyKey = 'idemp-match-both-001';
+
+        $payload = [
+            'amount' => 150000,
+            'reference_no' => 'CASH-IDEM-MATCH',
+            'idempotency_key' => $idempotencyKey,
+        ];
+
+        $first = $this->actingAs($this->cashierUser)
+            ->withHeader('Idempotency-Key', $idempotencyKey)
+            ->post(route('cooperative.store-credit.cash-funding', $account->id), $payload);
+
+        $second = $this->actingAs($this->cashierUser)
+            ->withHeader('Idempotency-Key', $idempotencyKey)
+            ->post(route('cooperative.store-credit.cash-funding', $account->id), $payload);
+
+        $first->assertRedirect();
+        $second->assertRedirect();
+
+        $this->assertSame(250000, $account->refresh()->balance);
+        $this->assertSame(1, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+        $this->assertSame(2, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store002_cash_funding_oversized_key_rejected_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
+        $initialBalance = $account->balance;
+        $initialLedgerCount = MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count();
+        $oversizedKey = str_repeat('a', 95); // exceeds 90-char limit
+
+        // Oversized via header
+        $responseHeader = $this->actingAs($this->cashierUser)->postJson(
+            route('cooperative.store-credit.cash-funding', $account->id),
+            ['amount' => 50000],
+            ['Idempotency-Key' => $oversizedKey]
+        );
+        $responseHeader->assertStatus(422)->assertJsonValidationErrors('idempotency_key');
+
+        // Oversized via body
+        $responseBody = $this->actingAs($this->cashierUser)->postJson(
+            route('cooperative.store-credit.cash-funding', $account->id),
+            ['amount' => 50000, 'idempotency_key' => $oversizedKey]
+        );
+        $responseBody->assertStatus(422)->assertJsonValidationErrors('idempotency_key');
+
+        // Zero mutations
+        $this->assertSame($initialBalance, $account->refresh()->balance);
+        $this->assertSame($initialLedgerCount, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count());
+        $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store002_cash_funding_malformed_non_string_body_key_rejected_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
+        $initialBalance = $account->balance;
+        $initialLedgerCount = MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count();
+
+        // Malformed array in body
+        $response = $this->actingAs($this->cashierUser)->postJson(
+            route('cooperative.store-credit.cash-funding', $account->id),
+            [
+                'amount' => 50000,
+                'idempotency_key' => ['nested' => 'key_is_array'],
+            ]
+        );
+
+        $response->assertStatus(422)->assertJsonValidationErrors('idempotency_key');
+
+        // Zero mutations
+        $this->assertSame($initialBalance, $account->refresh()->balance);
+        $this->assertSame($initialLedgerCount, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count());
+        $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store002_cash_funding_conflicting_header_and_body_keys_rejected_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
+        $initialBalance = $account->balance;
+        $initialLedgerCount = MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count();
+
+        $response = $this->actingAs($this->cashierUser)->postJson(
+            route('cooperative.store-credit.cash-funding', $account->id),
+            [
+                'amount' => 50000,
+                'idempotency_key' => 'body-key-alpha',
+            ],
+            ['Idempotency-Key' => 'header-key-beta']
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['idempotency_key' => 'Idempotency key pada header dan body tidak cocok.']);
+
+        // Zero mutations
+        $this->assertSame($initialBalance, $account->refresh()->balance);
+        $this->assertSame($initialLedgerCount, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count());
+        $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store002_service_layer_rejects_keys_exceeding_database_column_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 100000);
+        $initialBalance = $account->balance;
+        $initialLedgerCount = MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count();
+
+        // Pass a key directly to service that causes resolved key > 120 chars
+        $oversizedServiceKey = str_repeat('z', 115);
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            $this->fundingService->submitCashFunding(
+                account: $account,
+                amount: 50000,
+                cashier: $this->cashierUser,
+                idempotencyKey: $oversizedServiceKey
+            );
+        } finally {
+            $this->assertSame($initialBalance, $account->refresh()->balance);
+            $this->assertSame($initialLedgerCount, MemberStoreLedgerEntry::query()->where('account_id', $account->id)->count());
+            $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+        }
     }
 
     public function test_store002_zero_or_negative_cash_funding_rejected_with_zero_mutations(): void
@@ -1262,8 +1414,117 @@ class StoreCreditFunctionalTest extends TestCase
         $this->assertSame(50000, $account->refresh()->balance);
     }
 
+    public function test_store007_transfer_funding_api_header_only_idempotency_replay_creates_single_request(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 50000);
+        Sanctum::actingAs($this->memberUserA, ['member:read', 'member:write']);
+
+        $idempotencyKey = 'api-trf-header-001';
+        $payload = [
+            'amount' => 100000,
+            'bank_reference' => 'BCA-API-IDEM-HDR',
+        ];
+
+        $first = $this->withHeader('Idempotency-Key', $idempotencyKey)
+            ->postJson('/api/v1/member/store-account/transfers', $payload);
+        $first->assertStatus(201);
+        $fundingId = $first->json('data.id');
+
+        $second = $this->withHeader('Idempotency-Key', $idempotencyKey)
+            ->postJson('/api/v1/member/store-account/transfers', $payload);
+        $second->assertSuccessful();
+
+        $this->assertSame(1, MemberStoreFundingRequest::query()->where('account_id', $account->id)->where('method', 'transfer')->count());
+        $this->assertSame($fundingId, $second->json('data.id'));
+    }
+
+    public function test_store007_transfer_funding_api_body_only_idempotency_replay_creates_single_request(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 50000);
+        Sanctum::actingAs($this->memberUserA, ['member:read', 'member:write']);
+
+        $idempotencyKey = 'api-trf-body-001';
+        $payload = [
+            'amount' => 100000,
+            'bank_reference' => 'BCA-API-IDEM-BDY',
+            'idempotency_key' => $idempotencyKey,
+        ];
+
+        $first = $this->postJson('/api/v1/member/store-account/transfers', $payload);
+        $first->assertStatus(201);
+        $fundingId = $first->json('data.id');
+
+        $second = $this->postJson('/api/v1/member/store-account/transfers', $payload);
+        $second->assertSuccessful();
+
+        $this->assertSame(1, MemberStoreFundingRequest::query()->where('account_id', $account->id)->where('method', 'transfer')->count());
+        $this->assertSame($fundingId, $second->json('data.id'));
+    }
+
+    public function test_store007_transfer_funding_api_oversized_key_rejected_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 50000);
+        Sanctum::actingAs($this->memberUserA, ['member:read', 'member:write']);
+        $oversizedHeaderKey = str_repeat('t', 95);
+        $oversizedBodyKey = str_repeat('u', 95);
+
+        // Header oversized
+        $responseHeader = $this->postJson(
+            '/api/v1/member/store-account/transfers',
+            ['amount' => 100000],
+            ['Idempotency-Key' => $oversizedHeaderKey]
+        );
+        $responseHeader->assertStatus(422)->assertJsonValidationErrors('idempotency_key');
+
+        $this->flushHeaders();
+
+        // Body oversized
+        $responseBody = $this->postJson('/api/v1/member/store-account/transfers', [
+            'amount' => 100000,
+            'idempotency_key' => $oversizedBodyKey,
+        ]);
+        $responseBody->assertStatus(422)->assertJsonValidationErrors('idempotency_key');
+
+        $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store007_transfer_funding_api_malformed_body_key_rejected_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 50000);
+        Sanctum::actingAs($this->memberUserA, ['member:read', 'member:write']);
+        $this->flushHeaders();
+
+        $response = $this->postJson('/api/v1/member/store-account/transfers', [
+            'amount' => 100000,
+            'idempotency_key' => ['nested' => 'array_key'],
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('idempotency_key');
+        $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+    }
+
+    public function test_store007_transfer_funding_api_conflicting_keys_rejected_with_zero_mutations(): void
+    {
+        $account = $this->openTestAccount($this->memberA, openingBalance: 50000);
+        Sanctum::actingAs($this->memberUserA, ['member:read', 'member:write']);
+        $this->flushHeaders();
+
+        $response = $this->postJson(
+            '/api/v1/member/store-account/transfers',
+            [
+                'amount' => 100000,
+                'idempotency_key' => 'bdy-trf-key',
+            ],
+            ['Idempotency-Key' => 'hdr-trf-key']
+        );
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['idempotency_key' => 'Idempotency key pada header dan body tidak cocok.']);
+        $this->assertSame(0, MemberStoreFundingRequest::query()->where('account_id', $account->id)->count());
+    }
+
     // =========================================================================
-    // STORE-008: Ledger Balance Reconstruction Audit
+    // STORE-008: Ledger Balance Integrity Audit
     // =========================================================================
 
     public function test_store008_mathematical_balance_invariant_matches_ledger_sum_across_full_lifecycle(): void

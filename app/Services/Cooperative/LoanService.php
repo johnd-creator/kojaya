@@ -382,12 +382,33 @@ class LoanService implements LoanServiceContract
                     ]);
                 }
 
+                $this->periodLockService->assertUnlocked(now()->format('Y-m'));
+
                 $fromStatus = $loan->status->value;
 
                 $loan->forceFill([
                     'status' => LoanStatus::WrittenOff,
                     'notes' => trim(($loan->notes ? $loan->notes."\n" : '').($note ?: 'Pinjaman dihapus buku.')),
                 ])->save();
+
+                CooperativeLedgerEntry::query()->firstOrCreate(
+                    [
+                        'source_type' => Loan::class,
+                        'source_id' => $loan->id,
+                        'entry_type' => 'LOAN_WRITE_OFF',
+                    ],
+                    [
+                        'cooperative_member_id' => $loan->cooperative_member_id,
+                        'organization_id' => $loan->organization_id,
+                        'cooperative_payment_id' => null,
+                        'ledger_scope' => 'LOAN',
+                        'debit' => 0,
+                        'credit' => round((float) $loan->outstanding_amount, 2),
+                        'period' => now()->format('Y-m'),
+                        'description' => 'Penghapusbukuan pinjaman macet (write-off)',
+                        'posted_at' => now()->toDateString(),
+                    ],
+                );
 
                 $this->logApproval($loan, $fromStatus, LoanStatus::WrittenOff->value, $actor, $note);
 

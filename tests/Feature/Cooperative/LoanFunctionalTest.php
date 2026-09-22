@@ -6,6 +6,7 @@ use App\Contracts\Cooperative\LoanServiceContract;
 use App\Enums\InstallmentStatus;
 use App\Enums\LoanStatus;
 use App\Models\ApprovalLog;
+use App\Models\AuditLog;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
@@ -417,26 +418,228 @@ class LoanFunctionalTest extends TestCase
         $this->assertSame(LoanStatus::PaidOff, $loan->fresh()->status);
     }
 
-    public function test_loan010_writeoff_service_exists_but_contract_route_is_not_implemented(): void
+    public function test_loan010_authorized_pengurus_can_write_off_active_and_defaulted_loan_with_ledger_and_audit(): void
     {
         $organization = Organization::factory()->create();
-        $admin = $this->user('Admin Koperasi', $organization);
-        $cashier = $this->user('Kasir Koperasi', $organization);
         $pengurus = $this->user('Pengurus Koperasi', $organization);
-        $loan = Loan::factory()->active()->create(['organization_id' => $organization->id]);
+        $loan = $this->scheduledActiveLoan($organization);
 
-        $this->assertFalse(collect(app('router')->getRoutes()->getRoutes())
+        $this->assertTrue(collect(app('router')->getRoutes()->getRoutes())
             ->contains(fn ($route): bool => $route->uri() === 'cooperative/loans/{loan}/write-off'));
-        $this->assertFalse($admin->can('writeOff', $loan));
-        $this->assertFalse($cashier->can('writeOff', $loan));
         $this->assertTrue($pengurus->can('writeOff', $loan));
 
-        $result = app(LoanServiceContract::class)->writeOff($loan, $pengurus, 'Bad debt FUNC-08');
-        $this->assertSame(LoanStatus::WrittenOff, $result->status);
+        $response = $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => 'Bad debt decision by board FUNC-08',
+        ]);
+        $response->assertRedirect();
+
+        $loan->refresh();
+        $this->assertSame(LoanStatus::WrittenOff, $loan->status);
+        $this->assertStringContainsString('Bad debt decision by board FUNC-08', (string) $loan->notes);
+
+        $this->assertDatabaseHas('approval_logs', [
+            'subject_type' => Loan::class,
+            'subject_id' => (string) $loan->id,
+            'from_status' => LoanStatus::Active->value,
+            'to_status' => LoanStatus::WrittenOff->value,
+            'note' => 'Bad debt decision by board FUNC-08',
+        ]);
+
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'loan.writeoff.completed',
             'subject_id' => (string) $loan->id,
         ]);
+
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'cooperative_member_id' => $loan->cooperative_member_id,
+            'organization_id' => $organization->id,
+            'source_type' => Loan::class,
+            'source_id' => $loan->id,
+            'entry_type' => 'LOAN_WRITE_OFF',
+            'ledger_scope' => 'LOAN',
+            'debit' => 0,
+            'credit' => 300,
+        ]);
+        $this->assertSame(1, CooperativeLedgerEntry::query()
+            ->where('source_type', Loan::class)
+            ->where('source_id', $loan->id)
+            ->where('entry_type', 'LOAN_WRITE_OFF')
+            ->count());
+
+        // Also verify DEFAULTED -> WRITTEN_OFF
+        $member = $this->member($organization);
+        $loanType = $this->loanType();
+        $defaultedLoan = Loan::query()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $organization->id,
+            'loan_type_id' => $loanType->id,
+            'principal_amount' => 500000,
+            'interest_rate' => 0,
+            'admin_fee' => 0,
+            'late_fee_per_day' => 0,
+            'term_months' => 3,
+            'installment_amount' => 500000,
+            'total_interest_amount' => 0,
+            'total_amount' => 500000,
+            'outstanding_amount' => 500000,
+            'applied_at' => now()->toDateString(),
+            'first_due_date' => now()->addMonth()->toDateString(),
+            'status' => LoanStatus::Defaulted,
+            'disbursed_at' => now(),
+            'reference_no' => 'DISB-FUNC08-DEFAULTED',
+        ]);
+
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $defaultedLoan), [
+            'notes' => 'Pailit debitur defaulted',
+        ])->assertRedirect();
+
+        $defaultedLoan->refresh();
+        $this->assertSame(LoanStatus::WrittenOff, $defaultedLoan->status);
+        $this->assertDatabaseHas('approval_logs', [
+            'subject_type' => Loan::class,
+            'subject_id' => (string) $defaultedLoan->id,
+            'from_status' => LoanStatus::Defaulted->value,
+            'to_status' => LoanStatus::WrittenOff->value,
+            'note' => 'Pailit debitur defaulted',
+        ]);
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'source_type' => Loan::class,
+            'source_id' => $defaultedLoan->id,
+            'entry_type' => 'LOAN_WRITE_OFF',
+            'credit' => 500000,
+        ]);
+    }
+
+    public function test_loan010_unauthorized_and_cross_organization_actors_are_forbidden_with_zero_mutation(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = $this->user('Admin Koperasi', $organization);
+        $cashier = $this->user('Kasir Koperasi', $organization);
+        $otherOrg = Organization::factory()->create();
+        $crossOrgPengurus = $this->user('Pengurus Koperasi', $otherOrg);
+        $loan = $this->scheduledActiveLoan($organization);
+
+        $initialNotes = $loan->notes;
+        $initialStatus = $loan->status;
+
+        // Admin Koperasi: 403 Forbidden
+        $this->assertFalse($admin->can('writeOff', $loan));
+        $this->actingAs($admin)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => 'Admin write-off attempt',
+        ])->assertForbidden();
+
+        $this->assertSame($initialStatus, $loan->fresh()->status);
+        $this->assertSame($initialNotes, $loan->fresh()->notes);
+        $this->assertSame(0, ApprovalLog::query()->where('subject_id', (string) $loan->id)->where('to_status', LoanStatus::WrittenOff->value)->count());
+        $this->assertSame(0, AuditLog::query()->where('subject_id', (string) $loan->id)->where('action', 'loan.writeoff.completed')->count());
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_type', Loan::class)->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+
+        // Kasir Koperasi: 403 Forbidden
+        $this->assertFalse($cashier->can('writeOff', $loan));
+        $this->actingAs($cashier)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => 'Cashier write-off attempt',
+        ])->assertForbidden();
+
+        $this->assertSame($initialStatus, $loan->fresh()->status);
+        $this->assertSame(0, ApprovalLog::query()->where('subject_id', (string) $loan->id)->where('to_status', LoanStatus::WrittenOff->value)->count());
+        $this->assertSame(0, AuditLog::query()->where('subject_id', (string) $loan->id)->where('action', 'loan.writeoff.completed')->count());
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_type', Loan::class)->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+
+        // Cross-organization Pengurus: 403 Forbidden
+        $this->assertFalse($crossOrgPengurus->can('writeOff', $loan));
+        $this->actingAs($crossOrgPengurus)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => 'Cross-org write-off attempt',
+        ])->assertForbidden();
+
+        $this->assertSame($initialStatus, $loan->fresh()->status);
+        $this->assertSame(0, ApprovalLog::query()->where('subject_id', (string) $loan->id)->where('to_status', LoanStatus::WrittenOff->value)->count());
+        $this->assertSame(0, AuditLog::query()->where('subject_id', (string) $loan->id)->where('action', 'loan.writeoff.completed')->count());
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_type', Loan::class)->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+    }
+
+    public function test_loan010_invalid_state_and_empty_reason_are_rejected_with_zero_mutation(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = $this->user('Pengurus Koperasi', $organization);
+        $loan = $this->scheduledActiveLoan($organization);
+
+        // Empty reason rejected
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => '',
+        ])->assertSessionHasErrors('reason');
+
+        $this->assertSame(LoanStatus::Active, $loan->fresh()->status);
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+
+        // APPLIED state rejected
+        $appliedLoan = $this->appliedLoan($organization, $pengurus);
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $appliedLoan), [
+            'reason' => 'Attempt on applied loan',
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame(LoanStatus::Applied, $appliedLoan->fresh()->status);
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_id', $appliedLoan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+
+        // MANAGER_APPROVED state rejected
+        $manager = $this->user('Manajer Koperasi', $organization);
+        app(LoanServiceContract::class)->managerReview($appliedLoan, $manager, 'Manager review');
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $appliedLoan->fresh()), [
+            'reason' => 'Attempt on manager approved loan',
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame(LoanStatus::ManagerApproved, $appliedLoan->fresh()->status);
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_id', $appliedLoan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+
+        // APPROVED state rejected
+        $creator = $this->user('Admin Koperasi', $organization);
+        $approvedLoan = $this->approvedLoan($organization, $creator, $manager, $pengurus);
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $approvedLoan), [
+            'reason' => 'Attempt on approved loan',
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame(LoanStatus::Approved, $approvedLoan->fresh()->status);
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_id', $approvedLoan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+
+        // PAID_OFF state rejected
+        $paidOffLoan = $this->scheduledActiveLoan($organization);
+        $paidOffLoan->forceFill(['status' => LoanStatus::PaidOff, 'outstanding_amount' => 0])->save();
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $paidOffLoan), [
+            'reason' => 'Attempt on paid off loan',
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame(LoanStatus::PaidOff, $paidOffLoan->fresh()->status);
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_id', $paidOffLoan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
+    }
+
+    public function test_loan010_repeated_write_off_is_rejected_and_prevents_duplicate_effects(): void
+    {
+        $organization = Organization::factory()->create();
+        $pengurus = $this->user('Pengurus Koperasi', $organization);
+        $loan = $this->scheduledActiveLoan($organization);
+
+        // Initial write-off succeeds
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => 'Initial write-off FUNC-08',
+        ])->assertRedirect();
+
+        $this->assertSame(LoanStatus::WrittenOff, $loan->fresh()->status);
+        $approvalCount = ApprovalLog::query()->where('subject_id', (string) $loan->id)->where('to_status', LoanStatus::WrittenOff->value)->count();
+        $auditCount = AuditLog::query()->where('subject_id', (string) $loan->id)->where('action', 'loan.writeoff.completed')->count();
+        $ledgerCount = CooperativeLedgerEntry::query()->where('source_type', Loan::class)->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count();
+
+        $this->assertSame(1, $approvalCount);
+        $this->assertSame(1, $auditCount);
+        $this->assertSame(1, $ledgerCount);
+
+        // Repeated write-off attempt is rejected
+        $this->actingAs($pengurus)->post(route('cooperative.loans.write-off', $loan), [
+            'reason' => 'Duplicate write-off attempt',
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame(LoanStatus::WrittenOff, $loan->fresh()->status);
+        $this->assertSame(1, ApprovalLog::query()->where('subject_id', (string) $loan->id)->where('to_status', LoanStatus::WrittenOff->value)->count());
+        $this->assertSame(1, AuditLog::query()->where('subject_id', (string) $loan->id)->where('action', 'loan.writeoff.completed')->count());
+        $this->assertSame(1, CooperativeLedgerEntry::query()->where('source_type', Loan::class)->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
     }
 
     private function user(string $role, Organization $organization): User

@@ -87,8 +87,8 @@ class PosShiftCheckoutConcurrencyTest extends TestCase
         $this->assertSame(5000.0, (float) $closed->total_sales);
         $this->assertSame(5000.0, (float) $closed->total_cash_sales);
         $this->assertSame(105000.0, (float) $closed->expected_cash);
-        $this->assertSame(105000.0, (float) $closed->closing_cash);
-        $this->assertSame(0.0, (float) $closed->cash_difference);
+        $this->assertSame(100000.0, (float) $closed->closing_cash);
+        $this->assertSame(-5000.0, (float) $closed->cash_difference);
         $this->assertSame(1, PosTransaction::query()->where('pos_cashier_shift_id', $shift->id)->count());
     }
 

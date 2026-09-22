@@ -93,7 +93,7 @@ class MemberStoreCreditApiController extends Controller
             submitter: $request->user(),
             bankReference: $request->string('bank_reference')->toString() ?: null,
             proof: $request->file('proof_file'),
-            idempotencyKey: $request->headers->get('Idempotency-Key'),
+            idempotencyKey: $request->headers->get('Idempotency-Key') ?: ($request->input('idempotency_key') ?: null),
         );
 
         return (new MemberStoreFundingRequestResource($funding))

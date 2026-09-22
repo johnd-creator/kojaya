@@ -320,18 +320,18 @@ class MemberStoreCreditController extends Controller
 
     private function stableIdempotencyKey(Request $request): ?string
     {
-        $key = $request->headers->get('Idempotency-Key');
-
-        if ($key === null || $key === '') {
-            return null;
-        }
-
         $submitted = $request->input('idempotency_key');
         if (is_string($submitted) && $submitted !== '') {
             return $submitted;
         }
 
-        return $key;
+        $key = $request->headers->get('Idempotency-Key');
+
+        if ($key !== null && $key !== '') {
+            return $key;
+        }
+
+        return null;
     }
 
     public function report(Request $request): Response

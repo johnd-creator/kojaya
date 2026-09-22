@@ -18,6 +18,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class LoanFunctionalTest extends TestCase
@@ -516,7 +517,7 @@ class LoanFunctionalTest extends TestCase
         $admin = $this->user('Admin Koperasi', $organization);
         $cashier = $this->user('Kasir Koperasi', $organization);
         $otherOrg = Organization::factory()->create();
-        $crossOrgPengurus = $this->user('Pengurus Koperasi', $otherOrg);
+        $crossOrgPengurus = $this->scopedPengurus($otherOrg);
         $loan = $this->scheduledActiveLoan($organization);
 
         $initialNotes = $loan->notes;
@@ -642,8 +643,57 @@ class LoanFunctionalTest extends TestCase
         $this->assertSame(1, CooperativeLedgerEntry::query()->where('source_type', Loan::class)->where('source_id', $loan->id)->where('entry_type', 'LOAN_WRITE_OFF')->count());
     }
 
+    public function test_global_administrator_preserves_loan_policy_visibility_across_organizations(): void
+    {
+        $organizationA = Organization::factory()->create();
+        $organizationB = Organization::factory()->create();
+
+        // System Admin and Admin Pusat hold view_cooperative_all and full loan permissions
+        $systemAdmin = $this->user('System Admin', $organizationB);
+        $adminPusat = $this->user('Admin Pusat', $organizationB);
+        $globalAdminWithoutOrg = User::factory()->create(['organization_id' => null]);
+        $globalAdminWithoutOrg->assignRole('System Admin');
+
+        // Scoped Pengurus Koperasi belongs to organization B without view_cooperative_all
+        $scopedPengurusB = $this->scopedPengurus($organizationB);
+
+        // Loan belongs to organization A
+        $creatorA = $this->user('Admin Koperasi', $organizationA);
+        $loanA = $this->appliedLoan($organizationA, $creatorA);
+
+        // Global administrators retain policy visibility across organizations
+        $this->assertTrue($systemAdmin->can('approve', $loanA));
+        $this->assertTrue($systemAdmin->can('disburse', $loanA));
+        $this->assertTrue($adminPusat->can('approve', $loanA));
+        $this->assertTrue($adminPusat->can('disburse', $loanA));
+        $this->assertTrue($globalAdminWithoutOrg->can('approve', $loanA));
+        $this->assertTrue($globalAdminWithoutOrg->can('disburse', $loanA));
+
+        // Scoped cross-organization Pengurus remains strictly denied
+        $this->assertFalse($scopedPengurusB->can('approve', $loanA));
+        $this->assertFalse($scopedPengurusB->can('disburse', $loanA));
+        $this->assertFalse($scopedPengurusB->can('writeOff', $loanA));
+    }
+
     private function user(string $role, Organization $organization): User
     {
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole($role);
+
+        return $user;
+    }
+
+    private function scopedPengurus(Organization $organization): User
+    {
+        $role = Role::firstOrCreate(['name' => 'Scoped Pengurus Koperasi', 'guard_name' => 'web']);
+        $permissions = Role::findByName('Pengurus Koperasi')
+            ->permissions
+            ->pluck('name')
+            ->reject(fn (string $permission): bool => $permission === 'view_cooperative_all')
+            ->values()
+            ->all();
+        $role->syncPermissions($permissions);
+
         $user = User::factory()->create(['organization_id' => $organization->id]);
         $user->assignRole($role);
 

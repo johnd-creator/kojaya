@@ -68,7 +68,6 @@ class LoanPolicy extends BasePolicy
 
     private function visibleTo(User $user, Loan $loan): bool
     {
-        return $this->sameOrganization($user, $loan)
-            && (string) $user->organization_id === (string) $loan->organization_id;
+        return $this->sameOrganization($user, $loan);
     }
 }

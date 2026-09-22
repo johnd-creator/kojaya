@@ -4,6 +4,7 @@ namespace App\Services\Cooperative;
 
 use App\Models\LoanType;
 use Carbon\CarbonImmutable;
+use Illuminate\Validation\ValidationException;
 
 class LoanCalculatorService
 {
@@ -16,6 +17,24 @@ class LoanCalculatorService
         int $termMonths,
         string $firstDueDate,
     ): array {
+        if ($principalAmount <= 0) {
+            throw ValidationException::withMessages([
+                'principal_amount' => 'Nilai pokok pinjaman harus lebih besar dari nol.',
+            ]);
+        }
+
+        if ($termMonths <= 0) {
+            throw ValidationException::withMessages([
+                'term_months' => 'Tenor pinjaman harus lebih besar dari nol.',
+            ]);
+        }
+
+        if ((float) $loanType->interest_rate < 0) {
+            throw ValidationException::withMessages([
+                'interest_rate' => 'Suku bunga pinjaman tidak boleh negatif.',
+            ]);
+        }
+
         $monthlyInterestAmount = round($principalAmount * ((float) $loanType->interest_rate / 100), 2);
         $basePrincipalAmount = round($principalAmount / $termMonths, 2);
         $remainingPrincipal = round($principalAmount, 2);

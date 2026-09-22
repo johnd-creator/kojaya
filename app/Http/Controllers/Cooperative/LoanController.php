@@ -12,6 +12,7 @@ use App\Http\Requests\Cooperative\PreviewLoanCalculationPageRequest;
 use App\Http\Requests\Cooperative\RejectLoanRequest;
 use App\Http\Requests\Cooperative\StoreLoanPaymentRequest;
 use App\Http\Requests\Cooperative\StoreLoanRequest;
+use App\Http\Requests\Cooperative\WriteOffLoanRequest;
 use App\Models\CooperativeMember;
 use App\Models\Loan;
 use App\Models\LoanType;
@@ -180,6 +181,15 @@ class LoanController extends Controller
         $loanService->recordPayment($loan, $request->validated(), $request->user());
 
         return back()->with('success', 'Pembayaran angsuran berhasil dicatat.');
+    }
+
+    public function writeOff(WriteOffLoanRequest $request, Loan $loan, LoanServiceContract $loanService): RedirectResponse
+    {
+        $this->authorize('writeOff', $loan);
+
+        $loanService->writeOff($loan, $request->user(), $request->writeOffNote());
+
+        return back()->with('success', 'Pinjaman berhasil dihapus buku.');
     }
 
     public function calculator(PreviewLoanCalculationPageRequest $request, LoanCalculatorService $calculatorService): Response

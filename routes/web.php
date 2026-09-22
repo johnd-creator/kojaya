@@ -306,6 +306,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('loans/{loan}/reject', [\App\Http\Controllers\Cooperative\LoanController::class, 'reject'])->name('loans.reject');
             Route::post('loans/{loan}/disburse', [\App\Http\Controllers\Cooperative\LoanController::class, 'disburse'])->name('loans.disburse');
             Route::post('loans/{loan}/payments', [\App\Http\Controllers\Cooperative\LoanController::class, 'pay'])->name('loans.pay');
+            Route::post('loans/{loan}/write-off', [\App\Http\Controllers\Cooperative\LoanController::class, 'writeOff'])->name('loans.write-off');
         });
 
         Route::middleware('can:manage_cooperative_points')->group(function () {

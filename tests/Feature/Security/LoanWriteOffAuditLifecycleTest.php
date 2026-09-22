@@ -45,6 +45,12 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
         $this->assertSame(LoanStatus::WrittenOff->value, $audit->new_values['status']);
         $this->assertSame($org->id, $audit->old_values['organization_id']);
         $this->assertTrue($audit->new_values['note_supplied']);
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'source_type' => Loan::class,
+            'source_id' => $loan->id,
+            'entry_type' => 'LOAN_WRITE_OFF',
+            'ledger_scope' => 'LOAN',
+        ]);
     }
 
     public function test_defaulted_loan_can_be_written_off(): void
@@ -103,6 +109,11 @@ class LoanWriteOffAuditLifecycleTest extends TestCase
             'subject_type' => Loan::class,
             'subject_id' => (string) $loan->id,
             'to_status' => LoanStatus::WrittenOff->value,
+        ]);
+        $this->assertDatabaseMissing('cooperative_ledger_entries', [
+            'source_type' => Loan::class,
+            'source_id' => $loan->id,
+            'entry_type' => 'LOAN_WRITE_OFF',
         ]);
     }
 

@@ -178,6 +178,12 @@ class LoanService implements LoanServiceContract
         return DB::transaction(function () use ($loan, $actor, $referenceNo): Loan {
             $loan = Loan::query()->lockForUpdate()->findOrFail($loan->id);
 
+            if (! is_string($referenceNo) || trim($referenceNo) === '') {
+                throw ValidationException::withMessages([
+                    'reference_no' => 'Nomor referensi pencairan wajib diisi.',
+                ]);
+            }
+
             if (! in_array($loan->status, [LoanStatus::Approved, LoanStatus::Active], true)) {
                 return $loan;
             }
@@ -234,9 +240,30 @@ class LoanService implements LoanServiceContract
         return DB::transaction(function () use ($loan, $data, $actor): LoanPayment {
             $loan = Loan::query()->lockForUpdate()->with('installments')->findOrFail($loan->id);
 
+            if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Defaulted], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Pembayaran hanya dapat dicatat untuk pinjaman aktif atau bermasalah.',
+                ]);
+            }
+
+            $paymentAmount = round((float) $data['amount'], 2);
+            $outstandingAmount = round((float) $loan->outstanding_amount, 2);
+
+            if ($paymentAmount <= 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal pembayaran harus lebih besar dari nol.',
+                ]);
+            }
+
+            if ($paymentAmount > $outstandingAmount) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal pembayaran melebihi outstanding pinjaman.',
+                ]);
+            }
+
             $this->periodLockService->assertUnlocked(substr((string) $data['paid_at'], 0, 7));
 
-            $remainingPayment = round((float) $data['amount'], 2);
+            $remainingPayment = $paymentAmount;
             $principalPaid = 0.0;
             $interestPaid = 0.0;
             $feePaid = 0.0;
@@ -355,12 +382,33 @@ class LoanService implements LoanServiceContract
                     ]);
                 }
 
+                $this->periodLockService->assertUnlocked(now()->format('Y-m'));
+
                 $fromStatus = $loan->status->value;
 
                 $loan->forceFill([
                     'status' => LoanStatus::WrittenOff,
                     'notes' => trim(($loan->notes ? $loan->notes."\n" : '').($note ?: 'Pinjaman dihapus buku.')),
                 ])->save();
+
+                CooperativeLedgerEntry::query()->firstOrCreate(
+                    [
+                        'source_type' => Loan::class,
+                        'source_id' => $loan->id,
+                        'entry_type' => 'LOAN_WRITE_OFF',
+                    ],
+                    [
+                        'cooperative_member_id' => $loan->cooperative_member_id,
+                        'organization_id' => $loan->organization_id,
+                        'cooperative_payment_id' => null,
+                        'ledger_scope' => 'LOAN',
+                        'debit' => 0,
+                        'credit' => round((float) $loan->outstanding_amount, 2),
+                        'period' => now()->format('Y-m'),
+                        'description' => 'Penghapusbukuan pinjaman macet (write-off)',
+                        'posted_at' => now()->toDateString(),
+                    ],
+                );
 
                 $this->logApproval($loan, $fromStatus, LoanStatus::WrittenOff->value, $actor, $note);
 

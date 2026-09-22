@@ -14,7 +14,7 @@ class DisburseLoanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reference_no' => ['nullable', 'string', 'max:255'],
+            'reference_no' => ['required', 'string', 'max:255'],
         ];
     }
 }

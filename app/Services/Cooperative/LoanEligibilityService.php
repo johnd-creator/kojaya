@@ -20,6 +20,18 @@ class LoanEligibilityService
             ]);
         }
 
+        if ($loanType->min_amount !== null && $principalAmount < (float) $loanType->min_amount) {
+            throw ValidationException::withMessages([
+                'principal_amount' => 'Nilai pinjaman berada di bawah batas minimum jenis pinjaman.',
+            ]);
+        }
+
+        if ($loanType->max_amount !== null && $principalAmount > (float) $loanType->max_amount) {
+            throw ValidationException::withMessages([
+                'principal_amount' => 'Nilai pinjaman melebihi batas maksimum jenis pinjaman.',
+            ]);
+        }
+
         $minimumMembershipMonths = (int) ($rules['min_membership_months'] ?? 0);
         if ($minimumMembershipMonths > 0 && $this->membershipMonths($member) < $minimumMembershipMonths) {
             throw ValidationException::withMessages([

@@ -51,9 +51,19 @@ class PosCashierShiftService
         }
 
         return DB::transaction(function () use ($shift, $closingCash, $notes): PosCashierShift {
-            $stats = $this->computeShiftStats($shift);
+            $lockedShift = PosCashierShift::query()
+                ->lockForUpdate()
+                ->findOrFail($shift->id);
 
-            $shift->forceFill([
+            if ($lockedShift->status !== PosCashierShift::STATUS_OPEN) {
+                throw ValidationException::withMessages([
+                    'shift' => 'Shift sudah ditutup.',
+                ]);
+            }
+
+            $stats = $this->computeShiftStats($lockedShift);
+
+            $lockedShift->forceFill([
                 'closing_cash' => $closingCash,
                 'expected_cash' => $stats['expected_cash'],
                 'cash_difference' => round($closingCash - $stats['expected_cash'], 2),
@@ -62,16 +72,16 @@ class PosCashierShiftService
                 'total_cash_sales' => $stats['total_cash_sales'],
                 'closed_at' => now(),
                 'status' => PosCashierShift::STATUS_CLOSED,
-                'notes' => $notes ?? $shift->notes,
+                'notes' => $notes ?? $lockedShift->notes,
             ])->save();
 
-            $this->logEvent('shift.closed', null, $shift, [
+            $this->logEvent('shift.closed', null, $lockedShift, [
                 'closing_cash' => $closingCash,
                 'expected_cash' => $stats['expected_cash'],
-                'difference' => $shift->cash_difference,
+                'difference' => $lockedShift->cash_difference,
             ]);
 
-            return $shift->refresh();
+            return $lockedShift->refresh();
         });
     }
 

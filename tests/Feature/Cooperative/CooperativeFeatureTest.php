@@ -18,6 +18,7 @@ use App\Models\PosProduct;
 use App\Models\PosStockMovement;
 use App\Models\User;
 use App\Services\Cooperative\AnnualShuDistributionService;
+use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\PointService;
 use Database\Seeders\RolePermissionSeeder;
@@ -1099,6 +1100,8 @@ class CooperativeFeatureTest extends TestCase
 
     public function test_payment_store_supports_member_search_flow_with_type_and_proof_upload(): void
     {
+        config()->set('filesystems.payment_proof_disk', CooperativePaymentService::PROOF_DISK);
+        Storage::fake(CooperativePaymentService::PROOF_DISK);
         Storage::fake('public');
         $this->seed(RolePermissionSeeder::class);
         $user = User::factory()->create();
@@ -1141,7 +1144,9 @@ class CooperativeFeatureTest extends TestCase
         $this->assertSame('100000.00', $invoice->paid_amount);
         $this->assertSame(1, CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count());
         $this->assertNotNull($payment->proof_path);
-        $this->assertTrue(Storage::disk('public')->exists($payment->proof_path));
+        $proofDisk = config('filesystems.payment_proof_disk', CooperativePaymentService::PROOF_DISK);
+        Storage::disk($proofDisk)->assertExists($payment->proof_path);
+        Storage::disk('public')->assertMissing($payment->proof_path);
     }
 
     public function test_payment_store_rejects_non_standard_amount_for_wajib_and_pokok(): void

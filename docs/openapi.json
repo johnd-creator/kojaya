@@ -3350,6 +3350,70 @@
                 ]
             }
         },
+        "/api/v1/member/payments/{payment}/proof": {
+            "get": {
+                "summary": "api.v1.member.payments.proof",
+                "operationId": "get_api_v1_member_payments__payment__proof",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    }
+                ]
+            }
+        },
         "/api/v1/member/payments/proof": {
             "post": {
                 "summary": "Membuat Member/Payments/Proof",

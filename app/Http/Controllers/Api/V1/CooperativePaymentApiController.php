@@ -30,7 +30,7 @@ class CooperativePaymentApiController extends Controller
         $memberQuery->firstOrFail();
 
         if ($request->hasFile('proof')) {
-            $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin-api', 'public');
+            $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin-api', config('filesystems.payment_proof_disk', CooperativePaymentService::PROOF_DISK));
         }
 
         $payment = $service->record($data, $request->user());

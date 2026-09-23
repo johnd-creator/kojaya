@@ -103,7 +103,7 @@ class CooperativePaymentController extends Controller
         $memberQuery->firstOrFail();
 
         if ($request->hasFile('proof')) {
-            $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin', 'public');
+            $data['proof_path'] = $request->file('proof')->store('cooperative/payment-proofs/admin', config('filesystems.payment_proof_disk', CooperativePaymentService::PROOF_DISK));
         }
 
         $data['status'] = 'APPROVED';
@@ -113,6 +113,18 @@ class CooperativePaymentController extends Controller
         $service->approve($payment, $request->user());
 
         return back()->with('success', 'Pembayaran simpanan berhasil dicatat.');
+    }
+
+    public function downloadProof(Request $request, CooperativePayment $payment, CooperativePaymentService $service): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->authorize('viewProof', $payment);
+
+        $response = $service->downloadProofResponse($payment);
+        if ($response === null) {
+            abort(404, 'Bukti pembayaran tidak tersedia.');
+        }
+
+        return $response;
     }
 
     public function bulkApprove(BulkApprovePaymentsRequest $request, CooperativePaymentService $service, OrganizationScopedQueryService $scopeService): RedirectResponse

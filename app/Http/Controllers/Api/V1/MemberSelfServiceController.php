@@ -428,7 +428,7 @@ class MemberSelfServiceController extends Controller
             ->whereIn('status', ['UNPAID', 'PARTIAL'])
             ->findOrFail($request->validated('cooperative_dues_invoice_id'));
 
-        $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, 'public');
+        $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, config('filesystems.payment_proof_disk', \App\Services\Cooperative\CooperativePaymentService::PROOF_DISK));
 
         $payment = CooperativePayment::query()->create([
             'cooperative_member_id' => $member->id,
@@ -446,6 +446,20 @@ class MemberSelfServiceController extends Controller
         return (new MemberPaymentResource($payment->load('invoice.contributionType')))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function downloadPaymentProof(Request $request, CooperativePayment $payment, \App\Services\Cooperative\CooperativePaymentService $service): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403, 'Akses bukti pembayaran ditolak.');
+
+        $response = $service->downloadProofResponse($payment);
+        if ($response === null) {
+            abort(404, 'Bukti pembayaran tidak tersedia.');
+        }
+
+        return $response;
     }
 
     public function loans(Request $request): JsonResponse

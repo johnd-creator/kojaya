@@ -15,6 +15,10 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'payment_proof_disk' => env('PAYMENT_PROOF_DISK', 'local'),
+
+    'payment_proof_legacy_public_fallback' => env('PAYMENT_PROOF_LEGACY_PUBLIC_FALLBACK', true),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

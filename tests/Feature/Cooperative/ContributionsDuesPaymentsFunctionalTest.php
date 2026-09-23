@@ -972,7 +972,8 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
 
     public function test_pay006_member_can_upload_valid_image_payment_proof(): void
     {
-        Storage::fake('public');
+        $proofDisk = config('filesystems.payment_proof_disk', 'local');
+        Storage::fake($proofDisk);
 
         $invoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $this->memberA->id,
@@ -1002,12 +1003,13 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
 
         $this->assertSame('PENDING', $payment->status);
         $this->assertNotNull($payment->proof_path);
-        Storage::disk('public')->assertExists($payment->proof_path);
+        Storage::disk($proofDisk)->assertExists($payment->proof_path);
     }
 
     public function test_pay006_member_can_upload_valid_pdf_payment_proof(): void
     {
-        Storage::fake('public');
+        $proofDisk = config('filesystems.payment_proof_disk', 'local');
+        Storage::fake($proofDisk);
 
         $invoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $this->memberA->id,
@@ -1037,12 +1039,13 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
 
         $this->assertSame('PENDING', $payment->status);
         $this->assertNotNull($payment->proof_path);
-        Storage::disk('public')->assertExists($payment->proof_path);
+        Storage::disk($proofDisk)->assertExists($payment->proof_path);
     }
 
     public function test_pay006_upload_rejects_disallowed_mime_types_and_executables(): void
     {
-        Storage::fake('public');
+        $proofDisk = config('filesystems.payment_proof_disk', 'local');
+        Storage::fake($proofDisk);
 
         $invoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $this->memberA->id,
@@ -1070,12 +1073,13 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
 
         // Zero payment records created and zero stored artifacts
         $this->assertSame(0, CooperativePayment::query()->where('cooperative_dues_invoice_id', $invoice->id)->count());
-        $this->assertEmpty(Storage::disk('public')->allFiles(), 'Stored proof artifact left behind after executable upload rejection');
+        $this->assertEmpty(Storage::disk($proofDisk)->allFiles(), 'Stored proof artifact left behind after executable upload rejection');
     }
 
     public function test_pay006_upload_rejects_oversized_file(): void
     {
-        Storage::fake('public');
+        $proofDisk = config('filesystems.payment_proof_disk', 'local');
+        Storage::fake($proofDisk);
 
         $invoice = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $this->memberA->id,
@@ -1103,12 +1107,13 @@ class ContributionsDuesPaymentsFunctionalTest extends TestCase
 
         // Zero payment records created and zero stored artifacts
         $this->assertSame(0, CooperativePayment::query()->where('cooperative_dues_invoice_id', $invoice->id)->count());
-        $this->assertEmpty(Storage::disk('public')->allFiles(), 'Stored proof artifact left behind after oversized file rejection');
+        $this->assertEmpty(Storage::disk($proofDisk)->allFiles(), 'Stored proof artifact left behind after oversized file rejection');
     }
 
     public function test_pay006_member_cannot_upload_proof_for_another_members_invoice(): void
     {
-        Storage::fake('public');
+        $proofDisk = config('filesystems.payment_proof_disk', 'local');
+        Storage::fake($proofDisk);
 
         $invoiceB = CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $this->memberB->id,

@@ -8,6 +8,7 @@ use App\Models\CooperativeLedgerEntry;
 use App\Models\Organization;
 use App\Models\PosCashierShift;
 use App\Models\PosCategory;
+use App\Models\PosInventoryStock;
 use App\Models\PosPayment;
 use App\Models\PosProduct;
 use App\Models\PosTransaction;
@@ -115,6 +116,45 @@ class PosShiftCheckoutConcurrencyTest extends TestCase
         $this->assertSame(0, CooperativeLedgerEntry::query()->where('organization_id', $organization->id)->count());
     }
 
+    public function test_two_postgres_checkouts_competing_for_one_unit_create_one_sale_only(): void
+    {
+        [$organization, $cashier, $product, $shift] = $this->fixtures();
+        $product->forceFill(['stock' => 1])->save();
+        PosInventoryStock::query()->where('pos_product_id', $product->id)->update([
+            'quantity' => 1,
+            'reserved' => 0,
+        ]);
+
+        $workers = [
+            $this->launchConcurrentSaleWorker($cashier, $shift, $product),
+            $this->launchConcurrentSaleWorker($cashier, $shift, $product),
+        ];
+
+        foreach ($workers as $worker) {
+            fwrite($worker['pipes'][0], "GO\n");
+        }
+
+        $results = [];
+        foreach ($workers as $worker) {
+            $results[] = $this->readConcurrentWorkerLine($worker['pipes'][1]);
+            fclose($worker['pipes'][0]);
+            fclose($worker['pipes'][1]);
+            fclose($worker['pipes'][2]);
+            proc_close($worker['process']);
+        }
+
+        $this->assertSame(1, count(array_filter($results, fn (array $result): bool => $result['outcome'] === 'created')));
+        $this->assertSame(1, count(array_filter($results, fn (array $result): bool => $result['outcome'] === 'validation_error')));
+        $this->assertSame(0, count(array_filter($results, fn (array $result): bool => $result['outcome'] === 'error')));
+
+        $this->assertSame(0, (int) $product->fresh()->stock);
+        $this->assertSame(1, PosTransaction::query()->where('organization_id', $organization->id)->where('status', 'COMPLETED')->count());
+        $this->assertSame(1, PosTransactionItem::query()->count());
+        $this->assertSame(1, PosPayment::query()->count());
+        $this->assertSame(1, \App\Models\PosStockMovement::query()->where('pos_product_id', $product->id)->where('movement_type', 'SALE')->count());
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('organization_id', $organization->id)->count());
+    }
+
     /** @return array{Organization, User, PosProduct, PosCashierShift} */
     private function fixtures(): array
     {
@@ -171,6 +211,45 @@ class PosShiftCheckoutConcurrencyTest extends TestCase
         fwrite($this->pipes[0], "GO\n");
 
         return $ready['pid'];
+    }
+
+    /** @return array{process: resource, pipes: array<int, resource>} */
+    private function launchConcurrentSaleWorker(User $cashier, PosCashierShift $shift, PosProduct $product): array
+    {
+        $pipes = [];
+        $process = proc_open([PHP_BINARY, base_path('tests/Support/pos-shift-worker.php')], [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes, base_path());
+        $this->assertIsResource($process);
+
+        fwrite($pipes[0], json_encode([
+            'connection' => DB::connection()->getConfig(),
+            'action' => 'sale',
+            'actor_id' => $cashier->id,
+            'shift_id' => $shift->id,
+            'closing_cash' => 100000,
+            'sale' => $this->saleData($product, $shift),
+        ], JSON_THROW_ON_ERROR)."\n");
+
+        $ready = $this->readConcurrentWorkerLine($pipes[1]);
+        $this->assertSame('ready', $ready['outcome']);
+        $this->assertNotSame((int) DB::selectOne('select pg_backend_pid() as pid')->pid, $ready['pid']);
+
+        return ['process' => $process, 'pipes' => $pipes];
+    }
+
+    /** @return array<string, mixed> */
+    private function readConcurrentWorkerLine($pipe): array
+    {
+        $read = [$pipe];
+        $write = $except = null;
+        $this->assertSame(1, stream_select($read, $write, $except, 20), 'Concurrent POS worker pipe timed out.');
+        $line = fgets($pipe);
+        $this->assertNotFalse($line, 'Concurrent POS worker exited without a protocol result.');
+
+        return json_decode($line, true, flags: JSON_THROW_ON_ERROR);
     }
 
     private function assertWaitingOnParent(int $pid, string $targetTable): void

@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Cooperative;
 
+use App\Services\Authorization\CooperativeLedgerCorrectionAuthorizer;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ReviseLedgerPaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('System Admin') ?? false;
+        return app(CooperativeLedgerCorrectionAuthorizer::class)->canCorrect($this->user());
     }
 
     /**

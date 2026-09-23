@@ -22,6 +22,7 @@ class PosJournalPostingService
             'POS_SALE',
             [
                 'cooperative_member_id' => $transaction->cooperative_member_id,
+                'organization_id' => $transaction->organization_id,
                 'ledger_scope' => 'POS',
                 'debit' => 0,
                 'credit' => $amount,
@@ -49,6 +50,7 @@ class PosJournalPostingService
             'POS_COGS',
             [
                 'cooperative_member_id' => $transaction->cooperative_member_id,
+                'organization_id' => $transaction->organization_id,
                 'ledger_scope' => 'POS',
                 'debit' => $cogs,
                 'credit' => 0,
@@ -148,6 +150,7 @@ class PosJournalPostingService
                 'POS_SALE_REVERSAL',
                 [
                     'cooperative_member_id' => $transaction->cooperative_member_id,
+                    'organization_id' => $transaction->organization_id,
                     'ledger_scope' => 'POS',
                     'debit' => $saleAmount,
                     'credit' => 0,
@@ -170,6 +173,7 @@ class PosJournalPostingService
                 'POS_COGS_REVERSAL',
                 [
                     'cooperative_member_id' => null,
+                    'organization_id' => $transaction->organization_id,
                     'ledger_scope' => 'POS',
                     'debit' => 0,
                     'credit' => $cogs,

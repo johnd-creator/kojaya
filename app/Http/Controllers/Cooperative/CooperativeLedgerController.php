@@ -54,6 +54,7 @@ class CooperativeLedgerController extends Controller
                 ->pluck('entry_type'),
             'canManageLedger' => (bool) $request->user()?->can('manage_cooperative_ledger')
                 && (bool) $request->user()?->can('view_cooperative_all'),
+            'canCorrectLedgerPayment' => (bool) $request->user()?->hasRole('System Admin'),
         ]);
     }
 

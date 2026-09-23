@@ -1700,3 +1700,58 @@ Audits of the CI pipeline revealed several optimization opportunities:
 - **Coverage & Quality Preservation:** Zero skips enforced; combined code coverage gate enforced at `>= 60.0%`.
 - **Deterministic CI:** Sharding is purely deterministic and reproducible locally via CLI commands.
 - **Seamless Branch Protection:** Required status check `PHPUnit Parallel` remains intact and acts as the authoritative gatekeeper.
+
+---
+
+## 🎯 ADR-041: Savings Payment Ledger Correction, Cancellation, and Reconstructable Audit Trail
+
+**Status:** ✅ Accepted
+**Date:** September 23, 2026
+**Deciders:** Core Engineering Team & Cooperative Finance Working Group
+
+### Context
+
+Cooperative member dues and savings payments (`CooperativePayment`) generate financial entries in `cooperative_ledger_entries` (under `ledger_scope = 'SAVINGS'`), issue member receipts (`CooperativeReceipt`), and update dues invoices (`CooperativeDuesInvoice`). In operational environments, data-entry errors occur (such as incorrect amounts entered by cashiers, wrong payment methods, wrong payment dates, or duplicate records).
+
+Two competing accounting models exist for handling corrections in subledger systems:
+1. **Compensating Reversal Model:** Post explicit contra-entries (debit reversal for payments) to negate erroneous records, leaving erroneous records intact.
+2. **Authorized In-Place Revision & Destructive Subledger Cancellation with Full Audit Trail:** Allow strictly authorized central administrators (`System Admin`) to either revise transaction attributes in-place or cancel payments destructively from the operational subledger while recording immutable, reconstructable audit logs (`audit_logs`) and approval transitions (`approval_logs`), while synchronously restoring invoice balances and revoking issued receipts.
+
+Contract rows FIN-002 and FIN-003 previously referenced an informal "established product design" without formal architectural documentation, creating ambiguity during audits.
+
+### Decision
+
+1. **Authorization Hard Boundary:**
+   - Operational ledger corrections (`POST /cooperative/ledger/{entry}/cancel-payment` and `POST /cooperative/ledger/{entry}/revise-payment`) are strictly restricted to `System Admin`.
+   - Cooperative staff roles (`Pengurus Koperasi`, `Admin Koperasi`, `Manajer Koperasi`, `Kasir Koperasi`, `Admin Pusat`) are strictly forbidden (`403 Forbidden`) from modifying or cancelling posted payment ledger entries.
+
+2. **Payment Cancellation Semantics (FIN-002):**
+   - The associated `CooperativeLedgerEntry` record is destructively deleted from the active operational ledger to ensure member account balances, summaries, and category totals immediately reflect true corrected positions without requiring artificial contra-transaction clutter in member-facing views.
+   - The parent `CooperativePayment` is transitioned to `status = 'VOID'`.
+   - The associated `CooperativeReceipt` is deleted, and receipt metadata on the payment is cleared.
+   - The associated `CooperativeDuesInvoice` has its `paid_amount` decremented by the cancelled payment amount; if paid amount drops below invoice amount, invoice status reverts from `PAID` to `UNPAID` (or `PARTIAL`).
+   - Guard against period locks (`CooperativePeriodLock`): payments in locked periods cannot be cancelled.
+   - Guard against bank reconciliation: payments already reconciled with bank statements cannot be cancelled.
+
+3. **In-Place Payment Revision Semantics (FIN-003):**
+   - For corrections of amount, payment method, date, or notes, the `CooperativePayment` and its associated `CooperativeLedgerEntry` are updated in-place.
+   - The delta difference (`new_amount - old_amount`) is synchronously applied to `CooperativeDuesInvoice.paid_amount`.
+   - For mandatory fixed-amount contribution types (`POKOK`, `WAJIB`), the revised amount must match the configured default amount.
+   - The previous receipt is revoked and reissued to reflect the corrected transaction date and amount.
+   - Guard against period locks across both the original and revised transaction dates.
+
+4. **100% Reconstructable Audit Trail:**
+   - Every cancellation and revision writes an `ApprovalLog` documenting the status transition and reason.
+   - Every cancellation and revision writes a structured `AuditLog` capturing:
+     - Actor identity (`user_id`, roles) and execution timestamp (`occurred_at`).
+     - Payment identity (`payment_id`), member identity (`member_id`), and invoice identity (`invoice_id`).
+     - Complete `old_values` snapshot: `status`, `amount`, `paid_at`, `payment_method`, `notes`.
+     - Complete `new_values` snapshot: `status`, `amount`, `paid_at`, `payment_method`, `notes`.
+     - Mandatory non-empty business justification `reason`.
+   - This ensures full financial history reconstructability and non-repudiation despite in-place operational subledger mutation.
+
+### Consequences
+
+- **Audit Compliance:** Eliminates ambiguity by formally establishing the authorized in-place/cancellation model with complete audit trail reconstructability.
+- **Operational Clarity:** Prevents member confusion from reversal contra-entries on basic dues receipts while guaranteeing zero unrecorded data mutations.
+- **Security:** Strict `System Admin` authorization prevents unauthorized staff tampering.

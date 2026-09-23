@@ -18,8 +18,16 @@ use App\Models\CooperativePeriodLock;
 use App\Models\CooperativeShuAllocation;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Organization;
+use App\Models\PosCategory;
+use App\Models\PosDailyClosing;
+use App\Models\PosProduct;
+use App\Models\PosTransaction;
+use App\Models\PosTransactionItem;
 use App\Models\SavingsWithdrawal;
 use App\Models\User;
+use App\Services\Cooperative\PosDailyClosingService;
+use App\Services\Cooperative\PosJournalPostingService;
+use App\Services\Cooperative\PosSalesReportService;
 use Carbon\Carbon;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -396,9 +404,22 @@ class FinanceLedgerFunctionalTest extends TestCase
             ->first();
 
         $this->assertNotNull($audit);
+        $this->assertSame($this->systemAdmin->id, $audit->user_id);
+        $this->assertNotNull($audit->occurred_at);
+        $this->assertSame($cancelReason, $audit->reason);
+
+        // Full audit reconstructability assertion (FIN-002)
+        $this->assertSame($payment->id, $audit->old_values['payment_id'] ?? null);
+        $this->assertSame($member->id, $audit->old_values['member_id'] ?? null);
+        $this->assertSame($invoice->id, $audit->old_values['invoice_id'] ?? null);
         $this->assertSame('APPROVED', $audit->old_values['status'] ?? null);
         $this->assertSame(150000.0, (float) ($audit->old_values['amount'] ?? 0));
+        $this->assertSame('TRANSFER', $audit->old_values['payment_method'] ?? null);
+        $this->assertNotNull($audit->old_values['paid_at'] ?? null);
+
         $this->assertSame('VOID', $audit->new_values['status'] ?? null);
+        $this->assertSame(0.0, (float) ($audit->new_values['amount'] ?? 0));
+        $this->assertSame($payment->notes, $audit->new_values['notes'] ?? null);
     }
 
     public function test_fin002_payment_cancellation_guards_and_zero_mutation(): void
@@ -578,9 +599,27 @@ class FinanceLedgerFunctionalTest extends TestCase
             ->first();
 
         $this->assertNotNull($audit);
+        $this->assertSame($this->systemAdmin->id, $audit->user_id);
+        $this->assertNotNull($audit->occurred_at);
+        $this->assertSame($revisionReason, $audit->reason);
+
+        // Full audit reconstructability assertion (FIN-003)
+        $this->assertSame($payment->id, $audit->old_values['payment_id'] ?? null);
+        $this->assertSame($member->id, $audit->old_values['member_id'] ?? null);
+        $this->assertSame($invoice->id, $audit->old_values['invoice_id'] ?? null);
+        $this->assertSame('APPROVED', $audit->old_values['status'] ?? null);
         $this->assertSame(50000.0, (float) ($audit->old_values['amount'] ?? 0));
+        $this->assertSame('CASH', $audit->old_values['payment_method'] ?? null);
+        $this->assertSame('2026-05-10', substr((string) ($audit->old_values['paid_at'] ?? ''), 0, 10));
+
+        $this->assertSame($payment->id, $audit->new_values['payment_id'] ?? null);
+        $this->assertSame($member->id, $audit->new_values['member_id'] ?? null);
+        $this->assertSame($invoice->id, $audit->new_values['invoice_id'] ?? null);
+        $this->assertSame('APPROVED', $audit->new_values['status'] ?? null);
         $this->assertSame(100000.0, (float) ($audit->new_values['amount'] ?? 0));
         $this->assertSame('TRANSFER', $audit->new_values['payment_method'] ?? null);
+        $this->assertSame('2026-05-12', $audit->new_values['paid_at'] ?? null);
+        $this->assertSame('Koreksi mutasi transfer', $audit->new_values['notes'] ?? null);
     }
 
     public function test_fin003_payment_revision_guards_and_zero_mutation(): void
@@ -1169,5 +1208,358 @@ class FinanceLedgerFunctionalTest extends TestCase
         $this->assertSame(WithdrawalStatus::Rejected, $secondWithdrawal->refresh()->status);
         // Still exact 2 debit entries
         $this->assertSame(2, CooperativeLedgerEntry::query()->where('entry_type', 'SAVING_WITHDRAWAL')->count());
+    }
+
+    public function test_fin001_pos_ledger_scope_filtering_isolation_and_authorization_capabilities(): void
+    {
+        $memberA = CooperativeMember::factory()->active()->create(['organization_id' => $this->orgA->id]);
+        $memberB = CooperativeMember::factory()->active()->create(['organization_id' => $this->orgB->id]);
+
+        // Savings entry in Org A
+        CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $memberA->id,
+            'organization_id' => $this->orgA->id,
+            'ledger_scope' => 'SAVINGS',
+            'entry_type' => 'SAVING_PAYMENT',
+            'category_snapshot' => 'SUKARELA',
+            'credit' => 50000,
+            'debit' => 0,
+            'period' => '2026-06',
+            'posted_at' => '2026-06-01',
+            'description' => 'Simpanan sukarela Org A',
+        ]);
+
+        // POS entry in Org A
+        CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $memberA->id,
+            'organization_id' => $this->orgA->id,
+            'ledger_scope' => 'POS',
+            'entry_type' => 'POS_SALE',
+            'category_snapshot' => null,
+            'credit' => 125000,
+            'debit' => 0,
+            'period' => '2026-06',
+            'posted_at' => '2026-06-02',
+            'description' => 'Penjualan POS Org A #001',
+        ]);
+
+        // POS entry in Org B
+        CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $memberB->id,
+            'organization_id' => $this->orgB->id,
+            'ledger_scope' => 'POS',
+            'entry_type' => 'POS_SALE',
+            'category_snapshot' => null,
+            'credit' => 75000,
+            'debit' => 0,
+            'period' => '2026-06',
+            'posted_at' => '2026-06-03',
+            'description' => 'Penjualan POS Org B #002',
+        ]);
+
+        // 1. Direct POS scope filtering by Admin Koperasi A:
+        // Excludes SAVINGS entries and excludes Org B entries
+        $responseA = $this->actingAs($this->adminKoperasiA)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'POS',
+        ]));
+
+        $responseA->assertOk();
+        $responseA->assertInertia(function ($page) {
+            $page->component('Cooperative/Ledger/Index')
+                ->where('filters.ledger_scope', 'POS')
+                ->has('entries.data', 1)
+                ->where('entries.data.0.entry_type', 'POS_SALE')
+                ->where('entries.data.0.credit', '125000.00')
+                ->where('summary.total_balance', 125000)
+                // Inertia prop check: Admin Koperasi cannot correct ledger payments
+                ->where('canCorrectLedgerPayment', false);
+        });
+
+        // 2. SAVINGS scope filtering by Admin Koperasi A:
+        // Returns ONLY SAVINGS, excludes POS entries
+        $responseSavings = $this->actingAs($this->adminKoperasiA)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'SAVINGS',
+        ]));
+
+        $responseSavings->assertOk();
+        $responseSavings->assertInertia(function ($page) {
+            $page->has('entries.data', 1)
+                ->where('entries.data.0.entry_type', 'SAVING_PAYMENT')
+                ->where('entries.data.0.credit', '50000.00')
+                ->where('summary.total_balance', 50000);
+        });
+
+        // 3. Authorization capability matrix for canCorrectLedgerPayment:
+        // True strictly for System Admin, false for Pengurus and other staff roles
+        $this->actingAs($this->systemAdmin)
+            ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
+            ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', true));
+
+        $this->actingAs($this->pengurusA)
+            ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
+            ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', false));
+
+        $this->actingAs($this->manajerB)
+            ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
+            ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', false));
+    }
+
+    public function test_fin001_pos_sale_vs_daily_closing_presentation_and_sales_report_isolation(): void
+    {
+        $category = PosCategory::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'name' => 'Kebutuhan Pokok',
+        ]);
+        $product = PosProduct::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'pos_category_id' => $category->id,
+            'name' => 'Minyak Goreng 2L',
+            'sale_price' => 100000,
+            'cost_price' => 60000,
+            'stock' => 50,
+            'is_active' => true,
+        ]);
+
+        $saleDate = Carbon::parse('2026-06-15');
+
+        // 1. Create a completed sale of Rp 100.000 (COGS Rp 60.000)
+        $tx = PosTransaction::query()->create([
+            'organization_id' => $this->orgA->id,
+            'transaction_no' => 'POS-20260615-001',
+            'cashier_id' => $this->kasirA->id,
+            'subtotal' => 100000,
+            'discount_amount' => 0,
+            'total_amount' => 100000,
+            'gross_profit' => 40000,
+            'status' => 'COMPLETED',
+            'sold_at' => $saleDate,
+        ]);
+
+        PosTransactionItem::query()->create([
+            'pos_transaction_id' => $tx->id,
+            'pos_product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => 100000,
+            'cost_price' => 60000,
+            'line_total' => 100000,
+            'unit_profit' => 40000,
+            'line_profit' => 40000,
+        ]);
+
+        // Post sale and COGS journal entries
+        $postingService = app(PosJournalPostingService::class);
+        $saleEntry = $postingService->postSale($tx);
+        $cogsEntry = $postingService->postCogs($tx);
+
+        $this->assertNotNull($saleEntry);
+        $this->assertNotNull($cogsEntry);
+        $this->assertSame('POS_SALE', $saleEntry->entry_type);
+        $this->assertSame('100000.00', $saleEntry->credit);
+        $this->assertSame('POS_COGS', $cogsEntry->entry_type);
+        $this->assertSame('60000.00', $cogsEntry->debit);
+
+        // 2. Perform daily closing for that date
+        $closingService = app(PosDailyClosingService::class);
+        $closing = $closingService->closeDay($saleDate->toDateString(), $this->adminKoperasiA, $this->orgA->id);
+
+        $this->assertSame('100000.00', (string) $closing->net_sales);
+
+        // Assert daily closing control entry was posted
+        $closingEntry = CooperativeLedgerEntry::query()
+            ->where('source_type', PosDailyClosing::class)
+            ->where('source_id', $closing->id)
+            ->where('entry_type', 'POS_DAILY_CLOSING')
+            ->first();
+
+        $this->assertNotNull($closingEntry);
+        $this->assertSame('100000.00', $closingEntry->credit);
+        $this->assertSame('POS', $closingEntry->ledger_scope);
+
+        // 3. Official Sales Report (PosSalesReportService):
+        // Authoritative revenue is calculated strictly from pos_transactions.
+        // It MUST report exactly Rp 100.000 net sales and NOT double-count to Rp 200.000.
+        $salesReportService = app(PosSalesReportService::class);
+        $report = $salesReportService->summaryForPeriod(
+            $this->adminKoperasiA,
+            $saleDate->toDateString(),
+            $saleDate->toDateString()
+        );
+
+        $this->assertSame(1, $report['transactions']);
+        $this->assertSame(100000.0, (float) $report['net_sales']);
+        $this->assertSame(100000.0, (float) $report['gross_sales']);
+        $this->assertSame(40000.0, (float) $report['gross_profit']);
+
+        // 4. In CooperativeLedgerEntry:
+        // POS_DAILY_CLOSING is a control/closing entry.
+        // Direct filtering by entry_type allows operators to isolate operational sales vs daily closing summaries.
+        $posSaleOnly = $this->actingAs($this->adminKoperasiA)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'POS',
+            'entry_type' => 'POS_SALE',
+        ]));
+        $posSaleOnly->assertOk();
+        $posSaleOnly->assertInertia(fn ($page) => $page->has('entries.data', 1)->where('summary.total_balance', 100000));
+
+        $dailyClosingOnly = $this->actingAs($this->adminKoperasiA)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'POS',
+            'entry_type' => 'POS_DAILY_CLOSING',
+        ]));
+        $dailyClosingOnly->assertOk();
+        $dailyClosingOnly->assertInertia(fn ($page) => $page->has('entries.data', 1)->where('summary.total_balance', 100000));
+    }
+
+    public function test_fin008_withdrawal_queue_web_page_rendering_and_pagination(): void
+    {
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $this->orgA->id]);
+
+        // Seed initial voluntary balance so projection can be verified
+        CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $this->orgA->id,
+            'ledger_scope' => 'SAVINGS',
+            'entry_type' => 'SIMPANAN_SUKARELA',
+            'category_snapshot' => 'SUKARELA',
+            'credit' => 500000,
+            'debit' => 0,
+            'period' => '2026-06',
+            'posted_at' => '2026-06-01',
+            'description' => 'Saldo sukarela awal',
+        ]);
+
+        // Create 25 withdrawal records to test pagination (> 20 items per page)
+        for ($i = 1; $i <= 25; $i++) {
+            SavingsWithdrawal::query()->create([
+                'cooperative_member_id' => $member->id,
+                'amount' => 10000 + ($i * 1000),
+                'status' => $i === 1 ? WithdrawalStatus::Pending : ($i === 2 ? WithdrawalStatus::Processed : ($i === 3 ? WithdrawalStatus::Rejected : WithdrawalStatus::Pending)),
+                'destination_bank' => 'BCA',
+                'destination_account_no' => '543210'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'destination_account_name' => $member->name,
+                'reason' => "Kebutuhan #{$i}",
+                'rejection_reason' => $i === 3 ? 'Dokumen tidak lengkap' : null,
+                'approved_at' => $i === 2 ? now() : null,
+                'created_at' => now()->subMinutes(30 - $i),
+            ]);
+        }
+
+        // 1. Page 1 rendering with Pengurus Koperasi
+        $responsePage1 = $this->actingAs($this->pengurusA)->get(route('cooperative.savings.withdrawals.index'));
+        $responsePage1->assertOk();
+        $responsePage1->assertInertia(function ($page) {
+            $page->component('Cooperative/Savings/Withdrawals/Index')
+                ->has('withdrawals.data', 20)
+                ->where('withdrawals.current_page', 1)
+                ->where('withdrawals.last_page', 2)
+                ->where('withdrawals.total', 25)
+                // Assert item fields and balance projections
+                ->where('withdrawals.data.0.destination_bank', 'BCA')
+                ->where('withdrawals.data.0.available_voluntary_balance', 500000);
+        });
+
+        // 2. Page 2 rendering
+        $responsePage2 = $this->actingAs($this->pengurusA)->get(route('cooperative.savings.withdrawals.index', ['page' => 2]));
+        $responsePage2->assertOk();
+        $responsePage2->assertInertia(function ($page) {
+            $page->component('Cooperative/Savings/Withdrawals/Index')
+                ->has('withdrawals.data', 5)
+                ->where('withdrawals.current_page', 2);
+        });
+
+        // 3. Unauthorized access check: Kasir and unassigned user cannot view queue (403)
+        $this->actingAs($this->kasirA)
+            ->get(route('cooperative.savings.withdrawals.index'))
+            ->assertForbidden();
+
+        $this->actingAs($this->unauthorizedUser)
+            ->get(route('cooperative.savings.withdrawals.index'))
+            ->assertForbidden();
+    }
+
+    public function test_fin008_withdrawal_approval_and_rejection_http_dialog_validation(): void
+    {
+        $member = CooperativeMember::factory()->active()->create(['organization_id' => $this->orgA->id]);
+
+        CooperativeLedgerEntry::query()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $this->orgA->id,
+            'ledger_scope' => 'SAVINGS',
+            'entry_type' => 'SIMPANAN_SUKARELA',
+            'category_snapshot' => 'SUKARELA',
+            'credit' => 300000,
+            'debit' => 0,
+            'period' => '2026-06',
+            'posted_at' => '2026-06-01',
+            'description' => 'Saldo sukarela',
+        ]);
+
+        $withdrawalApprove = SavingsWithdrawal::query()->create([
+            'cooperative_member_id' => $member->id,
+            'amount' => 100000,
+            'status' => WithdrawalStatus::Pending,
+            'destination_bank' => 'Mandiri',
+            'destination_account_no' => '1122334455',
+            'destination_account_name' => $member->name,
+            'reason' => 'Biaya pendidikan',
+        ]);
+
+        $withdrawalReject = SavingsWithdrawal::query()->create([
+            'cooperative_member_id' => $member->id,
+            'amount' => 50000,
+            'status' => WithdrawalStatus::Pending,
+            'destination_bank' => 'BNI',
+            'destination_account_no' => '9988776655',
+            'destination_account_name' => $member->name,
+            'reason' => 'Biaya renovasi',
+        ]);
+
+        // 1. Rejection requires non-empty rejection_reason (422 validation error)
+        $emptyReject = $this->actingAs($this->pengurusA)
+            ->post(route('cooperative.savings.withdrawals.process', $withdrawalReject), [
+                'decision' => 'REJECT',
+                'rejection_reason' => '',
+            ]);
+        $emptyReject->assertSessionHasErrors(['rejection_reason']);
+        $this->assertSame(WithdrawalStatus::Pending, $withdrawalReject->refresh()->status);
+
+        // 2. Valid Rejection flow
+        $validReject = $this->actingAs($this->pengurusA)
+            ->post(route('cooperative.savings.withdrawals.process', $withdrawalReject), [
+                'decision' => 'REJECT',
+                'rejection_reason' => 'Nama pemilik rekening berbeda dengan data anggota',
+            ]);
+        $validReject->assertRedirect();
+        $validReject->assertSessionHas('success');
+
+        $withdrawalReject->refresh();
+        $this->assertSame(WithdrawalStatus::Rejected, $withdrawalReject->status);
+        $this->assertSame('Nama pemilik rekening berbeda dengan data anggota', $withdrawalReject->rejection_reason);
+        $this->assertSame($this->pengurusA->id, $withdrawalReject->approved_by);
+
+        // Zero ledger debit created for rejection
+        $this->assertSame(0, CooperativeLedgerEntry::query()->where('source_id', $withdrawalReject->id)->count());
+
+        // 3. Approval flow
+        $validApprove = $this->actingAs($this->pengurusA)
+            ->post(route('cooperative.savings.withdrawals.process', $withdrawalApprove), [
+                'decision' => 'APPROVE',
+            ]);
+        $validApprove->assertRedirect();
+        $validApprove->assertSessionHas('success');
+
+        $withdrawalApprove->refresh();
+        $this->assertSame(WithdrawalStatus::Processed, $withdrawalApprove->status);
+        $this->assertSame($this->pengurusA->id, $withdrawalApprove->approved_by);
+        $this->assertNotNull($withdrawalApprove->approved_at);
+
+        // Exactly one ledger debit entry created
+        $this->assertDatabaseHas('cooperative_ledger_entries', [
+            'cooperative_member_id' => $member->id,
+            'source_type' => SavingsWithdrawal::class,
+            'source_id' => $withdrawalApprove->id,
+            'entry_type' => 'SAVING_WITHDRAWAL',
+            'ledger_scope' => 'SAVINGS',
+            'debit' => '100000.00',
+            'credit' => '0.00',
+        ]);
     }
 }

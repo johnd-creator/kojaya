@@ -726,7 +726,7 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
         $guestDownload = $this->get(route('cooperative.payments.proof', ['payment' => $paymentA->id]));
         $this->assertTrue(in_array($guestDownload->getStatusCode(), [302, 401], true));
 
-        // 7. Backward compatibility: legacy proof existing on public disk can still be downloaded
+        // 7. Migrate a legacy public proof before authorized retrieval.
         $legacyPath = 'cooperative/payment-proofs/legacy.png';
         Storage::disk('public')->put($legacyPath, 'legacy-content');
         $legacyPayment = CooperativePayment::query()->create([
@@ -739,9 +739,22 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
             'proof_path' => $legacyPath,
         ]);
 
+        $this->artisan('payments:migrate-proofs-to-private', ['--execute' => true])
+            ->assertSuccessful();
+
+        Storage::disk($proofDisk)->assertExists($legacyPath);
+        Storage::disk('public')->assertMissing($legacyPath);
+
         $legacyDownload = $this->actingAs($this->adminA)
             ->get(route('cooperative.payments.proof', ['payment' => $legacyPayment->id]));
         $legacyDownload->assertOk();
+
+        Sanctum::actingAs($this->memberUserA, ['member:read']);
+        $this->get("/api/v1/member/payments/{$legacyPayment->id}/proof")->assertOk();
+
+        $this->actingAs($this->memberUserA)
+            ->get("/member/payments/{$legacyPayment->id}/proof")
+            ->assertOk();
 
         // 8. Missing proof file produces 404
         $missingProofPayment = CooperativePayment::query()->create([
@@ -756,5 +769,42 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
         $this->actingAs($this->adminA)
             ->get(route('cooperative.payments.proof', ['payment' => $missingProofPayment->id]))
             ->assertNotFound();
+    }
+
+    public function test_pay006_disabled_legacy_fallback_does_not_serve_a_public_only_proof(): void
+    {
+        $proofDisk = config('filesystems.payment_proof_disk', 'local');
+        Storage::fake($proofDisk);
+        Storage::fake('public');
+        config()->set('filesystems.payment_proof_legacy_public_fallback', false);
+
+        $contributionType = CooperativeContributionType::factory()->create();
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $this->memberA->id,
+            'cooperative_contribution_type_id' => $contributionType->id,
+            'period' => '2026-09',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'due_date' => '2026-09-10',
+            'status' => 'UNPAID',
+        ]);
+        $path = 'cooperative/payment-proofs/legacy-fallback-disabled.png';
+        Storage::disk('public')->put($path, 'legacy-public-proof');
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $this->memberA->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'amount' => 50000,
+            'payment_method' => 'TRANSFER',
+            'paid_at' => now()->toDateString(),
+            'status' => 'PENDING',
+            'proof_path' => $path,
+        ]);
+
+        $this->actingAs($this->adminA)
+            ->get(route('cooperative.payments.proof', ['payment' => $payment->id]))
+            ->assertNotFound();
+
+        Storage::disk('public')->assertExists($path);
+        Storage::disk($proofDisk)->assertMissing($path);
     }
 }

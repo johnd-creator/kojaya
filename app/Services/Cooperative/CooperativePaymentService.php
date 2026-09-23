@@ -531,7 +531,8 @@ class CooperativePaymentService
 
         if (Storage::disk($disk)->exists($path)) {
             $storage = Storage::disk($disk);
-        } elseif (Storage::disk('public')->exists($path)) {
+        } elseif (config('filesystems.payment_proof_legacy_public_fallback', true)
+            && Storage::disk('public')->exists($path)) {
             $storage = Storage::disk('public');
         } else {
             return null;

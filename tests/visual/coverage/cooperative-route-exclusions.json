@@ -62,8 +62,18 @@
       "category": "pdf"
     },
     {
+      "route_name": "cooperative.payments.proof",
+      "reason": "Authorized cooperative payment proof download endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
       "route_name": "cooperative.store-credit.transfers.proof",
       "reason": "Funding proof download endpoint; no HTML/Inertia surface",
+      "category": "download"
+    },
+    {
+      "route_name": "member.payments.download-proof",
+      "reason": "Authorized payment proof download endpoint; no HTML/Inertia surface",
       "category": "download"
     },
     {

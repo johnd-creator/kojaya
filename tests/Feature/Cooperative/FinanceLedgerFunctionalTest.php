@@ -18,6 +18,7 @@ use App\Models\CooperativePeriodLock;
 use App\Models\CooperativeShuAllocation;
 use App\Models\CooperativeShuPeriod;
 use App\Models\Organization;
+use App\Models\PosCashierShift;
 use App\Models\PosCategory;
 use App\Models\PosDailyClosing;
 use App\Models\PosProduct;
@@ -418,7 +419,9 @@ class FinanceLedgerFunctionalTest extends TestCase
         $this->assertNotNull($audit->old_values['paid_at'] ?? null);
 
         $this->assertSame('VOID', $audit->new_values['status'] ?? null);
-        $this->assertSame(0.0, (float) ($audit->new_values['amount'] ?? 0));
+        $this->assertSame((float) $payment->amount, (float) ($audit->new_values['amount'] ?? 0));
+        $this->assertSame(0.0, (float) ($audit->new_values['effective_ledger_amount'] ?? 0));
+        $this->assertSame(150000.0, (float) ($audit->old_values['effective_ledger_amount'] ?? 0));
         $this->assertSame($payment->notes, $audit->new_values['notes'] ?? null);
     }
 
@@ -1290,10 +1293,29 @@ class FinanceLedgerFunctionalTest extends TestCase
         });
 
         // 3. Authorization capability matrix for canCorrectLedgerPayment:
-        // True strictly for System Admin, false for Pengurus and other staff roles
+        // True strictly for System Admin with manage_cooperative_ledger, false for revoked, Admin Pusat, and staff roles
         $this->actingAs($this->systemAdmin)
             ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
             ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', true));
+
+        // System Admin with manage_cooperative_ledger revoked
+        $restrictedAdmin = User::factory()->create(['organization_id' => null]);
+        $restrictedAdmin->assignRole('System Admin');
+        $systemAdminRole = \Spatie\Permission\Models\Role::findByName('System Admin');
+        $systemAdminRole->revokePermissionTo('manage_cooperative_ledger');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->actingAs($restrictedAdmin)
+            ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
+            ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', false));
+
+        // Admin Pusat has broad permissions, but canCorrectLedgerPayment is false under current authoritative System Admin contract
+        $adminPusat = User::factory()->create(['organization_id' => null]);
+        $adminPusat->assignRole('Admin Pusat');
+
+        $this->actingAs($adminPusat)
+            ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
+            ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', false));
 
         $this->actingAs($this->pengurusA)
             ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
@@ -1302,6 +1324,124 @@ class FinanceLedgerFunctionalTest extends TestCase
         $this->actingAs($this->manajerB)
             ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
             ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', false));
+
+        $this->actingAs($this->adminKoperasiA)
+            ->get(route('cooperative.ledger.index', ['ledger_scope' => 'POS']))
+            ->assertInertia(fn ($page) => $page->where('canCorrectLedgerPayment', false));
+
+        // Endpoint denial verification for restricted admin & admin pusat
+        $testEntry = CooperativeLedgerEntry::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'entry_type' => 'SAVING_PAYMENT',
+            'ledger_scope' => 'SAVINGS',
+        ]);
+
+        $this->actingAs($restrictedAdmin)
+            ->post(route('cooperative.ledger.cancel-payment', $testEntry), ['reason' => 'Unauthorized attempt'])
+            ->assertForbidden();
+
+        $this->actingAs($adminPusat)
+            ->post(route('cooperative.ledger.cancel-payment', $testEntry), ['reason' => 'Unauthorized attempt'])
+            ->assertForbidden();
+
+        // Restore permission for subsequent tests
+        $systemAdminRole->givePermissionTo('manage_cooperative_ledger');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    public function test_fin001_pos_member_credit_and_shift_diff_organization_propagation_and_isolation(): void
+    {
+        $categoryA = PosCategory::factory()->create(['organization_id' => $this->orgA->id]);
+        $productA = PosProduct::factory()->create([
+            'organization_id' => $this->orgA->id,
+            'pos_category_id' => $categoryA->id,
+            'sale_price' => 50000,
+            'cost_price' => 30000,
+            'stock' => 10,
+        ]);
+        $memberA = CooperativeMember::factory()->active()->create(['organization_id' => $this->orgA->id]);
+
+        $postingService = app(PosJournalPostingService::class);
+
+        // 1. Transaction with MEMBER_CREDIT in Org A
+        $txA = PosTransaction::query()->create([
+            'organization_id' => $this->orgA->id,
+            'cooperative_member_id' => $memberA->id,
+            'transaction_no' => 'POS-CREDIT-ORGA-001',
+            'cashier_id' => $this->kasirA->id,
+            'subtotal' => 50000,
+            'discount_amount' => 0,
+            'total_amount' => 50000,
+            'status' => 'COMPLETED',
+            'sold_at' => now(),
+        ]);
+        $txA->payments()->create([
+            'payment_method' => 'MEMBER_CREDIT',
+            'amount' => 50000,
+        ]);
+
+        $creditEntry = $postingService->postMemberCredit($txA);
+        $this->assertNotNull($creditEntry);
+        $this->assertSame('POS_MEMBER_CREDIT', $creditEntry->entry_type);
+        $this->assertSame($this->orgA->id, $creditEntry->organization_id);
+        $this->assertSame(50000.0, (float) $creditEntry->debit);
+
+        // 2. Void reversal for MEMBER_CREDIT carries Org A
+        $postingService->postVoidReversal($txA);
+        $reversalEntry = CooperativeLedgerEntry::query()
+            ->where('source_type', PosTransaction::class)
+            ->where('source_id', $txA->id)
+            ->where('entry_type', 'POS_MEMBER_CREDIT_REVERSAL')
+            ->first();
+
+        $this->assertNotNull($reversalEntry);
+        $this->assertSame($this->orgA->id, $reversalEntry->organization_id);
+        $this->assertSame(50000.0, (float) $reversalEntry->credit);
+
+        // 3. Shift difference for cashier in Org A
+        $shiftA = PosCashierShift::query()->create([
+            'shift_no' => 'SHF-TEST-ORGA-001',
+            'cashier_id' => $this->kasirA->id,
+            'shift_date' => now()->toDateString(),
+            'opened_at' => now(),
+            'opening_cash' => 100000,
+            'status' => PosCashierShift::STATUS_OPEN,
+        ]);
+
+        $shiftDiffEntry = $postingService->postShiftDifference($shiftA->id, -15000.0);
+        $this->assertNotNull($shiftDiffEntry);
+        $this->assertSame('POS_SHIFT_DIFF', $shiftDiffEntry->entry_type);
+        $this->assertSame($this->orgA->id, $shiftDiffEntry->organization_id);
+        $this->assertSame(15000.0, (float) $shiftDiffEntry->debit);
+
+        // 4. Org A scoped actor (Admin Koperasi A) can see Org A entries
+        $responseOrgA = $this->actingAs($this->adminKoperasiA)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'POS',
+        ]));
+        $responseOrgA->assertOk();
+        $responseOrgA->assertInertia(function ($page) {
+            $page->has('entries.data', 4)
+                ->where('entries.data.0.organization_id', $this->orgA->id);
+        });
+
+        // 5. Org B scoped actor (Manajer B) cannot see Org A entries
+        $responseOrgB = $this->actingAs($this->manajerB)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'POS',
+        ]));
+        $responseOrgB->assertOk();
+        $responseOrgB->assertInertia(function ($page) {
+            $page->has('entries.data', 0)
+                ->where('summary.total_balance', 0);
+        });
+
+        // 6. Global actor (System Admin) sees entries across organizations
+        $responseGlobal = $this->actingAs($this->systemAdmin)->get(route('cooperative.ledger.index', [
+            'ledger_scope' => 'POS',
+        ]));
+        $responseGlobal->assertOk();
+        $responseGlobal->assertInertia(function ($page) {
+            $page->has('entries.data', 4);
+        });
     }
 
     public function test_fin001_pos_sale_vs_daily_closing_presentation_and_sales_report_isolation(): void

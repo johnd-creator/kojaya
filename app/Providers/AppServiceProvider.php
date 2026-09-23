@@ -166,7 +166,17 @@ class AppServiceProvider extends ServiceProvider
 
     protected function registerPolicies(): void
     {
-        Gate::before(fn ($user): ?bool => $user->hasRole('System Admin') ? true : null);
+        Gate::before(function ($user, $ability): ?bool {
+            if (! $user->hasRole('System Admin')) {
+                return null;
+            }
+
+            if ($ability === 'manage_cooperative_ledger' && ! $user->hasPermissionTo('manage_cooperative_ledger')) {
+                return false;
+            }
+
+            return true;
+        });
 
         Gate::policy(Asset::class, AssetPolicy::class);
         Gate::policy(Attendance::class, AttendancePolicy::class);

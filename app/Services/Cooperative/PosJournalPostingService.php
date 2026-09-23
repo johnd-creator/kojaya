@@ -125,6 +125,7 @@ class PosJournalPostingService
             'POS_MEMBER_CREDIT',
             [
                 'cooperative_member_id' => $transaction->cooperative_member_id,
+                'organization_id' => $transaction->organization_id,
                 'ledger_scope' => 'POS',
                 'debit' => $amount,
                 'credit' => 0,
@@ -193,6 +194,7 @@ class PosJournalPostingService
                 'POS_MEMBER_CREDIT_REVERSAL',
                 [
                     'cooperative_member_id' => $transaction->cooperative_member_id,
+                    'organization_id' => $transaction->organization_id,
                     'ledger_scope' => 'POS',
                     'debit' => 0,
                     'credit' => $creditAmount,
@@ -203,10 +205,22 @@ class PosJournalPostingService
         }
     }
 
-    public function postShiftDifference(int $cashierShiftId, float $difference): ?CooperativeLedgerEntry
+    public function postShiftDifference(int $cashierShiftId, float $difference, mixed $organizationId = null): ?CooperativeLedgerEntry
     {
         if (abs($difference) < 0.01) {
             return null;
+        }
+
+        $shift = PosCashierShift::query()->find($cashierShiftId);
+
+        $derivedOrgId = null;
+        if (is_string($organizationId) && strlen($organizationId) > 0) {
+            $derivedOrgId = $organizationId;
+        }
+
+        if (! $derivedOrgId && $shift) {
+            $derivedOrgId = $shift->transactions()->whereNotNull('organization_id')->value('organization_id')
+                ?? ($shift->cashier_id ? \App\Models\User::query()->where('id', $shift->cashier_id)->value('organization_id') : null);
         }
 
         return $this->firstOrCreateEntry(
@@ -215,6 +229,7 @@ class PosJournalPostingService
             'POS_SHIFT_DIFF',
             [
                 'cooperative_member_id' => null,
+                'organization_id' => $derivedOrgId,
                 'ledger_scope' => 'POS',
                 'debit' => $difference < 0 ? abs($difference) : 0,
                 'credit' => $difference > 0 ? $difference : 0,
@@ -238,6 +253,10 @@ class PosJournalPostingService
             ->first();
 
         if ($existing) {
+            if ($existing->organization_id === null && ! empty($attributes['organization_id'])) {
+                $existing->update(['organization_id' => $attributes['organization_id']]);
+            }
+
             return $existing;
         }
 

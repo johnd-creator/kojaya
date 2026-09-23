@@ -1707,7 +1707,7 @@ Audits of the CI pipeline revealed several optimization opportunities:
 
 **Status:** ✅ Accepted
 **Date:** September 23, 2026
-**Deciders:** Core Engineering Team & Cooperative Finance Working Group
+**Deciders:** Core Engineering Team
 
 ### Context
 
@@ -1715,19 +1715,19 @@ Cooperative member dues and savings payments (`CooperativePayment`) generate fin
 
 Two competing accounting models exist for handling corrections in subledger systems:
 1. **Compensating Reversal Model:** Post explicit contra-entries (debit reversal for payments) to negate erroneous records, leaving erroneous records intact.
-2. **Authorized In-Place Revision & Destructive Subledger Cancellation with Full Audit Trail:** Allow strictly authorized central administrators (`System Admin`) to either revise transaction attributes in-place or cancel payments destructively from the operational subledger while recording immutable, reconstructable audit logs (`audit_logs`) and approval transitions (`approval_logs`), while synchronously restoring invoice balances and revoking issued receipts.
+2. **Authorized In-Place Revision & Destructive Subledger Cancellation with Full Audit Trail:** Allow strictly authorized central administrators (`System Admin` with `manage_cooperative_ledger` permission) to either revise transaction attributes in-place or cancel payments destructively from the operational subledger while recording immutable, reconstructable audit logs (`audit_logs`) and approval transitions (`approval_logs`), while synchronously restoring invoice balances and revoking issued receipts.
 
 Contract rows FIN-002 and FIN-003 previously referenced an informal "established product design" without formal architectural documentation, creating ambiguity during audits.
 
 ### Decision
 
 1. **Authorization Hard Boundary:**
-   - Operational ledger corrections (`POST /cooperative/ledger/{entry}/cancel-payment` and `POST /cooperative/ledger/{entry}/revise-payment`) are strictly restricted to `System Admin`.
+   - Operational ledger corrections (`POST /cooperative/ledger/{entry}/cancel-payment` and `POST /cooperative/ledger/{entry}/revise-payment`) are strictly restricted to `System Admin` possessing `manage_cooperative_ledger` permission.
    - Cooperative staff roles (`Pengurus Koperasi`, `Admin Koperasi`, `Manajer Koperasi`, `Kasir Koperasi`, `Admin Pusat`) are strictly forbidden (`403 Forbidden`) from modifying or cancelling posted payment ledger entries.
 
 2. **Payment Cancellation Semantics (FIN-002):**
    - The associated `CooperativeLedgerEntry` record is destructively deleted from the active operational ledger to ensure member account balances, summaries, and category totals immediately reflect true corrected positions without requiring artificial contra-transaction clutter in member-facing views.
-   - The parent `CooperativePayment` is transitioned to `status = 'VOID'`.
+   - The parent `CooperativePayment` is transitioned to `status = 'VOID'`. Persisted payment `amount` remains preserved, while economic validity is nullified by `status = 'VOID'`.
    - The associated `CooperativeReceipt` is deleted, and receipt metadata on the payment is cleared.
    - The associated `CooperativeDuesInvoice` has its `paid_amount` decremented by the cancelled payment amount; if paid amount drops below invoice amount, invoice status reverts from `PAID` to `UNPAID` (or `PARTIAL`).
    - Guard against period locks (`CooperativePeriodLock`): payments in locked periods cannot be cancelled.
@@ -1740,18 +1740,21 @@ Contract rows FIN-002 and FIN-003 previously referenced an informal "established
    - The previous receipt is revoked and reissued to reflect the corrected transaction date and amount.
    - Guard against period locks across both the original and revised transaction dates.
 
-4. **100% Reconstructable Audit Trail:**
+4. **Reconstructable Audit Trail:**
    - Every cancellation and revision writes an `ApprovalLog` documenting the status transition and reason.
    - Every cancellation and revision writes a structured `AuditLog` capturing:
      - Actor identity (`user_id`, roles) and execution timestamp (`occurred_at`).
      - Payment identity (`payment_id`), member identity (`member_id`), and invoice identity (`invoice_id`).
-     - Complete `old_values` snapshot: `status`, `amount`, `paid_at`, `payment_method`, `notes`.
-     - Complete `new_values` snapshot: `status`, `amount`, `paid_at`, `payment_method`, `notes`.
+     - Complete `old_values` snapshot: `status`, `amount` (persisted amount), `effective_ledger_amount`, `paid_at`, `payment_method`, `notes`.
+     - Complete `new_values` snapshot: `status`, `amount` (persisted amount), `effective_ledger_amount`, `paid_at`, `payment_method`, `notes`.
      - Mandatory non-empty business justification `reason`.
-   - This ensures full financial history reconstructability and non-repudiation despite in-place operational subledger mutation.
+   - Payment snapshot fields (`old_values`, `new_values`) represent actual persisted `CooperativePayment` state (`amount` matches database record, not artificial zero).
+   - Transaction status (`status = 'VOID'`) controls economic validity and nullifies the transaction.
+   - The deleted active ledger entry effect (`effective_ledger_amount = 0.0`) is distinct from the persisted payment amount.
+   - Audit log and approval history preserve the full correction evidence and non-repudiation.
 
 ### Consequences
 
 - **Audit Compliance:** Eliminates ambiguity by formally establishing the authorized in-place/cancellation model with complete audit trail reconstructability.
 - **Operational Clarity:** Prevents member confusion from reversal contra-entries on basic dues receipts while guaranteeing zero unrecorded data mutations.
-- **Security:** Strict `System Admin` authorization prevents unauthorized staff tampering.
+- **Security:** Strict `System Admin` authorization with `manage_cooperative_ledger` permission prevents unauthorized staff tampering.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3";
+import { Head, Link, useForm } from "@inertiajs/vue3";
 import {
   Banknote,
   CalendarCheck,
@@ -7,6 +7,7 @@ import {
   Filter,
   HandCoins,
   HelpCircle,
+  Info,
   Landmark,
   MoreHorizontal,
   PiggyBank,
@@ -220,7 +221,7 @@ const pageDescription = computed(() => {
 });
 
 const totalBalanceLabel = computed(() => {
-  if (filters.value.ledger_scope === "POS") return "Mutasi Operasional POS";
+  if (filters.value.ledger_scope === "POS") return "Net Mutasi Ledger POS";
   if (filters.value.ledger_scope === "LOAN") return "Saldo Mutasi Pinjaman";
   if (filters.value.ledger_scope === "SAVINGS") return "Total Saldo Simpanan";
   return "Total Mutasi Ledger";
@@ -231,7 +232,10 @@ const kpiCards = computed(() => {
     {
       label: totalBalanceLabel.value,
       value: totalSimpanan.value,
-      meta: `${totalEntries.value} mutasi pada filter aktif`,
+      meta:
+        filters.value.ledger_scope === "POS"
+          ? "Nilai mutasi subledger operasional; bukan omzet penjualan."
+          : `${totalEntries.value} mutasi pada filter aktif`,
       icon: (filters.value.ledger_scope === "POS" ? Sparkles : Wallet) as Component,
       tone: (filters.value.ledger_scope === "POS" ? "violet" : "emerald") as Tone,
       href: ledgerIndex().url,
@@ -455,6 +459,24 @@ const memberNo = (entry: any) =>
           :href="card.href"
         />
       </section>
+
+      <div
+        v-if="filters.ledger_scope === 'POS'"
+        class="flex flex-col gap-2 rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-violet-900/50 dark:bg-violet-950/20"
+      >
+        <div class="flex items-start gap-3">
+          <Info class="mt-0.5 size-5 shrink-0 text-violet-600 dark:text-violet-400" />
+          <div class="text-sm text-violet-900 dark:text-violet-200">
+            <span class="font-semibold">Informasi Subledger POS:</span> Nilai mutasi subledger operasional mencakup pencatatan penjualan, HPP, retur, dan rekap harian; ini bukan omzet penjualan atau laba. Untuk angka resmi omzet kotor (gross sales), omzet bersih (net sales), dan laba kotor (gross profit), silakan buka
+            <Link
+              href="/cooperative/pos/reports"
+              class="font-semibold underline hover:text-violet-700 dark:hover:text-violet-300"
+            >
+              Laporan POS
+            </Link>.
+          </div>
+        </div>
+      </div>
 
       <Card
         data-testid="ledger-filter-card"

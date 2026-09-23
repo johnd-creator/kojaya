@@ -96,6 +96,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
             Route::get('/payments/{payment}/status', [MemberSelfServiceController::class, 'paymentStatus'])->name('api.v1.member.payments.status')->middleware('ability:member:read');
             Route::get('/payments/{payment}/qris-image', [MemberSelfServiceController::class, 'qrisImage'])->name('api.v1.member.payments.qris-image')->middleware('ability:member:read');
             Route::get('/payments/{payment}/receipt', [MemberSelfServiceController::class, 'paymentReceipt'])->middleware('ability:member:read');
+            Route::get('/payments/{payment}/proof', [MemberSelfServiceController::class, 'downloadPaymentProof'])->name('api.v1.member.payments.proof')->middleware('ability:member:read');
             Route::post('/payments/proof', [MemberSelfServiceController::class, 'uploadPaymentProof'])->middleware(['ability:member:write', 'throttle:api-write', 'idempotent']);
             Route::get('/bills', [MemberSelfServiceController::class, 'bills'])->middleware('ability:member:read');
             Route::get('/bills/{bill}', [MemberSelfServiceController::class, 'showBill'])->middleware('ability:member:read');

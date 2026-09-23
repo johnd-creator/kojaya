@@ -139,6 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/onboarding', [\App\Http\Controllers\MemberPortalController::class, 'submitOnboarding'])->name('onboarding.submit');
         Route::post('/onboarding/steps', [\App\Http\Controllers\MemberPortalController::class, 'markOnboardingStep'])->name('onboarding.steps');
         Route::post('/payments/proof', [\App\Http\Controllers\MemberPortalController::class, 'uploadPaymentProof'])->name('payments.proof');
+        Route::get('/payments/{payment}/proof', [\App\Http\Controllers\MemberPortalController::class, 'downloadPaymentProof'])->name('payments.download-proof');
         Route::post('/payments/intent', [\App\Http\Controllers\MemberPortalController::class, 'createPaymentIntent'])->name('payments.intent');
         Route::get('/payments/{payment}/status', [\App\Http\Controllers\MemberPortalController::class, 'paymentStatus'])->name('payments.status');
         Route::get('/profile', [\App\Http\Controllers\MemberPortalController::class, 'profile'])->name('profile');
@@ -270,6 +271,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('can:manage_cooperative_payment')->group(function () {
             Route::get('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'index'])->name('payments.index');
             Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
+            Route::get('payments/{payment}/proof', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'downloadProof'])->name('payments.proof');
             Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
             Route::post('payments/bulk-approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'bulkApprove'])->name('payments.bulk-approve');
         });

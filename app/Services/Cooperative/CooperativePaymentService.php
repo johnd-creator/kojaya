@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class CooperativePaymentService
 {
+    public const PROOF_DISK = 'local';
+
     public function __construct(
         private readonly CooperativePeriodLockService $periodLockService,
         private readonly CooperativeReceiptService $receiptService,
@@ -515,5 +517,32 @@ class CooperativePaymentService
             'receipt_no' => null,
             'receipt_issued_at' => null,
         ])->save();
+    }
+
+    public function downloadProofResponse(CooperativePayment $payment): ?\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $path = $payment->proof_path;
+
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        $disk = config('filesystems.payment_proof_disk', self::PROOF_DISK);
+
+        if (Storage::disk($disk)->exists($path)) {
+            $storage = Storage::disk($disk);
+        } elseif (Storage::disk('public')->exists($path)) {
+            $storage = Storage::disk('public');
+        } else {
+            return null;
+        }
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        $extension = $extension !== '' ? $extension : 'bin';
+        $filename = "bukti-pembayaran-{$payment->id}.{$extension}";
+
+        return $storage->download($path, $filename, [
+            'Cache-Control' => 'private, max-age=0, no-store',
+        ]);
     }
 }

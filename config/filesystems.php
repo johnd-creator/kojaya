@@ -15,6 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'payment_proof_disk' => env('PAYMENT_PROOF_DISK', 'local'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

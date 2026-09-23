@@ -214,13 +214,17 @@ class PosJournalPostingService
         $shift = PosCashierShift::query()->find($cashierShiftId);
 
         $derivedOrgId = null;
-        if (is_string($organizationId) && strlen($organizationId) > 0) {
-            $derivedOrgId = $organizationId;
+        if (! empty($organizationId)) {
+            $derivedOrgId = (string) $organizationId;
         }
 
         if (! $derivedOrgId && $shift) {
             $derivedOrgId = $shift->transactions()->whereNotNull('organization_id')->value('organization_id')
                 ?? ($shift->cashier_id ? \App\Models\User::query()->where('id', $shift->cashier_id)->value('organization_id') : null);
+        }
+
+        if (! $derivedOrgId) {
+            return null;
         }
 
         return $this->firstOrCreateEntry(

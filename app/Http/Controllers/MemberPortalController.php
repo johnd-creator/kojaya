@@ -634,7 +634,7 @@ class MemberPortalController extends Controller
             ->whereIn('status', ['UNPAID', 'PARTIAL'])
             ->findOrFail($request->validated('cooperative_dues_invoice_id'));
 
-        $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, 'public');
+        $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, config('filesystems.payment_proof_disk', \App\Services\Cooperative\CooperativePaymentService::PROOF_DISK));
 
         CooperativePayment::query()->create([
             'cooperative_member_id' => $member->id,
@@ -651,6 +651,20 @@ class MemberPortalController extends Controller
         ]);
 
         return back()->with('success', 'Bukti pembayaran berhasil dikirim. Pengurus akan memverifikasi dalam 1-3 hari kerja.');
+    }
+
+    public function downloadPaymentProof(Request $request, CooperativePayment $payment, \App\Services\Cooperative\CooperativePaymentService $service): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $member = $this->memberOrAbort($request);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403, 'Akses bukti pembayaran ditolak.');
+
+        $response = $service->downloadProofResponse($payment);
+        if ($response === null) {
+            abort(404, 'Bukti pembayaran tidak tersedia.');
+        }
+
+        return $response;
     }
 
     /**

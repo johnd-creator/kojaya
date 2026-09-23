@@ -5,6 +5,7 @@ namespace Tests\Feature\Cooperative;
 use App\Enums\LoanStatus;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeMember;
+use App\Models\CooperativeNotificationOutbox;
 use App\Models\Loan;
 use App\Models\LoanType;
 use App\Models\Organization;
@@ -80,10 +81,22 @@ class CooperativeNotificationWorkflowTest extends TestCase
 
         $this->assertTrue($memberUser->notifications()->where('data->event_type', 'member.payment.proof_uploaded')->exists());
         $this->assertTrue($admin->notifications()->where('data->event_type', 'admin.payment.approval_required')->exists());
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, CooperativeNotificationOutbox::query()
+            ->where('user_id', $memberUser->id)
+            ->where('deduplication_key', "member.payment.proof_uploaded:{$payment->id}")
+            ->value('status'));
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, CooperativeNotificationOutbox::query()
+            ->where('user_id', $admin->id)
+            ->where('deduplication_key', "admin.payment.approval_required:{$payment->id}")
+            ->value('status'));
 
         app(CooperativePaymentService::class)->approve($payment, $approver);
 
         $this->assertTrue($memberUser->notifications()->where('data->event_type', 'member.payment.approved')->exists());
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, CooperativeNotificationOutbox::query()
+            ->where('user_id', $memberUser->id)
+            ->where('deduplication_key', "member.payment.approved:{$payment->id}")
+            ->value('status'));
     }
 
     private function roleUser(string $roleName, Organization $organization): User

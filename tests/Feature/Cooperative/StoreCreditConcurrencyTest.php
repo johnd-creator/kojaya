@@ -170,6 +170,57 @@ class StoreCreditConcurrencyTest extends TestCase
         $this->assertSame(-100000, $finalBalance);
     }
 
+    public function test_edge002_capacity_for_one_concurrent_purchase_allows_exactly_one_spend(): void
+    {
+        $org = Organization::factory()->create();
+        $opener = User::factory()->create(['organization_id' => $org->id]);
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $org->id,
+            'status' => 'ACTIVE',
+            'validation_status' => CooperativeMember::VALIDATION_ACTIVE,
+        ]);
+        $account = app(StoreCreditLedgerService::class)->openAccount(new MemberStoreAccountContext(
+            organizationId: $org->id,
+            cooperativeMemberId: $member->id,
+            creditLimit: 10000,
+            openingBalance: 0,
+            openedBy: $opener,
+        ));
+
+        $workerFile = $this->workingDirectory.'/one-capacity-worker.php';
+        $startFile = $this->workingDirectory.'/one-capacity-start.signal';
+        $resultDir = $this->workingDirectory.'/one-capacity-results';
+        mkdir($resultDir);
+        file_put_contents($workerFile, $this->workerScript());
+
+        $workers = [
+            $this->startWorker($workerFile, $startFile, $resultDir, 0, $account->id, 10000),
+            $this->startWorker($workerFile, $startFile, $resultDir, 1, $account->id, 10000),
+        ];
+        usleep(300000);
+        touch($startFile);
+
+        $results = [
+            $this->finishWorker($workers[0], $resultDir, 0),
+            $this->finishWorker($workers[1], $resultDir, 1),
+        ];
+        $successes = array_filter($results, fn (array $result): bool => $result['ok']);
+
+        $balance = (int) DB::connection('pgsql')->table('member_store_accounts')->where('id', $account->id)->value('balance');
+        $purchaseEntries = (int) DB::connection('pgsql')->table('member_store_ledger_entries')
+            ->where('account_id', $account->id)
+            ->where('entry_type', 'pos_purchase')
+            ->count();
+
+        $this->assertCount(1, $successes);
+        $this->assertSame(-10000, $balance);
+        $this->assertSame(1, $purchaseEntries);
+        $this->assertGreaterThanOrEqual(-(int) $account->credit_limit, $balance);
+        $this->assertSame($balance, (int) DB::connection('pgsql')->table('member_store_ledger_entries')
+            ->where('account_id', $account->id)
+            ->sum(DB::raw("CASE WHEN effect = 'credit' THEN amount ELSE -amount END")));
+    }
+
     public function test_concurrent_duplicate_funding_does_not_double_credit(): void
     {
         $org = Organization::factory()->create();

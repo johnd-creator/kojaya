@@ -165,6 +165,52 @@ class CooperativeNotificationDispatcher
         ]);
     }
 
+    /**
+     * @return array<int, array{user: User, payload: array<string, mixed>}>
+     */
+    public function paymentNotificationIntents(CooperativePayment $payment, ?User $actor = null, bool $approved = false): array
+    {
+        $payment = $payment->loadMissing(['member.user', 'invoice.contributionType', 'contributionType']);
+
+        $intents = [];
+        $memberUser = $payment->member?->user;
+
+        if ($memberUser) {
+            $intents[] = [
+                'user' => $memberUser,
+                'payload' => $approved
+                    ? [
+                        ...$this->paymentPayload($payment, 'member.payment.approved', 'payment', 'success', 'Pembayaran disetujui', 'Pembayaran simpanan/iuran Anda sudah disetujui.', $actor),
+                        'deduplication_key' => "member.payment.approved:{$payment->id}",
+                    ]
+                    : [
+                        ...$this->paymentPayload($payment, 'member.payment.proof_uploaded', 'payment', 'info', 'Bukti pembayaran diterima', 'Bukti pembayaran Anda sudah diterima dan menunggu verifikasi Admin Koperasi.', $actor),
+                        'deduplication_key' => "member.payment.proof_uploaded:{$payment->id}",
+                    ],
+            ];
+        }
+
+        if (! $approved && $payment->status === 'PENDING') {
+            $payload = [
+                ...$this->paymentPayload($payment, 'admin.payment.approval_required', 'payment', 'warning', 'Bukti pembayaran perlu diverifikasi', "Pembayaran {$payment->member?->name} menunggu approval Admin Koperasi.", $actor),
+                'deduplication_key' => "admin.payment.approval_required:{$payment->id}",
+            ];
+            $roles = Role::query()->where('name', 'Admin Koperasi')->pluck('name')->all();
+
+            if ($roles !== []) {
+                $adminUsers = User::role($roles)
+                    ->when($payment->member?->organization_id, fn ($query) => $query->where('organization_id', $payment->member->organization_id))
+                    ->get();
+
+                foreach ($adminUsers->unique('id') as $adminUser) {
+                    $intents[] = ['user' => $adminUser, 'payload' => $payload];
+                }
+            }
+        }
+
+        return $intents;
+    }
+
     public function coffeeOrderReceived(CoffeeOrder $coffeeOrder, ?User $actor = null): void
     {
         $coffeeOrder = $coffeeOrder->loadMissing(['member.user', 'product', 'transaction']);

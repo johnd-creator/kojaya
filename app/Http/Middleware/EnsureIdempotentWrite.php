@@ -79,10 +79,18 @@ class EnsureIdempotentWrite
 
     private function fileFingerprint(mixed $file): array
     {
+        $path = method_exists($file, 'getRealPath') ? $file->getRealPath() : false;
+        $contentHash = is_string($path) ? hash_file('sha256', $path) : false;
+
+        if ($contentHash === false) {
+            throw new \RuntimeException('Unable to fingerprint uploaded file content.');
+        }
+
         return [
             'name' => method_exists($file, 'getClientOriginalName') ? $file->getClientOriginalName() : null,
             'size' => method_exists($file, 'getSize') ? $file->getSize() : null,
             'mime' => method_exists($file, 'getMimeType') ? $file->getMimeType() : null,
+            'content_hash' => $contentHash,
         ];
     }
 

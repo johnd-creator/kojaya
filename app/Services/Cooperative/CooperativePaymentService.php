@@ -5,6 +5,7 @@ namespace App\Services\Cooperative;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
+use App\Models\CooperativeNotificationOutbox;
 use App\Models\CooperativePayment;
 use App\Models\User;
 use App\Services\AuditLogService;
@@ -21,6 +22,7 @@ class CooperativePaymentService
         private readonly CooperativePeriodLockService $periodLockService,
         private readonly CooperativeReceiptService $receiptService,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
+        private readonly CooperativeNotificationOutboxService $notificationOutbox,
         private readonly AuditLogService $audit,
     ) {}
 
@@ -51,17 +53,33 @@ class CooperativePaymentService
 
         $this->periodLockService->assertUnlocked($invoice?->period ?? substr((string) $data['paid_at'], 0, 7));
 
-        $payment = CooperativePayment::query()->create([
-            ...$data,
-            'cooperative_dues_invoice_id' => $invoice?->id,
-            'cooperative_contribution_type_id' => $contributionType?->id,
-            'user_id' => $user?->id,
-            'status' => $data['status'] ?? 'PENDING',
-        ]);
+        return DB::transaction(function () use ($data, $invoice, $contributionType, $user): CooperativePayment {
+            $payment = CooperativePayment::query()->create([
+                ...$data,
+                'cooperative_dues_invoice_id' => $invoice?->id,
+                'cooperative_contribution_type_id' => $contributionType?->id,
+                'user_id' => $user?->id,
+                'status' => $data['status'] ?? 'PENDING',
+            ]);
 
-        DB::afterCommit(fn () => $this->notificationDispatcher->paymentRecorded($payment, $user));
+            $outboxIds = [];
 
-        return $payment;
+            foreach ($this->notificationDispatcher->paymentNotificationIntents($payment, $user) as $intent) {
+                $outbox = $this->notificationOutbox->enqueueForUser(
+                    $intent['user'],
+                    (string) $intent['payload']['deduplication_key'],
+                    $intent['payload'],
+                );
+
+                if ($outbox) {
+                    $outboxIds[] = $outbox->id;
+                }
+            }
+
+            $this->scheduleOutboxDelivery($outboxIds);
+
+            return $payment;
+        });
     }
 
     public function approve(CooperativePayment $payment, ?User $approver = null, ?AuditContext $context = null): CooperativePayment
@@ -153,9 +171,51 @@ class CooperativePaymentService
             ], $context);
 
             $this->receiptService->issue($payment, $approver);
-            DB::afterCommit(fn () => $this->notificationDispatcher->paymentApproved($payment, $approver));
+
+            $outboxIds = [];
+
+            foreach ($this->notificationDispatcher->paymentNotificationIntents($payment, $approver, approved: true) as $intent) {
+                $outbox = $this->notificationOutbox->enqueueForUser(
+                    $intent['user'],
+                    (string) $intent['payload']['deduplication_key'],
+                    $intent['payload'],
+                );
+
+                if ($outbox) {
+                    $outboxIds[] = $outbox->id;
+                }
+            }
+
+            $this->scheduleOutboxDelivery($outboxIds);
 
             return $payment->refresh()->load('receipt');
+        });
+    }
+
+    /**
+     * Attempt prompt delivery only after the financial transaction commits.
+     * The durable outbox retains any failure for the existing retry worker.
+     *
+     * @param  array<int, string>  $outboxIds
+     */
+    private function scheduleOutboxDelivery(array $outboxIds): void
+    {
+        if ($outboxIds === []) {
+            return;
+        }
+
+        DB::afterCommit(function () use ($outboxIds): void {
+            foreach ($outboxIds as $outboxId) {
+                try {
+                    $outbox = CooperativeNotificationOutbox::query()->find($outboxId);
+
+                    if ($outbox) {
+                        $this->notificationOutbox->deliver($outbox);
+                    }
+                } catch (\Throwable) {
+                    // The committed outbox row remains available to the retry worker.
+                }
+            }
         });
     }
 

@@ -9,10 +9,12 @@ use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
+use App\Models\CooperativeNotificationOutbox;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeReceipt;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Cooperative\CooperativeNotificationOutboxService;
 use App\Services\Cooperative\CooperativePaymentService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Http\Request;
@@ -116,6 +118,103 @@ class FailureRecoveryEdgeFunctionalTest extends TestCase
         $this->assertSame(1, $payment->approvalLogs()->where('to_status', 'RECONCILED')->count());
     }
 
+    public function test_edge006_payment_approval_keeps_finances_committed_and_notification_retryable_after_delivery_failure(): void
+    {
+        $organization = Organization::factory()->create();
+        $memberUser = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $memberUser->id,
+        ]);
+        $approver = User::factory()->create(['organization_id' => $organization->id]);
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'EDGE-11-AFTER-COMMIT',
+            'name' => 'FUNC-11 after-commit dues',
+            'category' => 'WAJIB',
+            'default_amount' => 50000,
+            'frequency' => 'MONTHLY',
+            'is_active' => true,
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-09',
+            'amount' => 50000,
+            'paid_amount' => 0,
+            'due_date' => '2026-09-30',
+            'status' => 'UNPAID',
+        ]);
+        $payment = CooperativePayment::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_dues_invoice_id' => $invoice->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'user_id' => $memberUser->id,
+            'amount' => 50000,
+            'payment_method' => 'CASH',
+            'paid_at' => now()->toDateString(),
+            'status' => 'PENDING',
+        ]);
+
+        Cache::flush();
+        $this->partialMock(CooperativeNotificationOutboxService::class, function ($mock): void {
+            $mock->shouldReceive('deliver')->once()->andThrow(new \RuntimeException('notification insert failed'));
+        });
+        $middleware = app(EnsureIdempotentWrite::class);
+        $requestCount = 0;
+        $approve = function (Request $request) use (&$requestCount, $payment, $approver): JsonResponse {
+            $requestCount++;
+            app(CooperativePaymentService::class)->approve($payment, $approver);
+
+            return response()->json(['status' => 'APPROVED']);
+        };
+        $request = fn () => Request::create('/api/edge-payment-approve', 'POST', ['payment_id' => $payment->id]);
+        $firstRequest = $request();
+        $firstRequest->headers->set('Idempotency-Key', 'edge-payment-approve-001');
+        $response = $middleware->handle($firstRequest, $approve);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame(1, $requestCount);
+
+        $snapshot = fn (): array => [
+            'payments' => CooperativePayment::query()->whereKey($payment->id)->where('status', 'APPROVED')->count(),
+            'invoice_paid_amount' => (float) $invoice->fresh()->paid_amount,
+            'invoice_status' => $invoice->fresh()->status,
+            'ledger_entries' => CooperativeLedgerEntry::query()->where('cooperative_payment_id', $payment->id)->count(),
+            'receipts' => CooperativeReceipt::query()->where('cooperative_payment_id', $payment->id)->count(),
+            'approval_logs' => $payment->approvalLogs()->where('to_status', 'APPROVED')->count(),
+        ];
+        $financialState = $snapshot();
+        $this->assertSame([
+            'payments' => 1,
+            'invoice_paid_amount' => 50000.0,
+            'invoice_status' => 'PAID',
+            'ledger_entries' => 1,
+            'receipts' => 1,
+            'approval_logs' => 1,
+        ], $financialState);
+
+        $outbox = CooperativeNotificationOutbox::query()
+            ->where('deduplication_key', "member.payment.approved:{$payment->id}")
+            ->firstOrFail();
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_PENDING, $outbox->status);
+        $this->assertSame(0, $outbox->attempts);
+        $this->assertSame($financialState, $snapshot(), 'Delivery failure cannot roll back or repeat the financial commit.');
+
+        $retryRequest = $request();
+        $retryRequest->headers->set('Idempotency-Key', 'edge-payment-approve-001');
+        $retryResponse = $middleware->handle($retryRequest, $approve);
+        $this->assertSame(200, $retryResponse->getStatusCode());
+        $this->assertSame('true', $retryResponse->headers->get('X-Idempotency-Replayed'));
+        $this->assertSame(1, $requestCount, 'Repeated payment request replays instead of executing financial writes.');
+
+        $this->travel(6)->minutes();
+        $retryService = new CooperativeNotificationOutboxService;
+        $this->assertSame(1, $retryService->deliverPending(1));
+        $this->assertSame(CooperativeNotificationOutbox::STATUS_DELIVERED, $outbox->fresh()->status);
+        $this->assertSame(1, $memberUser->notifications()->whereKey($outbox->id)->count());
+        $this->assertSame($financialState, $snapshot(), 'Outbox retry does not repeat financial effects.');
+    }
+
     public function test_edge004_idempotency_replay_conflict_expiry_and_server_errors(): void
     {
         Cache::flush();
@@ -159,10 +258,14 @@ class FailureRecoveryEdgeFunctionalTest extends TestCase
         $uploadReplay = Request::create('/api/upload-edge', 'POST', ['amount' => 10], [], ['proof' => $fileReplay]);
         $uploadReplay->headers->set('Idempotency-Key', 'edge-file-key-0001');
         $this->assertSame('true', $middleware->handle($uploadReplay, $next)->headers->get('X-Idempotency-Replayed'));
-        $differentFile = UploadedFile::fake()->createWithContent('proof.pdf', 'different content');
+        $differentFile = UploadedFile::fake()->createWithContent('proof.pdf', 'other content');
+        $this->assertSame($fileOne->getClientOriginalName(), $differentFile->getClientOriginalName());
+        $this->assertSame($fileOne->getSize(), $differentFile->getSize(), 'Conflict case must use different content with equal byte size.');
+        $this->assertSame($fileOne->getMimeType(), $differentFile->getMimeType());
         $uploadConflict = Request::create('/api/upload-edge', 'POST', ['amount' => 10], [], ['proof' => $differentFile]);
         $uploadConflict->headers->set('Idempotency-Key', 'edge-file-key-0001');
         $this->assertSame(409, $middleware->handle($uploadConflict, $next)->getStatusCode());
+        $this->assertSame(2, $calls, 'Same-size file conflict does not execute the mutation callback again.');
 
         $errorCalls = 0;
         $serverError = static function (Request $request) use (&$errorCalls): JsonResponse {

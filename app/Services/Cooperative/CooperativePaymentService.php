@@ -196,9 +196,11 @@ class CooperativePaymentService
     /**
      * @param  array{reason: string}  $data
      */
-    public function cancelLedgerPayment(CooperativeLedgerEntry $entry, User $user, array $data): CooperativePayment
+    public function cancelLedgerPayment(CooperativeLedgerEntry $entry, User $user, array $data, ?AuditContext $context = null): CooperativePayment
     {
-        return DB::transaction(function () use ($entry, $user, $data): CooperativePayment {
+        $context ??= AuditContext::forActor($user);
+
+        return DB::transaction(function () use ($entry, $user, $data, $context): CooperativePayment {
             $entry = CooperativeLedgerEntry::query()
                 ->lockForUpdate()
                 ->with('payment.invoice')
@@ -207,6 +209,12 @@ class CooperativePaymentService
             $payment = $this->editablePaymentForLedgerEntry($entry);
 
             $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
+
+            $oldStatus = $payment->status;
+            $oldAmount = (float) $payment->amount;
+            $oldPaidAt = $payment->paid_at?->toISOString() ?? (string) $payment->paid_at;
+            $oldPaymentMethod = $payment->payment_method;
+            $oldNotes = $payment->notes;
 
             $this->adjustInvoicePaidAmount($payment, -((float) $payment->amount));
 
@@ -225,6 +233,31 @@ class CooperativePaymentService
             ])->save();
 
             $payment->logApproval('APPROVED', 'VOID', $user, $reason);
+            $this->audit->log('payment.cancelled', 'cooperative.payment', $payment, [
+                'old' => [
+                    'payment_id' => $payment->id,
+                    'member_id' => $payment->cooperative_member_id,
+                    'invoice_id' => $payment->cooperative_dues_invoice_id,
+                    'status' => $oldStatus,
+                    'amount' => $oldAmount,
+                    'effective_ledger_amount' => $oldAmount,
+                    'paid_at' => $oldPaidAt,
+                    'payment_method' => $oldPaymentMethod,
+                    'notes' => $oldNotes,
+                ],
+                'new' => [
+                    'payment_id' => $payment->id,
+                    'member_id' => $payment->cooperative_member_id,
+                    'invoice_id' => $payment->cooperative_dues_invoice_id,
+                    'status' => 'VOID',
+                    'amount' => $oldAmount,
+                    'effective_ledger_amount' => 0.0,
+                    'paid_at' => $oldPaidAt,
+                    'payment_method' => $oldPaymentMethod,
+                    'notes' => $payment->notes,
+                ],
+                'reason' => $reason,
+            ], $context);
 
             return $payment->refresh();
         });
@@ -233,9 +266,11 @@ class CooperativePaymentService
     /**
      * @param  array{amount: numeric, payment_method: string, paid_at: string, notes?: ?string, reason: string}  $data
      */
-    public function reviseLedgerPayment(CooperativeLedgerEntry $entry, User $user, array $data): CooperativePayment
+    public function reviseLedgerPayment(CooperativeLedgerEntry $entry, User $user, array $data, ?AuditContext $context = null): CooperativePayment
     {
-        return DB::transaction(function () use ($entry, $user, $data): CooperativePayment {
+        $context ??= AuditContext::forActor($user);
+
+        return DB::transaction(function () use ($entry, $user, $data, $context): CooperativePayment {
             $entry = CooperativeLedgerEntry::query()
                 ->lockForUpdate()
                 ->with(['payment.invoice', 'payment.contributionType'])
@@ -256,6 +291,10 @@ class CooperativePaymentService
             }
 
             $oldAmount = round((float) $payment->amount, 2);
+            $oldPaidAt = $payment->paid_at?->toISOString() ?? (string) $payment->paid_at;
+            $oldPaymentMethod = $payment->payment_method;
+            $oldStatus = $payment->status;
+            $oldNotes = $payment->notes;
 
             $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
             $this->periodLockService->assertUnlocked($payment->invoice?->period ?? substr($data['paid_at'], 0, 7));
@@ -284,7 +323,31 @@ class CooperativePaymentService
             $this->deleteReceipt($payment);
             $this->receiptService->issue($payment->refresh(), $user);
 
-            $payment->logApproval('APPROVED', 'APPROVED', $user, 'Revisi pembayaran: '.trim($data['reason']));
+            $reason = trim($data['reason']);
+            $payment->logApproval('APPROVED', 'APPROVED', $user, 'Revisi pembayaran: '.$reason);
+            $this->audit->log('payment.revised', 'cooperative.payment', $payment, [
+                'old' => [
+                    'payment_id' => $payment->id,
+                    'member_id' => $payment->cooperative_member_id,
+                    'invoice_id' => $payment->cooperative_dues_invoice_id,
+                    'status' => $oldStatus,
+                    'amount' => $oldAmount,
+                    'paid_at' => $oldPaidAt,
+                    'payment_method' => $oldPaymentMethod,
+                    'notes' => $oldNotes,
+                ],
+                'new' => [
+                    'payment_id' => $payment->id,
+                    'member_id' => $payment->cooperative_member_id,
+                    'invoice_id' => $payment->cooperative_dues_invoice_id,
+                    'status' => $payment->status,
+                    'amount' => $newAmount,
+                    'paid_at' => $data['paid_at'],
+                    'payment_method' => $data['payment_method'],
+                    'notes' => $payment->notes,
+                ],
+                'reason' => $reason,
+            ], $context);
 
             return $payment->refresh()->load('receipt');
         });

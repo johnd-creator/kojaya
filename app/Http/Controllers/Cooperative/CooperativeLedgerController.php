@@ -8,6 +8,7 @@ use App\Http\Requests\Cooperative\CancelLedgerPaymentRequest;
 use App\Http\Requests\Cooperative\ReviseLedgerPaymentRequest;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeLedgerEntry;
+use App\Services\Authorization\CooperativeLedgerCorrectionAuthorizer;
 use App\Services\Cooperative\CooperativePaymentService;
 use App\Services\Cooperative\SavingsSummaryService;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,8 +19,12 @@ use Inertia\Response;
 
 class CooperativeLedgerController extends Controller
 {
-    public function index(Request $request, SavingsSummaryService $savingsSummary, OrganizationScopedQueryService $scopeService): Response
-    {
+    public function index(
+        Request $request,
+        SavingsSummaryService $savingsSummary,
+        OrganizationScopedQueryService $scopeService,
+        CooperativeLedgerCorrectionAuthorizer $correctionAuthorizer,
+    ): Response {
         $filters = [
             ...$request->only([
                 'member_search',
@@ -54,6 +59,7 @@ class CooperativeLedgerController extends Controller
                 ->pluck('entry_type'),
             'canManageLedger' => (bool) $request->user()?->can('manage_cooperative_ledger')
                 && (bool) $request->user()?->can('view_cooperative_all'),
+            'canCorrectLedgerPayment' => $correctionAuthorizer->canCorrect($request->user()),
         ]);
     }
 

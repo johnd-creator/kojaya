@@ -26,7 +26,13 @@ class SavingsWithdrawalController extends Controller
             ->orderByRaw("CASE status WHEN 'PENDING' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at');
         $scopeService->scopeVisibleTo($withdrawals, $request->user());
-        $withdrawals = $withdrawals->paginate(20);
+        $withdrawals = $withdrawals->paginate(20)->withQueryString()->through(function (SavingsWithdrawal $withdrawal): SavingsWithdrawal {
+            $voluntaryBalance = $withdrawal->member ? $this->service->voluntaryBalance($withdrawal->member) : 0.0;
+            $withdrawal->setAttribute('available_voluntary_balance', $voluntaryBalance);
+            $withdrawal->setAttribute('projected_remaining_balance', max(0.0, round($voluntaryBalance - (float) $withdrawal->amount, 2)));
+
+            return $withdrawal;
+        });
 
         return Inertia::render('Cooperative/Savings/Withdrawals/Index', [
             'withdrawals' => $withdrawals,

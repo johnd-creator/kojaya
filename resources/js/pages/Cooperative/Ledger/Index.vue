@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3";
+import { Head, Link, useForm } from "@inertiajs/vue3";
 import {
   Banknote,
   CalendarCheck,
@@ -7,6 +7,7 @@ import {
   Filter,
   HandCoins,
   HelpCircle,
+  Info,
   Landmark,
   MoreHorizontal,
   PiggyBank,
@@ -66,6 +67,7 @@ const props = defineProps<{
   categories: string[];
   entryTypes: string[];
   canManageLedger: boolean;
+  canCorrectLedgerPayment?: boolean;
 }>();
 
 const filters = ref({
@@ -198,42 +200,81 @@ const contributionTypeStats = computed(() =>
   })),
 );
 
-const kpiCards = computed(() => [
-  {
-    label: "Total Simpanan",
-    value: totalSimpanan.value,
-    meta: `${totalEntries.value} mutasi pada filter aktif`,
-    icon: Wallet as Component,
-    tone: "emerald" as Tone,
-    href: ledgerIndex().url,
-  },
-  ...contributionTypeStats.value.map((stat) => ({
-    label: stat.name,
-    value: stat.value,
-    meta: stat.code ? `Kategori ${stat.code}` : "Kategori simpanan",
-    icon: stat.icon,
-    tone: stat.tone,
-    href: ledgerIndex({
-      query: {
-        ledger_scope: "SAVINGS",
-        contribution_type_id: stat.id,
-      },
-    }).url,
-  })),
-  {
-    label: "Belum Dikategorikan",
-    value: uncategorizedLabel,
-    meta: "Butuh pengecekan mapping jenis simpanan",
-    icon: HelpCircle as Component,
-    tone: "zinc" as Tone,
-    href: ledgerIndex().url,
-  },
-]);
+const pageTitle = computed(() => {
+  if (filters.value.ledger_scope === "POS") return "Ledger POS";
+  if (filters.value.ledger_scope === "LOAN") return "Ledger Pinjaman";
+  if (filters.value.ledger_scope === "SAVINGS") return "Ledger Simpanan";
+  return "Buku Besar Koperasi";
+});
 
-const breadcrumbs = [
-  { title: "Iuran & Simpanan", href: "#" },
-  { title: "Ledger Simpanan", href: ledgerIndex().url },
-];
+const pageDescription = computed(() => {
+  if (filters.value.ledger_scope === "POS") {
+    return "Pantau mutasi operasional POS, transaksi kasir, dan piutang belanja anggota.";
+  }
+  if (filters.value.ledger_scope === "LOAN") {
+    return "Pantau mutasi pencairan pinjaman, angsuran pokok, jasa, dan write-off.";
+  }
+  if (filters.value.ledger_scope === "SAVINGS") {
+    return "Pantau mutasi simpanan anggota, klasifikasi kategori, dan koreksi transaksi dari satu tampilan operasional.";
+  }
+  return "Pantau seluruh mutasi buku besar koperasi lintas simpanan, pinjaman, dan transaksi operasional.";
+});
+
+const totalBalanceLabel = computed(() => {
+  if (filters.value.ledger_scope === "POS") return "Net Mutasi Ledger POS";
+  if (filters.value.ledger_scope === "LOAN") return "Saldo Mutasi Pinjaman";
+  if (filters.value.ledger_scope === "SAVINGS") return "Total Saldo Simpanan";
+  return "Total Mutasi Ledger";
+});
+
+const kpiCards = computed(() => {
+  const cards = [
+    {
+      label: totalBalanceLabel.value,
+      value: totalSimpanan.value,
+      meta:
+        filters.value.ledger_scope === "POS"
+          ? "Nilai mutasi subledger operasional; bukan omzet penjualan."
+          : `${totalEntries.value} mutasi pada filter aktif`,
+      icon: (filters.value.ledger_scope === "POS" ? Sparkles : Wallet) as Component,
+      tone: (filters.value.ledger_scope === "POS" ? "violet" : "emerald") as Tone,
+      href: ledgerIndex().url,
+    },
+  ];
+
+  if (filters.value.ledger_scope === "SAVINGS" || !filters.value.ledger_scope) {
+    cards.push(
+      ...contributionTypeStats.value.map((stat) => ({
+        label: stat.name,
+        value: stat.value,
+        meta: stat.code ? `Kategori ${stat.code}` : "Kategori simpanan",
+        icon: stat.icon,
+        tone: stat.tone,
+        href: ledgerIndex({
+          query: {
+            ledger_scope: "SAVINGS",
+            contribution_type_id: stat.id,
+          },
+        }).url,
+      })),
+      {
+        label: "Belum Dikategorikan",
+        value: uncategorizedLabel,
+        meta: "Butuh pengecekan mapping jenis simpanan",
+        icon: HelpCircle as Component,
+        tone: "zinc" as Tone,
+        href: ledgerIndex().url,
+      },
+    );
+  }
+
+  return cards;
+});
+
+const breadcrumbs = computed(() => [
+  { title: "Buku Besar & Keuangan", href: "#" },
+  { title: pageTitle.value, href: ledgerIndex().url },
+]);
 
 const columns = [
   { header: "Tanggal", key: "posted_at", slot: "posted_at" },
@@ -250,7 +291,7 @@ const columns = [
   { header: "Keterangan", key: "description", slot: "description" },
 ];
 
-if (props.canManageLedger) {
+if (props.canCorrectLedgerPayment) {
   columns.push({
     header: "Aksi",
     key: "id",
@@ -277,7 +318,7 @@ const cancelForm = useForm({
 });
 
 const canCorrectEntry = (entry: any) =>
-  props.canManageLedger &&
+  Boolean(props.canCorrectLedgerPayment) &&
   entry.entry_type === "SAVING_PAYMENT" &&
   Boolean(entry.cooperative_payment_id);
 
@@ -342,7 +383,7 @@ const memberNo = (entry: any) =>
 </script>
 
 <template>
-  <Head title="Ledger Simpanan" />
+  <Head :title="pageTitle" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <PageContainer class="max-w-none">
@@ -370,11 +411,10 @@ const memberNo = (entry: any) =>
             <h1
               class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
             >
-              Ledger Simpanan
+              {{ pageTitle }}
             </h1>
             <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Pantau mutasi simpanan anggota, klasifikasi kategori, dan koreksi
-              transaksi dari satu tampilan operasional.
+              {{ pageDescription }}
             </p>
           </div>
           <div
@@ -419,6 +459,24 @@ const memberNo = (entry: any) =>
           :href="card.href"
         />
       </section>
+
+      <div
+        v-if="filters.ledger_scope === 'POS'"
+        class="flex flex-col gap-2 rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-violet-900/50 dark:bg-violet-950/20"
+      >
+        <div class="flex items-start gap-3">
+          <Info class="mt-0.5 size-5 shrink-0 text-violet-600 dark:text-violet-400" />
+          <div class="text-sm text-violet-900 dark:text-violet-200">
+            <span class="font-semibold">Informasi Subledger POS:</span> Nilai mutasi subledger operasional mencakup pencatatan penjualan, HPP, retur, dan rekap harian; ini bukan omzet penjualan atau laba. Untuk angka resmi omzet kotor (gross sales), omzet bersih (net sales), dan laba kotor (gross profit), silakan buka
+            <Link
+              href="/cooperative/pos/reports"
+              class="font-semibold underline hover:text-violet-700 dark:hover:text-violet-300"
+            >
+              Laporan POS
+            </Link>.
+          </div>
+        </div>
+      </div>
 
       <Card
         data-testid="ledger-filter-card"
@@ -646,7 +704,7 @@ const memberNo = (entry: any) =>
               </span>
             </template>
 
-            <template v-if="canManageLedger" #actions="{ row }">
+            <template v-if="canCorrectLedgerPayment" #actions="{ row }">
               <div v-if="canCorrectEntry(row)" class="flex justify-end">
                 <DropdownMenu>
                   <DropdownMenuTrigger as-child>

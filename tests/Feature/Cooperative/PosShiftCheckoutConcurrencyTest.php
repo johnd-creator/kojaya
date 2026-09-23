@@ -148,11 +148,25 @@ class PosShiftCheckoutConcurrencyTest extends TestCase
         $this->assertSame(0, count(array_filter($results, fn (array $result): bool => $result['outcome'] === 'error')));
 
         $this->assertSame(0, (int) $product->fresh()->stock);
+        $transaction = PosTransaction::query()
+            ->where('organization_id', $organization->id)
+            ->where('status', 'COMPLETED')
+            ->sole();
+
         $this->assertSame(1, PosTransaction::query()->where('organization_id', $organization->id)->where('status', 'COMPLETED')->count());
         $this->assertSame(1, PosTransactionItem::query()->count());
         $this->assertSame(1, PosPayment::query()->count());
         $this->assertSame(1, \App\Models\PosStockMovement::query()->where('pos_product_id', $product->id)->where('movement_type', 'SALE')->count());
-        $this->assertSame(0, CooperativeLedgerEntry::query()->where('organization_id', $organization->id)->count());
+        $ledgerEntries = CooperativeLedgerEntry::query()
+            ->where('organization_id', $organization->id)
+            ->get();
+
+        $this->assertCount(2, $ledgerEntries);
+        $this->assertEqualsCanonicalizing(
+            ['POS_SALE', 'POS_COGS'],
+            $ledgerEntries->pluck('entry_type')->all(),
+        );
+        $this->assertSame([$transaction->id], $ledgerEntries->pluck('source_id')->unique()->values()->all());
     }
 
     /** @return array{Organization, User, PosProduct, PosCashierShift} */

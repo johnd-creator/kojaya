@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
 
 class Phase4ReadinessGateTest extends TestCase
@@ -91,6 +92,28 @@ class Phase4ReadinessGateTest extends TestCase
         ] as $dependency) {
             $this->assertStringContainsString("      - {$dependency}\n", $job);
         }
+    }
+
+    public function test_playwright_audit_steps_override_the_ci_testing_environment(): void
+    {
+        $workflow = Yaml::parseFile(base_path('.github/workflows/ci.yml'));
+        $this->assertSame('testing', $workflow['env']['APP_ENV']);
+
+        $steps = collect($workflow['jobs']['phase4-readiness']['steps'])->keyBy('name');
+
+        foreach ([
+            'Prepare isolated deterministic Playwright environment',
+            'Build frontend for the Playwright environment',
+            'Verify UI Audit global setup lifecycle',
+            'Run deterministic desktop accessibility audit',
+        ] as $name) {
+            $this->assertSame('playwright', $steps[$name]['env']['APP_ENV'], "{$name} must use the Playwright environment.");
+        }
+
+        $this->assertStringContainsString(
+            'php artisan --env=playwright db:seed --class=UiAuditSeeder',
+            $steps['Prepare isolated deterministic Playwright environment']['run'],
+        );
     }
 
     public function test_phase_four_contract_report_and_readiness_gate_exist(): void

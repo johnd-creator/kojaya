@@ -688,6 +688,8 @@ jobs:
           sudo apt-get install --no-install-recommends -y fonts-dejavu fonts-noto-core fonts-noto-ui-core
 
       - name: Prepare isolated deterministic Playwright environment
+        env:
+          APP_ENV: playwright
         run: |
           cp .env.playwright.example .env.playwright
           php artisan --env=playwright key:generate --force --no-interaction
@@ -699,16 +701,21 @@ jobs:
           php artisan --env=playwright wayfinder:generate --no-interaction
 
       - name: Build frontend for the Playwright environment
+        env:
+          APP_ENV: playwright
         run: |
           npm run build
           rm -f public/hot
 
       - name: Verify UI Audit global setup lifecycle
+        env:
+          APP_ENV: playwright
         run: npm run ui:test-global-setup
 
       - name: Run deterministic desktop accessibility audit
         id: accessibility
         env:
+          APP_ENV: playwright
           UI_AUDIT_MODE: accessibility
           UI_AUDIT_VIEWPORT: desktop
           UI_AUDIT_SCOPE: all

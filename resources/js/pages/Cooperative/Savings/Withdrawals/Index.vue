@@ -179,7 +179,7 @@ const getStatusBadge = (status: string) => {
       >
         <Wallet class="mx-auto mb-3 size-10 text-zinc-300 dark:text-zinc-600" />
         <p class="text-base font-medium">Tidak ada pengajuan penarikan</p>
-        <p class="mt-1 text-xs text-zinc-400">
+        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
           Semua pengajuan penarikan telah diproses atau belum ada pengajuan baru.
         </p>
       </div>

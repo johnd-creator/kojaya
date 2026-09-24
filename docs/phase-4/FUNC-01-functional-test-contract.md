@@ -452,5 +452,12 @@ Dalam penyusunan dokumen kontrak dan pelaksanaan Phase 4:
 - **Status**: Closed as By-Design (FUNC-09).
 - **Resolution**: Strict fail-closed balance drift detection with transaction rollback (`RuntimeException('Saldo akun tidak sesuai dengan jumlah ledger entry.')`) is the intentional, mathematically sound financial security design. As verified by `StoreCreditFunctionalTest::test_store008_drift_detection_causes_transaction_rollback_and_runtime_exception`, automatic silent recalculation without an explicit audit trail would obscure out-of-band tampering or corruption. Mutations on drifted accounts remain strictly blocked until manual reconciliation. PAY-006 is tracked separately as **PARTIAL** until the documented deployment migration removes historical payment proofs from public storage and the transitional fallback is disabled.
 
+## Phase 4 Closure and Readiness
+
+- **FUNC-12 — Full Regression Suite** records the integrated SQLite, PostgreSQL, migration/seed, frontend, generated-code, OpenAPI, formatting, dependency, and UI baseline evidence in `docs/phase-4/FUNC-12-full-regression-report.md`. Its exact-head CI results are evidence for that reviewed revision; the durable contract is the named CI suites and gates, not a transient run number.
+- **FUNC-13 — Final Readiness Gate** defines the fail-closed Release Candidate eligibility criteria in `docs/phase-4/FUNC-13-phase4-readiness-gate.md`. Its dedicated CI job depends on the current required full CI jobs and reruns focused readiness, shard MECE, OpenAPI, baseline integrity, and deterministic desktop accessibility checks.
+- Release Candidate eligibility is a code-readiness decision. It does not declare production deployment complete; PAY-006 remains a pre-deployment blocker until its documented proof migration and fallback-disablement steps are verified.
+- The four critical functional journeys above remain the contract inventory. The known `PARTIAL` statuses and unverified scenarios remain explicit and are not promoted by the readiness gate alone.
+
 ---
 *Dokumen ini merupakan rujukan otoritatif resmi untuk pelaksanaan Phase 4 pada repositori `johnd-creator/kojaya`.*

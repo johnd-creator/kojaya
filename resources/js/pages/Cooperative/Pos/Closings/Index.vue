@@ -5,6 +5,7 @@ import { ref } from "vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { close, index } from "@/routes/cooperative/pos/closings";
@@ -52,18 +53,19 @@ function closeDay(): void {
             <div class="flex flex-col gap-6">
                 <header class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <Link href="/cooperative/pos" prefetch>
-                            <Button variant="ghost" size="icon" class="rounded-full">
-                                <ArrowLeft class="h-5 w-5" />
-                            </Button>
-                        </Link>
+                        <Button variant="ghost" size="icon" class="rounded-full" as-child>
+                            <Link href="/cooperative/pos" aria-label="Kembali ke POS" prefetch>
+                                <ArrowLeft class="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                        </Button>
                         <div>
                             <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Closing Harian</h1>
                             <p class="text-sm text-zinc-500">Kunci transaksi harian dan posting ke jurnal.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <Input v-model="localDate" type="date" class="rounded-xl" />
+                        <Label for="closing-date" class="sr-only">Tanggal penutupan</Label>
+                        <Input id="closing-date" v-model="localDate" type="date" class="rounded-xl" />
                         <Button class="rounded-xl" @click="applyDate">Terapkan</Button>
                     </div>
                 </header>

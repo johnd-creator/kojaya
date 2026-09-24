@@ -10,22 +10,39 @@ use Tests\TestCase;
 
 class Phase4FullRegressionInventoryTest extends TestCase
 {
+    public const FUNCTIONAL_EVIDENCE = [
+        'tests/Feature/Auth/AuthenticationAndAccessFunctionalTest.php',
+        'tests/Feature/Member/MemberLifecycleAndProfileFunctionalTest.php',
+        'tests/Feature/Cooperative/AdminMemberManagementFunctionalTest.php',
+        'tests/Feature/Cooperative/ContributionsDuesPaymentsFunctionalTest.php',
+        'tests/Feature/Cooperative/StoreCreditFunctionalTest.php',
+        'tests/Feature/Cooperative/PosCashierFunctionalTest.php',
+        'tests/Feature/Cooperative/LoanFunctionalTest.php',
+        'tests/Feature/Cooperative/FinanceLedgerFunctionalTest.php',
+        'tests/Feature/Cooperative/OrganizationPermissionIsolationFunctionalTest.php',
+        'tests/Feature/Cooperative/FailureRecoveryEdgeFunctionalTest.php',
+    ];
+
+    public const POSTGRESQL_SUITES = [
+        'PostgreSQLConcurrency',
+        'Document05PostgreSQL',
+        'BackupRestoreDrill',
+    ];
+
+    public const POSTGRESQL_CONCURRENCY_EVIDENCE = [
+        'tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php',
+        'tests/Feature/Cooperative/PosShiftCheckoutConcurrencyTest.php',
+        'tests/Feature/Cooperative/PosVoidConcurrencyTest.php',
+        'tests/Feature/PaymentConcurrencyTest.php',
+        'tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php',
+        'tests/Feature/Cooperative/StoreCreditConcurrencyTest.php',
+        'tests/Feature/Cooperative/MemberImportConcurrencyTest.php',
+        'tests/Feature/Auth/Sso/GoogleSsoMemberMatchingConcurrencyTest.php',
+    ];
+
     public function test_phase_four_functional_evidence_files_remain_in_the_repository(): void
     {
-        $functionalEvidence = [
-            'tests/Feature/Auth/AuthenticationAndAccessFunctionalTest.php',
-            'tests/Feature/Member/MemberLifecycleAndProfileFunctionalTest.php',
-            'tests/Feature/Cooperative/AdminMemberManagementFunctionalTest.php',
-            'tests/Feature/Cooperative/ContributionsDuesPaymentsFunctionalTest.php',
-            'tests/Feature/Cooperative/StoreCreditFunctionalTest.php',
-            'tests/Feature/Cooperative/PosCashierFunctionalTest.php',
-            'tests/Feature/Cooperative/LoanFunctionalTest.php',
-            'tests/Feature/Cooperative/FinanceLedgerFunctionalTest.php',
-            'tests/Feature/Cooperative/OrganizationPermissionIsolationFunctionalTest.php',
-            'tests/Feature/Cooperative/FailureRecoveryEdgeFunctionalTest.php',
-        ];
-
-        foreach ($functionalEvidence as $path) {
+        foreach (self::FUNCTIONAL_EVIDENCE as $path) {
             $this->assertFileExists(base_path($path), "Missing Phase 4 functional evidence: {$path}");
         }
     }
@@ -43,29 +60,14 @@ class Phase4FullRegressionInventoryTest extends TestCase
             $suiteNames[] = $suiteNode->getAttribute('name');
         }
 
-        $this->assertEqualsCanonicalizing([
-            'PostgreSQLConcurrency',
-            'Document05PostgreSQL',
-            'BackupRestoreDrill',
-        ], $suiteNames);
-
-        $concurrencyFiles = [
-            'tests/Feature/Cooperative/PosDailyClosingConcurrencyTest.php',
-            'tests/Feature/Cooperative/PosShiftCheckoutConcurrencyTest.php',
-            'tests/Feature/Cooperative/PosVoidConcurrencyTest.php',
-            'tests/Feature/PaymentConcurrencyTest.php',
-            'tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php',
-            'tests/Feature/Cooperative/StoreCreditConcurrencyTest.php',
-            'tests/Feature/Cooperative/MemberImportConcurrencyTest.php',
-            'tests/Feature/Auth/Sso/GoogleSsoMemberMatchingConcurrencyTest.php',
-        ];
+        $this->assertEqualsCanonicalizing(self::POSTGRESQL_SUITES, $suiteNames);
         $ownedFiles = [];
 
         foreach ($xpath->query('/phpunit/testsuites/testsuite[@name="PostgreSQLConcurrency"]/file') as $fileNode) {
             $ownedFiles[] = $fileNode->textContent;
         }
 
-        foreach ($concurrencyFiles as $path) {
+        foreach (self::POSTGRESQL_CONCURRENCY_EVIDENCE as $path) {
             $this->assertContains($path, $ownedFiles, "PostgreSQLConcurrency must own {$path}");
             $this->assertFileExists(base_path($path), "Missing PostgreSQL concurrency evidence: {$path}");
         }

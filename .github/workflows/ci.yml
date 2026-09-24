@@ -563,3 +563,192 @@ jobs:
           DB_USERNAME: kojaya
           DB_PASSWORD: kojaya
 
+  phase4-readiness:
+    name: Phase 4 Readiness Gate
+    needs:
+      - changes
+      - dependency-audit
+      - style
+      - frontend-build
+      - generated-drift
+      - phpunit-shard
+      - unit-feature-tests
+      - seed-integrity-gate
+      - migration-seed
+      - openapi-drift
+      - postgres-concurrency
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Fail closed unless every required CI job passed
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+          DEPENDENCY_AUDIT_RESULT: ${{ needs.dependency-audit.result }}
+          STYLE_RESULT: ${{ needs.style.result }}
+          FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
+          GENERATED_DRIFT_RESULT: ${{ needs.generated-drift.result }}
+          PHPUNIT_SHARD_RESULT: ${{ needs.phpunit-shard.result }}
+          UNIT_FEATURE_TESTS_RESULT: ${{ needs.unit-feature-tests.result }}
+          SEED_INTEGRITY_RESULT: ${{ needs.seed-integrity-gate.result }}
+          MIGRATION_SEED_RESULT: ${{ needs.migration-seed.result }}
+          OPENAPI_DRIFT_RESULT: ${{ needs.openapi-drift.result }}
+          POSTGRES_RESULT: ${{ needs.postgres-concurrency.result }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$DOCS_ONLY" != "false" ]]; then
+            echo "::error::FUNC-13 requires the full CI path; docs_only=$DOCS_ONLY"
+            exit 1
+          fi
+
+          for result_name in \
+            CHANGES_RESULT \
+            DEPENDENCY_AUDIT_RESULT \
+            STYLE_RESULT \
+            FRONTEND_BUILD_RESULT \
+            GENERATED_DRIFT_RESULT \
+            PHPUNIT_SHARD_RESULT \
+            UNIT_FEATURE_TESTS_RESULT \
+            SEED_INTEGRITY_RESULT \
+            MIGRATION_SEED_RESULT \
+            OPENAPI_DRIFT_RESULT \
+            POSTGRES_RESULT; do
+            result="${!result_name}"
+            if [[ "$result" != "success" ]]; then
+              echo "::error::Required upstream job $result_name ended with $result"
+              exit 1
+            fi
+          done
+
+          echo "All required upstream CI dependencies: PASS"
+
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Download and verify built frontend assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build-assets
+          path: public/build
+
+      - name: Verify built frontend assets
+        run: test -f public/build/manifest.json
+
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force --no-interaction
+
+      - name: Run focused readiness and release-preflight tests
+        id: readiness-tests
+        run: >-
+          php artisan test --compact
+          tests/Feature/Phase4ReadinessGateTest.php
+          tests/Feature/ReleasePreflightTest.php
+          tests/Feature/ProductionReadinessP0P2Test.php
+          tests/Feature/PhaseDProductionSmokeTest.php
+
+      - name: Verify all four PHPUnit shards remain MECE
+        id: shard-mece
+        run: php bin/ci/phpunit-shard verify --total=4
+
+      - name: Verify OpenAPI contract drift
+        id: openapi
+        run: bin/openapi.sh check
+
+      - name: Verify UI baseline integrity
+        id: ui-baselines
+        run: npm run ui:verify-baselines
+
+      - name: Install Chromium and deterministic fonts
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y fonts-dejavu fonts-noto-core fonts-noto-ui-core
+
+      - name: Prepare isolated deterministic Playwright environment
+        run: |
+          cp .env.playwright.example .env.playwright
+          php artisan --env=playwright key:generate --force --no-interaction
+          mkdir -p database
+          rm -f database/playwright.sqlite
+          php artisan --env=playwright migrate:fresh --force --no-interaction
+          php artisan --env=playwright db:seed --class=UiAuditSeeder --force --no-interaction
+          php artisan --env=playwright storage:link --force --no-interaction
+          php artisan --env=playwright wayfinder:generate --no-interaction
+
+      - name: Build frontend for the Playwright environment
+        run: |
+          npm run build
+          rm -f public/hot
+
+      - name: Verify UI Audit global setup lifecycle
+        run: npm run ui:test-global-setup
+
+      - name: Run deterministic desktop accessibility audit
+        id: accessibility
+        env:
+          UI_AUDIT_MODE: accessibility
+          UI_AUDIT_VIEWPORT: desktop
+          UI_AUDIT_SCOPE: all
+          UI_AUDIT_ENFORCE_COVERAGE: '1'
+          UI_AUDIT_EVENT_NAME: ${{ github.event_name }}
+          UI_AUDIT_REQUESTED_MODE: accessibility
+          UI_AUDIT_REQUESTED_VIEWPORT: desktop
+          UI_AUDIT_REQUESTED_SCOPE: all
+          UI_AUDIT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          UI_AUDIT_TESTED_SHA: ${{ github.sha }}
+          UI_AUDIT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          UI_AUDIT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number || '' }}
+          UI_AUDIT_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          UI_AUDIT_DEFAULT_BRANCH_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: npm run ui:a11y -- --project=desktop
+
+      - name: Disposition FUNC-12 accessibility findings
+        id: accessibility-disposition
+        run: node tests/visual/scripts/verify-func13-accessibility.mjs
+
+      - name: Summarize Phase 4 readiness evidence
+        if: always()
+        env:
+          UPSTREAM_RESULT: ${{ job.status }}
+          READINESS_TESTS: ${{ steps.readiness-tests.outcome }}
+          SHARD_MECE: ${{ steps.shard-mece.outcome }}
+          OPENAPI: ${{ steps.openapi.outcome }}
+          UI_BASELINES: ${{ steps.ui-baselines.outcome }}
+          ACCESSIBILITY: ${{ steps.accessibility.outcome }}
+          ACCESSIBILITY_DISPOSITION: ${{ steps.accessibility-disposition.outcome }}
+        run: |
+          {
+            echo '## Phase 4 Readiness Gate'
+            echo "- Upstream CI dependencies: ${{ needs.changes.result == 'success' && needs.dependency-audit.result == 'success' && needs.style.result == 'success' && needs.frontend-build.result == 'success' && needs.generated-drift.result == 'success' && needs.phpunit-shard.result == 'success' && needs.unit-feature-tests.result == 'success' && needs.seed-integrity-gate.result == 'success' && needs.migration-seed.result == 'success' && needs.openapi-drift.result == 'success' && needs.postgres-concurrency.result == 'success' && needs.changes.outputs.docs_only == 'false' && 'PASS' || 'HOLD' }}"
+            echo "- Phase4ReadinessGateTest and release-preflight suites: ${READINESS_TESTS:-not run}"
+            echo "- Shard MECE: ${SHARD_MECE:-not run}"
+            echo "- OpenAPI: ${OPENAPI:-not run}"
+            echo "- UI baseline integrity: ${UI_BASELINES:-not run}"
+            echo "- Accessibility audit: ${ACCESSIBILITY:-not run}"
+            echo "- FUNC-12 accessibility finding disposition: ${ACCESSIBILITY_DISPOSITION:-not run}"
+            echo '- Known PARTIAL findings: documented in docs/phase-4/FUNC-13-phase4-readiness-gate.md'
+            echo "- Job status: ${UPSTREAM_RESULT}"
+          } >> "$GITHUB_STEP_SUMMARY"

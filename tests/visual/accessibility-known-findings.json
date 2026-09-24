@@ -56,33 +56,6 @@
       "expires_on": "2026-09-30"
     },
     {
-      "screen_id": "pos-closings-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "a[href$=\"pos\"] > .rounded-full.hover\\:bg-zinc-100\\/90.hover\\:text-zinc-950",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-127",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "pos-closings-index-default",
-      "rule": "label",
-      "impact": "critical",
-      "selector": "input",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-128",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "pos-closings-index-default",
-      "rule": "link-name",
-      "impact": "serious",
-      "selector": ".gap-4.items-center.flex > a[href$=\"pos\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-129",
-      "expires_on": "2026-09-30"
-    },
-    {
       "screen_id": "pos-coffee-orders-index-default",
       "rule": "select-name",
       "impact": "critical",
@@ -116,24 +89,6 @@
       "selector": "select",
       "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
       "tracking_id": "UI-A11Y-133",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "pos-inventory-counts-index-default",
-      "rule": "button-name",
-      "impact": "critical",
-      "selector": "a[href$=\"pos\"] > .rounded-full.hover\\:bg-zinc-100\\/90[data-slot=\"button\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-134",
-      "expires_on": "2026-09-30"
-    },
-    {
-      "screen_id": "pos-inventory-counts-index-default",
-      "rule": "link-name",
-      "impact": "serious",
-      "selector": ".gap-4.items-center > a[href$=\"pos\"]",
-      "reason": "Existing UI debt recorded during PR #21 audit; tracked for follow-up rather than hidden by a broad rule exclusion.",
-      "tracking_id": "UI-A11Y-135",
       "expires_on": "2026-09-30"
     },
     {

@@ -5,7 +5,8 @@
 - Repository: `johnd-creator/kojaya`
 - Branch: `test/func-12-full-regression`
 - Base: `main` at `4dca014d74886c0ba6652d7e590ba8f7444d120d` (verified equal to `origin/main`; descendant of the requested authoritative SHA).
-- Head before push: recorded in the final local handoff after commit; exact-head CI is pending.
+- Tested PR HEAD: `6f73167c20eb9140f0d784c861fa846fb3de1940`.
+- Authoritative exact-head CI: **#455 PASS**.
 - Evidence captured: 2026-09-24, local time WIB.
 - Environment: Linux; PHP 8.5.10 CLI; Node 25.6.1; SQLite for canonical tests and isolated migration/seed; PostgreSQL client/extension present but no local PostgreSQL server; Chromium/Playwright available.
 - Canonical PHPUnit inventory: 293 eligible test files.
@@ -20,17 +21,18 @@
 
 Four generated shard configurations ran via `php artisan test --compact --parallel`:
 
-| Shard | Files | Estimated tests in summary | Executed tests | Assertions | Result |
-| --- | ---: | ---: | ---: | ---: | --- |
-| 1 | 73 | 819 | 858 | 5,738 | PASS |
-| 2 | 73 | 741 | 793 | 12,268 | PASS |
-| 3 | 73 | 796 | 803 | 4,586 | PASS |
-| 4 | 74 | 842 | 820 | 4,605 | PASS |
-| **Total** | **293** | **3,198** | **3,274** | **27,197** | **PASS; no skipped tests reported** |
+| Shard | Files | Estimated tests in summary | Executed tests | Assertions | Errors | Failures | Skipped | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | 73 | 819 | 858 | 5,738 | 0 | 0 | 0 | PASS |
+| 2 | 73 | 741 | 793 | 12,268 | 0 | 0 | 0 | PASS |
+| 3 | 73 | 796 | 803 | 4,586 | 0 | 0 | 0 | PASS |
+| 4 | 74 | 842 | 820 | 4,605 | 0 | 0 | 0 | PASS |
+| **Total** | **293** | **3,198** | **3,274** | **27,197** | **0** | **0** | **0** | **PASS** |
 
 The generated configs and temporary `build/func12` files are not release inputs and are not committed.
 
-- Local coverage aggregation: **NOT AVAILABLE** (`xdebug` and `pcov` are absent). No coverage workaround or threshold change was made. The exact-head CI gate remains authoritative for minimum 2,211 tests and 60% coverage.
+- Local coverage aggregation: **NOT AVAILABLE** (`xdebug` and `pcov` are absent). No coverage workaround or threshold change was made.
+- Exact-head CI coverage: **81.40%**, above the **60.00%** required threshold; aggregate result PASS.
 
 ## SHARD MECE
 
@@ -49,7 +51,8 @@ The generated configs and temporary `build/func12` files are not release inputs 
 
 - `PostgreSQLConcurrency`, `Document05PostgreSQL`, and `BackupRestoreDrill` were not executable locally: `pg_isready -h 127.0.0.1 -p 5432 -d kojaya_test -U kojaya` reported no response.
 - The PostgreSQL PHPUnit configuration targets the isolated `kojaya_test` database. No SQLite substitution and no shared/development database were used.
-- Result: **LOCAL_POSTGRESQL = BLOCKED_BY_ENVIRONMENT**. Exact-head CI evidence remains pending; no remote CI result is claimed here.
+- Exact-head CI #455: `PostgreSQLConcurrency` **26 tests / 375 assertions PASS**; `Document05PostgreSQL` **71 tests / 393 assertions PASS**; `BackupRestoreDrill` **1 test / 20 assertions PASS**.
+- Result: **Local PostgreSQL = BLOCKED_BY_ENVIRONMENT; authoritative exact-head CI PostgreSQL = PASS**.
 
 ## MIGRATION / SEED
 
@@ -86,8 +89,9 @@ The generated configs and temporary `build/func12` files are not release inputs 
 
 - `npm run ui:test-global-setup`: PASS; route coverage found 81 GET routes, 64 renderable/audited, 17 explicitly excluded, zero uncovered or stale entries, and zero duplicate screen IDs.
 - `npm run ui:verify-baselines`: PASS; 234 baseline files valid, missing 0, orphan 0, duplicate 0, invalid dimensions 0.
-- Desktop all-route visual compare: **77 passed, 99 failed of 176**, all failed cases report `expect(page).toHaveScreenshot(expected)` differences (example diff ratio 0.01). There was also one audit metadata error: local `base_sha` was `unknown`, rejected as an invalid SHA. Existing snapshots were not refreshed. This checkout has no production UI changes, so the screenshot failures are in the current-main UI/baseline combination, not changes introduced by FUNC-12.
-- `npm run ui:a11y`: 156 passed, 3 failed, 144 skipped. Failures: `pos-closings-index-default`, `pos-inventory-counts-index-default`, and `savings-withdrawals-index-default` on desktop. No accessibility rules were disabled.
+- Desktop all-route visual compare: **77 passed, 99 visual mismatches of 176**; local metadata also reported `base_sha = unknown`. Classify this as **LOCAL UI ENVIRONMENT VARIANCE / NON-AUTHORITATIVE LOCAL RESULT**; no snapshots were refreshed. Deterministic prior evidence: Kojaya UI Audit #282 PASS for PR #85 HEAD `803de19e0b4454649874ef08bbf3e48231cadfef`, whose Git tree is identical to current main merge commit `4dca014d74886c0ba6652d7e590ba8f7444d120d`.
+- PR #86 changes no UI source, CSS, visual baselines, routes, or UI seed. Its visual mismatch result is not a FUNC-12-introduced production regression.
+- `npm run ui:a11y`: 156 passed, 3 failed, 144 skipped. Local findings: `pos-closings-index-default`, `pos-inventory-counts-index-default`, and `savings-withdrawals-index-default` on desktop. Preserve these as local accessibility findings for FUNC-13 disposition; no accessibility rules were disabled and they are not attributed to PR #86.
 
 ## CRITICAL JOURNEYS
 
@@ -95,7 +99,7 @@ Automated evidence is mapped to the four journeys actually defined in FUNC-01; t
 
 1. **Member Onboarding & Profile Completion** — Entry and login/access redirects: `AuthenticationAndAccessFunctionalTest`; member onboarding eligibility, submission, lifecycle constraints, and profile ownership/updates: `MemberLifecycleAndProfileFunctionalTest`; staff authorization, validation/revision/final approval and maker-checker restrictions: `AdminMemberManagementFunctionalTest`. Negative lifecycle and authorization paths are asserted.
 2. **Monthly Dues Generation & Midtrans Payment** — Staff generation and duplicate-period behavior, member invoice/intent ownership, signed/invalid webhook transitions, exact ledger credit, receipt creation, replay handling, manual payment, approval, rollback, and outbox retry: `ContributionsDuesPaymentsFunctionalTest`. Payment intent and charge recovery paths are also in `PaymentChargeRecoveryTest`.
-3. **POS Cashier Shift, Store-Credit Sale & Daily Closing** — Shift and POS authorization, sale validation/stock effects, void/return and close/duplicate-close behavior: `PosCashierFunctionalTest`; credit boundary, ledger debit, delegate attribution, replay, and atomic rejection: `StoreCreditFunctionalTest`; PostgreSQL checkout/closing concurrency ownership is retained in `phpunit.pgsql.xml` but blocked locally by unavailable PostgreSQL.
+3. **POS Cashier Shift, Store-Credit Sale & Daily Closing** — Shift and POS authorization, sale validation/stock effects, void/return and close/duplicate-close behavior: `PosCashierFunctionalTest`; credit boundary, ledger debit, delegate attribution, replay, and atomic rejection: `StoreCreditFunctionalTest`; PostgreSQL checkout/closing concurrency ownership is retained in `phpunit.pgsql.xml` and passed in exact-head CI #455 (local PostgreSQL was unavailable).
 4. **Loan Maker-Checker Application, Disbursement & Payoff** — Member/staff application entry, authorization, calculator validation, manager review, Pengurus approval, disbursement ledger effect, installment repayment, payoff, replay, and negative state/role cases: `LoanFunctionalTest`.
 
 ## KNOWN PARTIAL FINDINGS
@@ -110,12 +114,13 @@ Automated evidence is mapped to the four journeys actually defined in FUNC-01; t
 
 ## NEW REGRESSIONS
 
-- No production change or new application-code regression was identified in this test-only phase.
-- Current-main UI release evidence is not clean locally: 99 desktop visual screenshots differ from stored baselines and three desktop accessibility cases fail; local UI metadata also lacks a valid base SHA. These are recorded as release blockers for disposition; no baselines or UI code were altered.
-- Local PostgreSQL execution is environment-blocked. This is not represented as a PostgreSQL test pass.
+- No production regression was introduced by PR #86; it changes no production or UI files.
+- Local screenshot comparisons are non-authoritative environment variance; deterministic prior UI Audit #282 passed on a tree identical to current main.
+- Three local accessibility findings are preserved for FUNC-13 disposition.
+- Local PostgreSQL is environment-blocked, superseded by exact-head CI #455 PostgreSQL PASS.
 
 ## RELEASE EVIDENCE STATUS
 
-**HOLD — REGRESSION FOUND**
+**FUNC-12 PASS — EXACT-HEAD CI VERIFIED — FUNC-13 DISPOSITION PENDING**
 
-SQLite regression, shard coverage, migration/seed, build, OpenAPI, generated drift, dependency threshold, Pint, diff, and baseline integrity passed. The desktop visual compare and three accessibility tests failed, while PostgreSQL suites could not run locally. Exact-head CI is pending. FUNC-13 must decide disposition; this report does not declare release readiness.
+Exact-head CI #455 passed the SQLite shard aggregate (3,274 tests, 27,197 assertions, zero errors/failures/skips), 81.40% line coverage, and all PostgreSQL suites. Local migration/seed, frontend build, OpenAPI, generated drift, dependency thresholds, Pint, diff, and UI baseline integrity also passed. Local PostgreSQL unavailability and non-authoritative visual variance are documented; accessibility findings remain for FUNC-13 disposition. Existing PAY-006 and EDGE PARTIAL findings are unchanged. This status is not a release approval; FUNC-13 owns that decision.

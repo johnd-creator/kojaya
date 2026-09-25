@@ -81,11 +81,13 @@ use App\Services\Cooperative\LoanService;
 use App\Services\Integrations\MidtransPaymentProvider;
 use App\Services\Integrations\PaymentGatewayProvider;
 use App\Services\Security\PiiCryptoService;
+use App\Support\DatabaseMigrationSafety;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobFailed;
@@ -124,7 +126,37 @@ class AppServiceProvider extends ServiceProvider
         $this->registerRateLimiters();
         $this->registerObservers();
         $this->registerEventListeners();
+        $this->registerMigrationTargetGuard();
         $this->registerJobListeners();
+    }
+
+    protected function registerMigrationTargetGuard(): void
+    {
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if (! in_array((string) $event->command, [
+                'migrate',
+                'migrate:fresh',
+                'migrate:refresh',
+                'migrate:reset',
+                'migrate:rollback',
+                'migrate:install',
+            ], true)) {
+                return;
+            }
+
+            $connection = (string) config('database.default');
+            $database = (string) config("database.connections.{$connection}.database", '');
+            $environment = (string) config('app.env', '');
+            $isForce = $event->input->hasParameterOption('--force');
+            DatabaseMigrationSafety::assertAllowed(
+                $environment,
+                (bool) config('app.environment_explicit', true),
+                $connection,
+                $database,
+                (bool) config('database.target_explicit', true),
+                $isForce,
+            );
+        });
     }
 
     protected function configureUiAuditClock(): void

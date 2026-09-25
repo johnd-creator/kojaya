@@ -1758,3 +1758,22 @@ Contract rows FIN-002 and FIN-003 previously referenced an informal "established
 - **Audit Compliance:** Eliminates ambiguity by formally establishing the authorized in-place/cancellation model with complete audit trail reconstructability.
 - **Operational Clarity:** Prevents member confusion from reversal contra-entries on basic dues receipts while guaranteeing zero unrecorded data mutations.
 - **Security:** Strict `System Admin` authorization with `manage_cooperative_ledger` permission prevents unauthorized staff tampering.
+
+## ADR-039: Safe Fresh Installation and Migration Target Guard
+
+**Status:** Accepted
+**Date:** September 25, 2026
+
+### Decision
+
+- Composer dependency/setup workflows must not run database migrations implicitly. Database provisioning and forward migration are explicit operator steps.
+- Migration commands require an explicit, non-template environment and database target. QA/staging migrations require PostgreSQL, a QA/test/staging-named database, and the explicit `--force` option. Production follows the existing deployment contract and requires its explicit `--force` migration flow.
+- The `.env.example` values are an unconfigured QA template, not production credentials or an approved database target. Operators must replace/verify the target before migration.
+- `public/storage` is runtime state and is not tracked in Git; Laravel creates the platform-appropriate link to `storage/app/public`. Private document and payment-proof storage remains separate.
+- Privileged admin passwords are entered through hidden prompts or standard input. Password command-line options are restricted to automated tests.
+
+### Consequences
+
+- Fresh dependency installation cannot silently mutate an arbitrary database.
+- QA remains an operator-provisioned, disposable PostgreSQL target; the guard is not a substitute for verifying database ownership or emptiness.
+- Windows checkouts no longer depend on Git symlink materialization for the public storage link.

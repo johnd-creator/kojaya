@@ -19,6 +19,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'target_explicit' => env('DB_CONNECTION') !== null && (env('DB_DATABASE') !== null || env('DB_URL') !== null),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

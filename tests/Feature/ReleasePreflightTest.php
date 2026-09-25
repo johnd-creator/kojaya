@@ -89,6 +89,16 @@ class ReleasePreflightTest extends TestCase
         }
     }
 
+    public function test_strict_release_candidate_preflight_rejects_the_template_version(): void
+    {
+        $this->configureBaseline();
+        Config::set('app.version', '0.0.0-unconfigured');
+
+        $this->artisan('app:release-preflight', ['--strict-release-candidate' => true])
+            ->expectsOutput('application.release_version: FAIL (invalid configuration)')
+            ->assertExitCode(1);
+    }
+
     public function test_strict_production_preflight_rejects_a_prerelease_version(): void
     {
         $this->configureStrictProductionBaseline();

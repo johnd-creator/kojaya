@@ -31,7 +31,9 @@ class ReleasePreflight extends Command
             return $strictProduction
                 ? is_string($version) && $this->isStableApplicationVersion($version)
                 : ($strictReleaseCandidate
-                    ? is_string($version) && $this->isValidSemanticVersion($version)
+                    ? is_string($version)
+                        && $version !== '0.0.0-unconfigured'
+                        && $this->isValidSemanticVersion($version)
                     : filled($version));
         });
         $this->check('api.contract_version', function (): bool {

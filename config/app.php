@@ -42,6 +42,8 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'environment_explicit' => env('APP_ENV') !== null,
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

@@ -58,5 +58,6 @@
         <env name="DB_DATABASE" value="kojaya_test" force="true"/>
         <env name="DB_USERNAME" value="kojaya" force="true"/>
         <env name="DB_PASSWORD" value="kojaya" force="true"/>
+        <env name="PHPUNIT_PGSQL_SUITE" value="true" force="true"/>
     </php>
 </phpunit>

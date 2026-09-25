@@ -63,26 +63,52 @@ class DefaultAdminCredentialTest extends TestCase
 
         $this->assertNotNull($user);
         $this->assertTrue($user->hasRole('System Admin'));
+        $this->assertNotEmpty($user->getAllPermissions());
         $this->assertTrue(Hash::check('SecurePass123!', $user->password));
         $this->assertNotNull($user->organization_id);
     }
 
-    public function test_admin_create_command_generates_random_password_when_omitted(): void
+    public function test_admin_create_command_uses_hidden_confirmed_password_and_never_prints_it(): void
     {
         $this->seed(RolePermissionSeeder::class);
 
         $this->artisan('admin:create', [
             '--email' => 'randomadmin@example.com',
             '--name' => 'Random Admin',
-        ])->assertSuccessful();
+        ])
+            ->expectsQuestion('Admin password', 'HiddenSecret123!')
+            ->expectsQuestion('Confirm admin password', 'HiddenSecret123!')
+            ->doesntExpectOutputToContain('HiddenSecret123!')
+            ->assertSuccessful();
 
         $user = User::where('email', 'randomadmin@example.com')->first();
 
         $this->assertNotNull($user);
-        $this->assertFalse(
-            Hash::check('password', $user->password),
-            'Generated password should not be the literal string "password".',
-        );
+        $this->assertTrue(Hash::check('HiddenSecret123!', $user->password));
+    }
+
+    public function test_admin_create_rejects_invalid_email_before_creation(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $this->artisan('admin:create', [
+            '--email' => 'not-an-email',
+            '--password' => 'SecurePass123!',
+        ])->assertFailed();
+
+        $this->assertNull(User::where('email', 'not-an-email')->first());
+    }
+
+    public function test_admin_create_requires_noninteractive_password_input(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $this->artisan('admin:create', [
+            '--email' => 'no-password@example.com',
+            '--no-interaction' => true,
+        ])->assertFailed();
+
+        $this->assertNull(User::where('email', 'no-password@example.com')->first());
     }
 
     public function test_admin_create_refuses_to_overwrite_existing_user_by_default(): void

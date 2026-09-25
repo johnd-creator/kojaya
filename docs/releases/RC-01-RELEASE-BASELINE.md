@@ -218,3 +218,69 @@ RC-01 RESULT
 PASS
 RC-01 baseline gate passed. Do not create or push the tag without the required approval.
 ```
+
+## RC-01-FIX-02 Final Reconciliation
+
+This section preserves the FIX-01 evidence above and records the subsequent
+history reconciliation. No remote history was rewritten.
+
+| Evidence | Result |
+| --- | --- |
+| Previous source candidate | `f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e` |
+| Previous local combined candidate | `77a09cceeb0db5cd2c6ba69f2949140cd7579fa9` |
+| Previous `origin/main` before FIX-02 | `41efc989e1dab6db02a1f5e08fa61ff6232633fb` |
+| Source candidate exact-head CI | PASS; run #462, run ID `36130328122`, exact SHA `f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e` |
+| Documentation-only CI | Historical run #463, run ID `36134435343`, did not pass the Phase 4 readiness gate |
+| History rewrite | NO |
+| Force push | NO |
+| PAY-006 production data operation | NONE; PAY-006 remains a pre-deployment requirement |
+
+### History Reconciliation
+
+At reconciliation start, local `main` was `77a09cceeb0db5cd2c6ba69f2949140cd7579fa9`
+and `origin/main` was `41efc989e1dab6db02a1f5e08fa61ff6232633fb`. Their merge-base
+was `9b31b124cd1ed57dd09dc30ced83c534f79a88ee`; local `main` was one commit ahead
+and two commits behind. The local-only `77a09cce` commit duplicated the source
+tree already present in remote history at `f8e0800f`; the remote-only commits were
+that required source remediation and the later evidence update `41efc989`. No
+unrelated or unknown changes were retained.
+
+The reconciliation branch was created from the fetched `origin/main`. The
+RC-01 source tree is unchanged from `f8e0800f`, whose exact-head run #462 passed;
+the separate documentation history is retained. The final Git commit containing
+this section is the evidence head, while `f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e`
+is the exact CI-validated source SHA. The evidence head's own SHA is intentionally
+reported by `git rev-parse` after commit rather than embedded in its own contents.
+
+### Run #463: Documentation-Only Fail-Closed Behavior
+
+Run #463 was triggered by the documentation-only commit `41efc989`. The workflow
+change classifier set `docs_only=true`; build and test jobs that are conditional
+on a non-docs-only change were skipped. The always-running Phase 4 Readiness Gate
+then failed at its first step because `.github/workflows/ci.yml` explicitly exits
+non-zero unless `DOCS_ONLY` is `false`. This is intentional fail-closed release
+policy, not an accidental missing status or path-filter defect. The workflow was
+not changed to make a docs-only run green. Consequently, #463 is not evidence of
+a source regression; the source candidate's mandatory exact-head evidence remains
+run #462 on `f8e0800f`.
+
+### Final Re-Gate State
+
+The remediation source tree matches the exact-head CI-validated source candidate
+`f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e`. Local and remote branch identity,
+worktree cleanliness, and the final evidence-head SHA are verified after the
+normal push and recorded in the task's final handoff. No RC tag was created or
+pushed. RC-01 does not authorize PAY-006 production data migration.
+
+FIX-02 local verification, run against the reconciled source tree:
+
+| Check | Result |
+| --- | --- |
+| Full Windows ParaTest | PASS; 3,287 tests / 27,291 assertions |
+| CI-focused readiness and release-preflight suites | PASS; 48 tests / 226 assertions |
+| Frontend production build | PASS; existing CSS parser warning only |
+| Pint | PASS; no dirty PHP files |
+| OpenAPI snapshot | PASS; `php artisan openapi:snapshot --check` |
+| Composer validation | PASS; `composer validate --strict` |
+| UI baseline integrity | PASS; 234 valid, 0 missing/orphan/duplicate/invalid |
+| Strict release-candidate preflight | PASS with `APP_VERSION=1.0.0-rc.1` |

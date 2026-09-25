@@ -199,3 +199,51 @@ The original blocked findings above are retained as the historical RC-02 record.
 | Regression / exact-head CI | IN PROGRESS; CONCURRENCY CI GATE REQUIRED | Latest focused SQLite regression: PASS (45 tests, 135 assertions), including migration safety, Composer setup safety, admin credentials, and strict release preflight. `Document05PostgreSQL`: PASS (71 tests, 393 assertions) against the isolated PostgreSQL 18.6 test database after adding an explicit, name-locked PostgreSQL suite profile; ordinary tests still force SQLite `:memory:`. `PostgreSQLConcurrency`: 26 tests / 267 assertions, 10 failures on Windows in worker synchronization (nine lock-wait assertions and one concurrent Google SSO worker result); this is not counted as passing and must be adjudicated by exact-head Linux CI. Full default PHPUnit, run with a 1 GB memory limit after the default 128 MB process exhausted memory, was manually stopped at 1,464/3,301 tests (44%) because repeated Laravel/SQLite setup made the local run excessively long; it produced no reported failure before stopping, but is incomplete and not a pass. Earlier Composer strict validation/platform requirements, Pint, OpenAPI drift, frontend build, UI-baseline integrity (234/234), and strict RC preflight passed. Candidate commit, clean-room replay, push, and exact-head CI have not yet completed. |
 
 The temporary QA administrator and PostgreSQL cluster are disposable test state, not production/bootstrap identities. No external integrations were contacted, no shared/production DB was used, no PAY-006 operation was performed, and no RC-2 tag was created. Final remediation SHA, CI run ID/result, clean-room replay, and final re-gate will be recorded only after those steps complete.
+
+## RC-02-FIX-01 Continuation — Exact-Head Re-Gate
+
+The latest pushed source candidate is `f363541690daf4f65c93ef21b8898eec3515e905` (`fix(release): persist verified QA admin bootstrap`), on `main`. The initial 18-file remediation is `38ac80192a0362cc1ca1ce9a87fd289523c17953`. Both commits were pushed with normal fast-forward pushes. Repository-local Git identity was derived from the authenticated GitHub account: `Fauzi <fauzi.ardiyanto@gmail.com>` (`johnd-creator`, numeric account ID `224537153`). No global Git identity was changed.
+
+The candidate follow-up fixes `admin:create` so `email_verified_at` is persisted explicitly instead of being silently discarded by `User` mass-assignment rules. The focused PostgreSQL admin-command suite passed locally (15 tests, 59 assertions) against the disposable test database. A further temporary assertion exercising login in the Laravel test harness passed, but was not retained as a source change; it does not substitute for the required live HTTP login.
+
+### Exact-head Linux CI
+
+Workflow run [36178976949](https://github.com/johnd-creator/kojaya/actions/runs/36178976949) tested the exact candidate SHA above and completed **success**.
+
+| Gate | Result |
+| --- | --- |
+| Four PHPUnit shards | PASS — 3,302 tests, 27,318 assertions, 0 errors, 0 failures, 0 skipped |
+| Aggregated code coverage | PASS — 81.36% (60% minimum) |
+| PostgreSQLConcurrency | PASS — 26 tests, 375 assertions |
+| Document05PostgreSQL | PASS — 71 tests, 393 assertions |
+| PostgreSQL backup/restore drill | PASS — 1 test, 20 assertions |
+| Frontend, migration/seed, Pint, generated/OpenAPI drift, dependency audit | PASS |
+| SEED-09 readiness | PASS |
+| Phase 4 Readiness Gate | PASS — deterministic desktop accessibility audit: 104 passed; finding disposition passed |
+
+The previously observed Windows concurrency result remains 26 tests / 267 assertions with 10 failures (nine lock-wait assertions and one concurrent Google SSO worker result). It is not waived or counted as a pass; the exact-head Linux PostgreSQLConcurrency job above passed.
+
+### Candidate clean-room replay
+
+A new clone was checked out detached at the exact candidate SHA in `storage/framework/rc02-cleanroom-f363541`, with a new isolated PostgreSQL 18.6 database `kojaya_qa_rc02_f363541` on the disposable loopback-only cluster (initial public-table count: 0). Results:
+
+| Step | Result / evidence |
+| --- | --- |
+| Fresh clone and exact SHA | PASS; initial clone status clean and HEAD matched `f363541…` |
+| `composer install --prefer-dist --no-interaction` | PASS; 149 locked packages installed and Laravel package discovery completed |
+| `npm ci` and `npm run build` | PASS; 479 packages installed and 3,904 modules built. npm reported dependency/script warnings; the authoritative dependency-audit CI gate passed. |
+| Environment and app key | PASS; QA environment, RC candidate version, isolated PostgreSQL target, and generated key; secret values omitted |
+| Fresh PostgreSQL migration | PASS; all 182 migrations applied; no pending migrations |
+| Safe reference seed and repeat | PASS; default seeder ran twice. Counts were stable: roles 16, permissions 129, role mappings 476, organizations 1, users 0 before explicit admin bootstrap, members 0, loan types 3, tax rules 1, work shifts 4, contribution types 4, POS categories 6, job grades 6, leave types 6, salary component types 5, and departments 0. |
+| Windows public storage | PASS; `storage:link` created a Junction to `storage/app/public`; private storage was not linked |
+| Admin bootstrap | PASS for command completion; a synthetic QA admin was created via `--password-stdin`, the password was not printed, and `email_verified_at` was persisted |
+| Public HTTP smoke | PASS; `/login`, `/up`, `/api/openapi.json`, and a built Vite asset returned HTTP 200 |
+| Live admin login | **FAIL / unresolved**; POST `/login` redirected back to `/login` with the generic credential error. Direct Laravel provider validation accepted the same generated password, but the live request did not authenticate. Dashboard and logout therefore remain unverified. |
+
+The later `admin:create --update-existing` invocations were diagnostic attempts after the documented first-admin login failed; they did not produce a successful login and are not counted as runbook evidence. The replay is **not** accepted as PASS. It must be repeated from a clean admin/database after the live authentication discrepancy is explained; if any corrective step outside the runbook is required, document it first and repeat the affected sequence.
+
+The build caused `git status` in the clean-room clone to show `resources/js/wayfinder/index.ts` as modified, but its worktree object hash exactly matched the HEAD blob (`c9d6526326ea7b4174185ea731a4b64984730b0d`) and `git diff` was empty; it was not staged. The main checkout's Wayfinder file was separately checked against canonical generation and had no content change.
+
+### Final re-gate
+
+**RC-02: BLOCKED — do not create or push `v1.0.0-rc.2`.** Exact-head CI, Linux regression, PostgreSQLConcurrency, build, migration/seed, readiness, and Windows storage gates pass. The required clean-room live PostgreSQL login gate failed, so authenticated dashboard/logout and an accepted end-to-end clean-room replay are not established. `v1.0.0-rc.1` was not changed, and no RC-2 tag was created. After resolving the live-login discrepancy, repeat the affected clean-room sequence and re-gate before proposing the RC-2 tag command.

@@ -69,6 +69,42 @@ class DefaultAdminCredentialTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
     }
 
+    public function test_admin_created_by_command_can_authenticate_and_use_and_end_web_session(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(CooperativeReferenceSeeder::class);
+
+        $email = 'bootstrap-login@example.test';
+        $password = 'SecurePass123!';
+
+        $this->artisan('admin:create', [
+            '--email' => $email,
+            '--name' => 'Bootstrap Login Admin',
+            '--password' => $password,
+            '--role' => 'System Admin',
+        ])->assertSuccessful();
+
+        $user = User::query()->where('email', $email)->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'email' => $email,
+            'password' => 'WrongPass123!',
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest('web');
+
+        $this->post(route('login.store'), [
+            'email' => $email,
+            'password' => $password,
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user, 'web');
+        $this->get(route('dashboard'))->assertOk();
+
+        $this->post(route('logout'))->assertRedirect(route('home'));
+        $this->assertGuest('web');
+        $this->get(route('dashboard'))->assertRedirect(route('login', absolute: false));
+    }
+
     public function test_admin_create_command_uses_hidden_confirmed_password_and_never_prints_it(): void
     {
         $this->seed(RolePermissionSeeder::class);

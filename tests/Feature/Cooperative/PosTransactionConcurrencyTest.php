@@ -190,16 +190,30 @@ PHP);
     private function startWorker(string $workerFile, string $payloadFile, string $startFile, int $cashierId): array
     {
         $pipes = [];
+        $command = [PHP_BINARY];
+
+        // The local Windows PHP CLI may load SQLite through command-line ini
+        // overrides that are not inherited by child PHP processes.
+        if (PHP_OS_FAMILY === 'Windows' && extension_loaded('pdo_sqlite')) {
+            $command = array_merge($command, [
+                '-d',
+                'extension=sqlite3',
+                '-d',
+                'extension=pdo_sqlite',
+            ]);
+        }
+
+        $command = array_merge($command, [
+            $workerFile,
+            base_path(),
+            $this->databasePath,
+            $payloadFile,
+            $startFile,
+            (string) $cashierId,
+        ]);
+
         $process = proc_open(
-            [
-                PHP_BINARY,
-                $workerFile,
-                base_path(),
-                $this->databasePath,
-                $payloadFile,
-                $startFile,
-                (string) $cashierId,
-            ],
+            $command,
             [
                 1 => ['pipe', 'w'],
                 2 => ['pipe', 'w'],

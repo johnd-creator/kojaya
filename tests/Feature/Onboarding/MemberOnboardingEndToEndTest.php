@@ -30,6 +30,7 @@ use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\CreatesTestRsaJwk;
 use Tests\TestCase;
 
 /**
@@ -44,6 +45,7 @@ use Tests\TestCase;
  */
 class MemberOnboardingEndToEndTest extends TestCase
 {
+    use CreatesTestRsaJwk;
     use RefreshDatabase;
 
     private Organization $organization;
@@ -915,31 +917,6 @@ class MemberOnboardingEndToEndTest extends TestCase
         $user->attributes['token_type'] = 'Bearer';
 
         return $user;
-    }
-
-    /**
-     * @return array{private_key: string, jwk: array<string, string>}
-     */
-    protected function fakeRsaJwk(): array
-    {
-        $resource = openssl_pkey_new([
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]);
-        openssl_pkey_export($resource, $privateKey);
-        $details = openssl_pkey_get_details($resource);
-
-        return [
-            'private_key' => $privateKey,
-            'jwk' => [
-                'kty' => 'RSA',
-                'alg' => 'RS256',
-                'use' => 'sig',
-                'kid' => 'test-kid',
-                'n' => rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '='),
-                'e' => rtrim(strtr(base64_encode($details['rsa']['e']), '+/', '-_'), '='),
-            ],
-        ];
     }
 
     /**

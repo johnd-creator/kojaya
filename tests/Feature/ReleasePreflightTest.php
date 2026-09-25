@@ -57,6 +57,60 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
+    public function test_strict_release_candidate_preflight_accepts_a_valid_prerelease_version(): void
+    {
+        $this->configureBaseline();
+        Config::set('app.version', '1.0.0-rc.1');
+
+        $this->artisan('app:release-preflight', ['--strict-release-candidate' => true])
+            ->expectsOutput('application.release_version: PASS')
+            ->assertExitCode(0);
+    }
+
+    public function test_strict_release_candidate_preflight_accepts_semver_prerelease_identifiers(): void
+    {
+        $this->configureBaseline();
+        Config::set('app.version', '1.0.0-beta.1');
+
+        $this->artisan('app:release-preflight', ['--strict-release-candidate' => true])
+            ->expectsOutput('application.release_version: PASS')
+            ->assertExitCode(0);
+    }
+
+    public function test_strict_release_candidate_preflight_accepts_valid_stable_versions(): void
+    {
+        foreach (['1.0.0', '1.0.1'] as $version) {
+            $this->configureBaseline();
+            Config::set('app.version', $version);
+
+            $this->artisan('app:release-preflight', ['--strict-release-candidate' => true])
+                ->expectsOutput('application.release_version: PASS')
+                ->assertExitCode(0);
+        }
+    }
+
+    public function test_strict_production_preflight_rejects_a_prerelease_version(): void
+    {
+        $this->configureStrictProductionBaseline();
+        Config::set('app.version', '1.0.0-rc.1');
+
+        $this->artisan('app:release-preflight', ['--strict-production' => true])
+            ->expectsOutput('application.release_version: FAIL (invalid configuration)')
+            ->assertExitCode(1);
+    }
+
+    public function test_strict_release_candidate_preflight_rejects_invalid_and_v_prefixed_versions(): void
+    {
+        foreach (['1.0', '1.0.0-', '1.0.0-01', '01.0.0', 'v1.0.0', 'v1.0.0-rc.1'] as $version) {
+            $this->configureBaseline();
+            Config::set('app.version', $version);
+
+            $this->artisan('app:release-preflight', ['--strict-release-candidate' => true])
+                ->expectsOutput('application.release_version: FAIL (invalid configuration)')
+                ->assertExitCode(1);
+        }
+    }
+
     public function test_strict_production_preflight_rejects_an_invalid_application_key(): void
     {
         $this->configureStrictProductionBaseline();

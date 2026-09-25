@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { auditLogsApi } from "@/Actions/auditLogs";
-import type { AuditLog } from "@/Actions/auditLogs";
+import { auditLogsApi } from "@/api/auditLogs";
+import type { AuditLog } from "@/api/auditLogs";
 import { Button } from "@/components/ui/button";
 import {
   Card,

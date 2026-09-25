@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { AuditLog } from "@/Actions/auditLogs";
+import type { AuditLog } from "@/api/auditLogs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

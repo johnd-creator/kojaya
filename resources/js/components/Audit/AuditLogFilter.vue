@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type { AuditLogFilters } from "@/Actions/auditLogs";
+import type { AuditLogFilters } from "@/api/auditLogs";
 import SelectFilter from "@/components/SelectFilter.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

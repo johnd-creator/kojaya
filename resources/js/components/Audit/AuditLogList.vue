@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Download, Eye, RefreshCw, ScrollText } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { auditLogsApi } from "@/Actions/auditLogs";
-import type { AuditLog, AuditLogFilters } from "@/Actions/auditLogs";
+import { auditLogsApi } from "@/api/auditLogs";
+import type { AuditLog, AuditLogFilters } from "@/api/auditLogs";
 import FilterBar from "@/components/FilterBar.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
 import { Button } from "@/components/ui/button";

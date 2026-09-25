@@ -49,7 +49,7 @@ const fetchJson = async <T>(url: string, options?: RequestInit): Promise<T> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch: ${response.status}`);
+    throw new Error("Failed to fetch: " + response.status);
   }
 
   return response.json();
@@ -69,18 +69,18 @@ export const auditLogsApi = {
     if (filters?.page) params.append("page", filters.page.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `${API_BASE}?${queryString}` : API_BASE;
+    const url = queryString ? API_BASE + "?" + queryString : API_BASE;
 
     return fetchJson<AuditLogResponse>(url);
   },
 
   async show(id: number): Promise<AuditLog> {
-    return fetchJson<AuditLog>(`${API_BASE}/${id}`);
+    return fetchJson<AuditLog>(API_BASE + "/" + id);
   },
 
   async history(subjectType: string, subjectId: number): Promise<AuditLog[]> {
     return fetchJson<AuditLog[]>(
-      `${API_BASE}/history/${subjectType}/${subjectId}`,
+      API_BASE + "/history/" + subjectType + "/" + subjectId,
     );
   },
 
@@ -97,8 +97,8 @@ export const auditLogsApi = {
 
     const queryString = params.toString();
     const url = queryString
-      ? `${API_BASE}/export?${queryString}`
-      : `${API_BASE}/export`;
+      ? API_BASE + "/export?" + queryString
+      : API_BASE + "/export";
 
     return fetchJson<{ data: AuditLog[]; exported_at: string }>(url);
   },

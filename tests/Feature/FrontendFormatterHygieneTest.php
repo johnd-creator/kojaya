@@ -90,6 +90,7 @@ class FrontendFormatterHygieneTest extends TestCase
             }
 
             $relative = ltrim(str_replace($root, '', $file->getPathname()), DIRECTORY_SEPARATOR);
+            $relative = str_replace('\\', '/', $relative);
             $contents = file_get_contents($file->getPathname());
 
             if ($contents === false) {

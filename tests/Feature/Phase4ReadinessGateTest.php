@@ -68,6 +68,7 @@ class Phase4ReadinessGateTest extends TestCase
     {
         $workflow = file_get_contents(base_path('.github/workflows/ci.yml'));
         $this->assertNotFalse($workflow);
+        $workflow = str_replace(["\r\n", "\r"], "\n", $workflow);
 
         $jobStart = strpos($workflow, "\n  phase4-readiness:\n");
         $this->assertNotFalse($jobStart, 'The dedicated Phase 4 readiness job must remain in CI.');

@@ -39,6 +39,13 @@ Options:
 HELP;
 }
 
+function isAbsolutePath(string $path): bool
+{
+    return str_starts_with($path, '/')
+        || str_starts_with($path, '\\\\')
+        || preg_match('/\\A[A-Za-z]:[\\\\\\/]/', $path) === 1;
+}
+
 /**
  * Authoritatively parses a single shard's JUnit XML without double counting nested testsuites.
  *
@@ -184,14 +191,14 @@ function runAggregateCli(array $argv, string $root): void
 
     $totalShards = max(1, (int) $options['total']);
     $rawArtifactsDir = (string) $options['artifacts-dir'];
-    $artifactsDir = str_starts_with($rawArtifactsDir, '/') ? $rawArtifactsDir : ($root.'/'.ltrim($rawArtifactsDir, '/'));
+    $artifactsDir = isAbsolutePath($rawArtifactsDir) ? $rawArtifactsDir : ($root.'/'.ltrim($rawArtifactsDir, '/\\'));
     $minCoverage = (float) $options['min-coverage'];
     $minTests = (int) $options['min-tests'];
 
     $rawClover = ! empty($options['clover']) ? (string) $options['clover'] : null;
     $cloverPath = null;
     if ($rawClover !== null) {
-        $cloverPath = str_starts_with($rawClover, '/') ? $rawClover : ($root.'/'.ltrim($rawClover, '/'));
+        $cloverPath = isAbsolutePath($rawClover) ? $rawClover : ($root.'/'.ltrim($rawClover, '/\\'));
     }
 
     echo "===============================================================\n";

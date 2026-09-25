@@ -20,10 +20,12 @@ use Laravel\Socialite\Two\InvalidStateException;
 use Mockery;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Tests\Support\CreatesTestRsaJwk;
 use Tests\TestCase;
 
 class GoogleSsoFlowTest extends TestCase
 {
+    use CreatesTestRsaJwk;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -858,31 +860,6 @@ class GoogleSsoFlowTest extends TestCase
             'iat' => time(),
             'exp' => time() + 300,
         ], $claims), $privateKey, 'RS256', 'test-kid');
-    }
-
-    /**
-     * @return array{private_key: string, jwk: array<string, string>}
-     */
-    protected function fakeRsaJwk(): array
-    {
-        $resource = openssl_pkey_new([
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]);
-        openssl_pkey_export($resource, $privateKey);
-        $details = openssl_pkey_get_details($resource);
-
-        return [
-            'private_key' => $privateKey,
-            'jwk' => [
-                'kty' => 'RSA',
-                'alg' => 'RS256',
-                'use' => 'sig',
-                'kid' => 'test-kid',
-                'n' => rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '='),
-                'e' => rtrim(strtr(base64_encode($details['rsa']['e']), '+/', '-_'), '='),
-            ],
-        ];
     }
 
     protected function tearDown(): void

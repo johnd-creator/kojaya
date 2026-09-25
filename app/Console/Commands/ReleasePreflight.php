@@ -10,7 +10,8 @@ use Throwable;
 class ReleasePreflight extends Command
 {
     protected $signature = 'app:release-preflight
-        {--strict-production : Enforce production-only configuration checks}';
+        {--strict-production : Enforce production-only configuration checks}
+        {--strict-release-candidate : Enforce release-candidate version checks}';
 
     protected $description = 'Check release configuration without changing application or database state';
 
@@ -22,13 +23,16 @@ class ReleasePreflight extends Command
     public function handle(): int
     {
         $strictProduction = (bool) $this->option('strict-production');
+        $strictReleaseCandidate = (bool) $this->option('strict-release-candidate');
 
-        $this->check('application.release_version', function () use ($strictProduction): bool {
+        $this->check('application.release_version', function () use ($strictProduction, $strictReleaseCandidate): bool {
             $version = config('app.version');
 
             return $strictProduction
                 ? is_string($version) && $this->isStableApplicationVersion($version)
-                : filled($version);
+                : ($strictReleaseCandidate
+                    ? is_string($version) && $this->isValidSemanticVersion($version)
+                    : filled($version));
         });
         $this->check('api.contract_version', function (): bool {
             return filled(config('app.api_contract_version'));
@@ -124,8 +128,19 @@ class ReleasePreflight extends Command
 
     private function isStableApplicationVersion(string $version): bool
     {
+        $coreVersion = explode('+', $version, 2)[0];
+
+        return $this->isValidSemanticVersion($version)
+            && ! str_contains($coreVersion, '-');
+    }
+
+    private function isValidSemanticVersion(string $version): bool
+    {
         return preg_match(
-            '/\\A(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\z/',
+            '~\\A(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)'
+                .'(?:-((?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)'
+                .'(?:\\.(?:0|[1-9]\\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?'
+                .'(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?\\z~D',
             $version,
         ) === 1;
     }

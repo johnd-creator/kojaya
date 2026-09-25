@@ -150,8 +150,8 @@ class CreateAdminUserCommand extends Command
                 'name' => $name,
                 'password' => Hash::make($passwordToSet),
                 'organization_id' => $organizationId,
-                'email_verified_at' => now(),
             ]);
+            $user->forceFill(['email_verified_at' => now()])->save();
 
             $user->assignRole($roleName);
 

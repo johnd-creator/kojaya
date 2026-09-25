@@ -66,6 +66,7 @@ class DefaultAdminCredentialTest extends TestCase
         $this->assertNotEmpty($user->getAllPermissions());
         $this->assertTrue(Hash::check('SecurePass123!', $user->password));
         $this->assertNotNull($user->organization_id);
+        $this->assertNotNull($user->email_verified_at);
     }
 
     public function test_admin_create_command_uses_hidden_confirmed_password_and_never_prints_it(): void

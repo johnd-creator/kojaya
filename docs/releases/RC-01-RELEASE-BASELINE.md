@@ -150,15 +150,15 @@ Original baseline:
 9b31b124cd1ed57dd09dc30ced83c534f79a88ee
 
 Remediated baseline:
-13110cf1 (fix: close RC-01 baseline blockers)
+f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e (fix: close RC-01 baseline blockers)
 
 ### Blocker Resolution
 
-- B1 Working Tree: **RESOLVED locally**. The stale Vite command was reverted, the generated Wayfinder runtime remained unchanged, and intended remediation changes are committed.
-- B2 Exact-head CI: **PENDING**. The candidate commit is local and must be pushed through the repository workflow before exact-head GitHub Actions evidence can be recorded.
-- B3 Windows Test Baseline: **RESOLVED locally**. Full ParaTest passes with 3,286 tests and 27,287 assertions. Shared fixes cover Windows absolute paths, child SQLite CLI configuration, deterministic RSA test keys, CRLF workflow scanning, and path-separator normalization.
-- B4 Frontend Build: **RESOLVED locally**. Canonical npm run build passes after moving the manual audit-log API module out of the Wayfinder-generated resources/js/Actions tree; no OS-specific Vite checkout command remains.
-- B5 RC Version Policy: **RESOLVED locally**. --strict-release-candidate accepts valid SemVer stable/prerelease values, while --strict-production continues to require a stable SemVer without a prerelease identifier. APP_VERSION uses no v prefix; Git tags retain the v prefix.
+- B1 Working Tree: **RESOLVED**. The stale Vite command was reverted, the generated Wayfinder runtime remained unchanged, and intended remediation changes are committed.
+- B2 Exact-head CI: **RESOLVED**. CI run #462 executed ci.yml with head_sha exactly f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e and concluded success.
+- B3 Windows Test Baseline: **RESOLVED**. Full ParaTest passes with 3,286 tests and 27,287 assertions. Shared fixes cover Windows absolute paths, child SQLite CLI configuration, deterministic RSA test keys, CRLF workflow scanning, and path-separator normalization.
+- B4 Frontend Build: **RESOLVED**. Canonical npm run build passes after moving the manual audit-log API module out of the Wayfinder-generated resources/js/Actions tree; no OS-specific Vite checkout command remains.
+- B5 RC Version Policy: **RESOLVED**. --strict-release-candidate accepts valid SemVer stable/prerelease values, while --strict-production continues to require a stable SemVer without a prerelease identifier. APP_VERSION uses no v prefix; Git tags retain the v prefix.
 
 ### Remediation Verification
 
@@ -173,19 +173,22 @@ Remediated baseline:
 | Frontend production build | PASS; canonical npm run build |
 | Strict RC preflight | PASS with APP_VERSION=1.0.0-rc.1 |
 | Composer/NPM audit thresholds | PASS under repository thresholds; existing ignored advisories remain |
+| Exact-head CI run #462 | PASS; [ci.yml](https://github.com/johnd-creator/kojaya/actions/runs/36130328122) |
+| Phase 4 Readiness Gate | PASS; includes desktop accessibility audit |
+| ui-audit.yml | Not triggered by push; workflow trigger is PR/manual, with equivalent UI/accessibility checks PASS in ci.yml Phase 4 |
 
 ## Release Blockers
 
-RC-01 blockers are present: dirty worktree, missing current exact-head CI evidence, failed local baseline, and RC version/preflight mismatch. PAY-006 remains a deployment blocker for the next operational release work.
+No RC-01 baseline blockers remain. PAY-006 remains a known pre-deployment requirement outside this remediation scope and is not a reason to alter production data in RC-01-FIX-01.
 
 ## Freeze Decision
 
-**BLOCKED**
+**PASS**
 
 No `v1.0.0-rc.1` tag was created or moved. After all blockers are resolved, the exact command for approval is:
 
 ```bash
-git tag -a v1.0.0-rc.1 9b31b124cd1ed57dd09dc30ced83c534f79a88ee -m "Kojaya v1.0.0-rc.1"
+git tag -a v1.0.0-rc.1 f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e -m "Kojaya v1.0.0-rc.1"
 ```
 
 The tag must be created only after the final clean-tree and exact-head CI review. It must not be pushed or moved by RC-01 without the required review/approval.
@@ -196,22 +199,22 @@ The tag must be created only after the final clean-tree and exact-head CI review
 KOJAYA RELEASE CANDIDATE BASELINE
 ================================
 
-Version        : v1.0.0-rc.1 (target, not frozen)
+Version        : v1.0.0-rc.1 (candidate, not tagged)
 Branch         : main
-Commit SHA     : 9b31b124cd1ed57dd09dc30ced83c534f79a88ee
+Commit SHA     : f8e0800f7c234f5b1dc6d2471163b0e1a8461f8e
 
-Working Tree   : NOT CLEAN
-Phase 4        : PRESENT IN MAIN; current exact-head gate unverified
-Tests          : FAIL / ENVIRONMENT-BLOCKED
-Mandatory CI   : UNVERIFIED
+Working Tree   : CLEAN after final evidence commit
+Phase 4        : PASS; exact-head run #462
+Tests          : PASS / 3,286 tests / 27,287 assertions locally
+Mandatory CI   : PASS / exact-head verified
 Migration Audit: COMPLETE
 Seeder Audit   : COMPLETE
 Config Audit   : COMPLETE
 
-Release Blocker: PRESENT
+Release Blocker: NONE
 
 RC-01 RESULT
 ============
-BLOCKED
-Do not create/finalize the Release Candidate tag.
+PASS
+RC-01 baseline gate passed. Do not create or push the tag without the required approval.
 ```

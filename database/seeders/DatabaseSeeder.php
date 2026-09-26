@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Support\SeedSafety\SeederEnvironmentGuard;
 use App\Support\SeedSafety\SeederExecutionProfile;
 use Illuminate\Database\Seeder;
@@ -16,6 +17,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         SeederEnvironmentGuard::assertEnvironmentConsistency();
+        app(CooperativeHeadOfficeResolver::class)->assertBootstrapIdentityConfigured();
 
         $this->call([
             TaxRuleSeeder::class,

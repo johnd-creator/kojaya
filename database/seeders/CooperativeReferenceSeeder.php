@@ -3,10 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\CooperativeContributionType;
-use App\Models\Organization;
 use App\Models\PosCategory;
+use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class CooperativeReferenceSeeder extends Seeder
 {
@@ -17,20 +16,7 @@ class CooperativeReferenceSeeder extends Seeder
      */
     public function run(): void
     {
-        Organization::query()->firstOrCreate(
-            ['code' => 'KOP-001'],
-            [
-                'id' => (string) Str::uuid(),
-                'name' => 'Koperasi Jaya Bersama',
-                'level' => 'L0',
-                'type' => 'HEAD_OFFICE',
-                'parent_id' => null,
-                'address' => 'Jalan Jaya Bersama No. 1, Jakarta',
-                'phone' => '021-12345678',
-                'email' => 'info@koperasijayabersama.id',
-                'is_active' => true,
-            ],
-        );
+        app(CooperativeHeadOfficeResolver::class)->resolve();
 
         $contributionTypes = [
             ['code' => 'POKOK', 'name' => 'Simpanan Pokok', 'category' => 'POKOK', 'default_amount' => 200000, 'frequency' => 'ONCE', 'is_active' => true],

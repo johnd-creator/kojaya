@@ -1,5 +1,11 @@
 <?php
 
+$defaultBootstrapOrganizationName = in_array(
+    env('APP_ENV', 'production'),
+    ['production', 'staging', 'qa'],
+    true,
+) ? null : 'Koperasi Jaya Bersama';
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,4 +17,11 @@ return [
     |
     */
     'member_import_execution_enabled' => (bool) env('COOPERATIVE_MEMBER_IMPORT_EXECUTION_ENABLED', false),
+
+    'bootstrap_organization' => [
+        'name' => env('COOPERATIVE_BOOTSTRAP_ORGANIZATION_NAME', $defaultBootstrapOrganizationName),
+        'address' => env('COOPERATIVE_BOOTSTRAP_ORGANIZATION_ADDRESS'),
+        'phone' => env('COOPERATIVE_BOOTSTRAP_ORGANIZATION_PHONE'),
+        'email' => env('COOPERATIVE_BOOTSTRAP_ORGANIZATION_EMAIL'),
+    ],
 ];

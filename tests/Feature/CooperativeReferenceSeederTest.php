@@ -30,14 +30,25 @@ class CooperativeReferenceSeederTest extends TestCase
     public function test_fresh_production_safe_reference_seeding_creates_canonical_defaults(): void
     {
         $this->app['env'] = 'production';
-        config(['app.env' => 'production']);
+        config([
+            'app.env' => 'production',
+            'cooperative.bootstrap_organization' => [
+                'name' => 'Koperasi RC03 QA',
+                'address' => null,
+                'phone' => null,
+                'email' => null,
+            ],
+        ]);
 
         (new DatabaseSeeder)->run();
 
         // 1. KOP-001 organization anchor
         $kop = Organization::query()->where('code', 'KOP-001')->first();
         $this->assertNotNull($kop);
-        $this->assertSame('Koperasi Jaya Bersama', $kop->name);
+        $this->assertSame('Koperasi RC03 QA', $kop->name);
+        $this->assertNull($kop->address);
+        $this->assertNull($kop->phone);
+        $this->assertNull($kop->email);
         $this->assertSame('L0', $kop->level);
         $this->assertSame('HEAD_OFFICE', $kop->type);
         $this->assertNull($kop->parent_id);
@@ -84,6 +95,25 @@ class CooperativeReferenceSeederTest extends TestCase
         foreach ($expectedRoles as $roleName) {
             $this->assertDatabaseHas('roles', ['name' => $roleName]);
         }
+    }
+
+    public function test_production_database_seeder_fails_before_writes_without_approved_organization_name(): void
+    {
+        $this->app['env'] = 'production';
+        config([
+            'app.env' => 'production',
+            'cooperative.bootstrap_organization.name' => null,
+        ]);
+
+        try {
+            (new DatabaseSeeder)->run();
+            $this->fail('Production bootstrap must reject a missing cooperative organization name.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('COOPERATIVE_BOOTSTRAP_ORGANIZATION_NAME is not configured', $exception->getMessage());
+        }
+
+        $this->assertSame(0, Role::query()->count(), 'Configuration failure must occur before reference seed writes.');
+        $this->assertSame(0, Organization::query()->count());
     }
 
     /**

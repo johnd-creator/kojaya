@@ -104,6 +104,8 @@ php artisan serve --host=127.0.0.1 --port=8000
 
 From a browser, verify login-page GET, static assets, CSRF/session behavior, administrator POST login, authenticated dashboard redirect, and logout. Also verify `/up` and the approved API health/OpenAPI endpoints. Confirm no runtime error in Laravel logs, without copying secrets or personal data into the report. Shut down the local server after the smoke test.
 
+A non-GUI HTTP client is also acceptable for this smoke test when it preserves one cookie jar across the complete flow. Start it only after the reviewed `.env` and generated `APP_KEY` are in place; use the exact origin/port printed by the server. GET `/login`, read the form action, field names, CSRF token, and session cookie from that response, then POST `application/x-www-form-urlencoded` credentials with the same cookie jar (including the Inertia request headers used by the page). Keep redirects and subsequent dashboard/logout requests on that same client and cookie jar. Verify the QA target from the loaded application configuration and report only whether the expected fields are present/exact/non-empty; never print password values or cookie contents. A CLI provider/hash check alone is not evidence of HTTP authentication.
+
 If the selected QA queue driver is not `sync`, run the configured queue worker. Run the Laravel scheduler through the approved process supervisor; for a local Windows QA host, Task Scheduler may invoke `php artisan schedule:run` each minute. Neither a local built-in PHP server nor `sync` queue is evidence of production web/worker topology.
 
 ## Bootstrap manifest

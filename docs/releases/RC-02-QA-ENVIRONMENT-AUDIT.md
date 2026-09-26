@@ -247,3 +247,53 @@ The build caused `git status` in the clean-room clone to show `resources/js/wayf
 ### Final re-gate
 
 **RC-02: BLOCKED — do not create or push `v1.0.0-rc.2`.** Exact-head CI, Linux regression, PostgreSQLConcurrency, build, migration/seed, readiness, and Windows storage gates pass. The required clean-room live PostgreSQL login gate failed, so authenticated dashboard/logout and an accepted end-to-end clean-room replay are not established. `v1.0.0-rc.1` was not changed, and no RC-2 tag was created. After resolving the live-login discrepancy, repeat the affected clean-room sequence and re-gate before proposing the RC-2 tag command.
+
+## RC-02-FIX-02 — Live Authentication Remediation
+
+### Starting point and login architecture
+
+- Starting `main` / `origin/main`: `1b52d312aa44c7ddc48dd9a4d65dfd30e8883323`; clean and synchronized.
+- Remediation candidate: `365abcae332bc1a75bb4b6f10d17b847bab1c9b1` (`test(auth): cover admin bootstrap web login session`). It adds an end-to-end regression; no production authentication policy or code was changed.
+- `GET /login` is Fortify `AuthenticatedSessionController@create`; `POST /login` is `AuthenticatedSessionController@store` with `Fortify\Http\Requests\LoginRequest`, `web` middleware and Fortify's login throttle.
+- Fortify canonicalizes the email and passes only `email` and `password` to the configured `web` session guard. `config/auth.php` maps `web` → `users` → `App\Models\User`; `admin:create` also creates `App\Models\User`. **Same model: YES.** The guard/provider are `web` / `Illuminate\Auth\EloquentUserProvider`.
+- Successful authentication runs `PrepareAuthenticatedSession` (session ID regeneration), then the custom `LoginResponse` redirects non-members to `/dashboard`. Logout is Fortify's authenticated `POST /logout`; session invalidation is handled by Fortify.
+
+### Provider versus HTTP and root-cause classification
+
+The earlier report established provider password validation and an HTTP credential error, but did not retain proof of the HTTP worker's effective database/session configuration or a completed cookie-backed dashboard/logout flow. That evidence could not establish that both checks addressed the same runtime. On the corrected, runbook-compliant fresh replay below, provider lookup, password validation, guard validation/attempt, and live HTTP login all passed against the same new QA database; no Laravel guard/provider or credential-construction defect was reproduced.
+
+**Classification: QA replay / evidence-path defect; application authentication defect: not found.** The historical failing request's more specific cause cannot be reconstructed from the retained report alone. No authentication check was bypassed or weakened. The fresh-install runbook now explicitly requires a loaded `.env`, the server's actual origin, and a persistent cookie jar with the page's CSRF/form fields; it also clarifies that a CLI provider check is not HTTP evidence.
+
+| Condition | Required by Fortify credential lookup | Fresh admin | Result |
+| --- | --- | --- | --- |
+| Email | Yes; canonicalized lowercase | Exact synthetic QA email | MATCH |
+| Password | Yes; hash validated by Eloquent provider | Supplied once through `--password-stdin`; never reported | MATCH |
+| Active/status flag | No such `User` credential constraint | Not required for this model | N/A |
+| Organization | Not part of credentials | Head-office organization assigned by bootstrap | Not a credential predicate |
+| Account type / role | Not part of credentials | `System Admin` | Not a credential predicate |
+| Email verification | Not part of credentials | `email_verified_at` persisted | Not a credential predicate |
+| Soft delete | `User` does not use `SoftDeletes` | Not applicable | N/A |
+| Two-factor | Fortify challenge applies only when configured on the user | No two-factor secret configured | No challenge required |
+
+### Fresh PostgreSQL clean-room replay
+
+- New clone at the exact candidate SHA above; initial Git status clean. `composer install` installed 149 locked packages; `npm ci` installed 479 packages; production build transformed 3,904 modules. Build completed with one existing CSS optimizer warning; GitHub frontend build gate is the authoritative CI check.
+- New disposable PostgreSQL 18.6 cluster bound only to loopback, new database `kojaya_qa_rc02fix02_final_20260926`; before migration it had 0 public tables. No shared or production database was used.
+- `APP_ENV=qa`, debug off, `APP_VERSION` set to the candidate SHA, `.env` copied from the template and configured for the new QA database, and `APP_KEY` generated. Effective app report showed PostgreSQL, file sessions, and sync queue.
+- Fresh migration: **182 applied**, no pending migrations. Safe `DatabaseSeeder` repeated idempotently. Stable initial counts: 16 roles, 129 permissions, 476 role-permission mappings, 1 organization, 0 users, 0 members, 3 loan types, 1 tax rule, 4 work shifts, 4 contribution types, 6 POS categories, 6 job grades, 6 leave types, 5 salary component types, and 0 departments. No demo/member/transaction seeders ran.
+- `storage:link` created a Windows directory Junction from `public/storage` to `storage/app/public`; private storage remained outside the public target.
+- First administrator was created once by `admin:create` using a synthetic QA email and password over stdin. `email_verified_at` and organization assignment were present. No `--update-existing` was used for the accepted replay.
+- Provider stages: lookup PASS, exact retrieved-user password validation PASS, `Auth::guard('web')->validate` PASS, `Auth::guard('web')->attempt` PASS.
+- Real HTTP client retained the same cookie jar from GET through login, dashboard, logout, and post-logout dashboard check; used CSRF token and form field names from the login page and form-urlencoded encoding. Request email was present/exact and password non-empty; no credential or cookie value was logged.
+- `GET /login` **200**; `POST /login` **302 → `/dashboard`**; authenticated dashboard **200**; logout **302 → `/`**; dashboard after logout **302 → `/login`**. A separate synthetic session probe observed a new session file after login regeneration, dashboard persistence, and logout rejection. `/up`, `/api/openapi.json`, and a built asset each returned **200**.
+- The live server log from a bounded temporary diagnostic on the same code path confirmed guard `web`, Eloquent provider, the exact disposable QA database, database session driver, matching email, non-empty password, user found, and password valid. Diagnostic instrumentation was confined to a disposable earlier clone and was not committed.
+
+### Automated regression and exact-head Linux CI
+
+- Added `DefaultAdminCredentialTest::test_admin_created_by_command_can_authenticate_and_use_and_end_web_session`: a newly generated admin is rejected with a wrong password, accepted by the real Fortify web route, remains authenticated on the dashboard, logs out, and is denied dashboard access afterward.
+- Local isolated PostgreSQL run: **16 tests, 74 assertions, PASS**. Pint and `git diff --check` passed.
+- Exact candidate CI run: [36195986429](https://github.com/johnd-creator/kojaya/actions/runs/36195986429), SHA `365abcae332bc1a75bb4b6f10d17b847bab1c9b1`; completed **success**. All four PHPUnit shards passed: **3,303 tests, 27,333 assertions, 0 errors, 0 failures, 0 skipped**; combined coverage **81.36%** (28,670 / 35,238 lines), above the 60% gate. PostgreSQLConcurrency, dependency audit, generated drift, Pint, OpenAPI drift, frontend build, migration/seed, SEED-09, and Phase 4 Readiness Gate all passed.
+
+### Current disposition
+
+Live PostgreSQL authentication, session persistence/regeneration, dashboard, logout, clean-room safety gates, and exact-candidate Linux CI all pass. The source candidate is `365abcae332bc1a75bb4b6f10d17b847bab1c9b1`; this audit/runbook evidence update is a separate documentation-only commit and requires a manual full CI dispatch on its final SHA before RC-02 can be marked ready. **Until that final-SHA CI succeeds, RC-02 remains HOLD.** Do not create or push `v1.0.0-rc.2`; `v1.0.0-rc.1` remains unchanged.

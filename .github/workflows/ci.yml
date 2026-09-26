@@ -459,6 +459,7 @@ jobs:
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
+          COOPERATIVE_BOOTSTRAP_ORGANIZATION_NAME: CI Test Cooperative
 
   openapi-drift:
     name: OpenAPI Drift

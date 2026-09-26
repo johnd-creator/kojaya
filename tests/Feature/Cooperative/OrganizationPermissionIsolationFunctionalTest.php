@@ -25,6 +25,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -52,6 +53,8 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
     private CooperativeMember $memberA;
 
     private CooperativeMember $memberB;
+
+    private ?string $pay006StorageRoot = null;
 
     protected function setUp(): void
     {
@@ -99,6 +102,15 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
             'member_no' => 'MBR-B-001',
             'no_anggota' => 'MBR-B-001',
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->pay006StorageRoot !== null) {
+            File::deleteDirectory($this->pay006StorageRoot);
+        }
+
+        parent::tearDown();
     }
 
     // =========================================================================
@@ -668,8 +680,7 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
     public function test_pay006_payment_proof_storage_and_authorized_download_access(): void
     {
         $proofDisk = config('filesystems.payment_proof_disk', 'local');
-        Storage::fake($proofDisk);
-        Storage::fake('public');
+        $this->useIsolatedPaymentProofStorage($proofDisk);
 
         $contributionType = CooperativeContributionType::factory()->create();
         $invoiceA = CooperativeDuesInvoice::query()->create([
@@ -774,8 +785,7 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
     public function test_pay006_disabled_legacy_fallback_does_not_serve_a_public_only_proof(): void
     {
         $proofDisk = config('filesystems.payment_proof_disk', 'local');
-        Storage::fake($proofDisk);
-        Storage::fake('public');
+        $this->useIsolatedPaymentProofStorage($proofDisk);
         config()->set('filesystems.payment_proof_legacy_public_fallback', false);
 
         $contributionType = CooperativeContributionType::factory()->create();
@@ -806,5 +816,19 @@ class OrganizationPermissionIsolationFunctionalTest extends TestCase
 
         Storage::disk('public')->assertExists($path);
         Storage::disk($proofDisk)->assertMissing($path);
+    }
+
+    private function useIsolatedPaymentProofStorage(string $proofDisk): void
+    {
+        $this->pay006StorageRoot = sys_get_temp_dir().DIRECTORY_SEPARATOR.'kojaya-rc04-pay006-auth-'.bin2hex(random_bytes(8));
+
+        Storage::set($proofDisk, Storage::build([
+            'driver' => 'local',
+            'root' => $this->pay006StorageRoot.DIRECTORY_SEPARATOR.'private',
+        ]));
+        Storage::set('public', Storage::build([
+            'driver' => 'local',
+            'root' => $this->pay006StorageRoot.DIRECTORY_SEPARATOR.'public',
+        ]));
     }
 }

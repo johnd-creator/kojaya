@@ -87,7 +87,9 @@ class MigratePaymentProofsToPrivateCommand extends Command
                             }
 
                             if ($privateExists && $publicExists) {
-                                if (! hash_equals($this->hashFile('public', $path), $this->hashFile($privateDiskName, $path))) {
+                                $publicHash = $this->hashFile('public', $path);
+
+                                if (! hash_equals($publicHash, $this->hashFile($privateDiskName, $path))) {
                                     throw new RuntimeException('Public and private payment proof contents differ.');
                                 }
 
@@ -98,7 +100,7 @@ class MigratePaymentProofsToPrivateCommand extends Command
                                     continue;
                                 }
 
-                                $this->removePublicCopy($path);
+                                $this->removePublicCopy($path, $publicHash);
                                 $stats['already_private']++;
                                 $stats['public_removed']++;
 
@@ -115,7 +117,7 @@ class MigratePaymentProofsToPrivateCommand extends Command
                             }
 
                             $this->copyToPrivateAndVerify($path, $privateDiskName, $sourceHash);
-                            $this->removePublicCopy($path);
+                            $this->removePublicCopy($path, $sourceHash);
                             $stats['migrated']++;
                             $stats['public_removed']++;
                         } catch (Throwable) {
@@ -169,12 +171,25 @@ class MigratePaymentProofsToPrivateCommand extends Command
 
     private function isSafeLegacyPath(mixed $path): bool
     {
-        return is_string($path)
-            && str_starts_with($path, self::LEGACY_PATH_PREFIX)
-            && ! str_contains($path, '..')
-            && ! str_contains($path, '\\')
-            && ! str_contains($path, "\0")
-            && ! str_contains($path, '//');
+        if (! is_string($path) || ! str_starts_with($path, self::LEGACY_PATH_PREFIX)) {
+            return false;
+        }
+
+        $relativePath = substr($path, strlen(self::LEGACY_PATH_PREFIX));
+
+        if ($relativePath === '' || preg_match('/[\x00-\x1F\x7F:\\\\]/', $relativePath) === 1) {
+            return false;
+        }
+
+        foreach (explode('/', $relativePath) as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..'
+                || str_ends_with($segment, '.') || str_ends_with($segment, ' ')
+                || preg_match('/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i', $segment) === 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function copyToPrivateAndVerify(string $path, string $privateDisk, string $expectedSourceHash): void
@@ -206,11 +221,19 @@ class MigratePaymentProofsToPrivateCommand extends Command
         }
     }
 
-    private function removePublicCopy(string $path): void
+    private function removePublicCopy(string $path, string $expectedHash): void
     {
-        Storage::disk('public')->delete($path);
+        $publicDisk = Storage::disk('public');
 
-        if (Storage::disk('public')->exists($path)) {
+        if (! hash_equals($expectedHash, $this->hashFile('public', $path))) {
+            throw new RuntimeException('The public payment proof changed before removal.');
+        }
+
+        if (! $publicDisk->delete($path)) {
+            throw new RuntimeException('The verified public payment proof could not be removed.');
+        }
+
+        if ($publicDisk->exists($path)) {
             throw new RuntimeException('The verified public payment proof could not be removed.');
         }
     }

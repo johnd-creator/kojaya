@@ -4,7 +4,16 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 21, 2026
+**Last Updated:** September 27, 2026
+
+## 2026-09-27 - RC-04 PAY-006 Private Proof Migration Safety Gate
+
+- Hardened `payments:migrate-proofs-to-private` path checks against malformed and Windows-unsafe relative paths.
+- Re-hashed public sources immediately before removal and now fail closed when the storage adapter reports deletion failure; successful removal is still verified by checking absence.
+- Expanded PAY-006 PostgreSQL regressions for dry-run DB/filesystem fingerprints, malformed paths, and injected source-read, destination-hash, write, exists, and delete failures.
+- Moved PAY-006 test storage to unique temporary roots so local verification preserves pre-existing QA artifacts.
+- Published isolated synthetic rehearsal, authorization/fallback results, production preconditions, rollback properties, and pending real-data inventory in `docs/releases/RC-04-PAY006-DRY-RUN.md`.
+- Production execution and fallback disablement remain gated on an approved snapshot dry-run; RC-05 backup/restore planning is not blocked by the pending inventory.
 
 ## 2026-09-21 - Functional Test Contract & Coverage Matrix (FUNC-01)
 

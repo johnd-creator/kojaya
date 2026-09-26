@@ -174,6 +174,14 @@ The production-safe bootstrap was replayed twice against the same isolated, newl
 
 First safe seed observed: 182 migrations; 16 roles; 129 permissions; 476 mappings; 1 organization; 4 contribution types; 6 POS categories; 3 loan types; 1 tax rule; 6 job grades; 6 leave types; 5 salary component types; 4 work shifts. Users, members, employees, departments, POS products/transactions, cooperative payments, and ledger entries were all zero immediately after the safe seed. A synthetic QA admin was then created with `admin:create`, linked to KOP-001 and System Admin, authenticated over HTTP, loaded the protected dashboard (200), logged out, and was redirected to `/login` on the next dashboard request.
 
+## RC-03 Release CI and Integration Evidence
+
+The initial source candidate `caa5a34384df9c729faed4960b80123245d80e3d` was rejected by CI run [#472](https://github.com/johnd-creator/kojaya/actions/runs/36235689521): the example environment supplied a blank cooperative name, preventing the non-production fallback from being used. The environment-aware normalization and explicit synthetic CI bootstrap identity were added in commit `2786512b3dcef7fa87d5adf13fc0fe18b4901dcc`.
+
+The authoritative branch run was [CI #473](https://github.com/johnd-creator/kojaya/actions/runs/36236169463), dispatched on `codex/rc-03-production-bootstrap` at the exact source SHA `2786512b3dcef7fa87d5adf13fc0fe18b4901dcc`. Result: **PASS**. PHPUnit/ParaTest completed **3,304 tests, 27,339 assertions, 0 errors, 0 failures, 0 skips**; merged line coverage was **81.36%** against the 60% minimum. Migration/seed, PostgreSQL concurrency, SEED-09, Pint, dependency audit, OpenAPI drift, frontend/generated drift, UI baseline integrity, and Phase 4 readiness/accessibility all passed. The deterministic desktop accessibility audit reported 104 passed.
+
+After CI passed, `origin/main` at `16623dfd59ae1b562f55510390053cb345fdf231` was fast-forwarded normally. **Final main source SHA at integration:** `2786512b3dcef7fa87d5adf13fc0fe18b4901dcc`. GitHub Settings showed no classic branch protections or repository rulesets. This main source SHA is identical to the exact-head SHA verified by CI #473; therefore #473 is also exact-head evidence for the integrated source tree. Force push: **NO**. History rewrite: **NO**. Release tag created/pushed: **NO**.
+
 ## Validation Checklist
 
 - [x] Begin with a new PostgreSQL database with zero public tables.

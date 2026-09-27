@@ -122,4 +122,32 @@ RC-04 does not disable legacy fallback. Disablement is a later operational gate 
 
 **Production data gate: PENDING.** No approved real-data snapshot exists; production migration is not authorized by this result. The pending snapshot blocks production execution, but not RC-05 Backup & Restore planning.
 
-**Required exact-head Linux CI: PENDING until the change is pushed and the authoritative run for the final SHA completes.** This is a runtime change, so the candidate version should advance from `v1.0.0-rc.3` to proposed `v1.0.0-rc.4`; no tag is created or pushed.
+## Exact-Head CI Evidence
+
+### RC-04 branch gate
+
+- PR: [#88 — RC-04 PAY-006 Proof Migration Dry-Run](https://github.com/johnd-creator/kojaya/pull/88), merged after the required checks passed.
+- Branch: `codex/rc-04-pay006-dry-run`.
+- Branch SHA: `ecbfa6a541cf639ae6c9a5a9c1c64de165407a87`.
+- CI: run **#477** (run ID `36326999849`), event `pull_request`, result **success** on the exact branch SHA.
+- UI Audit: run **#285** (run ID `36326999852`), result **success** on the exact branch SHA.
+- PHPUnit: **3,312 tests / 27,371 assertions**, 0 errors, failures, or skips; aggregate line coverage **81.38%** (`28,690 / 35,255` lines).
+- Mandatory jobs passed: Change Classification, Dependency Audit, Pint, Frontend Build, Generated Drift, PHPUnit Shards 1–4, PHPUnit Parallel, SEED-09, Migration and Seed, OpenAPI Drift, PostgreSQL Concurrency (including `Document05PostgreSQL` and `BackupRestoreDrill` suites), and Phase 4 Readiness Gate. UI Audit and deterministic accessibility gates passed.
+
+### Main integration gate
+
+- Integration: fast-forward from `40e20605d5df6a1c2c79f0757cdad9d99ce56a25`; no merge commit, force push, or history rewrite.
+- Integrated code SHA: `ecbfa6a541cf639ae6c9a5a9c1c64de165407a87`.
+- Final-main CI at the integrated code SHA: run **#478** (run ID `36329401559`), event `push`, branch `main`, exact SHA, result **success**.
+- Main PHPUnit: **3,312 tests / 27,371 assertions**, 0 errors, failures, or skips; aggregate line coverage **81.38%** (`28,691 / 35,255` lines). All 15 CI jobs passed, including Phase 4 Readiness Gate; UI Audit #285 passed on the same code SHA.
+- PR #88 is closed as merged. `main` and `origin/main` matched at the integrated code SHA with a clean worktree and 0/0 ahead/behind before this evidence update.
+
+This section is committed after run #478 as a documentation-only evidence update. The resulting documentation commit receives a fresh exact-head CI run before RC-04 closure; its SHA and run result are captured in the final handoff. No further source or documentation edits are planned after that run.
+
+## RC-04 Verdict
+
+**Technical RC-04 gate: PASS**, subject to the exact-head CI run for the final documentation commit recorded in the final handoff. Synthetic migration, dry-run immutability, disposable execution, integrity, failure injection, idempotency, authorization, fallback, focused PostgreSQL tests, PR CI, integrated-main CI, production prerequisites, and rollback characteristics are verified.
+
+**Production data gate: PENDING.** No approved real-data snapshot exists; production migration is not authorized by this result. The pending snapshot blocks production execution, but not RC-05 Backup & Restore planning. Preserve `REAL-DATA DRY-RUN: PENDING PRODUCTION INVENTORY` and `CAPACITY DATA PENDING PRODUCTION INVENTORY` until actual inventory is completed.
+
+Runtime behavior changed, so the candidate version should advance from `v1.0.0-rc.3` to proposed `v1.0.0-rc.4`; no tag is created or pushed.

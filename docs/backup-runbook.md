@@ -66,12 +66,13 @@ php artisan backup:verify backups/database/kojaya-production-kojaya_erp-20260829
 
 **Verification Steps Executed:**
 1. Validates filesystem disk safety (rejects public disks).
-2. Validates file existence and non-zero file size.
-3. Checks streaming SHA-256 checksum against companion `.json` manifest and `.sha256` file.
-4. Performs read-only archive structure inspection:
+2. Requires the managed `.json` manifest and `.sha256` companion; a missing provenance artifact fails closed.
+3. Validates file existence and non-zero file size.
+4. Checks streaming SHA-256 checksum against companion `.json` manifest and `.sha256` file.
+5. Performs read-only archive structure inspection:
    - For PostgreSQL: `pg_restore --list <dump_file>`
    - For SQLite: `PRAGMA integrity_check`
-5. Returns exit code 0 on success, exit code 1 on failure.
+6. Returns exit code 0 on success, exit code 1 on failure.
 
 ### 3. Check Backup Freshness and Health (`backup:status`)
 

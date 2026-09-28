@@ -88,7 +88,17 @@ class Sprint4ProductionInfrastructureTest extends TestCase
         $sqlite->exec("INSERT INTO backup_verify (name) VALUES ('ok')");
         $sqlite->close();
 
-        Storage::disk('local')->put('test-backups/valid.sqlite', fopen($databasePath, 'rb'));
+        $backupContent = File::get($databasePath);
+        $backupSha = hash('sha256', $backupContent);
+        Storage::disk('local')->put('test-backups/valid.sqlite', $backupContent);
+        Storage::disk('local')->put('test-backups/valid.sqlite.json', json_encode([
+            'backup_id' => 'sprint4-valid-sqlite',
+            'created_at' => now('UTC')->toIso8601String(),
+            'database_engine' => 'sqlite',
+            'sha256' => $backupSha,
+            'verification_status' => 'verified',
+        ]));
+        Storage::disk('local')->put('test-backups/valid.sqlite.sha256', "{$backupSha}  valid.sqlite\n");
 
         $this->artisan('backup:verify', [
             'path' => 'test-backups/valid.sqlite',

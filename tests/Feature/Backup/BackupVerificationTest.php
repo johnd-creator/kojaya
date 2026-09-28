@@ -78,10 +78,74 @@ class BackupVerificationTest extends TestCase
             ->assertFailed();
     }
 
+    public function test_verify_fails_when_manifest_is_missing(): void
+    {
+        Storage::fake('local');
+        $dbPath = storage_path('framework/test_verify_missing_manifest_'.uniqid().'.sqlite');
+        File::ensureDirectoryExists(dirname($dbPath));
+
+        $sqlite = new SQLite3($dbPath);
+        $sqlite->exec('CREATE TABLE items (id INTEGER PRIMARY KEY)');
+        $sqlite->close();
+        $content = File::get($dbPath);
+        $sha = hash('sha256', $content);
+
+        Storage::disk('local')->put('backups/missing-manifest.sqlite', $content);
+        Storage::disk('local')->put('backups/missing-manifest.sqlite.sha256', "{$sha}  missing-manifest.sqlite\n");
+
+        $this->artisan('backup:verify', [
+            'path' => 'backups/missing-manifest.sqlite',
+            '--disk' => 'local',
+        ])
+            ->expectsOutputToContain('missing required cryptographic provenance')
+            ->assertFailed();
+
+        File::delete($dbPath);
+    }
+
+    public function test_verify_fails_when_checksum_is_missing(): void
+    {
+        Storage::fake('local');
+        $dbPath = storage_path('framework/test_verify_missing_checksum_'.uniqid().'.sqlite');
+        File::ensureDirectoryExists(dirname($dbPath));
+
+        $sqlite = new SQLite3($dbPath);
+        $sqlite->exec('CREATE TABLE items (id INTEGER PRIMARY KEY)');
+        $sqlite->close();
+        $content = File::get($dbPath);
+
+        Storage::disk('local')->put('backups/missing-checksum.sqlite', $content);
+        Storage::disk('local')->put('backups/missing-checksum.sqlite.json', json_encode([
+            'backup_id' => 'missing-checksum',
+            'created_at' => now('UTC')->toIso8601String(),
+            'database_engine' => 'sqlite',
+            'sha256' => hash('sha256', $content),
+            'verification_status' => 'verified',
+        ]));
+
+        $this->artisan('backup:verify', [
+            'path' => 'backups/missing-checksum.sqlite',
+            '--disk' => 'local',
+        ])
+            ->expectsOutputToContain('missing required cryptographic provenance')
+            ->assertFailed();
+
+        File::delete($dbPath);
+    }
+
     public function test_verify_fails_on_zero_byte_empty_file(): void
     {
         Storage::fake('local');
         Storage::disk('local')->put('backups/empty.sqlite', '');
+        $sha = hash('sha256', '');
+        Storage::disk('local')->put('backups/empty.sqlite.json', json_encode([
+            'backup_id' => 'empty',
+            'created_at' => now('UTC')->toIso8601String(),
+            'database_engine' => 'sqlite',
+            'sha256' => $sha,
+            'verification_status' => 'verified',
+        ]));
+        Storage::disk('local')->put('backups/empty.sqlite.sha256', "{$sha}  empty.sqlite\n");
 
         $this->artisan('backup:verify', [
             'path' => 'backups/empty.sqlite',

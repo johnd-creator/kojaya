@@ -42,7 +42,7 @@ class VerifyDatabaseBackupCommand extends Command
         $this->info("Verifying database backup: {$disk}:{$path}");
 
         try {
-            $manifest = $verificationService->verifyStorageBackup($disk, $path);
+            $manifest = $verificationService->verifyStorageBackup($disk, $path, requireProvenance: true);
 
             $this->info("Backup verified successfully: {$disk}:{$path}");
             $this->line("Backup ID:   {$manifest->backupId}");

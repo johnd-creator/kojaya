@@ -598,6 +598,20 @@ Authorization: Bearer {token}
 Gateway status yang dibedakan: `PENDING`, `PAID`, `EXPIRED`, `CANCELLED`, dan `FAILED`.
 
 ### **Push Device Registration**
+
+RC-07: kontrak registrasi di bawah tidak berubah. Pengiriman backend memakai
+FCM HTTP v1 (OAuth service account); key/account JSON hanya berada di server.
+Payload Android menggunakan **data-only**, tanpa blok FCM `notification`, agar
+aplikasi memeriksa akun aktif sebelum menampilkan pesan foreground/background.
+Data selalu berisi string `recipient_user_id`, `kojaya_push_version=1`, `title`,
+dan `body`, ditambah data event; field tersebut dicadangkan dan tidak dapat
+ditimpa pemanggil. Prioritas Android high, TTL satu jam. Aplikasi pendamping
+`F:\kojayaapp` mengikat ID pengguna hasil registrasi ke hash sesi saat ini dalam
+penyimpanan terenkripsi; logout/pergantian akun menolak pesan sesi lama.
+Sender dan client ini harus dirilis sebagai pasangan kompatibel. Penerimaan
+provider bukan bukti perangkat menampilkan notifikasi;
+lihat [gate pengiriman Android](payment-go-live-checklist.md#fcm).
+
 ```http
 POST /api/devices/push-token
 Authorization: Bearer {token}

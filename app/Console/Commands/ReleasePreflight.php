@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Integrations\FcmAccessTokenProvider;
 use App\Services\Security\PiiCryptoService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -11,6 +12,7 @@ class ReleasePreflight extends Command
 {
     protected $signature = 'app:release-preflight
         {--strict-production : Enforce production-only configuration checks}
+        {--require-android-push : Require configured FCM HTTP v1 for this release}
         {--strict-release-candidate : Enforce release-candidate version checks}';
 
     protected $description = 'Check release configuration without changing application or database state';
@@ -22,6 +24,7 @@ class ReleasePreflight extends Command
 
     public function handle(): int
     {
+        $this->failures = [];
         $strictProduction = (bool) $this->option('strict-production');
         $strictReleaseCandidate = (bool) $this->option('strict-release-candidate');
 
@@ -50,6 +53,16 @@ class ReleasePreflight extends Command
             $this->check('application.key', function (): bool {
                 return $this->decodeKey((string) config('app.key')) !== null;
             });
+            $this->check('application.https_url', function (): bool {
+                $url = config('app.url');
+
+                return is_string($url) && filter_var($url, FILTER_VALIDATE_URL) !== false
+                    && parse_url($url, PHP_URL_SCHEME) === 'https'
+                    && parse_url($url, PHP_URL_USER) === null
+                    && parse_url($url, PHP_URL_PASS) === null;
+            });
+            $this->check('session.secure_cookie', fn (): bool => config('session.secure') === true);
+            $this->check('session.http_only', fn (): bool => config('session.http_only') === true);
         } else {
             $this->pass('application.environment', 'non-strict');
             $this->pass('application.debug', 'non-strict');
@@ -93,9 +106,21 @@ class ReleasePreflight extends Command
             config('services.whatsapp.access_token'),
             config('services.whatsapp.phone_number_id'),
         ]);
+        $this->check('integrations.fcm.legacy_key_absent', fn (): bool => blank(config('services.fcm.server_key')));
         $this->integrationStatus('integrations.fcm', [
-            config('services.fcm.server_key'),
+            config('services.fcm.project_id'),
+            config('services.fcm.service_account_path'),
         ]);
+        if (resolve(FcmAccessTokenProvider::class)->isConfigured()) {
+            $this->check('integrations.fcm.service_account', function (): bool {
+                resolve(FcmAccessTokenProvider::class)->validateConfiguration();
+
+                return true;
+            });
+        }
+        if ($this->option('require-android-push')) {
+            $this->check('integrations.fcm.required', fn (): bool => resolve(FcmAccessTokenProvider::class)->isConfigured());
+        }
 
         if ($this->failures !== []) {
             $this->error('Release preflight failed.');

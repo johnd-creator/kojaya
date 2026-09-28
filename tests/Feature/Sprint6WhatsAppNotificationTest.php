@@ -144,6 +144,48 @@ class Sprint6WhatsAppNotificationTest extends TestCase
             && str_contains($request['text']['body'], 'Isi pesan WhatsApp'));
     }
 
+    public function test_provider_failure_logs_exclude_phone_message_and_response_body(): void
+    {
+        config([
+            'services.whatsapp.access_token' => 'synthetic-wa-secret',
+            'services.whatsapp.phone_number_id' => 'synthetic-phone-id',
+            'services.whatsapp.endpoint' => 'https://graph.facebook.test/v20.0',
+        ]);
+        Http::preventStrayRequests();
+        Http::fake(['graph.facebook.test/*' => Http::response(['message' => 'provider-secret-response'], 400)]);
+        $user = User::factory()->create();
+        NotificationPreference::query()->create([
+            'user_id' => $user->id, 'whatsapp_enabled' => true, 'whatsapp_phone' => '081234567890',
+        ]);
+        \Illuminate\Support\Facades\Log::spy();
+        $this->assertFalse(app(WhatsAppNotificationService::class)->send($user, 'private-title', 'private-body'));
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('error')->once()->withArgs(function (string $message, array $context): bool {
+            $serialized = json_encode([$message, $context]);
+            foreach (['6281234567890', 'private-title', 'private-body', 'synthetic-wa-secret', 'provider-secret-response'] as $secret) {
+                $this->assertStringNotContainsString($secret, $serialized);
+            }
+
+            return $context['status'] === 400;
+        });
+    }
+
+    public function test_whatsapp_transport_exception_does_not_escape_into_outbox_error(): void
+    {
+        config([
+            'services.whatsapp.access_token' => 'synthetic-wa-secret',
+            'services.whatsapp.phone_number_id' => 'synthetic-phone-id',
+            'services.whatsapp.endpoint' => 'https://graph.facebook.test/v20.0',
+        ]);
+        Http::preventStrayRequests();
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('private-provider-url-and-body'));
+        $user = User::factory()->create();
+        NotificationPreference::query()->create([
+            'user_id' => $user->id, 'whatsapp_enabled' => true, 'whatsapp_phone' => '081234567890',
+        ]);
+        $this->expectExceptionMessage('WhatsApp notification delivery failed.');
+        app(WhatsAppNotificationService::class)->sendOrFail($user, 'Title', 'Body');
+    }
+
     public function test_leave_status_update_queues_whatsapp_notification_for_employee(): void
     {
         Queue::fake();

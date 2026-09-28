@@ -12,7 +12,111 @@ php artisan migrate --force
 
 RC-03 applied all 182 checked-in migrations to a new PostgreSQL database that initially contained zero public application tables. Do not use a reset/fresh command against an existing database. Confirm the database name and `php artisan migrate:status` before applying forward migrations.
 
-## Required Reference Seed
+## Upgrade Boundary
+
+For an existing installation, use the upgrade plan below instead. Reference
+seeding is not part of a routine deployment.
+
+## RC-06 Production Migration Plan
+
+Planning baseline: `7acc96bd706127e6945e8beff730fd1ae564e902` (182 migration
+files). Bundle A adds no migration. This is a reviewed execution plan, not
+evidence that any production database has been inspected or migrated.
+
+### Approval and rehearsal gate
+
+1. Release owner records the approved immutable target SHA, current deployed
+   SHA, environment owner, maintenance window, abort criteria, and recovery
+   owner. A branch name or RC label is not an execution identity.
+2. Database operator verifies the actual PostgreSQL host/database/user and
+   connection from the intended deployment runtime, including cached config
+   and any connection URL override. Retain a redacted identity, server version,
+   migration ledger, schema baseline, and `php artisan migrate:status
+   --no-interaction` result. Do not expose connection strings or credentials.
+   This operator-only production check was NOT executed during Bundle A.
+3. Compare that ledger with the target SHA's migration files. List **every
+   pending migration** and review its `up()` implementation, indexes, constraints,
+   data writes, transaction behavior, lock duration, disk requirements, and
+   compatibility with the previous application. Do not assume all 182 are
+   pending or that a successful empty-database install proves an upgrade safe.
+4. Rehearse the exact pending sequence on a separately authorized, access-controlled
+   snapshot clone with outbound providers disabled. Record duration, peak storage,
+   row-count/financial invariants, unresolved ownership, and schema/ledger results.
+   Set a measured timeout/abort budget; do not guess production lock durations.
+   `migrate --pretend` is not the isolation boundary: migration PHP may perform
+   work outside captured SQL. Never use a production connection for rehearsal.
+5. Provision required APP/PII keys without rotation or replacement of existing
+   decryption keys. Validate the approved release configuration before the window.
+   The production preflight requires a stable SemVer, while an RC environment
+   uses `--strict-release-candidate`; do not bypass the stable-production gate
+   merely to deploy an RC label.
+
+### Known migration review hotspots
+
+These are review priorities, not an exhaustive pending ledger for an unknown
+production schema. Review all other pending files identified in step 3 as well.
+
+| Migration family | Required upgrade evidence |
+| --- | --- |
+| PII encrypted columns and July 14 version metadata | Preserve existing encryption/blind-index key versions; inspect rollout/backfill status separately. Schema migration does not prove plaintext retirement. Keep `PII_ALLOW_SCHEMA_ROLLBACK=false`. |
+| Payment reference and intent unique indexes | Check duplicates and retry/idempotency invariants on the clone before constraint creation. No payment/provider calls during schema rehearsal. |
+| August 26 / September 5 POS organization columns | Verify ownership/backfill outcomes and unresolved rows; never guess tenant ownership. Measure data-size-dependent work. |
+| September 6 daily-closing uniqueness | Verify per-organization/date constraints and unresolved historic ownership. Global uniqueness cannot necessarily be restored after new tenant-scoped data exists. |
+| September 7 category ownership | Existing migration can duplicate shared categories and remap products; reconcile category/product counts and references, not just migration exit status. Its `down()` includes data writes and is not a safe generic recovery command. |
+| September 8 sync-request ownership | Unknown historic tenant is deliberately not inferred. Treat unresolved legacy requests explicitly instead of broad ownership rewrites. |
+| September 11 attendance and bank-batch permission cutovers | Verify intended grants/revocations, unrelated permissions unchanged, tenant isolation, and permission-cache invalidation. `down()` intentionally does not reinstate insecure grants. |
+
+### Controlled execution order (operator only)
+
+1. Freeze concurrent deployments. Quiesce external ingress/writers, scheduler
+   producers, and queue workers across **all** hosts; drain in-flight work and
+   record supervisor evidence. `artisan down` on one host and a later
+   `queue:restart` do not themselves prove a fleet-wide drain. Keep an external
+   traffic/worker hold until post-deploy acceptance, because the script runs
+   `artisan up` automatically after its command sequence succeeds.
+2. Follow [the backup policy](../backup-runbook.md): a verified private primary
+   pre-deploy backup is mandatory before maintenance/code checkout/migrations.
+   Preserve archive, checksum, provenance manifest, storage snapshot and key
+   recovery references. Offsite is independently mandatory before go-live;
+   synchronous deploy gating follows the approved `BACKUP_REQUIRE_OFFSITE`
+   setting, not an invented unconditional requirement.
+3. On an existing bootstrapped installation, the approved automation invokes
+   `bash bin/deploy.sh --ref <approved-40-character-SHA>`. Its order is: resolve
+   target/current SHAs; primary backup gate; maintenance; checkout; dependency
+   install; clear caches; strict production preflight with required Android push;
+   frontend build; forward
+   `php artisan migrate --force`; optimize; queue restart signal; application up.
+   The script does not run seeders, PAY-006, PII backfill, or imports. Do not run
+   a second migration invocation outside this controlled sequence.
+4. Keep the external hold while checking exact deployed SHA, migration status
+   (no unexpected pending files), health, login, selected role/tenant negative
+   checks, protected storage access, and agreed financial/inventory counts.
+   Confirm the actual new worker process and scheduler heartbeat, not merely a
+   successful restart command. Resume traffic/producers only after sign-off.
+5. An empty installation follows this manifest's explicit migration, reference
+   seed, and first-admin flow instead of pretending a pre-existing application
+   and backup exist. It still requires target approval and a recovery plan.
+
+### Failure and recovery
+
+- Failed primary backup aborts before maintenance/checkout/schema changes.
+- Failure after maintenance leaves the application in maintenance; preserve
+  the external hold, logs (redacted), migration ledger, and failed step. A
+  multi-migration batch must not be assumed atomic. Inspect before retrying.
+- Prefer a reviewed forward repair. A code-only rollback is allowed only after
+  proving compatibility with the resulting schema and key versions on a clone.
+- Do not invoke `migrate:rollback`, `migrate:reset`, `migrate:fresh`, `db:wipe`,
+  broad reseeding, or PII schema rollback as an incident shortcut. Restore into
+  an independently approved empty recovery target, validate backup provenance
+  and semantic invariants, and obtain explicit authority before switching the
+  application or restoring/reconciling post-backup writes. Coordinate database,
+  private files, keys, and asynchronous/provider state; a DB restore alone is
+  not full business recovery.
+- Production pending-ledger/snapshot rehearsal, measured downtime, fleet drain,
+  backup/recovery proof, and operator sign-off remain RC-11 prerequisites. RC-06
+  approves this plan only; it authorizes no production execution.
+
+## Required Reference Seed (fresh installation only)
 
 After setting the approved cooperative name as described below, run the existing production-safe path:
 

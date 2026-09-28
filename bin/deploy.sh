@@ -83,7 +83,7 @@ git checkout --detach "$target_commit"
 
 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 php artisan optimize:clear
-php artisan app:release-preflight --strict-production
+php artisan app:release-preflight --strict-production --require-android-push
 
 npm ci --prefer-offline --no-audit
 npm run build

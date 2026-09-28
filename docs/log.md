@@ -4,7 +4,24 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 27, 2026
+**Last Updated:** September 28, 2026
+
+## 2026-09-28 - Bundle A RC-06 / RC-07 / RC-08
+
+- Documented controlled production migration planning without production DB access.
+- Migrated Android push from legacy FCM keys to HTTP v1 service-account OAuth;
+  preserved device registration, added safe error handling,
+  partial-delivery retries and local credential preflight.
+- Corrected the old payment checklist's unsafe claim that production could fall
+  back to internal simulated payment by changing credentials/mode.
+- Production secrets, IAM/device proof, migration rehearsal and independent
+  offsite recovery evidence remain operator-owned prerequisites, not local PASS claims.
+- Added HTTPS/Secure/HTTP-only production preflight checks and sanitized WhatsApp
+  logs/transport failures. Scoped static config scan found no reportable finding;
+  independent workers were unavailable, and no production-state audit is claimed.
+- Added a separately authorized Android companion and recipient-checked data-only
+  push contract; backend/client rollout must be coordinated. Configuration and
+  real-device acceptance remain pending. No production migration or tag.
 
 ## 2026-09-27 - RC-04 PAY-006 Private Proof Migration Safety Gate
 

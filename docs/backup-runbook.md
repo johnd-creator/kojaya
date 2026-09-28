@@ -198,16 +198,16 @@ For every backup, three deterministic artifacts are generated:
 
 ## 🚀 Pre-Deployment Backup Gate & Deployment Contract
 
-The deployment script `bin/deploy.sh` enforces this ordering. Backup creation includes primary stored-artifact verification; the script does not make a separate `backup:verify` invocation.
+The deployment script `bin/deploy.sh` enforces this ordering. Backup creation includes primary stored-artifact verification; the script does not make a separate `backup:verify` invocation. The detailed operator sequence and traffic hold are defined in [RC-09](releases/PHASE-5-BUNDLE-B.md#rc-09--execution-sequence).
 
 ```text
-1. Fetch refs; validate and resolve the exact target SHA
+1. Validate exact commit input and clean worktree; fetch refs; resolve and compare the exact target SHA
    ↓
 2. Verified primary pre-deploy backup: php artisan backup:database --purpose=pre-deploy
    ↓ (If primary backup, checksum, archive, manifest, or stored-artifact verification fails -> ABORT before maintenance/code/database mutation)
 3. Maintenance Mode: php artisan down --retry=60
    ↓
-4. Checkout exact target; install Composer dependencies; clear optimization cache; strict release preflight
+4. Checkout exact target; install Composer dependencies; clear optimization cache; strict release preflight with required Android push
    ↓
 5. Install frontend dependencies and build assets (npm ci, npm run build)
    ↓
@@ -220,12 +220,19 @@ Offsite replication failure also aborts at step 2 only when `BACKUP_REQUIRE_OFFS
 
 ### Target / Required Deployment Receipt Format
 
-For auditing and release verification, deployment pipelines must record deployment receipts adhering to this specification:
+This is the single authoritative receipt schema. The current script prints
+SHA/stage messages but does **not** generate this receipt automatically. The
+operator completes it from redacted evidence, including failures and PENDING
+checks; a zero script exit alone must not become a PASS smoke/final verdict.
+All SHA fields contain complete commit IDs; approved CI must identify that exact
+target. The following is an illustrative schema, not an executed deployment:
 
 ```json
 {
   "deployment_timestamp": "2026-08-29T13:30:00Z",
   "environment": "production",
+  "requested_git_sha": "138963f69c045546170c1beedee5f5d555c63d14",
+  "resolved_git_sha": "138963f69c045546170c1beedee5f5d555c63d14",
   "deployed_git_sha": "138963f69c045546170c1beedee5f5d555c63d14",
   "previous_git_sha": "f4fb6aa87c8913aae1eee86e84778bd8c1056a55",
   "database_name": "kojaya_erp",
@@ -234,10 +241,29 @@ For auditing and release verification, deployment pipelines must record deployme
   "backup_verification": "PASS",
   "offsite_replication": "PASS",
   "migrations_applied": ["2026_08_29_000001_example.php"],
-  "smoke_test_status": "PASS",
-  "operator_role": "Release Manager"
+  "migration_status_before": "private-evidence-reference",
+  "migration_status_after": "private-evidence-reference",
+  "approved_ci_run": "exact-target-full-CI-reference",
+  "release_approval": "approval-reference",
+  "maintenance_window": "approved-UTC-window",
+  "preflight_status": "PENDING",
+  "build_status": "PENDING",
+  "smoke_test_status": "PENDING",
+  "operator": "operator-identity",
+  "approver": "release-authority-identity",
+  "operator_role": "Release Manager",
+  "failed_stage": null,
+  "database_migration_state": "not-started",
+  "final_verdict": "PENDING"
 }
 ```
+
+`offsite_replication` is PASS/FAIL/NOT_REQUIRED_BY_SYNC_POLICY, independently
+from the required production offsite readiness evidence. Record the latter's
+approved independent-retrieval reference separately; an optional synchronous
+copy does not waive that production gate. Protect receipts and omit password,
+APP_KEY, DB password/URL, API/OAuth tokens, Firebase private key, SSH key,
+session cookie, raw environment dumps and business response bodies.
 
 ---
 

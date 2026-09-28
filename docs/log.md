@@ -4,7 +4,18 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 28, 2026
+**Last Updated:** September 29, 2026
+
+## 2026-09-29 - Bundle B RC-09 / RC-10
+
+- RC-09 rejects symbolic deployment refs before workflow checkout and requires
+  exact SHA equality at both workflow and server boundaries. Dirty deployment
+  worktrees abort before backup/maintenance; failures report stage and DB boundary.
+- Documented the operator deployment sequence, external fleet hold, explicit
+  non-business-mutating smoke acceptance and authoritative sanitized receipt.
+  Production FCM/preflight stays mandatory; QA Android acceptance remains QA-06.
+- Initial RC-09 focused gate: 78 tests / 364 assertions PASS on isolated SQLite;
+  Bash syntax, Composer validation, Pint and diff checks PASS. No production run.
 
 ## 2026-09-28 - Bundle A RC-06 / RC-07 / RC-08
 

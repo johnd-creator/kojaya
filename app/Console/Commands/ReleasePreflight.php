@@ -53,6 +53,16 @@ class ReleasePreflight extends Command
             $this->check('application.key', function (): bool {
                 return $this->decodeKey((string) config('app.key')) !== null;
             });
+            $this->check('application.https_url', function (): bool {
+                $url = config('app.url');
+
+                return is_string($url) && filter_var($url, FILTER_VALIDATE_URL) !== false
+                    && parse_url($url, PHP_URL_SCHEME) === 'https'
+                    && parse_url($url, PHP_URL_USER) === null
+                    && parse_url($url, PHP_URL_PASS) === null;
+            });
+            $this->check('session.secure_cookie', fn (): bool => config('session.secure') === true);
+            $this->check('session.http_only', fn (): bool => config('session.http_only') === true);
         } else {
             $this->pass('application.environment', 'non-strict');
             $this->pass('application.debug', 'non-strict');

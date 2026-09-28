@@ -234,6 +234,32 @@ class ReleasePreflightTest extends TestCase
             ->assertFailed();
     }
 
+    public function test_production_rejects_insecure_urls_and_cookie_settings_without_exposing_values(): void
+    {
+        $this->configureStrictProductionBaseline();
+        Config::set([
+            'app.url' => 'http://secret-user:secret-password@example.test',
+            'session.secure' => false,
+            'session.http_only' => false,
+        ]);
+        $this->artisan('app:release-preflight', ['--strict-production' => true])
+            ->expectsOutput('application.https_url: FAIL (invalid configuration)')
+            ->expectsOutput('session.secure_cookie: FAIL (invalid configuration)')
+            ->expectsOutput('session.http_only: FAIL (invalid configuration)')
+            ->doesntExpectOutputToContain('secret-user')
+            ->doesntExpectOutputToContain('secret-password')
+            ->assertFailed();
+    }
+
+    public function test_production_rejects_credentials_in_https_url(): void
+    {
+        $this->configureStrictProductionBaseline();
+        Config::set('app.url', 'https://secret-user:secret-password@example.test');
+        $this->artisan('app:release-preflight', ['--strict-production' => true])
+            ->expectsOutput('application.https_url: FAIL (invalid configuration)')
+            ->assertFailed();
+    }
+
     public function test_legacy_fcm_key_is_rejected_without_disclosure(): void
     {
         $this->configureBaseline();
@@ -311,6 +337,9 @@ class ReleasePreflightTest extends TestCase
             'app.debug' => false,
             'app.key' => $this->encodedKey('A'),
             'app.version' => '0.1.0',
+            'app.url' => 'https://kojaya.example.test',
+            'session.secure' => true,
+            'session.http_only' => true,
         ]);
         $this->app->forgetInstance(PiiCryptoService::class);
     }

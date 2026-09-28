@@ -5,6 +5,7 @@ namespace App\Services\Integrations;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class WhatsAppNotificationService
 {
@@ -18,7 +19,6 @@ class WhatsAppNotificationService
         if ($recipient === null) {
             Log::info('WhatsApp notification skipped: no opted-in phone number', [
                 'user_id' => $user->id,
-                'title' => $title,
             ]);
 
             return false;
@@ -27,32 +27,34 @@ class WhatsAppNotificationService
         if (! $this->isConfigured()) {
             Log::info('WhatsApp notification disabled: credentials are not configured', [
                 'user_id' => $user->id,
-                'to' => $recipient,
-                'title' => $title,
             ]);
 
             return false;
         }
 
-        $response = Http::withToken((string) config('services.whatsapp.access_token'))
-            ->acceptJson()
-            ->post($this->endpoint(), [
-                'messaging_product' => 'whatsapp',
-                'recipient_type' => 'individual',
-                'to' => $recipient,
-                'type' => 'text',
-                'text' => [
-                    'preview_url' => false,
-                    'body' => $this->messageBody($title, $message, $data),
-                ],
-            ]);
+        try {
+            $response = Http::withToken((string) config('services.whatsapp.access_token'))
+                ->acceptJson()->withoutRedirecting()->connectTimeout(5)->timeout(15)
+                ->post($this->endpoint(), [
+                    'messaging_product' => 'whatsapp',
+                    'recipient_type' => 'individual',
+                    'to' => $recipient,
+                    'type' => 'text',
+                    'text' => [
+                        'preview_url' => false,
+                        'body' => $this->messageBody($title, $message, $data),
+                    ],
+                ]);
+        } catch (Throwable) {
+            Log::warning('WhatsApp notification transport failed', ['user_id' => $user->id]);
+
+            return false;
+        }
 
         if (! $response->successful()) {
             Log::error('WhatsApp notification failed', [
                 'user_id' => $user->id,
-                'to' => $recipient,
                 'status' => $response->status(),
-                'body' => $response->json() ?: $response->body(),
             ]);
 
             return false;
@@ -60,9 +62,6 @@ class WhatsAppNotificationService
 
         Log::info('WhatsApp notification sent', [
             'user_id' => $user->id,
-            'to' => $recipient,
-            'title' => $title,
-            'provider_message_id' => $response->json('messages.0.id'),
         ]);
 
         return true;

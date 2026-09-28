@@ -76,7 +76,7 @@ class FcmHttpV1Test extends TestCase
         Http::assertSentCount(2);
     }
 
-    public function test_http_v1_request_preserves_notification_and_string_data(): void
+    public function test_http_v1_data_only_payload_binds_the_recipient_and_preserves_content(): void
     {
         $this->fakeAuthentication();
         Http::fake(['https://fcm.googleapis.com/*' => Http::response(['name' => 'projects/kojaya-test/messages/test-1'])]);
@@ -85,9 +85,27 @@ class FcmHttpV1Test extends TestCase
         Http::assertSent(fn ($request): bool => $request->url() === 'https://fcm.googleapis.com/v1/projects/kojaya-test/messages:send'
             && $request->hasHeader('Authorization', 'Bearer synthetic-access')
             && $request['message']['token'] === 'synthetic-device-token'
-            && $request['message']['notification'] === ['title' => 'Title', 'body' => 'Message']
-            && $request['message']['data'] === ['count' => '3', 'nested' => '{"id":1}']);
+            && ! isset($request['message']['notification'])
+            && $request['message']['android'] === ['priority' => 'high', 'ttl' => '3600s']
+            && $request['message']['data'] === ['count' => '3', 'nested' => '{"id":1}',
+                'recipient_user_id' => (string) $device->user_id, 'kojaya_push_version' => '1',
+                'title' => 'Title', 'body' => 'Message']);
         $this->assertNull($device->fresh()->revoked_at);
+    }
+
+    public function test_callers_cannot_override_recipient_or_protocol_fields(): void
+    {
+        $this->fakeAuthentication();
+        Http::fake(['https://fcm.googleapis.com/*' => Http::response(['name' => 'projects/kojaya-test/messages/reserved'])]);
+        $device = $this->device();
+        app(PushNotificationService::class)->send($device->user, 'Actual title', 'Actual body', [
+            'recipient_user_id' => '99999', 'kojaya_push_version' => 'unsupported',
+            'title' => 'Forged title', 'body' => 'Forged body',
+        ]);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'messages:send') && $request['message']['data'] === [
+            'recipient_user_id' => (string) $device->user_id, 'kojaya_push_version' => '1',
+            'title' => 'Actual title', 'body' => 'Actual body',
+        ]);
     }
 
     #[DataProvider('failedResponses')]
@@ -210,7 +228,7 @@ class FcmHttpV1Test extends TestCase
         $this->assertNull($second->refresh()->revoked_at);
     }
 
-    public function test_empty_data_is_omitted_and_unregistered_device_is_not_retried(): void
+    public function test_routing_data_is_always_present_and_unregistered_device_is_not_retried(): void
     {
         $this->fakeAuthentication();
         Http::fake(['https://fcm.googleapis.com/*' => Http::response(['error' => ['details' => [[
@@ -218,7 +236,9 @@ class FcmHttpV1Test extends TestCase
         ]]]], 404)]);
         $device = $this->device();
         $this->assertSame(0, app(PushNotificationService::class)->sendOrFail($device->user, 'Title', 'Body'));
-        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'messages:send') && ! isset($request['message']['data']));
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'messages:send')
+            && $request['message']['data']['recipient_user_id'] === (string) $device->user_id
+            && ! isset($request['message']['notification']));
         $this->assertNotNull($device->refresh()->revoked_at);
     }
 

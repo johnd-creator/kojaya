@@ -757,7 +757,8 @@ class PhaseBContractApiTest extends TestCase
             return $request->url() === 'https://fcm.googleapis.com/v1/projects/kojaya-test/messages:send'
                 && $request->hasHeader('Authorization', 'Bearer synthetic-access-token')
                 && $request['message']['token'] === 'valid-fcm-token'
-                && $request['message']['notification']['title'] === 'Pembayaran diterima'
+                && ! isset($request['message']['notification'])
+                && $request['message']['data']['title'] === 'Pembayaran diterima'
                 && $request['message']['data']['payment_id'] === '55';
         });
     }

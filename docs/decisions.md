@@ -1778,7 +1778,7 @@ Contract rows FIN-002 and FIN-003 previously referenced an informal "established
 - QA remains an operator-provisioned, disposable PostgreSQL target; the guard is not a substitute for verifying database ownership or emptiness.
 - Windows checkouts no longer depend on Git symlink materialization for the public storage link.
 
-## ADR-040: FCM HTTP v1 and Server Credential Boundary
+## ADR-042: FCM HTTP v1 and Server Credential Boundary
 
 **Status:** Accepted for implementation; production activation pending RC-11.
 **Date:** September 28, 2026.
@@ -1801,3 +1801,13 @@ responses revoke devices. Partial transient failures keep the outbox retryable;
 push retries use exponential delay (minimum one minute) and honor Retry-After.
 Existing non-push retry semantics remain unchanged. The delivery guarantee is
 at-least-once, not exactly-once across multiple devices.
+
+Android companion authorization was subsequently granted for `F:\kojayaapp`.
+HTTP v1 messages are data-only with reserved recipient user ID, protocol version,
+title/body fields. The receiver checks a current-session-bound registration
+identity before showing a notification; FCM notification payloads would bypass
+that check in background. Account/logout changes invalidate local delivery and
+clear displayed messages. Existing register-device request/response stays intact;
+no schema change. This is a coordinated sender/client rollout, not an assertion
+that unknown older clients understand the new payload. Actual device acceptance
+and environment provisioning remain release gates.

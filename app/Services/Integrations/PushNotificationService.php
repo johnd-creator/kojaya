@@ -43,7 +43,14 @@ class PushNotificationService
         $sent = 0;
 
         foreach ($fcmTargets as $token) {
-            $result = $this->sendFcm($token->push_token, $title, $message, $data);
+            $result = $this->sendFcm($token->push_token, $title, $message, [
+                ...$data,
+                // Reserved routing fields cannot be overridden by notification callers.
+                'recipient_user_id' => (string) $user->id,
+                'kojaya_push_version' => '1',
+                'title' => $title,
+                'body' => $message,
+            ]);
 
             if ($result['success']) {
                 $sent++;
@@ -94,10 +101,9 @@ class PushNotificationService
 
         $messagePayload = [
             'token' => $pushToken,
-            'notification' => [
-                'title' => $title,
-                'body' => $message,
-            ],
+            // Data-only: Android verifies its current session before displaying,
+            // including in background. A notification payload would bypass that check.
+            'android' => ['priority' => 'high', 'ttl' => '3600s'],
         ];
         try {
             if ($data !== []) {

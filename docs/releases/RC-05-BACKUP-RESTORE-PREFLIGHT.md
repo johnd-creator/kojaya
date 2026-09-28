@@ -13,7 +13,7 @@ Audit date: 2026-09-28 (Asia/Jakarta). This is a non-production rehearsal using 
 
 | Command/service | Purpose | Production safe? | Source read-only? | Destructive target action? | Provenance check | Fail-closed condition |
 | --- | --- | --- | --- | --- | --- | --- |
-| `backup:database` / `BackupDatabaseService` | `pg_dump -Fc`, manifest, checksum, stored-byte verification and optional replication | Yes, when configured to private disks and an explicit approved DB | Yes; reads table counts and dumps the configured DB | Writes new artifacts; refuses overwrite; optional `--prune` is destructive | Git SHA, engine/name, purpose, size, row counts, SHA-256 | Dump, archive, storage verification, required offsite, or production/staging provenance failure returns non-zero |
+| `backup:database` / backup service | `pg_dump -Fc`, manifest, checksum, stored-byte verification and optional replication | Yes, when configured to private disks and an explicit approved DB | Yes; reads table counts and dumps the configured DB | Writes new artifacts; refuses overwrite; optional `--prune` is destructive | Git SHA, engine/name, purpose, size, row counts, SHA-256 | Primary dump/archive/storage verification or provenance failure returns non-zero; offsite failures do so when offsite is required |
 | `backup:verify` / `BackupVerificationService` | Verify managed artifact checksum and archive | Yes | Yes | No | Requires manifest and checksum after this RC-05 fix | Missing either provenance companion, checksum mismatch, empty/invalid archive returns non-zero |
 | `backup:status` / `BackupStatusService` | Latest backup integrity and freshness | Yes | Yes | No | Requires strict manifest/checksum and measures age from `created_at` | Missing/corrupt/stale backup reports unhealthy and returns non-zero |
 | `backup:prune` / `BackupRetentionService` | Retention preview or deletion | Only on intended private backup namespace | Yes | Only with `--execute`; default is dry-run | Requires valid manifest/checksum and actual streamed SHA; preserves `min_keep` valid artifacts | Invalid/unverified artifacts are retained for manual review |
@@ -38,7 +38,14 @@ Observed effective repository defaults (`config/operations.php` / `.env.example`
 | `BACKUP_REQUIRE_OFFSITE` | `false` |
 | `BACKUP_TIMEOUT` | `300` seconds |
 
-**Is offsite replication required for production deployment?** The runbook's pre-deploy contract says failure of an offsite copy aborts deployment, so the documented operational policy says **YES**. The implementation is conditional: `BACKUP_REQUIRE_OFFSITE` defaults false, and `bin/deploy.sh` supplies no `--require-offsite` flag, so fail-closed behavior occurs only if the production environment sets the variable true. No production environment was inspected. This contradiction plus the absence of an approved production-equivalent target is a release blocker; the policy must be reconciled explicitly, not inferred from the template default.
+### Approved policy: primary deployment gate vs. offsite disaster-recovery gate
+
+- **Every production deployment:** a verified primary private backup is mandatory before maintenance mode or code/database mutation. Failure aborts deployment. Backup creation performs stored-artifact verification internally.
+- **Production go-live readiness:** independent offsite disaster-recovery protection is mandatory and must pass the acceptance gate in the runbook. This does not make replication an unconditional synchronous dependency of each deployment.
+- **`BACKUP_REQUIRE_OFFSITE=true`:** preserves fail-closed behavior; missing target/configuration, replication failure, or integrity failure returns non-zero and aborts the current deployment.
+- **Repository defaults:** `BACKUP_OFFSITE_ENABLED=false`, no `BACKUP_OFFSITE_DISK`, and `BACKUP_REQUIRE_OFFSITE=false` are development/QA defaults only. Production environment settings were not inspected and are not claimed here.
+
+**Classification:** RC-05 backup/restore mechanism is evaluated independently from production environment readiness. Production offsite configuration and independent retrieval remain **PENDING** as prerequisites for production go-live, carried forward to **RC-07 — Integration Configuration Check** and **RC-11 — QA Deployment Readiness Gate**. They are not RC-05 mechanism blockers.
 
 ## Backup Disk Safety
 
@@ -171,11 +178,11 @@ Accepted rehearsal manifest SHA is exactly `69c5947f39a631bbaf0a9a8253a9534e6dbc
 - Repository default: offsite disabled, no disk configured, and `BACKUP_REQUIRE_OFFSITE=false`.
 - Fail-closed injection with `require_offsite=true` and no target: non-zero failure before backup.
 - Replication rehearsal to a separate directory on the private `local` disk: primary and replica each produced the expected three files; SHA-256 matched, manifest showed `copied=true` and `sha256_verified=true`, and replica verification passed.
-- This is a same-host/same-volume mechanism test, **not geographic or independent offsite protection**. No approved non-production object-storage target or production bucket credentials were available/used. Production offsite remains **PENDING** and blocks RC-05 until the documented policy/config contradiction and approved target are resolved.
+- This is a same-host/same-volume mechanism test, **not geographic or independent offsite protection**. No approved non-production object-storage target or production bucket credentials were available/used. Production offsite configuration and independent retrieval remain **PENDING for RC-07 / RC-11**; no production environment or target was accessed.
 
 ## Deployment Backup Gate
 
-Static inspection confirms backup failure exits `bin/deploy.sh` before maintenance mode and before migrations. The backup service verifies the primary stored artifact before returning success. No deployment was executed. The script performs exact-SHA validation before the backup; its strict `app:release-preflight` command currently runs after maintenance starts and code/dependency checkout, but before migration. This is an ordering nuance versus the runbook's compressed “release preflight” diagram; the backup failure gate itself is before maintenance and migration.
+Static inspection confirms the actual order: exact target SHA validation/resolution; `backup:database --purpose=pre-deploy`; maintenance mode; checkout and Composer install; cache clear and strict `app:release-preflight`; npm install/build; migration; optimization/queue restart; exit maintenance. Primary backup failure exits before maintenance, checkout, and migration. No deployment was executed. The script does not call `backup:verify` separately because backup creation verifies the stored artifact internally. Offsite failure aborts at the backup step only when `BACKUP_REQUIRE_OFFSITE=true`.
 
 ## Failure Injection
 
@@ -183,7 +190,7 @@ Static inspection confirms backup failure exits `bin/deploy.sh` before maintenan
 | --- | --- |
 | `pg_dump` unavailable (PATH isolated) | Non-zero failure; no false success |
 | Database unreachable (loopback port 55438) | Connection refused, non-zero failure |
-| Required offsite target missing | Non-zero fail-closed response |
+| Required offsite target missing with `require_offsite=true` | Non-zero fail-closed response |
 | Modified bytes / mismatched checksum / missing metadata | Rejected as described above |
 | `pg_restore --list` failure | Rejected |
 | Restore failure | Non-zero; empty target remained empty |
@@ -195,7 +202,7 @@ Static inspection confirms backup failure exits `bin/deploy.sh` before maintenan
 - Logical PostgreSQL backup: **implemented and exercised**.
 - Restore drill: **implemented and exercised**.
 - Scheduled backup freshness SLA: configured default 26 hours; this is not a guarantee of achieved RPO.
-- Offsite copy: **configuration-dependent**; same-host test is not offsite resilience.
+- Offsite copy: **configuration-dependent at deployment time; mandatory before production go-live**. The same-host test is not offsite resilience. Production configuration remains pending RC-07 / RC-11.
 - PITR/WAL archiving: **follow-up / not verified as implemented**. No RPO/RTO claim is made.
 
 ## Cleanup
@@ -211,12 +218,12 @@ Cleanup completed after evidence capture. Dropped only the five exact databases 
 
 ## Exact-Head CI
 
-Pending for the RC-05 branch commit. CI must run on the exact pushed candidate SHA; no exact-head CI is claimed for the runtime fix yet. Final exact-head CI on `main` is also pending safe integration. No dummy commit or release tag was created.
+The original RC-05 runtime candidate `095f12b15811d3bf974e60b8814bd335cf741548` passed PR CI run **#481 / 36368047006**: 3,314 tests, 27,375 assertions, 0 errors, 0 failures, 0 skipped, 81.33% coverage; PostgreSQL restore drill and Phase 4 Readiness Gate passed. The policy reconciliation changes this PR head, so fresh exact-head PR CI is required before integration. Final exact-head CI on `main` is also required after integration. No dummy commit or release tag was created.
 
 ## RC-05 Verdict
 
-**BLOCKED.** The rehearsal proved real backup, SHA verification, empty-target restore, semantic equality, and app boot/login/logout. The strict provenance defect has been fixed and has focused regressions. RC-05 cannot pass until:
+**MECHANISM: PASS.** The rehearsal proved real backup, SHA verification, empty-target restore, semantic equality, and app boot/login/logout. The strict provenance defect has been fixed with focused regressions. CI run #481 cleared the previously noted Windows secondary-worktree test discrepancy through authoritative Linux CI.
 
-1. The documented production offsite requirement is reconciled with the conditional-false implementation default, and an approved production-equivalent private offsite target is configured/tested if required.
-2. The candidate branch gets successful exact-head CI, including PostgreSQL restore drill; the Windows secondary-worktree restore-test discrepancy is explained or cleared by authoritative CI.
-3. Safe integration to `main` is followed by final exact-head CI.
+**Production readiness: PENDING.** Independent approved offsite configuration/retrieval is mandatory before production go-live and is carried to RC-07 / RC-11. No production target was inspected or configured. This pending production prerequisite does not block the RC-05 backup/restore mechanism verdict.
+
+**Integration gate: PENDING** fresh exact-head CI for the reconciled PR head, safe PR integration, and final exact-head `main` CI. Until those are complete, the integrated RC-05 release gate is not final. No release tag was created or pushed.

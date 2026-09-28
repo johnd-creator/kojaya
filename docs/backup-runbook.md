@@ -18,7 +18,7 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 
 | Layer | Type | Mechanism | Schedule / Trigger | Target SLA |
 | :--- | :--- | :--- | :--- | :--- |
-| **Layer 1** | **Pre-Deploy Logical Backup** | `php artisan backup:database --purpose=pre-deploy` | Mandatory pre-deployment gate in `bin/deploy.sh` | Zero data loss across deployments |
+| **Layer 1** | **Pre-Deploy Logical Backup** | `php artisan backup:database --purpose=pre-deploy` | Mandatory pre-deployment gate in `bin/deploy.sh` | Verified recovery point before deployment mutation |
 | **Layer 2** | **Scheduled Logical Backup** | `php artisan backup:database --purpose=scheduled --prune` | Daily at 02:30 UTC / 09:30 WIB via Laravel Scheduler | Max 24h data age (SLA < 26h) |
 | **Layer 3** | **Off-Site Copy** | Provider-neutral Laravel Filesystem disk (`s3`, `r2`, `minio`) | Replicated with streaming SHA-256 validation | Geographic redundancy |
 | **Layer 4** | **WAL Archiving / PITR** | Continuous WAL streaming (e.g. pgBackRest) *(Follow-up Design)* | Continuous archive | RPO <= 15 min, RTO <= 1 hour |
@@ -27,6 +27,40 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 > [!NOTE]
 > A `pg_dump` custom-format logical dump is a schema- and table-level logical representation, **not** a PostgreSQL physical base backup for WAL replay. Point-in-Time Recovery (PITR) via continuous WAL archiving is designed as follow-up Layer 4.
 > VM or block storage snapshots are also **not a replacement** for database-aware logical backups and continuous WAL archiving, as filesystem snapshots can capture in-flight database write buffers in an inconsistent state.
+
+## Backup Policy by Environment
+
+| Environment | Primary backup | Offsite copy | `BACKUP_REQUIRE_OFFSITE` |
+| :--- | :--- | :--- | :--- |
+| Local / development | Optional | Optional | `false` by default |
+| Testing / QA | Required for a backup/restore drill | Optional | `false` by default |
+| Staging | Required before deployment | Recommended; set by environment policy | Environment-specific |
+| Production | Required before every deployment and before go-live | Mandatory for production go-live readiness | Environment-specific; synchronous fail-closed replication is required only when `true` |
+
+**Pre-deploy backup gate:** every production deployment requires a verified primary backup on private storage. Backup creation verifies the stored artifact, including its manifest and SHA-256 companion. Failure aborts deployment before maintenance mode, code checkout, or database mutation. This gate does not unconditionally require offsite replication.
+
+**Production disaster-recovery gate:** an approved, independent offsite copy is mandatory before production go-live. A directory on the same host or disk is not offsite protection. Production offsite configuration has not been verified by this runbook and must be proven separately before go-live.
+
+**Synchronous deployment behavior:** when `BACKUP_REQUIRE_OFFSITE=true`, missing offsite configuration, replication failure, or integrity failure makes `backup:database` fail and aborts that deployment. With the repository default `false`, offsite replication is not a hard synchronous dependency of each deployment. Do not infer production configuration from repository defaults.
+
+### Production Offsite Acceptance Gate
+
+Before production release, record evidence for each item:
+
+| Acceptance item | Required result |
+| :--- | :--- |
+| Approved offsite provider | YES |
+| `BACKUP_OFFSITE_ENABLED` | `true` |
+| `BACKUP_OFFSITE_DISK` | Configured |
+| Target private / non-public | PASS |
+| Primary backup | PASS |
+| Offsite replication | PASS |
+| Primary SHA-256 equals offsite SHA-256 | PASS |
+| Offsite manifest | PASS |
+| Independent retrieval from the application host | PASS |
+| `backup:status` | HEALTHY |
+
+If deployment policy also requires replication synchronously before every deploy, set `BACKUP_REQUIRE_OFFSITE=true` in that deployment environment and validate its fail-closed behavior. Provider approval and production configuration are deployment-environment decisions, not repository defaults.
 
 ---
 
@@ -164,22 +198,24 @@ For every backup, three deterministic artifacts are generated:
 
 ## 🚀 Pre-Deployment Backup Gate & Deployment Contract
 
-The deployment script `bin/deploy.sh` enforces the mandatory deployment ordering:
+The deployment script `bin/deploy.sh` enforces this ordering. Backup creation includes primary stored-artifact verification; the script does not make a separate `backup:verify` invocation.
 
 ```text
-1. Release Preflight & Exact SHA verification
+1. Fetch refs; validate and resolve the exact target SHA
    ↓
-2. Pre-deploy Backup: php artisan backup:database --purpose=pre-deploy
-   ↓ (If backup, checksum, primary stored verification, or offsite copy fails -> ABORT DEPLOYMENT)
+2. Verified primary pre-deploy backup: php artisan backup:database --purpose=pre-deploy
+   ↓ (If primary backup, checksum, archive, manifest, or stored-artifact verification fails -> ABORT before maintenance/code/database mutation)
 3. Maintenance Mode: php artisan down --retry=60
    ↓
-4. Deploy Code & Install Dependencies (composer install, npm ci, npm run build)
+4. Checkout exact target; install Composer dependencies; clear optimization cache; strict release preflight
    ↓
-5. Forward-only Migrations: php artisan migrate --force
+5. Install frontend dependencies and build assets (npm ci, npm run build)
    ↓
-6. Application Optimization & Queue Restart
+6. Forward-only Migrations: php artisan migrate --force
    ↓
-7. Exit Maintenance: php artisan up
+7. Application optimization, queue restart, and exit maintenance
+
+Offsite replication failure also aborts at step 2 only when `BACKUP_REQUIRE_OFFSITE=true`. Production offsite readiness is independently mandatory before production go-live; it is not an unconditional synchronous dependency for every deployment.
 ```
 
 ### Target / Required Deployment Receipt Format

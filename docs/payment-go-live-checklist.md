@@ -27,7 +27,15 @@ Checklist ini adalah gate operator sebelum integrasi dipakai di production, buka
 - Operator/mobile owner mendaftarkan token perangkat Android synthetic melalui kontrak `/api/devices/push-token` yang tidak berubah. Uji foreground/background, payload string/deep-link yang memang didukung aplikasi Kotlin, refresh token, serta user/tenant yang benar. Catat SHA backend, versi aplikasi, waktu, project alias, dan hasil tanpa token mentah.
 - Penerimaan FCM (`name` respons) bukan bukti tampil di perangkat. Catat keduanya. `UNREGISTERED` yang bertipe FCM menyebabkan revoke; `INVALID_ARGUMENT`, salah sender, auth, kuota, atau timeout tidak boleh mencabut token secara membabi buta.
 - Validasi retry outbox untuk kegagalan parsial, 429/503 dan `Retry-After`; tidak ada retry HTTP langsung. Pengiriman bersifat at-least-once: retry seluruh outbox dapat mengulang notifikasi pada perangkat yang sebelumnya sukses. Pastikan pengalaman client menangani duplikasi; jangan mengklaim exactly-once.
-- Test lokal tidak memakai service account asli, IAM, perangkat, atau jaringan FCM. Aktivasi production dan bukti penerimaan Android wajib ditutup di RC-11; repository Kotlin tidak tersedia pada audit Windows ini. APNs langsung tetap placeholder, bukan pengiriman iOS.
+- Repository Kotlin ditemukan di `F:\kojayaapp`; implementasi pendamping memakai Firebase Messaging, registrasi terikat sesi, izin Android 13+, serta receiver data-only dengan pemeriksaan penerima. Konfigurasi Android per varian, IAM/backend, dan bukti perangkat masih diperlukan; test lokal tidak memakai service account asli atau jaringan FCM. Aktivasi production wajib ditutup di RC-11. APNs langsung tetap placeholder, bukan pengiriman iOS.
+- Uji payload data-only versi 1 yang benar melalui backend, bukan notification-composer Firebase yang dapat melewati pemeriksaan receiver saat background. Uji logout, pergantian akun, process restart, dan penolakan izin; jangan memasang sender baru dengan client yang belum mendukung kontrak tersebut.
+
+## Security / environment (RC-08)
+
+- Strict production preflight requires `APP_ENV=production`, `APP_DEBUG=false`, a stable approved version, HTTPS `APP_URL` without embedded credentials, secure and HTTP-only session cookies, and the existing PII/ability safeguards. It prints check names, never values.
+- Confirm trusted reverse-proxy addresses, TLS forwarding, database TLS/network restrictions, private object ACLs, filesystem permissions, and independent offsite recovery on the actual target. A local config review does not verify these controls remotely.
+- Production mail must use an approved delivering transport; do not use `log` or a failover route to `log` for reset/verification messages. Keep credentials and PII keys out of VITE variables, source control, backups accessible to the public, and diagnostic output.
+- Provider logs contain only safe status/identifiers; WhatsApp transport errors are replaced with a generic failure before outbox persistence. Retain established authentication, authorization, tenant isolation and secret rotation policy.
 
 Rujukan kontrak: [FCM HTTP v1](https://firebase.google.com/docs/cloud-messaging/send/v1-api) dan [kode kegagalan FCM](https://firebase.google.com/docs/cloud-messaging/error-codes).
 

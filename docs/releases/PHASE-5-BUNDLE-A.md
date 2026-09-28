@@ -87,7 +87,8 @@ provider smoke tests. This was the initial audit gate, before HTTP v1 changes.
 - Converted push payload/acknowledgment/error handling to HTTP v1. Raw device
   tokens, notification content and provider bodies are no longer logged by push.
   Only typed FCM UNREGISTERED revokes a token; auth/payload/quota failures do not.
-- Preserved the device registration API and notification/string-data semantics.
+- Preserved the device registration API. Companion integration subsequently
+  changes delivery to recipient-checked data-only messages (see below).
   Partial failures keep push outboxes retryable, honor Retry-After, and use
   exponential minimum-one-minute delay. Other channel retry delays are unchanged.
   Outbox delivery remains at-least-once; successful devices can see duplicates.
@@ -95,17 +96,140 @@ provider smoke tests. This was the initial audit gate, before HTTP v1 changes.
   network calls. Mandatory Android configuration is enforced by deploy.
 - Reconciled the payment go-live checklist: changing production credentials or
   sandbox mode does not activate internal simulation. No security bypass added.
-- No dependency, schema, frontend or mobile repository change. The referenced
-  Kotlin repository is unavailable here; real client compatibility stays pending.
+- No backend dependency, schema, or frontend change. The user subsequently
+  supplied `F:\kojayaapp` and explicitly authorized a separate Android companion
+  plus Firebase Messaging dependency. The initial unavailable-Kotlin limitation
+  is superseded; real provider/device receipt is still unverified.
 
-Final focused HTTP v1 gate: `FcmHttpV1Test`, `ReleasePreflightTest`,
+Initial post-migration HTTP v1 gate: `FcmHttpV1Test`, `ReleasePreflightTest`,
 `PhaseBContractApiTest`, `Sprint4ReliabilityDxTest`, and
 `Sprint6WhatsAppNotificationTest`: **86 tests, 729 assertions, PASS**. Pint dirty
 check, deployment shell syntax, and Composer strict validation also PASS.
 Two development-test issues (JWT test key lookup and subsecond timestamp
 comparison) were corrected before this final passing run; no failure suppressed.
 
-**Final RC-07 local verdict: PASS WITH CARRIED-FORWARD PREREQUISITES.** The
-repository compatibility blocker is remediated. Production IAM/credentials,
-actual Android receipt, provider activation and independent offsite recovery
-are still mandatory RC-11 evidence; push may not be silently deferred.
+**RC-07 repository verdict: PASS WITH CARRIED-FORWARD PREREQUISITES.** Backend
+legacy transport is remediated; see companion verification below. Actual push
+activation is NOT PASS: Android Firebase options, backend IAM/credentials and
+device receipt are absent. QA configuration/device acceptance must be resolved
+before claiming push readiness; production activation and independent offsite
+recovery remain mandatory RC-11 evidence. Push may not be silently deferred.
+
+### Authorized Android companion and coordinated contract
+
+Android baseline: `b58facb5aa6825bec7f5bcaa0869efca4f67b332`, `F:\kojayaapp`.
+Its working tree was clean before companion edits. Changes remain local and
+separate from this backend PR; no Android commit/push/PR is claimed.
+
+- Added Firebase Messaging, private receiver, notification channel/icon and
+  Android 13+ permission request. Public Firebase options are per build type;
+  no server account/key is embedded. No `google-services.json` found in that
+  project, including ignored/hidden paths outside generated/cache directories.
+- Independent registration loop handles login, SSO, restore, token refresh,
+  retries and session cancellation without changing auth business behavior.
+  It sends a captured bearer token over a non-redirecting client, binds the
+  returned user ID to a session hash in encrypted backup-excluded storage,
+  and never logs raw tokens/provider failures.
+- Backend Android payload is data-only, high priority/one-hour TTL, with
+  reserved `recipient_user_id`, `kojaya_push_version=1`, `title`, `body` and
+  existing event data. Receiver verifies current local session/recipient before
+  displaying; local logout/forced logout/account switch invalidate display.
+  Tapping uses normal authenticated navigation, not arbitrary payload deep links.
+- This is a coordinated sender/client rollout. Other/older client compatibility,
+  remote account revocation behavior, actual background delivery, permission
+  denial UX and process-killed receipt require device acceptance, not inference
+  from mocks. The authenticated inbox remains authoritative. SDK token methods
+  are deprecated but supported; a future FID migration is distinct from HTTP v1.
+- Android gate: `testDebugUnitTest`, `assembleDebug`, `lintDebug` **PASS**;
+  **732 tests, zero failures/errors/skips**, lint **0 errors / 70 warnings**.
+  Ten new push policy/coordinator/HTTP-contract tests are included. Debug build
+  without Firebase options is intentionally not a working-push artifact.
+- QA/release configuration gates were exercised with absent settings: both
+  **rejected as expected**. Actual configured QA/release builds remain pending.
+  Initial manifest duplication, ActivityResult/transitive Fragment lint issue,
+  and composition-root allowlist mismatch were fixed; no baseline refreshed or
+  lint/test disabled. The new Application is explicitly documented as wiring.
+
+## RC-08 - Security / Secret / Env Verification
+
+**Local verdict: PASS WITH CARRIED-FORWARD PREREQUISITES.**
+
+Strict production preflight now rejects non-HTTPS/credential-bearing APP_URL,
+non-secure cookies and disabled HTTP-only cookies without printing values.
+WhatsApp logging no longer retains phone/content/raw provider bodies; transport
+exceptions become generic delivery failures before outbox error persistence.
+Redirects are refused and provider calls have bounded timeouts. Existing auth,
+authorization, PII rollback/key and tenant controls remain unchanged.
+
+The tracked-file check found only approved `.env.example`/`.env.playwright.example`
+among the targeted env/key/dump patterns. Bounded non-test/non-doc tracked source
+signature search found no GitHub token, AWS access-key or private-key header
+matches. This is not a comprehensive secret-history scan. Actual `.env`, secret
+mounts and production configuration were not printed or inspected.
+
+Codex Security scan `81b28208-1a70-4941-b563-a0de73796e08` completed against
+`config/` at `66def7f7b9cf2ae197ccf9cf8cb1bfdce62c01b6`: 19 files reviewed,
+zero reportable findings. The parent completed the static review after both
+independent workers hit usage limits; independent review is unavailable.
+No repository-wide, Android, runtime or production security assurance is claimed.
+The workbench recorded a working-tree-change warning: its result belongs to the
+original scan snapshot, not the final bundle. Canonical artifacts are retained
+locally in the Security workbench, not copied into source control. Tool-reported
+usage: 7,300,811 total tokens (including 6,874,496 cached input tokens), four
+threads; this is the tool's rollout accounting, not a separate billing estimate.
+
+Initial focused RC-08 regression gate: **64 tests / 274 assertions PASS**.
+Final integrated focused gate: **188 tests / 1,281 assertions PASS**, SQLite
+`:memory:`; includes all RC-06 and changed RC-07/08 tests plus webhook fail-closed,
+SSO, backup status, public-root protection, granular ability cutover and member
+serialization. A new assertion initially matched the OAuth request instead of
+the FCM request; its URL predicate was corrected and both the 24-test FCM suite
+and the complete 188-test gate were rerun successfully.
+
+Operator checks still required: actual HTTPS/cookie/proxy topology, least-privilege
+credentials and OS ACLs, PII key/version recovery, database TLS/network controls,
+private object ACLs, approved mail delivery without log fallback, queue/scheduler
+supervision and offsite retrieval. None are replaced by static configuration PASS.
+
+## Cross-RC self-review and pre-push gate
+
+- Reviewed complete diff from the recorded baseline: no migration, seed, financial
+  side-effect change, new backend dependency, auth bypass, production credential,
+  generated artifact or unrelated refactor. Android files are not in this PR.
+- Migration plan and deploy agree on required Android preflight; stable-production
+  version gate is not bypassed for `v1.0.0-rc.5`. Payment simulation claim corrected.
+- Client compatibility became a real companion implementation after authorization,
+  not merely an operator-config label. Sender rollout must wait for that client.
+- Full Windows working-copy Pint initially failed on existing CRLF files; the
+  changed-file gate passes. Git archive also applied the Windows conversion on
+  the first attempt. Recreating only the temporary snapshot with command-local
+  `core.autocrlf=false` produced an LF tree: **full Pint PASS**. All **1,428 tracked
+  PHP files** matched working-copy content after newline normalization (zero
+  mismatches). No user files/global Git setting were rewritten. Authoritative
+  Linux CI remains required.
+- Composer strict validation, OpenAPI snapshot check, deployment shell syntax,
+  and `git diff --check` pass. Frontend/schema code unchanged; no production or
+  shared PostgreSQL database was used. Full CI must still cover frontend/PG and
+  the default suite's exclusions/alternate gates.
+
+**BUNDLE_LOCAL_VERDICT: PASS for the integrated repository candidate.** All
+focused tests, format, metadata, API snapshot and diff checks listed above pass.
+This authorizes the single integrated push/PR for CI, not provider activation.
+**Bundle A overall: BLOCKED pending exact-head full CI and required push activation
+evidence; not approved for production.** No merge or tag is authorized.
+
+Local logical commits before the final evidence commit:
+
+| Commit | Scope |
+| --- | --- |
+| `f87e5d91` | RC-06 controlled migration plan |
+| `05bab4ee` | RC-07 integration inventory and initial blocker |
+| `66def7f7` | RC-07 HTTP v1 server migration |
+| `4a361ad7` | RC-07 recipient-checked Android companion contract |
+| `050cb9eb` | RC-08 secure configuration and sanitized provider failures |
+
+PR metadata is the authoritative post-push location for exact candidate SHA,
+CI run IDs/results and any follow-up failures; this pre-push evidence does not
+claim an unexecuted CI result. RC candidate remains `v1.0.0-rc.5`; tag created NO,
+tag pushed NO. Next planned bundle is RC-09 + RC-10, after the release owner
+reviews outstanding gates; this task does not execute that bundle.

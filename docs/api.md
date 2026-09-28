@@ -598,6 +598,13 @@ Authorization: Bearer {token}
 Gateway status yang dibedakan: `PENDING`, `PAID`, `EXPIRED`, `CANCELLED`, dan `FAILED`.
 
 ### **Push Device Registration**
+
+RC-07: kontrak registrasi di bawah tidak berubah. Pengiriman backend memakai
+FCM HTTP v1 (OAuth service account); key/account JSON hanya berada di server.
+Payload perangkat tetap membawa notification title/body dan data bernilai
+string. Penerimaan provider bukan bukti perangkat menampilkan notifikasi;
+lihat [gate pengiriman Android](payment-go-live-checklist.md#fcm).
+
 ```http
 POST /api/devices/push-token
 Authorization: Bearer {token}

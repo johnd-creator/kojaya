@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\PushDeliveryException;
 use App\Models\NotificationOutbox;
 use App\Services\Integrations\PushNotificationService;
 use App\Services\Integrations\WhatsAppNotificationService;
@@ -97,12 +98,15 @@ class ProcessNotificationOutbox implements ShouldQueue
     {
         $attempts = $outbox->attempts + 1;
         $exhausted = $attempts >= $outbox->max_attempts;
+        $delay = $exception instanceof PushDeliveryException
+            ? max($exception->retryAfterSeconds, min(3600, 60 * (2 ** min($attempts - 1, 6))))
+            : min(300, 30 * $attempts);
 
         $outbox->forceFill([
             'status' => $exhausted ? 'failed' : 'pending',
             'attempts' => $attempts,
             'processing_at' => null,
-            'available_at' => $exhausted ? null : now()->addSeconds(min(300, 30 * $attempts)),
+            'available_at' => $exhausted ? null : now()->addSeconds($delay),
             'failed_at' => $exhausted ? now() : null,
             'last_error' => mb_substr($exception->getMessage(), 0, 1000),
         ])->save();

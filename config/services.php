@@ -29,8 +29,10 @@ return [
     ],
 
     'fcm' => [
+        // Legacy key retained only so release preflight can reject stale deployments.
         'server_key' => env('FCM_SERVER_KEY'),
-        'endpoint' => env('FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
+        'project_id' => env('FCM_PROJECT_ID'),
+        'service_account_path' => env('FCM_SERVICE_ACCOUNT_PATH'),
     ],
 
     'payment_gateway' => [

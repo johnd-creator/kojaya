@@ -1777,3 +1777,27 @@ Contract rows FIN-002 and FIN-003 previously referenced an informal "established
 - Fresh dependency installation cannot silently mutate an arbitrary database.
 - QA remains an operator-provisioned, disposable PostgreSQL target; the guard is not a substitute for verifying database ownership or emptiness.
 - Windows checkouts no longer depend on Git symlink materialization for the public storage link.
+
+## ADR-040: FCM HTTP v1 and Server Credential Boundary
+
+**Status:** Accepted for implementation; production activation pending RC-11.
+**Date:** September 28, 2026.
+
+The release owner requires Android push for Bundle A. Legacy FCM server-key
+delivery is replaced by HTTP v1 using a private mounted service-account JSON
+and explicit target project. Existing JWT/OpenSSL/HTTP facilities are reused;
+no dependency is added. OAuth assertions have a fixed Google audience and FCM
+scope, fixed HTTPS destinations, and no redirects. Access tokens are cached
+only within the provider instance until a conservative expiry and invalidated
+on credential change or HTTP 401; no shared cache stores bearer credentials.
+
+Preflight validates credential shape/readability/RSA key and rejects legacy
+server keys without making network calls. `--require-android-push` prevents a
+disabled provider from satisfying this release's operator gate. Real IAM,
+device receipt, Kotlin behavior, and recovery remain external evidence.
+
+FCM errors expose only safe status information. Only typed `UNREGISTERED`
+responses revoke devices. Partial transient failures keep the outbox retryable;
+push retries use exponential delay (minimum one minute) and honor Retry-After.
+Existing non-push retry semantics remain unchanged. The delivery guarantee is
+at-least-once, not exactly-once across multiple devices.

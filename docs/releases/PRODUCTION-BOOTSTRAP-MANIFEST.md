@@ -83,7 +83,8 @@ production schema. Review all other pending files identified in step 3 as well.
 3. On an existing bootstrapped installation, the approved automation invokes
    `bash bin/deploy.sh --ref <approved-40-character-SHA>`. Its order is: resolve
    target/current SHAs; primary backup gate; maintenance; checkout; dependency
-   install; clear caches; strict production preflight; frontend build; forward
+   install; clear caches; strict production preflight with required Android push;
+   frontend build; forward
    `php artisan migrate --force`; optimize; queue restart signal; application up.
    The script does not run seeders, PAY-006, PII backfill, or imports. Do not run
    a second migration invocation outside this controlled sequence.

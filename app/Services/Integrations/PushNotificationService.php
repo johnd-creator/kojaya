@@ -2,23 +2,32 @@
 
 namespace App\Services\Integrations;
 
+use App\Exceptions\PushDeliveryException;
 use App\Models\MobileDeviceToken;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PushNotificationService
 {
-    private const FCM_URL = 'https://fcm.googleapis.com/fcm/send';
+    private bool $retryableFailure = false;
 
-    public function __construct(private readonly NotificationService $notificationService) {}
+    private int $retryAfterSeconds = 60;
+
+    public function __construct(
+        private readonly NotificationService $notificationService,
+        private readonly FcmAccessTokenProvider $accessTokenProvider,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
      */
     public function send(User $user, string $title, string $message, array $data = []): int
     {
+        $this->retryableFailure = false;
+        $this->retryAfterSeconds = 60;
         $tokens = MobileDeviceToken::query()
             ->where('user_id', $user->id)
             ->whereNull('revoked_at')
@@ -42,15 +51,15 @@ class PushNotificationService
 
             if ($result['invalid_token']) {
                 $token->forceFill(['revoked_at' => now()])->save();
+            } elseif (! $result['success']) {
+                $this->retryableFailure = true;
             }
         }
 
         foreach ($tokens->where('platform', 'ios') as $token) {
             Log::info('Push notification (APNs placeholder)', [
                 'user_id' => $user->id,
-                'device_id' => $token->device_id,
-                'push_token' => $token->push_token,
-                'title' => $title,
+                'device_token_id' => $token->id,
             ]);
         }
 
@@ -62,17 +71,10 @@ class PushNotificationService
      */
     public function sendOrFail(User $user, string $title, string $message, array $data = []): int
     {
-        $activeAndroidTokenCount = MobileDeviceToken::query()
-            ->where('user_id', $user->id)
-            ->where('platform', 'android')
-            ->whereNull('revoked_at')
-            ->whereNotNull('push_token')
-            ->count();
-
         $sent = $this->send($user, $title, $message, $data);
 
-        if ($activeAndroidTokenCount > 0 && $sent === 0) {
-            throw new \RuntimeException('Push notification delivery failed for all active Android tokens.');
+        if ($this->retryableFailure) {
+            throw new PushDeliveryException($this->retryAfterSeconds);
         }
 
         return $sent;
@@ -84,56 +86,66 @@ class PushNotificationService
      */
     private function sendFcm(string $pushToken, string $title, string $message, array $data = []): array
     {
-        if (! config('services.fcm.server_key')) {
-            Log::info('FCM disabled (no server key configured)', [
-                'push_token' => $pushToken,
-                'title' => $title,
-            ]);
+        if (! $this->accessTokenProvider->isConfigured()) {
+            Log::info('FCM disabled (HTTP v1 credentials are not configured)');
 
             return ['success' => false, 'invalid_token' => false, 'fcm_message_id' => null];
         }
 
-        $payload = [
-            'to' => $pushToken,
+        $messagePayload = [
+            'token' => $pushToken,
             'notification' => [
                 'title' => $title,
                 'body' => $message,
             ],
-            'data' => collect($data)
-                ->map(fn (mixed $value): string => is_scalar($value) ? (string) $value : json_encode($value))
-                ->all(),
         ];
+        try {
+            if ($data !== []) {
+                $messagePayload['data'] = collect($data)
+                    ->map(fn (mixed $value): string => is_scalar($value) ? (string) $value : json_encode($value, JSON_THROW_ON_ERROR))
+                    ->all();
+            }
 
-        $response = Http::withHeaders([
-            'Authorization' => 'key='.config('services.fcm.server_key'),
-            'Content-Type' => 'application/json',
-        ])
-            ->post((string) config('services.fcm.endpoint', self::FCM_URL), $payload);
+            $project = $this->accessTokenProvider->projectId();
+            $response = Http::withToken($this->accessTokenProvider->accessToken())
+                ->acceptJson()->withoutRedirecting()->connectTimeout(5)->timeout(15)
+                ->post('https://fcm.googleapis.com/v1/projects/'.$project.'/messages:send', [
+                    'message' => $messagePayload,
+                ]);
 
-        $body = $response->json() ?: [];
-        $result = $body['results'][0] ?? [];
+            if (! $response->successful()) {
+                $retryAfter = $response->header('Retry-After');
+                $retryAt = ctype_digit($retryAfter) ? now()->timestamp + (int) $retryAfter : strtotime($retryAfter);
+                if ($retryAt !== false) {
+                    $this->retryAfterSeconds = max($this->retryAfterSeconds, $retryAt - now()->timestamp);
+                }
+                if ($response->status() === 401) {
+                    $this->accessTokenProvider->forgetToken();
+                }
 
-        if (! $response->successful() || (int) ($body['failure'] ?? 0) > 0) {
-            Log::error('FCM push failed', [
-                'push_token' => $pushToken,
-                'status' => $response->status(),
-                'body' => $body,
-            ]);
+                // A payload INVALID_ARGUMENT must not revoke a valid device token.
+                $unregistered = $response->status() === 404 && collect($response->json('error.details', []))
+                    ->contains(fn (mixed $detail): bool => is_array($detail)
+                        && ($detail['@type'] ?? null) === 'type.googleapis.com/google.firebase.fcm.v1.FcmError'
+                        && ($detail['errorCode'] ?? null) === 'UNREGISTERED');
+                Log::warning('FCM push failed', ['status' => $response->status()]);
 
-            $errorType = $result['error'] ?? $body['error']['details'][0]['errorCode'] ?? null;
-            $invalidToken = in_array($errorType, ['NotRegistered', 'InvalidRegistration', 'UNREGISTERED', 'INVALID_ARGUMENT'], true);
+                return ['success' => false, 'invalid_token' => $unregistered, 'fcm_message_id' => null];
+            }
 
-            return ['success' => false, 'invalid_token' => $invalidToken, 'fcm_message_id' => null];
+            $messageId = $response->json('name');
+            if (! is_string($messageId) || ! str_starts_with($messageId, 'projects/'.$project.'/messages/')) {
+                throw new \RuntimeException('Invalid FCM acknowledgment.');
+            }
+
+            Log::info('FCM push accepted');
+
+            return ['success' => true, 'invalid_token' => false, 'fcm_message_id' => $messageId];
+        } catch (Throwable) {
+            // Do not persist request URLs/bodies, bearer tokens or provider exceptions.
+            Log::warning('FCM push failed (configuration, transport or response)');
+
+            return ['success' => false, 'invalid_token' => false, 'fcm_message_id' => null];
         }
-
-        $messageId = $result['message_id'] ?? $body['name'] ?? null;
-
-        Log::info('FCM push sent', [
-            'push_token' => $pushToken,
-            'fcm_message_id' => $messageId,
-            'title' => $title,
-        ]);
-
-        return ['success' => true, 'invalid_token' => false, 'fcm_message_id' => $messageId];
     }
 }

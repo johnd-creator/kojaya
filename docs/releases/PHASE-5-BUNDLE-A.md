@@ -41,8 +41,9 @@ evidence are carried to RC-11; they do not prevent RC-07/08 repository checks.
 
 ## RC-07 - Integration Configuration Check
 
-**Local verdict: BLOCKED for push activation; other configuration checks PASS
-WITH CARRIED-FORWARD PREREQUISITES.** RC-08 is independent and may continue.
+**Initial finding:** push activation was blocked by the legacy FCM implementation.
+The release owner explicitly requires Android push and authorized HTTP v1
+migration before Bundle A can pass. See remediation and final local gate below.
 
 `app:release-preflight` checks credential completeness for Midtrans, WhatsApp,
 and FCM, not provider connectivity, entitlement, delivery, or production
@@ -53,7 +54,7 @@ Production settings were not read. The matrix describes source/template state.
 | --- | --- | --- |
 | Midtrans / payment owner | `services.midtrans`; three credentials blank in template, sandbox default, simulation false. Runtime forbids simulation in production even if requested. Partial credentials fail preflight. | Approved merchant and enabled channels, mode/key match, HTTPS callback, valid/invalid signature and retry/reconciliation evidence under separately approved provider testing. Leave disabled until approved; no live charge here. |
 | WhatsApp / messaging owner | `services.whatsapp`; token and phone ID blank; Graph endpoint v20.0, country code 62. Runtime requires opt-in and both credential fields. | Confirm currently supported Graph version/account entitlement, opted-in synthetic recipient, applicable messaging/session/template rules, failed-delivery handling, and redacted delivery proof. No messages sent here. |
-| Android FCM / mobile owner | `services.fcm`; blank server key; current implementation uses `/fcm/send`, `Authorization: key=...` and legacy payload. | **Repository compatibility issue**, not just missing credentials. HTTP v1 requires a different auth/payload contract; changing the endpoint alone is not a fix. Obtain an explicit release decision to defer push, or implement/review/test an HTTP v1 migration before activation. No Kotlin/device compatibility claim. |
+| Android FCM / mobile owner | `services.fcm`; migrated to explicit project + mounted service account, HTTP v1 payload and OAuth Bearer auth; legacy key rejected by preflight. | Android push is mandatory. IAM/API activation, credential provisioning, and actual synthetic device receipt are required at RC-11; no Kotlin/device compatibility claim from local tests. |
 | iOS push / mobile owner | APNs path is a logging placeholder, not delivery. | Do not advertise iOS push as ready; explicit scope decision or separate implementation required. |
 | Google SSO / identity owner | `services.google` / `auth_sso`; disabled by default, blank client credentials; redirect derives from APP_URL. | Approved client/audience/redirect/domain policy, no unintended account linking, TLS callback, and synthetic login/denial proof. Disabled is acceptable only when sign-in scope explicitly allows it. |
 | Mail / operations owner | `config/mail.php`; `log` template transport, not delivery. SMTP and named transports need their own credentials; not covered by release-preflight integration completeness. | Choose approved transport/sender/TLS and test verification/reset mail to a controlled account without retaining token-bearing mail in general logs. |
@@ -64,15 +65,47 @@ Production settings were not read. The matrix describes source/template state.
 FCM incompatibility is source-backed and independently corroborated by the
 [AWS FCM authentication migration guidance](https://docs.aws.amazon.com/sns/latest/dg/sns-fcm-authentication-methods.html)
 describing retirement of the legacy key API and HTTP v1 token authentication.
-The old Firebase `migrate-v1` URL returned 404 during this audit; no provider
-credential or live delivery was used to infer compatibility. An empty FCM key
-prevents outbound FCM calls but does **not** prove push is safely excluded from
-the release: existing Android recipients can still produce failed/retried push
-outbox entries. Do not silently treat missing credentials as feature acceptance.
+The old Firebase `migrate-v1` URL returned 404 during this audit; the current
+[HTTP v1 contract](https://firebase.google.com/docs/cloud-messaging/send/v1-api)
+was used for remediation. No live provider credential or delivery was used.
+Empty HTTP v1 configuration prevents outbound calls but does not satisfy this
+release: deploy now requires `--require-android-push`, and all-active-device
+delivery failure remains retryable, not falsely reported as sent.
 
 Focused SQLite tests: `ReleasePreflightTest`, `PaymentWebhookFailClosedTest`,
 `Sprint6WhatsAppNotificationTest`, `GoogleSsoFlowTest`, and
 `BackupStatusCommandTest`: **78 tests, 366 assertions, PASS** using the same
 explicit SQLite DLL invocation as RC-06. Provider flows use synthetic fixtures
 and mocked responses; these are configuration/behavior regressions, not live
-provider smoke tests. No config default or provider behavior changed in RC-07.
+provider smoke tests. This was the initial audit gate, before HTTP v1 changes.
+
+### RC-07 remediation
+
+- Added service-account RS256 OAuth exchange using existing JWT/OpenSSL and
+  Laravel HTTP facilities, fixed HTTPS Google destinations, redirect refusal,
+  bounded request timeouts, credential validation and process-local token expiry.
+- Converted push payload/acknowledgment/error handling to HTTP v1. Raw device
+  tokens, notification content and provider bodies are no longer logged by push.
+  Only typed FCM UNREGISTERED revokes a token; auth/payload/quota failures do not.
+- Preserved the device registration API and notification/string-data semantics.
+  Partial failures keep push outboxes retryable, honor Retry-After, and use
+  exponential minimum-one-minute delay. Other channel retry delays are unchanged.
+  Outbox delivery remains at-least-once; successful devices can see duplicates.
+- Release preflight rejects legacy/partial/unreadable credentials without
+  network calls. Mandatory Android configuration is enforced by deploy.
+- Reconciled the payment go-live checklist: changing production credentials or
+  sandbox mode does not activate internal simulation. No security bypass added.
+- No dependency, schema, frontend or mobile repository change. The referenced
+  Kotlin repository is unavailable here; real client compatibility stays pending.
+
+Final focused HTTP v1 gate: `FcmHttpV1Test`, `ReleasePreflightTest`,
+`PhaseBContractApiTest`, `Sprint4ReliabilityDxTest`, and
+`Sprint6WhatsAppNotificationTest`: **86 tests, 729 assertions, PASS**. Pint dirty
+check, deployment shell syntax, and Composer strict validation also PASS.
+Two development-test issues (JWT test key lookup and subsecond timestamp
+comparison) were corrected before this final passing run; no failure suppressed.
+
+**Final RC-07 local verdict: PASS WITH CARRIED-FORWARD PREREQUISITES.** The
+repository compatibility blocker is remediated. Production IAM/credentials,
+actual Android receipt, provider activation and independent offsite recovery
+are still mandatory RC-11 evidence; push may not be silently deferred.

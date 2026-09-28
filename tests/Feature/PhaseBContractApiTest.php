@@ -710,12 +710,13 @@ class PhaseBContractApiTest extends TestCase
         return [$memberUser, $member, $invoice];
     }
 
-    public function test_fcm_push_uses_legacy_endpoint_payload_and_revokes_invalid_tokens(): void
+    public function test_fcm_push_uses_http_v1_payload_and_revokes_unregistered_tokens(): void
     {
-        config([
-            'services.fcm.server_key' => 'fcm-server-key',
-            'services.fcm.endpoint' => 'https://fcm.test/send',
-        ]);
+        $this->mock(\App\Services\Integrations\FcmAccessTokenProvider::class, function ($mock): void {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('projectId')->andReturn('kojaya-test');
+            $mock->shouldReceive('accessToken')->andReturn('synthetic-access-token');
+        });
 
         $user = User::factory()->create();
         $validToken = MobileDeviceToken::query()->create([
@@ -736,9 +737,12 @@ class PhaseBContractApiTest extends TestCase
         ]);
 
         Http::fake([
-            'https://fcm.test/send' => Http::sequence()
-                ->push(['success' => 1, 'failure' => 0, 'results' => [['message_id' => 'msg-1']]], 200)
-                ->push(['success' => 0, 'failure' => 1, 'results' => [['error' => 'NotRegistered']]], 200),
+            'https://fcm.googleapis.com/v1/projects/kojaya-test/messages:send' => Http::sequence()
+                ->push(['name' => 'projects/kojaya-test/messages/msg-1'], 200)
+                ->push(['error' => ['details' => [[
+                    '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                    'errorCode' => 'UNREGISTERED',
+                ]]]], 404),
         ]);
 
         $sent = app(PushNotificationService::class)->send($user, 'Pembayaran diterima', 'Pembayaran berhasil.', [
@@ -750,11 +754,11 @@ class PhaseBContractApiTest extends TestCase
         $this->assertNotNull($invalidToken->refresh()->revoked_at);
 
         Http::assertSent(function ($request): bool {
-            return $request->url() === 'https://fcm.test/send'
-                && $request->hasHeader('Authorization', 'key=fcm-server-key')
-                && $request['to'] === 'valid-fcm-token'
-                && $request['notification']['title'] === 'Pembayaran diterima'
-                && $request['data']['payment_id'] === '55';
+            return $request->url() === 'https://fcm.googleapis.com/v1/projects/kojaya-test/messages:send'
+                && $request->hasHeader('Authorization', 'Bearer synthetic-access-token')
+                && $request['message']['token'] === 'valid-fcm-token'
+                && $request['message']['notification']['title'] === 'Pembayaran diterima'
+                && $request['message']['data']['payment_id'] === '55';
         });
     }
 

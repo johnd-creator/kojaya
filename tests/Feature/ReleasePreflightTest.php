@@ -226,6 +226,48 @@ class ReleasePreflightTest extends TestCase
             ->assertExitCode(1);
     }
 
+    public function test_required_android_push_fails_when_disabled(): void
+    {
+        $this->configureBaseline();
+        $this->artisan('app:release-preflight', ['--require-android-push' => true])
+            ->expectsOutput('integrations.fcm.required: FAIL (invalid configuration)')
+            ->assertFailed();
+    }
+
+    public function test_legacy_fcm_key_is_rejected_without_disclosure(): void
+    {
+        $this->configureBaseline();
+        Config::set('services.fcm.server_key', 'synthetic-legacy-secret');
+        $this->artisan('app:release-preflight')
+            ->expectsOutput('integrations.fcm.legacy_key_absent: FAIL (invalid configuration)')
+            ->doesntExpectOutputToContain('synthetic-legacy-secret')
+            ->assertFailed();
+    }
+
+    public function test_partial_fcm_http_v1_configuration_is_rejected(): void
+    {
+        $this->configureBaseline();
+        Config::set('services.fcm.project_id', 'kojaya-test');
+        $this->artisan('app:release-preflight')
+            ->expectsOutput('integrations.fcm: FAIL (partial configuration)')
+            ->assertFailed();
+    }
+
+    public function test_unreadable_service_account_fails_without_exposing_path(): void
+    {
+        $this->configureBaseline();
+        Config::set([
+            'services.fcm.project_id' => 'kojaya-test',
+            'services.fcm.service_account_path' => '/nonexistent/private-account-secret.json',
+        ]);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        $this->artisan('app:release-preflight', ['--require-android-push' => true])
+            ->expectsOutput('integrations.fcm.service_account: FAIL (invalid configuration)')
+            ->doesntExpectOutputToContain('private-account-secret.json')
+            ->assertFailed();
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
     private function configureBaseline(): void
     {
         Config::set([
@@ -254,6 +296,8 @@ class ReleasePreflightTest extends TestCase
             'services.whatsapp.access_token' => null,
             'services.whatsapp.phone_number_id' => null,
             'services.fcm.server_key' => null,
+            'services.fcm.project_id' => null,
+            'services.fcm.service_account_path' => null,
         ]);
 
         $this->app->forgetInstance(PiiCryptoService::class);

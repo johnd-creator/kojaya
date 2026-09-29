@@ -137,6 +137,97 @@ class DeploymentScriptTest extends TestCase
         $process->run();
         $this->assertSame(1, $process->getExitCode());
         $this->assertFileDoesNotExist($this->directory.'/output');
+        $state = $this->state();
+        $state['code'] = self::TARGET;
+        file_put_contents($this->directory.'/state.json', json_encode($state, JSON_THROW_ON_ERROR));
+        $process->run();
+        $this->assertSame(0, $process->getExitCode());
+        $this->assertStringContainsString('commit='.self::TARGET, file_get_contents($this->directory.'/output'));
+    }
+
+    #[DataProvider('postMigrationFailures')]
+    public function test_failure_after_migration_never_automatically_reverts_code_or_database(string $scenario): void
+    {
+        $result = $this->deploy($scenario);
+        $this->assertNotSame(0, $result->getExitCode());
+        $state = $this->state();
+        $this->assertTrue($state['maintenance']);
+        $this->assertSame(self::TARGET, $state['code']);
+        $this->assertSame($scenario === 'migration' ? 'partial' : 'complete', $state['migration']);
+        $this->assertStringContainsString('migration='.($scenario === 'migration' ? 'started-inspect-ledger' : 'completed'), $result->getErrorOutput());
+        $db = new PDO('sqlite:'.$this->directory.'/source.sqlite');
+        $this->assertSame(1, (int) $db->query("SELECT COUNT(*) FROM sqlite_master WHERE name = 'schema_v2'")->fetchColumn());
+        $this->assertNotContains('git checkout --detach '.self::PREVIOUS, $state['commands']);
+        $this->assertNotContains('php artisan migrate:rollback', $state['commands']);
+    }
+
+    public static function postMigrationFailures(): array
+    {
+        return [['migration'], ['optimize'], ['queue-restart'], ['application-up']];
+    }
+
+    public function test_operator_code_recovery_before_migration_preserves_database(): void
+    {
+        $this->assertNotSame(0, $this->deploy('build')->getExitCode());
+        $databaseHash = hash_file('sha256', $this->directory.'/source.sqlite');
+        $recovery = $this->process('export PATH="$REHEARSAL_BIN:/usr/bin:/bin"; set -e; git checkout --detach "$REHEARSAL_PREVIOUS"; composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader; php artisan optimize:clear; php artisan app:release-preflight --strict-production --require-android-push; npm ci --prefer-offline --no-audit; npm run build; php artisan optimize; php artisan queue:restart; php artisan up', 'success');
+        $recovery->run();
+        $this->assertSame(0, $recovery->getExitCode(), $recovery->getErrorOutput());
+        $this->assertSame(self::PREVIOUS, $this->state()['code']);
+        $this->assertFalse($this->state()['maintenance']);
+        $this->assertSame($databaseHash, hash_file('sha256', $this->directory.'/source.sqlite'));
+        $this->assertUnchangedDatabase();
+    }
+
+    public function test_partial_migration_recovery_uses_fresh_database_and_retains_failed_state(): void
+    {
+        $this->assertNotSame(0, $this->deploy('migration')->getExitCode());
+        $state = $this->state();
+        $failedHash = hash_file('sha256', $this->directory.'/source.sqlite');
+        $this->assertSame($state['backup_sha256'], hash_file('sha256', $this->directory.'/verified.sqlite'));
+        $recoveryPath = $this->directory.'/recovery.sqlite';
+        $this->assertFileDoesNotExist($recoveryPath);
+        $this->assertTrue(copy($this->directory.'/verified.sqlite', $recoveryPath));
+        $db = new PDO('sqlite:'.$recoveryPath);
+        $identity = $db->query('PRAGMA database_list')->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame(strtolower($recoveryPath), strtolower(str_replace('\\', '/', $identity['file'])));
+        $this->assertSame(1, (int) $db->query('SELECT COUNT(*) FROM business_fixture')->fetchColumn());
+        $this->assertSame(0, (int) $db->query("SELECT COUNT(*) FROM sqlite_master WHERE name = 'schema_v2'")->fetchColumn());
+        $this->assertSame($failedHash, hash_file('sha256', $this->directory.'/source.sqlite'));
+        $this->assertSame(self::PREVIOUS, $state['backup_code']);
+        $this->assertTrue($state['maintenance']);
+        // Target is validated, but cutover remains a separate approval, not an automatic test action.
+    }
+
+    public function test_operator_reestablishes_maintenance_after_post_deploy_http_smoke_failure(): void
+    {
+        $this->assertSame(0, $this->deploy('success')->getExitCode());
+        $socket = stream_socket_server('tcp://127.0.0.1:0');
+        $this->assertIsResource($socket);
+        $address = stream_socket_get_name($socket, false);
+        fclose($socket);
+        file_put_contents($this->directory.'/router.php', '<?php http_response_code(503); echo "Synthetic smoke failure";');
+        $server = new Process([PHP_BINARY, '-n', '-S', $address, $this->directory.'/router.php'], $this->directory);
+        $server->disableOutput();
+        $server->start();
+        try {
+            $context = stream_context_create(['http' => ['ignore_errors' => true, 'timeout' => 1]]);
+            $response = false;
+            for ($attempt = 0; $attempt < 50 && $response === false; $attempt++) {
+                usleep(20000);
+                $response = @file_get_contents('http://'.$address.'/smoke', false, $context);
+            }
+            $this->assertSame('Synthetic smoke failure', $response);
+            $this->assertStringContainsString('503', $http_response_header[0]);
+            $hold = $this->process('export PATH="$REHEARSAL_BIN:/usr/bin:/bin"; php artisan down --retry=60', 'success');
+            $hold->run();
+            $this->assertSame(0, $hold->getExitCode());
+            $this->assertTrue($this->state()['maintenance']);
+            $this->assertSame(self::TARGET, $this->state()['code']);
+            $this->assertSame('complete', $this->state()['migration']);
+        } finally {
+            $server->stop();
+        }
     }
 
     private function deploy(string $scenario, string $target = self::TARGET): Process
@@ -159,6 +250,7 @@ class DeploymentScriptTest extends TestCase
             'REHEARSAL_PHP' => str_replace('\\', '/', PHP_BINARY),
             'REHEARSAL_EXTENSION_DIR' => str_replace('\\', '/', ini_get('extension_dir')),
             'REHEARSAL_SCENARIO' => $scenario, 'REHEARSAL_TARGET' => $target,
+            'REHEARSAL_PREVIOUS' => self::PREVIOUS,
         ], timeout: 60);
     }
 

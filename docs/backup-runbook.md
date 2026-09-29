@@ -240,6 +240,7 @@ target. The following is an illustrative schema, not an executed deployment:
   "backup_sha256": "4b68e9f2913e61c5c47864f7831d683a3089d8713028cf56d353b34b6f199e82",
   "backup_verification": "PASS",
   "offsite_replication": "PASS",
+  "production_offsite_readiness": "independent-retrieval-evidence-reference",
   "migrations_applied": ["2026_08_29_000001_example.php"],
   "migration_status_before": "private-evidence-reference",
   "migration_status_after": "private-evidence-reference",
@@ -293,7 +294,7 @@ Inspect and Apply Deliberate Forward Migrations (php artisan migrate:status / mi
               ↓
 Execute Preflight & Smoke Test against Recovery DB
               ↓
-Controlled Cutover to Recovery DB (update connection / rename database)
+Controlled Cutover to Recovery DB (approved connection switch on all runtimes)
               ↓
 Retain Prior Broken DB for Forensic Review Until Final Acceptance
 ```
@@ -304,81 +305,143 @@ Retain Prior Broken DB for Forensic Review Until Final Acceptance
 - Record incident timeline, target recovery time, and affected systems.
 
 #### 2. Enter Maintenance Mode & Drain Queues
+Retain/re-establish the external traffic and writer hold on every node first.
+Drain in-flight work and stop scheduler/producers/workers through the approved
+environment procedure; concrete commands are PENDING RC-11 ENVIRONMENT
+VERIFICATION. `queue:restart` is only a cached restart signal, not a drain or
+stop acknowledgment. The repository defines no `kojaya-worker` systemd unit.
+
 ```bash
-php artisan down --retry=60 --secret="<APPROVED_RECOVERY_TOKEN>"
+php artisan down --retry=60
 php artisan queue:restart
-# Stop queue workers on the server (systemctl stop kojaya-worker)
 ```
+
+Do not put a maintenance bypass secret in command arguments or evidence.
+Use the approved private operator ingress path during smoke verification.
 
 #### 3. Select & Verify Recovery Source Artifact
 ```bash
 # Check status and locate intended backup artifact
 php artisan backup:status
 
-# Verify checksum and archive listing before touching database
-sha256sum --check kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump.sha256
-pg_restore --list kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump > /tmp/restore_table_manifest.txt
+# Verify the specific managed artifact and both provenance companions
+php artisan backup:verify "$BACKUP_PATH" --disk="$BACKUP_DISK"
 ```
+
+The operator sets these non-secret artifact identifiers from the approved
+incident record. Check manifest `application_git_sha`, environment, database
+identity, creation time, format/size and SHA-256 against the incident and RC-05
+policy. `backup:status`/latest alone is not backup selection. Verify independent
+retrieval when recovering from offsite. Preserve the manifest and checksum with
+the dump. A missing/mismatched companion or archive failure means STOP.
 
 #### 4. Preserve Existing State & Create Empty Recovery Target Database
 ```bash
-# Take a safety snapshot of the broken/current state before any changes
-pg_dump --format=custom --file=/var/backups/kojaya/pre_recovery_broken_state_$(date +%s).dump kojaya_erp
-
-# Create new empty recovery database
-createdb kojaya_recovery_20260829
+# Only after exact source/target and private paths are approved:
+set -euo pipefail
+umask 077
+: "${FAILED_DB:?Approved failed database required}"
+: "${FAILED_STATE_DUMP:?Approved private preservation path required}"
+: "${RECOVERY_DB:?Approved fresh recovery database required}"
+[[ "$RECOVERY_DB" =~ ^kojaya_recovery_[a-zA-Z0-9_]+$ ]] || exit 1
+[[ "$RECOVERY_DB" != "$FAILED_DB" ]] || exit 1
+test ! -e "$FAILED_STATE_DUMP"
+pg_dump --format=custom --file="$FAILED_STATE_DUMP" "$FAILED_DB"
+createdb "$RECOVERY_DB"
 ```
+
+Keep the failed DB intact. The recovery target must be a new, independently
+approved `kojaya_recovery_<incident>` name on the approved server, distinct from
+every live/shared DB. Confirm the actual server identity, role and TLS privately;
+credentials come from the protected connection mechanism, never shell arguments.
+If preservation fails, stop and escalate rather than overwriting the only copy.
 
 #### 5. Execute Restore into Empty Recovery Database
 ```bash
-# Restore into the empty recovery target database
-pg_restore --no-owner --no-acl --exit-on-error --dbname=kojaya_recovery_20260829 kojaya-production-kojaya_erp-20260829T132000Z-138963f.dump
+# Check runtime identity and emptiness on the approved recovery server.
+set -euo pipefail
+: "${RECOVERY_DB:?Approved fresh recovery database required}"
+: "${VERIFIED_LOCAL_DUMP:?Approved verified private archive required}"
+[[ "$RECOVERY_DB" =~ ^kojaya_recovery_[a-zA-Z0-9_]+$ ]] || exit 1
+test "$(psql -X -v ON_ERROR_STOP=1 --dbname="$RECOVERY_DB" -Atc 'SELECT current_database()')" = "$RECOVERY_DB" || exit 1
+test "$(psql -X -v ON_ERROR_STOP=1 --dbname="$RECOVERY_DB" -Atc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','S','v','m','f')")" = '0' || exit 1
+pg_restore --no-owner --no-acl --exit-on-error --dbname="$RECOVERY_DB" "$VERIFIED_LOCAL_DUMP"
 ```
+
+`VERIFIED_LOCAL_DUMP` is the privately retrieved, verified artifact above, not
+an arbitrary export. Do not add `--clean` or `--create`. A restore failure can
+leave a partial recovery DB: retain it for inspection and keep traffic held;
+never cut over merely because some tables exist. Reconcile schema/migration
+ledger, representative counts, referential/financial invariants and required
+private files/key versions before application use. Reconciliation of post-backup
+writes, outboxes and provider-side payments needs explicit business approval;
+blindly replaying jobs can duplicate external effects.
 
 #### 6. Application Code Alignment, Config Cache Clear, and Migration After Restore
 1. **Checkout Application Revision:** Check out the exact Git commit SHA recorded in the manifest (`application_git_sha`).
    ```bash
-   git checkout <manifest_git_sha>
+   git checkout --detach <EXACT_40_CHARACTER_MANIFEST_COMMIT_SHA>
    ```
-2. **Clear Caching Layers Immediately:** Clear all cached configuration, routes, and views before establishing recovery database context to prevent stale configuration pollution.
-   ```bash
-   php artisan optimize:clear
-   ```
+   Use an isolated approved recovery checkout and preserve the matching existing
+   APP/PII keys. Stage source/lockfiles first; prepare step 2 before running any
+   dependency hooks or Artisan command. Do not call `bin/deploy.sh` as a restore shortcut: it would
+   create another backup and run migrations automatically.
+2. **Prepare Isolated Runtime:** Do not copy cached production configuration.
+   Configure the recovery DB and isolated cache/session/queue/storage context
+   privately before booting the app. Disable producers/workers/provider sends.
+   Account for `DB_URL`, which can override `DB_DATABASE`; changing only one
+   environment variable is not connection proof. Do not clear a shared live
+   cache from the recovery runtime.
+   Restore the manifest SHA's Composer and frontend lockfile dependencies/assets
+   only in this prepared isolated runtime; review hooks before execution.
 3. **Establish Recovery DB Context & Verify Runtime DB Identity:**
-   Configure the recovery database target context:
-   ```bash
-   export DB_DATABASE=kojaya_recovery_20260829
-   ```
    Execute an explicit runtime PostgreSQL verification query to prove that the application runtime is actively connected to the intended recovery database:
    ```bash
    php artisan tinker --execute="echo 'Connected DB: ' . DB::selectOne('SELECT current_database() as db')->db . PHP_EOL;"
    ```
    > [!CRITICAL]
-   > The output MUST strictly equal `kojaya_recovery_20260829`. If the output does not match or indicates the live production database, **STOP IMMEDIATELY**. Never execute migrations or commands before runtime database identity is proven.
+   > The output MUST strictly equal the approved `RECOVERY_DB`; server identity
+   > must also match the approved recovery server. Otherwise STOP. Prove identity
+   > again after any configuration/cache/connection change before migration.
 4. **Inspect Migration Status:**
    ```bash
    php artisan migrate:status
    ```
 5. **Review Migration Plan:** Confirm the list of unapplied migrations and verify that no destructive operations are pending.
-6. **Apply Forward-Only Migrations Deliberately:**
+6. **Preflight Before Deliberate Forward Migrations:**
+   Run `php artisan app:release-preflight --strict-production --require-android-push`
+   with the approved production configuration. Failure means STOP. Use the
+   separate QA candidate procedure for QA; never relax production preflight.
+   Preserve the proven runtime identity while clearing/rebuilding only isolated
+   recovery caches. Apply only the reviewed forward set, if any is needed.
    Only after runtime DB identity is proven and reviewed:
    ```bash
    php artisan migrate --force
    ```
 7. **Execute Release Preflight:**
    ```bash
-   php artisan app:release-preflight --strict-production
+   php artisan app:release-preflight --strict-production --require-android-push
    ```
 
 #### 7. Cutover, Post-Recovery Smoke Test, and Exit Maintenance
-1. Update production configuration `DB_DATABASE=kojaya_recovery_20260829` (or rename database after disconnecting sessions).
-2. Verify essential business entities (Users, Members, Accounting Ledgers, POS Products).
-3. Start queue workers (`systemctl start kojaya-worker`).
-4. Exit maintenance mode:
+1. Obtain recovery approval after proving the isolated app uses the fresh recovery
+   DB and the manifest-aligned source. Verify essential business entities (Users,
+   Members, Accounting Ledgers, POS Products) through non-mutating checks.
+2. Switch approved connection configuration on **all** app/worker/scheduler
+   runtimes; rebuild caches and verify effective DB identity on each. No ad hoc
+   database rename/drop is part of this runbook. Keep external ingress/producers
+   held throughout; topology-specific cutover is pending RC-11 verification.
+3. Optimize the aligned runtime, signal queue restart, and verify new processes
+   through the approved supervisor procedure while preventing job consumption.
+4. Exit application maintenance only for restricted operator smoke acceptance:
    ```bash
    php artisan up
    ```
-5. Retain prior broken database (`kojaya_erp` or safety dump) for forensic and auditing purposes until sign-off.
+5. Complete the [RC-09 smoke matrix](releases/PHASE-5-BUNDLE-B.md#rc-09--operator-smoke-and-reopening), obtain sign-off, then reopen traffic/resume producers in the approved order. On failure, re-establish maintenance and retain the hold.
+6. Retain the prior broken DB and safety dump until recovery sign-off. Record
+   incident timestamp, failed/previous/backup/final recovered SHA, observed DB
+   migration state, strategy, backup ID, operator, approver, smoke outcome and
+   final verdict in the incident receipt. No automatic production rollback exists.
 
 ---
 

@@ -136,8 +136,6 @@ The first harness run exposed missing Git Bash PATH and an unavailable fixture
 filesystem helper; both harness issues were corrected using installed tooling.
 No live deployment, provider call, shared DB or real secrets were used.
 
-RC-10 recovery matrix and integrated evidence follow in this same document.
-
 RC-09 focused local gate: **78 tests / 364 assertions PASS**, including script,
 preflight, backup creation/verification and production infrastructure tests;
 Bash syntax, Composer strict validation, Pint and diff whitespace checks PASS.
@@ -146,3 +144,111 @@ the suites passed and authoritative Linux CI is still required.
 **RC-09 local verdict: PASS**, with the listed host/topology checks pending RC-11.
 Because this bundle changes the deployment script/workflow, the proposed source
 candidate is **v1.0.0-rc.6** (no tag; no deployment/version secret changed).
+
+## RC-10 — Failure and recovery decision matrix
+
+Code rollback changes source/dependencies/assets. Database recovery selects and
+restores a consistent data/key/file recovery point. They require different
+evidence. No automatic production rollback is introduced.
+
+| Failure boundary | Immediate state / stop point | Recovery decision and final acceptance |
+| --- | --- | --- |
+| Invalid SHA, dirty worktree, fetch/resolve failure | Before backup/down/checkout; prior code and DB untouched | Record failure; repair prerequisite and reapprove target. No rollback. External hold may be released only after confirming previous runtime is healthy. |
+| Backup/checksum/manifest/archive/required offsite failure | Backup gate exits before application maintenance, source checkout or DB migration | Preserve diagnostic/artifacts privately; fix backup gate. Previous app stays in its prior state. No restore or code rollback. |
+| Maintenance command or checkout fails before source changes | Maintenance active or uncertain; current SHA must be inspected | Keep external hold. Prove prior code/dependencies/DB intact; remove application maintenance for restricted smoke, then release hold only after sign-off. No unnecessary DB restore. |
+| Composer/cache-clear/preflight/npm/build failure after checkout, before migration | New code/dependencies may be partial; no deployment migration issued; maintenance retained | Verify ledger and DB unchanged, then restore previous exact code, lockfile dependencies/assets, isolated caches and worker runtime. Run production preflight and restricted smoke. No DB restore normally required. |
+| Migration command fails | Earlier migrations may already be committed, failed migration may be partial | Keep new code/maintenance/hold. Inspect actual ledger **and schema/data**, classify untouched/partial/complete, preserve failed state. Choose reviewed forward correction when safe, or separately approved verified fresh-DB recovery. |
+| Optimize/queue-restart/up fails after migration | Migrations completed but runtime may be partial; maintenance must be verified | Repair runtime/config under hold where schema-compatible. Do not infer that old code is compatible. Code rollback requires clone-proven compatibility; otherwise forward repair or fresh-DB recovery. |
+| Script exits zero; operator HTTP/auth/API smoke fails | Application maintenance has been removed, but external hold must remain | Re-enter maintenance if runtime works; keep network hold even if it cannot. Inspect whether migrations ran, classify root cause below, then use the corresponding recovery path. Never announce success from script exit alone. |
+
+Before DB migration, an approved code-only recovery sequence is:
+
+```text
+retain external hold and maintenance
+→ prove previous exact SHA exists and DB ledger/data unchanged
+→ checkout previous exact SHA (never reset --hard/clean)
+→ install previous Composer lockfile / rebuild previous frontend lockfile assets
+→ clear/rebuild caches for the approved runtime; re-run strict production preflight
+→ queue restart signal + actual supervisor/process verification under worker hold
+→ artisan up for restricted operator smoke
+→ approve receipt, reopen traffic/resume workers
+```
+
+Do not blindly rerun the full deployment script for rollback; it also migrates.
+Do not use `migrate:rollback`, `migrate:reset`, `migrate:fresh`, `migrate:refresh`,
+`db:wipe`, broad reseeding, or disabling PII rollback guards as a recovery shortcut.
+If any stage of recovery fails, keep the hold and incident open.
+
+### Failures after coming online
+
+| Finding | Decision boundary |
+| --- | --- |
+| HTTP/login/assets fail; DB compatible | Diagnose host/runtime/cache/assets/session configuration; repair within approved SHA or prove previous code compatibility. No automatic DB restore. |
+| FCM/mail/integration unavailable | Preserve outbox/provider state, fix approved configuration/IAM/connectivity and verify delivery in its acceptance scope. Do not erase notification/payment history with a restore or bypass required preflight. |
+| Worker/cache/scheduler unhealthy | Keep affected producers/traffic held, verify connection namespaces/supervision/permissions and restart actually observed workers. A restart signal alone is insufficient. |
+| DB unreachable | Verify effective connection/network/credentials through protected channels. Connectivity failure alone is not corruption and does not justify restoration. |
+| Schema or data incompatibility/corruption | Preserve current DB and ledger; rehearse forward repair or approve the fresh-DB recovery procedure below. Account for post-backup writes and external side effects. |
+
+### Verified database recovery
+
+Follow the [single restoration contract](../backup-runbook.md#-disaster-recovery--production-restore-runbook):
+preserve failed DB → select approved backup → verify managed manifest/checksum/
+archive and code/key provenance → create fresh isolated empty recovery DB →
+restore with exit-on-error → reconcile schema/ledger/data/private files → use
+manifest-aligned code and dependencies → prove effective application connection
+to the new DB (including DB_URL/config cache overrides) → preflight → deliberately
+review/apply forward migrations if required → smoke → approved fleet cutover.
+
+Never restore over the live/populated DB, drop it, or automatically delete a failed
+recovery target. Keep prior state for investigation until sign-off. Record every
+incident/recovery decision using the receipt fields in the backup runbook,
+including incident UTC timestamp, failed and previous SHA, DB migration state,
+strategy, backup ID if used, operator, approver, recovered SHA and smoke result.
+
+## Rehearsal scope and limits
+
+`DeploymentScriptTest` executes the real `bin/deploy.sh` and actual YAML Bash
+validation/identity steps in a unique OS temporary directory. Commands that
+would reach GitHub, providers, dependencies or Laravel are replaced by a recorded
+fixture. The source DB is a newly created SQLite file with one synthetic row;
+the migration scenario commits one DDL step then executes genuinely invalid SQL.
+The smoke scenario starts a loopback-only PHP fixture returning HTTP 503.
+No production or shared `kojaya_erp` connection is used.
+
+| Injected scenario | Observed contract required by the test | Final rehearsal state / recovery |
+| --- | --- | --- |
+| Symbolic/short/malformed SHA; dirty status; fetch/resolve/backup failure | Nonzero before down/checkout/migration, source DB unchanged | Previous code online; stop and correct prerequisite. |
+| Down/checkout/composer/cache/preflight/npm/build failure | No migration/up, conservative maintenance retained, stage identified | DB unchanged. Separate code recovery restores prior code/dependencies and online fixture without DB changes. |
+| Real SQLite migration failure after committed DDL | Partial schema persists; no automatic old-code checkout or `up` | New code, maintenance active. Restore verified fixture copy into a **new** DB, prove connection/rows/schema; failed DB hash unchanged, cutover withheld. |
+| Optimize/restart/up failure after migration | DB complete, failure reports migrated boundary | New code and maintenance retained for runtime repair/compatibility review. |
+| HTTP 503 after successful script | Operator failure is distinct from script success | Re-establish maintenance; preserve new code and migrated DB pending classified recovery. |
+
+These prove shell ordering, stop/maintenance decisions and a disposable DB/HTTP
+failure boundary. They do not claim real dependency install, production TLS,
+multi-host draining, PostgreSQL lock behavior or end-to-end Laravel deployment.
+Existing backup/preflight/migration/readiness suites separately exercise the real
+Laravel services; PostgreSQL restore is also required in authoritative CI.
+Actual topology and production-snapshot rehearsal remain **PENDING RC-11
+ENVIRONMENT VERIFICATION**. No scenario is promoted to production PASS from stubs.
+
+## RC-10 and integrated local gate
+
+**RC-10 local verdict: PASS.** The 28 deployment contract/recovery tests cover
+the scenarios above (242 assertions). Full focused Bundle B validation completed
+with **132 tests / 639 assertions, zero failures/errors/skips** on isolated SQLite:
+DeploymentScriptTest, DatabaseMigrationSafetyTest, ReleasePreflightTest,
+BackupDatabaseCommandTest, BackupVerificationTest, BackupStatusCommandTest,
+BackupRetentionTest, Sprint4ProductionInfrastructureTest, Phase4ReadinessGateTest,
+PhaseDProductionSmokeTest, PiiMigrationGuardTest and
+PiiDatabaseMigrationsCompatibilityTest.
+
+On Windows the first HTTP-fixture runs needed manual fixture-process termination
+because the restricted process token could not stop the child server. Those runs
+are not the acceptance evidence. The focused HTTP case and complete 132-test gate
+were rerun with permission to manage their own loopback fixture and finished
+normally (the full gate took 56 seconds). The fixture emits only synthetic 503
+content. No production access or shared database reset occurred.
+
+Bash syntax, Composer strict validation, Pint for the changed PHP tests/fixture,
+and diff whitespace checks PASS. No application API, financial behavior, schema,
+dependency, Android file, production secret or provider configuration changed.

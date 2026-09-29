@@ -475,4 +475,34 @@ review, not connected to Nginx or the serving application. FIX-02B addresses
 the synthetic populated-data branch only. RC-11 still requires actual QA
 backup/offsite retrieval/restore, PII key and provider readiness, deployment
 approvals and candidate smoke, plus any policy-required real-snapshot proof.
-FIX-03 and Phase 6 have not started.
+FIX-03's local primary backup was verified, but no approved independent offsite
+target was configured; the drill stopped before transfer or restore. Phase 6
+has not started.
+
+
+## 15. RC-11-FIX-03 independent offsite backup and restore drill — 2026-09-29
+
+**RC-11-FIX-03 BLOCKED — OFFSITE TARGET REQUIRED.** The exact rc.7 candidate
+`0b02ad2441c1e4e8ca5f41933e33597246c07b9b` was verified in the isolated
+rehearsal worktree. The retained synthetic QA-like source identity matched its
+expected rehearsal role/database, with 182 migrations applied. A structural
+count snapshot was recorded privately; the source had no unvalidated
+constraints or invalid indexes.
+
+The repository-supported primary backup completed and passed managed
+verification and health checks. The primary artifact checksum matched its
+managed manifest and companion record. These checks establish the primary
+backup only.
+
+No approved independent offsite destination was configured. The run stopped at
+the required boundary: there was no replication, independent retrieval, fresh
+recovery database, restore, post-restore structural reconciliation, repeated
+migration check, or recovery application smoke. Offsite/retrieved checksum
+equality is therefore not proven.
+
+The serving QA checkout was not changed. Queue and scheduler controls were
+left unchanged; no worker or scheduler was started. No source switch, migration,
+seed, import, provider delivery, or Phase 6 activity occurred. RC-11 remains
+BLOCKED pending an approved independent offsite target and the subsequent
+retrieval/restore evidence, plus its remaining PII/integration, approval, and
+candidate-acceptance blockers.

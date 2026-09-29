@@ -27,6 +27,22 @@
   approvals and candidate acceptance remain. RC-11-FIX-02 is next; Phase 6
   was not started.
 
+## 2026-09-29 - RC-11-FIX-03 independent backup and recovery
+
+- Exact `v1.0.0-rc.7` candidate `0b02ad2441c1e4e8ca5f41933e33597246c07b9b`
+  and the isolated synthetic FIX-02B source identity were verified. The source
+  had 182 applied migrations; a sanitized structural snapshot and PostgreSQL
+  constraint/index checks were retained privately.
+- The repository-supported primary backup completed; managed verification and
+  backup health checks passed. Its checksum matched the local manifest and
+  companion record.
+- No approved independent offsite destination was configured. Per the stop
+  condition, no transfer, independent retrieval, recovery database, restore, or
+  post-restore reconciliation was attempted. Serving QA and queue/scheduler
+  controls were left unchanged.
+- **RC-11-FIX-03 BLOCKED — OFFSITE TARGET REQUIRED.** RC-11 remains blocked;
+  Phase 6 was not started.
+
 ## 2026-09-29 - Phase 5 RC-11 QA Deployment Readiness
 
 - Verified the requested `main` SHA `007130ee1ecb527a8a7c324ec271c46b984c3881`

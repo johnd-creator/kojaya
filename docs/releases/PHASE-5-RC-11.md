@@ -219,7 +219,7 @@ Anggota were not modified; future Kojaya production uses a separate server.
 | FIX-01C | Shared www-data PHP runtime and world-readable secrets → non-login kojayaqa account, dedicated PHP 8.4 pool/socket and Kojaya-only Nginx routing were installed. PHP-FPM and Nginx config tests passed. Serving .env and cached config are mode 640 with the Kojaya runtime group; private storage is restricted. Independent queue service and scheduler timer were installed stopped/disabled, with an absent readiness marker preventing premature starts. Public SSH ED25519 fingerprint: SHA256:AYwyGhVd8pMnxf3Ipt4eUSE7gnHkOfH909Ne/cs8MZw. |
 | FIX-01D | Unexercised hold, broad PostgreSQL firewall rule and missing HTTP redirect → Kojaya-only hold returned external 503 while loopback smoke on port 18080 returned 200; restoration returned HTTPS 200. Waspro stayed at local 302 and Anggota at local 404. PostgreSQL metadata showed only Kojaya databases, no active remote clients and authentication limited to loopback/private LAN; UFW 5432 was narrowed to the private LAN and broad IPv4/IPv6 permits removed. After the owner's Cloudflare rule was deployed, independent checks returned 308 for HTTP root and /test?x=1 to identical HTTPS path/query, HTTPS /login returned 200 with valid TLS, and the chain reached HTTPS /login in two redirects without a loop. |
 
-### Updated RC-11 blocker matrix
+### RC-11 blocker matrix as of FIX-01D
 
 | Area | Current status | Remaining boundary |
 | --- | --- | --- |
@@ -242,3 +242,86 @@ remains out of scope. No deploy, migration, seed, import, restore, PAY-006,
 provider delivery, or worker/scheduler activation was performed. The next
 planned task is **RC-11-FIX-02 — PostgreSQL migration and production-like data
 rehearsal**; it was not started here.
+
+
+## 12. RC-11-FIX-02 PostgreSQL rehearsal — 2026-09-29
+
+**Verdict: RC-11-FIX-02 BLOCKED. RC-11 remains BLOCKED.** The exact runtime
+candidate `007130ee1ecb527a8a7c324ec271c46b984c3881` was checked out in the
+isolated `/var/www/kojaya/rc11-fix02` worktree; the serving checkout remained
+at `878b3678d4d29bec635d918ebbd98d9367878b2a`. Composer and npm installed
+from unchanged lockfiles, and only the isolated worktree was built. No source
+file or lockfile changed.
+
+The private rehearsal environment used `APP_ENV=qa`, PostgreSQL database
+`kojaya_qa`, and role `kojaya_qa_app`. Direct PostgreSQL identity and Laravel
+resolved configuration matched before every mutating Artisan command. The
+initial QA database had zero public objects. All **182** candidate migrations
+applied in about **15.5 seconds**; `migrate:status` showed none pending and a
+repeat `migrate --force` reported nothing to migrate. The RC-03-approved default
+production-safe seeder ran twice. Counts were stable at 16 roles, 129
+permissions, one synthetic QA organization, zero members/users, and unchanged
+reference totals. The synthetic organization label is rehearsal-only and is
+not an approved production identity. The QA release preflight passed, and
+`admin:create` availability plus invalid-input rejection were verified without
+creating an administrator.
+
+The owner approved the existing `kojaya` development database as sanitized
+rehearsal input. It was read only. A private dump was restored into the
+new Kojaya-only `kojaya_qa_upgrade_rehearsal` database and deleted after the
+restore. The source had **176** applied migrations and about 30 MB of data; the
+six pending September migrations applied in about **0.24 seconds**. All 182
+migrations then showed as applied. Source and upgraded-copy counts matched:
+one member, one organization, one user, two permissions, zero roles, and zero
+payments, ledger entries, POS transactions/products/categories, store
+accounts, receipts and payment intents. PostgreSQL reported zero unvalidated
+constraints. This source is too sparse to exercise the POS ownership backfills,
+payment/ledger reconciliation, or realistic volume/lock behavior. No approved
+member import CSV was supplied, so import preview was validated through tests
+only; no bulk import ran. PAY-006 dry-run is not applicable to this dataset
+because it has no payment records or legacy proof references.
+
+Static review classifies September POS transaction/category ownership
+backfills, tenant-scoped unique indexes, and daily-closing type/uniqueness
+changes as **HIGH** upgrade risk for populated data. Their `down()` paths can
+also reject duplicates created after migration. A separate **HIGH rollback
+defect** was reproduced on disposable PostgreSQL test database `kojaya_test`:
+`2026_06_23_010000_add_metadata_to_cooperative_ledger_entries_table.php`
+line 57 executes `DROP INDEX IF EXISTS coop_ledger_source_entry_unique` in
+`down()`, but PostgreSQL reports SQLSTATE `2BP01` because that index backs the
+same-named table constraint. DatabaseMigrations teardown therefore failed in
+nine POS and six authentication test cases. This is a source defect in the
+exact candidate, not a failed forward migration. The source was not patched;
+a corrected candidate and repeat rollback rehearsal are required. The
+disposable test database was removed after evidence capture.
+
+Targeted PostgreSQL test results: migration safety **11 tests/14 assertions
+PASS**, member-import preview **23/241 PASS**, payment-proof private storage
+**14/63 PASS**, and finance ledger **15/510 PASS**. POS **9 cases/87
+assertions with 9 teardown errors** and authentication **6 cases/13
+assertions with 6 teardown errors** are not credited as passing. The first
+attempt using repository-default SQLite could not run database-backed tests
+because the host PHP CLI has no SQLite driver; the guarded PostgreSQL test
+profile supplied valid database-backed evidence. No QA worker, scheduler,
+Phase 6 deployment, PAY-006 execution, real-data import, or source switch
+occurred.
+
+### Current RC-11 blocker matrix after FIX-02
+
+| Area | Status | Evidence / next requirement |
+| --- | --- | --- |
+| QA host isolation, identity, TLS, traffic hold, firewall | PASS | FIX-01A–01D evidence retained above; serving application remains unchanged. |
+| Exact source and dependency installation | PASS | Exact SHA and clean isolated worktree; lockfiles unchanged. |
+| Empty QA PostgreSQL migration and bootstrap | PASS (rehearsal) | 182 migrations; production-safe seed twice without count drift; preflight passed. |
+| Production-like upgrade on available sanitized source | PARTIAL | Six migrations applied and structural counts matched, but business data are too sparse for payment, ledger and POS backfills or realistic volume. |
+| PostgreSQL rollback/retry readiness | BLOCKED | Candidate `down()` fails with SQLSTATE 2BP01 on a constraint-backed index; corrected RC source and repeat proof required. |
+| Member import / PAY-006 evidence | BLOCKED / NOT APPLICABLE | No approved import CSV; no legacy payment-proof rows in available dataset. |
+| Actual QA backup, independent offsite retrieval and restore | BLOCKED | Rehearsal dump is not a QA backup or recovery drill. |
+| PII historical keys and QA integrations | BLOCKED | Historical decryption and provider readiness remain unverified. |
+| GitHub deployment approvals and candidate acceptance | BLOCKED | Reviewer/environment protections and Phase 6 smoke remain pending. |
+| Host backup plus restore capacity | PARTIAL | Disk free-space observation only; complete backup/restore capacity not proven. |
+
+The next FIX-02 action is to correct the PostgreSQL rollback migration in a new
+reviewed RC candidate, obtain a richer approved sanitized dataset (including
+payments, ledger, POS and import cases), and repeat the isolated rehearsal.
+This task does not authorize Phase 6 or RC-11-FIX-03.

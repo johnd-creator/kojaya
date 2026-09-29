@@ -252,3 +252,40 @@ content. No production access or shared database reset occurred.
 Bash syntax, Composer strict validation, Pint for the changed PHP tests/fixture,
 and diff whitespace checks PASS. No application API, financial behavior, schema,
 dependency, Android file, production secret or provider configuration changed.
+
+## Bundle self-review and handoff
+
+Reviewed the full baseline-to-candidate diff against the requested acceptance
+criteria. Corrections include workflow symbolic-ref rejection, exact commit
+identity comparison, dirty-worktree refusal, conservative maintenance failure
+reporting, explicit `/up` maintenance exemption, and manual smoke/receipt status.
+The recovery runbook no longer implies a known systemd unit, an argument-visible
+maintenance secret, a restore without managed provenance, or a DB identity proved
+only by setting DB_DATABASE. It rejects non-recovery target names and nonempty
+targets and preserves previous/failed data. No preflight or backup gate was relaxed.
+
+The changed-file secret-signature check found no private-key header, GitHub token
+or AWS access-key signature. This is a bounded diff review, not a whole-history
+secret/security scan. Local Markdown link targets and `git diff --check` passed.
+Application tests are isolated; production deploy workflow was never dispatched.
+
+Logical commits: `93728287` (RC-09), `fe2bc372` (RC-10), followed by the bundle
+evidence/closure-correction commit. Files: deployment workflow/script, backup
+runbook, this dossier, Bundle A closure update, development log, deployment
+contract test and its command fixture. No backend dependency or schema change.
+
+**BUNDLE_LOCAL_VERDICT: PASS.** Proposed source candidate: **v1.0.0-rc.6** because
+deployment behavior changed. No release tag created/pushed. Full authoritative
+CI on the pushed candidate remains required; PR metadata will record exact SHA,
+run/event/status, tests/assertions/failures/errors/skips/coverage and mandatory
+jobs. This pre-push record does not claim an unexecuted CI result. No automatic
+merge is authorized; final exact-main CI is required after any later integration.
+
+RC-11 prerequisites: environment approvals/access, immutable QA-approved target,
+stable production version decision, host/runtime capacity, actual pending-ledger
+snapshot rehearsal, all-host traffic/worker/scheduler hold and cutover commands,
+SSH identity/protected deployment environment, production TLS/cookies/key/ACL
+checks, Firebase/IAM and other enabled providers, and independent offsite
+retrieval/recovery sign-off. Android live runtime acceptance remains Phase 6
+QA-06. After Bundle B CI PASS, recommended next task is RC-11 — QA Deployment
+Readiness Gate; it is not started by this task.

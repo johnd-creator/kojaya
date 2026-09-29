@@ -133,7 +133,7 @@
 
 - Implemented `php artisan cooperative:reset-test-data` command and `CooperativeTestDataResetService` closing gap G-09 from SEED-01:
   - Scoped strictly to fixture-owned synthetic identities and natural keys; production and manually maintained records remain outside cleanup scope.
-  - Total cleanup of legacy cooperative demo namespaces (`DEMO-KOP-*`, `DEMO-ANG-*`, demo users).
+  - Total cleanup of legacy cooperative demo namespaces (legacy synthetic member records and demo users).
   - Strict preservation of operator/reference configuration (e.g. customized `WAJIB.default_amount`, customized `LoanType` parameters).
   - Strict preservation of manually maintained QA cooperative records and unrelated ERP data (`Employee`, `Payroll`, `Department`, etc.).
   - UI audit fixtures remain preserved and isolated from reset.

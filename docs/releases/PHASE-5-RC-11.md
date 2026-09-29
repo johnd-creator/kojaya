@@ -100,8 +100,8 @@ The test configuration `phpunit.xml` forces SQLite `:memory:`. Its PostgreSQL
 companion targets a disposable local test database; this assessment did not run
 that configuration against the workstation PostgreSQL service. The authoritative
 CI PostgreSQL evidence used isolated GitHub Actions service databases.
-No shared the default local development database connection, reset, broad seed, production dataset, or
-member import was used.
+No shared local development database connection, reset, broad seed, production
+dataset, or member import was used.
 
 ## 5. Backup, recovery, integrations and operations
 
@@ -207,9 +207,9 @@ the QA target and supply safe, non-secret evidence for the blocked prerequisites
 ## 11. QA host evidence progression — FIX-01A through FIX-01D
 
 This section updates the host findings above without erasing the original
-blocked assessment. The owner classified the shared host as development/QA; no application there
-is an authoritative production workload. A neighboring application's
-production environment label was a configuration classification finding and
+blocked assessment. The owner classified the shared host as development/QA; no
+application there is an authoritative production workload. A neighboring
+application's production environment label was a configuration classification finding and
 was left unchanged. Future Kojaya production uses a separate server.
 
 | Step | Previous status → current evidence |
@@ -236,9 +236,9 @@ was left unchanged. Future Kojaya production uses a separate server.
 | GitHub deployment approvals and Phase 6 acceptance | BLOCKED | Environment/reviewer protection evidence and candidate smoke are absent. |
 
 **FIX-01D / QA HOST HARDENING: PASS. RC-11: BLOCKED.** This is host
-infrastructure readiness, not approval to start Phase 6. Neighboring application configuration
-remained unchanged; its baseline response does not establish functional health
-and remains out of scope. No deploy, migration, seed, import, restore, PAY-006,
+infrastructure readiness, not approval to start Phase 6. Neighboring
+application configuration remained unchanged; its baseline response does not
+establish functional health and remains out of scope. No deploy, migration, seed, import, restore, PAY-006,
 provider delivery, or worker/scheduler activation was performed. The next
 planned task is **RC-11-FIX-02 — PostgreSQL migration and production-like data
 rehearsal**; it was not started here.
@@ -248,13 +248,13 @@ rehearsal**; it was not started here.
 
 **Verdict: RC-11-FIX-02 BLOCKED. RC-11 remains BLOCKED.** The exact runtime
 candidate `007130ee1ecb527a8a7c324ec271c46b984c3881` was checked out in the
-isolated worktree; the serving checkout remained unchanged. Composer and npm installed
-from unchanged lockfiles, and only the isolated worktree was built. No source
+isolated worktree; the serving checkout remained unchanged. Composer and npm
+installed from unchanged lockfiles, and only the isolated worktree was built. No source
 file or lockfile changed.
 
 The private rehearsal environment used QA configuration, a dedicated
-PostgreSQL database, and a dedicated application role. Direct PostgreSQL identity and Laravel
-resolved configuration matched before every mutating Artisan command. The
+PostgreSQL database, and a dedicated application role. Direct PostgreSQL
+identity and Laravel resolved configuration matched before every mutating Artisan command. The
 initial QA database had zero public objects. All **182** candidate migrations
 applied in about **15.5 seconds**; `migrate:status` showed none pending and a
 repeat `migrate --force` reported nothing to migrate. The RC-03-approved default
@@ -266,10 +266,10 @@ not an approved production identity. The QA release preflight passed, and
 creating an administrator.
 
 The owner approved the existing development database as sanitized
-rehearsal input. It was read only. A private dump was restored into the
-new Kojaya-only dedicated rehearsal database and deleted after the
-restore. The source had **176** applied migrations and a small synthetic dataset; the
-six pending September migrations applied in about **0.24 seconds**. All 182
+rehearsal input. It was read only. A private dump was restored into a new
+dedicated rehearsal database and deleted after the restore. The source had
+**176** applied migrations and a small synthetic dataset; the six pending
+September migrations applied in about **0.24 seconds**. All 182
 migrations then showed as applied. Source and upgraded-copy counts matched:
 one member, one organization, one user, two permissions, zero roles, and zero
 payments, ledger entries, POS transactions/products/categories, store
@@ -333,8 +333,7 @@ Section 12 preserves the rc.6 failure at
 `007130ee1ecb527a8a7c324ec271c46b984c3881`; it has not been recast as a
 passing rehearsal. FIX-02A is on dedicated fix PR #93, with candidate source
 commit `d241e2af0f532e9cef17f37cb4afb44411133063`. No tag was created and
-the serving QA checkout still points to
-`878b3678d4d29bec635d918ebbd98d9367878b2a`.
+the serving QA checkout was not changed.
 
 On a newly created disposable PostgreSQL test database, the unmodified
 rc.6 migration set applied all 182 migrations. Direct catalog inspection showed

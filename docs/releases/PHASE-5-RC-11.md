@@ -325,3 +325,57 @@ The next FIX-02 action is to correct the PostgreSQL rollback migration in a new
 reviewed RC candidate, obtain a richer approved sanitized dataset (including
 payments, ledger, POS and import cases), and repeat the isolated rehearsal.
 This task does not authorize Phase 6 or RC-11-FIX-03.
+
+
+## 13. RC-11-FIX-02A PostgreSQL rollback remediation — 2026-09-29
+
+**RC-11-FIX-02A PASS; QA rollback defect remediated. RC-11 remains BLOCKED.**
+Section 12 preserves the rc.6 failure at
+`007130ee1ecb527a8a7c324ec271c46b984c3881`; it has not been recast as a
+passing rehearsal. FIX-02A is on dedicated fix PR #93, with candidate source
+commit `d241e2af0f532e9cef17f37cb4afb44411133063`. No tag was created and
+the serving QA checkout still points to
+`878b3678d4d29bec635d918ebbd98d9367878b2a`.
+
+On a newly created disposable PostgreSQL `kojaya_test` database, the unmodified
+rc.6 migration set applied all 182 migrations. Direct catalog inspection showed
+`coop_ledger_source_entry_unique` is a UNIQUE constraint with a same-named
+backing index on `cooperative_ledger_entries`; the earlier June 13 POS ledger
+migration created that constraint. Rolling back the June 23 metadata migration
+reproduced SQLSTATE `2BP01` from `DROP INDEX IF EXISTS`. The minimal fix leaves
+the earlier constraint/index intact and drops the index only when PostgreSQL
+reports it is standalone. Forward migration behavior was unchanged.
+
+The repaired migration rolled back successfully: the `metadata` column and its
+migration row were removed, while the earlier constraint and index each
+remained present once. Re-applying the target migration restored the column
+without duplicates. A full rollback of the disposable database then completed
+with the migration's explicit test-only PII rollback flag enabled; it left zero
+migration rows, no application tables and no orphan ledger index. All 182
+migrations reapplied successfully. The disposable database was removed after
+testing. The new real-PostgreSQL regression covers both preservation of the
+pre-existing constraint and deletion/re-application of a standalone index:
+**2 tests, 23 assertions PASS**.
+
+Previously failing PostgreSQL suites now pass: POS **9/87**, authentication
+**6/13**, finance ledger **15/510**, and private payment proof **14/63**
+(tests/assertions). Pint, strict Composer validation, OpenAPI drift, UI baseline
+integrity and PHPUnit shard verification passed locally. The new regression is
+registered in the existing PostgreSQL CI suite and excluded from the
+SQLite-only default suite; no test was disabled to hide a failure. The host PHP
+CLI lacks SQLite support, so the complete backend suite and UI audit were
+validated through PR CI. All four PHPUnit shards passed: **3,374 tests, 27,751
+assertions**. CI run 36568087976 passed every job, including PostgreSQL
+Concurrency, migration/seed, OpenAPI, frontend build, Pint, dependency audit,
+PHPUnit aggregation and the Phase 4 readiness gate. UI Audit run 36568087932
+also passed. PR #93's merge ref `d444b7c1a69d57097642f3db50787a248343a01e`
+has the same Git tree (`452c8b4f15579954d09993d14ae287566ac74a03`)
+as candidate commit `d241e2af0f532e9cef17f37cb4afb44411133063`, so
+CI validated the exact candidate source tree. The candidate is designated
+`v1.0.0-rc.7` for review; no tag was created.
+
+FIX-02A does not clear the separate RC-11 blockers from section 12: the
+approved sanitized dataset lacks representative payment, ledger, POS and
+member-import cases; actual QA backup/offsite retrieval/restore, historical PII
+key and provider readiness, deployment approvals, and Phase 6 candidate smoke
+remain outstanding. FIX-02B and Phase 6 have not started.

@@ -6,6 +6,25 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 29, 2026
 
+## 2026-09-29 - RC-11-FIX-01A through FIX-01D QA host hardening
+
+- Owner classified bslahosting as shared DEV/QA after FIX-01A stopped on
+  Waspro's misleading APP_ENV=production label. Waspro and Anggota remained
+  unchanged; Anggota's observed 404 is not a functional health baseline.
+- FIX-01B fetched authoritative main without changing the serving checkout,
+  created an empty dedicated QA PostgreSQL database/role and protected local
+  backup path. FIX-01C installed a dedicated Kojaya runtime and PHP-FPM pool,
+  protected secrets/private storage, and prepared stopped/disabled queue and
+  scheduler units guarded against premature start.
+- FIX-01D exercised a Kojaya-only public 503 hold with loopback smoke and
+  restoration, narrowed UFW 5432 to the approved private LAN, and verified
+  the owner's Cloudflare HTTP-to-HTTPS 308 rule preserves path/query. HTTPS
+  login returned 200; the redirect chain had no loop.
+- **QA HOST HARDENING PASS; RC-11 BLOCKED.** Migration/data rehearsal, QA
+  backup/offsite retrieval/restore, PII and integration proof, deployment
+  approvals and candidate acceptance remain. RC-11-FIX-02 is next; Phase 6
+  was not started.
+
 ## 2026-09-29 - Phase 5 RC-11 QA Deployment Readiness
 
 - Verified the requested `main` SHA `007130ee1ecb527a8a7c324ec271c46b984c3881`

@@ -203,3 +203,42 @@ reviewed/merged RC-11 PR, and full exact-head `main` CI. Do not start Phase 6
 until the gate is cleared. No `v1.0.0-rc.7` is proposed because no runtime
 source changed; no tag was created. The next action is to provision and identify
 the QA target and supply safe, non-secret evidence for the blocked prerequisites.
+
+## 11. QA host evidence progression — FIX-01A through FIX-01D
+
+This section updates the host findings above without erasing the original
+blocked assessment. The owner classified bslahosting as a shared development/QA
+host; no application there is an authoritative production workload. Waspro's
+APP_ENV=production was a configuration classification finding. Waspro and
+Anggota were not modified; future Kojaya production uses a separate server.
+
+| Step | Previous status → current evidence |
+| --- | --- |
+| FIX-01A | Unknown host/workload classification → inspection found Kojaya, Waspro and an Anggota site; Waspro's environment label triggered a safe stop pending owner classification. |
+| FIX-01B | No isolated QA database/source proof → owner confirmed shared DEV/QA use; an empty UTF-8 kojaya_qa database and nonsuperuser kojaya_qa_app role were created. The generated credential is in a mode-600 ignored server-side file, and a private QA backup directory was prepared. Fetch made required main commit 007130ee1ecb527a8a7c324ec271c46b984c3881 available; the serving checkout remains clean at ancestor 878b3678d4d29bec635d918ebbd98d9367878b2a. No candidate checkout or migration occurred. |
+| FIX-01C | Shared www-data PHP runtime and world-readable secrets → non-login kojayaqa account, dedicated PHP 8.4 pool/socket and Kojaya-only Nginx routing were installed. PHP-FPM and Nginx config tests passed. Serving .env and cached config are mode 640 with the Kojaya runtime group; private storage is restricted. Independent queue service and scheduler timer were installed stopped/disabled, with an absent readiness marker preventing premature starts. Public SSH ED25519 fingerprint: SHA256:AYwyGhVd8pMnxf3Ipt4eUSE7gnHkOfH909Ne/cs8MZw. |
+| FIX-01D | Unexercised hold, broad PostgreSQL firewall rule and missing HTTP redirect → Kojaya-only hold returned external 503 while loopback smoke on port 18080 returned 200; restoration returned HTTPS 200. Waspro stayed at local 302 and Anggota at local 404. PostgreSQL metadata showed only Kojaya databases, no active remote clients and authentication limited to loopback/private LAN; UFW 5432 was narrowed to the private LAN and broad IPv4/IPv6 permits removed. After the owner's Cloudflare rule was deployed, independent checks returned 308 for HTTP root and /test?x=1 to identical HTTPS path/query, HTTPS /login returned 200 with valid TLS, and the chain reached HTTPS /login in two redirects without a loop. |
+
+### Updated RC-11 blocker matrix
+
+| Area | Current status | Remaining boundary |
+| --- | --- | --- |
+| QA host classification, SSH identity and source availability | PASS | Shared DEV/QA host approved; public SSH fingerprint recorded; required source fetched but not deployed. |
+| Runtime, secrets, private storage and domain/TLS | PASS (host) | Dedicated Kojaya PHP pool and protected files; HTTPS and edge redirect verified. Candidate acceptance remains pending. |
+| Traffic/writer hold | PASS (host control) | Public 503, loopback smoke and restoration rehearsed; Phase 6 must apply the hold around its deployment. |
+| Queue and scheduler control | PASS (prepared) | Kojaya-only units are stopped/disabled and require a deployment-readiness marker; activation awaits acceptance. |
+| PostgreSQL target and firewall | PASS (host preparation) | Empty dedicated QA database and private-LAN-only UFW rule; schema and migration acceptance remain untested. |
+| Local backup storage | PASS (prerequisite) | Private directory exists; no actual QA backup or restore is credited. |
+| Host capacity | PARTIAL | 16 CPUs, 15 GiB RAM and approximately 75 GiB root free observed; backup plus temporary restore capacity remains unproved. |
+| Migration snapshot and production-like data rehearsal | BLOCKED | No approved snapshot, forward migration ledger or reconciliation; next task is RC-11-FIX-02. |
+| Offsite backup, independent retrieval and QA restore | BLOCKED | No offsite receipt, independently retrieved artifact or restore into a fresh QA recovery target. |
+| PII keys and provider integrations | BLOCKED | Historical decryption and QA-safe Firebase, payment, SSO, mail and other provider readiness remain unverified. |
+| GitHub deployment approvals and Phase 6 acceptance | BLOCKED | Environment/reviewer protection evidence and candidate smoke are absent. |
+
+**FIX-01D / QA HOST HARDENING: PASS. RC-11: BLOCKED.** This is host
+infrastructure readiness, not approval to start Phase 6. Anggota configuration
+remained unchanged; its baseline 404 does not establish functional health and
+remains out of scope. No deploy, migration, seed, import, restore, PAY-006,
+provider delivery, or worker/scheduler activation was performed. The next
+planned task is **RC-11-FIX-02 — PostgreSQL migration and production-like data
+rehearsal**; it was not started here.

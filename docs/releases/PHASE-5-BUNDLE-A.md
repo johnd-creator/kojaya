@@ -2,6 +2,14 @@
 
 ## Baseline and scope
 
+**Closure update (2026-09-29): Bundle A backend CLOSED.** PR #90 merged normally
+as `d167ae9d2f0be265cab69d1da073970401801710`; exact-main
+[CI 36493519192](https://github.com/johnd-creator/kojaya/actions/runs/36493519192)
+passed (3,346 tests / 27,509 assertions, zero failures/errors/skips, 81.41%).
+The release owner carried Android live runtime acceptance to Phase 6 QA-06 and
+production Firebase/IAM to RC-11. Earlier pre-push BLOCKED statements below are
+historical, superseded by this closure. Required production push preflight remains.
+
 - Audit date: 2026-09-28 (Asia/Jakarta).
 - Clean starting main: `7acc96bd706127e6945e8beff730fd1ae564e902`, after PR #89.
 - Branch: `astra/phase5-bundle-a-rc06-rc08`; one integrated push/PR after local gates.

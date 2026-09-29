@@ -4,7 +4,25 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 28, 2026
+**Last Updated:** September 29, 2026
+
+## 2026-09-29 - Bundle B RC-09 / RC-10
+
+- RC-09 rejects symbolic deployment refs before workflow checkout and requires
+  exact SHA equality at both workflow and server boundaries. Dirty deployment
+  worktrees abort before backup/maintenance; failures report stage and DB boundary.
+- Documented the operator deployment sequence, external fleet hold, explicit
+  non-business-mutating smoke acceptance and authoritative sanitized receipt.
+  Production FCM/preflight stays mandatory; QA Android acceptance remains QA-06.
+- Initial RC-09 focused gate: 78 tests / 364 assertions PASS on isolated SQLite;
+  Bash syntax, Composer validation, Pint and diff checks PASS. No production run.
+- RC-10 classifies pre/post-migration failures, preserves failed databases and
+  requires verified provenance plus a fresh empty recovery target. Reconciled
+  runtime connection proof, supervisor boundaries and required FCM preflight.
+- Failure-injection contract tests use isolated command fixtures, actual SQLite
+  partial DDL and loopback HTTP 503. Integrated gate: 132 tests / 639 assertions
+  PASS after rerunning with Windows child-process cleanup permission. No live
+  deployment/rollback; host topology and snapshot acceptance remain RC-11.
 
 ## 2026-09-28 - Bundle A RC-06 / RC-07 / RC-08
 

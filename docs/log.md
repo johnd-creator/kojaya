@@ -6,6 +6,22 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 29, 2026
 
+## 2026-09-29 - Phase 5 RC-11 QA Deployment Readiness
+
+- Verified the requested `main` SHA `007130ee1ecb527a8a7c324ec271c46b984c3881`
+  and full exact-main CI #487 success; candidate source tree remains `rc.6`.
+- Repository deployment SHA/backup/preflight contract, synthetic member import
+  authorization, backup tooling, and Phase 6 smoke-plan review passed.
+- Local isolated validation: 228 tests / 1,356 assertions plus the deployment
+  harness 28 / 242, all passing. Exact-main PostgreSQL CI also passed migration,
+  concurrency, and restore-drill suites.
+- **RC-11 BLOCKED:** no identified Linux QA target or PostgreSQL snapshot/data
+  rehearsal; QA offsite/recovery, traffic/worker/scheduler controls, TLS/storage/
+  PII/FCM config, trusted SSH host identity and deployment approvals lack
+  environment evidence. GitHub reports `main` unprotected and no environments.
+- No production access, migration, restore, data import, provider delivery,
+  source-code change or release tag. Phase 6 has not started.
+
 ## 2026-09-29 - Bundle B RC-09 / RC-10
 
 - RC-09 rejects symbolic deployment refs before workflow checkout and requires

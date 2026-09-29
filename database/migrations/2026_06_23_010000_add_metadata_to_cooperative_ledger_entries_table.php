@@ -42,8 +42,8 @@ return new class extends Migration
     }
 
     /**
-     * Hapus unique index `coop_ledger_source_entry_unique` untuk driver
-     * non-SQLite secara idempotent agar rollback migration bersih.
+     * Remove a standalone unique index without dropping a PostgreSQL constraint
+     * created by the earlier POS ledger migration.
      */
     private function dropUniqueSourceEntryIndex(): void
     {
@@ -54,7 +54,15 @@ return new class extends Migration
         }
 
         if ($driver === 'pgsql') {
-            DB::statement('DROP INDEX IF EXISTS coop_ledger_source_entry_unique');
+            $constraint = DB::selectOne(<<<'SQL'
+                SELECT 1 FROM pg_constraint
+                WHERE conrelid = 'public.cooperative_ledger_entries'::regclass
+                  AND conindid = to_regclass('public.coop_ledger_source_entry_unique')
+            SQL);
+
+            if ($constraint === null) {
+                DB::statement('DROP INDEX IF EXISTS coop_ledger_source_entry_unique');
+            }
 
             return;
         }

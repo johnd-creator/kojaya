@@ -81,6 +81,23 @@ if [[ ! "$previous_sha" =~ ^[0-9a-fA-F]{40}$ || "$previous_sha" == "${ref,,}" ]]
     exit 1
 fi
 
+serving_env="$serving_dir/.env"
+if [[ ! -f "$serving_env" || -L "$serving_env" ]]; then
+    printf 'Serving runtime configuration must be a regular non-symlink file.\n' >&2
+    exit 1
+fi
+serving_env_metadata="$(stat -c '%u:%g:%a' -- "$serving_env" 2>/dev/null)" || {
+    printf 'Cannot determine serving runtime configuration security metadata.\n' >&2
+    exit 1
+}
+IFS=: read -r serving_env_uid serving_env_gid serving_env_mode <<< "$serving_env_metadata"
+if ! [[ "$serving_env_uid" =~ ^[0-9]+$ && "$serving_env_gid" =~ ^[0-9]+$ && "$serving_env_mode" =~ ^[0-7]{3,4}$ ]] \
+    || (( (8#$serving_env_mode & 0440) != 0440 )) \
+    || (( (8#$serving_env_mode & 07137) != 0 )); then
+    printf 'Serving runtime configuration permissions do not match the private PHP-FPM-readable contract.\n' >&2
+    exit 1
+fi
+
 attestation_epoch="$(sed -n 's/^created_at_epoch=//p' "$traffic_attestation")"
 now_epoch="$(date +%s)"
 if ! [[ "$attestation_epoch" =~ ^[0-9]{10}$ ]] || (( attestation_epoch > now_epoch || now_epoch - attestation_epoch > 900 )) \
@@ -155,12 +172,10 @@ mkdir -p "$recovery_root"
 chmod 0700 "$recovery_root"
 recovery_dir="$(mktemp -d "$recovery_root/run.XXXXXXXX")"
 chmod 0700 "$recovery_dir"
-# Preserve the currently serving runtime file only after all no-cutover gates pass.
-if [[ ! -f "$serving_dir/.env" || -L "$serving_dir/.env" ]]; then
-    printf 'Serving runtime configuration is not a regular file.\n' >&2
-    exit 1
-fi
-install -m 0600 "$serving_dir/.env" "$recovery_dir/.env.previous"
+# Preserve the currently serving runtime contents in the private recovery directory.
+install -m 0600 "$serving_env" "$recovery_dir/.env.previous"
+printf '%s:%s:%s\n' "$serving_env_uid" "$serving_env_gid" "$serving_env_mode" > "$recovery_dir/.env.previous-metadata"
+chmod 0600 "$recovery_dir/.env.previous-metadata"
 printf '%s\n' "$previous_sha" > "$recovery_dir/previous-sha"
 printf '%s\n' "${ref,,}" > "$recovery_dir/target-sha"
 printf '%s\n' 'not-started' > "$recovery_dir/migration-state"
@@ -176,7 +191,17 @@ restore_before_migration() {
     if [[ "$serving_mutated" == true && "$migration_started" != true ]]; then
         printf 'Recovering pre-migration QA checkout and runtime configuration.\n' >&2
         git -C "$serving_dir" checkout --detach "$previous_sha" || restore_status=1
-        install -m 0600 "$recovery_dir/.env.previous" "$serving_dir/.env" || restore_status=1
+        local restore_env_temp
+        if restore_env_temp="$(mktemp "$serving_dir/.env.qa-restore.XXXXXXXX")"; then
+            if ! install -o "$serving_env_uid" -g "$serving_env_gid" -m "$serving_env_mode" \
+                "$recovery_dir/.env.previous" "$restore_env_temp" \
+                || ! mv -f -- "$restore_env_temp" "$serving_env"; then
+                rm -f -- "$restore_env_temp"
+                restore_status=1
+            fi
+        else
+            restore_status=1
+        fi
         (cd "$serving_dir" && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader) || restore_status=1
         (cd "$serving_dir" && npm ci --prefer-offline --no-audit && npm run build) || restore_status=1
         clear_local_caches "$serving_dir" || restore_status=1
@@ -208,8 +233,13 @@ trap on_exit EXIT
 
 failure_stage=runtime-config
 serving_mutated=true
-install -m 0600 "$runtime_env" "$serving_dir/.env.qa-new"
-mv -f "$serving_dir/.env.qa-new" "$serving_dir/.env"
+serving_env_temp="$(mktemp "$serving_dir/.env.qa-new.XXXXXXXX")"
+if ! install -o "$serving_env_uid" -g "$serving_env_gid" -m "$serving_env_mode" "$runtime_env" "$serving_env_temp" \
+    || ! mv -f -- "$serving_env_temp" "$serving_env"; then
+    rm -f -- "$serving_env_temp"
+    printf 'Cannot atomically install QA runtime configuration with approved serving metadata.\n' >&2
+    exit 1
+fi
 clear_local_caches "$serving_dir"
 
 failure_stage=maintenance

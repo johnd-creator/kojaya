@@ -526,3 +526,45 @@ PR merge, FIX-04, or Phase 6 activity occurred.
 | Host backup plus restore capacity | PARTIAL | Complete capacity proof remains outstanding. |
 
 RC-11 remains BLOCKED on the items above. PR #92 remains open and unmerged.
+
+## 16. RC-11-FIX-04A PII classification and FCM QA readiness — 2026-09-30
+
+**RC-11-FIX-04A PASS; RC-11 remains BLOCKED.** Verification used exact rc.7
+candidate `0b02ad2441c1e4e8ca5f41933e33597246c07b9b` in the isolated QA
+workspace.
+
+Historical production PII is **NOT APPLICABLE** for this first production
+release: the approved rc.7 populated-data rehearsal used synthetic records and
+copied no production data; the owner-classified shared host has no authoritative
+production workload, and future Kojaya production uses a separate server. No
+historical production ciphertext or keys were represented as present. Current
+PII configuration, key-map/version validation, key distinction, service
+resolution, and rollback guard passed the application release preflight.
+
+The QA FCM HTTP v1 configuration now resolves the QA project and a protected
+runtime credential. The credential JSON parsed successfully, its project
+identity matched the configured QA project, and the application provider
+validated it. The credential is outside the repository and public webroot,
+with directory mode `0750` and file mode `0640`; access is limited to the
+credential owner and the dedicated Kojaya PHP-FPM runtime group. Credential
+identities, filenames, locations, project identifier, and key material are
+intentionally omitted. The legacy FCM server key is absent.
+
+Both `php artisan app:release-preflight --no-interaction` and
+`php artisan app:release-preflight --strict-release-candidate
+--require-android-push --no-interaction` passed. A non-send OAuth readiness
+check using the Firebase messaging scope succeeded; the access token remained
+process-local and was discarded. No FCM notification or device test was sent.
+
+Runtime environment hygiene passed: the isolated `.env` is ignored and
+untracked, mode `0600`, outside the public webroot, and an HTTP probe to the
+`.env` resource returned `403`. A streaming scan covered all 663 reachable Git
+commits and the current tracked tree. It found no high-confidence credential
+patterns; six generic assignment matches were reviewed as test-only
+placeholders. No credential value was printed or added to repository history.
+
+The serving checkout and database were unchanged; no deployment, migration,
+seed/import, queue or scheduler start, provider delivery, PR merge, or Phase 6
+work occurred. PR #92 remains open and unmerged. RC-11 remains BLOCKED on the
+other outstanding capacity, serving-QA backup/deployment, approval, and
+candidate-acceptance evidence.

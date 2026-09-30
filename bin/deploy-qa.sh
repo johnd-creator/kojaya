@@ -114,9 +114,23 @@ if [[ -z "$systemctl_bin" ]]; then
     printf 'Cannot verify Kojaya QA queue and scheduler service state.\n' >&2
     exit 1
 fi
-queue_state="$(systemctl show --property=ActiveState --value kojaya-queue.service 2>/dev/null || true)"
-scheduler_state="$(systemctl show --property=ActiveState --value kojaya-scheduler.timer 2>/dev/null || true)"
-scheduler_enabled="$(systemctl is-enabled kojaya-scheduler.timer 2>/dev/null || true)"
+queue_unit='kojaya-qa-queue.service'
+scheduler_timer='kojaya-qa-schedule.timer'
+if ! queue_load_state="$(systemctl show --property=LoadState --value "$queue_unit" 2>/dev/null)" \
+    || ! scheduler_load_state="$(systemctl show --property=LoadState --value "$scheduler_timer" 2>/dev/null)"; then
+    printf 'Cannot verify that the required Kojaya QA queue and scheduler units are installed.\n' >&2
+    exit 1
+fi
+if [[ "$queue_load_state" != loaded || "$scheduler_load_state" != loaded ]]; then
+    printf 'Required Kojaya QA queue and scheduler units must both be installed.\n' >&2
+    exit 1
+fi
+if ! queue_state="$(systemctl show --property=ActiveState --value "$queue_unit" 2>/dev/null)" \
+    || ! scheduler_state="$(systemctl show --property=ActiveState --value "$scheduler_timer" 2>/dev/null)"; then
+    printf 'Cannot verify the installed Kojaya QA queue and scheduler state.\n' >&2
+    exit 1
+fi
+scheduler_enabled="$(systemctl is-enabled "$scheduler_timer" 2>/dev/null || true)"
 if [[ "$queue_state" != inactive || "$scheduler_state" != inactive || "$scheduler_enabled" != disabled ]]; then
     printf 'Kojaya QA queue must be stopped and scheduler must be stopped and disabled.\n' >&2
     exit 1

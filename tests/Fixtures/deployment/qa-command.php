@@ -45,14 +45,18 @@ if ($tool === 'git') {
         $state['migration'] = $failure ? 'partial' : 'completed';
     }
 } elseif ($tool === 'systemctl') {
-    if ($scenario === 'queue' && in_array('kojaya-queue.service', $args, true)) {
-        echo 'active';
-    } elseif ($scenario === 'scheduler' && in_array('kojaya-scheduler.timer', $args, true)) {
-        echo in_array('is-enabled', $args, true) ? 'enabled' : 'active';
+    $unit = end($args);
+    $property = current(array_filter($args, static fn (string $argument): bool => str_starts_with($argument, '--property=')));
+    if (str_starts_with((string) $property, '--property=LoadState')) {
+        $missingQueue = $scenario === 'queue-missing' && $unit === 'kojaya-qa-queue.service';
+        $missingScheduler = $scenario === 'scheduler-missing' && $unit === 'kojaya-qa-schedule.timer';
+        echo $missingQueue || $missingScheduler ? 'not-found' : 'loaded';
+    } elseif (str_starts_with((string) $property, '--property=ActiveState')) {
+        $queueActive = $scenario === 'queue-active' && $unit === 'kojaya-qa-queue.service';
+        $schedulerActive = $scenario === 'scheduler-active' && $unit === 'kojaya-qa-schedule.timer';
+        echo $queueActive || $schedulerActive ? 'active' : 'inactive';
     } elseif (in_array('is-enabled', $args, true)) {
-        echo 'disabled';
-    } else {
-        echo 'inactive';
+        echo $scenario === 'scheduler-enabled' && $unit === 'kojaya-qa-schedule.timer' ? 'enabled' : 'disabled';
     }
 } elseif ($tool === 'npm' && $args[0] === 'ci' && $scenario === 'candidate-dependencies') {
     $failure = true;

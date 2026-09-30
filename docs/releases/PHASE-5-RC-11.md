@@ -480,29 +480,49 @@ target was configured; the drill stopped before transfer or restore. Phase 6
 has not started.
 
 
-## 15. RC-11-FIX-03 independent offsite backup and restore drill — 2026-09-29
+## 15. RC-11-FIX-03 independent offsite backup and restore drill — 2026-09-30
 
-**RC-11-FIX-03 BLOCKED — OFFSITE TARGET REQUIRED.** The exact rc.7 candidate
-`0b02ad2441c1e4e8ca5f41933e33597246c07b9b` was verified in the isolated
-rehearsal worktree. The retained synthetic QA-like source identity matched its
-expected rehearsal role/database, with 182 migrations applied. A structural
-count snapshot was recorded privately; the source had no unvalidated
-constraints or invalid indexes.
+**RC-11-FIX-03 PASS for the isolated rc.7 recovery rehearsal; RC-11 remains
+BLOCKED.** The exact candidate `0b02ad2441c1e4e8ca5f41933e33597246c07b9b`
+was used with the retained sanitized rehearsal source. Its primary backup
+passed managed verification. A dedicated Google Drive location and separate
+client-side encryption remote were configured locally; only the encrypted
+backup was uploaded. The encrypted remote object was verified, then independently
+retrieved and decrypted into a new local artifact. The retrieved artifact's
+SHA-256 and size matched the verified primary backup.
 
-The repository-supported primary backup completed and passed managed
-verification and health checks. The primary artifact checksum matched its
-managed manifest and companion record. These checks establish the primary
-backup only.
+A new empty recovery database, separate from the source and serving QA
+database, was verified before restore. Restore used only the independently
+retrieved artifact and completed successfully in one transaction. Representative
+table counts matched the rehearsal source. Constraint and index reconciliation
+passed with no unvalidated constraints, invalid indexes, or orphan relationships.
+The source and recovery databases had the same 182 migration records. Migration
+status showed 182 ran and none pending; a repeat `php artisan migrate --force`
+returned `Nothing to migrate`.
 
-No approved independent offsite destination was configured. The run stopped at
-the required boundary: there was no replication, independent retrieval, fresh
-recovery database, restore, post-restore structural reconciliation, repeated
-migration check, or recovery application smoke. Offsite/retrieved checksum
-equality is therefore not proven.
+Read-only Eloquent smoke checks passed across seven representative model and
+relationship groups against the recovery database. No FCM, email, SMS, payment
+provider, queue, or other external integration was invoked. The encrypted remote
+backup is retained for RC-11 review. Credentials, encryption material, remote
+identifiers, local paths, database identities, and raw checksums remain private.
 
-The serving QA checkout was not changed. Queue and scheduler controls were
-left unchanged; no worker or scheduler was started. No source switch, migration,
-seed, import, provider delivery, or Phase 6 activity occurred. RC-11 remains
-BLOCKED pending an approved independent offsite target and the subsequent
-retrieval/restore evidence, plus its remaining PII/integration, approval, and
-candidate-acceptance blockers.
+This proves backup, independent retrieval, and recovery for the isolated
+sanitized rehearsal dataset; the serving QA database was deliberately untouched.
+The serving checkout remained unchanged, and the Kojaya queue and scheduler
+remained stopped and disabled. No deployment, seed, import, provider delivery,
+PR merge, FIX-04, or Phase 6 activity occurred.
+
+### Current RC-11 blocker matrix after FIX-03
+
+| Area | Status | Evidence / next requirement |
+| --- | --- | --- |
+| QA host isolation and controls | PASS | FIX-01A–01D evidence remains valid; serving application was not changed. |
+| Exact rc.7 source and synthetic populated-data rehearsal | PASS | Exact candidate verified; 182-migration rehearsal source retained. |
+| Encrypted offsite backup, independent retrieval, and recovery restore | PASS (isolated rehearsal) | Encrypted remote object retained; retrieved checksum matched; restore and structural reconciliation passed. |
+| Serving QA database backup or deployment | BLOCKED / NOT RUN | The serving database and checkout were intentionally outside this recovery drill. |
+| Full production-like dataset and policy-required real-snapshot proof | PARTIAL | This rehearsal used the approved sanitized synthetic dataset; any separate real-snapshot requirement remains outstanding. |
+| PII historical keys and QA integrations | BLOCKED | Historical decryption and provider readiness remain unverified. |
+| Deployment approvals and candidate acceptance | BLOCKED | Required approvals and deployment acceptance evidence remain outstanding. |
+| Host backup plus restore capacity | PARTIAL | Complete capacity proof remains outstanding. |
+
+RC-11 remains BLOCKED on the items above. PR #92 remains open and unmerged.

@@ -13,7 +13,9 @@ class VerifyDatabaseBackupCommand extends Command
     protected $signature = 'backup:verify
         {path? : Specific backup path inside the selected disk. Defaults to the latest file in the backup directory}
         {--disk= : Filesystem disk containing the backup}
-        {--directory= : Directory inside the backup disk}';
+        {--directory= : Directory inside the backup disk}
+        {--expected-database= : Require this source database identity}
+        {--require-private-permissions : Require private artifact, manifest, checksum, and directory permissions}';
 
     protected $description = 'Verify the integrity, checksum, and archive contents of a database backup';
 
@@ -42,7 +44,13 @@ class VerifyDatabaseBackupCommand extends Command
         $this->info("Verifying database backup: {$disk}:{$path}");
 
         try {
+            $this->assertPrivatePermissions($disk, $path);
             $manifest = $verificationService->verifyStorageBackup($disk, $path, requireProvenance: true);
+
+            $expectedDatabase = (string) $this->option('expected-database');
+            if ($expectedDatabase !== '' && $manifest->databaseName !== $expectedDatabase) {
+                throw new \RuntimeException('Backup source database identity does not match the requested target.');
+            }
 
             $this->info("Backup verified successfully: {$disk}:{$path}");
             $this->line("Backup ID:   {$manifest->backupId}");
@@ -57,6 +65,40 @@ class VerifyDatabaseBackupCommand extends Command
             $this->error("Backup verification failed: {$e->getMessage()}");
 
             return self::FAILURE;
+        }
+    }
+
+    private function assertPrivatePermissions(string $disk, string $path): void
+    {
+        if (! $this->option('require-private-permissions')) {
+            return;
+        }
+
+        $storage = Storage::disk($disk);
+        if (! method_exists($storage, 'path')) {
+            throw new \RuntimeException('Private filesystem paths cannot be verified for this disk.');
+        }
+
+        $privateRoot = realpath(storage_path('app/private'));
+        $artifactPath = realpath($storage->path($path));
+        if ($privateRoot === false || $artifactPath === false || ! str_starts_with($artifactPath, $privateRoot.DIRECTORY_SEPARATOR)) {
+            throw new \RuntimeException('Backup artifact is outside protected private storage.');
+        }
+
+        foreach ([$artifactPath, $artifactPath.'.json', $artifactPath.'.sha256'] as $privatePath) {
+            $resolvedPath = realpath($privatePath);
+            $permissions = $resolvedPath === false ? false : @fileperms($resolvedPath);
+            if ($resolvedPath === false || ! str_starts_with($resolvedPath, $privateRoot.DIRECTORY_SEPARATOR)
+                || $permissions === false || ($permissions & 0077) !== 0) {
+                throw new \RuntimeException('Backup artifact permissions are not private.');
+            }
+        }
+
+        $resolvedDirectory = realpath(dirname($artifactPath));
+        $directoryPermissions = $resolvedDirectory === false ? false : @fileperms($resolvedDirectory);
+        if ($resolvedDirectory === false || ! str_starts_with($resolvedDirectory, $privateRoot.DIRECTORY_SEPARATOR)
+            || $directoryPermissions === false || ($directoryPermissions & 0077) !== 0) {
+            throw new \RuntimeException('Backup directory permissions are not private.');
         }
     }
 

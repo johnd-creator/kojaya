@@ -1556,3 +1556,18 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Jul 29, 2026 | Admin Koperasi Sidebar Active State | Engineering | Kept the Keuangan Anggota group open for payment and dues routes, normalized active navigation matching to ignore query strings, and added responsive Playwright coverage for active submenu behavior. |
 
 *This log is maintained throughout the project lifecycle. Last updated: August 29, 2026*
+
+## 2026-09-30 - RC-11-FIX-05B QA Cutover Orchestrator
+
+- Added an isolated QA deployment entry point with exact-SHA, clean-worktree,
+  protected-runtime, traffic-hold, and Kojaya-only worker/scheduler gates.
+- Added a Laravel plus independent PostgreSQL identity command that fails
+  closed unless both resolve to `kojaya_qa`; legacy `kojaya` is rejected.
+- Requires rc.7+ QA release-candidate preflight and verified managed backup
+  provenance, source database identity, archive integrity, checksum, and
+  restrictive artifact permissions before serving-checkout mutation.
+- Pre-migration failures restore previous code/configuration and retain the
+  hold; post-migration failures never automate code or database rollback.
+  QA deployment leaves queue/scheduler stopped and external traffic held.
+- Production deploy entry point remains unchanged. No deployment, migration,
+  service change, serving-checkout edit, or production action was performed.

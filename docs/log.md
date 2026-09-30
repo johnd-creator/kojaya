@@ -235,9 +235,6 @@
   - A pending, unverified persona has no decision metadata.
   - An under-review persona has been verified by an Admin and awaits Pengurus approval.
   - A revision-required persona retains the Admin revision decision and guidance.
-Warning: truncated output (original token count: 8336)
-Total output lines: 237
-
   - A rejected persona retains the final Pengurus decision and reason.
   - Active personas retain their verified/approved states and activation dates.
 - Added `blockedUnknown()` factory state to `CooperativeMemberFactory` for isolated unit/feature edge testing without polluting DEV baseline seed.
@@ -366,7 +363,16 @@ Total output lines: 237
 - Repaired `PosSprint3ClosingLockTest::test_void_on_locked_origin_date_is_rejected` by ensuring supervisor fixture belongs to the cashier's organization (`supervisor($cashier)`), properly reaching the closing lock guard.
 - Blocker A (Offline Sync Idempotency): removed divergent early user-org transaction lookup in `PosSyncService::dispatchTransaction()`, delegating directly to `PosTransactionService::create()`, which authoritatively resolves target organization from cart items and enforces tenant-scoped idempotency.
 - Blocker B (Authoritative Member Recheck Anti-TOCTOU): locked `CooperativeMember` with `lockForUpdate()->find($memberId)` inside `PosTransactionService::create()` DB transaction and re-verified non-null `organization_id` matching `targetOrgId` before mutating member credit, store account, points, or ledger.
-- Blocker C (PosReturnService Null Actor Fail-Closed): threw `AuthorizationException` when `$cashier === null` in `PosReturnService::create()`, preventing unauthenticated execution with verified zer…336 tokens truncated…animously belong to a single non-null product organization and agree with member organization when present; unresolved/ambiguous records remain null (fail closed).
+- Blocker C (PosReturnService Null Actor Fail-Closed): threw `AuthorizationException` when `$cashier === null` in `PosReturnService::create()`, preventing unauthenticated execution with verified zero side effects.
+- Blocker D (Migration Down Safety): added pre-flight guard in `down()` checking for cross-organization duplicate non-null `client_reference` values (`HAVING COUNT(*) > 1`), throwing `\LogicException` before any DDL to prevent rollback failures or corruption.
+- Blocker E (Shift Tenant Validation): enforced 4-case fail-closed validation on `pos_cashier_shift_id` in `PosTransactionService::create()`, requiring shift existence, assigned cashier, cashier non-null `organization_id`, and organization equality.
+- Blocker F (Void Product Tenant Integrity): verified locked products in `PosTransactionService::approveVoid()` belong to `transaction.organization_id` before stock restoration or financial reversals.
+- Expanded `PosTransactionVoidOrganizationIsolationTest.php` from 45 to 52 tests (208 assertions) covering all blockers and rollback cases.
+
+## 🎯 2026-09-05 - POS Transaction and Void Organization Isolation (SEC-P1-03)
+
+- Added direct foreign key `organization_id` (UUID nullable) to `pos_transactions` with foreign key constraint, composite index on `['organization_id', 'sold_at']`, and composite unique constraint on `['organization_id', 'client_reference']` (dropping global client reference uniqueness).
+- Implemented deterministic migration backfill resolving legacy transaction organizations when items unanimously belong to a single non-null product organization and agree with member organization when present; unresolved/ambiguous records remain null (fail closed).
 - Implemented `OrganizationScopedModel` on `PosTransaction` (`organization_id`) and `PosVoidRequest` (`transaction.organization_id`).
 - Registered canonical global permissions in `OrganizationScopeService::GLOBAL_PERMISSIONS`: `PosTransaction::class => 'view_cooperative_all'` and `PosVoidRequest::class => 'view_cooperative_all'`. Maintained centralized registry truth (`registeredPaths: 38`, `registeredGlobalPermissions: 33`).
 - Prevented client tenant forgery in `StorePosTransactionRequest` (`'organization_id' => ['prohibited']`) and added validation rule for `'pos_cashier_shift_id'`.

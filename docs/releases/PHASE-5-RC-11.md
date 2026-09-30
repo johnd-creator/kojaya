@@ -607,3 +607,37 @@ Phase-6 QA database target is `kojaya_qa`. Before any Phase-6 deployment, the op
 The rc.7 deployment script validates a full 40-character SHA, exact resolution, and clean worktree, and orders the managed backup before maintenance/checkout/migration. The governance binding is external: owner-approved SHA = `--ref` SHA = resolved SHA. The repository's `main` branch is unprotected; no GitHub reviewer/environment approval gate is claimed. This task supplies no explicit Phase-6 entry approval.
 
 No runtime cutover, deployment, migration, seed/import, restore, queue/scheduler start, or external provider traffic occurred. Phase 6 remains **NOT STARTED**. FIX-01A–01D, FIX-02/02A/02B, FIX-03, and FIX-04A evidence remains as recorded above; capacity and FIX-05A backup/cutover preparation now pass. The only remaining RC-11 gate is explicit owner/release-authority approval for QA-only Phase-6 entry. PR #92 remains open and unmerged.
+
+## 18. RC-11 — RC.8 Reconciliation — 2026-09-30
+
+This section updates the current candidate and gate state. Earlier rc.7 evidence remains historical evidence where its scope was unaffected; it is not evidence for the rc.8 candidate or its changed QA cutover code.
+
+### Authoritative source and exact-main validation
+
+PR #94 is merged. Its merge commit is current origin/main and the exact v1.0.0-rc.8 candidate:
+
+4f3afd8a5940e0ad7735f7e2ffb143a3d8ab9dd5
+
+A clean, isolated worktree resolved to this exact SHA. The rc.7 candidate 0b02ad2441c1e4e8ca5f41933e33597246c07b9b is superseded. The exact-SHA comparison covers the QA deployment orchestrator, Laravel/PostgreSQL identity guard, managed backup verification, serving environment metadata preservation and recovery, contract tests, and runbook/ADR/log changes. It contains no migration-file change. bin/deploy.sh is unchanged.
+
+No CI or Kojaya UI Audit run was found for the exact rc.8 main SHA. This session had no authenticated workflow-dispatch capability; both required exact-main workflow results are therefore BLOCKED / NOT RUN. PR-head CI results are not substituted for exact-main results.
+
+### Candidate deployment and readiness evidence
+
+The exact rc.8 QaDeploymentScriptTest.php suite passed: 18 tests and 127 assertions. It covers exact-SHA and worktree gates, QA database identity, backup ordering/verification, hold and worker controls, candidate env mode, serving env metadata preservation, and pre-migration recovery. Local related legacy deployment and SQLite feature suites could not run because the host PHP CLI lacks pdo_sqlite; they were not used to claim an exact-main CI pass.
+
+The rc.8 qa:deployment-identity --expect=kojaya_qa --no-interaction gate passed. It verified Laravel configuration and an independent PostgreSQL connection resolve to the designated QA database.
+
+The strict release-candidate preflight failed. The sanitized failing checks were PII key-map validity, distinct PII keys, PII service resolution, and required FCM readiness. No secret values or provider requests were emitted.
+
+The rc.8 managed backup of non-serving kojaya_qa and independent backup:verify both passed. The verifier required the expected source database, provenance, archive/checksum integrity, and private artifact and directory permissions. The backup was not restored; no migrations or data changes were performed.
+
+### Serving and approval state
+
+The serving checkout remained at its historical pre-cutover SHA 878b3678d4d29bec635d918ebbd98d9367878b2a; its runtime still identifies the legacy kojaya database. Queue state was inactive. The scheduler timer was inactive, but systemd reported its enablement state as not found, so the required disabled state could not be proven. This control is BLOCKED.
+
+No deployment, migration, seed/import, restore, queue/scheduler start, traffic release, or external provider request occurred. Legacy kojaya was not migrated. kojaya_qa remains the intended Phase-6 target. Phase 6 has NOT STARTED.
+
+The owner approval previously given for rc.7 does not authorize rc.8. New explicit owner approval for exact SHA 4f3afd8a5940e0ad7735f7e2ffb143a3d8ab9dd5 remains required after the technical blockers are cleared. RC-11 remains BLOCKED on exact-main CI/UI Audit, release-preflight readiness, scheduler disabled-state proof, and owner approval.
+
+RC-11-RC8-RECONCILIATION: BLOCKED

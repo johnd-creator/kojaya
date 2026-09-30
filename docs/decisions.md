@@ -1811,3 +1811,36 @@ clear displayed messages. Existing register-device request/response stays intact
 no schema change. This is a coordinated sender/client rollout, not an assertion
 that unknown older clients understand the new payload. Actual device acceptance
 and environment provisioning remain release gates.
+
+## ADR-DEPLOY-QA-001: Separate Fail-Closed QA Cutover
+
+**Status:** Accepted for implementation in RC-11-FIX-05B
+
+### Context
+
+The historical QA serving checkout cannot provide the rc.7 managed pre-deploy
+backup contract, while running the production deployment script from the
+isolated candidate does not switch the serving checkout. The production
+preflight also enforces production-specific gates.
+
+### Decision
+
+Add a dedicated `bin/deploy-qa.sh` path. It requires an exact approved SHA,
+separate clean candidate and serving worktrees, private QA runtime input, a
+fresh owner traffic-hold attestation, and stopped/disabled Kojaya-only worker
+and scheduler units. It verifies both Laravel and independent PostgreSQL
+identity against `kojaya_qa` before backup and again after cutover, then
+performs managed backup verification before touching the serving checkout.
+
+Before migration starts, failures restore the previous code and runtime
+configuration but retain maintenance and the traffic hold. After migration
+starts, the script retains the candidate and database state and requires
+operator recovery. QA deploys never start queue workers or scheduler services;
+external traffic release remains a separate QA acceptance gate.
+
+### Consequences
+
+The existing production `bin/deploy.sh` remains unchanged. QA deployment needs
+an explicit, current traffic-hold attestation and protected runtime file. The
+new source change creates a new release-candidate SHA; the prior rc.7 approval
+does not authorize a later candidate or any production deployment.

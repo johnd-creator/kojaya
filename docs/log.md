@@ -235,6 +235,9 @@
   - A pending, unverified persona has no decision metadata.
   - An under-review persona has been verified by an Admin and awaits Pengurus approval.
   - A revision-required persona retains the Admin revision decision and guidance.
+Warning: truncated output (original token count: 8336)
+Total output lines: 237
+
   - A rejected persona retains the final Pengurus decision and reason.
   - Active personas retain their verified/approved states and activation dates.
 - Added `blockedUnknown()` factory state to `CooperativeMemberFactory` for isolated unit/feature edge testing without polluting DEV baseline seed.
@@ -363,16 +366,7 @@
 - Repaired `PosSprint3ClosingLockTest::test_void_on_locked_origin_date_is_rejected` by ensuring supervisor fixture belongs to the cashier's organization (`supervisor($cashier)`), properly reaching the closing lock guard.
 - Blocker A (Offline Sync Idempotency): removed divergent early user-org transaction lookup in `PosSyncService::dispatchTransaction()`, delegating directly to `PosTransactionService::create()`, which authoritatively resolves target organization from cart items and enforces tenant-scoped idempotency.
 - Blocker B (Authoritative Member Recheck Anti-TOCTOU): locked `CooperativeMember` with `lockForUpdate()->find($memberId)` inside `PosTransactionService::create()` DB transaction and re-verified non-null `organization_id` matching `targetOrgId` before mutating member credit, store account, points, or ledger.
-- Blocker C (PosReturnService Null Actor Fail-Closed): threw `AuthorizationException` when `$cashier === null` in `PosReturnService::create()`, preventing unauthenticated execution with verified zero side effects.
-- Blocker D (Migration Down Safety): added pre-flight guard in `down()` checking for cross-organization duplicate non-null `client_reference` values (`HAVING COUNT(*) > 1`), throwing `\LogicException` before any DDL to prevent rollback failures or corruption.
-- Blocker E (Shift Tenant Validation): enforced 4-case fail-closed validation on `pos_cashier_shift_id` in `PosTransactionService::create()`, requiring shift existence, assigned cashier, cashier non-null `organization_id`, and organization equality.
-- Blocker F (Void Product Tenant Integrity): verified locked products in `PosTransactionService::approveVoid()` belong to `transaction.organization_id` before stock restoration or financial reversals.
-- Expanded `PosTransactionVoidOrganizationIsolationTest.php` from 45 to 52 tests (208 assertions) covering all blockers and rollback cases.
-
-## 🎯 2026-09-05 - POS Transaction and Void Organization Isolation (SEC-P1-03)
-
-- Added direct foreign key `organization_id` (UUID nullable) to `pos_transactions` with foreign key constraint, composite index on `['organization_id', 'sold_at']`, and composite unique constraint on `['organization_id', 'client_reference']` (dropping global client reference uniqueness).
-- Implemented deterministic migration backfill resolving legacy transaction organizations when items unanimously belong to a single non-null product organization and agree with member organization when present; unresolved/ambiguous records remain null (fail closed).
+- Blocker C (PosReturnService Null Actor Fail-Closed): threw `AuthorizationException` when `$cashier === null` in `PosReturnService::create()`, preventing unauthenticated execution with verified zer…336 tokens truncated…animously belong to a single non-null product organization and agree with member organization when present; unresolved/ambiguous records remain null (fail closed).
 - Implemented `OrganizationScopedModel` on `PosTransaction` (`organization_id`) and `PosVoidRequest` (`transaction.organization_id`).
 - Registered canonical global permissions in `OrganizationScopeService::GLOBAL_PERMISSIONS`: `PosTransaction::class => 'view_cooperative_all'` and `PosVoidRequest::class => 'view_cooperative_all'`. Maintained centralized registry truth (`registeredPaths: 38`, `registeredGlobalPermissions: 33`).
 - Prevented client tenant forgery in `StorePosTransactionRequest` (`'organization_id' => ['prohibited']`) and added validation rule for `'pos_cashier_shift_id'`.
@@ -1628,3 +1622,28 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 - Diagnosed the earlier rc.7 managed-backup failure: the isolated candidate runtime had `BACKUP_ENABLED=false`. Enabled the setting only in the protected candidate environment and verified managed backup plus `backup:verify` against non-serving `kojaya_qa`. This is a readiness test, not the Phase-6 pre-deploy backup.
 - Prepared the cutover procedure: hold traffic, keep queue/scheduler stopped, configure runtime to `kojaya_qa`, rebuild configuration cache as required, verify Laravel and direct PostgreSQL identities, and require owner-approved SHA = deployment ref = resolved SHA before deployment. The rc.7 managed pre-deploy backup must pass against `kojaya_qa` before mutation.
 - No serving runtime cutover, deployment, migration, seed/import, restore, queue/scheduler start, or external provider traffic occurred. Phase 6 remains not started; explicit owner approval for QA-only entry is still required. PR #92 remains open and unmerged.
+
+## 2026-09-30 - RC-11-FIX-05B QA Cutover Orchestrator
+
+- Added an isolated QA deployment entry point with exact-SHA, clean-worktree,
+  protected-runtime, traffic-hold, and Kojaya-only worker/scheduler gates.
+- Added a Laravel plus independent PostgreSQL identity command that fails
+  closed unless both resolve to `kojaya_qa`; legacy `kojaya` is rejected.
+- Requires rc.7+ QA release-candidate preflight and verified managed backup
+  provenance, source database identity, archive integrity, checksum, and
+  restrictive artifact permissions before serving-checkout mutation.
+- Pre-migration failures restore previous code/configuration and retain the
+  hold; post-migration failures never automate code or database rollback.
+  QA deployment leaves queue/scheduler stopped and external traffic held.
+- Production deploy entry point remains unchanged. No deployment, migration,
+  service change, serving-checkout edit, or production action was performed.
+
+## 2026-09-30 - RC-11 RC.8 Reconciliation
+
+- Verified PR #94 merged as exact current main candidate 4f3afd8a5940e0ad7735f7e2ffb143a3d8ab9dd5; rc.7 is superseded. The diff adds QA cutover tooling and evidence, contains no migration-file change, and leaves bin/deploy.sh unchanged.
+- Exact rc.8 QA deployment contract: 18 tests / 127 assertions PASS. Laravel and independent PostgreSQL identity checks PASS for kojaya_qa.
+- Strict release-candidate preflight BLOCKED on PII key-map/distinctness/service readiness and required FCM configuration. Managed private backup plus independent verification PASS for non-serving kojaya_qa; no restore or migration was run.
+- No exact-main CI or UI Audit run was available or dispatched in this session; both remain BLOCKED. Queue stayed inactive; scheduler was inactive but its enablement was not found, so disabled state remains unproven.
+- Serving checkout/database remained pre-cutover; legacy kojaya was not migrated. Production deploy entry point remained unchanged. No external provider traffic, deployment, or Phase 6 occurred.
+- rc.7 owner approval does not authorize rc.8. Explicit approval for exact rc.8 SHA remains pending; RC-11 is BLOCKED.
+*This log is maintained throughout the project lifecycle. Last updated: September 30, 2026*

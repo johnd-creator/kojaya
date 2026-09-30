@@ -515,9 +515,13 @@ at the expected exact revisions.
 The traffic-hold attestation is a private operator record with exactly one each
 of `environment=qa`, `status=held`, `approved_sha=<exact-sha>`, and
 `created_at_epoch=<unix-seconds>`. It is valid for 15 minutes. The orchestrator
-also requires `kojaya-queue.service` inactive and `kojaya-scheduler.timer`
-inactive and disabled. These checks are Kojaya-specific and do not stop or
-change services belonging to other applications.
+requires the installed `kojaya-qa-queue.service` to report
+`LoadState=loaded` and `ActiveState=inactive`. It also requires the installed
+`kojaya-qa-schedule.timer` to report `LoadState=loaded`, `ActiveState=inactive`,
+and `UnitFileState=disabled` (`systemctl is-enabled` returns `disabled`). A
+missing unit is a deployment blocker and is never treated as inactive. These
+checks are Kojaya-specific and do not stop or change services belonging to
+other applications.
 
 Before changing the serving checkout, the orchestrator installs the protected
 QA runtime file into the candidate with mode `0600`, prepares dependencies and

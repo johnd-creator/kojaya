@@ -568,3 +568,42 @@ seed/import, queue or scheduler start, provider delivery, PR merge, or Phase 6
 work occurred. PR #92 remains open and unmerged. RC-11 remains BLOCKED on the
 other outstanding capacity, serving-QA backup/deployment, approval, and
 candidate-acceptance evidence.
+
+
+## 17. RC-11-FIX-05A — QA cutover target and safety backup — 2026-09-30
+
+**FIX-05A technical gates PASS. RC-11 is technically ready; explicit owner approval for Phase-6 QA entry remains required.** The current authoritative main and isolated candidate resolve to rc.7 SHA `0b02ad2441c1e4e8ca5f41933e33597246c07b9b`. The serving checkout remains at its historical pre-cutover revision `878b3678d4d29bec635d918ebbd98d9367878b2a`.
+
+### Database classification and read-only evidence
+
+The active QA site currently connects to legacy/pre-cutover database `kojaya`. The intended Phase-6 QA database is `kojaya_qa`; PostgreSQL confirms these are distinct databases. Read-only structural checks found:
+
+| Database classification | Size | Migration rows | Application tables |
+|---|---:|---:|---:|
+| Legacy/pre-cutover QA (current serving target) | 29.01 MiB | 176 | 155 |
+| Phase-6 QA target (not serving) | 15.95 MiB | 182 | 155 |
+
+No schema or business data was changed. The QA target's 182 migration rows match the rc.7 rehearsal state.
+
+### Legacy safety snapshot
+
+A one-time, read-only host-tool snapshot of the legacy QA database was created in PostgreSQL custom format with no-owner/no-ACL options. The source was rechecked through Laravel and an independent PostgreSQL client immediately before the dump. `pg_restore --list` passed; a private manifest records UTC time, source classification, serving SHA, purpose, size, and SHA-256. The dump and manifest are restricted to mode `0600` in a mode `0700` directory; the snapshot is 0.57 MiB. Its checksum and storage location remain private. This legacy snapshot is not the rc.7 managed pre-deploy backup for `kojaya_qa` and was not restored.
+
+### Managed backup diagnosis and proof
+
+The earlier rc.7 managed-backup failure was caused by `BACKUP_ENABLED=false` in the isolated candidate runtime configuration, not a source defect, PostgreSQL access failure, or storage safety rejection. The flag was enabled only in the private, mode-`0600` isolated candidate environment. The exact rc.7 managed backup command and `backup:verify` then passed against non-serving Phase-6 target `kojaya_qa`; its manifest, SHA-256 companions, custom archive, and post-permission-change re-verification all passed. Artifacts are mode `0600` in a mode `0700` private directory. This readiness test does not replace the fresh managed pre-deploy backup that must pass during Phase 6 before any deployment mutation.
+
+### Phase-6 cutover contract — prepared, not activated
+
+Phase-6 QA database target is `kojaya_qa`. Before any Phase-6 deployment, the operator must:
+
+1. Establish the external Kojaya-only traffic hold and keep the Kojaya queue and scheduler stopped/disabled.
+2. Configure the serving runtime to use `kojaya_qa`; never run rc.7 migrations against legacy `kojaya`.
+3. Clear and rebuild Laravel configuration cache as required, then verify the resolved runtime database with a Laravel database probe.
+4. Independently query PostgreSQL with `psql -XAt -v ON_ERROR_STOP=1` using the protected QA PostgreSQL runtime environment. Require both checks to return exactly `kojaya_qa`; otherwise stop and retain the hold.
+5. Verify the owner-approved SHA, deployment `--ref`, and resolved commit are all exactly `0b02ad2441c1e4e8ca5f41933e33597246c07b9b`, with a clean worktree.
+6. Only after explicit Phase-6 QA approval, invoke the rc.7 deployment procedure. Its managed pre-deploy backup must pass against `kojaya_qa` before maintenance, checkout, or migration; a failure aborts before mutation. Keep traffic held and workers stopped through the defined smoke acceptance.
+
+The rc.7 deployment script validates a full 40-character SHA, exact resolution, and clean worktree, and orders the managed backup before maintenance/checkout/migration. The governance binding is external: owner-approved SHA = `--ref` SHA = resolved SHA. The repository's `main` branch is unprotected; no GitHub reviewer/environment approval gate is claimed. This task supplies no explicit Phase-6 entry approval.
+
+No runtime cutover, deployment, migration, seed/import, restore, queue/scheduler start, or external provider traffic occurred. Phase 6 remains **NOT STARTED**. FIX-01A–01D, FIX-02/02A/02B, FIX-03, and FIX-04A evidence remains as recorded above; capacity and FIX-05A backup/cutover preparation now pass. The only remaining RC-11 gate is explicit owner/release-authority approval for QA-only Phase-6 entry. PR #92 remains open and unmerged.

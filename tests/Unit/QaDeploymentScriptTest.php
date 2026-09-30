@@ -17,6 +17,8 @@ class QaDeploymentScriptTest extends TestCase
 
     private string $bash;
 
+    private array $originalServingEnvMetadata;
+
     private const TARGET = '0b02ad2441c1e4e8ca5f41933e33597246c07b9b';
 
     private const PREVIOUS = '878b3678d4d29bec635d918ebbd98d9367878b2a';
@@ -47,7 +49,8 @@ class QaDeploymentScriptTest extends TestCase
         ]));
         chmod($this->directory.'/traffic-hold', 0600);
         file_put_contents($this->serving.'/.env', "APP_ENV=development\nDB_DATABASE=kojaya\n");
-        chmod($this->serving.'/.env', 0600);
+        chmod($this->serving.'/.env', 0640);
+        $this->originalServingEnvMetadata = [fileowner($this->serving.'/.env'), filegroup($this->serving.'/.env'), fileperms($this->serving.'/.env') & 0777];
         file_put_contents($this->directory.'/state.json', json_encode([
             'candidate_sha' => self::TARGET,
             'serving_sha' => self::PREVIOUS,
@@ -138,6 +141,33 @@ class QaDeploymentScriptTest extends TestCase
         $this->assertStringContainsString('DB_DATABASE=kojaya', file_get_contents($this->serving.'/.env'));
         $this->assertSame('not-started', $state['migration']);
         $this->assertSame(2, count(array_filter($state['commands'], fn (string $command): bool => str_starts_with($command, 'serving-checkout '))));
+        $this->assertServingEnvMetadataRestored();
+    }
+
+    public function test_insecure_serving_env_permissions_fail_closed_before_serving_mutation(): void
+    {
+        chmod($this->serving.'/.env', 0644);
+
+        $result = $this->deploy('success');
+
+        $this->assertNotSame(0, $result->getExitCode());
+        $this->assertStringContainsString('private PHP-FPM-readable contract', $result->getErrorOutput());
+        $this->assertSame(self::PREVIOUS, $this->state()['serving_sha']);
+        $this->assertStringContainsString('DB_DATABASE=kojaya', file_get_contents($this->serving.'/.env'));
+        $this->assertSame([], array_values(array_filter($this->state()['commands'], fn (string $command): bool => str_starts_with($command, 'serving-') || str_starts_with($command, 'php artisan down'))));
+        $this->assertSame(0644, fileperms($this->serving.'/.env') & 0777);
+    }
+
+    public function test_candidate_runtime_staging_remains_deployment_user_private(): void
+    {
+        $result = $this->deploy('post-identity');
+
+        $this->assertNotSame(0, $result->getExitCode());
+        $candidateEnv = $this->candidate.'/.env';
+        $this->assertFileExists($candidateEnv);
+        $this->assertSame(0600, fileperms($candidateEnv) & 0777);
+        $this->assertSame(fileowner($this->directory.'/runtime.env'), fileowner($candidateEnv));
+        $this->assertSame(filegroup($this->directory.'/runtime.env'), filegroup($candidateEnv));
     }
 
     public function test_migration_failure_keeps_target_and_never_rolls_back_database_or_code(): void
@@ -177,6 +207,11 @@ class QaDeploymentScriptTest extends TestCase
         }
         $this->assertSame('completed', $this->state()['migration']);
         $this->assertStringContainsString('DB_DATABASE=kojaya_qa', file_get_contents($this->serving.'/.env'));
+        $this->assertSame($this->originalServingEnvMetadata, $this->servingEnvMetadata());
+        $candidateEnv = $this->candidate.'/.env';
+        $this->assertSame(0600, fileperms($candidateEnv) & 0777);
+        $this->assertSame(fileowner($this->directory.'/runtime.env'), fileowner($candidateEnv));
+        $this->assertSame(filegroup($this->directory.'/runtime.env'), filegroup($candidateEnv));
         $this->assertStringNotContainsString('queue:restart', implode("\n", $commands));
         $this->assertStringNotContainsString('systemctl start', implode("\n", $commands));
         $this->assertNotFalse($this->positionStartingWith($commands, 'candidate-backup:verify backups/database/kojaya-qa-kojaya_qa-'));
@@ -185,6 +220,20 @@ class QaDeploymentScriptTest extends TestCase
         $productionScript = file_get_contents(dirname(__DIR__, 2).'/bin/deploy.sh');
         $this->assertStringContainsString('--strict-production', $productionScript);
         $this->assertStringNotContainsString('--strict-release-candidate', $productionScript);
+    }
+
+    private function servingEnvMetadata(): array
+    {
+        return [fileowner($this->serving.'/.env'), filegroup($this->serving.'/.env'), fileperms($this->serving.'/.env') & 0777];
+    }
+
+    private function assertServingEnvMetadataRestored(): void
+    {
+        $this->assertSame($this->originalServingEnvMetadata, $this->servingEnvMetadata());
+        $recoveryMetadataFiles = glob($this->directory.'/rc11-qa-deploy-recovery/run.*/.env.previous-metadata') ?: [];
+        $this->assertCount(1, $recoveryMetadataFiles);
+        $this->assertSame(implode(':', [$this->originalServingEnvMetadata[0], $this->originalServingEnvMetadata[1], '640']), trim(file_get_contents($recoveryMetadataFiles[0])));
+        $this->assertSame(0600, fileperms($recoveryMetadataFiles[0]) & 0777);
     }
 
     private function deploy(string $scenario, string $target = self::TARGET): Process

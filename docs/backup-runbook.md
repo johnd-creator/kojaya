@@ -500,3 +500,46 @@ archive_mode = on
 archive_command = 'pgbackrest --stanza=kojaya archive-push %p'
 archive_timeout = 300 # Forces WAL segment switch every 5 min for <= 5 min RPO
 ```
+
+## QA First-Cutover Orchestrator (RC-11-FIX-05B)
+
+`bin/deploy-qa.sh` is a separate QA-only path. It does not change the
+production `bin/deploy.sh` contract. Run it only with an exact approved 40
+character SHA, the isolated candidate checkout, the active QA serving checkout,
+a protected QA runtime environment file, and a recent traffic-hold attestation.
+The runtime file and attestation must be regular files owned by the deploy user
+with mode `0600`, outside both worktrees; the runtime file must also be outside
+the web root. The candidate and serving worktrees must be distinct, clean, and
+at the expected exact revisions.
+
+The traffic-hold attestation is a private operator record with exactly one each
+of `environment=qa`, `status=held`, `approved_sha=<exact-sha>`, and
+`created_at_epoch=<unix-seconds>`. It is valid for 15 minutes. The orchestrator
+also requires `kojaya-queue.service` inactive and `kojaya-scheduler.timer`
+inactive and disabled. These checks are Kojaya-specific and do not stop or
+change services belonging to other applications.
+
+Before changing the serving checkout, the orchestrator installs the protected
+QA runtime file into the candidate with mode `0600`, prepares dependencies and
+assets there, and runs `qa:deployment-identity`. That command checks Laravel's
+effective PostgreSQL connection config, Laravel's `current_database()` result,
+and a separate PDO PostgreSQL connection. All three must identify exactly
+`kojaya_qa`; the configured legacy name `kojaya` fails before a query. It then
+runs the strict release-candidate preflight (never strict-production), creates
+the managed pre-deploy backup on the private local disk, and independently verifies that exact backup's
+manifest source database, checksum/provenance, archive integrity, and private
+artifact permissions.
+
+The script installs the approved QA runtime config before invoking Artisan against the serving tree, so even maintenance-mode commands cannot use the previous legacy database configuration. It clears only application-local compiled/config/route/view/event caches; it does not run `optimize:clear` and therefore does not flush a potentially shared cache backend. Only after these gates pass does the script enter Laravel maintenance mode,
+install the approved QA runtime file into the serving checkout, fetch and
+activate the exact candidate commit, clear stale caches, and repeat both
+identity checks before `migrate --force`. The migration state is recorded as
+`not-started`, `started`, or `completed` in a mode-`0700` private recovery
+directory. A failure before migration restores the previous checkout and
+runtime file while leaving traffic held and maintenance active for inspection.
+Once migration starts, the script never checks out the old code, rolls back a
+migration, restores a database, or changes to `kojaya`; failures require
+operator inspection with both holds retained. Success does not start workers
+or the scheduler and does not remove the external traffic hold. The application
+is brought out of Laravel maintenance for controlled smoke testing while the
+external hold remains in place.

@@ -1581,3 +1581,14 @@ authorized CommonMark 2.10.2 security patch and remediation of expired existing
 accessibility debt: control labels/names, valid back-link semantics and
 contrast, retaining fail-closed axe/waiver behavior. Full final CI and
 full/all/all audit remain required; no QA deployment or Phase 6 was started.
+
+### RC-11-FIX-05D-R2 — Axios and user-menu logout
+
+Owner-authorized Axios 1.20.0 changes only its transitive lock entry; the high
+production audit passes without ignores. Repeated user-menu pointer selection
+sent duplicate logout requests (aborted/419), fixed with a single named button,
+explicit select action and single-flight guard. Focused three-viewport tests
+pass 19/19 without retries, retaining shared-session isolation and adding
+single-POST, no-reload, runtime-error and Enter/Space checks. Backend regressions
+pass 2 tests/7 assertions on isolated SQLite. Exact-new-head CI and full audit
+remain required; PR #96 is unmerged, with QA/PR #92/Phase 6 untouched.

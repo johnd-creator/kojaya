@@ -469,3 +469,11 @@ onboarding fixture error overriding its misleading screenshot symptom.
 - `tests/visual/baselines/tablet/reports--reports--default.png`
 - `tests/visual/baselines/mobile/dues-payments-ledger--withdrawals--default.png`
 - `tests/visual/baselines/tablet/rewards-shu--shu--default.png`
+
+### Expanded accessibility remediation evidence
+
+- Owner authorized real remediation of all 84 legacy waivers across 22 screens; no expiry extension or axe exclusion was added.
+- Diagnostic accessibility run `36807340471` on `f94bf0cd9d6e56ff1cf92f38afb2ff59d1cdd088` retained 71 raw axe reports before failing closed on expired waivers. Every one of the 22 waiver screens has a report, with zero critical/serious nodes. All 84 resolved waiver records were therefore removed, not renewed.
+- Capture run `36807343081` on the same SHA executed 234/234 expected screens with no runtime errors, warnings, failed requests, or unexpected responses. Using the unchanged comparator (`threshold=0.15`, `maxDiffPixelRatio=0.001`), exactly nine baselines differ: loans detail, POS transaction detail, and profile, each at desktop/tablet/mobile. Reviewed differences are the intended destructive-button and warning-text contrast improvements, not changed layout or behavior.
+- The three desktop captures are byte-identical to independent PR audit `36807344007`; that audit passed 174 tests and failed only those three visual comparisons. Nine contrast baselines are refreshed from the reviewed capture artifact. One tablet loan baseline overlaps the previous 45-file refresh, so the cumulative baseline inventory is 53 unique files.
+- These diagnostic runs are not final full-audit acceptance. Final exact-head full/all/all, automatic PR audit, CI, and Phase 4 must still pass. npm Dependency Audit remains blocked by Axios 1.18.1 until separate minor-update authorization is received.

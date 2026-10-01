@@ -233,3 +233,43 @@ Jangan mengubah kode. Hasilkan laporan audit dan task prompt terpisah.
 ```
 
 Baseline tidak boleh diperbarui hanya untuk menyembunyikan regression. Perubahan yang terdeteksi harus dibahas dulu sebagai perubahan UI atau bug.
+# RC-11-FIX-05D full-mode remediation evidence
+
+Historical exact rc.9 audit #293 (`36791630817`, head
+`f52610326e4ff43bff05b9afe2efcdc9646eefb7`) failed with 95 failures:
+469 passed, 213 skipped, no reported flakes. The artifact was downloaded once.
+
+Primary observed categories cover every failed test: D (shared session/state)
+53; C (stale responsive comparison candidates) 40; B (onboarding fixture
+assumption) 2; A/E/F/G 0. The 53 D failures include 5 logout tests,
+18 Pengurus documentation tests, 2 inventory documentation tests,
+18 store-credit tests, 9 member/POS/profile screens, and 1 store-credit
+accessibility test. Profile additionally has a masked incorrect heading
+expectation; user-menu logout additionally has an incorrect `data-testid`
+locator and a closed mobile sidebar assumption.
+
+Logout invalidated the shared server-side Pengurus session serialized for all
+projects. Traces and error contexts show subsequent `/dashboard` and screen
+requests redirecting to `/login`. Runtime network failures were aborted
+store-credit navigations, not ignored console exceptions. Logout tests now
+authenticate independently and check that the canonical shared session still
+serves the dashboard after each logout, on each viewport.
+
+The onboarding registry previously used an active member, whose intended
+controller behavior redirects to `/member`. A separate pending-member user
+now owns existing AUD-009; the active member is unchanged. Both visual and
+accessibility scenarios assert that onboarding remains on its intended route.
+The homepage screenshot is not accepted as an onboarding baseline.
+
+All 40 remaining responsive baseline candidates were visually reviewed in
+expected/actual pairs: their runtime reports are clean and their first/retry
+images are byte-identical. None has yet been adopted: independent clean Linux
+execution must confirm correct state before selected baseline replacement.
+Screenshot thresholds, accessibility and full/all/all coverage enforcement
+remain unchanged.
+
+Local Windows has no PDO SQLite and no installed WSL/container runtime, so
+equivalent full browser execution is delegated to the existing Ubuntu Actions
+workflow. No workstation PHP changes or shared database operations are used.
+Local harness checks: 5 passed; baseline inventory: 234 valid, 0 missing,
+0 orphan, 0 duplicate, 0 invalid dimensions. Final CI evidence remains pending.

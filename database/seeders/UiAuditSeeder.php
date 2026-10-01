@@ -95,6 +95,7 @@ class UiAuditSeeder extends Seeder
             'admin' => ['ui.admin@kojaya.test', 'UI Admin Koperasi', 'Admin Koperasi'],
             'kasir' => ['ui.kasir@kojaya.test', 'UI Kasir Koperasi', 'Kasir Koperasi'],
             'anggota' => ['ui.anggota@kojaya.test', 'UI Anggota', 'Anggota'],
+            'anggota-pending' => ['ui.anggota.pending@kojaya.test', 'UI Anggota Pending', 'Anggota'],
         ];
         $users = [];
 
@@ -142,7 +143,11 @@ class UiAuditSeeder extends Seeder
                 ['member_no' => $memberNo],
                 [
                     'organization_id' => $organization->id,
-                    'user_id' => $key === 'positive' ? $users['anggota']->id : null,
+                    'user_id' => match ($key) {
+                        'positive' => $users['anggota']->id,
+                        'pending-review' => $users['anggota-pending']->id,
+                        default => null,
+                    },
                     'no_anggota' => $memberNo,
                     'name' => $name,
                     'email' => strtolower($memberNo).'@kojaya.test',

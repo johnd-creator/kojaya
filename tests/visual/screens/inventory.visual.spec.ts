@@ -77,6 +77,9 @@ for (const authState of authStates) {
                     const route = await resolveRoute(page, definition);
                     const response = await page.goto(route, { waitUntil: "domcontentloaded" });
                     expect(response?.status(), `${definition.id} did not return an HTML page.`).toBe(200);
+                    if (definition.id === "member-onboarding-default") {
+                        await expect(page).toHaveURL(/\/member\/onboarding(?:\?|$)/);
+                    }
                     if (["tablet", "mobile"].includes(testInfo.project.name)) {
                         await assertNoHorizontalOverflow(page);
                     }

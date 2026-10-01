@@ -133,11 +133,11 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
             <div class="flex flex-col gap-6">
                 <header class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <Link href="/cooperative/pos" prefetch>
-                            <Button variant="ghost" size="icon" class="rounded-full">
-                                <ArrowLeft class="h-5 w-5" />
-                            </Button>
+                        <Button as-child variant="ghost" size="icon" class="rounded-full">
+                        <Link href="/cooperative/pos" prefetch aria-label="Kembali ke POS">
+                            <ArrowLeft class="h-5 w-5" />
                         </Link>
+                    </Button>
                         <div>
                             <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">Laporan POS</h1>
                             <p class="text-sm text-zinc-500 dark:text-zinc-400">Ringkasan penjualan, pembayaran, dan tren.</p>
@@ -174,16 +174,16 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                 <div class="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 md:grid-cols-6">
                     <div>
                         <Label class="text-xs text-zinc-600 dark:text-zinc-300">Dari</Label>
-                        <Input v-model="dateFilter.from" type="date" class="mt-1 rounded-xl" />
+                        <Input aria-label="Dari" v-model="dateFilter.from" type="date" class="mt-1 rounded-xl" />
                     </div>
                     <div>
                         <Label class="text-xs text-zinc-600 dark:text-zinc-300">Sampai</Label>
-                        <Input v-model="dateFilter.to" type="date" class="mt-1 rounded-xl" />
+                        <Input aria-label="Sampai" v-model="dateFilter.to" type="date" class="mt-1 rounded-xl" />
                     </div>
                     <div>
                         <Label class="text-xs text-zinc-600 dark:text-zinc-300">Produk</Label>
                         <select
-                            v-model="f.pos_product_id"
+                            aria-label="Produk" v-model="f.pos_product_id"
                             class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                         >
                             <option value="">Semua</option>
@@ -193,7 +193,7 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                     <div>
                         <Label class="text-xs text-zinc-600 dark:text-zinc-300">Kategori</Label>
                         <select
-                            v-model="f.category_id"
+                            aria-label="Kategori" v-model="f.category_id"
                             class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                         >
                             <option value="">Semua</option>
@@ -203,7 +203,7 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                     <div>
                         <Label class="text-xs text-zinc-600 dark:text-zinc-300">Kasir</Label>
                         <select
-                            v-model="f.cashier_id"
+                            aria-label="Kasir" v-model="f.cashier_id"
                             class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                         >
                             <option value="">Semua</option>
@@ -213,7 +213,7 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                     <div>
                         <Label class="text-xs text-zinc-600 dark:text-zinc-300">Metode</Label>
                         <select
-                            v-model="f.payment_method"
+                            aria-label="Metode" v-model="f.payment_method"
                             class="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                         >
                             <option value="">Semua</option>
@@ -254,7 +254,7 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                     </div>
                     <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
                         <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Laba Kotor</p>
-                        <p class="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ formatCurrency(analytics.summary.gross_profit) }}</p>
+                        <p class="mt-1 text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">{{ formatCurrency(analytics.summary.gross_profit) }}</p>
                     </div>
                     <div class="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
                         <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Penjualan Bersih</p>
@@ -325,7 +325,7 @@ const maxRevenue = computed(() => Math.max(1, ...(props.analytics?.daily_trend ?
                                 <td class="py-2.5 font-medium">{{ p.product_name }}</td>
                                 <td class="py-2.5 text-right tabular-nums">{{ p.quantity }}</td>
                                 <td class="py-2.5 text-right tabular-nums">{{ formatCurrency(p.revenue) }}</td>
-                                <td class="py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{{ formatCurrency(p.gross_profit) }}</td>
+                                <td class="py-2.5 text-right tabular-nums text-emerald-700 dark:text-emerald-400">{{ formatCurrency(p.gross_profit) }}</td>
                                 <td class="py-2.5 text-right tabular-nums">{{ p.margin_percent }}%</td>
                             </tr>
                         </tbody>

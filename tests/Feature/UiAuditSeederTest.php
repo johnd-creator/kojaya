@@ -18,6 +18,22 @@ class UiAuditSeederTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_onboarding_fixture_uses_pending_member_without_mutating_active_member(): void
+    {
+        $this->seed(UiAuditSeeder::class);
+
+        $pendingUser = User::query()->where('email', 'ui.anggota.pending@kojaya.test')->firstOrFail();
+        $activeUser = User::query()->where('email', 'ui.anggota@kojaya.test')->firstOrFail();
+        $this->assertDatabaseHas('cooperative_members', [
+            'member_no' => 'AUD-009',
+            'user_id' => $pendingUser->id,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING_REVIEW,
+        ]);
+        $this->actingAs($pendingUser)->get('/member/onboarding')
+            ->assertOk()->assertInertia(fn (Assert $page) => $page->component('Kojayaku/Onboarding'));
+        $this->actingAs($activeUser)->get('/member/onboarding')->assertRedirect(route('member.dashboard'));
+    }
+
     public function test_ui_audit_seeder_is_repeatable_and_deterministic(): void
     {
         $this->seed(UiAuditSeeder::class);

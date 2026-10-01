@@ -160,7 +160,7 @@ const formatTime = (value?: string) =>
         class="grid gap-3 rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 sm:grid-cols-[220px_1fr_auto]"
       >
         <select
-          v-model="status"
+          aria-label="Status pesanan" v-model="status"
           class="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
         >
           <option value="">Status aktif</option>

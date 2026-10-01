@@ -50,11 +50,11 @@ function approve(): void {
             <div class="flex flex-col gap-6">
                 <header class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <Link href="/cooperative/pos/inventory/counts">
-                            <Button variant="ghost" size="icon" class="rounded-full">
-                                <ArrowLeft class="h-5 w-5" />
-                            </Button>
+                        <Button as-child variant="ghost" size="icon" class="rounded-full">
+                        <Link href="/cooperative/pos/inventory/counts" aria-label="Kembali ke stock opname">
+                            <ArrowLeft class="h-5 w-5" />
                         </Link>
+                    </Button>
                         <div>
                             <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">{{ count.count_no }}</h1>
                             <p class="text-sm text-zinc-500">

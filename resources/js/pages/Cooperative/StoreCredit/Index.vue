@@ -51,7 +51,7 @@ const props = defineProps<{
 }>();
 
 const balanceTone = (account: Account): string =>
-    account.balance > 0 ? "text-emerald-600" : account.balance < 0 ? "text-rose-600" : "text-zinc-500";
+    account.balance > 0 ? "text-emerald-700" : account.balance < 0 ? "text-rose-600" : "text-zinc-500";
 
 const filters = computed(() => props.filters);
 
@@ -110,7 +110,7 @@ function submitOpenAccount(): void {
                                 <div class="space-y-2">
                                     <Label>Anggota</Label>
                                     <select
-                                        v-model="openForm.cooperative_member_id"
+                                        aria-label="Anggota" v-model="openForm.cooperative_member_id"
                                         required
                                         class="h-9 w-full rounded-md border bg-white px-2 text-sm dark:bg-zinc-950"
                                     >
@@ -134,16 +134,16 @@ function submitOpenAccount(): void {
                                 <div class="grid grid-cols-2 gap-3">
                                     <div class="space-y-2">
                                         <Label>Limit Kredit (opsional)</Label>
-                                        <Input v-model.number="openForm.credit_limit" type="number" min="0" />
+                                        <Input aria-label="Limit Kredit (opsional)" v-model.number="openForm.credit_limit" type="number" min="0" />
                                     </div>
                                     <div class="space-y-2">
                                         <Label>Saldo Awal (opsional)</Label>
-                                        <Input v-model.number="openForm.opening_balance" type="number" min="0" />
+                                        <Input aria-label="Saldo Awal (opsional)" v-model.number="openForm.opening_balance" type="number" min="0" />
                                     </div>
                                 </div>
                                 <div class="space-y-2">
                                     <Label>Keterangan (opsional)</Label>
-                                    <Textarea v-model="openForm.reason" />
+                                    <Textarea aria-label="Keterangan (opsional)" v-model="openForm.reason" />
                                 </div>
                                 <DialogFooter>
                                     <Button type="button" variant="outline" @click="showOpenDialog = false">
@@ -170,7 +170,7 @@ function submitOpenAccount(): void {
                                 @keyup.enter="applyFilter"
                             />
                         </div>
-                        <select v-model="filters.filter" class="h-9 rounded-md border px-2 text-sm" @change="applyFilter">
+                        <select aria-label="Filter saldo akun" v-model="filters.filter" class="h-9 rounded-md border px-2 text-sm" @change="applyFilter">
                             <option value="">Semua</option>
                             <option value="positive">Saldo Positif</option>
                             <option value="negative">Saldo Negatif</option>
@@ -228,8 +228,10 @@ function submitOpenAccount(): void {
                 <Link
                     v-for="(link, i) in accounts.meta.links"
                     :key="i"
+                    :as="link.url ? 'a' : 'span'"
+                    :aria-disabled="!link.url"
                     :href="link.url || '#'"
-                    :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none opacity-40']"
+                    :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none text-zinc-500']"
                     v-html="link.label"
                 />
             </div>

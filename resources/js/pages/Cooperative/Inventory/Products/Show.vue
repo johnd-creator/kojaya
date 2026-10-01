@@ -73,13 +73,13 @@ const submit = () =>
           <h2 class="text-lg font-semibold">Adjustment Stok</h2>
           <div class="mt-4 space-y-3">
             <select
-              v-model="form.movement_type"
+              aria-label="Jenis penyesuaian stok" v-model="form.movement_type"
               class="h-10 w-full rounded-md border bg-white px-3 text-sm dark:bg-zinc-950"
             >
               <option value="ADJUSTMENT_IN">Stok Masuk</option>
               <option value="ADJUSTMENT_OUT">Stok Keluar</option>
             </select>
-            <Input v-model="form.quantity" type="number" min="1" required />
+            <Input aria-label="Jumlah penyesuaian stok" v-model="form.quantity" type="number" min="1" required />
             <textarea
               v-model="form.notes"
               class="min-h-20 w-full rounded-md border bg-white px-3 py-2 text-sm dark:bg-zinc-950"

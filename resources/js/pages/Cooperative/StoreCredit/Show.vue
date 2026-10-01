@@ -56,7 +56,7 @@ const props = defineProps<{
 }>();
 
 const balanceTone = (): string =>
-    props.account.balance > 0 ? "text-emerald-600" : props.account.balance < 0 ? "text-rose-600" : "text-zinc-500";
+    props.account.balance > 0 ? "text-emerald-700" : props.account.balance < 0 ? "text-rose-600" : "text-zinc-500";
 
 const cashForm = useForm({ amount: 0, reference_no: "" });
 const limitForm = useForm({ credit_limit: props.account.credit_limit, reason: "", override_below_debt: false });
@@ -141,11 +141,11 @@ function submitDelegate(): void {
                         <form class="space-y-2" @submit.prevent="submitCash">
                             <div>
                                 <Label>Jumlah (Rupiah)</Label>
-                                <Input v-model.number="cashForm.amount" type="number" min="1" />
+                                <Input aria-label="Jumlah (Rupiah)" v-model.number="cashForm.amount" type="number" min="1" />
                             </div>
                             <div>
                                 <Label>No. Referensi</Label>
-                                <Input v-model="cashForm.reference_no" />
+                                <Input aria-label="No. Referensi" v-model="cashForm.reference_no" />
                             </div>
                             <Button type="submit" :disabled="cashForm.processing">Posting Setoran</Button>
                         </form>
@@ -158,11 +158,11 @@ function submitDelegate(): void {
                         <form class="space-y-2" @submit.prevent="submitLimit">
                             <div>
                                 <Label>Limit Baru (Rupiah)</Label>
-                                <Input v-model.number="limitForm.credit_limit" type="number" min="0" />
+                                <Input aria-label="Limit Baru (Rupiah)" v-model.number="limitForm.credit_limit" type="number" min="0" />
                             </div>
                             <div>
                                 <Label>Alasan</Label>
-                                <Textarea v-model="limitForm.reason" />
+                                <Textarea aria-label="Alasan perubahan limit" v-model="limitForm.reason" />
                             </div>
                             <label class="flex items-center gap-2 text-sm">
                                 <input v-model="limitForm.override_below_debt" type="checkbox" /> Override di bawah utang
@@ -179,11 +179,11 @@ function submitDelegate(): void {
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <Label>Jumlah</Label>
-                                    <Input v-model.number="adjustForm.amount" type="number" min="1" />
+                                    <Input aria-label="Jumlah penyesuaian" v-model.number="adjustForm.amount" type="number" min="1" />
                                 </div>
                                 <div>
                                     <Label>Arah</Label>
-                                    <select v-model="adjustForm.effect" class="h-9 w-full rounded-md border px-2 text-sm">
+                                    <select aria-label="Arah" v-model="adjustForm.effect" class="h-9 w-full rounded-md border px-2 text-sm">
                                         <option value="credit">Kredit (Tambah)</option>
                                         <option value="debit">Debit (Kurangi)</option>
                                     </select>
@@ -191,7 +191,7 @@ function submitDelegate(): void {
                             </div>
                             <div>
                                 <Label>Alasan</Label>
-                                <Textarea v-model="adjustForm.reason" />
+                                <Textarea aria-label="Alasan penyesuaian" v-model="adjustForm.reason" />
                             </div>
                             <Button type="submit" :disabled="adjustForm.processing">Posting Penyesuaian</Button>
                         </form>
@@ -236,7 +236,7 @@ function submitDelegate(): void {
                                     {{ entry.entry_type_label }}
                                     <Badge v-if="entry.is_reversed" variant="secondary" class="ml-1">Dibatalkan</Badge>
                                 </td>
-                                <td class="p-3 text-right font-mono" :class="entry.effect === 'credit' ? 'text-emerald-600' : 'text-rose-600'">
+                                <td class="p-3 text-right font-mono" :class="entry.effect === 'credit' ? 'text-emerald-700' : 'text-rose-600'">
                                     {{ entry.effect === 'credit' ? '+' : '-' }}{{ formatCurrency(entry.amount) }}
                                 </td>
                                 <td class="p-3 text-right font-mono font-semibold">{{ formatCurrency(entry.balance_after) }}</td>
@@ -251,8 +251,10 @@ function submitDelegate(): void {
                         <Link
                             v-for="(link, i) in ledger.meta.links"
                             :key="i"
+                            :as="link.url ? 'a' : 'span'"
+                            :aria-disabled="!link.url"
                             :href="link.url || '#'"
-                            :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none opacity-40']"
+                            :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-indigo-600 text-white' : 'hover:bg-zinc-100', !link.url && 'pointer-events-none text-zinc-500']"
                             v-html="link.label"
                         />
                     </div>

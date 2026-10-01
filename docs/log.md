@@ -1571,3 +1571,24 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
   QA deployment leaves queue/scheduler stopped and external traffic held.
 - Production deploy entry point remains unchanged. No deployment, migration,
   service change, serving-checkout edit, or production action was performed.
+## RC-11-FIX-05D — full UI audit remediation in progress
+
+Dedicated unmerged PR #96 starts from exact rc.9. Isolated logout sessions,
+responsive menu access, profile heading and pending onboarding fixtures fix
+full-mode state pollution and masked test assumptions. Canonical Linux
+evidence supports 45 individually reviewed baseline replacements. The owner
+authorized CommonMark 2.10.2 security patch and remediation of expired existing
+accessibility debt: control labels/names, valid back-link semantics and
+contrast, retaining fail-closed axe/waiver behavior. Full final CI and
+full/all/all audit remain required; no QA deployment or Phase 6 was started.
+
+### RC-11-FIX-05D-R2 — Axios and user-menu logout
+
+Owner-authorized Axios 1.20.0 changes only its transitive lock entry; the high
+production audit passes without ignores. Repeated user-menu pointer selection
+sent duplicate logout requests (aborted/419), fixed with a single named button,
+explicit select action and single-flight guard. Focused three-viewport tests
+pass 19/19 without retries, retaining shared-session isolation and adding
+single-POST, no-reload, runtime-error and Enter/Space checks. Backend regressions
+pass 2 tests/7 assertions on isolated SQLite. Exact-new-head CI and full audit
+remain required; PR #96 is unmerged, with QA/PR #92/Phase 6 untouched.

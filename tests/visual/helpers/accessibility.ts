@@ -64,12 +64,16 @@ async function readKnownFindings(): Promise<KnownFinding[]> {
         trackingIds.add(finding.tracking_id);
         findingKeys.add(findingKey);
 
-        if (new Date(`${finding.expires_on}T23:59:59+00:00`) < new Date()) {
-            throw new Error(`Accessibility waiver expired: ${finding.tracking_id}`);
-        }
     }
 
     return file.findings;
+}
+
+export function expiredAccessibilityFindings<T extends { expires_on: string }>(
+    findings: T[],
+    now: Date = new Date(),
+): T[] {
+    return findings.filter((finding) => new Date(`${finding.expires_on}T23:59:59+00:00`) < now);
 }
 
 export async function auditAccessibility(
@@ -81,6 +85,7 @@ export async function auditAccessibility(
     await waitForStableScreen(page, { screenId: screen, readyLocator });
     const result = await new AxeBuilder({ page }).analyze();
     const knownFindings = await readKnownFindings();
+    const expiredFindings = expiredAccessibilityFindings(knownFindings);
     const blockingViolations = result.violations.filter((violation) =>
         ["critical", "serious"].includes(violation.impact ?? ""),
     );
@@ -137,8 +142,14 @@ export async function auditAccessibility(
             ...metrics,
             new_violations: newViolations,
             stale_findings: staleFindings,
+            expired_findings: expiredFindings,
         },
     }, null, 2) + "\n");
+
+    // Preserve fail-closed expiry, but retain axe evidence before rejecting it.
+    if (expiredFindings.length > 0) {
+        throw new Error(`Accessibility waiver expired: ${expiredFindings[0].tracking_id}`);
+    }
 
     expect({ newViolations, staleFindings }, "New or stale critical/serious accessibility findings")
         .toEqual({ newViolations: [], staleFindings: [] });

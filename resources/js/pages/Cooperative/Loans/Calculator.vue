@@ -92,7 +92,7 @@ const submit = () => {
                 >Tipe Pinjaman</label
               >
               <select
-                v-model="form.loan_type_id"
+                aria-label="Tipe Pinjaman" v-model="form.loan_type_id"
                 required
                 class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950"
               >
@@ -112,7 +112,7 @@ const submit = () => {
                 >Nominal Pokok</label
               >
               <Input
-                v-model="form.principal_amount"
+                aria-label="Nominal Pokok" v-model="form.principal_amount"
                 type="number"
                 min="1"
                 step="1000"
@@ -125,7 +125,7 @@ const submit = () => {
                 >Tenor (bulan)</label
               >
               <Input
-                v-model="form.term_months"
+                aria-label="Tenor (bulan)" v-model="form.term_months"
                 type="number"
                 min="1"
                 required
@@ -136,7 +136,7 @@ const submit = () => {
                 class="text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >Jatuh Tempo Pertama</label
               >
-              <Input v-model="form.first_due_date" type="date" required />
+              <Input aria-label="Jatuh Tempo Pertama" v-model="form.first_due_date" type="date" required />
             </div>
             <div class="md:col-span-2 flex justify-end">
               <Button type="submit" class="shadow-sm">Hitung Simulasi</Button>

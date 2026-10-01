@@ -37,6 +37,9 @@ for (const authState of authStates) {
                     await installStableEnvironment(page);
                     const response = await page.goto(await resolveRoute(page, entry), { waitUntil: "domcontentloaded" });
                     expect(response?.status(), `${entry.id} did not return an HTML page.`).toBe(200);
+                    if (entry.id === "member-onboarding-default") {
+                        await expect(page).toHaveURL(/\/member\/onboarding(?:\?|$)/);
+                    }
                     const readyLocator = entry.route_name === "cooperative.pos.transactions.receipt"
                         ? page.locator("body")
                         : undefined;

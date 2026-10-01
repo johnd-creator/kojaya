@@ -39,11 +39,11 @@ function submit(): void {
         <PageContainer>
             <div class="flex flex-col gap-6">
                 <header class="flex items-center gap-4">
-                    <Link href="/cooperative/pos/inventory/counts">
-                        <Button variant="ghost" size="icon" class="rounded-full">
+                    <Button as-child variant="ghost" size="icon" class="rounded-full">
+                        <Link href="/cooperative/pos/inventory/counts" aria-label="Kembali ke stock opname">
                             <ArrowLeft class="h-5 w-5" />
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <div>
                         <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Buat Stock Opname</h1>
                         <p class="text-sm text-zinc-500">Stok opname akan dibuat dalam status draft.</p>
@@ -53,7 +53,7 @@ function submit(): void {
                 <form @submit.prevent="submit" class="space-y-6">
                     <div class="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm">
                         <Label>Lokasi</Label>
-                        <select v-model="form.pos_inventory_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                        <select aria-label="Lokasi" v-model="form.pos_inventory_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
                             <option value="0">Pilih lokasi</option>
                             <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
                         </select>
@@ -72,15 +72,15 @@ function submit(): void {
                             <div v-for="(item, idx) in form.items" :key="idx" class="grid items-end gap-2 md:grid-cols-12">
                                 <div class="md:col-span-3">
                                     <Label class="text-xs">ID Produk</Label>
-                                    <Input v-model="item.pos_product_id" type="number" min="1" class="mt-1 rounded-lg" />
+                                    <Input aria-label="ID Produk" v-model="item.pos_product_id" type="number" min="1" class="mt-1 rounded-lg" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <Label class="text-xs">Qty Hitung</Label>
-                                    <Input v-model="item.counted_qty" type="number" min="0" class="mt-1 rounded-lg" />
+                                    <Input aria-label="Qty Hitung" v-model="item.counted_qty" type="number" min="0" class="mt-1 rounded-lg" />
                                 </div>
                                 <div class="md:col-span-6">
                                     <Label class="text-xs">Catatan</Label>
-                                    <Input v-model="item.notes" class="mt-1 rounded-lg" />
+                                    <Input aria-label="Catatan" v-model="item.notes" class="mt-1 rounded-lg" />
                                 </div>
                                 <div class="md:col-span-1">
                                     <Button type="button" variant="ghost" size="sm" class="text-red-600" @click="removeItem(idx)">×</Button>

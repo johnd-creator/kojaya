@@ -263,13 +263,209 @@ The homepage screenshot is not accepted as an onboarding baseline.
 
 All 40 remaining responsive baseline candidates were visually reviewed in
 expected/actual pairs: their runtime reports are clean and their first/retry
-images are byte-identical. None has yet been adopted: independent clean Linux
-execution must confirm correct state before selected baseline replacement.
+images are byte-identical. Independent clean Linux audit `36804238517` at
+`d54c4d5b7f25b9c84e2baab84bb703c1ae2afcd6` reproduces all 40 images
+byte-for-byte against historical audit #293. These 40 candidates were adopted.
+Five additional reviewed candidates were adopted: onboarding in all three
+viewports now represents the pending member rather than the active-member
+redirect; member-list tablet/mobile now reflects current lifecycle counts,
+the import action and removal of synthetic sparklines already present in the
+approved desktop UI. Member-table truncation/scroll behavior is unchanged.
+All 45 first/retry pairs are byte-identical, with zero runtime issues. The
+onboarding desktop image also matches independent PR audit `36804238522`.
+Only these 45 PNGs were copied unmodified: desktop 1, tablet 22, mobile 22.
 Screenshot thresholds, accessibility and full/all/all coverage enforcement
 remain unchanged.
 
 Local Windows has no PDO SQLite and no installed WSL/container runtime, so
 equivalent full browser execution is delegated to the existing Ubuntu Actions
 workflow. No workstation PHP changes or shared database operations are used.
-Local harness checks: 5 passed; baseline inventory: 234 valid, 0 missing,
-0 orphan, 0 duplicate, 0 invalid dimensions. Final CI evidence remains pending.
+Local harness checks: 5 passed; baseline inventory after replacement: 234
+valid, 0 missing, 0 orphan, 0 duplicate, 0 invalid dimensions. ESLint cannot
+include these tests through the existing TypeScript project service. Explicit
+type checking finds three pre-existing errors in unchanged accessibility and
+stable-screen helpers; scoped transpilation succeeds for all five changed TS
+files. Final CI evidence remains pending.
+
+The initial remediation full audit had 445 passed, 120 failed and 213
+policy-skipped tests, but all 234 expected screens executed: 189 comparison
+passes, 45 screenshot failures, zero skipped expected screens. The other 75
+failures report expired waiver UI-A11Y-015. There are 84 existing waiver entries
+across 22 screens, all expiring 2026-09-30; this is not evidence that all 84
+violations remain. No waiver was removed, extended or suppressed. Owner
+authorized the broader accessibility-debt scope on this PR. Labels/control
+names, nested back-button links and contrast are being corrected. Axe output
+is now retained before the unchanged expiry rejection, with expiry-boundary
+regression coverage; only proven resolved fingerprints may be removed.
+
+Owner authorized a necessary security patch on this PR. Only
+`league/commonmark` changes in composer.lock, 2.10.0 to 2.10.2, addressing
+[GHSA-3q6v-r5mr-hxv8](https://github.com/advisories/GHSA-3q6v-r5mr-hxv8).
+The dependency's GFM TableStartParser previously scanned the entire growing
+paragraph for a pipe at every line; the patched parser checks the current
+delimiter line first. Laravel Str::markdown delegates to this converter; no
+application invocation accepting untrusted Markdown was found in the scoped
+source search, so public exploitability is not asserted. A separate
+compatibility review confirms table extension registration/API remains intact.
+Regression checks enforce the patched installed version, process numeric and
+punctuation-leading pipe-free paragraphs (25,000 lines each), and preserve
+normal paragraphs and table cells: 3 tests, 13 assertions PASS locally.
+No wall-clock assertion is used under parallel coverage. An initial 100,000
+line probe exceeded local 128 MB PHP memory; the workstation was not altered.
+Required Composer audit passes with existing severity rules. The unchanged
+npm production audit finds a further high Axios advisory blocker at transitive
+1.18.1; updating it to 1.20.0 requires separately requested owner authorization.
+
+PR #96 remains draft and unmerged. Historical rc.9 evidence remains intact.
+If this source/test/baseline remediation is later merged, it supersedes rc.9;
+no rc.10 is declared yet. PR #92 and QA remain untouched; Phase 6 is not started.
+# Historical failure inventory
+## Historical failed-test inventory (all 95)
+
+Primary categories follow the observed failure, with the independently proven
+onboarding fixture error overriding its misleading screenshot symptom.
+
+| Viewport | Spec | Test | Category |
+| --- | --- | --- | --- |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-dashboard-dashboard-admin-koperasi @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-members-index-default @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-members-index-pending-filter @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-members-index-no-results @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-payments-index-pending @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-payments-index-empty @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-ledger-index-default @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-loan-types-index-default @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-points-index-default @visual | C |
+| tablet | screens/admin-koperasi.visual.spec.ts | admin-payments-index-selected @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-dashboard-dashboard-admin-koperasi @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-members-index-default @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-members-index-pending-filter @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-members-index-no-results @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-payments-index-pending @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-payments-index-empty @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-ledger-index-default @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-loan-types-index-default @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-members-show-pending-review @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-members-show-revision @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-members-show-active @visual | C |
+| mobile | screens/admin-koperasi.visual.spec.ts | admin-payments-index-selected @visual | C |
+| desktop | screens/inventory.visual.spec.ts | documentation-landing-pengurus @visual @inventory | D |
+| desktop | screens/inventory.visual.spec.ts | documentation-article-pengurus @visual @inventory | D |
+| tablet | screens/inventory.visual.spec.ts | ledger-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | loan-types-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | loans-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | loans-show-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | members-resignations-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | members-show-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | operator-dashboard-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | payments-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | shu-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | reports-index-default @visual @inventory | C |
+| tablet | screens/inventory.visual.spec.ts | member-onboarding-default @visual @inventory | B |
+| mobile | screens/inventory.visual.spec.ts | ledger-index-default @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | loan-types-index-default @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | members-resignations-index-default @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | members-show-default @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | payments-index-default @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | savings-withdrawals-index-default @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | member-onboarding-default @visual @inventory | B |
+| mobile | screens/inventory.visual.spec.ts | documentation-article-anggota @visual @inventory | C |
+| mobile | screens/inventory.visual.spec.ts | documentation-article-mobile-overflow @visual @inventory | C |
+| desktop | screens/documentation.visual.spec.ts | landing shows articles for Pengurus | D |
+| desktop | screens/documentation.visual.spec.ts | loan approval article renders body | D |
+| desktop | screens/documentation.visual.spec.ts | SHU article renders body | D |
+| desktop | screens/documentation.visual.spec.ts | contextual help on SHU page | D |
+| desktop | screens/documentation.visual.spec.ts | no role selector with correct context label | D |
+| desktop | screens/documentation.visual.spec.ts | pengurus cannot access anggota article (403) | D |
+| tablet | screens/documentation.visual.spec.ts | landing shows articles for Pengurus | D |
+| tablet | screens/documentation.visual.spec.ts | loan approval article renders body | D |
+| tablet | screens/documentation.visual.spec.ts | SHU article renders body | D |
+| tablet | screens/documentation.visual.spec.ts | contextual help on SHU page | D |
+| tablet | screens/documentation.visual.spec.ts | no role selector with correct context label | D |
+| tablet | screens/documentation.visual.spec.ts | pengurus cannot access anggota article (403) | D |
+| mobile | screens/documentation.visual.spec.ts | landing shows articles for Pengurus | D |
+| mobile | screens/documentation.visual.spec.ts | loan approval article renders body | D |
+| mobile | screens/documentation.visual.spec.ts | SHU article renders body | D |
+| mobile | screens/documentation.visual.spec.ts | contextual help on SHU page | D |
+| mobile | screens/documentation.visual.spec.ts | no role selector with correct context label | D |
+| mobile | screens/documentation.visual.spec.ts | pengurus cannot access anggota article (403) | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko index default @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko index empty @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko index search results @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko index no results @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko open account dialog @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko validation error @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko show positive balance @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko show negative balance @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko show suspended @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko show empty ledger @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko show with ledger @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko transfers pending @visual | D |
+| desktop | screens/store-credit.visual.spec.ts | Saldo Toko transfers empty @visual | D |
+| tablet | screens/store-credit.visual.spec.ts | Saldo Toko index default @visual | D |
+| tablet | screens/store-credit.visual.spec.ts | Saldo Toko show positive balance @visual | D |
+| mobile | screens/store-credit.visual.spec.ts | Saldo Toko index default @visual | D |
+| mobile | screens/store-credit.visual.spec.ts | Saldo Toko open account dialog @visual | D |
+| mobile | screens/store-credit.visual.spec.ts | Saldo Toko show positive balance @visual | D |
+| desktop | auth/inertia-navigation.spec.ts | user menu logout reaches the login page without a reload | D |
+| tablet | auth/inertia-navigation.spec.ts | header logout reaches the login page without a reload | D |
+| tablet | auth/inertia-navigation.spec.ts | user menu logout reaches the login page without a reload | D |
+| mobile | auth/inertia-navigation.spec.ts | header logout reaches the login page without a reload | D |
+| mobile | auth/inertia-navigation.spec.ts | user menu logout reaches the login page without a reload | D |
+| desktop | screens/members.visual.spec.ts | Anggota Koperasi default @visual | D |
+| tablet | screens/members.visual.spec.ts | Anggota Koperasi default @visual | D |
+| mobile | screens/members.visual.spec.ts | Anggota Koperasi default @visual | D |
+| desktop | screens/pos.visual.spec.ts | POS register default @visual | D |
+| tablet | screens/pos.visual.spec.ts | POS register default @visual | D |
+| mobile | screens/pos.visual.spec.ts | POS register default @visual | D |
+| desktop | screens/profile.visual.spec.ts | Profil default @visual | D |
+| tablet | screens/profile.visual.spec.ts | Profil default @visual | D |
+| mobile | screens/profile.visual.spec.ts | Profil default @visual | D |
+| desktop | accessibility/inventory.accessibility.spec.ts | store-credit-index-default @accessibility | D |
+## Selected baseline file inventory (45)
+
+- `tests/visual/baselines/mobile/dashboard--dashboard--admin-koperasi.png`
+- `tests/visual/baselines/tablet/dashboard--dashboard--admin-koperasi.png`
+- `tests/visual/baselines/mobile/dues-payments-ledger--ledger--admin-default.png`
+- `tests/visual/baselines/tablet/dues-payments-ledger--ledger--admin-default.png`
+- `tests/visual/baselines/mobile/loans--index--admin-default.png`
+- `tests/visual/baselines/tablet/loans--index--admin-default.png`
+- `tests/visual/baselines/mobile/members--index--admin-default.png`
+- `tests/visual/baselines/tablet/members--index--admin-default.png`
+- `tests/visual/baselines/mobile/members--index--no-results.png`
+- `tests/visual/baselines/tablet/members--index--no-results.png`
+- `tests/visual/baselines/mobile/members--index--pending-filter.png`
+- `tests/visual/baselines/tablet/members--index--pending-filter.png`
+- `tests/visual/baselines/mobile/members--show--active.png`
+- `tests/visual/baselines/mobile/members--show--pending-review.png`
+- `tests/visual/baselines/mobile/members--show--revision.png`
+- `tests/visual/baselines/mobile/payments--index--empty.png`
+- `tests/visual/baselines/tablet/payments--index--empty.png`
+- `tests/visual/baselines/mobile/payments--index--pending.png`
+- `tests/visual/baselines/tablet/payments--index--pending.png`
+- `tests/visual/baselines/mobile/payments--index--selected.png`
+- `tests/visual/baselines/tablet/payments--index--selected.png`
+- `tests/visual/baselines/tablet/rewards-shu--index--admin-default.png`
+- `tests/visual/baselines/mobile/documentation--article--default-anggota.png`
+- `tests/visual/baselines/mobile/documentation--article--mobile-overflow.png`
+- `tests/visual/baselines/mobile/dues-payments-ledger--ledger--default.png`
+- `tests/visual/baselines/tablet/dues-payments-ledger--ledger--default.png`
+- `tests/visual/baselines/mobile/loans--index--default.png`
+- `tests/visual/baselines/tablet/loans--index--default.png`
+- `tests/visual/baselines/tablet/loans--loans--default.png`
+- `tests/visual/baselines/tablet/loans--show--default.png`
+- `tests/visual/baselines/desktop/member-portal--onboarding--default.png`
+- `tests/visual/baselines/mobile/member-portal--onboarding--default.png`
+- `tests/visual/baselines/tablet/member-portal--onboarding--default.png`
+- `tests/visual/baselines/mobile/members--index--default.png`
+- `tests/visual/baselines/tablet/members--index--default.png`
+- `tests/visual/baselines/mobile/members--members-resignations--default.png`
+- `tests/visual/baselines/tablet/members--members-resignations--default.png`
+- `tests/visual/baselines/mobile/members--show--default.png`
+- `tests/visual/baselines/tablet/members--show--default.png`
+- `tests/visual/baselines/tablet/operator--dashboard--default.png`
+- `tests/visual/baselines/mobile/dues-payments-ledger--payments--default.png`
+- `tests/visual/baselines/tablet/dues-payments-ledger--payments--default.png`
+- `tests/visual/baselines/tablet/reports--reports--default.png`
+- `tests/visual/baselines/mobile/dues-payments-ledger--withdrawals--default.png`
+- `tests/visual/baselines/tablet/rewards-shu--shu--default.png`

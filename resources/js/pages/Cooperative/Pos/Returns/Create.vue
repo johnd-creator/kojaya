@@ -133,12 +133,12 @@ const submit = () => {
                         type="button"
                         class="size-7"
                         :disabled="(quantities[item.id] ?? 0) === 0"
-                        @click="adjust(item.id, -1, item.max_returnable)"
+                        aria-label="Kurangi jumlah retur" @click="adjust(item.id, -1, item.max_returnable)"
                       >
                         <Minus class="size-3" />
                       </Button>
                       <Input
-                        v-model.number="quantities[item.id]"
+                        aria-label="Jumlah retur" v-model.number="quantities[item.id]"
                         type="number"
                         class="h-7 w-16 text-right"
                         :min="0"
@@ -150,7 +150,7 @@ const submit = () => {
                         type="button"
                         class="size-7"
                         :disabled="(quantities[item.id] ?? 0) >= item.max_returnable"
-                        @click="adjust(item.id, 1, item.max_returnable)"
+                        aria-label="Tambah jumlah retur" @click="adjust(item.id, 1, item.max_returnable)"
                       >
                         <Plus class="size-3" />
                       </Button>

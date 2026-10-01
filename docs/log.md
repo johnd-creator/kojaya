@@ -1571,3 +1571,13 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
   QA deployment leaves queue/scheduler stopped and external traffic held.
 - Production deploy entry point remains unchanged. No deployment, migration,
   service change, serving-checkout edit, or production action was performed.
+## RC-11-FIX-05D — full UI audit remediation in progress
+
+Dedicated unmerged PR #96 starts from exact rc.9. Isolated logout sessions,
+responsive menu access, profile heading and pending onboarding fixtures fix
+full-mode state pollution and masked test assumptions. Canonical Linux
+evidence supports 45 individually reviewed baseline replacements. The owner
+authorized CommonMark 2.10.2 security patch and remediation of expired existing
+accessibility debt: control labels/names, valid back-link semantics and
+contrast, retaining fail-closed axe/waiver behavior. Full final CI and
+full/all/all audit remain required; no QA deployment or Phase 6 was started.

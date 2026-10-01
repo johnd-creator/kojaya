@@ -165,7 +165,7 @@ const submit = () => {
           <CardContent class="space-y-4 p-5">
             <form class="space-y-4" @submit.prevent="submit">
               <select
-                v-model="form.pos_category_id"
+                aria-label="Kategori produk" v-model="form.pos_category_id"
                 class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950"
               >
                 <option value="">Tanpa kategori</option>
@@ -215,7 +215,7 @@ const submit = () => {
                     </div>
                   </div>
                   <input
-                    type="file"
+                    aria-label="Foto produk" type="file"
                     accept="image/png,image/jpeg,image/webp"
                     class="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-2 file:py-1 file:text-sky-700 hover:file:bg-sky-100 dark:file:bg-sky-900/40 dark:file:text-sky-200"
                     @change="onImageChange"
@@ -311,7 +311,7 @@ const submit = () => {
                   />
                 </div>
                 <select
-                  v-model="categoryId"
+                  aria-label="Filter kategori produk" v-model="categoryId"
                   class="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950"
                 >
                   <option value="">Semua kategori</option>

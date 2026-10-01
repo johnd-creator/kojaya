@@ -56,7 +56,7 @@ const refreshPreview = () => {
         </div>
         <div class="flex gap-3 rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 p-4 dark:bg-zinc-900">
           <Input
-            v-model.number="filter.year"
+            aria-label="Tahun SHU" v-model.number="filter.year"
             type="number"
             min="2020"
             class="w-32"

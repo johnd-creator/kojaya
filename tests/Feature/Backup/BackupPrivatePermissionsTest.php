@@ -260,6 +260,7 @@ class BackupPrivatePermissionsTest extends TestCase
         } else {
             $command->expectsOutputToContain('Off-site copy was not completed or failed.')->assertSuccessful();
         }
+        $command->run();
         $this->assertSame(['backups/database/historical.sql'], $offsite->files('backups/database'));
         $this->assertSame('preserve historical backup', $offsite->get('backups/database/historical.sql'));
         $primary = Storage::disk('backup_permissions');

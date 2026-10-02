@@ -4,6 +4,7 @@ namespace App\Services\Backup;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use RuntimeException;
 use SQLite3;
 use Symfony\Component\Process\Process;
@@ -11,6 +12,99 @@ use Throwable;
 
 class BackupVerificationService
 {
+    public function preparePrivateLocalDirectory(string $disk, string $directory): void
+    {
+        $storage = Storage::disk($disk);
+        $root = realpath($storage->path(''));
+        $current = '';
+        foreach (explode('/', str_replace('\\', '/', $directory)) as $segment) {
+            $current = $current === '' ? $segment : $current.'/'.$segment;
+            $parent = realpath(dirname($storage->path($current)));
+            if ($root === false || $parent === false || ($parent !== $root && ! str_starts_with($parent, $root.DIRECTORY_SEPARATOR))) {
+                throw new RuntimeException('Backup directory is outside its configured storage root.');
+            }
+            $exists = $storage->exists($current);
+            if (! $exists && ! $storage->makeDirectory($current)) {
+                throw new RuntimeException('Unable to create private backup directory.');
+            }
+            if (! $exists || $current === str_replace('\\', '/', $directory)) {
+                $this->enforcePrivateLocalPath($disk, $current, 0700);
+            }
+        }
+    }
+
+    public function preparePrivateTemporaryDirectory(string $path): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            File::ensureDirectoryExists($path);
+
+            return;
+        }
+        $missing = [];
+        for ($current = $path; ! is_dir($current); $current = dirname($current)) {
+            $missing[] = $current;
+        }
+        foreach (array_reverse($missing) as $directory) {
+            File::makeDirectory($directory, 0700);
+            $this->enforcePrivatePath($directory, 0700);
+        }
+        $this->enforcePrivatePath($path, 0700);
+    }
+
+    public function enforcePrivateLocalPath(string $disk, string $path, int $mode): void
+    {
+        $storage = Storage::disk($disk);
+        $root = realpath($storage->path(''));
+        $absolute = realpath($storage->path($path));
+        if ($root === false || $absolute === false || ! str_starts_with($absolute, $root.DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('Backup path is outside its configured storage root.');
+        }
+        if (! $storage->setVisibility($path, 'private')) {
+            throw new RuntimeException('Unable to establish private backup visibility.');
+        }
+        $this->enforcePrivatePath($absolute, $mode);
+    }
+
+    public function enforcePrivatePath(string $path, int $mode): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            throw new RuntimeException('Private backup permissions require a supported POSIX filesystem; NTFS ACL verification is unavailable.');
+        }
+        if (! @chmod($path, $mode)) {
+            throw new RuntimeException('Unable to establish private backup permissions.');
+        }
+        $this->assertPrivatePath($path);
+    }
+
+    public function assertPrivatePermissions(string $disk, string $path, bool $requireProtectedRoot = true): void
+    {
+        $storage = Storage::disk($disk);
+        if (! $storage->getAdapter() instanceof LocalFilesystemAdapter) {
+            throw new RuntimeException('Private filesystem paths cannot be verified for this disk.');
+        }
+        $privateRoot = realpath($requireProtectedRoot ? storage_path('app/private') : $storage->path(''));
+        $artifactPath = realpath($storage->path($path));
+        if ($privateRoot === false || $artifactPath === false || ! str_starts_with($artifactPath, $privateRoot.DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('Backup artifact is outside protected private storage.');
+        }
+        foreach ([$storage->path($path), $storage->path($path.'.json'), $storage->path($path.'.sha256'), dirname($artifactPath)] as $privatePath) {
+            $resolved = realpath($privatePath);
+            if ($resolved === false || ! str_starts_with($resolved, $privateRoot.DIRECTORY_SEPARATOR)) {
+                throw new RuntimeException('Backup artifact is outside protected private storage.');
+            }
+            $this->assertPrivatePath($resolved);
+        }
+    }
+
+    private function assertPrivatePath(string $path): void
+    {
+        clearstatcache(true, $path);
+        $permissions = @fileperms($path);
+        if (PHP_OS_FAMILY === 'Windows' || $permissions === false || ($permissions & 0077) !== 0) {
+            throw new RuntimeException('Backup artifact or directory permissions are not private.');
+        }
+    }
+
     public function __construct(
         private readonly ?BackupRetentionService $retentionService = null,
     ) {}
@@ -140,7 +234,7 @@ class BackupVerificationService
 
         // 2. Download to isolated temporary file to perform archive structure verification
         $tmpDirectory = storage_path('app/private/backups/verify');
-        File::ensureDirectoryExists($tmpDirectory);
+        $this->preparePrivateTemporaryDirectory($tmpDirectory);
         $tmpFile = $tmpDirectory.'/'.uniqid('verify-', true).'.'.$extension;
 
         try {
@@ -152,6 +246,10 @@ class BackupVerificationService
             $targetStream = fopen($tmpFile, 'wb');
             if ($targetStream === false) {
                 throw new RuntimeException("Unable to open temporary verification file [{$tmpFile}].");
+            }
+
+            if (PHP_OS_FAMILY !== 'Windows') {
+                $this->enforcePrivatePath($tmpFile, 0600);
             }
 
             stream_copy_to_stream($stream, $targetStream);

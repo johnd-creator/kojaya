@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -139,9 +140,15 @@ class BackupDatabaseService
         $targetPath = "{$directory}/{$backupFilename}";
 
         $storage = Storage::disk($disk);
-        if ($storage->exists($targetPath)) {
-            throw new RuntimeException("Backup artifact [{$disk}:{$targetPath}] already exists. Overwrite prohibited.");
+        $artifactPaths = [$targetPath, $targetPath.'.sha256', $targetPath.'.json'];
+        foreach ($artifactPaths as $artifactPath) {
+            if ($storage->exists($artifactPath)) {
+                throw new RuntimeException("Backup artifact [{$disk}:{$artifactPath}] already exists. Overwrite prohibited.");
+            }
         }
+        $isLocal = $storage->getAdapter() instanceof LocalFilesystemAdapter;
+        $createdPaths = [];
+        $primaryVerified = false;
 
         Log::info('Database backup started', [
             'backup_id' => $backupId,
@@ -153,15 +160,31 @@ class BackupDatabaseService
         ]);
 
         $tmpDirectory = storage_path('app/private/backups/tmp');
-        File::ensureDirectoryExists($tmpDirectory);
         $tmpFile = "{$tmpDirectory}/".uniqid('tmp-backup-', true)."-{$backupFilename}";
 
         try {
+            if ($isLocal) {
+                $this->verificationService->preparePrivateLocalDirectory($disk, $directory);
+                // Exclusive reservations prevent cleanup from claiming an existing or concurrent backup.
+                foreach ($artifactPaths as $artifactPath) {
+                    $reservation = @fopen($storage->path($artifactPath), 'xb');
+                    if ($reservation === false) {
+                        throw new RuntimeException('Unable to reserve a new backup artifact. Overwrite prohibited.');
+                    }
+                    fclose($reservation);
+                    $createdPaths[] = $artifactPath;
+                    $this->verificationService->enforcePrivateLocalPath($disk, $artifactPath, 0600);
+                }
+            }
+            $this->verificationService->preparePrivateTemporaryDirectory($tmpDirectory);
             // 1. Gather non-sensitive row counts before dump
             $rowCounts = $this->gatherRowCounts($connectionName);
 
             // 2. Execute read-only dump
             $this->executeDump($driver, $connection, $tmpFile);
+            if (PHP_OS_FAMILY !== 'Windows') {
+                $this->verificationService->enforcePrivatePath($tmpFile, 0600);
+            }
 
             // 3. Verify file exists and is non-empty
             if (! File::exists($tmpFile) || File::size($tmpFile) <= 0) {
@@ -213,21 +236,34 @@ class BackupDatabaseService
             if ($stream === false) {
                 throw new RuntimeException("Failed to open temporary dump file [{$tmpFile}] for reading.");
             }
-            $putSuccess = $storage->put($targetPath, $stream);
-            if (is_resource($stream)) {
-                fclose($stream);
+            try {
+                $putSuccess = $storage->put($targetPath, $stream, ['visibility' => 'private']);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
             }
 
             if (! $putSuccess) {
                 throw new RuntimeException("Failed to write backup dump to primary storage [{$disk}:{$targetPath}].");
             }
+            if ($isLocal) {
+                $this->verificationService->enforcePrivateLocalPath($disk, $targetPath, 0600);
+            }
 
             $sha256Content = "{$sha256}  {$backupFilename}\n";
-            $storage->put($targetPath.'.sha256', $sha256Content);
-            $storage->put($targetPath.'.json', $manifest->toJson());
+            foreach ([$targetPath.'.sha256' => $sha256Content, $targetPath.'.json' => $manifest->toJson()] as $path => $content) {
+                if (! $storage->put($path, $content, ['visibility' => 'private'])) {
+                    throw new RuntimeException('Unable to write managed backup provenance.');
+                }
+                if ($isLocal) {
+                    $this->verificationService->enforcePrivateLocalPath($disk, $path, 0600);
+                }
+            }
 
             // 8. CRITICAL: Verify final primary stored artifact
             $this->verifyFinalPrimaryArtifact($disk, $targetPath, $sizeBytes, $sha256);
+            $primaryVerified = true;
 
             // 9. Handle Off-site Replication if enabled
             $offsiteResult = [
@@ -272,12 +308,25 @@ class BackupDatabaseService
                     schemaVersion: $manifest->schemaVersion,
                 );
 
-                $storage->put($targetPath.'.json', $manifest->toJson());
+                $primaryVerified = false;
+                if (! $storage->put($targetPath.'.json', $manifest->toJson(), ['visibility' => 'private'])) {
+                    throw new RuntimeException('Unable to update managed backup manifest.');
+                }
+                if ($isLocal) {
+                    $this->verificationService->enforcePrivateLocalPath($disk, $targetPath.'.json', 0600);
+                }
 
                 if (! empty($offsiteResult['copied'])) {
                     Storage::disk($offsiteDisk)->put("{$offsiteDirectory}/{$backupFilename}.json", $manifest->toJson());
                 }
             }
+
+            // Check after the last write (including offsite manifest updates), before reporting success.
+            if ($isLocal) {
+                $primaryVerified = false;
+                $this->verificationService->assertPrivatePermissions($disk, $targetPath, requireProtectedRoot: false);
+            }
+            $primaryVerified = true;
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -300,6 +349,15 @@ class BackupDatabaseService
                 'offsite' => $offsiteResult,
             ];
         } catch (Throwable $e) {
+            if (! $primaryVerified && $createdPaths !== []) {
+                try {
+                    if (! $storage->delete($createdPaths)) {
+                        Log::warning('Incomplete managed backup cleanup failed', ['backup_id' => $backupId]);
+                    }
+                } catch (Throwable) {
+                    Log::warning('Incomplete managed backup cleanup failed', ['backup_id' => $backupId]);
+                }
+            }
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             Log::error('Database backup failed', [
@@ -341,6 +399,9 @@ class BackupDatabaseService
         }
 
         // Full archive integrity check on stored artifact
+        if ($storage->getAdapter() instanceof LocalFilesystemAdapter) {
+            $this->verificationService->assertPrivatePermissions($disk, $targetPath, requireProtectedRoot: false);
+        }
         $this->verificationService->verifyStorageBackup($disk, $targetPath, requireProvenance: true);
     }
 

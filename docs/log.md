@@ -1592,3 +1592,12 @@ pass 19/19 without retries, retaining shared-session isolation and adding
 single-POST, no-reload, runtime-error and Enter/Space checks. Backend regressions
 pass 2 tests/7 assertions on isolated SQLite. Exact-new-head CI and full audit
 remain required; PR #96 is unmerged, with QA/PR #92/Phase 6 untouched.
+
+## 2026-10-02 — RC-11-FIX-06A managed backup permissions
+
+Managed local backups enforce private directory/artifact modes and reuse the
+independent verifier before reporting success, including the final offsite
+manifest update. Exclusive reservations bound failed-operation cleanup to newly
+created primary files. Real isolated POSIX filesystem regression tests cover
+nonrestrictive umasks and permission failures; no dependency or deployment-script
+changes, QA operations, PR #92 reconciliation, or Phase 6 work are included.

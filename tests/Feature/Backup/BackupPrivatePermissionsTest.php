@@ -94,6 +94,7 @@ class BackupPrivatePermissionsTest extends TestCase
             $mock->shouldReceive('assertPrivatePermissions')->andThrow(new RuntimeException('Injected permission verification failure'));
         });
         $this->artisan('backup:database')
+            ->expectsOutputToContain('Injected permission verification failure')
             ->doesntExpectOutputToContain('Backup successfully created and verified')
             ->assertFailed();
         $this->assertSame(['managed/historical.sql'], Storage::disk('backup_permissions')->files('managed'));
@@ -107,6 +108,7 @@ class BackupPrivatePermissionsTest extends TestCase
         $mock->shouldReceive('setVisibility')->andReturn(false);
         Storage::set('backup_permissions', $mock);
         $this->artisan('backup:database')
+            ->expectsOutputToContain('Unable to establish private backup visibility')
             ->doesntExpectOutputToContain('Backup successfully created and verified')
             ->assertFailed();
         $this->assertEmpty($storage->files('managed'));
@@ -140,15 +142,16 @@ class BackupPrivatePermissionsTest extends TestCase
         Config::set('filesystems.disks.offsite_test', ['driver' => 'local', 'root' => $this->root.'/offsite']);
         $verifier = new BackupVerificationService;
         $checks = 0;
-        $this->partialMock(BackupVerificationService::class, function ($mock) use ($verifier, &$checks): void {
-            $mock->shouldReceive('assertPrivatePermissions')->andReturnUsing(function (string $disk, string $path, bool $requireProtectedRoot) use ($verifier, &$checks): void {
-                if (++$checks === 2) {
-                    throw new RuntimeException('Injected final permission verification failure');
-                }
-                $verifier->assertPrivatePermissions($disk, $path, $requireProtectedRoot);
-            });
+        $mock = \Mockery::mock(BackupVerificationService::class, [null])->makePartial();
+        $mock->shouldReceive('assertPrivatePermissions')->andReturnUsing(function (string $disk, string $path, bool $requireProtectedRoot) use ($verifier, &$checks): void {
+            if (++$checks === 2) {
+                throw new RuntimeException('Injected final permission verification failure');
+            }
+            $verifier->assertPrivatePermissions($disk, $path, $requireProtectedRoot);
         });
+        $this->instance(BackupVerificationService::class, $mock);
         $this->artisan('backup:database', ['--offsite-disk' => 'offsite_test'])
+            ->expectsOutputToContain('Injected final permission verification failure')
             ->doesntExpectOutputToContain('Backup successfully created and verified')
             ->assertFailed();
         $this->assertSame(2, $checks);

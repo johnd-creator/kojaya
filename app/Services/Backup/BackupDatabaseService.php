@@ -82,7 +82,7 @@ class BackupDatabaseService
         }
 
         $disk = (string) ($disk ?: config('operations.backup.disk', 'local'));
-        $directory = trim((string) ($directory ?: config('operations.backup.directory', 'backups/database')), '/\\');
+        $directory = str_replace('\\', '/', trim((string) ($directory ?: config('operations.backup.directory', 'backups/database')), '/\\'));
 
         // Disk safety validation (must not be public)
         $this->retentionService->validateDiskSafety($disk);

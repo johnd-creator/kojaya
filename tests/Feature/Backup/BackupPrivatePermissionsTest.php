@@ -134,6 +134,20 @@ class BackupPrivatePermissionsTest extends TestCase
         $this->assertCount(3, Storage::disk('backup_permissions')->files('nested/managed'));
     }
 
+    public function test_directory_separator_alias_uses_the_same_private_local_namespace(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('POSIX backup creation must be verified on Linux.');
+        }
+        $this->artisan('backup:database', ['--directory' => 'nested\\managed'])->assertSuccessful();
+        $files = Storage::disk('backup_permissions')->files('nested/managed');
+        $this->assertCount(3, $files);
+        foreach ($files as $path) {
+            clearstatcache(true, $this->root.'/'.$path);
+            $this->assertSame(0600, fileperms($this->root.'/'.$path) & 0777);
+        }
+    }
+
     public function test_final_privacy_check_after_offsite_manifest_update_fails_closed(): void
     {
         if (PHP_OS_FAMILY === 'Windows') {

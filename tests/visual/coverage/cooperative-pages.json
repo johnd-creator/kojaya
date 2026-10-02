@@ -820,7 +820,7 @@
       "route_name": "member.onboarding",
       "path_template": "/member/onboarding",
       "role": "Anggota",
-      "auth_state": "anggota",
+      "auth_state": "anggota-pending",
       "state": "default",
       "viewport_policy": ["desktop", "tablet", "mobile"],
       "fixture": "module-default",

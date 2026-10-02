@@ -44,7 +44,9 @@ class VerifyDatabaseBackupCommand extends Command
         $this->info("Verifying database backup: {$disk}:{$path}");
 
         try {
-            $this->assertPrivatePermissions($disk, $path);
+            if ($this->option('require-private-permissions')) {
+                $verificationService->assertPrivatePermissions($disk, $path);
+            }
             $manifest = $verificationService->verifyStorageBackup($disk, $path, requireProvenance: true);
 
             $expectedDatabase = (string) $this->option('expected-database');
@@ -65,40 +67,6 @@ class VerifyDatabaseBackupCommand extends Command
             $this->error("Backup verification failed: {$e->getMessage()}");
 
             return self::FAILURE;
-        }
-    }
-
-    private function assertPrivatePermissions(string $disk, string $path): void
-    {
-        if (! $this->option('require-private-permissions')) {
-            return;
-        }
-
-        $storage = Storage::disk($disk);
-        if (! method_exists($storage, 'path')) {
-            throw new \RuntimeException('Private filesystem paths cannot be verified for this disk.');
-        }
-
-        $privateRoot = realpath(storage_path('app/private'));
-        $artifactPath = realpath($storage->path($path));
-        if ($privateRoot === false || $artifactPath === false || ! str_starts_with($artifactPath, $privateRoot.DIRECTORY_SEPARATOR)) {
-            throw new \RuntimeException('Backup artifact is outside protected private storage.');
-        }
-
-        foreach ([$artifactPath, $artifactPath.'.json', $artifactPath.'.sha256'] as $privatePath) {
-            $resolvedPath = realpath($privatePath);
-            $permissions = $resolvedPath === false ? false : @fileperms($resolvedPath);
-            if ($resolvedPath === false || ! str_starts_with($resolvedPath, $privateRoot.DIRECTORY_SEPARATOR)
-                || $permissions === false || ($permissions & 0077) !== 0) {
-                throw new \RuntimeException('Backup artifact permissions are not private.');
-            }
-        }
-
-        $resolvedDirectory = realpath(dirname($artifactPath));
-        $directoryPermissions = $resolvedDirectory === false ? false : @fileperms($resolvedDirectory);
-        if ($resolvedDirectory === false || ! str_starts_with($resolvedDirectory, $privateRoot.DIRECTORY_SEPARATOR)
-            || $directoryPermissions === false || ($directoryPermissions & 0077) !== 0) {
-            throw new \RuntimeException('Backup directory permissions are not private.');
         }
     }
 

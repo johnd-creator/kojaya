@@ -1,5 +1,9 @@
 # Phase 5 RC-11 — QA Deployment Readiness Gate
 
+**Current status (2026-10-03): RC-11 TECHNICAL GATES: PASS;
+OWNER APPROVAL: PENDING — READY FOR OWNER APPROVAL.** Section 19 supersedes
+older candidate-status conclusions; earlier BLOCKED assessments remain history.
+
 **Assessment date:** 2026-09-29
 
 **Verdict:** **RC-11 BLOCKED**
@@ -641,3 +645,94 @@ No deployment, migration, seed/import, restore, queue/scheduler start, traffic r
 The owner approval previously given for rc.7 does not authorize rc.8. New explicit owner approval for exact SHA 4f3afd8a5940e0ad7735f7e2ffb143a3d8ab9dd5 remains required after the technical blockers are cleared. RC-11 remains BLOCKED on exact-main CI/UI Audit, release-preflight readiness, scheduler disabled-state proof, and owner approval.
 
 RC-11-RC8-RECONCILIATION: BLOCKED
+
+## 19. Final rc.11 dossier reconciliation — 2026-10-03
+
+### Candidate and evidence authority
+
+Authoritative untagged candidate: **v1.0.0-rc.11**, exact main SHA
+`1c257b3e5ad76d9d453222213dd055d9ab18c9a9`. PR #97 is MERGED;
+FIX-06A is PASS. Main was fetched and remained at that SHA during reconciliation.
+PR #92 is a documentation dossier, not a replacement application candidate.
+Earlier rc.7/rc.8 assessments, including BLOCKED results, are historical and
+are not retroactively changed. rc.9 `f52610326e4ff43bff05b9afe2efcdc9646eefb7`
+and rc.10 `5c2e76ca7010dbd87174850f17ea48615f200dfe` are superseded candidates.
+The remote dossier previously ended at rc.8; no missing rc.9/rc.10 assessment
+is invented. The supplied rc.10 backup history is distinguished below.
+
+### Exact-main application and UI gates
+
+[CI #523 / 37029602498](https://github.com/johnd-creator/kojaya/actions/runs/37029602498):
+SUCCESS on branch main, exact SHA above. All 15 mandatory jobs PASS:
+Change Classification, Frontend Build, Generated Drift, Pint, Migration and Seed,
+PostgreSQL Concurrency, OpenAPI Drift, Dependency Audit, SEED-09, PHPUnit Shards
+1/4 through 4/4, PHPUnit Parallel, and Phase 4 Readiness Gate.
+Existing exact-main evidence is authoritative; CI was not rerun for this dossier.
+
+[Kojaya UI Audit #310 / 37071233636](https://github.com/johnd-creator/kojaya/actions/runs/37071233636):
+workflow_dispatch, mode=full, viewport=all, scope=all; SUCCESS on the same exact
+rc.11 tested SHA. Playwright: 577 pass, 0 fail, 213 policy skips, 0 flaky,
+0 expected-screen skips. Baseline inventory 234/234 valid; missing, orphan,
+duplicate and invalid dimensions all 0. Artifact contract PASS. Accessibility:
+critical 0, serious 0, no new waiver. Logout regression 12/12 PASS covers header
+logout, user-menu logout, Enter and Space across desktop, tablet and mobile.
+No additional full UI audit is dispatched solely for documentation changes.
+
+### FIX-06A backup closure and fresh runtime proof
+
+Managed primary local and local offsite backups enforce directory 0700 and
+dump/checksum/manifest 0600, including the final manifest rewrite, independently
+of shell umask. The shared independent permission verifier is fail-closed.
+Required offsite failure fails the backup; optional offsite failure cannot report
+unsafe copied=true. Non-local adapters are not subjected to POSIX chmod.
+Failed-operation cleanup is bounded to newly owned files, preserving history.
+
+The completed QA-02 handoff supplies fresh rc.11 automatic backup proof:
+source `kojaya_qa`, purpose pre-deploy readiness proof, directory 0700,
+dump/manifest/checksum 0600, **MANUAL CHMOD = NO**. Provenance, checksum,
+PostgreSQL archive integrity, source DB identity and independent permission
+verification all PASS. The private backup identifier is intentionally omitted.
+The historical rc.10 backup required manual permission correction; that defect
+is now superseded and closed by FIX-06A in rc.11, not erased from history.
+
+### Final QA runtime revalidation and network reconciliation
+
+**RC-11-RC11-QA-02: PASS**, recorded from the owner's completed runtime handoff,
+not from new SSH/probes in this documentation task. Candidate is the exact rc.11
+SHA above; serving checkout remained historical and unchanged.
+
+- QA database identity PASS; intended target `kojaya_qa`. Legacy `kojaya` and
+  `kojaya_qa` exist and are distinct.
+- Strict release-candidate preflight PASS; Android push readiness PASS.
+- FCM OAuth non-send PASS / HTTP 2xx; process-local OAuth token discarded;
+  no FCM notification or external provider delivery.
+- Queue loaded and inactive; scheduler loaded, inactive and disabled.
+- Deployment contract PASS; no migration, restore, serving cutover or legacy
+  database mutation. Phase 6 NOT STARTED.
+
+Earlier Google OAuth transport failures were traced to upstream network
+security/reputation policy rather than application JWT/FCM code. A narrowly
+scoped approved network exception restored Google OAuth HTTPS connectivity;
+final rc.11 non-send OAuth verification PASSed. No token/JWT, project identifier,
+service-account email, credential path/key, database credential, internal address,
+private threat-feed URI or firewall topology is published.
+
+### Current decision and explicit approval boundary
+
+**RC-11 TECHNICAL GATES: PASS**
+
+**OWNER APPROVAL: PENDING**
+
+**READY FOR OWNER APPROVAL** — not RC-11 CLOSED, not Phase 5 CLOSED, and not
+Phase 6 STARTED. Earlier approval for another candidate does not authorize rc.11.
+Required fresh approval must explicitly bind:
+
+- Exact SHA `1c257b3e5ad76d9d453222213dd055d9ab18c9a9`.
+- Environment QA ONLY; target database `kojaya_qa`.
+- Legacy `kojaya` MUST NOT be the migration target.
+- Production NOT AUTHORIZED; Phase 6 may start only after explicit approval.
+
+PR #92 remains OPEN/UNMERGED pending that approval. This task changes only
+`docs/log.md` and this dossier, preserves current-main source, and performs no
+deployment, migration, restore, seed/import, QA server change, provider send,
+credential rotation, release tag or new candidate creation.

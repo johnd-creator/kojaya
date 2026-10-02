@@ -61,11 +61,11 @@ function submitClose(): void {
         <PageContainer>
             <div class="flex flex-col gap-6">
                 <header class="flex items-center gap-4">
-                    <Link href="/cooperative/pos" prefetch>
-                        <Button variant="ghost" size="icon" class="rounded-full">
+                    <Button as-child variant="ghost" size="icon" class="rounded-full">
+                        <Link href="/cooperative/pos" prefetch aria-label="Kembali ke POS">
                             <ArrowLeft class="h-5 w-5" />
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <div>
                         <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Shift Kasir</h1>
                         <p class="text-sm text-zinc-500">Buka dan tutup shift kasir dengan penghitungan uang.</p>
@@ -93,18 +93,18 @@ function submitClose(): void {
                     <div class="mt-4 grid gap-4 md:grid-cols-3">
                         <div>
                             <Label>Kas Awal</Label>
-                            <Input v-model="openForm.opening_cash" type="number" min="0" class="mt-1 rounded-xl" />
+                            <Input aria-label="Kas Awal" v-model="openForm.opening_cash" type="number" min="0" class="mt-1 rounded-xl" />
                         </div>
                         <div>
                             <Label>Lokasi (opsional)</Label>
-                            <select v-model="openForm.pos_inventory_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                            <select aria-label="Lokasi (opsional)" v-model="openForm.pos_inventory_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
                                 <option :value="null">-</option>
                                 <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
                             </select>
                         </div>
                         <div>
                             <Label>Catatan</Label>
-                            <Input v-model="openForm.notes" class="mt-1 rounded-xl" />
+                            <Input aria-label="Catatan" v-model="openForm.notes" class="mt-1 rounded-xl" />
                         </div>
                     </div>
                     <div class="mt-4 flex justify-end">
@@ -122,11 +122,11 @@ function submitClose(): void {
                         <div class="mt-4 space-y-3">
                             <div>
                                 <Label>Kas Dihitung</Label>
-                                <Input v-model="closeForm.closing_cash" type="number" min="0" class="mt-1 rounded-xl" />
+                                <Input aria-label="Kas Dihitung" v-model="closeForm.closing_cash" type="number" min="0" class="mt-1 rounded-xl" />
                             </div>
                             <div>
                                 <Label>Catatan</Label>
-                                <Input v-model="closeForm.notes" class="mt-1 rounded-xl" />
+                                <Input aria-label="Catatan penutupan" v-model="closeForm.notes" class="mt-1 rounded-xl" />
                             </div>
                         </div>
                         <div class="mt-5 flex justify-end gap-2">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { LogOut, Settings, Building, Check } from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -24,6 +24,23 @@ const activeOrg = computed(
 const userOrgs = computed(
   () => (page.props.user_organizations || []) as Record<string, any>[],
 );
+
+const loggingOut = ref(false);
+
+const logOut = () => {
+  // Pointer selection can emit again before the dropdown has closed.
+  if (loggingOut.value) return;
+  loggingOut.value = true;
+  router.post(
+    logout().url,
+    {},
+    {
+      onFinish: () => {
+        loggingOut.value = false;
+      },
+    },
+  );
+};
 
 const switchOrganization = (orgId: string | null) => {
   router.post(
@@ -89,16 +106,15 @@ defineProps<Props>();
     </DropdownMenuSub>
   </DropdownMenuGroup>
   <DropdownMenuSeparator />
-  <DropdownMenuItem :as-child="true">
-    <Link
-      class="block w-full cursor-pointer"
-      :href="logout()"
-      method="post"
-      as="button"
-      data-test="logout-button"
-    >
-      <LogOut class="mr-2 h-4 w-4" />
-      Log out
-    </Link>
+  <DropdownMenuItem
+    as="button"
+    type="button"
+    class="w-full cursor-pointer"
+    data-test="logout-button"
+    :disabled="loggingOut"
+    @select="logOut"
+  >
+    <LogOut class="mr-2 h-4 w-4" />
+    Log out
   </DropdownMenuItem>
 </template>

@@ -39,6 +39,22 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 
 **Pre-deploy backup gate:** every production deployment requires a verified primary backup on private storage. Backup creation verifies the stored artifact, including its manifest and SHA-256 companion. Failure aborts deployment before maintenance mode, code checkout, or database mutation. This gate does not unconditionally require offsite replication.
 
+Managed local backup creation (primary and local offsite adapters) explicitly enforces `0700` on the backup directory
+and `0600` on the dump, manifest, and checksum, independently of shell umask.
+The shared private-permission verifier runs before success, including after an
+offsite manifest update. Local offsite copies are reported as successful only
+after all three final artifacts and their containing directory pass verification.
+Required offsite failure fails the command; optional offsite failure preserves a
+verified primary with `copied=false`. Cleanup covers only exclusively reserved
+new artifacts on the affected disk; historical backups are
+not deleted. `backup:verify --require-private-permissions` remains an independent
+gate, and the QA script's `umask 077` remains defense-in-depth. POSIX permissions
+are verified on Linux; managed local creation fails closed on Windows because
+NTFS ACL verification is not implemented. Do not use Windows mode bits as proof
+of privacy or add a manual chmod step to the release procedure.
+Remote/non-local adapters retain private object visibility and streamed checksum
+verification without destination POSIX path or chmod requirements.
+
 **Production disaster-recovery gate:** an approved, independent offsite copy is mandatory before production go-live. A directory on the same host or disk is not offsite protection. Production offsite configuration has not been verified by this runbook and must be proven separately before go-live.
 
 **Synchronous deployment behavior:** when `BACKUP_REQUIRE_OFFSITE=true`, missing offsite configuration, replication failure, or integrity failure makes `backup:database` fail and aborts that deployment. With the repository default `false`, offsite replication is not a hard synchronous dependency of each deployment. Do not infer production configuration from repository defaults.
@@ -515,9 +531,13 @@ at the expected exact revisions.
 The traffic-hold attestation is a private operator record with exactly one each
 of `environment=qa`, `status=held`, `approved_sha=<exact-sha>`, and
 `created_at_epoch=<unix-seconds>`. It is valid for 15 minutes. The orchestrator
-also requires `kojaya-queue.service` inactive and `kojaya-scheduler.timer`
-inactive and disabled. These checks are Kojaya-specific and do not stop or
-change services belonging to other applications.
+requires the installed `kojaya-qa-queue.service` to report
+`LoadState=loaded` and `ActiveState=inactive`. It also requires the installed
+`kojaya-qa-schedule.timer` to report `LoadState=loaded`, `ActiveState=inactive`,
+and `UnitFileState=disabled` (`systemctl is-enabled` returns `disabled`). A
+missing unit is a deployment blocker and is never treated as inactive. These
+checks are Kojaya-specific and do not stop or change services belonging to
+other applications.
 
 Before changing the serving checkout, the orchestrator installs the protected
 QA runtime file into the candidate with mode `0600`, prepares dependencies and

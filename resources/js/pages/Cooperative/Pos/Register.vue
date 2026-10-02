@@ -241,7 +241,7 @@ const submit = () => {
               />
             </div>
             <select
-              v-model="selectedCategory"
+              aria-label="Kategori produk" v-model="selectedCategory"
               class="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <option value="">Semua kategori</option>
@@ -407,7 +407,7 @@ const submit = () => {
             class="space-y-3 border-t border-zinc-200/70 p-4 dark:border-zinc-800/70"
           >
             <select
-              v-model="paymentMethod"
+              aria-label="Metode pembayaran" v-model="paymentMethod"
               class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <option value="CASH">Tunai (CASH)</option>
@@ -417,7 +417,7 @@ const submit = () => {
               <option value="MEMBER_STORE_ACCOUNT">Saldo Toko Anggota</option>
             </select>
             <select
-              v-model="memberId"
+              aria-label="Anggota pembeli" v-model="memberId"
               class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <option value="">

@@ -95,7 +95,8 @@ class QaDeploymentScriptTest extends TestCase
     {
         return [
             ['dirty-candidate'], ['mismatch-candidate'], ['candidate-identity'], ['candidate-dependencies'],
-            ['preflight'], ['backup'], ['verify'], ['traffic'], ['queue'], ['scheduler'],
+            ['preflight'], ['backup'], ['verify'], ['traffic'], ['queue-active'], ['scheduler-active'],
+            ['scheduler-enabled'], ['queue-missing'], ['scheduler-missing'],
         ];
     }
 
@@ -212,8 +213,16 @@ class QaDeploymentScriptTest extends TestCase
         $this->assertSame(0600, fileperms($candidateEnv) & 0777);
         $this->assertSame(fileowner($this->directory.'/runtime.env'), fileowner($candidateEnv));
         $this->assertSame(filegroup($this->directory.'/runtime.env'), filegroup($candidateEnv));
-        $this->assertStringNotContainsString('queue:restart', implode("\n", $commands));
-        $this->assertStringNotContainsString('systemctl start', implode("\n", $commands));
+        $commandLog = implode("\n", $commands);
+        $this->assertContains('systemctl show --property=LoadState --value kojaya-qa-queue.service', $commands);
+        $this->assertContains('systemctl show --property=LoadState --value kojaya-qa-schedule.timer', $commands);
+        $this->assertContains('systemctl show --property=ActiveState --value kojaya-qa-queue.service', $commands);
+        $this->assertContains('systemctl show --property=ActiveState --value kojaya-qa-schedule.timer', $commands);
+        $this->assertContains('systemctl is-enabled kojaya-qa-schedule.timer', $commands);
+        $this->assertStringNotContainsString('kojaya-queue.service', $commandLog);
+        $this->assertStringNotContainsString('kojaya-scheduler.timer', $commandLog);
+        $this->assertStringNotContainsString('queue:restart', $commandLog);
+        $this->assertStringNotContainsString('systemctl start', $commandLog);
         $this->assertNotFalse($this->positionStartingWith($commands, 'candidate-backup:verify backups/database/kojaya-qa-kojaya_qa-'));
         $this->assertStringContainsString('--disk=local --directory=backups/database --expected-database=kojaya_qa --require-private-permissions', implode("\n", $commands));
         $this->assertStringContainsString('--strict-release-candidate --require-android-push --no-interaction', implode("\n", $commands));

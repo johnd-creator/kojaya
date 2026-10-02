@@ -118,7 +118,7 @@
 
 - Established authoritative cross-component seed integrity and readiness gate closing Phase 3 — Seed & Test Data:
   - Created `tests/Feature/SEED09/SeedIntegrityGateTest.php` implementing 41 comprehensive integration scenarios (Scenarios A through AO) across 10 readiness domains (Identity, Lifecycle, Organization, Financial, Store Credit, POS, Loans, Edge Isolation, Determinism, Safety).
-  - Validated aggregate identity counts across 12 synthetic users and 7 synthetic members; the baseline excludes reserved edge personas, uses correct RBAC roles, and preserves unique natural keys and deterministic SSO binding.
+  - Validated identity counts (exactly 12 `seed.*@kojaya.test` users, 7 `DEV-KOP-*` members), absence of P11/P14/P15 in baseline, correct RBAC roles, unique natural keys, and deterministic Google SSO binding for P12.
   - Verified authoritative application lifecycle derivation via `MemberLifecycleExperience::fromMember()` across all member personas with full metadata coherence.
   - Enforced multi-tenant topology and organizational isolation (KOP-001 owns all members and finance; KBU-001 and ISO-999 own 0 members and 0 finance).
   - Verified complete financial reconciliation: 0 financial fixtures for non-active personas (P06-P09) and empty state (P13); 100% dues, payment, receipt, and savings ledger reconciliation for P10 (paid) and P12 (unpaid).
@@ -126,7 +126,7 @@
   - Verified POS transactions and stock reconciliation: P10 cash routine purchase (110k), P12 store account purchase (450k), and exact inventory depletion against transaction quantities.
   - Verified loan integrity and maker-checker workflow: P10 paid-off loan (3.225M, 6 installments paid), P12 active ongoing loan (3.225M, 6 pending installments), reviewer P03 != approver P02, chronological ordering, and 0 defaulted/written-off loans in baseline.
   - Verified edge dataset readiness and reversible separation (`baseline -> edge -> baseline`), snapshot reset determinism, and dirty state recovery.
-  - Verified production safety: preservation of manually maintained QA records, ERP isolation (`Employee`), operator reference preservation, complete seeder safety registry coverage, zero fixture creation in production `DatabaseSeeder`, and fail-closed environment mismatch / direct seeder denial.
+  - Verified production safety: preservation of manual QA cooperative data (`MANUAL-KOP-001`), ERP isolation (`Employee`), operator reference preservation, 100% complete seeder safety registry coverage, zero fixture creation in production `DatabaseSeeder`, and fail-closed environment mismatch / direct seeder denial.
   - Added dedicated CI readiness job `seed-integrity-gate` (`SEED-09 — Seed Integrity & Readiness Gate`) in `.github/workflows/ci.yml`.
   - Published comprehensive documentation in `docs/phase-3/SEED-09-seed-integrity-readiness-gate.md`.
   - Formally declared Phase 3 CLOSED and ready for Phase 4 Functional Test & Fix.
@@ -148,11 +148,11 @@
 ## 2026-09-20 - Deterministic Reset / Reseed Tooling (SEED-07)
 
 - Implemented `php artisan cooperative:reset-test-data` command and `CooperativeTestDataResetService` closing gap G-09 from SEED-01:
-  - Scoped strictly to fixture-owned synthetic identities and natural keys; production and manually maintained records remain outside cleanup scope.
-  - Total cleanup of legacy cooperative demo namespaces (legacy synthetic member records and demo users).
+  - Scoped strictly to fixture-owned synthetic identities and natural keys (`seed.*@kojaya.test`, `DEV-KOP-*`, `google-seed-*`, `SEED-PAY-*`, `SEED-RC-*`, `SEED-POS-*`, `SEED-LOAN-*`, `seed-store-ledger:*`).
+  - Total cleanup of legacy cooperative demo namespaces (`DEMO-KOP-*`, `DEMO-ANG-*`, demo users `admin.kop@koj.id`, `kasir@...`).
   - Strict preservation of operator/reference configuration (e.g. customized `WAJIB.default_amount`, customized `LoanType` parameters).
-  - Strict preservation of manually maintained QA cooperative records and unrelated ERP data (`Employee`, `Payroll`, `Department`, etc.).
-  - UI audit fixtures remain preserved and isolated from reset.
+  - Strict preservation of manual QA cooperative records (e.g. `MANUAL-KOP-*`, non-seed users) and unrelated ERP data (`Employee`, `Payroll`, `Department`, etc.).
+  - UI Audit data (`AUD-*`, `ui.*@kojaya.test`) preserved and isolated from reset.
   - Multi-tier environment guard: allowed only in `local`, `testing`, `playwright`. Rejects `development`, `qa`, `staging`, and `production`.
   - Guard for `--with-edge-cases`: strictly rejected in `local`, allowed only in `testing` and `playwright`. Rejection occurs before any cleanup or mutation.
   - Safe `--dry-run` mode: reports counts of affected records and reseed plan with 100% zero database modifications.
@@ -169,7 +169,7 @@
   - Classified strictly as `TEST_ONLY_INVALID_FIXTURE`.
   - Enforced strict environment guard: allowed ONLY in `testing` and `playwright`. Throws `LogicException` in `production`, `staging`, `qa`, `local`, and `development`.
   - Kept completely separate from `DatabaseSeeder`: never invoked in baseline local development seeds to maintain an uncorrupted dev environment.
-  - Implemented a deterministic synthetic P11 persona for blocked-member authorization coverage; credentials and identifying values remain test-only:
+  - Implemented deterministic canonical P11 persona (`DEV-KOP-011`, `seed.member.blocked@kojaya.test`, password `password`, role `Anggota`, organization `KOP-001`):
     - Status: `INACTIVE`, `validation_status = INACTIVE` (`BLOCKED_UNKNOWN`).
     - Web entry fail-closed: HTTP 403 on `/dashboard` and `/member/onboarding`.
     - API login fail-closed: HTTP 403 on `POST /api/auth/login` with `lifecycle_experience = BLOCKED_UNKNOWN`, 0 Sanctum tokens issued.
@@ -197,22 +197,22 @@
 ## 2026-09-20 - Synthetic Transaction & Financial Test Data (SEED-05)
 
 - Implemented `CooperativeFinancialFixtureSeeder` providing deterministic synthetic financial test data for Phase 4 functional testing:
-  - Scope boundaries strictly enforced: financial fixtures are assigned only to active synthetic member personas.
-  - The designated empty-state persona has strictly 0 financial records across all models (0 store account, 0 dues, 0 loans, 0 POS transactions, 0 receipts, 0 ledgers).
+  - Scope boundaries strictly enforced: financial fixtures assigned strictly to active canonical members (P10 `DEV-KOP-010`, P12 `DEV-KOP-012`, P13 `DEV-KOP-013`).
+  - P13 (`DEV-KOP-013`) canonical EMPTY state: strictly 0 financial records across all models (0 store account, 0 dues, 0 loans, 0 POS transactions, 0 receipts, 0 ledgers).
   - Inactive/pending members (P06-P09) have strictly 0 financial records.
   - Organizations: all financial records belong strictly to `KOP-001`. `KBU-001` and `ISO-999` have strictly 0 members and 0 financial records.
   - Zero edge/negative data: no `DEFAULTED`/`WRITTEN_OFF` loans, no store balance < -500k, no P11 edge data.
   - P10 Financial Fixtures (NORMAL / PAID-OFF):
-    - Dues: principal and mandatory savings examples are paid with matched savings ledgers.
+    - Dues: Simpanan Pokok (Rp 200.000, PAID, receipt `SEED-RC-010-001`), Simpanan Wajib 2026-01 (Rp 100.000, PAID, receipt `SEED-RC-010-002`), matched savings ledgers.
     - Store Account: +Rp 150.000 (credit balance), limit Rp 500.000, matched opening ledger entry.
-    - POS: one completed cash sale had matched payment and stock deduction.
-    - Loan: one completed productive loan had six fully paid installments and matched disbursement/payment ledgers.
+    - POS: 1 completed CASH sale (`SEED-POS-TX-010-001`, Rp 110.000, 2 items), matched cash payment and stock deduction.
+    - Loan: 1 completed productive loan (`SEED-LOAN-CLOSED-010-001`, Rp 3.000.000, 6-month, closed), reviewed by Manager P03, approved and disbursed by Pengurus P02, 6 fully paid installments (Rp 537.500 each, total Rp 3.225.000), matched disbursement and payment ledgers.
   - P12 Financial Fixtures (PARTIAL / UNPAID / BOUNDARY):
     - Dues: Simpanan Wajib 2026-06 (Rp 100.000, UNPAID, due 2026-06-10).
     - Store Account: -Rp 450.000 (outstanding debt), limit Rp 500.000, available credit Rp 50.000.
-    - POS: one completed store-account purchase had a matched credit ledger debit and stock deduction.
-    - Loan: one active productive loan had six pending installments and a matched disbursement ledger.
-  - POS catalog: four deterministic active products had reconciled stock counts.
+    - POS: 1 completed credit purchase via `MEMBER_STORE_ACCOUNT` (`SEED-POS-TX-012-001`, Rp 450.000, 4 items), matched store credit ledger debit and stock deduction.
+    - Loan: 1 active productive loan (`SEED-LOAN-ACTIVE-012-001`, Rp 3.000.000, 6-month, active), reviewed by Manager P03, approved and disbursed by Pengurus P02, 6 pending installments (Rp 537.500 each, total Rp 3.225.000 outstanding), matched disbursement ledger.
+  - POS Catalog: 4 deterministic active products under `KOP-001` (`SEED-POS-001` through `SEED-POS-004`) with reconciled stock (93, 99, 100, 80 units).
   - Closed Gap G-04: removed calendar dependency (`Carbon::now()`) in legacy seeders (`CooperativeSeeder`, `AnggotaSeeder`) by fixing reference end period to `2026-06-01`.
   - Fail-closed environment guard: throws `LogicException` in `production`, `staging`, `qa`, and `development`.
   - Supports standalone direct execution bootstrapping `CooperativeMemberLifecycleSeeder`, `CooperativeReferenceSeeder`, and `LoanTypeSeeder`.
@@ -222,7 +222,7 @@
 
 ## 2026-09-20 - Member Lifecycle Verification Metadata Correction (SEED-04R1)
 
-- Corrected lifecycle metadata for revision-required and rejected member personas in `CooperativeMemberLifecycleSeeder`:
+- Corrected lifecycle metadata for P08 (`DEV-KOP-008`, `REVISION`) and P09 (`DEV-KOP-009`, `REJECTED`) in `CooperativeMemberLifecycleSeeder`:
   - Preserved historical admin verification evidence: `admin_validated_by = P04` (Admin Koperasi), `admin_validated_at = 2026-06-01 09:00:00`, and `admin_validation_notes` populated.
   - P08 revision decision remains by Admin P04 at `2026-06-01 09:30:00` with revision guidance.
   - P09 final rejection remains by Pengurus P02 at `2026-06-01 10:00:00` with rejection reason, preserving maker-checker invariant (`P04 != P02`).
@@ -231,12 +231,12 @@
 
 ## 2026-09-19 - Member Lifecycle Dataset (SEED-04)
 
-- Implemented `CooperativeMemberLifecycleSeeder` to enrich seven canonical member personas with deterministic lifecycle metadata:
-  - A pending, unverified persona has no decision metadata.
-  - An under-review persona has been verified by an Admin and awaits Pengurus approval.
-  - A revision-required persona retains the Admin revision decision and guidance.
-  - A rejected persona retains the final Pengurus decision and reason.
-  - Active personas retain their verified/approved states and activation dates.
+- Implemented `CooperativeMemberLifecycleSeeder` enriching the 7 canonical member personas (`DEV-KOP-006` through `DEV-KOP-013`) with deterministic lifecycle metadata:
+  - P06 (`DEV-KOP-006`, `WaitingVerification`): PENDING/PENDING, unverified, unapproved, zero decision metadata.
+  - P07 (`DEV-KOP-007`, `UnderReview`): PENDING/PENDING_VALIDATION, verified by Admin P04 at `2026-06-01 09:00:00`, pending Pengurus approval.
+  - P08 (`DEV-KOP-008`, `RevisionRequired`): INACTIVE/REVISION, revision note by Admin P04 at `2026-06-01 09:30:00`.
+  - P09 (`DEV-KOP-009`, `Rejected`): INACTIVE/REJECTED, rejected with reason by Pengurus P02 at `2026-06-01 10:00:00`.
+  - P10, P12, P13 (`DEV-KOP-010`, `012`, `013`, `Active`): ACTIVE/ACTIVE, verified by P04 (`09:00:00`), approved by P02 (`10:00:00`), `catatan_pengurus` set, `tanggal_aktif = 2026-06-01`.
 - Added `blockedUnknown()` factory state to `CooperativeMemberFactory` for isolated unit/feature edge testing without polluting DEV baseline seed.
 - Enforced zero new persona/member creation (strictly 12 users and 7 members in baseline dataset).
 - Enforced strict fail-closed environment guard (`LogicException` in production, staging, qa, and development).
@@ -260,9 +260,9 @@
 ## 2026-09-19 - User & Member Persona Seeder (SEED-03)
 
 - Implemented `CooperativePersonaSeeder` creating the canonical deterministic non-production personas for Phase 4 functional testing:
-  - Twelve valid baseline user personas cover staff/admin and member roles.
-  - Seven valid `CooperativeMember` personas cover the derived lifecycle experiences.
-  - One deterministic Google `SocialAccount` is linked to a member with no fake login/token side effects.
+  - 12 valid baseline User personas (`seed.*@kojaya.test` with password `password`): P01-P05 Staff/Admin, P06-P10 and P12-P13 Members.
+  - 7 valid `CooperativeMember` personas (`DEV-KOP-006` through `DEV-KOP-013`) mapped to derived lifecycle experiences (`WaitingVerification`, `UnderReview`, `RevisionRequired`, `Rejected`, and `Active`).
+  - 1 deterministic Google `SocialAccount` linked to P12 (`google-seed-sub-012`, `linked_at` set, zero fake login/token side-effects).
   - Ensured P13 has strictly 0 `SocialAccount`s.
 - Enforced strict fail-closed environment guard (`LogicException` in `production`, `staging`, `qa`, and `development`).
 - Preserved single-ownership domain boundaries: all personas and members belong strictly to `KOP-001`; `KBU-001` has strictly 0 members; `ISO-999` has 0 default personas.
@@ -301,7 +301,7 @@
 - Completed full inventory of 15 seeders and 63 factories in the repository.
 - Documented strict boundary between `PRODUCTION_SAFE_REFERENCE` data and non-production demo/fixture seeders.
 - Mapped canonical `MemberLifecycleExperience` states against existing `CooperativeMemberFactory` methods, identifying missing `blockedUnknown()` state.
-- Defined 15 persona definitions: 14 baseline valid DEV personas (P01–P10, P12–P15) + 1 optional BLOCKED_UNKNOWN edge persona (P11) with synthetic identities (`DEV-*`, `synthetic test-domain identities`, synthetic NIKs), strictly excluding P11 from standard default DEV reseed.
+- Defined 15 persona definitions: 14 baseline valid DEV personas (P01–P10, P12–P15) + 1 optional BLOCKED_UNKNOWN edge persona (P11) with synthetic identities (`DEV-*`, `@kojaya.test`, synthetic NIKs), strictly excluding P11 from standard default DEV reseed.
 - Established Credential Policy, Fixed Anchor Date policy (`2026-06-01`), and tenant isolation requirements (`KOP-001`, `KBU-001`, `ISO-999`).
 - Mapped primary ownership for all Phase 3 tasks (SEED-02 through SEED-09) with detailed gap analysis.
 - Zero production code, zero seeder code, zero migrations, and zero configuration changed.
@@ -355,7 +355,7 @@
 
 - Removed controller/service target-policy duplication and all implicit global session/home targets. Added HTTP and direct-service regressions for explicit targeting, invalid targets, authoritative unit scope, and organization attribution on both closing and journal.
 - Added `PosDailyClosingConcurrencyTest` to the existing `PostgreSQLConcurrency` CI suite. Independent PHP worker sessions synchronize via pipes; `pg_blocking_pids()` and fresh `pg_stat_activity` snapshots prove the competing session waits before the parent commits. Covers sale-first and closing-first orderings for existing mutex rows and concurrent creation of previously absent placeholders, plus cross-organization same-date progress.
-- Local PostgreSQL 18.6 (`pgsql`, READ COMMITTED), isolated PostgreSQL test database: five cases passed with 117 assertions. CI uses PostgreSQL 16. SQLite explicitly skips this proof. The mutex algorithm, mutation transaction boundaries, migration, and legacy null-org isolation remain unchanged. The closing page preserves the server-validated target on date filtering and submission; the UI audit uses an explicit organization fixture and exercises both actions without changing visual baselines.
+- Local PostgreSQL 18.6 (`pgsql`, READ COMMITTED), isolated `kojaya_test`: five cases passed with 117 assertions. CI uses PostgreSQL 16. SQLite explicitly skips this proof. The mutex algorithm, mutation transaction boundaries, migration, and legacy null-org isolation remain unchanged. The closing page preserves the server-validated target on date filtering and submission; the UI audit uses an explicit organization fixture and exercises both actions without changing visual baselines.
 
 ## 🎯 2026-09-05 - POS Organization Isolation R1 & CI Regression Hardening (SEC-P1-03 R1)
 
@@ -511,8 +511,8 @@
 - Added `CooperativeReferenceSeeder` for core organization, contribution types, and POS categories.
 - Added fail-closed environment guards (`['local', 'testing', 'playwright']`) to all demo seeders (`CooperativeSeeder`, `AnggotaSeeder`, `DemoDataSeeder`, `InvoiceSeeder`, `CooperativeManagerRoleSeeder`).
 - Removed destructive `resetDemoSavingsForMember` ledger/invoice delete operations.
-- Namespaced demo member records to prevent collisions with real members.
-- Removed hardcoded admin account creation from `RolePermissionSeeder`; privileged user creation is delegated to `admin:create`.
+- Namespaced demo member identities (`DEMO-ANG-001`, `DEMO-KOP-001`) to prevent collisions with real members.
+- Removed hardcoded admin user creation with `'password'` from `RolePermissionSeeder`; privileged user creation is delegated to `admin:create`.
 - Hardened `AppServiceProvider` with `DB::prohibitDestructiveCommands(! app()->environment('local', 'testing', 'playwright'))` to prohibit `migrate:fresh`, `migrate:refresh`, `db:wipe` in staging and production.
 - Added comprehensive regression and static analysis test suites.
 
@@ -638,7 +638,7 @@
 - ✅ Coffee orders now create POS transactions for the authenticated active cooperative member, reduce POS stock, and return an initial `RECEIVED` status for mobile order tracking.
 - ✅ Added persistent `coffee_orders` status tracking plus Admin Koperasi queue at `/cooperative/pos/coffee-orders`.
 - ✅ Added member status endpoint `GET /api/v1/member/coffee/orders/{coffeeOrder}` so Flutter can poll backend status changes (`RECEIVED`, `BREWING`, `READY`, `PICKED_UP`, `CANCELLED`).
-- ✅ Documented the related Flutter app project in `AGENTS.md` so future Laravel work can inspect it before aligning mobile-facing contracts.
+- ✅ Documented the Flutter app path in `AGENTS.md` so future Laravel work can inspect `/home/john-d/Videos/kojaya-app` before aligning mobile-facing contracts.
 
 **Verification:**
 - ✅ `MemberCoffeeOrderApiTest` covers catalog loading and order creation.
@@ -1032,7 +1032,7 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 
 **🛡️ Security & Hygiene Improvements:**
 - ✅ Removed `resources/js/pages/Welcome.vue.bak` from version control and added `tests/Feature/RepoHygieneTest.php` to prevent backup/temp files (`*.bak`, `*.backup`, `*.old`, `*.tmp`, `*.temp`, `*.orig`, `*.rej`, `*.swp`) from re-entering the repo.
-- ✅ Replaced predictable ESS account defaults with randomly generated credentials. Added `App\Services\Hr\EmployeeEssProvisioningService` with `enable()` / `disable()` methods and a Fortify password-reset link returned via flash session (`ess_password_reset_link`) so operators can deliver it through a secure channel. Wrapped provisioning in `DB::transaction` so partial failures roll back cleanly.
+- ✅ Replaced ESS account default password (was `employee_code` — visible on printed ID cards) with a random 20-char password generated via `Str::password()`. Added `App\Services\Hr\EmployeeEssProvisioningService` with `enable()` / `disable()` methods and a Fortify password-reset link returned via flash session (`ess_password_reset_link`) so operators can deliver it through a secure channel. Wrapped provisioning in `DB::transaction` so partial failures roll back cleanly.
 - ✅ Added `throttle:audit-logs` (30/min) to all audit-logs API routes and a tighter `throttle:audit-export` (5/min) to `/audit-logs/export` to prevent bulk scraping of the audit trail. Registered both rate limiters in `AppServiceProvider::registerRateLimiters`.
 - ✅ Removed inline `formatRupiah` and `new Intl.NumberFormat("id-ID")` helpers from `Exceptions/Dashboard.vue`, `Dashboard.vue`, and `settings/Components.vue`; pages now consume `formatCurrency` / `formatNumber` from `@/lib/formatters`. Added `tests/Feature/FrontendFormatterHygieneTest.php` to fail CI if a local formatter is reintroduced.
 - ✅ Hardened `App\Monitoring\Health::counts()` and `App\Services\Monitoring\MetricsService` (`failedWebhookCount`, `failedPushCount`, `queueFailureCount`) with `Schema::hasTable` guards plus try-catch, so missing observability tables (`webhook_logs`, `push_notification_logs`, `failed_jobs`) no longer break health checks during fresh deployments.
@@ -1249,7 +1249,7 @@ User review menemukan 8 celah di implementasi Phase 0–6. Diselesaikan dalam 6 
 
 **⚠️ Security Warning:**
 - Database credentials need rotation
-- Configured application key material should be regenerated
+- APP_KEY should be regenerated
 - All API keys need to be rotated
 
 **📚 Documentation Created:**
@@ -1578,7 +1578,7 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 
 ---
 
-* Aug 25, 2026 | QA Authentication Inertia Proxy Hardening | Engineering | Identified HTTP-scheme downgrade in login/logout redirects behind the edge proxy, added least-privilege trusted-proxy configuration and host-isolated session guidance, and made both logout entry points submit the same Inertia POST transition. QA deployment and browser acceptance remain operator steps. |
+* Aug 25, 2026 | QA Authentication Inertia Proxy Hardening | Engineering | Identified HTTP-scheme downgrade in login/logout redirects behind Cloudflare Tunnel, added least-privilege trusted-proxy configuration and host-isolated session guidance, and made both logout entry points submit the same Inertia POST transition. QA deployment and browser acceptance remain operator steps. |
 * Aug 29, 2026 | Backup & Disaster Recovery Safety V1 | Engineering | Implemented comprehensive PostgreSQL-native logical backup tooling (pg_dump -Fc, pg_restore --list verification), cryptographic JSON manifests and SHA-256 checksums, mandatory pre-deployment backup gate in deploy script, fail-closed restore drills in isolated CI, provider-neutral off-site replication, and safe retention pruning. |
 * Aug 29, 2026 | Senior Backup DR Safety Fixes | Engineering | Hardened backup storage safety by rejecting public disks, public visibility, public roots, and public URLs; fixed require-offsite config fallback; implemented streaming SHA-256 verification of remote off-site copy; added stored primary artifact verification; protected verified valid backups during retention pruning; used authoritative manifest creation timestamp for SLA health monitoring; enforced ephemeral disposable source & target database lifecycles for restore drills; sanitized MySQL process environment to prevent argv password exposure; updated disaster recovery runbook to empty recovery database cutover model. |
 * Sep 1, 2026 | Sensitive Employee File Storage Hardening (SEC-P0-03) | Engineering | Hardened employee certificates and medical checkup storage by moving them to the private employee_documents filesystem disk, removing public storage URLs, adding authenticated/scoped API & web download endpoints, implementing fail-closed deletion, verified MIME inspection, withTrashed orphan inventory in migration tooling, and tracking the six operational migration lifecycle states. |
@@ -1652,4 +1652,63 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 - No exact-main CI or UI Audit run was available or dispatched in this session; both remain BLOCKED. Queue stayed inactive; scheduler was inactive but its enablement was not found, so disabled state remains unproven.
 - Serving checkout/database remained pre-cutover; legacy kojaya was not migrated. Production deploy entry point remained unchanged. No external provider traffic, deployment, or Phase 6 occurred.
 - rc.7 owner approval does not authorize rc.8. Explicit approval for exact rc.8 SHA remains pending; RC-11 is BLOCKED.
-*This log is maintained throughout the project lifecycle. Last updated: September 30, 2026*
+## RC-11-FIX-05D — full UI audit remediation in progress
+
+Dedicated unmerged PR #96 starts from exact rc.9. Isolated logout sessions,
+responsive menu access, profile heading and pending onboarding fixtures fix
+full-mode state pollution and masked test assumptions. Canonical Linux
+evidence supports 45 individually reviewed baseline replacements. The owner
+authorized CommonMark 2.10.2 security patch and remediation of expired existing
+accessibility debt: control labels/names, valid back-link semantics and
+contrast, retaining fail-closed axe/waiver behavior. Full final CI and
+full/all/all audit remain required; no QA deployment or Phase 6 was started.
+
+### RC-11-FIX-05D-R2 — Axios and user-menu logout
+
+Owner-authorized Axios 1.20.0 changes only its transitive lock entry; the high
+production audit passes without ignores. Repeated user-menu pointer selection
+sent duplicate logout requests (aborted/419), fixed with a single named button,
+explicit select action and single-flight guard. Focused three-viewport tests
+pass 19/19 without retries, retaining shared-session isolation and adding
+single-POST, no-reload, runtime-error and Enter/Space checks. Backend regressions
+pass 2 tests/7 assertions on isolated SQLite. Exact-new-head CI and full audit
+remain required; PR #96 is unmerged, with QA/PR #92/Phase 6 untouched.
+
+## 2026-10-02 — RC-11-FIX-06A managed backup permissions
+
+Managed local backups enforce private directory/artifact modes and reuse the
+independent verifier before reporting success, including the final offsite
+manifest update. Exclusive reservations bound failed-operation cleanup to newly
+created files. R2 extends the same invariant to actual local offsite adapters,
+finalizes their manifest before independent permission verification, and preserves
+required/optional failure semantics without imposing POSIX checks on remote
+adapters. Real isolated POSIX filesystem regression tests cover
+nonrestrictive umasks and permission failures; no dependency or deployment-script
+changes, QA operations, PR #92 reconciliation, or Phase 6 work are included.
+
+## 2026-10-03 — RC-11-RC11-DOSSIER-01 final reconciliation
+
+- Authoritative untagged `v1.0.0-rc.11` is
+  `1c257b3e5ad76d9d453222213dd055d9ab18c9a9`; PR #97 is merged.
+  Exact-main CI #523 (37029602498), all 15 mandatory jobs, and full/all/all
+  UI Audit #310 (37071233636) passed. Existing evidence was retained, not rerun.
+- UI: 577 passed, zero failed/flaky, 213 policy skips, zero expected-screen
+  skips; baseline 234/234 valid, zero inventory defects; artifact contract PASS,
+  critical/serious accessibility zero, no new waiver, logout 12/12 PASS.
+- Completed QA-02 runtime handoff records identity/preflight/push readiness,
+  non-send OAuth HTTP 2xx, deployment contract and fresh backup proof PASS.
+  FIX-06A closes the historical rc.10 manual-permission correction defect:
+  rc.11 backup directory 0700 and dump/checksum/manifest 0600 automatically,
+  with no manual chmod. Provenance, checksum, archive integrity, source identity
+  and independent permission verification passed.
+- Earlier OAuth transport failures were upstream network-security policy,
+  not application JWT/FCM code; an approved narrowly scoped exception restored
+  connectivity. No token, private endpoint or credential is recorded here.
+- Historical evidence remains historical. Final technical gates PASS; owner
+  approval PENDING. Approval must bind this exact SHA, QA ONLY and `kojaya_qa`;
+  legacy `kojaya` must not be the migration target; production is not authorized.
+  Serving QA remains unchanged, no migration/restore/cutover/provider delivery
+  occurred, PR #92 stays unmerged and Phase 6 NOT STARTED.
+- This reconciliation changes documentation only and makes no QA/server calls.
+  Full sanitized evidence and approval boundaries are in section 19 of
+  `docs/releases/PHASE-5-RC-11.md`.

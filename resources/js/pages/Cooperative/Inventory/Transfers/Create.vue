@@ -42,11 +42,11 @@ function submit(): void {
         <PageContainer>
             <div class="flex flex-col gap-6">
                 <header class="flex items-center gap-4">
-                    <Link href="/cooperative/pos/inventory/transfers">
-                        <Button variant="ghost" size="icon" class="rounded-full">
+                    <Button as-child variant="ghost" size="icon" class="rounded-full">
+                        <Link href="/cooperative/pos/inventory/transfers" aria-label="Kembali ke transfer stok">
                             <ArrowLeft class="h-5 w-5" />
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <div>
                         <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Transfer Stok Baru</h1>
                     </div>
@@ -56,7 +56,7 @@ function submit(): void {
                     <div class="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm md:grid-cols-3">
                         <div>
                             <Label>Dari Lokasi</Label>
-                            <select v-model="form.from_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                            <select aria-label="Dari Lokasi" v-model="form.from_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
                                 <option value="0">Pilih</option>
                                 <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
                             </select>
@@ -64,7 +64,7 @@ function submit(): void {
                         </div>
                         <div>
                             <Label>Ke Lokasi</Label>
-                            <select v-model="form.to_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
+                            <select aria-label="Ke Lokasi" v-model="form.to_location_id" class="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm">
                                 <option value="0">Pilih</option>
                                 <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
                             </select>
@@ -72,7 +72,7 @@ function submit(): void {
                         </div>
                         <div>
                             <Label>Tanggal</Label>
-                            <Input v-model="form.transferred_at" type="date" class="mt-1 rounded-xl" />
+                            <Input aria-label="Tanggal" v-model="form.transferred_at" type="date" class="mt-1 rounded-xl" />
                         </div>
                     </div>
 
@@ -88,11 +88,11 @@ function submit(): void {
                             <div v-for="(item, idx) in form.items" :key="idx" class="grid items-end gap-2 md:grid-cols-12">
                                 <div class="md:col-span-8">
                                     <Label class="text-xs">ID Produk</Label>
-                                    <Input v-model="item.pos_product_id" type="number" min="1" class="mt-1 rounded-lg" />
+                                    <Input aria-label="ID Produk" v-model="item.pos_product_id" type="number" min="1" class="mt-1 rounded-lg" />
                                 </div>
                                 <div class="md:col-span-3">
                                     <Label class="text-xs">Qty</Label>
-                                    <Input v-model="item.quantity" type="number" min="1" class="mt-1 rounded-lg" />
+                                    <Input aria-label="Qty" v-model="item.quantity" type="number" min="1" class="mt-1 rounded-lg" />
                                 </div>
                                 <div class="md:col-span-1">
                                     <Button type="button" variant="ghost" size="sm" class="text-red-600" @click="removeItem(idx)">×</Button>

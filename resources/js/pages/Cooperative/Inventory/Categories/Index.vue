@@ -115,7 +115,7 @@ const submit = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    @click="router.delete(destroy(category.id).url)"
+                    aria-label="Hapus kategori" @click="router.delete(destroy(category.id).url)"
                   >
                     <Trash2 class="h-4 w-4" />
                   </Button>

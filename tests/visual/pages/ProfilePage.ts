@@ -5,6 +5,6 @@ export class ProfilePage {
 
     public async goto(): Promise<void> {
         await this.page.goto("/settings/profile");
-        await expect(this.page.getByRole("heading", { name: /profile settings/i })).toBeAttached();
+        await expect(this.page.getByRole("heading", { name: "Profile information", exact: true })).toBeVisible();
     }
 }

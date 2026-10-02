@@ -1,0 +1,110 @@
+<?php
+
+namespace Tests\Feature\Backup;
+
+use App\Services\Backup\BackupVerificationService;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
+use SQLite3;
+use Tests\TestCase;
+
+class BackupPrivatePermissionsTest extends TestCase
+{
+    private string $root;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->root = storage_path('app/private/backup-permissions-test-'.uniqid());
+        File::ensureDirectoryExists($this->root);
+        $database = $this->root.'/fixture.sqlite';
+        $sqlite = new SQLite3($database);
+        $sqlite->exec('CREATE TABLE fixture (id INTEGER PRIMARY KEY)');
+        $sqlite->exec('INSERT INTO fixture VALUES (1)');
+        $sqlite->close();
+
+        Config::set('database.default', 'backup_permissions');
+        Config::set('database.connections.backup_permissions', ['driver' => 'sqlite', 'database' => $database]);
+        Config::set('filesystems.disks.backup_permissions', [
+            'driver' => 'local', 'root' => $this->root, 'throw' => true,
+        ]);
+        Config::set('operations.backup.enabled', true);
+        Config::set('operations.backup.disk', 'backup_permissions');
+        Config::set('operations.backup.directory', 'managed');
+        Config::set('operations.backup.offsite_enabled', false);
+        Config::set('operations.backup.offsite_disk', null);
+        Config::set('operations.backup.require_offsite', false);
+    }
+
+    protected function tearDown(): void
+    {
+        DB::purge('backup_permissions');
+        Storage::forgetDisk('backup_permissions');
+        File::deleteDirectory($this->root);
+        parent::tearDown();
+    }
+
+    public static function permissiveUmasks(): array
+    {
+        return ['no restriction' => [0000], 'usual shell' => [0022], 'all creation bits masked' => [0777]];
+    }
+
+    #[DataProvider('permissiveUmasks')]
+    public function test_real_local_artifacts_and_existing_directory_are_private_without_shell_umask(int $mask): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('POSIX modes require Linux; NTFS mode bits are not a privacy proof.');
+        }
+        File::ensureDirectoryExists($this->root.'/managed');
+        chmod($this->root.'/managed', 0777);
+        $previous = umask($mask);
+        try {
+            $this->artisan('backup:database')->assertSuccessful();
+        } finally {
+            umask($previous);
+        }
+
+        $files = Storage::disk('backup_permissions')->files('managed');
+        $this->assertCount(3, $files);
+        foreach ($files as $path) {
+            $absolute = Storage::disk('backup_permissions')->path($path);
+            clearstatcache(true, $absolute);
+            $this->assertSame(0600, fileperms($absolute) & 0777, $path);
+        }
+        clearstatcache(true, $this->root.'/managed');
+        $this->assertSame(0700, fileperms($this->root.'/managed') & 0777);
+        $dump = array_values(array_filter($files, fn (string $path): bool => str_ends_with($path, '.sqlite')))[0];
+        $this->artisan('backup:verify', [
+            'path' => $dump, '--disk' => 'backup_permissions', '--require-private-permissions' => true,
+        ])->assertSuccessful();
+    }
+
+    public function test_permission_verification_failure_fails_command_and_cleans_only_new_artifacts(): void
+    {
+        Storage::disk('backup_permissions')->put('managed/historical.sql', 'historical backup');
+        $this->partialMock(BackupVerificationService::class, function ($mock): void {
+            $mock->shouldReceive('assertPrivatePermissions')->andThrow(new RuntimeException('Injected permission verification failure'));
+        });
+        $this->artisan('backup:database')
+            ->doesntExpectOutputToContain('Backup successfully created and verified')
+            ->assertFailed();
+        $this->assertSame(['managed/historical.sql'], Storage::disk('backup_permissions')->files('managed'));
+        $this->assertSame('historical backup', Storage::disk('backup_permissions')->get('managed/historical.sql'));
+    }
+
+    public function test_visibility_enforcement_failure_fails_closed(): void
+    {
+        $storage = Storage::disk('backup_permissions');
+        $mock = \Mockery::mock($storage)->makePartial();
+        $mock->shouldReceive('setVisibility')->andReturn(false);
+        Storage::set('backup_permissions', $mock);
+        $this->artisan('backup:database')
+            ->doesntExpectOutputToContain('Backup successfully created and verified')
+            ->assertFailed();
+        $this->assertEmpty($storage->files('managed'));
+    }
+}

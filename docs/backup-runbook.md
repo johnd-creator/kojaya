@@ -39,16 +39,21 @@ This document defines the operational procedures for PostgreSQL backup, verifica
 
 **Pre-deploy backup gate:** every production deployment requires a verified primary backup on private storage. Backup creation verifies the stored artifact, including its manifest and SHA-256 companion. Failure aborts deployment before maintenance mode, code checkout, or database mutation. This gate does not unconditionally require offsite replication.
 
-Managed local backup creation explicitly enforces `0700` on the backup directory
+Managed local backup creation (primary and local offsite adapters) explicitly enforces `0700` on the backup directory
 and `0600` on the dump, manifest, and checksum, independently of shell umask.
 The shared private-permission verifier runs before success, including after an
-offsite manifest update. Enforcement/verification failure returns failure and
-cleans only exclusively reserved new primary artifacts; historical backups are
+offsite manifest update. Local offsite copies are reported as successful only
+after all three final artifacts and their containing directory pass verification.
+Required offsite failure fails the command; optional offsite failure preserves a
+verified primary with `copied=false`. Cleanup covers only exclusively reserved
+new artifacts on the affected disk; historical backups are
 not deleted. `backup:verify --require-private-permissions` remains an independent
 gate, and the QA script's `umask 077` remains defense-in-depth. POSIX permissions
 are verified on Linux; managed local creation fails closed on Windows because
 NTFS ACL verification is not implemented. Do not use Windows mode bits as proof
 of privacy or add a manual chmod step to the release procedure.
+Remote/non-local adapters retain private object visibility and streamed checksum
+verification without destination POSIX path or chmod requirements.
 
 **Production disaster-recovery gate:** an approved, independent offsite copy is mandatory before production go-live. A directory on the same host or disk is not offsite protection. Production offsite configuration has not been verified by this runbook and must be proven separately before go-live.
 

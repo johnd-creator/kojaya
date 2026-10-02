@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Backup;
 
+use App\Services\Backup\BackupDatabaseService;
+use App\Services\Backup\BackupManifest;
 use App\Services\Backup\BackupVerificationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -158,7 +160,7 @@ class BackupPrivatePermissionsTest extends TestCase
         $checks = 0;
         $mock = \Mockery::mock(BackupVerificationService::class, [null])->makePartial();
         $mock->shouldReceive('assertPrivatePermissions')->andReturnUsing(function (string $disk, string $path, bool $requireProtectedRoot) use ($verifier, &$checks): void {
-            if (++$checks === 2) {
+            if ($disk === 'backup_permissions' && ++$checks === 2) {
                 throw new RuntimeException('Injected final permission verification failure');
             }
             $verifier->assertPrivatePermissions($disk, $path, $requireProtectedRoot);
@@ -173,15 +175,17 @@ class BackupPrivatePermissionsTest extends TestCase
         Storage::forgetDisk('offsite_test');
     }
 
-    public function test_new_directory_and_primary_files_remain_private_after_offsite_update(): void
+    #[DataProvider('permissiveUmasks')]
+    public function test_new_directory_and_primary_files_remain_private_after_offsite_update(int $mask): void
     {
         if (PHP_OS_FAMILY === 'Windows') {
             $this->markTestSkipped('POSIX backup creation must be verified on Linux.');
         }
         Config::set('filesystems.disks.offsite_test', ['driver' => 'local', 'root' => $this->root.'/offsite']);
-        $previous = umask(0000);
+        Storage::disk('offsite_test');
+        $previous = umask($mask);
         try {
-            $this->artisan('backup:database', ['--offsite-disk' => 'offsite_test'])->assertSuccessful();
+            $this->artisan('backup:database', ['--offsite-disk' => 'offsite_test', '--offsite-directory' => 'backups\\database'])->assertSuccessful();
         } finally {
             umask($previous);
         }
@@ -193,6 +197,157 @@ class BackupPrivatePermissionsTest extends TestCase
         }
         clearstatcache(true, $this->root.'/managed');
         $this->assertSame(0700, fileperms($this->root.'/managed') & 0777);
+        $offsite = Storage::disk('offsite_test');
+        $offsiteFiles = $offsite->files('backups/database');
+        $this->assertCount(3, $offsiteFiles);
+        foreach ($offsiteFiles as $path) {
+            clearstatcache(true, $offsite->path($path));
+            $this->assertSame(0600, fileperms($offsite->path($path)) & 0777, $path);
+            if (str_ends_with($path, '.json')) {
+                $metadata = json_decode($offsite->get($path), true, flags: JSON_THROW_ON_ERROR);
+                $this->assertTrue($metadata['offsite_copy']['copied']);
+                $this->assertTrue($metadata['offsite_copy']['sha256_verified']);
+            }
+        }
+        clearstatcache(true, $offsite->path('backups/database'));
+        $this->assertSame(0700, fileperms($offsite->path('backups/database')) & 0777);
         Storage::forgetDisk('offsite_test');
+    }
+
+    public static function offsiteFailures(): array
+    {
+        return [
+            'required enforcement failure' => [true, false],
+            'optional enforcement failure' => [false, false],
+            'required final verification failure' => [true, true],
+            'optional final verification failure' => [false, true],
+        ];
+    }
+
+    #[DataProvider('offsiteFailures')]
+    public function test_local_offsite_failure_never_reports_unsafe_success(bool $required, bool $finalVerification): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Real POSIX offsite permissions require Linux.');
+        }
+        Config::set('filesystems.disks.offsite_test', ['driver' => 'local', 'root' => $this->root.'/offsite']);
+        $offsite = Storage::disk('offsite_test');
+        $offsite->put('backups/database/historical.sql', 'preserve historical backup');
+        $verifier = new BackupVerificationService;
+        $mock = \Mockery::mock(BackupVerificationService::class, [null])->makePartial();
+        if ($finalVerification) {
+            $mock->shouldReceive('assertPrivatePermissions')->andReturnUsing(function (string $disk, string $path, bool $requireProtectedRoot) use ($verifier, $offsite): void {
+                if ($disk === 'offsite_test') {
+                    $metadata = json_decode($offsite->get($path.'.json'), true, flags: JSON_THROW_ON_ERROR);
+                    $this->assertTrue($metadata['offsite_copy']['copied']);
+                    chmod($offsite->path($path.'.json'), 0644);
+                }
+                $verifier->assertPrivatePermissions($disk, $path, $requireProtectedRoot);
+            });
+        } else {
+            $mock->shouldReceive('enforcePrivateLocalPath')->andReturnUsing(function (string $disk, string $path, int $mode) use ($verifier): void {
+                if ($disk === 'offsite_test' && $mode === 0600) {
+                    throw new RuntimeException('Injected offsite permission enforcement failure');
+                }
+                $verifier->enforcePrivateLocalPath($disk, $path, $mode);
+            });
+        }
+        $this->instance(BackupVerificationService::class, $mock);
+        $command = $this->artisan('backup:database', ['--offsite-disk' => 'offsite_test', '--require-offsite' => $required]);
+        $command->doesntExpectOutputToContain('Off-site copy replicated to:');
+        if ($required) {
+            $command->expectsOutputToContain('Required off-site backup copy')->assertFailed();
+        } else {
+            $command->expectsOutputToContain('Off-site copy was not completed or failed.')->assertSuccessful();
+        }
+        $this->assertSame(['backups/database/historical.sql'], $offsite->files('backups/database'));
+        $this->assertSame('preserve historical backup', $offsite->get('backups/database/historical.sql'));
+        $primary = Storage::disk('backup_permissions');
+        $dumps = array_values(array_filter($primary->files('managed'), fn (string $path): bool => str_ends_with($path, '.sqlite')));
+        $this->assertCount(1, $dumps);
+        $manifest = $verifier->verifyStorageBackup('backup_permissions', $dumps[0], requireProvenance: true);
+        $verifier->assertPrivatePermissions('backup_permissions', $dumps[0], requireProtectedRoot: false);
+        $this->assertFalse($manifest->offsiteCopy['copied']);
+        $this->assertFalse($manifest->offsiteCopy['sha256_verified']);
+        Storage::forgetDisk('offsite_test');
+    }
+
+    public function test_non_local_offsite_never_uses_posix_paths_or_permission_helpers(): void
+    {
+        $objects = [];
+        $adapter = \Mockery::mock(\League\Flysystem\FilesystemAdapter::class);
+        $storage = \Mockery::mock(\Illuminate\Filesystem\FilesystemAdapter::class);
+        $storage->shouldReceive('getAdapter')->andReturn($adapter);
+        $storage->shouldNotReceive('path');
+        $storage->shouldNotReceive('setVisibility');
+        $storage->shouldReceive('put')->andReturnUsing(function (string $path, mixed $content, array $options) use (&$objects): bool {
+            $this->assertSame('private', $options['visibility']);
+            $objects[$path] = is_resource($content) ? stream_get_contents($content) : $content;
+
+            return true;
+        });
+        $storage->shouldReceive('size')->andReturnUsing(function (string $path) use (&$objects): int {
+            return strlen($objects[$path]);
+        });
+        $storage->shouldReceive('readStream')->andReturnUsing(function (string $path) use (&$objects) {
+            $stream = fopen('php://temp', 'w+b');
+            fwrite($stream, $objects[$path]);
+            rewind($stream);
+
+            return $stream;
+        });
+        Storage::set('remote_offsite_test', $storage);
+        $verifier = \Mockery::mock(BackupVerificationService::class, [null])->makePartial();
+        $verifier->shouldNotReceive('preparePrivateLocalDirectory');
+        $verifier->shouldNotReceive('enforcePrivateLocalPath');
+        $verifier->shouldNotReceive('assertPrivatePermissions');
+        $file = $this->root.'/fixture.sqlite';
+        $manifest = BackupManifest::fromArray([
+            'backup_id' => 'remote-test', 'created_at' => now('UTC')->toIso8601String(),
+            'application_environment' => 'testing', 'application_git_sha' => str_repeat('a', 40),
+            'database_engine' => 'sqlite', 'database_name' => 'isolated-fixture',
+            'backup_filename' => 'fixture.sqlite', 'backup_format' => 'sqlite',
+            'backup_size_bytes' => filesize($file), 'sha256' => hash_file('sha256', $file),
+            'purpose' => 'manual', 'verification_status' => 'verified',
+            'verified_at' => now('UTC')->toIso8601String(),
+        ]);
+        $method = new \ReflectionMethod(BackupDatabaseService::class, 'replicateToOffsite');
+        $result = $method->invoke(new BackupDatabaseService($verifier), $file, 'fixture.sqlite', 'remote_offsite_test', 'managed', $manifest->sha256, $manifest, true);
+        $this->assertTrue($result['copied']);
+        $this->assertTrue($result['sha256_verified']);
+        $this->assertCount(3, $objects);
+        $final = json_decode($objects['managed/fixture.sqlite.json'], true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame($result, $final['offsite_copy']);
+        Storage::forgetDisk('remote_offsite_test');
+    }
+
+    public static function incorrectOwnerOnlyModes(): array
+    {
+        return [
+            'executable dump' => ['', 0700],
+            'read-only checksum' => ['.sha256', 0400],
+            'executable final manifest' => ['.json', 0700],
+            'read-only directory' => [null, 0500],
+        ];
+    }
+
+    #[DataProvider('incorrectOwnerOnlyModes')]
+    public function test_independent_verifier_rejects_incorrect_owner_only_modes(?string $suffix, int $mode): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Exact POSIX modes require Linux.');
+        }
+        $this->artisan('backup:database')->assertSuccessful();
+        $storage = Storage::disk('backup_permissions');
+        $dump = array_values(array_filter($storage->files('managed'), fn (string $path): bool => str_ends_with($path, '.sqlite')))[0];
+        $absolute = $storage->path($suffix === null ? 'managed' : $dump.$suffix);
+        try {
+            chmod($absolute, $mode);
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('permissions are not private');
+            (new BackupVerificationService)->assertPrivatePermissions('backup_permissions', $dump, requireProtectedRoot: false);
+        } finally {
+            chmod($absolute, $suffix === null ? 0700 : 0600);
+        }
     }
 }

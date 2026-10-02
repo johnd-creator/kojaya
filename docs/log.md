@@ -1598,6 +1598,9 @@ remain required; PR #96 is unmerged, with QA/PR #92/Phase 6 untouched.
 Managed local backups enforce private directory/artifact modes and reuse the
 independent verifier before reporting success, including the final offsite
 manifest update. Exclusive reservations bound failed-operation cleanup to newly
-created primary files. Real isolated POSIX filesystem regression tests cover
+created files. R2 extends the same invariant to actual local offsite adapters,
+finalizes their manifest before independent permission verification, and preserves
+required/optional failure semantics without imposing POSIX checks on remote
+adapters. Real isolated POSIX filesystem regression tests cover
 nonrestrictive umasks and permission failures; no dependency or deployment-script
 changes, QA operations, PR #92 reconciliation, or Phase 6 work are included.

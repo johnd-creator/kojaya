@@ -91,7 +91,7 @@ class BackupDatabaseService
         $hasExplicitOffsiteDisk = $offsiteDisk !== null;
         $offsiteDisk = $offsiteDisk ?: config('operations.backup.offsite_disk');
         $offsiteDisk = is_string($offsiteDisk) && trim($offsiteDisk) !== '' ? trim($offsiteDisk) : null;
-        $offsiteDirectory = trim((string) ($offsiteDirectory ?: config('operations.backup.offsite_directory', 'backups/database')), '/\\');
+        $offsiteDirectory = str_replace('\\', '/', trim((string) ($offsiteDirectory ?: config('operations.backup.offsite_directory', 'backups/database')), '/\\'));
         $requireOffsite = $requireOffsite ?? (bool) config('operations.backup.require_offsite', false);
         $offsiteEnabled = $offsiteDisk !== null && ($hasExplicitOffsiteDisk || (bool) config('operations.backup.offsite_enabled', false) || $requireOffsite);
 
@@ -315,10 +315,6 @@ class BackupDatabaseService
                 if ($isLocal) {
                     $this->verificationService->enforcePrivateLocalPath($disk, $targetPath.'.json', 0600);
                 }
-
-                if (! empty($offsiteResult['copied'])) {
-                    Storage::disk($offsiteDisk)->put("{$offsiteDirectory}/{$backupFilename}.json", $manifest->toJson());
-                }
             }
 
             // Check after the last write (including offsite manifest updates), before reporting success.
@@ -519,25 +515,51 @@ class BackupDatabaseService
         BackupManifest $manifest,
         bool $requireOffsite,
     ): array {
+        $createdPaths = [];
         try {
             $offsiteStorage = Storage::disk($offsiteDisk);
             $offsiteTargetPath = "{$offsiteDirectory}/{$backupFilename}";
+            $isLocal = $offsiteStorage->getAdapter() instanceof LocalFilesystemAdapter;
+            if ($isLocal) {
+                $this->verificationService->preparePrivateLocalDirectory($offsiteDisk, $offsiteDirectory);
+                foreach ([$offsiteTargetPath, $offsiteTargetPath.'.sha256', $offsiteTargetPath.'.json'] as $path) {
+                    $reservation = @fopen($offsiteStorage->path($path), 'xb');
+                    if ($reservation === false) {
+                        throw new RuntimeException('Unable to reserve a new offsite artifact. Overwrite prohibited.');
+                    }
+                    fclose($reservation);
+                    $createdPaths[] = $path;
+                    $this->verificationService->enforcePrivateLocalPath($offsiteDisk, $path, 0600);
+                }
+            }
 
             $stream = fopen($tmpFile, 'rb');
             if ($stream === false) {
                 throw new RuntimeException('Failed to open temporary dump file for offsite upload.');
             }
-            $putSuccess = $offsiteStorage->put($offsiteTargetPath, $stream);
-            if (is_resource($stream)) {
-                fclose($stream);
+            try {
+                $putSuccess = $offsiteStorage->put($offsiteTargetPath, $stream, ['visibility' => 'private']);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
             }
 
             if (! $putSuccess) {
                 throw new RuntimeException("Failed to write backup dump to offsite storage [{$offsiteDisk}:{$offsiteTargetPath}].");
             }
 
-            $offsiteStorage->put($offsiteTargetPath.'.sha256', "{$sha256}  {$backupFilename}\n");
-            $offsiteStorage->put($offsiteTargetPath.'.json', $manifest->toJson());
+            if ($isLocal) {
+                $this->verificationService->enforcePrivateLocalPath($offsiteDisk, $offsiteTargetPath, 0600);
+            }
+            foreach ([$offsiteTargetPath.'.sha256' => "{$sha256}  {$backupFilename}\n", $offsiteTargetPath.'.json' => $manifest->toJson()] as $path => $content) {
+                if (! $offsiteStorage->put($path, $content, ['visibility' => 'private'])) {
+                    throw new RuntimeException('Unable to write offsite backup provenance.');
+                }
+                if ($isLocal) {
+                    $this->verificationService->enforcePrivateLocalPath($offsiteDisk, $path, 0600);
+                }
+            }
 
             // Validate offsite size matches
             $expectedSize = (int) File::size($tmpFile);
@@ -553,7 +575,7 @@ class BackupDatabaseService
                 throw new RuntimeException("Off-site SHA-256 verification mismatch on [{$offsiteDisk}]: expected [{$sha256}], calculated [{$offsiteCalculatedSha256}].");
             }
 
-            return [
+            $result = [
                 'enabled' => true,
                 'disk' => $offsiteDisk,
                 'directory' => $offsiteDirectory,
@@ -561,7 +583,27 @@ class BackupDatabaseService
                 'copied_at' => now('UTC')->toIso8601String(),
                 'sha256_verified' => true,
             ];
+            $finalManifest = BackupManifest::fromArray(array_replace($manifest->toArray(), ['offsite_copy' => $result]));
+            if (! $offsiteStorage->put($offsiteTargetPath.'.json', $finalManifest->toJson(), ['visibility' => 'private'])) {
+                throw new RuntimeException('Unable to update offsite backup manifest.');
+            }
+            if ($isLocal) {
+                $this->verificationService->enforcePrivateLocalPath($offsiteDisk, $offsiteTargetPath.'.json', 0600);
+                $this->verificationService->assertPrivatePermissions($offsiteDisk, $offsiteTargetPath, requireProtectedRoot: false);
+            }
+
+            return $result;
         } catch (Throwable $e) {
+            // Exclusive reservations are the only paths this attempt owns; never remove historical backups.
+            if ($createdPaths !== []) {
+                try {
+                    if (! $offsiteStorage->delete($createdPaths)) {
+                        Log::warning('Incomplete local offsite backup cleanup failed', ['offsite_disk' => $offsiteDisk]);
+                    }
+                } catch (Throwable) {
+                    Log::warning('Incomplete local offsite backup cleanup failed', ['offsite_disk' => $offsiteDisk]);
+                }
+            }
             Log::warning('Off-site backup replication failed', [
                 'offsite_disk' => $offsiteDisk,
                 'error' => $e->getMessage(),

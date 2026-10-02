@@ -100,7 +100,8 @@ class BackupVerificationService
     {
         clearstatcache(true, $path);
         $permissions = @fileperms($path);
-        if (PHP_OS_FAMILY === 'Windows' || $permissions === false || ($permissions & 0077) !== 0) {
+        $expectedMode = is_dir($path) ? 0700 : 0600;
+        if (PHP_OS_FAMILY === 'Windows' || $permissions === false || ($permissions & 07777) !== $expectedMode) {
             throw new RuntimeException('Backup artifact or directory permissions are not private.');
         }
     }
